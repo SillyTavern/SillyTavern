@@ -765,6 +765,82 @@ export function initDefaultSlashCommands() {
         `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'chchar',
+        callback: changeCharacter,
+        returns: 'Change the character that sent a message.',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'avatar',
+                description: 'Character avatar override (Can be either avatar key or just the character name to pull the avatar from)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'system',
+                description: 'If the message should be changed to a \'system\' message. By default determined by whether the character does not exist.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: false
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'user',
+                description: 'If the message should be forced to be a \'user\' message. By default determined by the character\'s name matching the user\'s current persona.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: false
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'nosystem',
+                description: 'If the message should be changed to not be a \'system\' message. By default determined by whether the character exists.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: false
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'nouser',
+                description: 'If the message should be forced to not be a \'user\' message. By default determined by the character not being the user \'s current persona.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: false
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'at',
+                description: 'the ID of the message to modify (index-based, corresponding to message id). If omitted, the last message is chosen.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will modify the message right before the last message in chat. At must be nonzero.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: -1,
+                enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'The way how you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'none',
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                forceEnum: true,
+            }),
+        ],
+        helpString: `
+        <div>
+            Changes the character that sent a message to one of your choice.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/chchar name="Chloe" at=-2</code></pre>
+                    Will change the bottom third message to be sent by "Chloe".
+                </li>
+            </ul>
+        </div>
+        <div>
+            If "system" is set to true, the message is a system message and won't have an avatar.
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
         rawQuotes: true,
         callback: sendMessageAs,
@@ -4507,6 +4583,74 @@ export function getNameAndAvatarForMessage(character, name = null) {
         force_avatar: force_avatar,
         original_avatar: original_avatar,
     };
+}
+/**
+ * Changes the character
+ *
+ * @param {object?} args - Arguments to this function. Includes:
+ * @param {string} name - Name to change to.
+ * @param {string} avatar - Optionally use another character's avatar.
+ * @param {number} at - ID to make the change at.
+ *
+ * @returns {{name: string, force_avatar: string, original_avatar: string}} An object containing the name for the message, forced avatar URL, and original avatar
+ */
+export async function changeCharacter(args) {
+    let name = args.name?.trim();
+    let modifyAt = Number(args.at);
+    // Convert possible depth parameter to index
+    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        modifyAt = chat.length + modifyAt;
+    }
+    if (!name) {
+        const namelessWarningKey = 'chcharToNamelessWarningShown';
+        if (accountStorage.getItem(namelessWarningKey) !== 'true') {
+            toastr.warning('To avoid confusion, please use /chchar name="Character Name"', 'Name defaulted to {{char}}', { timeOut: 10000 });
+            accountStorage.setItem(namelessWarningKey, 'true');
+        }
+        name = name2;
+    }
+    if (modifyAt === 0) {
+        const zeroAtWarningKey = 'chcharZeroAtWarningShown';
+        if (accountStorage.getItem(zeroAtWarningKey) !== 'true') {
+            toastr.warning('At cannot be zero. Defaulting to -1 (last message)', { timeOut: 10000 });
+            accountStorage.setItem(zeroAtWarningKey, 'true');
+        }
+        modifyAt = -1;
+    }
+    const character = findChar({ name: name });
+    const avatarCharacter = args.avatar ? findChar({ name: args.avatar }) : character;
+    if (args.avatar && !avatarCharacter) {
+        toastr.warning(`Character for avatar ${args.avatar} not found`);
+        return '';
+    }
+    const { name: avatarCharName, force_avatar, original_avatar } = getNameAndAvatarForMessage(avatarCharacter, name);
+    chat[args.at].name = character?.name || name || avatarCharName;
+    if(chat[args.at].name == name1 || chat[args.at].name == name2 || args.user) {
+        chat[args.at].is_user = true;
+    } else {
+        chat[args.at].is_user = false;
+    }
+    if(args.system) {
+        chat[args.at].is_system = true;
+    }
+    if(args.nosystem) {
+        chat[args.at].is_system = false;
+    }
+    if(args.user) {
+        chat[args.at].is_user = true;
+    }
+    if(args.nouser) {
+        chat[args.at].is_user = false;
+    }
+    chat[args.at].send_date = getMessageTimeStamp();
+    chat[args.at].force_avatar = force_avatar;
+    chat[args.at].original_avatar = original_avatar;
+    await saveChatConditional();
+    await eventSource.emit(event_types.MESSAGE_RECEIVED, modifyAt);
+    await reloadCurrentChat();
+    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, modifyAt);
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'none', chat[args.at].mes, { objectToStringFunc: x => x.mes });
 }
 
 export async function sendMessageAs(args, text) {
