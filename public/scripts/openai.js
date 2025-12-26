@@ -2519,7 +2519,8 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.MOONSHOT,
     ];
 
-    const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(model);
+    const gptModel = model.replace(/^openai\//, ''); // for OpenRouter compatibility
+    const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(gptModel);
     const stream = settings.stream_openai && type !== 'quiet' && !isO1;
 
     const noMultiSwipeTypes = ['quiet', 'impersonate', 'continue'];
@@ -2742,7 +2743,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['seed'] = settings.seed;
     }
 
-    if (gptSources.includes(settings.chat_completion_source) && /^(o1|o3|o4)/.test(model)) {
+    if (gptSources.includes(settings.chat_completion_source) && /^(o1|o3|o4)/.test(gptModel)) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
         delete generate_data.logprobs;
@@ -2753,7 +2754,7 @@ export async function createGenerationParameters(settings, model, type, messages
         delete generate_data.top_p;
         delete generate_data.frequency_penalty;
         delete generate_data.presence_penalty;
-        if (model.startsWith('o1')) {
+        if (gptModel.startsWith('o1')) {
             generate_data.messages.forEach((msg) => {
                 if (msg.role === 'system') {
                     msg.role = 'user';
@@ -2765,7 +2766,7 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    if (gptSources.includes(settings.chat_completion_source) && /^gpt-5/.test(model)) {
+    if (gptSources.includes(settings.chat_completion_source) && /gpt-5/.test(model)) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
         delete generate_data.logprobs;
