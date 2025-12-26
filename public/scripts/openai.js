@@ -2519,8 +2519,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.MOONSHOT,
     ];
 
-    const gptModel = model.replace(/^openai\//, ''); // for OpenRouter compatibility
-    const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(gptModel);
+    const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(model);
     const stream = settings.stream_openai && type !== 'quiet' && !isO1;
 
     const noMultiSwipeTypes = ['quiet', 'impersonate', 'continue'];
@@ -2743,6 +2742,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data['seed'] = settings.seed;
     }
 
+    const gptModel = model.replace(/^openai\//, ''); // for OpenRouter compatibility
     if (gptSources.includes(settings.chat_completion_source) && /^(o1|o3|o4)/.test(gptModel)) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
