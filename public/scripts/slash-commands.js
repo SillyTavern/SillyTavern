@@ -774,7 +774,7 @@ export function initDefaultSlashCommands() {
                 name: 'at',
                 description: 'the ID of the message to modify (index-based, corresponding to message id). If omitted, the last message is chosen.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will modify the message right before the last message in chat. At must be nonzero.',
                 typeList: [ARGUMENT_TYPE.NUMBER],
-                defaultValue: String(-1),
+                defaultValue: '',
                 enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
             }),
         ],
@@ -784,7 +784,7 @@ export function initDefaultSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: (executor) => {
-                    let modifyAt = Number(executor.namedArgumentList.find(arg => arg.name === 'at')?.value ?? -1);
+                    let modifyAt = Number(executor.namedArgumentList.find(arg => arg.name === 'at')?.value ?? (chat.length - 1));
                     if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
                         modifyAt = chat.length + modifyAt;
                     }
