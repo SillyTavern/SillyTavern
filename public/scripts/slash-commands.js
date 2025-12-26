@@ -4585,23 +4585,27 @@ export async function changeMessageName(args, name) {
 
     if (message.is_user) {
         const persona = findPersona({ name: name });
-        if (!persona) {
-            toastr.warning(t`Persona not found for a user role message.`);
-            return '';
+        if (persona) {
+            message.name = newName = persona.name;
+            message.force_avatar = getThumbnailUrl('persona', persona.avatar);
+            message.original_avatar = persona.avatar;
+        } else {
+            message.name = newName = name;
+            message.force_avatar = default_avatar;
+            message.original_avatar = default_avatar;
         }
-        message.name = newName = persona.name;
-        message.force_avatar = getThumbnailUrl('persona', persona.avatar);
-        message.original_avatar = persona.avatar;
     } else {
         const character = findChar({ name: name });
-        if (!character) {
-            toastr.warning(t`Character not found for a non-user role message.`);
-            return '';
+        if (character) {
+            const characterInfo = getNameAndAvatarForMessage(character, name);
+            message.name = newName = characterInfo.name;
+            message.force_avatar = characterInfo.force_avatar;
+            message.original_avatar = characterInfo.original_avatar;
+        } else {
+            message.name = newName = name;
+            message.force_avatar = default_avatar;
+            message.original_avatar = default_avatar;
         }
-        const characterInfo = getNameAndAvatarForMessage(character, name);
-        message.name = newName = characterInfo.name;
-        message.force_avatar = characterInfo.force_avatar;
-        message.original_avatar = characterInfo.original_avatar;
     }
 
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
