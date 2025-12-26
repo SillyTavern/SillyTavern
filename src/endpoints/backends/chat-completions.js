@@ -1365,6 +1365,27 @@ async function sendElectronHubRequest(request, response) {
             };
         }
 
+        bodyParams['stream_options'] = {
+            'include_usage': true,
+        };
+
+        const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
+        const cachingAtDepth = getConfigValue('claude.cachingAtDepth', -1, 'number');
+        const isClaude3or4 = /^claude-(3-|opus-4-|sonnet-4-|haiku-4-)/.test(request.body.model);
+        const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
+
+        if (Array.isArray(request.body.messages)) {
+            if (isClaude3or4) {
+                if (enableSystemPromptCache) {
+                    cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
+                }
+
+                if (Number.isInteger(cachingAtDepth) && cachingAtDepth >= 0) {
+                    cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+                }
+            }
+        }
+
         const requestBody = {
             'messages': request.body.messages,
             'model': request.body.model,
