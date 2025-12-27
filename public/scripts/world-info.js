@@ -813,6 +813,48 @@ export function getWorldInfoSettings() {
     };
 }
 
+/**
+ *  Updates the world info settings.
+ * @param {object} settings - Settings object
+ * @param {string[]} [active_world_info] - Optional array of active world info names
+ */
+ export function updateWorldInfoSettings(settings, active_world_info) {
+    console.debug('[WI] Updating world info settings', settings, active_world_info);
+    if (settings.world_info_depth !== undefined)
+        world_info_depth = Number(settings.world_info_depth);
+    if (settings.world_info_min_activations !== undefined)
+        world_info_min_activations = Number(settings.world_info_min_activations);
+    if (settings.world_info_min_activations_depth_max !== undefined)
+        world_info_min_activations_depth_max = Number(settings.world_info_min_activations_depth_max);
+    if (settings.world_info_budget !== undefined)
+        world_info_budget = Number(settings.world_info_budget);
+    if (settings.world_info_include_names !== undefined)
+        world_info_include_names = Boolean(settings.world_info_include_names);
+    if (settings.world_info_recursive !== undefined)
+        world_info_recursive = Boolean(settings.world_info_recursive);
+    if (settings.world_info_overflow_alert !== undefined)
+        world_info_overflow_alert = Boolean(settings.world_info_overflow_alert);
+    if (settings.world_info_case_sensitive !== undefined)
+        world_info_case_sensitive = Boolean(settings.world_info_case_sensitive);
+    if (settings.world_info_match_whole_words !== undefined)
+        world_info_match_whole_words = Boolean(settings.world_info_match_whole_words);
+    if (settings.world_info_character_strategy !== undefined)
+        world_info_character_strategy = Number(settings.world_info_character_strategy);
+    if (settings.world_info_budget_cap !== undefined)
+        world_info_budget_cap = Number(settings.world_info_budget_cap);
+    if (settings.world_info_use_group_scoring !== undefined)
+        world_info_use_group_scoring = Boolean(settings.world_info_use_group_scoring);
+    if (settings.world_info_max_recursion_steps !== undefined)
+        world_info_max_recursion_steps = Number(settings.world_info_max_recursion_steps);
+
+    if (active_world_info && Array.isArray(active_world_info)) {
+        delete settings.world_info;
+        selected_world_info = active_world_info;
+    }
+
+    saveSettingsDebounced();
+};
+
 export const world_info_position = {
     before: 0,
     after: 1,
