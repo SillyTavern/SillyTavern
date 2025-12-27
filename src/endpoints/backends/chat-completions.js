@@ -1842,19 +1842,21 @@ router.post('/status', async function (request, statusResponse) {
             }
 
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHUTES && Array.isArray(data?.data)) {
-                data.data = data.data.map(model => {
-                    if (model.pricing?.prompt !== undefined && model.pricing?.completion !== undefined) {
-                        return {
-                            ...model,
-                            pricing: {
-                                ...model.pricing,
-                                input: model.pricing.prompt,
-                                output: model.pricing.completion,
-                            },
-                        };
-                    }
-                    return model;
-                });
+                data.data = data.data
+                    .filter(model => model?.id)
+                    .map(model => {
+                        if (model.pricing?.prompt !== undefined && model.pricing?.completion !== undefined) {
+                            return {
+                                ...model,
+                                pricing: {
+                                    ...model.pricing,
+                                    input: model.pricing.prompt,
+                                    output: model.pricing.completion,
+                                },
+                            };
+                        }
+                        return model;
+                    });
             }
 
             statusResponse.send(data);
