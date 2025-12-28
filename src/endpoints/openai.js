@@ -73,7 +73,7 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         }
 
-        if (request.body.api === 'moonshot') {
+        if (request.body.api === 'moonshot' && !request.body.reverse_proxy) {
             key = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
         }
 
@@ -89,8 +89,11 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
 
-        if (request.body.api === 'zai') {
+        if (request.body.api === 'zai' && !request.body.reverse_proxy) {
             key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+        }
+
+        if (request.body.api === 'zai') {
             bodyParams.max_tokens = 4096; // default is 1024
         }
 
@@ -174,7 +177,7 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = 'https://text.pollinations.ai/openai/chat/completions';
         }
 
-        if (request.body.api === 'moonshot') {
+        if (request.body.api === 'moonshot' && !request.body.reverse_proxy) {
             apiUrl = 'https://api.moonshot.ai/v1/chat/completions';
         }
 
@@ -190,21 +193,21 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
         }
 
-        if (request.body.api === 'zai') {
+        if (request.body.api === 'zai' && !request.body.reverse_proxy) {
             apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING
                 ? 'https://api.z.ai/api/coding/paas/v4/chat/completions'
                 : 'https://api.z.ai/api/paas/v4/chat/completions';
+        }
 
-            // Handle video inlining for Z.AI
-            if (/data:video\/\w+;base64,/.test(request.body.image)) {
-                const message = body.messages.find(msg => Array.isArray(msg.content));
-                if (message) {
-                    const imgContent = message.content.find(c => c.type === 'image_url');
-                    if (imgContent) {
-                        imgContent.type = 'video_url';
-                        imgContent.video_url = imgContent.image_url;
-                        delete imgContent.image_url;
-                    }
+        // Handle video inlining for Z.AI
+        if (request.body.api === 'zai' && /data:video\/\w+;base64,/.test(request.body.image)) {
+            const message = body.messages.find(msg => Array.isArray(msg.content));
+            if (message) {
+                const imgContent = message.content.find(c => c.type === 'image_url');
+                if (imgContent) {
+                    imgContent.type = 'video_url';
+                    imgContent.video_url = imgContent.image_url;
+                    delete imgContent.image_url;
                 }
             }
         }

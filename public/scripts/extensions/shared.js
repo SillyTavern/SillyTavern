@@ -15,7 +15,7 @@ import { createThumbnail, isValidUrl } from '../utils.js';
  */
 export async function getMultimodalCaption(base64Img, prompt) {
     const useReverseProxy =
-        (['openai', 'anthropic', 'google', 'mistral', 'vertexai', 'xai'].includes(extension_settings.caption.multimodal_api))
+        (['openai', 'anthropic', 'google', 'mistral', 'vertexai', 'xai', 'zai', 'moonshot'].includes(extension_settings.caption.multimodal_api))
         && extension_settings.caption.allow_reverse_proxy
         && oai_settings.reverse_proxy
         && isValidUrl(oai_settings.reverse_proxy);
