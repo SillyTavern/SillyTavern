@@ -2239,8 +2239,8 @@ router.post('/generate', async function (request, response) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
-            apiUrl = API_MOONSHOT;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
+            apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
             headers = {};
             bodyParams = {};
             request.body.json_schema
@@ -2255,8 +2255,9 @@ router.post('/generate', async function (request, response) {
             };
             throw new Error('This provider is temporarily disabled.');
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
-            apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+            const defaultApiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
+            apiUrl = new URL(request.body.reverse_proxy || defaultApiUrl).toString();
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.ZAI);
             headers = {
                 'Accept-Language': 'en-US,en',
             };

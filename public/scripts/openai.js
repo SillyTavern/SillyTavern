@@ -2486,6 +2486,8 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.XAI,
+        chat_completion_sources.ZAI,
+        chat_completion_sources.MOONSHOT,
     ];
 
     // Sources that support logprobs
@@ -4129,6 +4131,8 @@ async function getStatusOpen() {
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.XAI,
+        chat_completion_sources.ZAI,
+        chat_completion_sources.MOONSHOT,
     ];
     if (oai_settings.reverse_proxy && validateProxySources.includes(oai_settings.chat_completion_source)) {
         await validateReverseProxy();
