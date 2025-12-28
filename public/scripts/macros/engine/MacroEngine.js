@@ -42,7 +42,8 @@ class MacroEngine {
     #postProcessors = [];
 
     constructor() {
-        this.#registerCoreProcessors();
+        this.#registerCorePreProcessors();
+        this.#registerCorePostProcessors();
     }
 
     /**
@@ -247,7 +248,7 @@ class MacroEngine {
     /**
      * Registers the core pre/post processors that handle legacy syntax and cleanup.
      */
-    #registerCoreProcessors() {
+    #registerCorePreProcessors() {
         // Pre-processors (priority 0-50 reserved for core)
 
         // This legacy macro will not be supported by the new macro parser, but rather regex-replaced beforehand
@@ -268,8 +269,13 @@ class MacroEngine {
                 .replace(/<CHARIFNOTGROUP>/gi, '{{charIfNotGroup}}'),
             { priority: 20, source: 'core:legacy-markers' },
         );
+    }
 
-    // Post-processors (priority 0-50 reserved for core)
+    /**
+     * Registers the core post-processors that handle legacy syntax and cleanup.
+     */
+    #registerCorePostProcessors() {
+        // Post-processors (priority 0-50 reserved for core)
 
         // Unescape braces: \{ → { and \} → }
         // Since \{\{ doesn't match {{ (MacroStart), it passes through as plain text.
