@@ -53,12 +53,23 @@
                 </label>
                 <label class="checkbox_label" for="tts_skip_tags">
                     <input type="checkbox" id="tts_skip_tags">
-                    <small data-i18n="Skip tagged blocks">Skip &lt;tagged&gt; blocks</small>
+                    <small data-i18n="Skip tagged blocks">Skip <tagged> blocks</small>
                 </label>
                 <label class="checkbox_label" for="tts_pass_asterisks">
                     <input type="checkbox" id="tts_pass_asterisks">
                     <small data-i18n="Pass Asterisks to TTS Engine">Pass Asterisks to TTS Engine</small>
                 </label>
+                <label class="checkbox_label" for="tts_apply_regex">
+                    <input type="checkbox" id="tts_apply_regex">
+                    <small data-i18n="Apply regex filter">Apply regex filter to text</small>
+                </label>
+                <div id="tts_regex_block" class="margin-top5 display-none">
+                    <div class="range-block-title justifyLeft">
+                        <small data-i18n="Regex Pattern">Regex Pattern (removes matching text)</small>
+                    </div>
+                    <input type="text" id="tts_regex_pattern" class="text_pole width100p" placeholder="Default: [^a-zA-Z0-9\s.,!?;:'\"()-]+" />
+                    <small data-i18n="Regex Description">Removes emojis and non-English text. Keeps letters, numbers, and punctuation.</small>
+                </div>
                 <label class="checkbox_label" for="tts_multi_voice_enabled"
                 data-i18n="[title]Works best when: Pass Asterisks to TTS Engine is enabled, and both Only narrate quotes and Ignore *text, even 'quotes', inside asterisks* are disabled."
                 title="Works best when: Pass Asterisks to TTS Engine is enabled, and both Only narrate quotes and Ignore *text, even 'quotes', inside asterisks* are disabled.">

@@ -638,6 +638,18 @@ async function processTtsQueue() {
             : text.replaceAll('*', '').trim(); // remove just the asterisks
     }
 
+    if (extension_settings.tts.apply_regex) {
+        const regexPattern = extension_settings.tts.regex_pattern || '[^a-zA-Z0-9\\s.,!?;:\'"()-]+';
+        try {
+            const regex = new RegExp(regexPattern, 'g');
+            text = text.replace(regex, '').trim();
+            // Clean up extra spaces that might be left after removal
+            text = text.replace(/\s+/g, ' ').trim();
+        } catch (error) {
+            console.error('Invalid regex pattern:', error);
+        }
+    }
+
     if (extension_settings.tts.narrate_quoted_only) {
         const partJoiner = (ttsProvider?.separator || ' ... ');
         text = joinQuotedBlocks(text, { separator: partJoiner, includeQuotes: true });
@@ -825,6 +837,9 @@ function loadSettings() {
     $('#tts_skip_codeblocks').prop('checked', extension_settings.tts.skip_codeblocks);
     $('#tts_skip_tags').prop('checked', extension_settings.tts.skip_tags);
     $('#tts_multi_voice_enabled').prop('checked', extension_settings.tts.multi_voice_enabled);
+    $('#tts_apply_regex').prop('checked', extension_settings.tts.apply_regex);
+    $('#tts_regex_pattern').val(extension_settings.tts.regex_pattern);
+    $('#tts_regex_block').toggle(extension_settings.tts.apply_regex);
     $('#playback_rate').val(extension_settings.tts.playback_rate);
     $('#playback_rate_counter').val(Number(extension_settings.tts.playback_rate).toFixed(2));
     $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
@@ -840,6 +855,8 @@ const defaultSettings = {
     narrate_user: false,
     playback_rate: 1,
     multi_voice_enabled: false,
+    apply_regex: false,
+    regex_pattern: '[^a-zA-Z0-9\\s.,!?;:\'"()-]+',
 };
 
 function setTtsStatus(status, success) {
@@ -938,6 +955,17 @@ function onMultiVoiceClick() {
     saveSettingsDebounced();
     // Reinitialize voice map to show/hide voices
     initVoiceMap();
+}
+
+function onApplyRegexClick() {
+    extension_settings.tts.apply_regex = !!$('#tts_apply_regex').prop('checked');
+    saveSettingsDebounced();
+    $('#tts_regex_block').toggle(extension_settings.tts.apply_regex);
+}
+
+function onRegexPatternChange() {
+    extension_settings.tts.regex_pattern = $('#tts_regex_pattern').val();
+    saveSettingsDebounced();
 }
 
 //##############//
@@ -1449,6 +1477,8 @@ jQuery(async function () {
         $('#tts_narrate_by_paragraphs').on('click', onNarrateByParagraphsClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_multi_voice_enabled').on('click', onMultiVoiceClick);
+        $('#tts_apply_regex').on('click', onApplyRegexClick);
+        $('#tts_regex_pattern').on('input', onRegexPatternChange);
 
         $('#playback_rate').on('input', function () {
             const value = $(this).val();
