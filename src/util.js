@@ -1557,6 +1557,8 @@ export function tryDeleteFile(filePath) {
  * If the json files has newlines (jsonl), only the first line will be read.
  * I cannot use the steam-json's jsonl parser because it reads the entire line.
  * https://github.com/uhop/stream-json/blob/07f034a6/src/jsonl/parser.js#L63
+ * .unpipe must be before .destroy, Thank you @God-damnit-all!
+ * https://github.com/SillyTavern/SillyTavern/pull/4573#issuecomment-3695128316
  * @param {string} filePath - Path to the file to read
  * @param {Array} match - Location of target object.
  * @param {number} maxChunks - Maximum number of chunks to read (default: 4)
@@ -1574,10 +1576,10 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
             if (!resolved) {
                 resolved = true;
                 if (pipeline) {
-                    pipeline.destroy();
+                    pipeline.unpipe();
                 }
                 else if (readStream) {
-                    readStream.unpipe();
+                    readStream.destroy();
                 }
             }
         };
