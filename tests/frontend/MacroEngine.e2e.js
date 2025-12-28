@@ -1451,10 +1451,11 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('[text]');
         });
 
-        test('should preserve internal whitespace when auto-trimming', async ({ page }) => {
+        test('should dedent consistent indentation when auto-trimming', async ({ page }) => {
+        // Both lines have 2-space indent, so dedent removes it from both
             const input = '{{setvar::myvar}}\n  line1\n  line2  \n{{/setvar}}[{{getvar::myvar}}]';
             const output = await evaluateWithEngine(page, input);
-            expect(output).toBe('[line1\n  line2]');
+            expect(output).toBe('[line1\nline2]');
         });
 
         test('should preserve whitespace with # flag', async ({ page }) => {
@@ -1510,6 +1511,68 @@ test.describe('MacroEngine', () => {
             const input = '{{#reverse}}\n  abc  \n{{/reverse}}';
             const output = await evaluateWithEngine(page, input);
             expect(output).toBe('\n  cba  \n');
+        });
+
+        test('should dedent consistent indentation from multiline content', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  # Heading\n  Content here\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[# Heading\nContent here]');
+        });
+
+        test('should dedent based on first non-empty line indentation', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n    line1\n    line2\n    line3\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[line1\nline2\nline3]');
+        });
+
+        test('should preserve relative indentation when dedenting', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  parent\n    child\n  sibling\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[parent\n  child\nsibling]');
+        });
+
+        test('should handle mixed indentation levels correctly', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  # Header\n    - item1\n    - item2\n  Paragraph\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[# Header\n  - item1\n  - item2\nParagraph]');
+        });
+
+        test('should dedent {{if}} branches with indentation', async ({ page }) => {
+            const input = '{{if yes}}\n  # Title\n  Body text\n{{/if}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('# Title\nBody text');
+        });
+
+        test('should dedent {{if}} else branch with indentation', async ({ page }) => {
+            const input = '{{if false}}\n  Then branch\n{{else}}\n  # Else Title\n  Else body\n{{/if}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('# Else Title\nElse body');
+        });
+
+        test('should not dedent when # flag is set', async ({ page }) => {
+            const input = '{{#setvar::myvar}}\n  # Heading\n  Content\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[\n  # Heading\n  Content\n]');
+        });
+
+        test('should handle single line content without dedent issues', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  single line\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[single line]');
+        });
+
+        test('should handle empty lines in multiline content', async ({ page }) => {
+            const input = '{{setvar::myvar}}\n  line1\n\n  line2\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[line1\n\nline2]');
+        });
+
+        test('should dedent based on first non-empty line and preserve relative indentation', async ({ page }) => {
+            // First non-empty line has 2-space indent, subsequent lines have varying indentation
+            // The 2-space base indent should be removed, preserving relative indentation
+            const input = '{{setvar::myvar}}\n  First Line\n    Second Line, more indented\n  Third line\n    Fourth line, also more indented\n{{/setvar}}[{{getvar::myvar}}]';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('[First Line\n  Second Line, more indented\nThird line\n  Fourth line, also more indented]');
         });
     });
 });

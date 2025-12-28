@@ -109,7 +109,7 @@ export function registerCoreMacros() {
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
         ],
         returns: 'The content if condition is truthy, else branch or empty string otherwise.',
-        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], flags, env }) => {
+        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], flags, env, trimContent }) => {
             // Check if the ORIGINAL condition (before macro resolution) starts with !
             // We use raw args to check this, as the resolved value might start with ! from a variable
             let inverted = false;
@@ -142,7 +142,7 @@ export function registerCoreMacros() {
             if (flags.preserveWhitespace) {
                 return result ?? '';
             }
-            return (result ?? '').trim();
+            return trimContent(result ?? '');
         },
     });
 

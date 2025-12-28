@@ -26,6 +26,7 @@ import { MacroRegistry } from './MacroRegistry.js';
  * @property {string} text
  * @property {MacroEnv} env
  * @property {(call: MacroCall) => string} resolveMacro
+ * @property {(content: string, options?: { trimIndent?: boolean }) => string} trimContent - Shared utility function that trims scoped content with optional indentation dedent.
  */
 
 /**
@@ -55,7 +56,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     evaluateDocument(options) {
-        const { text, cst, env, resolveMacro } = options;
+        const { text, cst, env, resolveMacro, trimContent } = options;
 
         if (typeof text !== 'string') {
             throw new Error('MacroCstWalker.evaluateDocument: text must be a string');
@@ -66,9 +67,12 @@ class MacroCstWalker {
         if (typeof resolveMacro !== 'function') {
             throw new Error('MacroCstWalker.evaluateDocument: resolveMacro must be a function');
         }
+        if (typeof trimContent !== 'function') {
+            throw new Error('MacroCstWalker.evaluateDocument: trimContent must be a function');
+        }
 
         /** @type {EvaluationContext} */
-        const context = { text, env, resolveMacro };
+        const context = { text, env, resolveMacro, trimContent };
         let items = this.#collectDocumentItems(cst);
 
         // Process scoped macros: find opening/closing pairs and merge them
@@ -233,7 +237,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateMacroNode(macroNode, context, scopedContent) {
-        const { text, env, resolveMacro } = context;
+        const { text, env, resolveMacro, trimContent } = context;
 
         const children = macroNode.children || {};
         const identifierTokens = /** @type {IToken[]} */ (children['Macro.identifier'] || []);
@@ -287,7 +291,7 @@ class MacroCstWalker {
 
                 // Auto-trim scoped content unless the '#' (preserveWhitespace) flag is set
                 if (!flags.preserveWhitespace) {
-                    scopedValue = scopedValue.trim();
+                    scopedValue = trimContent(scopedValue);
                 }
 
                 args.push(scopedValue);
@@ -546,7 +550,7 @@ class MacroCstWalker {
      * @returns {string} - The evaluated scoped content with nested macros resolved.
      */
     #evaluateScopedContent(scopedContent, context) {
-        const { text, env, resolveMacro } = context;
+        const { text, env, resolveMacro, trimContent } = context;
         const { startOffset, endOffset } = scopedContent;
 
         // Extract the raw content between opening and closing tags
@@ -568,7 +572,7 @@ class MacroCstWalker {
 
         // Create a new context with the scoped content text
         /** @type {EvaluationContext} */
-        const scopedContext = { text: rawContent, env, resolveMacro };
+        const scopedContext = { text: rawContent, env, resolveMacro, trimContent };
 
         // Collect items from the scoped content CST
         let items = this.#collectDocumentItems(scopedCst);

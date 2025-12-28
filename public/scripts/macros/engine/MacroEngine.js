@@ -59,6 +59,7 @@ class MacroEngine {
                 cst,
                 env: safeEnv,
                 resolveMacro: this.#resolveMacro.bind(this),
+                trimContent: this.trimScopedContent.bind(this),
             });
         } catch (error) {
             logMacroGeneralError({ message: 'Macro evaluation failed. Returning original input.', error: { input, error } });
@@ -206,6 +207,71 @@ class MacroEngine {
         }
 
         return String(value);
+    }
+
+    /**
+     * Trims scoped content with optional indentation dedent.
+     *
+     * When trimIndent is true (default), this function:
+     * 1. Trims leading and trailing whitespace (like String.trim())
+     * 2. Finds the indentation of the first non-empty line
+     * 3. Removes that amount of leading whitespace from all subsequent lines
+     *
+     * This allows neatly formatted scoped macros like:
+     * ```
+     * {{if condition}}
+     *   # Heading
+     *   Content here
+     * {{/if}}
+     * ```
+     * To produce "# Heading\nContent here" instead of "# Heading\n  Content here"
+     *
+     * @param {string} content - The content to trim
+     * @param {Object} options - Configuration options
+     * @param {boolean} [options.trimIndent=true] - Whether to also dedent consistent indentation
+     * @returns {string} The trimmed content
+     */
+    trimScopedContent(content, { trimIndent = true } = {}) {
+        if (!content) return '';
+
+        // If not dedenting, just do a basic trim
+        if (!trimIndent) {
+            return content.trim();
+        }
+
+        // Split into lines BEFORE trimming to preserve indentation info
+        const lines = content.split('\n');
+
+        // Find the first non-empty line (has non-whitespace characters)
+        let baseIndent = 0;
+        for (const line of lines) {
+            if (line.trim() !== '') {
+                // Found first non-empty line - get its indentation
+                const match = line.match(/^[ \t]*/);
+                baseIndent = match ? match[0].length : 0;
+                break;
+            }
+        }
+
+        // If no indentation to remove, just trim and return
+        if (baseIndent === 0) {
+            return content.trim();
+        }
+
+        // Remove the base indentation from ALL lines
+        const dedentedLines = lines.map(line => {
+            // Only remove indentation if the line has enough leading whitespace
+            const match = line.match(/^[ \t]*/);
+            const lineIndent = match ? match[0].length : 0;
+            if (lineIndent >= baseIndent) {
+                return line.slice(baseIndent);
+            }
+            // Line has less indentation than base - just trim its leading whitespace
+            return line.trimStart();
+        });
+
+        // Join and trim the final result
+        return dedentedLines.join('\n').trim();
     }
 }
 

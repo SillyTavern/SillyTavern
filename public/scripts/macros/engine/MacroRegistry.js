@@ -116,6 +116,7 @@ export const MacroValueType = Object.freeze({
  * @property {CstNode|null} cstNode
  * @property {{ startOffset: number, endOffset: number }|null} range
  * @property {(value: any) => string} normalize - Normalize function to use on unsure macro results to make sure they return strings as expected.
+ * @property {(content: string, trimIndent?: boolean) => string} trimContent - Trims scoped content with optional indentation dedent. Defaults to trimming indentation.
  */
 
 /**
@@ -547,6 +548,7 @@ class MacroRegistry {
             cstNode: call.cstNode,
             range: call.range,
             normalize: MacroEngine.normalizeMacroResult.bind(MacroEngine),
+            trimContent: MacroEngine.trimScopedContent.bind(MacroEngine),
         };
 
         const result = def.handler(executionContext);
