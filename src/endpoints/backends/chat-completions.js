@@ -1686,8 +1686,8 @@ router.post('/status', async function (request, statusResponse) {
             headers = {};
             throw new Error('This provider is temporarily disabled.');
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
-            apiUrl = API_MOONSHOT;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
+            apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
             apiUrl = API_FIREWORKS;
