@@ -611,7 +611,7 @@
   "Model Icon": "แสดงไอคอน Model AI ที่ตอบแชท",
   "Show sequential message numbers in the chat log": "แสดงหมายเลขลำดับข้อความในประวัติแชท",
   "Message IDs": "แสดงเลขจำนวนข้อความ",
-  "Hide avatars in chat messages.": "ซ่อนภาพ avatar ในแชทข้อความ",
+  "Hide avatars, only in chat messages.": "ซ่อนภาพ avatar ในแชทข้อความ",
   "Hide Chat Avatars": "ซ่อนรูปโปรไฟล์แชท",
   "Show the number of tokens in each message in the chat log": "แสดงจำนวนโทเค็นในแต่ละข้อความในบันทึกแชท",
   "Show Message Token Count": "แสดงจำนวนโทเค็นที่ Ai ตอบแชท",

@@ -554,7 +554,7 @@
     "Model Icon": "Icône du modèle",
     "Show sequential message numbers in the chat log": "Afficher les numéros de message séquentiels dans le journal de discussion",
     "Message IDs": "Identifiants du message",
-    "Hide avatars in chat messages.": "Masquez les avatars dans les messages de discussion.",
+    "Hide avatars, only in chat messages.": "Masquez les avatars dans les messages de discussion.",
     "Hide Chat Avatars": "Masquer les avatars du chat",
     "Show the number of tokens in each message in the chat log": "Afficher le nombre de tokens dans chaque message dans le journal de discussion",
     "Show Message Token Count": "Afficher le nombre de tokens du message",

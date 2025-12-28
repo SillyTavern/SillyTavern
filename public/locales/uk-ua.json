@@ -603,7 +603,7 @@
     "Model Icon": "Іконка моделі",
     "Show sequential message numbers in the chat log": "Показувати послідовні номери повідомлень у журналі чату",
     "Message IDs": "Ідентифікатори повідомлень",
-    "Hide avatars in chat messages.": "Приховати аватари в повідомленнях чату.",
+    "Hide avatars, only in chat messages.": "Приховати аватари в повідомленнях чату.",
     "Hide Chat Avatars": "Приховати аватари чату",
     "Show the number of tokens in each message in the chat log": "Показувати кількість токенів у кожному повідомленні у журналі чату",
     "Show Message Token Count": "Кількість токенів у повідомленні",

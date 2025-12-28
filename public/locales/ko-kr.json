@@ -613,7 +613,7 @@
     "Model Icon": "모델 아이콘 표시",
     "Show sequential message numbers in the chat log": "채팅 로그에 순차적인 메시지 번호 표시",
     "Message IDs": "메시지 ID",
-    "Hide avatars in chat messages.": "채팅 메시지에서 아바타 숨김.",
+    "Hide avatars, only in chat messages.": "채팅 메시지에서 아바타 숨김.",
     "Hide Chat Avatars": "캐릭터 프로필 숨기기",
     "Show the number of tokens in each message in the chat log": "채팅 로그의 각 메시지에 토큰 수 표시",
     "Show Message Token Count": "메시지 토큰 개수 표시",

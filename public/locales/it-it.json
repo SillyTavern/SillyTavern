@@ -605,7 +605,7 @@
     "Model Icon": "Icona del modello",
     "Show sequential message numbers in the chat log": "Mostra numeri di messaggi sequenziali nel registro della chat",
     "Message IDs": "ID Messaggio",
-    "Hide avatars in chat messages.": "Nascondi gli avatar nei messaggi di chat.",
+    "Hide avatars, only in chat messages.": "Nascondi gli avatar nei messaggi di chat.",
     "Hide Chat Avatars": "Nascondi avatar di chat",
     "Show the number of tokens in each message in the chat log": "Mostra il numero di token in ogni messaggio nel registro della chat",
     "Show Message Token Count": "Mostra Conteggio Token Messaggio",

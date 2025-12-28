@@ -603,7 +603,7 @@
     "Model Icon": "Biểu tượng Model",
     "Show sequential message numbers in the chat log": "Hiển thị số tin nhắn tuần tự trong nhật ký trò chuyện",
     "Message IDs": "ID Tin nhắn",
-    "Hide avatars in chat messages.": "Ẩn hình đại diện trong tin nhắn trò chuyện.",
+    "Hide avatars, only in chat messages.": "Ẩn hình đại diện trong tin nhắn trò chuyện.",
     "Hide Chat Avatars": "Ẩn hình đại diện trò chuyện",
     "Show the number of tokens in each message in the chat log": "Hiển thị số lượng token trong mỗi tin nhắn trong nhật ký trò chuyện",
     "Show Message Token Count": "Hiển thị Số lượng Token trong Tin nhắn",

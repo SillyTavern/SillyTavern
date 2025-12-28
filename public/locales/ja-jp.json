@@ -605,7 +605,7 @@
     "Model Icon": "モデルアイコン",
     "Show sequential message numbers in the chat log": "チャットログに連続したメッセージ番号を表示する",
     "Message IDs": "メッセージID",
-    "Hide avatars in chat messages.": "チャットメッセージ内のアバターを非表示にします。",
+    "Hide avatars, only in chat messages.": "チャットメッセージ内のアバターを非表示にします。",
     "Hide Chat Avatars": "チャットアバターを非表示",
     "Show the number of tokens in each message in the chat log": "チャットログ内の各メッセージのトークン数を表示する",
     "Show Message Token Count": "メッセージトークンの数を表示",

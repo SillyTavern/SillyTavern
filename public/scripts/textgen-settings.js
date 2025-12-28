@@ -730,12 +730,17 @@ async function getStatusTextgen() {
         const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(textgenerationwebui_settings.type);
 
         if (supportsChatTemplate && (wantsInstructDerivation || wantsContextDerivation || wantsContextSize)) {
+            const model = textgenerationwebui_settings.type === textgen_types.LLAMACPP
+                ? textgenerationwebui_settings.llamacpp_model
+                : undefined;
+
             const response = await fetch('/api/backends/text-completions/props', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
                     api_server: endpoint,
                     api_type: textgenerationwebui_settings.type,
+                    model: model,
                 }),
             });
 
@@ -747,13 +752,15 @@ async function getStatusTextgen() {
 
                     if (wantsContextSize && 'default_generation_settings' in data) {
                         const backend_max_context = data['default_generation_settings']['n_ctx'];
-                        const old_value = max_context;
-                        if (max_context !== backend_max_context) {
-                            setGenerationParamsFromPreset({ max_length: backend_max_context });
-                        }
-                        if (old_value !== max_context) {
-                            console.log(`Auto-switched max context from ${old_value} to ${max_context}`);
-                            toastr.info(`${old_value} ⇒ ${max_context}`, 'Context Size Changed');
+                        if (backend_max_context && typeof backend_max_context === 'number') {
+                            const old_value = max_context;
+                            if (max_context !== backend_max_context) {
+                                setGenerationParamsFromPreset({ max_length: backend_max_context });
+                            }
+                            if (old_value !== max_context) {
+                                console.log(`Auto-switched max context from ${old_value} to ${max_context}`);
+                                toastr.info(`${old_value} ⇒ ${max_context}`, 'Context Size Changed');
+                            }
                         }
                     }
                     console.log(`We have chat template ${chat_template.split('\n')[0]}...`);

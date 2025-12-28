@@ -603,7 +603,7 @@
     "Model Icon": "Módel Tákn",
     "Show sequential message numbers in the chat log": "Sýna röðuð skilaboðanúmer í spjall skránni",
     "Message IDs": "Skilaboðaauðkenni",
-    "Hide avatars in chat messages.": "Fela avatar í spjallskilaboðum.",
+    "Hide avatars, only in chat messages.": "Fela avatar í spjallskilaboðum.",
     "Hide Chat Avatars": "Fela spjallmyndir",
     "Show the number of tokens in each message in the chat log": "Sýna fjölda tákn í hverju skilaboði í spjall skránni",
     "Show Message Token Count": "Sýna fjölda tákn í skilaboðum",

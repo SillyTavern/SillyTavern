@@ -329,4 +329,10 @@ export const commonEnumProviders = {
         new SlashCommandEnumValue('null', null, enumTypes.type, enumIcons.null),
         new SlashCommandEnumValue('undefined', null, enumTypes.type, enumIcons.undefined),
     ],
+
+    messageRoles: () => [
+        new SlashCommandEnumValue('user', null, enumTypes.enum, enumIcons.user),
+        new SlashCommandEnumValue('assistant', null, enumTypes.enum, enumIcons.assistant),
+        new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.system),
+    ],
 };
