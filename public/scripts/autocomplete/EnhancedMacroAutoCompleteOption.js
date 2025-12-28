@@ -445,6 +445,156 @@ export class MacroFlagAutoCompleteOption extends AutoCompleteOption {
 }
 
 /**
+ * Enum of variable shorthand prefix types.
+ * @readonly
+ * @enum {string}
+ */
+export const VariableShorthandType = Object.freeze({
+    /** Local variable prefix (`.`) */
+    LOCAL: '.',
+    /** Global variable prefix (`$`) */
+    GLOBAL: '$',
+});
+
+/**
+ * @typedef {Object} VariableShorthandDefinition
+ * @property {VariableShorthandType} type - The prefix symbol.
+ * @property {string} name - Human-readable name.
+ * @property {string} description - Description of what this prefix does.
+ * @property {string[]} operations - List of supported operations.
+ */
+
+/**
+ * Definitions for variable shorthand prefixes.
+ * @type {Map<string, VariableShorthandDefinition>}
+ */
+export const VariableShorthandDefinitions = new Map([
+    [VariableShorthandType.LOCAL, {
+        type: VariableShorthandType.LOCAL,
+        name: 'Local Variable',
+        description: 'Access or modify a local variable (scoped to current chat).',
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)'],
+    }],
+    [VariableShorthandType.GLOBAL, {
+        type: VariableShorthandType.GLOBAL,
+        name: 'Global Variable',
+        description: 'Access or modify a global variable (shared across all chats).',
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)'],
+    }],
+]);
+
+/**
+ * Set of valid variable shorthand prefix symbols.
+ * @type {Set<string>}
+ */
+export const ValidVariableShorthandSymbols = new Set(Object.values(VariableShorthandType));
+
+/**
+ * Autocomplete option for variable shorthand prefixes.
+ * Shows prefix symbol, name, and description.
+ * This provides entry into the variable shorthand syntax ({{.varName}} or {{$varName}}).
+ */
+export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
+    /** @type {VariableShorthandDefinition} */
+    #varDef;
+
+    /**
+     * @param {VariableShorthandDefinition} varDef - The variable shorthand definition.
+     */
+    constructor(varDef) {
+        // Use the prefix symbol as the name, with a variable icon
+        super(varDef.type, '📦');
+        this.#varDef = varDef;
+    }
+
+    /** @returns {VariableShorthandDefinition} */
+    get variableDefinition() {
+        return this.#varDef;
+    }
+
+    /**
+     * Renders the autocomplete list item for this variable shorthand.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = this.makeItem(
+            `${this.#varDef.type} ${this.#varDef.name}`,
+            '📦',
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'any', // returnType
+            this.#varDef.description,
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable-shorthand');
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this variable shorthand.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-variable-details');
+
+        // Header with prefix symbol and name
+        const header = document.createElement('h3');
+        header.classList.add('macro-variable-details-header');
+        header.innerHTML = `<code>${this.#varDef.type}</code> ${this.#varDef.name}`;
+        details.append(header);
+
+        // Description
+        const desc = document.createElement('p');
+        desc.classList.add('macro-variable-details-desc');
+        desc.textContent = this.#varDef.description;
+        details.append(desc);
+
+        // Supported operations
+        const opsHeader = document.createElement('p');
+        opsHeader.innerHTML = '<strong>Supported Operations:</strong>';
+        details.append(opsHeader);
+
+        const opsList = document.createElement('ul');
+        opsList.classList.add('macro-variable-details-ops');
+        for (const op of this.#varDef.operations) {
+            const li = document.createElement('li');
+            li.textContent = op;
+            opsList.append(li);
+        }
+        details.append(opsList);
+
+        // Examples
+        const exampleHeader = document.createElement('p');
+        exampleHeader.innerHTML = '<strong>Examples:</strong>';
+        details.append(exampleHeader);
+
+        const exampleList = document.createElement('ul');
+        exampleList.classList.add('macro-variable-details-examples');
+        const prefix = this.#varDef.type;
+        const examples = [
+            `{{${prefix}myvar}} - Get variable value`,
+            `{{${prefix}myvar = value}} - Set variable`,
+            `{{${prefix}counter++}} - Increment`,
+            `{{${prefix}counter--}} - Decrement`,
+            `{{${prefix}myvar += text}} - Append/add`,
+        ];
+        for (const ex of examples) {
+            const li = document.createElement('li');
+            li.innerHTML = `<code>${ex.split(' - ')[0]}</code> - ${ex.split(' - ')[1]}`;
+            exampleList.append(li);
+        }
+        details.append(exampleList);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
  * Autocomplete option for closing a scoped macro.
  * Suggests {{/macroName}} to close an unclosed scoped macro.
  */

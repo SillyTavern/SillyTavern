@@ -24,6 +24,10 @@ const modes = {
     macro_args: 'macro_args_mode',
     macro_filter_modifer: 'macro_filter_modifer_mode',
     macro_filter_modifier_end: 'macro_filter_modifier_end_mode',
+    // Variable shorthand modes
+    var_identifier: 'var_identifier_mode',
+    var_after_identifier: 'var_after_identifier_mode',
+    var_value: 'var_value_mode',
 };
 
 /** @readonly */
@@ -45,10 +49,8 @@ const Tokens = {
          * - `~` = re-evaluate (TBD)
          * - `/` = closing block marker for scoped macros
          * - `#` = preserve whitespace (don't auto-trim scoped content), also legacy handlebars compatibility
-         * - `.` = variable shorthand (TBD)
-         * - `$` = variable shorthand alternative (TBD)
          */
-        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/.$]/ }),
+        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/]/ }),
         /**
          * Filter flag (`>`) - separate token because it changes parsing behavior.
          * When present, `|` characters inside the macro are treated as filter/pipe operators.
@@ -82,6 +84,29 @@ const Tokens = {
     Identifier: createToken({ name: 'Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
     WhiteSpace: createToken({ name: 'WhiteSpace', pattern: /\s+/, group: Lexer.SKIPPED }),
 
+    // Variable shorthand tokens
+    Var: {
+        /** Local variable prefix (`.`) - triggers variable shorthand for local variables */
+        LocalPrefix: createToken({ name: 'Var.LocalPrefix', pattern: /\./ }),
+        /** Global variable prefix (`$`) - triggers variable shorthand for global variables */
+        GlobalPrefix: createToken({ name: 'Var.GlobalPrefix', pattern: /\$/ }),
+        /**
+         * Variable identifier - allows hyphens inside but not at the end to avoid conflict with -- operator.
+         * Pattern: starts with letter, optionally followed by word chars/hyphens, but must end with word char.
+         * Examples: myVar, my-var, my_var, myVar123, my-long-var-name
+         * Invalid: my-, my--, -var
+         */
+        Identifier: createToken({ name: 'Var.Identifier', pattern: /[a-zA-Z](?:[\w\-_]*[\w])?/ }),
+        /** Increment operator (`++`) */
+        Increment: createToken({ name: 'Var.Increment', pattern: /\+\+/ }),
+        /** Decrement operator (`--`) */
+        Decrement: createToken({ name: 'Var.Decrement', pattern: /--/ }),
+        /** Add/append operator (`+=`) - must come before Equals to avoid conflict */
+        PlusEquals: createToken({ name: 'Var.PlusEquals', pattern: /\+=/ }),
+        /** Set operator (`=`) */
+        Equals: createToken({ name: 'Var.Equals', pattern: /=/ }),
+    },
+
     // Capture unknown characters one by one, to still allow other tokens being matched once they are there.
     // This includes any possible braces that is not the double closing braces as MacroEnd.
     Unknown: createToken({ name: 'Unknown', pattern: /([^}]|\}(?!\}))/ }),
@@ -110,6 +135,11 @@ const Def = {
 
             // An explicit double-slash will be treated above flags to consume, as it'll introduce a comment macro. Directly following is the args then.
             enter(Tokens.Macro.DoubleSlash, modes.macro_args),
+
+            // Variable shorthand prefixes - must come before flags to take precedence
+            // These enter the variable identifier mode to parse variable expressions
+            enter(Tokens.Var.LocalPrefix, modes.var_identifier),
+            enter(Tokens.Var.GlobalPrefix, modes.var_identifier),
 
             using(Tokens.Macro.Flags),
             // Filter flag is separate because it affects parsing behavior for pipes
@@ -164,6 +194,46 @@ const Def = {
             // Valid options after a filter itenfier: whitespace, colon/double-colon (captured), macro end braces, or output modifier pipe.
             exits(Tokens.Macro.BeforeEnd, modes.macro_identifier_end),
             exits(Tokens.Filter.EndOfIdentifier, modes.macro_filter_modifer),
+        ],
+
+        // ========================================================================
+        // Variable Shorthand Modes
+        // ========================================================================
+
+        // After seeing `.` or `$`, expect a variable identifier
+        [modes.var_identifier]: [
+            using(Tokens.WhiteSpace),
+            // Consume the variable identifier and move to operator detection
+            enter(Tokens.Var.Identifier, modes.var_after_identifier, { andExits: modes.var_identifier }),
+            // If no valid identifier found, exit back (will result in parser error)
+            exits(Tokens.ModePopper, modes.var_identifier),
+        ],
+
+        // After the variable identifier, look for operators or end
+        [modes.var_after_identifier]: [
+            using(Tokens.WhiteSpace),
+            // Check for operators (order matters: += before =, ++ and -- first)
+            using(Tokens.Var.Increment),
+            using(Tokens.Var.Decrement),
+            enter(Tokens.Var.PlusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Equals, modes.var_value, { andExits: modes.var_after_identifier }),
+            // If we see the end, exit
+            exits(Tokens.Macro.BeforeEnd, modes.var_after_identifier),
+            // Fallback exit
+            exits(Tokens.ModePopper, modes.var_after_identifier),
+        ],
+
+        // After `=` or `+=`, capture the value (can contain nested macros)
+        [modes.var_value]: [
+            // Nested macros in value
+            enter(Tokens.Macro.Start, modes.macro_def),
+
+            using(Tokens.Identifier),
+            using(Tokens.WhiteSpace),
+            using(Tokens.Unknown),
+
+            // Exit when we're about to see the end
+            exits(Tokens.ModePopper, modes.var_value),
         ],
     },
     defaultMode: modes.plaintext,

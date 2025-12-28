@@ -13,12 +13,21 @@ import { MacroRegistry } from './MacroRegistry.js';
  * @property {string[]} args
  * @property {MacroFlags} flags - Parsed macro execution flags.
  * @property {boolean} isScoped - Whether this macro was invoked using scoped syntax (opening + closing tags).
+ * @property {boolean} [isVariableShorthand] - Whether this call originated from variable shorthand syntax.
  * @property {MacroEnv} env
  * @property {string} rawInner
  * @property {string} rawWithBraces
  * @property {string[]} rawArgs
  * @property {{ startOffset: number, endOffset: number }} range
  * @property {CstNode} cstNode
+ */
+
+/**
+ * @typedef {Object} VariableExprInfo
+ * @property {'local' | 'global'} scope - Whether this is a local (.) or global ($) variable.
+ * @property {string} varName - The variable name.
+ * @property {'get' | 'set' | 'inc' | 'dec' | 'add'} operation - The operation to perform.
+ * @property {string | null} value - The value for set/add operations, null for get/inc/dec.
  */
 
 /**
@@ -240,11 +249,21 @@ class MacroCstWalker {
         const { text, env, resolveMacro, trimContent } = context;
 
         const children = macroNode.children || {};
-        const identifierTokens = /** @type {IToken[]} */ (children['Macro.identifier'] || []);
+
+        // Check if this is a variable expression (has variableExpr child)
+        const variableExprNode = /** @type {CstNode?} */ ((children.variableExpr || [])[0]);
+        if (variableExprNode) {
+            return this.#evaluateVariableExpr(macroNode, variableExprNode, context);
+        }
+
+        // Regular macro - get identifier from macroBody
+        const macroBodyNode = /** @type {CstNode?} */ ((children.macroBody || [])[0]);
+        const bodyChildren = macroBodyNode?.children || {};
+        const identifierTokens = /** @type {IToken[]} */ (bodyChildren['Macro.identifier'] || []);
         const name = identifierTokens[0]?.image || '';
 
-        // Extract flag tokens and parse them into a MacroFlags object
-        const flagTokens = /** @type {IToken[]} */ (children['flags'] || []);
+        // Extract flag tokens and parse them into a MacroFlags object (now inside macroBody)
+        const flagTokens = /** @type {IToken[]} */ (bodyChildren['flags'] || []);
         const flagSymbols = flagTokens.map(token => token.image);
         const flags = flagSymbols.length > 0 ? parseFlags(flagSymbols) : createEmptyFlags();
 
@@ -255,8 +274,8 @@ class MacroCstWalker {
         const innerStart = startToken ? startToken.endOffset + 1 : range.startOffset;
         const innerEnd = endToken ? endToken.startOffset - 1 : range.endOffset;
 
-        // Extract argument nodes from the "arguments" rule (if present)
-        const argumentsNode = /** @type {CstNode?} */ ((children.arguments || [])[0]);
+        // Extract argument nodes from the "arguments" rule (if present, inside macroBody)
+        const argumentsNode = /** @type {CstNode?} */ ((bodyChildren.arguments || [])[0]);
         const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
 
         /** @type {string[]} */
@@ -346,6 +365,167 @@ class MacroCstWalker {
         const stringValue = typeof value === 'string' ? value : String(value ?? '');
 
         return stringValue;
+    }
+
+    /**
+     * Evaluates a variable expression node and routes it to the appropriate variable macro.
+     *
+     * @param {CstNode} macroNode - The parent macro node.
+     * @param {CstNode} variableExprNode - The variableExpr CST node.
+     * @param {EvaluationContext} context - The evaluation context.
+     * @returns {string}
+     */
+    #evaluateVariableExpr(macroNode, variableExprNode, context) {
+        const { text, env, resolveMacro } = context;
+
+        const children = macroNode.children || {};
+        const varChildren = variableExprNode.children || {};
+
+        // Extract scope (. for local, $ for global)
+        const localPrefixToken = /** @type {IToken?} */ ((varChildren['Var.scope'] || []).find(t => /** @type {IToken} */(t).tokenType?.name === 'Var.LocalPrefix'));
+        const isGlobal = !localPrefixToken;
+
+        // Extract variable name
+        const varIdentifierToken = /** @type {IToken?} */ ((varChildren['Var.identifier'] || [])[0]);
+        const varName = varIdentifierToken?.image || '';
+
+        // Extract operator (if any)
+        const operatorNode = /** @type {CstNode?} */ ((varChildren.variableOperator || [])[0]);
+        const operatorChildren = operatorNode?.children || {};
+
+        // Determine operation and value
+        let operation = 'get';
+        let value = null;
+
+        if (operatorNode) {
+            const operatorTokens = /** @type {IToken[]} */ (operatorChildren['Var.operator'] || []);
+            const operatorToken = operatorTokens[0];
+
+            if (operatorToken) {
+                const operatorImage = operatorToken.image;
+                if (operatorImage === '++') {
+                    operation = 'inc';
+                } else if (operatorImage === '--') {
+                    operation = 'dec';
+                } else if (operatorImage === '=') {
+                    operation = 'set';
+                    value = this.#evaluateVariableValue(operatorChildren, context);
+                } else if (operatorImage === '+=') {
+                    operation = 'add';
+                    value = this.#evaluateVariableValue(operatorChildren, context);
+                }
+            }
+        }
+
+        // Map operation to macro name
+        const macroNameMap = {
+            get: isGlobal ? 'getglobalvar' : 'getvar',
+            set: isGlobal ? 'setglobalvar' : 'setvar',
+            inc: isGlobal ? 'incglobalvar' : 'incvar',
+            dec: isGlobal ? 'decglobalvar' : 'decvar',
+            add: isGlobal ? 'addglobalvar' : 'addvar',
+        };
+
+        const targetMacroName = macroNameMap[operation];
+
+        // Build args array based on operation
+        const args = [varName];
+        if (value !== null) {
+            args.push(value);
+        }
+
+        const range = this.#getMacroRange(macroNode);
+
+        /** @type {MacroCall} */
+        const call = {
+            name: targetMacroName,
+            args,
+            flags: createEmptyFlags(),
+            isScoped: false,
+            isVariableShorthand: true,
+            rawInner: text.slice(
+                (/** @type {IToken|undefined} */ (children['Macro.Start']?.[0])?.endOffset ?? range.startOffset) + 1,
+                (/** @type {IToken|undefined} */ (children['Macro.End']?.[0])?.startOffset ?? range.endOffset + 1) - 1,
+            ),
+            rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
+            rawArgs: args,
+            range,
+            cstNode: macroNode,
+            env,
+        };
+
+        const result = resolveMacro(call);
+        return typeof result === 'string' ? result : String(result ?? '');
+    }
+
+    /**
+     * Evaluates the value part of a variable expression (after = or +=).
+     * Resolves any nested macros in the value.
+     *
+     * @param {Record<string, any>} operatorChildren - The children of the variableOperator node.
+     * @param {EvaluationContext} context - The evaluation context.
+     * @returns {string}
+     */
+    #evaluateVariableValue(operatorChildren, context) {
+        const { text } = context;
+
+        const valueNodes = /** @type {CstNode[]} */ (operatorChildren['Var.value'] || []);
+        const valueNode = valueNodes[0];
+
+        if (!valueNode) {
+            return '';
+        }
+
+        const valueChildren = valueNode.children || {};
+
+        // Get all tokens and nested macros from the value
+        const identifierTokens = /** @type {IToken[]} */ (valueChildren.Identifier || []);
+        const unknownTokens = /** @type {IToken[]} */ (valueChildren.Unknown || []);
+        const nestedMacros = /** @type {CstNode[]} */ (valueChildren.macro || []);
+
+        // Get the range of the value
+        const allTokens = [...identifierTokens, ...unknownTokens];
+        const allRanges = [
+            ...allTokens.map(t => ({ startOffset: t.startOffset, endOffset: t.endOffset })),
+            ...nestedMacros.map(m => this.#getMacroRange(m)),
+        ];
+
+        if (allRanges.length === 0) {
+            return '';
+        }
+
+        const startOffset = Math.min(...allRanges.map(r => r.startOffset));
+        const endOffset = Math.max(...allRanges.map(r => r.endOffset));
+
+        // If no nested macros, return the raw text (trimmed)
+        if (nestedMacros.length === 0) {
+            return text.slice(startOffset, endOffset + 1).trim();
+        }
+
+        // Evaluate nested macros
+        const nestedWithRange = nestedMacros.map(node => ({
+            node,
+            range: this.#getMacroRange(node),
+        }));
+
+        nestedWithRange.sort((a, b) => a.range.startOffset - b.range.startOffset);
+
+        let result = '';
+        let cursor = startOffset;
+
+        for (const entry of nestedWithRange) {
+            if (entry.range.startOffset > cursor) {
+                result += text.slice(cursor, entry.range.startOffset);
+            }
+            result += this.#evaluateMacroNode(entry.node, context);
+            cursor = entry.range.endOffset + 1;
+        }
+
+        if (cursor <= endOffset) {
+            result += text.slice(cursor, endOffset + 1);
+        }
+
+        return result.trim();
     }
 
     /**
@@ -759,13 +939,24 @@ class MacroCstWalker {
      */
     #extractMacroInfo(macroNode) {
         const children = macroNode.children || {};
-        const identifierTokens = /** @type {IToken[]} */ (children['Macro.identifier'] || []);
+
+        // Check if this is a variable expression - they can't be scoped
+        const variableExprNode = (children.variableExpr || [])[0];
+        if (variableExprNode) {
+            return null; // Variable expressions don't support scoped content
+        }
+
+        // Regular macro - get info from macroBody
+        const macroBodyNode = /** @type {CstNode?} */ ((children.macroBody || [])[0]);
+        const bodyChildren = macroBodyNode?.children || {};
+
+        const identifierTokens = /** @type {IToken[]} */ (bodyChildren['Macro.identifier'] || []);
         const name = identifierTokens[0]?.image || '';
 
         if (!name) return null;
 
-        // Check for closing block flag
-        const flagTokens = /** @type {IToken[]} */ (children['flags'] || []);
+        // Check for closing block flag (inside macroBody)
+        const flagTokens = /** @type {IToken[]} */ (bodyChildren['flags'] || []);
         const isClosing = flagTokens.some(token => token.image === MacroFlagType.CLOSING_BLOCK);
 
         return { name, isClosing };
@@ -786,9 +977,11 @@ class MacroCstWalker {
             return true;
         }
 
-        // Count current arguments in the macro
+        // Count current arguments in the macro (now inside macroBody)
         const children = macroNode.children || {};
-        const argumentsNode = /** @type {CstNode?} */ ((children.arguments || [])[0]);
+        const macroBodyNode = /** @type {CstNode?} */ ((children.macroBody || [])[0]);
+        const bodyChildren = macroBodyNode?.children || {};
+        const argumentsNode = /** @type {CstNode?} */ ((bodyChildren.arguments || [])[0]);
         const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
         const currentArgCount = argumentNodes.length;
 

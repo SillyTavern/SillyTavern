@@ -667,29 +667,175 @@ This is the second line
                 'Macro.End': '}}',
             });
         });
+    });
 
-        // {{.myvar}} - variable shorthand
-        test('should parse macro with variable dot shorthand flag', async ({ page }) => {
+    test.describe('Variable Shorthand Syntax', () => {
+        // {{.myvar}} - local variable get
+        test('should parse local variable shorthand', async ({ page }) => {
             const input = '{{.myvar}}';
             const macroCst = await runParser(page, input);
 
             expect(macroCst).toEqual({
                 'Macro.Start': '{{',
-                'flags': '.',
-                'Macro.identifier': 'myvar',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'myvar',
+                },
                 'Macro.End': '}}',
             });
         });
 
-        // {{$myvar}} - variable shorthand
-        test('should parse macro with variable dollar shorthand flag', async ({ page }) => {
+        // {{$myvar}} - global variable get
+        test('should parse global variable shorthand', async ({ page }) => {
             const input = '{{$myvar}}';
             const macroCst = await runParser(page, input);
 
             expect(macroCst).toEqual({
                 'Macro.Start': '{{',
-                'flags': '$',
-                'Macro.identifier': 'myvar',
+                'variableExpr': {
+                    'Var.scope': '$',
+                    'Var.identifier': 'myvar',
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{.my-var}} - variable with hyphen in name
+        test('should parse variable with hyphen in name', async ({ page }) => {
+            const input = '{{.my-var}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'my-var',
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{.myvar = value}} - set operator
+        test('should parse variable set shorthand', async ({ page }) => {
+            const input = '{{.myvar = hello}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'myvar',
+                    'variableOperator': {
+                        'Var.operator': '=',
+                        'Var.value': {
+                            'Identifier': 'hello',
+                        },
+                    },
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{.counter++}} - increment operator
+        test('should parse variable increment shorthand', async ({ page }) => {
+            const input = '{{.counter++}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'counter',
+                    'variableOperator': {
+                        'Var.operator': '++',
+                    },
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{$counter--}} - decrement operator
+        test('should parse global variable decrement shorthand', async ({ page }) => {
+            const input = '{{$counter--}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '$',
+                    'Var.identifier': 'counter',
+                    'variableOperator': {
+                        'Var.operator': '--',
+                    },
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{.myvar += 5}} - add operator
+        test('should parse variable add shorthand', async ({ page }) => {
+            const input = '{{.myvar += 5}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'myvar',
+                    'variableOperator': {
+                        'Var.operator': '+=',
+                        'Var.value': {
+                            'Unknown': '5',
+                        },
+                    },
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{.myvar = Hello {{user}}}} - nested macro in value
+        test('should parse nested macro in variable value', async ({ page }) => {
+            const input = '{{.myvar = Hello {{user}}}}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'myvar',
+                    'variableOperator': {
+                        'Var.operator': '=',
+                        'Var.value': {
+                            'Identifier': 'Hello',
+                            'macro': {
+                                'Macro.Start': '{{',
+                                'Macro.identifier': 'user',
+                                'Macro.End': '}}',
+                            },
+                        },
+                    },
+                },
+                'Macro.End': '}}',
+            });
+        });
+
+        // {{ .myvar = spaced }} - whitespace handling
+        test('should parse variable shorthand with whitespace', async ({ page }) => {
+            const input = '{{ .myvar = spaced }}';
+            const macroCst = await runParser(page, input);
+
+            expect(macroCst).toEqual({
+                'Macro.Start': '{{',
+                'variableExpr': {
+                    'Var.scope': '.',
+                    'Var.identifier': 'myvar',
+                    'variableOperator': {
+                        'Var.operator': '=',
+                        'Var.value': {
+                            'Identifier': 'spaced',
+                        },
+                    },
+                },
                 'Macro.End': '}}',
             });
         });
@@ -767,6 +913,19 @@ function simplifyCstNode(cst, input, { flattenKeys = [], ignoreKeys = [], ignore
         }
         if (node.children) {
             const simplifiedChildren = {};
+
+            // Special handling: merge macroBody children into parent (flatten the structure)
+            // This preserves backward compatibility with existing tests after parser refactor
+            if (node.children.macroBody && Array.isArray(node.children.macroBody) && node.children.macroBody.length === 1) {
+                const macroBody = node.children.macroBody[0];
+                if (macroBody.children) {
+                    for (const bodyKey in macroBody.children) {
+                        node.children[bodyKey] = macroBody.children[bodyKey];
+                    }
+                }
+                delete node.children.macroBody;
+            }
+
             for (const key in node.children) {
                 function simplifyChildNode(childNode, path) {
                     if (Array.isArray(childNode)) {

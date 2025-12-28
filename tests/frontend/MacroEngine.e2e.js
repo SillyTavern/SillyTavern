@@ -1765,6 +1765,60 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('Message (by EnvChar)');
         });
     });
+
+    test.describe('Variable Shorthand Syntax', () => {
+        // {{.myvar}} - get local variable
+        test('should get local variable with . shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar}}', { local: { myvar: 'hello' } });
+            expect(output).toBe('hello');
+        });
+
+        // {{$myvar}} - get global variable
+        test('should get global variable with $ shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar}}', { global: { myvar: 'world' } });
+            expect(output).toBe('world');
+        });
+
+        // {{.myvar = value}} - set local variable (setvar returns empty string)
+        test('should set local variable with = shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar = test}}Value: {{.myvar}}', { local: {} });
+            // setvar returns '', then "Value: ", then getvar returns "test"
+            expect(output).toBe('Value: test');
+        });
+
+        // {{.counter++}} - increment local variable (incvar returns new value)
+        test('should increment local variable with ++ shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.counter++}}', { local: { counter: '5' } });
+            expect(output).toBe('6');
+        });
+
+        // {{$counter--}} - decrement global variable (decvar returns new value)
+        test('should decrement global variable with -- shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$counter--}}', { global: { counter: '10' } });
+            expect(output).toBe('9');
+        });
+
+        // {{.myvar += 5}} - add to local variable (addvar returns empty string)
+        test('should add to local variable with += shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar += 3}}Then: {{.myvar}}', { local: { myvar: '7' } });
+            // addvar returns '', then "Then: ", then getvar returns "10"
+            expect(output).toBe('Then: 10');
+        });
+
+        // Nested macro in value: {{.myvar = {{user}}}}
+        test('should support nested macro in variable value', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.greeting = Hello {{user}}}}{{.greeting}}', { local: {} });
+            // setvar returns '', then getvar returns "Hello User"
+            expect(output).toBe('Hello User');
+        });
+
+        // Whitespace handling: {{ .myvar = value }}
+        test('should handle whitespace in variable shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{ .myvar = spaced }}{{.myvar}}', { local: {} });
+            // setvar returns '', then getvar returns "spaced"
+            expect(output).toBe('spaced');
+        });
+    });
 });
 
 /**
@@ -1832,4 +1886,52 @@ async function evaluateWithEngineAndCaptureMacroLogs(page, input) {
     } finally {
         page.off('console', handler);
     }
+}
+
+/**
+ * Evaluates the given input string with pre-set variables.
+ * Variables are set via SillyTavern.getContext().variables which is where
+ * the variable macros read/write their data.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string} input
+ * @param {{ local?: Record<string, string>, global?: Record<string, string> }} variables
+ * @returns {Promise<string>}
+ */
+async function evaluateWithEngineAndVariables(page, input, variables) {
+    const result = await page.evaluate(async ({ input, variables }) => {
+        /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+        const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+        /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+        const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+        // Get the SillyTavern context for variable access
+        const ctx = SillyTavern.getContext();
+
+        // Pre-set local variables
+        if (variables.local) {
+            for (const [key, value] of Object.entries(variables.local)) {
+                ctx.variables.local.set(key, value);
+            }
+        }
+        // Pre-set global variables
+        if (variables.global) {
+            for (const [key, value] of Object.entries(variables.global)) {
+                ctx.variables.global.set(key, value);
+            }
+        }
+
+        /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js').MacroEnvRawContext} */
+        const rawEnv = {
+            content: input,
+            name1Override: 'User',
+            name2Override: 'Character',
+        };
+        const env = MacroEnvBuilder.buildFromRawEnv(rawEnv);
+
+        const output = await MacroEngine.evaluate(input, env);
+        return output;
+    }, { input, variables });
+
+    return result;
 }
