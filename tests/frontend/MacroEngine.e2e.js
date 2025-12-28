@@ -1575,6 +1575,196 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('[First Line\n  Second Line, more indented\nThird line\n  Fourth line, also more indented]');
         });
     });
+
+    test.describe('Pre/Post Processor Registration', () => {
+        test('should run custom pre-processor before macro evaluation', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // Add a pre-processor that replaces [[USER]] with {{user}}
+                const handler = (text) => text.replace(/\[\[USER\]\]/g, '{{user}}');
+                MacroEngine.addPreProcessor(handler, { priority: 100, source: 'test:custom-user-marker' });
+
+                try {
+                    const input = 'Hello [[USER]]!';
+                    const env = MacroEnvBuilder.buildFromRawEnv({ content: input, name1Override: 'TestUser' });
+                    return MacroEngine.evaluate(input, env);
+                } finally {
+                    MacroEngine.removePreProcessor(handler);
+                }
+            });
+
+            expect(output).toBe('Hello TestUser!');
+        });
+
+        test('should run custom post-processor after macro evaluation', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // Add a post-processor that wraps output in brackets
+                const handler = (text) => `[${text}]`;
+                MacroEngine.addPostProcessor(handler, { priority: 100, source: 'test:bracket-wrapper' });
+
+                try {
+                    const input = 'Hello {{user}}!';
+                    const env = MacroEnvBuilder.buildFromRawEnv({ content: input, name1Override: 'TestUser' });
+                    return MacroEngine.evaluate(input, env);
+                } finally {
+                    MacroEngine.removePostProcessor(handler);
+                }
+            });
+
+            expect(output).toBe('[Hello TestUser!]');
+        });
+
+        test('should execute pre-processors in priority order (lower first)', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // First handler (priority 200) appends 'B'
+                const handlerB = (text) => text + 'B';
+                // Second handler (priority 100) appends 'A' - should run first despite being registered second
+                const handlerA = (text) => text + 'A';
+
+                MacroEngine.addPreProcessor(handlerB, { priority: 200, source: 'test:append-b' });
+                MacroEngine.addPreProcessor(handlerA, { priority: 100, source: 'test:append-a' });
+
+                try {
+                    const input = 'X';
+                    const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                    return MacroEngine.evaluate(input, env);
+                } finally {
+                    MacroEngine.removePreProcessor(handlerA);
+                    MacroEngine.removePreProcessor(handlerB);
+                }
+            });
+
+            // Priority 100 (A) runs before priority 200 (B), so: X -> XA -> XAB
+            expect(output).toBe('XAB');
+        });
+
+        test('should execute post-processors in priority order (lower first)', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // First handler (priority 200) wraps with ()
+                const handlerParen = (text) => `(${text})`;
+                // Second handler (priority 100) wraps with [] - should run first
+                const handlerBracket = (text) => `[${text}]`;
+
+                MacroEngine.addPostProcessor(handlerParen, { priority: 200, source: 'test:wrap-paren' });
+                MacroEngine.addPostProcessor(handlerBracket, { priority: 100, source: 'test:wrap-bracket' });
+
+                try {
+                    const input = 'X';
+                    const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                    return MacroEngine.evaluate(input, env);
+                } finally {
+                    MacroEngine.removePostProcessor(handlerBracket);
+                    MacroEngine.removePostProcessor(handlerParen);
+                }
+            });
+
+            // Priority 100 ([]) runs before priority 200 (()), so: X -> [X] -> ([X])
+            expect(output).toBe('([X])');
+        });
+
+        test('should successfully remove a registered pre-processor', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const handler = (text) => text + '-ADDED';
+                MacroEngine.addPreProcessor(handler, { priority: 100, source: 'test:to-remove' });
+
+                // Remove it immediately
+                const removed = MacroEngine.removePreProcessor(handler);
+
+                const input = 'Test';
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                const result = MacroEngine.evaluate(input, env);
+
+                return { result, removed };
+            });
+
+            expect(output.removed).toBe(true);
+            expect(output.result).toBe('Test'); // No '-ADDED' suffix
+        });
+
+        test('should return false when removing non-existent processor', async ({ page }) => {
+            const removed = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+
+                const handler = () => 'never registered';
+                return MacroEngine.removePreProcessor(handler);
+            });
+
+            expect(removed).toBe(false);
+        });
+
+        test('should pass env to pre-processor handlers', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // Pre-processor that uses env to get the user name
+                /** @param {string} text @param {import('../../public/scripts/macros/engine/MacroEnv.types.js').MacroEnv} env */
+                const handler = (text, env) => text.replace('__NAME__', env.names.user);
+                MacroEngine.addPreProcessor(handler, { priority: 100, source: 'test:env-access' });
+
+                try {
+                    const input = 'Hello __NAME__!';
+                    const env = MacroEnvBuilder.buildFromRawEnv({ content: input, name1Override: 'EnvUser' });
+                    return MacroEngine.evaluate(input, env);
+                } finally {
+                    MacroEngine.removePreProcessor(handler);
+                }
+            });
+
+            expect(output).toBe('Hello EnvUser!');
+        });
+
+        test('should pass env to post-processor handlers', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // Post-processor that appends the character name from env
+                /** @param {string} text @param {import('../../public/scripts/macros/engine/MacroEnv.types.js').MacroEnv} env */
+                const handler = (text, env) => `${text} (by ${env.names.char})`;
+                MacroEngine.addPostProcessor(handler, { priority: 100, source: 'test:env-access-post' });
+
+                try {
+                    const input = 'Message';
+                    const env = MacroEnvBuilder.buildFromRawEnv({ content: input, name2Override: 'EnvChar' });
+                    return MacroEngine.evaluate(input, env);
+                } finally {
+                    MacroEngine.removePostProcessor(handler);
+                }
+            });
+
+            expect(output).toBe('Message (by EnvChar)');
+        });
+    });
 });
 
 /**
