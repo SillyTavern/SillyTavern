@@ -89,12 +89,12 @@ const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 /**
  * Module-scoped Claude caching configuration values.
  */
-const ENABLE_SYSTEM_PROMPT_CACHE = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
-const CACHING_AT_DEPTH = (() => {
+const cacheTTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
+const enableSystemPromptCache = getConfigValue('claude.enableSystemPromptCache', false, 'boolean');
+const cachingAtDepth = (() => {
     const value = getConfigValue('claude.cachingAtDepth', -1, 'number');
     return Number.isInteger(value) && value >= 0 ? value : -1;
 })();
-const CACHE_TTL = getConfigValue('claude.extendedTTL', false, 'boolean') ? '1h' : '5m';
 
 /**
  * Cache for cacheable (writing) OpenRouter model IDs.
@@ -244,8 +244,8 @@ async function sendClaudeRequest(request, response) {
             stream: request.body.stream,
         };
         if (useSystemPrompt) {
-            if (ENABLE_SYSTEM_PROMPT_CACHE && Array.isArray(convertedPrompt.systemPrompt) && convertedPrompt.systemPrompt.length) {
-                convertedPrompt.systemPrompt[convertedPrompt.systemPrompt.length - 1]['cache_control'] = { type: 'ephemeral', ttl: CACHE_TTL };
+            if (enableSystemPromptCache && Array.isArray(convertedPrompt.systemPrompt) && convertedPrompt.systemPrompt.length) {
+                convertedPrompt.systemPrompt[convertedPrompt.systemPrompt.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
             }
 
             requestBody.system = convertedPrompt.systemPrompt;
@@ -260,8 +260,8 @@ async function sendClaudeRequest(request, response) {
                 .map(tool => tool.function)
                 .map(fn => ({ name: fn.name, description: fn.description, input_schema: flattenSchema(fn.parameters, request.body.chat_completion_source) }));
 
-            if (ENABLE_SYSTEM_PROMPT_CACHE && requestBody.tools.length) {
-                requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: CACHE_TTL };
+            if (enableSystemPromptCache && requestBody.tools.length) {
+                requestBody.tools[requestBody.tools.length - 1]['cache_control'] = { type: 'ephemeral', ttl: cacheTTL };
             }
         }
 
@@ -284,11 +284,11 @@ async function sendClaudeRequest(request, response) {
             requestBody.tools = [...webSearchTool, ...(requestBody.tools || [])];
         }
 
-        if (CACHING_AT_DEPTH !== -1) {
-            cachingAtDepthForClaude(convertedPrompt.messages, CACHING_AT_DEPTH, CACHE_TTL);
+        if (cachingAtDepth !== -1) {
+            cachingAtDepthForClaude(convertedPrompt.messages, cachingAtDepth, cacheTTL);
         }
 
-        if (ENABLE_SYSTEM_PROMPT_CACHE || CACHING_AT_DEPTH !== -1) {
+        if (enableSystemPromptCache || cachingAtDepth !== -1) {
             betaHeaders.push('prompt-caching-2024-07-31');
             betaHeaders.push('extended-cache-ttl-2025-04-11');
         }
@@ -1371,12 +1371,12 @@ async function sendElectronHubRequest(request, response) {
         const isClaude = /^claude-/.test(request.body.model);
 
         if (Array.isArray(request.body.messages) && isClaude) {
-            if (ENABLE_SYSTEM_PROMPT_CACHE) {
-                cachingSystemPromptForOpenRouter(request.body.messages, CACHE_TTL);
+            if (enableSystemPromptCache) {
+                cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
             }
 
-            if (CACHING_AT_DEPTH !== -1) {
-                cachingAtDepthForOpenRouterClaude(request.body.messages, CACHING_AT_DEPTH, CACHE_TTL);
+            if (cachingAtDepth !== -1) {
+                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
             }
         }
 
@@ -2116,7 +2116,7 @@ router.post('/generate', async function (request, response) {
                 };
             }
 
-            const isClaude = /^anthropic\/claude-/.test(request.body.model);
+            const isClaude = /^anthropic\/claude/.test(request.body.model);
             const isGemini = /google\/gemini/.test(request.body.model);
             const isCacheableGemini = isGemini && await isOpenRouterModelCacheable(request.body.model);
             const enableGeminiSystemPromptCache = getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
@@ -2126,12 +2126,12 @@ router.post('/generate', async function (request, response) {
                 addOpenRouterSignatures(request.body.messages, request.body.model);
 
                 if (isClaude) {
-                    if (ENABLE_SYSTEM_PROMPT_CACHE) {
-                        cachingSystemPromptForOpenRouter(request.body.messages, CACHE_TTL);
+                    if (enableSystemPromptCache) {
+                        cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
                     }
 
-                    if (CACHING_AT_DEPTH !== -1) {
-                        cachingAtDepthForOpenRouterClaude(request.body.messages, CACHING_AT_DEPTH, CACHE_TTL);
+                    if (cachingAtDepth !== -1) {
+                        cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
                     }
                 }
 
@@ -2227,10 +2227,10 @@ router.post('/generate', async function (request, response) {
             }
 
             const isClaude = /^claude-/.test(request.body.model);
-            if (ENABLE_SYSTEM_PROMPT_CACHE && isClaude) {
+            if (enableSystemPromptCache && isClaude) {
                 bodyParams['cache_control'] = {
                     'enabled': true,
-                    'ttl': CACHE_TTL,
+                    'ttl': cacheTTL,
                 };
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
