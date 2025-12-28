@@ -311,8 +311,8 @@ export class AutoComplete {
         this.name = this.parserResult.name.toLowerCase() ?? '';
 
         const isCursorInNamePart = this.textarea.selectionStart >= this.parserResult.start && this.textarea.selectionStart <= this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0);
-        if (isForced || isInput) {
-            // if forced (ctrl+space) or user input...
+        if (isForced || isInput || isSelect) {
+            // if forced (ctrl+space) or user input or just selected an option...
             if (isCursorInNamePart) {
                 // ...and cursor is somewhere in the name part (including right behind the final char)
                 // -> show autocomplete for the (partial if cursor in the middle) name
@@ -393,8 +393,20 @@ export class AutoComplete {
                 this.updateName(option);
                 return option;
             })
-            // sort by fuzzy score or alphabetical
-            .toSorted(this.matchType == 'fuzzy' ? this.fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name));
+            // sort by priority first, then by fuzzy score or alphabetical
+            .toSorted((a, b) => {
+                // First compare by sortPriority (lower = higher priority)
+                const priorityA = a.sortPriority ?? 100;
+                const priorityB = b.sortPriority ?? 100;
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
+                // Then by fuzzy score or alphabetical
+                if (this.matchType == 'fuzzy') {
+                    return this.fuzzyScoreCompare(a, b);
+                }
+                return a.name.localeCompare(b.name);
+            });
 
 
 

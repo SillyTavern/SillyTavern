@@ -3,6 +3,19 @@ const { createToken, Lexer } = chevrotain;
 
 /** @typedef {import('chevrotain').TokenType} TokenType */
 
+
+/** Regex for lexer token matching (no anchors). */
+const IDENTIFIER_LEXER_PATTERN = /[a-zA-Z][\w-_]*/;
+
+/**
+ * Pattern for valid macro identifiers.
+ * Must start with a letter, followed by word chars (letters, digits, underscore) or hyphens.
+ * Used by both the lexer token and the validation regex.
+ *
+ * Regex for full-string validation (with anchors). Exported for macro registration.
+ */
+export const MACRO_IDENTIFIER_PATTERN = /^[a-zA-Z][\w-_]*$/;
+
 /** @enum {string} */
 const modes = {
     plaintext: 'plaintext_mode',
@@ -25,9 +38,24 @@ const Tokens = {
         Start: createToken({ name: 'Macro.Start', pattern: /\{\{/ }),
         // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
         // We need this, because this token is going to switch lexer mode, while the general identifier does not.
-        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?#~/.$]/ }),
+        /**
+         * Macro execution flags - special symbols that modify macro resolution behavior.
+         * - `!` = immediate resolve (TBD)
+         * - `?` = delayed resolve (TBD)
+         * - `~` = re-evaluate (TBD)
+         * - `/` = closing block marker for scoped macros
+         * - `#` = preserve whitespace (don't auto-trim scoped content), also legacy handlebars compatibility
+         * - `.` = variable shorthand (TBD)
+         * - `$` = variable shorthand alternative (TBD)
+         */
+        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/.$]/ }),
+        /**
+         * Filter flag (`>`) - separate token because it changes parsing behavior.
+         * When present, `|` characters inside the macro are treated as filter/pipe operators.
+         */
+        FilterFlag: createToken({ name: 'Macro.FilterFlag', pattern: />/ }),
         DoubleSlash: createToken({ name: 'Macro.DoubleSlash', pattern: /\/\// }),
-        Identifier: createToken({ name: 'Macro.Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
+        Identifier: createToken({ name: 'Macro.Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
         EndOfIdentifier: createToken({ name: 'Macro.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
         BeforeEnd: createToken({ name: 'Macro.BeforeEnd', pattern: /(?=\}\})/, group: Lexer.SKIPPED }),
@@ -45,13 +73,13 @@ const Tokens = {
     Filter: {
         EscapedPipe: createToken({ name: 'Filter.EscapedPipe', pattern: /\\\|/ }),
         Pipe: createToken({ name: 'Filter.Pipe', pattern: /\|/ }),
-        Identifier: createToken({ name: 'Filter.Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
+        Identifier: createToken({ name: 'Filter.Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
         // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
         EndOfIdentifier: createToken({ name: 'Filter.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
     },
 
     // All tokens that can be captured inside a macro
-    Identifier: createToken({ name: 'Identifier', pattern: /[a-zA-Z][\w-_]*/ }),
+    Identifier: createToken({ name: 'Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
     WhiteSpace: createToken({ name: 'WhiteSpace', pattern: /\s+/, group: Lexer.SKIPPED }),
 
     // Capture unknown characters one by one, to still allow other tokens being matched once they are there.
@@ -84,6 +112,8 @@ const Def = {
             enter(Tokens.Macro.DoubleSlash, modes.macro_args),
 
             using(Tokens.Macro.Flags),
+            // Filter flag is separate because it affects parsing behavior for pipes
+            using(Tokens.Macro.FilterFlag),
 
             // We allow whitspaces inbetween flags or in front of the modifier
             using(Tokens.WhiteSpace),

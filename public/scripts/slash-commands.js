@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight } from './utils.js';
 
 import {
     Generate,
@@ -7,6 +7,7 @@ import {
     addOneMessage,
     characters,
     chat,
+    chatElement,
     chat_metadata,
     comment_avatar,
     deactivateSendButtons,
@@ -763,6 +764,98 @@ export function initDefaultSlashCommands() {
             </ul>
         </div>
         `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'message-role',
+        callback: messageRoleCallback,
+        returns: 'The role of the message sender',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'at',
+                description: 'the ID of the message to modify (index-based, corresponding to message id). If omitted, the last message is chosen.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will modify the message right before the last message in chat. At must be nonzero.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '',
+                enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Role to set for the message sender (user, assistant, system)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: commonEnumProviders.messageRoles,
+            }),
+        ],
+        helpString: `
+        <div>
+            Changes the role of a message sender to one of your choice.
+            If no role is provided, just gets the current role of the message sender.
+            If no index is provided, the last message is chosen.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/message-role | /echo</code></pre>
+                    Will output the role of the sender of the last message.
+                </li>
+                <li>
+                    <pre><code>/message-role at=-2 assistant</code></pre>
+                    Will change the third message from the bottom to be sent by the assistant.
+                </li>
+            </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'message-name',
+        callback: messageNameCallback,
+        returns: 'The name of the message sender',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'at',
+                description: 'the ID of the message to modify (index-based, corresponding to message id). If omitted, the last message is chosen.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will modify the message right before the last message in chat. At must be nonzero.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '',
+                enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Persona name, character name, or unique character identifier (avatar key)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: (executor) => {
+                    let modifyAt = Number(executor.namedArgumentList.find(arg => arg.name === 'at')?.value ?? (chat.length - 1));
+                    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+                        modifyAt = chat.length + modifyAt;
+                    }
+                    return chat[modifyAt]?.is_user
+                        ? commonEnumProviders.personas()
+                        : commonEnumProviders.characters('character')();
+                },
+            }),
+        ],
+        helpString: `
+        <div>
+            Changes the name of a message sender to one of your choice.
+            If no name is provided, just gets the current name of the message sender.
+            If no index is provided, the last message is chosen.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/message-name | /echo</code></pre>
+                    Will output the name of the sender of the last message.
+                </li>
+                <li>
+                    <pre><code>/message-name at=-2 "Chloe"</code></pre>
+                    Will change the third message from the bottom to be sent by "Chloe".
+                </li>
+            </ul>
+        </div>
+    `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
@@ -4508,6 +4601,119 @@ export function getNameAndAvatarForMessage(character, name = null) {
         force_avatar: force_avatar,
         original_avatar: original_avatar,
     };
+}
+
+/**
+ * Changes the character role on a message at a given index.
+ * @param {object?} args - Named arguments
+ * @param {string} role - Role to change to.
+ *
+ * @returns {Promise<string>} The updated message role.
+ */
+async function messageRoleCallback(args, role) {
+    let modifyAt = Number(args?.at ?? (chat.length - 1));
+    // Convert possible depth parameter to index
+    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        modifyAt = chat.length + modifyAt;
+    }
+
+    const message = chat[modifyAt];
+    if (!message) {
+        toastr.warning(t`No message found at the specified index.`);
+        return '';
+    }
+
+    role = String(role ?? '').trim().toLowerCase();
+    if (!role || !['user', 'assistant', 'system'].includes(role)) {
+        return message?.extra?.type === system_message_types.NARRATOR
+            ? 'system'
+            : message.is_user ? 'user' : 'assistant';
+    }
+
+    message.extra = message.extra || {};
+    if (role === 'system') {
+        message.extra.type = system_message_types.NARRATOR;
+    } else {
+        delete message.extra.type;
+    }
+    message.is_user = role === 'user';
+
+    await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
+    const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
+    if (existingMessage.length) {
+        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        existingMessage.remove();
+    }
+    await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
+    await saveChatConditional();
+
+    return role;
+}
+
+/**
+ * Changes the character name on a message at a given index.
+ * @param {object?} args - Named arguments
+ * @param {string} name - Name to change to.
+ *
+ * @returns {Promise<string>} The updated message name.
+ */
+async function messageNameCallback(args, name) {
+    let modifyAt = Number(args?.at ?? (chat.length - 1));
+    // Convert possible depth parameter to index
+    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        modifyAt = chat.length + modifyAt;
+    }
+
+    const message = chat[modifyAt];
+    if (!message) {
+        toastr.warning(t`No message found at the specified index.`);
+        return '';
+    }
+
+    name = String(name ?? '').trim();
+    if (!name) {
+        return message.name;
+    }
+
+    let newName = '';
+
+    if (message.is_user) {
+        const persona = findPersona({ name: name });
+        if (persona) {
+            message.name = newName = persona.name;
+            message.force_avatar = getThumbnailUrl('persona', persona.avatar);
+            message.original_avatar = persona.avatar;
+        } else {
+            message.name = newName = name;
+            message.force_avatar = default_avatar;
+            message.original_avatar = default_avatar;
+        }
+    } else {
+        const character = findChar({ name: name });
+        if (character) {
+            const characterInfo = getNameAndAvatarForMessage(character, name);
+            message.name = newName = characterInfo.name;
+            message.force_avatar = characterInfo.force_avatar;
+            message.original_avatar = characterInfo.original_avatar;
+        } else {
+            message.name = newName = name;
+            message.force_avatar = default_avatar;
+            message.original_avatar = default_avatar;
+        }
+    }
+
+    await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
+    const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
+    if (existingMessage.length) {
+        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        existingMessage.remove();
+    }
+    await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
+    await saveChatConditional();
+
+    return newName;
 }
 
 export async function sendMessageAs(args, text) {

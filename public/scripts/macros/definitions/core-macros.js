@@ -1,9 +1,21 @@
 import { seedrandom, droll } from '../../../lib.js';
 import { chat_metadata, main_api, getMaxContextSize, extension_prompts, getCurrentChatId } from '../../../script.js';
-import { getStringHash } from '../../utils.js';
+import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
+import { MacroEngine } from '../engine/MacroEngine.js';
+
+/**
+ * Marker used by {{else}} to split content in {{if}} blocks.
+ * Uses control characters to minimize collision with real content.
+ *
+ * This marker is used internally by the macro engine to separate if/else branches.
+ * It should never appear in user-generated content.
+ *
+ * @type {string}
+ */
+export const ELSE_MARKER = '\u0000\u001FELSE\u001F\u0000';
 
 /**
  * Registers SillyTavern's core built-in macros in the MacroRegistry.
@@ -59,11 +71,98 @@ export function registerCoreMacros() {
     });
 
     // {{trim}} -> macro will currently replace itself with itself. Trimming is handled in post-processing.
+    // Scoped: {{trim}}content{{/trim}} -> trims whitespace from content (handled by engine auto-trim)
     MacroRegistry.registerMacro('trim', {
         category: MacroCategory.UTILITY,
-        description: 'Trims all whitespaces around the trim macro.',
+        description: 'Trims whitespace. Non-scoped: trims newlines around the macro (post-processing). Scoped: returns the content (auto-trimmed by the engine).',
+        unnamedArgs: [
+            {
+                name: 'content',
+                description: 'Content to trim (when used as scoped macro)',
+                optional: true,
+            },
+        ],
         returns: '',
-        handler: () => '{{trim}}',
+        handler: ({ unnamedArgs: [content], isScoped }) => {
+            // Scoped usage: return content (already auto-trimmed by the engine)
+            if (isScoped) return content ?? '';
+            // Non-scoped: return marker for post-processing regex
+            return '{{trim}}';
+        },
+    });
+
+    // {{if condition}}content{{/if}} -> conditional content
+    // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
+    // {{if !condition}}content{{/if}} -> inverted conditional (negated)
+    // Condition can be a macro name (resolved automatically) or any value
+    MacroRegistry.registerMacro('if', {
+        category: MacroCategory.UTILITY,
+        description: 'Conditional macro. Returns the content if the condition is truthy, otherwise returns nothing (or the else branch if present). Prefix the condition with ! to invert. If the condition is a registered macro name (without braces), it will be resolved first.',
+        unnamedArgs: [
+            {
+                name: 'condition',
+                description: 'The condition to evaluate. Prefix with ! to invert. Can be a macro name (auto-resolved) or a value. Falsy: empty string, "false", "off", "0".',
+            },
+            {
+                name: 'content',
+                description: 'The content to return if condition is truthy (typically provided as scoped content). May contain {{else}} to define an else branch.',
+            },
+        ],
+        displayOverride: '{{if condition}}then{{else}}other{{/if}}',
+        exampleUsage: [
+            '{{if description}}# Description\n{{description}}{{/if}}',
+            '{{if charVersion}}{{charVersion}}{{else}}No version{{/if}}',
+            '{{if !personality}}No personality defined{{/if}}',
+            '{{if {{getvar::showHeader}}}}# Header{{/if}}',
+        ],
+        returns: 'The content if condition is truthy, else branch or empty string otherwise.',
+        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], flags, env, trimContent }) => {
+            // Check if the ORIGINAL condition (before macro resolution) starts with !
+            // We use raw args to check this, as the resolved value might start with ! from a variable
+            let inverted = false;
+            if (/^\s*!/.test(rawCondition)) {
+                inverted = true;
+                // Strip the ! from the resolved condition if it was the prefix
+                condition = condition.replace(/^!/, '');
+            }
+
+            // Check if condition is a registered macro name (without braces)
+            // If so, resolve it first (only for macros that accept 0 required args)
+            const macroDef = MacroRegistry.getPrimaryMacro(condition);
+            if (macroDef && macroDef.minArgs === 0) {
+                // Use MacroEngine.evaluate to properly resolve the macro with full context
+                // This ensures all handler args (cst, normalize, list, etc.) are correctly provided
+                condition = MacroEngine.evaluate(`{{${condition}}}`, env);
+            }
+
+            // Check if condition is falsy: empty string or isFalseBoolean
+            let isFalsy = condition === '' || isFalseBoolean(condition);
+            if (inverted) isFalsy = !isFalsy;
+
+            // Split content on else marker (if present)
+            const [thenBranch, elseBranch] = content.split(ELSE_MARKER);
+            const result = !isFalsy ? thenBranch : elseBranch;
+
+            // Trim branches unless # flag is set (preserveWhitespace)
+            // The engine auto-trims the whole scoped content, but we still need to trim
+            // around the {{else}} marker since that's internal to this macro
+            if (flags.preserveWhitespace) {
+                return result ?? '';
+            }
+            return trimContent(result ?? '');
+        },
+    });
+
+    // {{else}} -> marker for else branch inside {{if}} blocks
+    // Only meaningful inside a scoped {{if}} macro
+    MacroRegistry.registerMacro('else', {
+        category: MacroCategory.UTILITY,
+        description: 'Marks the else branch inside a scoped {{if}} block. Only works inside {{if}}...{{/if}}. If used outside, returns an invisible marker.',
+        exampleUsage: [
+            '{{if condition}}true branch{{else}}false branch{{/if}}',
+        ],
+        returns: 'Invisible marker (consumed by the enclosing {{if}} macro).',
+        handler: () => ELSE_MARKER,
     });
 
     // {{input}} -> current textarea content
@@ -101,7 +200,7 @@ export function registerCoreMacros() {
 
     // Comment macro: {{// ...}} -> '' (consumes any arguments)
     MacroRegistry.registerMacro('//', {
-        aliases: [{ alias: 'comment' }],
+        aliases: [{ alias: 'comment', visible: false }],
         category: MacroCategory.UTILITY,
         list: true,         // We consume any arguments as if this is a list, but we'll ignore them in the handler anyway
         strictArgs: false,  // and we also always remove it, even if the parsing might say it's invalid

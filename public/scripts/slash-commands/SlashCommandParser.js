@@ -15,15 +15,21 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { EnhancedMacroAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
+import { EnhancedMacroAutoCompleteOption, MacroFlagAutoCompleteOption, MacroClosingTagAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
+import { MacroFlagDefinitions, MacroFlagType } from '../macros/engine/MacroFlags.js';
+import { MacroParser } from '../macros/engine/MacroParser.js';
+import { MacroCstWalker } from '../macros/engine/MacroCstWalker.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
 import { macros as macroSystem } from '../macros/macro-system.js';
+import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
+/** @typedef {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} MacroAutoCompleteContext */
+/** @typedef {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').EnhancedMacroAutoCompleteOptions} EnhancedMacroAutoCompleteOptions */
 
 /**
  * @enum {Number}
@@ -493,18 +499,137 @@ export class SlashCommandParser {
                 const macroContent = text.slice(macro.start + 2, macro.end - (text.slice(macro.end - 2, macro.end) === '}}' ? 2 : 0));
                 const context = parseMacroContext(macroContent, cursorInMacro);
 
-                // Extract just the identifier (strip trailing colons/whitespace/closing braces from macro.name)
-                const identifier = macro.name.replace(/[\s:}]+$/, '').trim();
+                // Check if cursor is at/after the closing }} - macro syntax is complete
+                const macroEndsBrackets = text.slice(macro.end - 2, macro.end) === '}}';
+                const isCursorAtClosing = macroEndsBrackets && index >= macro.end - 1;
+
+                if (isCursorAtClosing) {
+                    // Cursor is at the closing }} - check if this is an unclosed scoped macro
+                    const textUpToCursor = text.slice(0, index);
+                    const unclosedScopes = this.#findUnclosedScopes(textUpToCursor);
+
+                    if (unclosedScopes.length > 0) {
+                        const scopedMacro = unclosedScopes[unclosedScopes.length - 1];
+                        // Check if the current macro IS the unclosed scoped macro
+                        if (scopedMacro.startOffset === macro.start) {
+                            // Show scoped context - cursor is right at the end of the opening tag
+                            const scopedContext = {
+                                ...context,
+                                currentArgIndex: context.args.length, // Next arg (scoped content)
+                                isInScopedContent: true,
+                                scopedMacroName: scopedMacro.name,
+                            };
+
+                            const macroDef = macroSystem.registry.getPrimaryMacro(scopedMacro.name);
+                            if (macroDef) {
+                                const scopedOption = new EnhancedMacroAutoCompleteOption(macroDef, scopedContext);
+                                scopedOption.valueProvider = () => '';
+
+                                const result = new AutoCompleteNameResult(
+                                    scopedMacro.name,
+                                    macro.start + 2,
+                                    [scopedOption],
+                                    false,
+                                );
+                                return result;
+                            }
+                        }
+                    }
+
+                    // Not a scoped macro, just clear arg highlighting
+                    context.currentArgIndex = -1;
+                }
+
+                // Use the identifier from context (handles whitespace and flags)
+                // Start position must be where the identifier actually begins (after whitespace/flags)
+                // so that the autocomplete range calculation works correctly
+                const identifier = context.identifier;
+                const identifierStartInText = macro.start + 2 + context.identifierStart;
 
                 // Use enhanced macro autocomplete when experimental engine is enabled
-                const options = this.#buildEnhancedMacroOptions(context);
+                // Pass full text up to cursor for unclosed scope detection
+                const textUpToCursor = text.slice(0, index);
+
+                // Special case for {{if}} condition: use the condition text for matching/replacement
+                const isTypingIfCondition = context.identifier === 'if' && context.currentArgIndex === 0;
+                if (isTypingIfCondition) {
+                    // Get the typed condition text and calculate its start position
+                    const conditionText = context.args[0] || '';
+                    // Find where the condition argument starts in the macro text
+                    const separatorMatch = macroContent.match(/^.*?if\s*(?:::?)\s*/);
+                    const spaceMatch = macroContent.match(/^.*?if\s+/);
+                    let conditionStartOffset;
+                    if (separatorMatch) {
+                        conditionStartOffset = separatorMatch[0].length;
+                    } else if (spaceMatch) {
+                        conditionStartOffset = spaceMatch[0].length;
+                    } else {
+                        conditionStartOffset = context.identifierStart + identifier.length;
+                    }
+                    const conditionStartInText = macro.start + 2 + conditionStartOffset;
+
+                    // Build if-condition options using macroContent for padding calculation
+                    const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
+                    const options = this.#buildIfConditionOptions(context, allMacros, macroContent);
+
+                    const result = new AutoCompleteNameResult(
+                        conditionText,
+                        conditionStartInText,
+                        options,
+                        false,
+                        () => 'Use {{macro}} syntax for dynamic conditions',
+                        () => 'Enter a macro name or {{macro}} for the condition',
+                    );
+                    return result;
+                }
+
+                const options = this.#buildEnhancedMacroOptions(context, textUpToCursor);
                 const result = new AutoCompleteNameResult(
                     identifier,
-                    macro.start + 2,
+                    identifierStartInText,
                     options,
                     false,
                 );
                 return result;
+            }
+
+            // Check if cursor is in scoped content of an unclosed macro
+            const textUpToCursor = text.slice(0, index);
+            const unclosedScopes = this.#findUnclosedScopes(textUpToCursor);
+            if (unclosedScopes.length > 0) {
+                const scopedMacro = unclosedScopes[unclosedScopes.length - 1];
+                // Find the original macro in macroIndex to get full info
+                const originalMacro = this.macroIndex.find(it => it.start === scopedMacro.startOffset);
+                if (originalMacro) {
+                    // Parse the original macro content to get base context
+                    const macroContent = text.slice(originalMacro.start + 2, originalMacro.end - 2);
+                    const baseContext = parseMacroContext(macroContent, macroContent.length);
+
+                    // Create a scoped context - show next arg as current (the scoped content)
+                    const scopedContext = {
+                        ...baseContext,
+                        currentArgIndex: baseContext.args.length, // Next arg index (the scoped one)
+                        isInScopedContent: true,
+                        scopedMacroName: scopedMacro.name,
+                    };
+
+                    // Only show the scoped macro's details - no list of other macros
+                    // This creates a "details only" view showing the scoped arg being typed
+                    const macroDef = macroSystem.registry.getPrimaryMacro(scopedMacro.name);
+                    if (macroDef) {
+                        const scopedOption = new EnhancedMacroAutoCompleteOption(macroDef, scopedContext);
+                        // Mark as non-insertable - we're just showing details
+                        scopedOption.valueProvider = () => '';
+
+                        const result = new AutoCompleteNameResult(
+                            scopedMacro.name, // Use macro name so it shows as "match"
+                            originalMacro.start + 2, // Point to original macro
+                            [scopedOption],
+                            false,
+                        );
+                        return result;
+                    }
+                }
             }
             if (executor.name == ':') {
                 const options = this.scopeIndex[this.commandIndex.indexOf(executor)]
@@ -540,19 +665,83 @@ export class SlashCommandParser {
 
     /**
      * Builds enhanced macro autocomplete options from the MacroRegistry.
+     * When in the flags area (before identifier), includes flag options.
      * When typing arguments (after ::), prioritizes the exact macro match.
      * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
-     * @returns {EnhancedMacroAutoCompleteOption[]}
+     * @param {string} [textUpToCursor] - Full document text up to cursor, for unclosed scope detection.
+     * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]}
      */
-    #buildEnhancedMacroOptions(context) {
-        /** @type {EnhancedMacroAutoCompleteOption[]} */
+    #buildEnhancedMacroOptions(context, textUpToCursor = '') {
+        /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]} */
         const options = [];
+
+        // Check for unclosed scoped macros and suggest closing tags first
+        const unclosedScopes = this.#findUnclosedScopes(textUpToCursor);
+        if (unclosedScopes.length > 0) {
+            // Suggest closing the innermost (last) unclosed scope first
+            const innermostScope = unclosedScopes[unclosedScopes.length - 1];
+            const closingOption = new MacroClosingTagAutoCompleteOption(innermostScope.name);
+            options.push(closingOption);
+
+            // If inside a scoped {{if}}, also suggest {{else}}
+            if (innermostScope.name === 'if') {
+                // TODO: TEsting
+                const macroDef = macroSystem.registry.getPrimaryMacro('else');
+                const elseOption = new EnhancedMacroAutoCompleteOption(macroDef);
+                elseOption.sortPriority = 2;
+                // const elseOption = new MacroElseAutoCompleteOption();
+                options.push(elseOption);
+            }
+        }
+
+        // If cursor is in the flags area (before identifier starts), include flag options
+        if (context.isInFlagsArea) {
+            // Build flag options with priority-based sorting
+            // Last typed flag has highest priority (1), other flags have lower priority (10)
+            // Already-typed flags (except last) are hidden from the list
+            const lastTypedFlag = context.flags.length > 0 ? context.flags[context.flags.length - 1] : null;
+
+            // Add last typed flag with high priority (so it appears at top)
+            if (lastTypedFlag) {
+                const lastFlagDef = MacroFlagDefinitions.get(lastTypedFlag);
+                if (lastFlagDef) {
+                    const lastFlagOption = new MacroFlagAutoCompleteOption(lastFlagDef);
+                    // Mark as already typed - valueProvider returns empty so it doesn't re-insert
+                    lastFlagOption.valueProvider = () => '';
+                    // High priority to appear at top (after closing tags at 1)
+                    lastFlagOption.sortPriority = 2;
+                    options.push(lastFlagOption);
+                }
+            }
+
+            // Add flags that haven't been typed yet (skip already-typed ones except last)
+            for (const [symbol, flagDef] of MacroFlagDefinitions) {
+                // Skip the last typed flag (already added above) and other already-typed flags
+                if (context.flags.includes(symbol)) {
+                    continue;
+                }
+                const flagOption = new MacroFlagAutoCompleteOption(flagDef);
+
+                // Define whether this flag is selectable (and at the top), based on being implemented, and closing actually being relevant
+                let isSelectable = flagDef.implemented;
+                if (flagDef.type === MacroFlagType.CLOSING_BLOCK && !unclosedScopes.length) isSelectable = false;
+                if (!isSelectable) {
+                    flagOption.valueProvider = () => '';
+                }
+                // Normal flag priority
+                flagOption.sortPriority = isSelectable ? 10 : 12;
+                options.push(flagOption);
+            }
+        }
 
         // Get all macros from the registry (excluding hidden aliases)
         const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
 
         // If we're typing arguments (after ::), only show the context to the matching macro
         const isTypingArgs = context.currentArgIndex >= 0;
+
+        // Check if we're inside a scoped {{if}} for {{else}} selectability
+        const isInsideScopedIf = unclosedScopes.some(scope => scope.name === 'if');
 
         for (const macro of allMacros) {
             // Check if this macro matches the typed identifier
@@ -561,9 +750,24 @@ export class SlashCommandParser {
 
             // Only pass context to the macro that matches the identifier being typed
             // This ensures argument hints only show for the relevant macro
-            const macroContext = (isExactMatch || isAliasMatch) ? context : null;
+            /** @type {MacroAutoCompleteContext|EnhancedMacroAutoCompleteOptions|null} */
+            let macroContext = (isExactMatch || isAliasMatch) ? context : null;
+
+            // If no context, we pass some options for additional details though
+            if (!macroContext) {
+                macroContext = /** @type {EnhancedMacroAutoCompleteOptions} */ ({
+                    paddingAfter: context.paddingBefore, // Match whitespace before the macro - will only be used if the macro gets auto-closed
+                });
+            }
 
             const option = new EnhancedMacroAutoCompleteOption(macro, macroContext);
+
+            // {{else}} is only selectable inside a scoped {{if}} block
+            // Outside of {{if}}, it should appear in the list but not be tab-completable
+            if (macro.name === 'else' && !isInsideScopedIf) {
+                option.valueProvider = () => '';
+                option.makeSelectable = false;
+            }
 
             // When typing arguments, prioritize exact matches by putting them first
             if (isTypingArgs && (isExactMatch || isAliasMatch)) {
@@ -574,6 +778,103 @@ export class SlashCommandParser {
         }
 
         return options;
+    }
+
+    /**
+     * Builds autocomplete options for {{if}} condition - shows zero-arg macros as shorthand.
+     * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+     * @param {import('../macros/engine/MacroRegistry.js').MacroDefinition[]} allMacros
+     * @param {string} macroInnerText - The text inside the macro braces (e.g., "  if  pers" from "{{  if  pers").
+     * @returns {AutoCompleteOption[]}
+     */
+    #buildIfConditionOptions(context, allMacros, macroInnerText) {
+        /** @type {AutoCompleteOption[]} */
+        const options = [];
+
+        // Calculate padding from the original macro text for matching whitespace on completion
+        // e.g., "  if pers" -> leading padding = "  " (whitespace before 'if', used before '}}')
+        const leadingMatch = macroInnerText.match(/^(\s*)/);
+        const paddingAfter = leadingMatch ? leadingMatch[1] : '';
+
+        // Add zero-arg macros as condition shorthand options
+        for (const macro of allMacros) {
+            // Only include macros that require zero arguments (can be auto-resolved)
+            if (macro.minArgs !== 0) continue;
+
+            // Skip internal/utility macros that don't make sense as conditions
+            if (['else', 'noop', 'trim', '//'].includes(macro.name)) continue;
+
+            const option = new EnhancedMacroAutoCompleteOption(macro, {
+                noBraces: true,
+                paddingAfter,
+                closeWithBraces: true,
+            });
+            options.push(option);
+        }
+
+        return options;
+    }
+
+    /**
+     * Finds unclosed scoped macros in the text up to cursor position.
+     * Uses the MacroParser and MacroCstWalker for accurate analysis.
+     *
+     * @param {string} textUpToCursor - The document text up to the cursor position.
+     * @returns {Array<{ name: string, startOffset: number, endOffset: number }>}
+     */
+    #findUnclosedScopes(textUpToCursor) {
+        if (!textUpToCursor) return [];
+
+        try {
+            // Parse the document to get the CST
+            const { cst } = MacroParser.parseDocument(textUpToCursor);
+            if (!cst) return [];
+
+            // Use the CST walker to find unclosed scopes
+            return MacroCstWalker.findUnclosedScopes({ text: textUpToCursor, cst });
+        } catch {
+            // If parsing fails (incomplete input), fall back to simple regex approach
+            return this.#findUnclosedScopesRegex(textUpToCursor);
+        }
+    }
+
+    /**
+     * Fallback regex-based approach for finding unclosed scopes.
+     * Used when the parser fails on incomplete input.
+     *
+     * @param {string} text - The text to analyze.
+     * @returns {Array<{ name: string, startOffset: number, endOffset: number }>}
+     */
+    #findUnclosedScopesRegex(text) {
+        // Simple regex to find macro openings and closings
+        // This is a fallback - less accurate but works on partial input
+        const macroPattern = /\{\{(\/?)([\w-]+)/g;
+        const stack = [];
+
+        let match;
+        while ((match = macroPattern.exec(text)) !== null) {
+            const isClosing = match[1] === '/';
+            const name = match[2];
+
+            if (isClosing) {
+                // Pop matching opener
+                if (stack.length > 0 && stack[stack.length - 1].name === name) {
+                    stack.pop();
+                }
+            } else {
+                // Check if macro can accept scoped content
+                const macroDef = macroSystem.registry.getPrimaryMacro(name);
+                if (macroDef && macroDef.maxArgs > 0) {
+                    stack.push({
+                        name,
+                        startOffset: match.index,
+                        endOffset: match.index + match[0].length,
+                    });
+                }
+            }
+        }
+
+        return stack;
     }
 
     /**
@@ -1286,18 +1587,66 @@ export class SlashCommandParser {
     }
 
     indexMacros(offset, text) {
-        const re = /{{(?:((?:(?!}})[^\s:])+[\s:]*)((?:(?!}}).)*)(}}|}$|$))?/s;
-        let remaining = text;
-        let localOffset = 0;
-        while (remaining.length > 0 && re.test(remaining)) {
-            const match = re.exec(remaining);
-            this.macroIndex.push({
-                start: offset + localOffset + match.index,
-                end: offset + localOffset + match.index + (match[0]?.length ?? 0),
-                name: match[1] ?? '',
-            });
-            localOffset += match.index + (match[0]?.length ?? 0);
-            remaining = remaining.slice(match.index + (match[0]?.length ?? 0));
+        // Index all macros including nested ones
+        // We need to track brace depth to properly handle nested macros like {{reverse::Hey {{user}}}}
+        let i = 0;
+        while (i < text.length - 1) {
+            // Look for macro start {{
+            if (text[i] === '{' && text[i + 1] === '{') {
+                const macroStart = i;
+                i += 2; // Skip {{
+
+                // Find where this macro ends, tracking nested braces
+                let depth = 1;
+                let macroEnd = text.length; // Default to end if unclosed
+
+                while (i < text.length - 1 && depth > 0) {
+                    if (text[i] === '{' && text[i + 1] === '{') {
+                        // Nested macro start - recursively index it
+                        // The nested macro will be indexed in subsequent iterations
+                        depth++;
+                        i += 2;
+                    } else if (text[i] === '}' && text[i + 1] === '}') {
+                        depth--;
+                        if (depth === 0) {
+                            macroEnd = i + 2; // Include the closing }}
+                        }
+                        i += 2;
+                    } else {
+                        i++;
+                    }
+                }
+
+                // Extract macro content (between {{ and }} or end)
+                const contentEnd = macroEnd === text.length ? macroEnd : macroEnd - 2;
+                const macroContent = text.slice(macroStart + 2, contentEnd);
+
+                // Use parseMacroContext to extract the identifier
+                const context = parseMacroContext(macroContent, macroContent.length);
+
+                this.macroIndex.push({
+                    start: offset + macroStart,
+                    end: offset + macroEnd,
+                    name: context.identifier,
+                });
+
+                // Continue from where we left off (don't skip ahead)
+                // This ensures nested macros get their own index entries
+                i = macroStart + 2; // Move past the opening {{ to look for nested macros
+                // Skip to find nested {{ inside this macro's content
+                while (i < contentEnd) {
+                    if (text[i] === '{' && i + 1 < text.length && text[i + 1] === '{') {
+                        break; // Found nested macro, outer loop will handle it
+                    }
+                    i++;
+                }
+                if (i >= contentEnd) {
+                    // No nested macro found, skip to end of this macro
+                    i = macroEnd;
+                }
+            } else {
+                i++;
+            }
         }
     }
 }

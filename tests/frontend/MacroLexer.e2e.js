@@ -653,6 +653,35 @@ test.describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+        // {{>filtered}}
+        test('should support > filter flag as separate token', async ({ page }) => {
+            const input = '{{>filtered}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.FilterFlag', text: '>' },
+                { type: 'Macro.Identifier', text: 'filtered' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ ! > user }}
+        test('should support filter flag combined with other flags', async ({ page }) => {
+            const input = '{{ ! > user }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Macro.FilterFlag', text: '>' },
+                { type: 'Macro.Identifier', text: 'user' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
         // {{ a shaaark }}
         test('should not capture single letter as flag, but as macro identifiers', async ({ page }) => {
             const input = '{{ a shaaark }}';
@@ -668,42 +697,35 @@ test.describe('MacroLexer', () => {
             expect(tokens).toEqual(expectedTokens);
         });
 
-        test.describe('Error Cases (Macro Execution Modifiers)', () => {
+        test.describe('"Error" Cases (Macro Execution Modifiers)', () => {
             // {{ @unknown }}
-            test('[Error] should not capture unknown special characters as flag', async ({ page }) => {
+            test('should not capture unknown special characters as flag', async ({ page }) => {
                 const input = '{{ @unknown }}';
                 const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-                const expectedErrors = [
-                    { message: 'unexpected character: ->@<- at offset: 3, skipped 1 characters.' },
-                ];
-
-                expect(errors).toMatchObject(expectedErrors);
+                // No errors expected, as lexer should not error out even on invalid macros
+                expect(errors).toMatchObject([]);
 
                 const expectedTokens = [
                     { type: 'Macro.Start', text: '{{' },
-                    // Do not capture '@' as anything, as it's a lexer error
-                    { type: 'Macro.Identifier', text: 'unknown' },
-                    { type: 'Macro.End', text: '}}' },
+                    // Because '@' is invalid in lexer, it'll "pop out" and be captured as plaintext
+                    { type: 'Plaintext', text: '@unknown }}' },
                 ];
 
                 expect(tokens).toEqual(expectedTokens);
             });
             // {{ 2 cents }}
-            test('[Error] should not capture numbers as flag - they are also invalid macro identifiers', async ({ page }) => {
+            test('should not capture numbers as flag - they are also invalid macro identifiers', async ({ page }) => {
                 const input = '{{ 2 cents }}';
                 const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-                const expectedErrors = [
-                    { message: 'unexpected character: ->2<- at offset: 3, skipped 1 characters.' },
-                ];
-                expect(errors).toMatchObject(expectedErrors);
+                // No errors expected, as lexer should not error out even on invalid macros
+                expect(errors).toMatchObject([]);
 
                 const expectedTokens = [
                     { type: 'Macro.Start', text: '{{' },
-                    // Do not capture '2' as anything, as it's a lexer error
-                    { type: 'Macro.Identifier', text: 'cents' },
-                    { type: 'Macro.End', text: '}}' },
+                    // Because '2' is invalid in lexer, it'll "pop out" and be captured as plaintext
+                    { type: 'Plaintext', text: '2 cents }}' },
                 ];
 
                 expect(tokens).toEqual(expectedTokens);
@@ -868,20 +890,16 @@ test.describe('MacroLexer', () => {
 
         test.describe('Error Cases (Macro Output Modifiers)', () => {
             // {{|macro}}
-            test('[Error] should not capture when starting the macro with a pipe', async ({ page }) => {
+            test('should not capture when starting the macro with a pipe', async ({ page }) => {
                 const input = '{{|macro}}';
                 const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-                const expectedErrors = [
-                    { message: 'unexpected character: ->|<- at offset: 2, skipped 1 characters.' },
-                ];
-
-                expect(errors).toMatchObject(expectedErrors);
+                // No errors expected, as lexer should not error out even on invalid macros
+                expect(errors).toMatchObject([]);
 
                 const expectedTokens = [
                     { type: 'Macro.Start', text: '{{' },
-                    { type: 'Macro.Identifier', text: 'macro' },
-                    { type: 'Macro.End', text: '}}' },
+                    { type: 'Plaintext', text: '|macro}}' },
                 ];
 
                 expect(tokens).toEqual(expectedTokens);
@@ -1052,18 +1070,14 @@ test.describe('MacroLexer', () => {
             const input = 'invalid {{ 000 }} followed by correct {{ macro }}';
             const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-            const expectedErrors = [
-                { message: 'unexpected character: ->0<- at offset: 11, skipped 3 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
+            // No errors expected, as lexer should not error out even on invalid macros
+            expect(errors).toMatchObject([]);
 
             const expectedTokens = [
                 { type: 'Plaintext', text: 'invalid ' },
                 { type: 'Macro.Start', text: '{{' },
-                // Do not capture '000' as anything, as it's a lexer error
-                { type: 'Macro.End', text: '}}' },
-                { type: 'Plaintext', text: ' followed by correct ' },
+                // '000' is invalid vor the lexer, so it is captured as plaintext
+                { type: 'Plaintext', text: '000 }} followed by correct ' },
                 { type: 'Macro.Start', text: '{{' },
                 { type: 'Macro.Identifier', text: 'macro' },
                 { type: 'Macro.End', text: '}}' },

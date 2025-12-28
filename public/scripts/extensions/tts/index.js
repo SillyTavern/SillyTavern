@@ -5,6 +5,7 @@ import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
 import { GptSovitsV2Provider } from './gpt-sovits-v2.js';
+import { GptSoVITSAdapterProvider } from './gpt-sovits-adapter.js';
 import { CoquiTtsProvider } from './coqui.js';
 import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
@@ -130,6 +131,7 @@ const ttsProviders = {
     'Google Translate': GoogleTranslateTtsProvider,
     'Google Gemini TTS': GoogleNativeTtsProvider,
     GSVI: GSVITtsProvider,
+    'GPT-SoVITS-Adapter': GptSoVITSAdapterProvider,
     'GPT-SoVITS-V2 (Unofficial)': GptSovitsV2Provider,
     Kokoro: KokoroTtsProvider,
     MiniMax: MiniMaxTtsProvider,
@@ -1191,7 +1193,7 @@ async function onPeriodicMessageGenerationTick() {
  * @param {boolean} unrestricted - If true, will include all characters in voiceMapEntries, even if they are not in the current chat.
  * @returns {string[]} - Array of character names
  */
-function getCharacters(unrestricted) {
+export function getCharacters(unrestricted) {
     const context = getContext();
 
     if (unrestricted) {

@@ -46,7 +46,18 @@ class MacroParser extends CstParser {
         // Basic Macro Structure
         $.macro = $.RULE('macro', () => {
             $.CONSUME(Tokens.Macro.Start);
-            $.OR([
+
+            // Optional flags before the identifier (e.g., {{!user}}, {{?~macro}}, {{>filtered}})
+            // Both regular flags and filter flag are captured under the 'flags' label
+            $.MANY(() => {
+                $.OR1([
+                    { ALT: () => $.CONSUME(Tokens.Macro.Flags, { LABEL: 'flags' }) },
+                    { ALT: () => $.CONSUME(Tokens.Macro.FilterFlag, { LABEL: 'flags' }) },
+                ]);
+            });
+
+            // Macro identifier (name)
+            $.OR2([
                 { ALT: () => $.CONSUME(Tokens.Macro.DoubleSlash, { LABEL: 'Macro.identifier' }) },
                 { ALT: () => $.CONSUME(Tokens.Macro.Identifier, { LABEL: 'Macro.identifier' }) },
             ]);

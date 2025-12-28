@@ -8,6 +8,7 @@ import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
 import { IGNORE_SYMBOL, OVERSWIPE_BEHAVIOR } from './scripts/constants';
 import { ToolInvocation } from './scripts/tool-calling';
+import { getWorldInfoSettings } from './scripts/world-info';
 
 declare global {
     // Custom types
@@ -16,6 +17,7 @@ declare global {
     type ReasoningSettings = typeof power_user.reasoning;
     type ChatCompletionSettings = typeof oai_settings;
     type TextCompletionSettings = typeof textgenerationwebui_settings;
+    type WorldInfoSettings = ReturnType<typeof getWorldInfoSettings>;
     type MessageTimestamp = string | number | Date;
     type Character = import('./scripts/char-data').v1CharData;
     type ChatMessageExtra = BaseMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
