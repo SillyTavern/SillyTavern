@@ -6,7 +6,9 @@ import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
 import { FileAttachment } from './scripts/chats';
 import { ReasoningMessageExtra } from './scripts/reasoning';
-import { OVERSWIPE_BEHAVIOR } from './scripts/constants';
+import { IGNORE_SYMBOL, OVERSWIPE_BEHAVIOR } from './scripts/constants';
+import { ToolInvocation } from './scripts/tool-calling';
+import { getWorldInfoSettings } from './scripts/world-info';
 
 declare global {
     // Custom types
@@ -15,6 +17,7 @@ declare global {
     type ReasoningSettings = typeof power_user.reasoning;
     type ChatCompletionSettings = typeof oai_settings;
     type TextCompletionSettings = typeof textgenerationwebui_settings;
+    type WorldInfoSettings = ReturnType<typeof getWorldInfoSettings>;
     type MessageTimestamp = string | number | Date;
     type Character = import('./scripts/char-data').v1CharData;
     type ChatMessageExtra = BaseMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
@@ -83,13 +86,16 @@ declare global {
     }
 
     interface BaseMessageExtra {
+        api?: string;
+        model?: string;
+        type?: string;
         gen_id?: number;
         bias?: string;
         uses_system_ui?: boolean;
         memory?: string;
         display_text?: string;
         reasoning_display_text?: string;
-        tool_invocations?: any[];
+        tool_invocations?: ToolInvocation[];
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
@@ -115,6 +121,8 @@ declare global {
         generationType?: number;
         /** @deprecated Use `MediaAttachment.negative` instead */
         negative?: string;
+        /** Will exclude this message from prompt processing */
+        [IGNORE_SYMBOL]?: boolean;
     }
 
     type MediaAttachment = MediaAttachmentProps & ImageGenerationAttachmentProps & ImageCaptionAttachmentProps;

@@ -42,6 +42,7 @@
     <link rel="stylesheet" type="text/css" href="css/extensions-panel.css">
     <link rel="stylesheet" type="text/css" href="css/select2-overrides.css">
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
+    <link rel="stylesheet" type="text/css" href="css/macros.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- Scripts are loaded at the end of the body to improve page load speed -->
@@ -1126,7 +1127,7 @@
                                     <div id="grammar_block" class="wide100p">
                                         <hr class="wide100p">
                                         <h4 class="wide100p textAlignCenter"><span data-i18n="GBNF Grammar">GBNF Grammar</span>
-                                            <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
+                                            <a href="https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                 <small>
                                                     <div class="fa-solid fa-circle-question note-link-span"></div>
                                                 </small>
@@ -1693,7 +1694,7 @@
                                             <div class="flex-container justifyCenter alignitemscenter">
                                                 <span data-i18n="Grammar String">Grammar String</span>
                                                 <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]GBNF or EBNF, depends on the backend in use. If you're using this you should know which." title="GBNF or EBNF, depends on the backend in use. If you're using this you should know which."></div>
-                                                <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
+                                                <a href="https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                     <div class="fa-solid fa-up-right-from-square note-link-span"></div>
                                                 </a>
                                             </div>
@@ -1997,7 +1998,7 @@
                                                     <i class="icon-supported fa-solid fa-image" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
                                                     <i class="icon-unsupported fa-solid fa-image" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
                                                 </div>
-                                                <div id="openai_video_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                <div id="openai_video_inlining_supported" data-source="makersuite,vertexai,openrouter,zai">
                                                     <i class="icon-supported fa-solid fa-film" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
                                                     <i class="icon-unsupported fa-solid fa-film" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
                                                 </div>
@@ -2012,7 +2013,7 @@
                                             <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long.</strong>
                                             <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB.</strong>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,chutes">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,chutes,makersuite,vertexai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2107,8 +2108,14 @@
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
                                                 Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.
                                             </div>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai" data-i18n="Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.">
-                                                Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai">
+                                                <span data-i18n="Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.">
+                                                    Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.
+                                                </span>
+                                                <br>
+                                                <span data-i18n="Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.">
+                                                    Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -2654,8 +2661,8 @@
                             </div>
                             <div data-tg-type="llamacpp">
                                 <div class="flex-container flexFlowColumn">
-                                    <a href="https://github.com/ggerganov/llama.cpp" target="_blank" data-i18n="ggerganov/llama.cpp">
-                                        ggerganov/llama.cpp (inference server)
+                                    <a href="https://github.com/ggml-org/llama.cpp/blob/master/README.md#llama-server" target="_blank" data-i18n="ggml-org/llama.cpp">
+                                        ggml-org/llama.cpp (inference server)
                                     </a>
                                 </div>
                                 <h4 data-i18n="API key (optional)">API key (optional)</h4>
@@ -2671,6 +2678,16 @@
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: http://127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
                                     <input id="llamacpp_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-server-history="llamacpp">
+                                </div>
+                                <div>
+                                    <h4>
+                                        <span data-i18n="llama.cpp Model">llama.cpp Model</span>
+                                    </h4>
+                                    <select id="llamacpp_model">
+                                        <option value="" data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                             <div data-tg-type="ollama">
@@ -3194,6 +3211,7 @@
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+                                        <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
@@ -3366,6 +3384,7 @@
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+                                        <option value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                                     </optgroup>
                                     <optgroup label="Gemini 2.5">
                                         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
@@ -3792,9 +3811,11 @@
                             </select>
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
+                                <option value="glm-4.7">glm-4.7</option>
                                 <option value="glm-4.6">glm-4.6</option>
                                 <option value="glm-4.6v">glm-4.6v</option>
                                 <option value="glm-4.6v-flash">glm-4.6v-flash</option>
+                                <option value="glm-4.6v-flashx">glm-4.6v-flashx</option>
                                 <option value="glm-4.5v">glm-4.5v</option>
                                 <option value="glm-4.5">glm-4.5</option>
                                 <option value="glm-4.5-air">glm-4.5-air</option>
@@ -3802,6 +3823,7 @@
                                 <option value="glm-4.5-airx">glm-4.5-airx</option>
                                 <option value="glm-4.5-flash">glm-4.5-flash</option>
                                 <option value="glm-4-32b-0414-128k">glm-4-32b-0414-128k</option>
+                                <option value="autoglm-phone-multilingual">autoglm-phone-multilingual</option>
                             </select>
                         </div>
                         <div id="azure_openai_settings" data-source="azure_openai">
@@ -4758,7 +4780,7 @@
                         <div name="themeElements" class="flex-container flexFlowColumn flexNoGap">
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
-                                <div class="flex-container alignItemsBaseline">
+                                <div class="flex-container alignItemsBaseline" title="This style applies to all avatars globaly, including your Persona, Character Managment, Account selection, etc." data-i18n="[title]This style applies to all avatars globaly, including your Persona, Character Managment, Account selection, etc.">
                                     <span data-i18n="Avatar Style:">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Circle">Circle</option>
@@ -4934,7 +4956,7 @@
                                     <input id="mesIDDisplayEnabled" type="checkbox" />
                                     <small data-i18n="Message IDs">Message IDs</small>
                                 </label>
-                                <label for="hideChatAvatarsEnabled" class="checkbox_label" title="Hide avatars in chat messages." data-i18n="[title]Hide avatars in chat messages.">
+                                <label for="hideChatAvatarsEnabled" class="checkbox_label" title="Hide avatars, only in chat messages." data-i18n="[title]Hide avatars, only in chat messages.">
                                     <input id="hideChatAvatarsEnabled" type="checkbox" />
                                     <small data-i18n="Hide Chat Avatars">Hide Chat Avatars</small>
                                 </label>
@@ -5257,6 +5279,11 @@
                                 <label class="checkbox_label" for="encode_tags" title="Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown." data-i18n="[title]Skip encoding  and  characters in message text, allowing a subset of HTML markup as well as Markdown">
                                     <input id="encode_tags" type="checkbox" />
                                     <small data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</small>
+                                </label>
+                                <label class="checkbox_label" for="experimental_macro_engine" title="Experimental new Macro Engine.&NewLine;&NewLine;Allows nested macros to be resolved correctly and has a dedicated, logical replacement order.&NewLine;The new engine is designed to cleanly replace the old regex-based macro system.">
+                                    <input id="experimental_macro_engine" type="checkbox" />
+                                    <small data-i18n="Experimental Macro Engine">Experimental Macro Engine</small>
+                                    <i class="fa-solid fa-flask" title="Experimental feature. Currently in development to test." data-i18n="[title]Experimental feature. Currently in development to test."></i>
                                 </label>
                                 <label class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members." data-i18n="[title]Allow AI messages in groups to contain lines spoken by other group members">
                                     <input id="disable_group_trimming" type="checkbox" />

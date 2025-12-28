@@ -4,7 +4,7 @@ import {
 import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFormatting, saveChatConditional, saveChatDebounced, saveSettingsDebounced, substituteParams, syncMesToSwipe, updateMessageBlock } from '../script.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getCurrentLocale, t, translate } from './i18n.js';
-import { MacrosParser } from './macros.js';
+import { macros, MacroCategory } from './macros/macro-system.js';
 import { chat_completion_sources, getChatCompletionModel, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { performFuzzySearch, power_user } from './power-user.js';
@@ -142,6 +142,53 @@ export function extractReasoningFromData(data, {
     }
 
     return '';
+}
+
+/**
+ * Extracts encrypted reasoning signature from the response data.
+ * These signatures are used to maintain reasoning context across multi-turn conversations.
+ * @param {object} data Response data
+ * @param {object} [options] Optional parameters
+ * @param {string|null} [options.mainApi] Override for main API
+ * @param {string|null} [options.chatCompletionSource] Override for chat completion source
+ * @returns {string?} Encrypted signature of the reasoning text
+ */
+export function extractReasoningSignatureFromData(data, {
+    mainApi = null,
+    chatCompletionSource = null,
+} = {}) {
+    // Only Gemini models use thought signatures (via MakerSuite/VertexAI or OpenRouter)
+    if ((mainApi ?? main_api) !== 'openai') {
+        return null;
+    }
+
+    const source = chatCompletionSource ?? oai_settings.chat_completion_source;
+    const isGemini = source === chat_completion_sources.MAKERSUITE || source === chat_completion_sources.VERTEXAI;
+    const isOpenRouter = source === chat_completion_sources.OPENROUTER;
+
+    if (!isGemini && !isOpenRouter) {
+        return null;
+    }
+
+    // OpenRouter format: reasoning_details array with type "reasoning.encrypted" (exclude tool calls)
+    if (isOpenRouter && Array.isArray(data?.choices?.[0]?.message?.reasoning_details)) {
+        for (const detail of data.choices[0].message.reasoning_details) {
+            if (!/^tool_/.test(detail.id) && detail.type === 'reasoning.encrypted' && detail.data) {
+                return detail.data;
+            }
+        }
+    }
+
+    // Direct Gemini format: Extract from responseContent.parts if available (only text parts)
+    if (isGemini && Array.isArray(data?.responseContent?.parts)) {
+        data.responseContent.parts.forEach((part) => {
+            if (part.thoughtSignature && typeof part.text === 'string') {
+                return part.thoughtSignature;
+            }
+        });
+    }
+
+    return null;
 }
 
 /**
@@ -1000,9 +1047,21 @@ function registerReasoningSlashCommands() {
 }
 
 function registerReasoningMacros() {
-    MacrosParser.registerMacro('reasoningPrefix', () => power_user.reasoning.prefix, t`Reasoning Prefix`);
-    MacrosParser.registerMacro('reasoningSuffix', () => power_user.reasoning.suffix, t`Reasoning Suffix`);
-    MacrosParser.registerMacro('reasoningSeparator', () => power_user.reasoning.separator, t`Reasoning Separator`);
+    macros.register('reasoningPrefix', {
+        category: MacroCategory.PROMPTS,
+        description: t`The prefix string used before reasoning blocks`,
+        handler: () => power_user.reasoning.prefix,
+    });
+    macros.register('reasoningSuffix', {
+        category: MacroCategory.PROMPTS,
+        description: t`The suffix string used after reasoning blocks`,
+        handler: () => power_user.reasoning.suffix,
+    });
+    macros.register('reasoningSeparator', {
+        category: MacroCategory.PROMPTS,
+        description: t`The separator between thinking content and response`,
+        handler: () => power_user.reasoning.separator,
+    });
 }
 
 function setReasoningEventHandlers() {
@@ -1284,6 +1343,7 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
  * @property {string} reasoning Reasoning block
  * @property {number} reasoning_duration Duration of the reasoning block
  * @property {string} reasoning_type Type of reasoning block
+ * @property {string?} reasoning_signature Encrypted signature of the reasoning text
  */
 export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
     if (!power_user.reasoning.auto_parse) {

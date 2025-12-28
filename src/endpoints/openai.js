@@ -8,7 +8,7 @@ import express from 'express';
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { AIMLAPI_HEADERS, OPENROUTER_HEADERS } from '../constants.js';
+import { AIMLAPI_HEADERS, OPENROUTER_HEADERS, ZAI_ENDPOINT } from '../constants.js';
 
 export const router = express.Router();
 
@@ -91,6 +91,7 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'zai') {
             key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+            bodyParams.max_tokens = 4096; // default is 1024
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations'];
@@ -190,7 +191,22 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'zai') {
-            apiUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+            apiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING
+                ? 'https://api.z.ai/api/coding/paas/v4/chat/completions'
+                : 'https://api.z.ai/api/paas/v4/chat/completions';
+
+            // Handle video inlining for Z.AI
+            if (/data:video\/\w+;base64,/.test(request.body.image)) {
+                const message = body.messages.find(msg => Array.isArray(msg.content));
+                if (message) {
+                    const imgContent = message.content.find(c => c.type === 'image_url');
+                    if (imgContent) {
+                        imgContent.type = 'video_url';
+                        imgContent.video_url = imgContent.image_url;
+                        delete imgContent.image_url;
+                    }
+                }
+            }
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {

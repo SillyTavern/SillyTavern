@@ -701,6 +701,7 @@ class PresetManager {
             'ollama_model',
             'vllm_model',
             'aphrodite_model',
+            'llamacpp_model',
             'server_urls',
             'type',
             'custom_model',

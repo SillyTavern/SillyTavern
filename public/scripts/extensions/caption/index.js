@@ -455,7 +455,7 @@ function isVideoCaptioningAvailable() {
         return false;
     }
 
-    return ['google', 'vertexai'].includes(extension_settings.caption.multimodal_api);
+    return ['google', 'vertexai', 'zai'].includes(extension_settings.caption.multimodal_api);
 }
 
 jQuery(async function () {

@@ -1280,10 +1280,10 @@ class PromptManager {
         const preparedPrompt = new Prompt(prompt);
 
         if (typeof original === 'string') {
-            if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', null, null, original, groupMembers.join(', '));
-            else preparedPrompt.content = substituteParams(prompt.content, null, null, original);
+            if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', { original, groupOverride: groupMembers.join(', ') });
+            else preparedPrompt.content = substituteParams(prompt.content, { original });
         } else {
-            if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', null, null, null, groupMembers.join(', '));
+            if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', { groupOverride: groupMembers.join(', ') });
             else preparedPrompt.content = substituteParams(prompt.content);
         }
 
