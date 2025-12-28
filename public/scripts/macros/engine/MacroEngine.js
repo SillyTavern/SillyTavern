@@ -2,6 +2,7 @@ import { MacroParser } from './MacroParser.js';
 import { MacroCstWalker } from './MacroCstWalker.js';
 import { MacroRegistry } from './MacroRegistry.js';
 import { logMacroGeneralError, logMacroInternalError, logMacroRuntimeWarning, logMacroSyntaxWarning } from './MacroDiagnostics.js';
+import { ELSE_MARKER } from '../definitions/core-macros.js';
 
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
@@ -180,6 +181,9 @@ class MacroEngine {
         // To treat {{trim}} as it was before, we won't process it by the engine itself,
         // but doing a regex replace on {{trim}} and the surrounding area, after all other macros have been processed.
         result = result.replace(/(?:\r?\n)*{{trim}}(?:\r?\n)*/gi, '');
+
+        // Remove any wrongly placed leftover ELSE_MARKER that might have been inserted during processing
+        result = result.replaceAll(ELSE_MARKER, '');
 
         return result;
     }

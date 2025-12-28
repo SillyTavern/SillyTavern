@@ -7,6 +7,17 @@ import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroReg
 import { MacroEngine } from '../engine/MacroEngine.js';
 
 /**
+ * Marker used by {{else}} to split content in {{if}} blocks.
+ * Uses control characters to minimize collision with real content.
+ *
+ * This marker is used internally by the macro engine to separate if/else branches.
+ * It should never appear in user-generated content.
+ *
+ * @type {string}
+ */
+export const ELSE_MARKER = '\u0000\u001FELSE\u001F\u0000';
+
+/**
  * Registers SillyTavern's core built-in macros in the MacroRegistry.
  *
  * These macros correspond to the main {{...}} macros that are available
@@ -79,10 +90,6 @@ export function registerCoreMacros() {
             return '{{trim}}';
         },
     });
-
-    // Marker used by {{else}} to split content in {{if}} blocks
-    // Uses control characters to minimize collision with real content
-    const ELSE_MARKER = '\u0000\u001FELSE\u001F\u0000';
 
     // {{if condition}}content{{/if}} -> conditional content
     // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
