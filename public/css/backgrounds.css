@@ -54,6 +54,12 @@
     color: var(--SmartThemeBodyColor);
 }
 
+.bg-video-play {
+    background: none;
+    border: none;
+    color: var(--SmartThemeBodyColor);
+}
+
 .bg-video-volume {
     width: 140px;
 }

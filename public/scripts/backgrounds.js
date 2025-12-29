@@ -79,6 +79,7 @@ export let background_settings = {
     videoUrl: '',
     videoVolume: 1,
     videoMuted: false,
+    videoPaused: false,
 };
 
 /**
@@ -162,6 +163,9 @@ export function loadBackgroundSettings(settings) {
     if (!Object.hasOwn(backgroundSettings, 'videoMuted')) {
         backgroundSettings.videoMuted = false;
     }
+    if (!Object.hasOwn(backgroundSettings, 'videoPaused')) {
+        backgroundSettings.videoPaused = false;
+    }
     if (!Object.hasOwn(backgroundSettings, 'type')) {
         const isVideoSetting = typeof backgroundSettings.url === 'string'
             && backgroundSettings.url.startsWith(VIDEO_METADATA_PREFIX);
@@ -180,6 +184,7 @@ export function loadBackgroundSettings(settings) {
     const normalizedUrl = stripVideoPrefix(backgroundSettings.url);
     background_settings.videoVolume = backgroundSettings.videoVolume;
     background_settings.videoMuted = backgroundSettings.videoMuted;
+    background_settings.videoPaused = backgroundSettings.videoPaused;
     updateVideoControlsState();
     setBackground(backgroundSettings.name, normalizedUrl, backgroundSettings.type === 'video');
     setFittingClass(backgroundSettings.fitting);
@@ -307,7 +312,11 @@ function applyBackgroundToDom(cssUrl, isVideo) {
         videoElement.classList.add('active');
         controls?.classList.add('active');
         updateVideoControlsState();
-        videoElement.play().catch(() => {});
+        if (background_settings.videoPaused) {
+            videoElement.pause();
+        } else {
+            videoElement.play().catch(() => {});
+        }
         $('#bg1').css('background-image', 'none');
         return;
     }
@@ -1147,6 +1156,12 @@ export function initBackgrounds() {
         saveSettingsDebounced();
     });
 
+    $('#bg_video_play').on('click', function () {
+        background_settings.videoPaused = !background_settings.videoPaused;
+        applyVideoPlaybackSettings();
+        saveSettingsDebounced();
+    });
+
     Object.values(BG_TABS).forEach(tabId => {
         setupScrollToTop({
             scrollContainerId: tabId,
@@ -1167,9 +1182,24 @@ function applyVideoAudioSettings() {
     updateVideoControlsState();
 }
 
+function applyVideoPlaybackSettings() {
+    const videoElement = document.getElementById('bg_video');
+    if (!videoElement) {
+        updateVideoControlsState();
+        return;
+    }
+    if (background_settings.videoPaused) {
+        videoElement.pause();
+    } else {
+        videoElement.play().catch(() => {});
+    }
+    updateVideoControlsState();
+}
+
 function updateVideoControlsState() {
     const slider = document.getElementById('bg_video_volume');
     const button = document.getElementById('bg_video_mute');
+    const playButton = document.getElementById('bg_video_play');
     if (slider) {
         slider.value = String(background_settings.videoVolume);
     }
@@ -1178,5 +1208,10 @@ function updateVideoControlsState() {
         button.classList.toggle('fa-volume-high', !isMuted);
         button.classList.toggle('fa-volume-xmark', isMuted);
         button.setAttribute('title', isMuted ? 'Unmute' : 'Mute');
+    }
+    if (playButton) {
+        playButton.classList.toggle('fa-play', background_settings.videoPaused);
+        playButton.classList.toggle('fa-pause', !background_settings.videoPaused);
+        playButton.setAttribute('title', background_settings.videoPaused ? 'Play' : 'Pause');
     }
 }
