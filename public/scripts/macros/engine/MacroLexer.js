@@ -16,6 +16,15 @@ const IDENTIFIER_LEXER_PATTERN = /[a-zA-Z][\w-_]*/;
  */
 export const MACRO_IDENTIFIER_PATTERN = /^[a-zA-Z][\w-_]*$/;
 
+/**
+ * Pattern for valid variable shorthand identifiers.
+ * Must start with a letter, followed by word chars (letters, digits, underscore) or hyphens,
+ * but must end with a word character (not a hyphen).
+ *
+ * Used for variable shorthand syntax like .varName or $varName.
+ */
+export const MACRO_VARIABLE_SHORTHAND_PATTERN = /[a-zA-Z](?:[\w\-_]*[\w])?/;
+
 /** @enum {string} */
 const modes = {
     plaintext: 'plaintext_mode',
@@ -96,7 +105,7 @@ const Tokens = {
          * Examples: myVar, my-var, my_var, myVar123, my-long-var-name
          * Invalid: my-, my--, -var
          */
-        Identifier: createToken({ name: 'Var.Identifier', pattern: /[a-zA-Z](?:[\w\-_]*[\w])?/ }),
+        Identifier: createToken({ name: 'Var.Identifier', pattern: MACRO_VARIABLE_SHORTHAND_PATTERN }),
         /** Increment operator (`++`) */
         Increment: createToken({ name: 'Var.Increment', pattern: /\+\+/ }),
         /** Decrement operator (`--`) */

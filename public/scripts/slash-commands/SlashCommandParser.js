@@ -15,7 +15,18 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { EnhancedMacroAutoCompleteOption, MacroFlagAutoCompleteOption, MacroClosingTagAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
+import {
+    EnhancedMacroAutoCompleteOption,
+    MacroFlagAutoCompleteOption,
+    MacroClosingTagAutoCompleteOption,
+    VariableShorthandAutoCompleteOption,
+    VariableShorthandDefinitions,
+    VariableNameAutoCompleteOption,
+    VariableOperatorAutoCompleteOption,
+    VariableOperatorDefinitions,
+    isValidVariableShorthandName,
+    parseMacroContext,
+} from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
 import { MacroFlagDefinitions, MacroFlagType } from '../macros/engine/MacroFlags.js';
 import { MacroParser } from '../macros/engine/MacroParser.js';
 import { MacroCstWalker } from '../macros/engine/MacroCstWalker.js';
@@ -25,6 +36,8 @@ import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
 import { macros as macroSystem } from '../macros/macro-system.js';
 import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
+import { chat_metadata } from '/script.js';
+import { extension_settings } from '../extensions.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -583,12 +596,85 @@ export class SlashCommandParser {
                     return result;
                 }
 
+                /** @type {()=>string|undefined} */
+                let makeNoMatchText = undefined;
+                /** @type {()=>string|undefined} */
+                let makeNoOptionsText = undefined;
+
                 const options = this.#buildEnhancedMacroOptions(context, textUpToCursor);
+
+                // For variable shorthands, calculate the correct identifier and start position
+                // based on what the user is currently typing (variable name, operator, or value)
+                let resultIdentifier = identifier;
+                let resultStart = identifierStartInText;
+                if (context.isVariableShorthand && context.variablePrefix) {
+                    // Find where the prefix is in the macro content
+                    const prefixIndex = macroContent.indexOf(context.variablePrefix);
+
+                    if (context.isTypingVariableName) {
+                        // Typing variable name: identifier = variableName, start = after prefix
+                        resultIdentifier = context.variableName;
+                        if (prefixIndex >= 0) {
+                            resultStart = macro.start + 2 + prefixIndex + 1; // +1 to skip the prefix
+                        }
+                    } else if (context.isTypingOperator) {
+                        // Typing operator: identifier = partial operator text (if any), start = after variable name
+                        // Using partial operator as identifier ensures cursor is within name range for filtering
+                        resultIdentifier = context.partialOperator || '';
+                        if (prefixIndex >= 0) {
+                            // Start after prefix + variable name length
+                            resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length;
+                            // If no partial operator (just whitespace after var name), set start to cursor
+                            // This ensures cursor is in the name range for filtering
+                            if (!context.partialOperator) {
+                                resultStart = index;
+                            }
+                        }
+                    } else if (context.isOperatorComplete) {
+                        // Operator complete (++ or --) - show context but no value input needed
+                        resultIdentifier = '';
+                        resultStart = index; // Cursor at end
+                    } else if (context.hasInvalidTrailingChars) {
+                        // Invalid chars after variable name: show the invalid chars for warning
+                        resultIdentifier = context.invalidTrailingChars || '';
+                        if (prefixIndex >= 0) {
+                            resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length;
+                        }
+                    } else if (context.isTypingValue) {
+                        // Typing value: identifier = value being typed, start = after operator
+                        resultIdentifier = context.variableValue;
+                        if (prefixIndex >= 0) {
+                            const operatorLen = context.variableOperator?.length ?? 0;
+                            resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length + operatorLen;
+                            // Skip any whitespace between operator and value
+                            while (resultStart < index && /\s/.test(text[resultStart])) {
+                                resultStart++;
+                            }
+
+                            makeNoMatchText = () => `Type any value you want to ${context.variableOperator == '+=' ? `add to the variable '${context.variableName}'` : `set the variable '${context.variableName}' to`}.`;
+                            makeNoOptionsText = () => 'Enter a variable value';
+                        }
+                    } else {
+                        // Fallback: use variable name
+                        resultIdentifier = context.variableName;
+                        if (prefixIndex >= 0) {
+                            resultStart = macro.start + 2 + prefixIndex + 1;
+                        }
+                    }
+
+                    if (!makeNoMatchText && !makeNoOptionsText) {
+                        makeNoMatchText = () => 'Invalid syntax or variable name (must be alphanumeric, not ending in hyphen or underscore). Use a valid macro name or syntax.';
+                        makeNoOptionsText = () => 'Enter a variable name to create or use a new variable';
+                    }
+                }
+
                 const result = new AutoCompleteNameResult(
-                    identifier,
-                    identifierStartInText,
+                    resultIdentifier,
+                    resultStart,
                     options,
                     false,
+                    makeNoMatchText,
+                    makeNoOptionsText,
                 );
                 return result;
             }
@@ -669,11 +755,16 @@ export class SlashCommandParser {
      * When typing arguments (after ::), prioritizes the exact macro match.
      * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
      * @param {string} [textUpToCursor] - Full document text up to cursor, for unclosed scope detection.
-     * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]}
+     * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
      */
     #buildEnhancedMacroOptions(context, textUpToCursor = '') {
-        /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption)[]} */
+        /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
         const options = [];
+
+        // Handle variable shorthand mode
+        if (context.isVariableShorthand) {
+            return this.#buildVariableShorthandOptions(context);
+        }
 
         // Check for unclosed scoped macros and suggest closing tags first
         const unclosedScopes = this.#findUnclosedScopes(textUpToCursor);
@@ -685,11 +776,9 @@ export class SlashCommandParser {
 
             // If inside a scoped {{if}}, also suggest {{else}}
             if (innermostScope.name === 'if') {
-                // TODO: TEsting
                 const macroDef = macroSystem.registry.getPrimaryMacro('else');
                 const elseOption = new EnhancedMacroAutoCompleteOption(macroDef);
                 elseOption.sortPriority = 2;
-                // const elseOption = new MacroElseAutoCompleteOption();
                 options.push(elseOption);
             }
         }
@@ -731,6 +820,14 @@ export class SlashCommandParser {
                 // Normal flag priority
                 flagOption.sortPriority = isSelectable ? 10 : 12;
                 options.push(flagOption);
+            }
+
+            // Add variable shorthand prefix options (. for local, $ for global)
+            // These allow users to type variable shorthands instead of macro names
+            for (const [, varShorthandDef] of VariableShorthandDefinitions) {
+                const varOption = new VariableShorthandAutoCompleteOption(varShorthandDef);
+                varOption.sortPriority = 8; // Between implemented flags (10) and unimplemented (12)
+                options.push(varOption);
             }
         }
 
@@ -778,6 +875,175 @@ export class SlashCommandParser {
         }
 
         return options;
+    }
+
+    /**
+     * Builds autocomplete options for variable shorthand syntax (.varName or $varName).
+     * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+     * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
+     */
+    #buildVariableShorthandOptions(context) {
+        /** @type {(VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
+        const options = [];
+
+        const isLocal = context.variablePrefix === '.';
+        const scope = isLocal ? 'local' : 'global';
+
+        // Always show the typed variable prefix as a non-completable option (like flags do)
+        // This allows the details panel to show information about the prefix
+        const prefixDef = VariableShorthandDefinitions.get(context.variablePrefix);
+        if (prefixDef) {
+            const prefixOption = new VariableShorthandAutoCompleteOption(prefixDef);
+            prefixOption.valueProvider = () => ''; // Already typed, don't re-insert
+            prefixOption.makeSelectable = false;
+            prefixOption.sortPriority = 1; // Show at top
+            options.push(prefixOption);
+        }
+
+        // If typing the variable name, suggest existing variables
+        if (context.isTypingVariableName) {
+            // Get existing variable names from the appropriate scope
+            // Filter to only include names that are valid for shorthand syntax
+            const existingVariables = this.#getVariableNames(scope)
+                .filter(name => isValidVariableShorthandName(name));
+
+            // Add existing variables that match the typed name
+            for (const varName of existingVariables) {
+                const option = new VariableNameAutoCompleteOption(varName, scope, false);
+                // Variables matching the typed prefix get higher priority
+                if (varName.startsWith(context.variableName)) {
+                    option.sortPriority = 3;
+                } else {
+                    option.sortPriority = 10;
+                }
+                options.push(option);
+            }
+
+            // If typing a name that doesn't exist, offer to create a new variable
+            // But if the name is invalid for shorthand syntax, show a warning instead
+            if (context.variableName.length > 0 && !existingVariables.includes(context.variableName)) {
+                const isInvalid = !isValidVariableShorthandName(context.variableName);
+                const newVarOption = new VariableNameAutoCompleteOption(context.variableName, scope, true, isInvalid);
+                newVarOption.sortPriority = isInvalid ? 2 : 4; // Invalid names get higher priority to show warning
+                if (isInvalid) {
+                    // Make it non-selectable since it can't be used
+                    newVarOption.valueProvider = () => '';
+                    newVarOption.makeSelectable = false;
+                }
+                options.push(newVarOption);
+            }
+        }
+
+        // If there are invalid trailing characters after the variable name, show a warning
+        if (context.hasInvalidTrailingChars) {
+            // Show the full invalid name (variableName + invalidTrailingChars) with a warning
+            const fullInvalidName = context.variableName + (context.invalidTrailingChars || '');
+            const invalidOption = new VariableNameAutoCompleteOption(
+                fullInvalidName,
+                scope,
+                false,
+                true, // isInvalidName - triggers warning display
+            );
+            invalidOption.valueProvider = () => ''; // Don't insert anything
+            invalidOption.makeSelectable = false;
+            invalidOption.sortPriority = 2;
+            invalidOption.matchProvider = () => true; // Always show
+            options.push(invalidOption);
+            // Return early - don't show operators when syntax is invalid
+            return options;
+        }
+
+        // If ready for operator (after variable name), suggest operators
+        if (context.isTypingOperator) {
+            // Show the current variable name as context (already typed)
+            const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+            varNameOption.valueProvider = () => ''; // Already typed, don't re-insert
+            varNameOption.sortPriority = 2;
+            varNameOption.matchProvider = () => true; // Always show
+            options.push(varNameOption);
+
+            // Then show available operators, filtered by partial prefix if any
+            const partialOp = context.partialOperator || '';
+            for (const [, operatorDef] of VariableOperatorDefinitions) {
+                // Filter by partial operator prefix if user is typing one
+                if (partialOp && !operatorDef.symbol.startsWith(partialOp)) {
+                    continue;
+                }
+                const opOption = new VariableOperatorAutoCompleteOption(operatorDef);
+                opOption.sortPriority = 5;
+                // Always match operators when showing operator suggestions
+                opOption.matchProvider = () => true;
+                options.push(opOption);
+            }
+        }
+
+        // If typing value (after = or +=), no autocomplete needed - freeform text
+        // But we can show the current context for reference
+        if (context.isTypingValue) {
+            // Show the current variable name as context
+            const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+            varNameOption.valueProvider = () => ''; // Context only
+            varNameOption.sortPriority = 2;
+            varNameOption.matchProvider = () => true; // Always show
+            options.push(varNameOption);
+
+            // Show the operator that was used
+            if (context.variableOperator) {
+                const opDef = VariableOperatorDefinitions.get(context.variableOperator);
+                if (opDef) {
+                    const opOption = new VariableOperatorAutoCompleteOption(opDef);
+                    opOption.valueProvider = () => ''; // Already typed
+                    opOption.sortPriority = 3;
+                    opOption.matchProvider = () => true; // Always show
+                    options.push(opOption);
+                }
+            }
+        }
+
+        // If operator is complete (++ or --), show context without value input
+        if (context.isOperatorComplete) {
+            // Show the current variable name as context
+            const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+            varNameOption.valueProvider = () => ''; // Context only
+            varNameOption.sortPriority = 2;
+            varNameOption.matchProvider = () => true; // Always show
+            options.push(varNameOption);
+
+            // Show the operator that was used
+            if (context.variableOperator) {
+                const opDef = VariableOperatorDefinitions.get(context.variableOperator);
+                if (opDef) {
+                    const opOption = new VariableOperatorAutoCompleteOption(opDef);
+                    opOption.valueProvider = () => ''; // Already typed
+                    opOption.sortPriority = 3;
+                    opOption.matchProvider = () => true; // Always show
+                    options.push(opOption);
+                }
+            }
+        }
+
+        return options;
+    }
+
+    /**
+     * Gets variable names from the specified scope.
+     * @param {'local'|'global'} scope - The variable scope.
+     * @returns {string[]} Array of variable names.
+     */
+    #getVariableNames(scope) {
+        try {
+            // Import chat_metadata and extension_settings dynamically to avoid circular deps
+            // These are the same sources used by commonEnumProviders.variables
+            if (scope === 'local') {
+                // Local variables are in chat_metadata.variables
+                return Object.keys(chat_metadata?.variables ?? {});
+            } else {
+                // Global variables are in extension_settings.variables.global
+                return Object.keys(extension_settings?.variables?.global ?? {});
+            }
+        } catch {
+            return [];
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ import {
 } from '../macros/MacroBrowser.js';
 import { enumIcons } from '../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
+import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../macros/engine/MacroLexer.js';
 
 /** @typedef {import('../macros/engine/MacroRegistry.js').MacroDefinition} MacroDefinition */
 
@@ -34,6 +35,18 @@ import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
  * @property {number} separatorCount - Number of '::' separators found.
  * @property {boolean} [isInScopedContent] - Whether cursor is in scoped content (after }} but before closing tag).
  * @property {string} [scopedMacroName] - Name of the scoped macro if in scoped content.
+ * @property {boolean} isVariableShorthand - Whether this is a variable shorthand (starts with . or $).
+ * @property {'.'|'$'|null} variablePrefix - The variable prefix (. for local, $ for global), or null.
+ * @property {string} variableName - The variable name being typed (after the prefix).
+ * @property {string|null} variableOperator - The operator typed (=, ++, --, +=), or null.
+ * @property {string} variableValue - The value after the operator (for = and +=).
+ * @property {boolean} isTypingVariableName - Whether cursor is in the variable name area.
+ * @property {boolean} isTypingOperator - Whether cursor is at/after variable name, ready for operator.
+ * @property {boolean} isTypingValue - Whether cursor is after an operator that requires a value.
+ * @property {boolean} [hasInvalidTrailingChars] - Whether there are invalid characters after the variable name.
+ * @property {string} [invalidTrailingChars] - The invalid trailing characters (for error display).
+ * @property {string} [partialOperator] - Partial operator prefix being typed ('+' or '-').
+ * @property {boolean} [isOperatorComplete] - Whether a complete operator (++ or --) was typed that doesn't need a value.
  */
 
 /**
@@ -490,6 +503,25 @@ export const VariableShorthandDefinitions = new Map([
 export const ValidVariableShorthandSymbols = new Set(Object.values(VariableShorthandType));
 
 /**
+ * Regex pattern for valid variable shorthand names.
+ * Must start with a letter, can contain word chars, underscores and hyphens, but must not end with an underscore or hyphen.
+ * Examples: myVar, my-var, my_var, myVar123, my-long-var-name
+ * Invalid: my-, my--, -var, 123var
+ * @type {RegExp}
+ */
+const VARIABLE_SHORTHAND_NAME_PATTERN = new RegExp(`^${MACRO_VARIABLE_SHORTHAND_PATTERN.source}`);;
+
+/**
+ * Checks if a variable name is valid for use with variable shorthand syntax.
+ * @param {string} name - The variable name to validate.
+ * @returns {boolean} True if the name is valid for shorthand syntax.
+ */
+export function isValidVariableShorthandName(name) {
+    if (!name || typeof name !== 'string') return false;
+    return VARIABLE_SHORTHAND_NAME_PATTERN.test(name);
+}
+
+/**
  * Autocomplete option for variable shorthand prefixes.
  * Shows prefix symbol, name, and description.
  * This provides entry into the variable shorthand syntax ({{.varName}} or {{$varName}}).
@@ -588,6 +620,282 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
             exampleList.append(li);
         }
         details.append(exampleList);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
+ * Autocomplete option for a specific variable name.
+ * Shows variable name with scope indicator (local/global).
+ */
+export class VariableNameAutoCompleteOption extends AutoCompleteOption {
+    /** @type {string} */
+    #varName;
+
+    /** @type {'local'|'global'} */
+    #scope;
+
+    /** @type {boolean} */
+    #isNewVariable;
+
+    /** @type {boolean} */
+    #isInvalidName;
+
+    /**
+     * @param {string} varName - The variable name.
+     * @param {'local'|'global'} scope - Whether this is a local or global variable.
+     * @param {boolean} [isNewVariable=false] - Whether this is a "create new variable" option.
+     * @param {boolean} [isInvalidName=false] - Whether this name is invalid for shorthand syntax.
+     */
+    constructor(varName, scope, isNewVariable = false, isInvalidName = false) {
+        const icon = scope === 'local' ? 'L' : 'G';
+        super(varName, icon);
+        this.#varName = varName;
+        this.#scope = scope;
+        this.#isNewVariable = isNewVariable;
+        this.#isInvalidName = isInvalidName;
+    }
+
+    /** @returns {string} */
+    get variableName() {
+        return this.#varName;
+    }
+
+    /** @returns {'local'|'global'} */
+    get scope() {
+        return this.#scope;
+    }
+
+    /** @returns {boolean} */
+    get isNewVariable() {
+        return this.#isNewVariable;
+    }
+
+    /** @returns {boolean} */
+    get isInvalidName() {
+        return this.#isInvalidName;
+    }
+
+    /**
+     * Renders the autocomplete list item for this variable.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const scopeLabel = this.#scope === 'local' ? 'Local' : 'Global';
+        let description;
+        if (this.#isInvalidName) {
+            description = '⚠️ Invalid variable name for shorthand';
+        } else if (this.#isNewVariable) {
+            description = `Define new ${scopeLabel.toLowerCase()} variable`;
+        } else {
+            description = `${scopeLabel} variable`;
+        }
+
+        const li = this.makeItem(
+            this.#varName,
+            this.typeIcon,
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'any', // returnType
+            description,
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable-name');
+        if (this.#isNewVariable) {
+            li.classList.add('variable-new');
+        }
+        if (this.#isInvalidName) {
+            li.classList.add('variable-invalid');
+        }
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this variable.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-variable-name-details');
+
+        const scopeLabel = this.#scope === 'local' ? 'Local' : 'Global';
+        const prefix = this.#scope === 'local' ? '.' : '$';
+
+        // Show big warning for invalid names
+        if (this.#isInvalidName) {
+            const warningBox = document.createElement('div');
+            warningBox.classList.add('variable-invalid-warning');
+            warningBox.style.cssText = 'background: #ff000033; border: 2px solid #ff0000; border-radius: 4px; padding: 10px; margin-bottom: 10px;';
+
+            const warningHeader = document.createElement('h3');
+            warningHeader.style.cssText = 'color: #ff6b6b; margin: 0 0 8px 0;';
+            warningHeader.textContent = '⚠️ Invalid Variable Name';
+            warningBox.append(warningHeader);
+
+            const warningText = document.createElement('p');
+            warningText.style.cssText = 'margin: 0 0 8px 0;';
+            warningText.innerHTML = `The name <code>${this.#varName}</code> cannot be used with variable shorthand syntax.`;
+            warningBox.append(warningText);
+
+            const rulesText = document.createElement('p');
+            rulesText.style.cssText = 'margin: 0; font-size: 0.9em;';
+            rulesText.innerHTML = '<strong>Valid names must:</strong><br>• Start with a letter (a-z, A-Z)<br>• Contain only letters, numbers, underscores, or hyphens<br>• Not end with an underscore or hyphen';
+            warningBox.append(rulesText);
+
+            details.append(warningBox);
+            frag.append(details);
+            return frag;
+        }
+
+        // Header
+        const header = document.createElement('h3');
+        header.innerHTML = this.#isNewVariable
+            ? `<code>${prefix}${this.#varName}</code> (New ${scopeLabel} Variable)`
+            : `<code>${prefix}${this.#varName}</code> ${scopeLabel} Variable`;
+        details.append(header);
+
+        // Description
+        const desc = document.createElement('p');
+        if (this.#isNewVariable) {
+            desc.textContent = `Creates a new ${scopeLabel.toLowerCase()} variable named "${this.#varName}". ${this.#scope === 'local'
+                ? 'Local variables are scoped to the current chat.'
+                : 'Global variables are shared across all chats.'
+                }`;
+        } else {
+            desc.textContent = `Access or modify the ${scopeLabel.toLowerCase()} variable "${this.#varName}". ${this.#scope === 'local'
+                ? 'Local variables are scoped to the current chat.'
+                : 'Global variables are shared across all chats.'
+                }`;
+        }
+        details.append(desc);
+
+        // Usage examples
+        const usageHeader = document.createElement('p');
+        usageHeader.innerHTML = '<strong>Usage:</strong>';
+        details.append(usageHeader);
+
+        const usageList = document.createElement('ul');
+        const examples = [
+            `{{${prefix}${this.#varName}}} - Get value`,
+            `{{${prefix}${this.#varName} = value}} - Set value`,
+            `{{${prefix}${this.#varName}++}} - Increment`,
+            `{{${prefix}${this.#varName}--}} - Decrement`,
+            `{{${prefix}${this.#varName} += text}} - Append/add`,
+        ];
+        for (const ex of examples) {
+            const li = document.createElement('li');
+            li.innerHTML = `<code>${ex.split(' - ')[0]}</code> - ${ex.split(' - ')[1]}`;
+            usageList.append(li);
+        }
+        details.append(usageList);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
+ * Variable shorthand operators with metadata.
+ * @type {Map<string, { symbol: string, name: string, description: string, needsValue: boolean }>}
+ */
+export const VariableOperatorDefinitions = new Map([
+    ['=', {
+        symbol: '=',
+        name: 'Set',
+        description: 'Set the variable to a new value.',
+        needsValue: true,
+    }],
+    ['++', {
+        symbol: '++',
+        name: 'Increment',
+        description: 'Increment the variable by 1 (numeric).',
+        needsValue: false,
+    }],
+    ['--', {
+        symbol: '--',
+        name: 'Decrement',
+        description: 'Decrement the variable by 1 (numeric).',
+        needsValue: false,
+    }],
+    ['+=', {
+        symbol: '+=',
+        name: 'Add',
+        description: 'Add to the variable (numeric addition or string concatenation).',
+        needsValue: true,
+    }],
+]);
+
+/**
+ * Autocomplete option for a variable operator.
+ * Shows operator symbol, name, and description.
+ */
+export class VariableOperatorAutoCompleteOption extends AutoCompleteOption {
+    /** @type {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    #operatorDef;
+
+    /**
+     * @param {{ symbol: string, name: string, description: string, needsValue: boolean }} operatorDef - The operator definition.
+     */
+    constructor(operatorDef) {
+        super(operatorDef.symbol, '⚡');
+        this.#operatorDef = operatorDef;
+    }
+
+    /** @returns {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    get operatorDefinition() {
+        return this.#operatorDef;
+    }
+
+    /**
+     * Renders the autocomplete list item for this operator.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = this.makeItem(
+            `${this.#operatorDef.symbol} ${this.#operatorDef.name}`,
+            '⚡',
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'void', // returnType
+            this.#operatorDef.description,
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable-operator');
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this operator.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-variable-operator-details');
+
+        // Header
+        const header = document.createElement('h3');
+        header.innerHTML = `<code>${this.#operatorDef.symbol}</code> ${this.#operatorDef.name}`;
+        details.append(header);
+
+        // Description
+        const desc = document.createElement('p');
+        desc.textContent = this.#operatorDef.description;
+        details.append(desc);
+
+        // Value note
+        const valueNote = document.createElement('p');
+        valueNote.innerHTML = this.#operatorDef.needsValue
+            ? '<em>This operator requires a value after it.</em>'
+            : '<em>This operator does not take a value.</em>';
+        details.append(valueNote);
 
         frag.append(details);
         return frag;
@@ -758,6 +1066,129 @@ export function parseMacroContext(macroText, cursorOffset) {
         }
     }
 
+    // Check for variable shorthand prefix (. or $)
+    // These trigger variable expression mode instead of regular macro parsing
+    /** @type {'.'|'$'|null} */
+    let variablePrefix = null;
+    let variableName = '';
+    /** @type {string|null} */
+    let variableOperator = null;
+    let variableValue = '';
+    let isVariableShorthand = false;
+    let isTypingVariableName = false;
+    let isTypingOperator = false;
+    let isTypingValue = false;
+    let variableNameEnd = i;
+
+    const remainingAfterFlags = macroText.slice(i);
+    if (remainingAfterFlags.startsWith('.') || remainingAfterFlags.startsWith('$')) {
+        isVariableShorthand = true;
+        variablePrefix = /** @type {'.'|'$'} */ (remainingAfterFlags[0]);
+        i++; // Move past the prefix
+
+        // Variable names: start with letter, can have hyphens inside, must not end with hyphen
+        const varNameMatch = macroText.slice(i).match(VARIABLE_SHORTHAND_NAME_PATTERN);
+        if (varNameMatch) {
+            variableName = varNameMatch[0];
+            i += variableName.length;
+        }
+        variableNameEnd = i;
+
+        // Skip whitespace before operator
+        while (i < macroText.length && /\s/.test(macroText[i])) {
+            i++;
+        }
+
+        // Check for operators: ++, --, +=, =
+        // Also track partial operator prefixes for autocomplete
+        const operatorText = macroText.slice(i);
+        let hasInvalidTrailingChars = false;
+        let invalidTrailingChars = '';
+        let partialOperator = '';
+        if (operatorText.startsWith('++')) {
+            variableOperator = '++';
+            i += 2;
+        } else if (operatorText.startsWith('--')) {
+            variableOperator = '--';
+            i += 2;
+        } else if (operatorText.startsWith('+=')) {
+            variableOperator = '+=';
+            i += 2;
+        } else if (operatorText.startsWith('=')) {
+            variableOperator = '=';
+            i += 1;
+        } else if (operatorText.startsWith('+') || operatorText.startsWith('-')) {
+            // Partial operator prefix - user is typing an operator
+            partialOperator = operatorText[0];
+        } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
+            // There's non-whitespace after the variable name that isn't a valid operator
+            // This is an invalid trailing character (e.g., $my$ or .var@test)
+            hasInvalidTrailingChars = true;
+            invalidTrailingChars = operatorText.trim();
+        }
+
+        // If operator requires a value (= or +=), parse the value
+        if (variableOperator === '=' || variableOperator === '+=') {
+            // Skip whitespace after operator
+            while (i < macroText.length && /\s/.test(macroText[i])) {
+                i++;
+            }
+            variableValue = macroText.slice(i).trimEnd();
+        }
+
+        // Determine cursor position context for autocomplete
+        const prefixEnd = (macroText.indexOf(variablePrefix) ?? 0) + 1;
+        if (cursorOffset < prefixEnd) {
+            // Cursor is before the prefix - still in flags area conceptually
+            isTypingVariableName = false;
+        } else if (cursorOffset <= variableNameEnd) {
+            // Cursor is in the variable name
+            isTypingVariableName = true;
+        } else if (!variableOperator && !hasInvalidTrailingChars) {
+            // Cursor is after variable name but no operator yet (and no invalid chars)
+            // This includes partial operator prefixes like '+' or '-'
+            isTypingOperator = true;
+        } else if (variableOperator === '=' || variableOperator === '+=') {
+            // Operator that requires value - cursor is in value area
+            isTypingValue = true;
+        }
+        // For ++ and --, the operator is complete (no value needed)
+        // For invalid trailing chars, none of the typing flags will be true
+        const isOperatorComplete = (variableOperator === '++' || variableOperator === '--');
+
+        // Return early for variable shorthand - different structure than regular macros
+        return {
+            fullText: macroText,
+            cursorOffset,
+            paddingBefore: macroText.match(/^\s+/)?.[0] ?? '',
+            identifier: '', // No macro identifier for variable shorthand
+            identifierStart: -1,
+            isInFlagsArea: false,
+            flags,
+            currentFlag,
+            args: [],
+            currentArgIndex: -1,
+            isTypingSeparator: false,
+            hasSpaceAfterIdentifier: false,
+            hasSpaceArgContent: false,
+            separatorCount: 0,
+            // Variable shorthand specific properties
+            isVariableShorthand,
+            variablePrefix,
+            variableName,
+            variableOperator,
+            variableValue,
+            isTypingVariableName,
+            isTypingOperator,
+            isTypingValue,
+            isOperatorComplete,
+            hasInvalidTrailingChars,
+            invalidTrailingChars,
+            partialOperator,
+        };
+    }
+
+    // Regular macro parsing (not variable shorthand)
     // Now parse the identifier and arguments starting from position i
     const remainingText = macroText.slice(i);
     const parts = [];
@@ -875,5 +1306,14 @@ export function parseMacroContext(macroText, cursorOffset) {
         hasSpaceAfterIdentifier,
         hasSpaceArgContent: spaceArgText.length > 0,
         separatorCount: separatorPositions.length,
+        // Default variable shorthand properties (not a variable shorthand)
+        isVariableShorthand: false,
+        variablePrefix: null,
+        variableName: '',
+        variableOperator: null,
+        variableValue: '',
+        isTypingVariableName: false,
+        isTypingOperator: false,
+        isTypingValue: false,
     };
 }
