@@ -5,13 +5,18 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 
 import { dimensions, invalidateThumbnail } from './thumbnails.js';
+import { MEDIA_REQUEST_TYPE } from '../constants.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
 
 router.post('/all', function (request, response) {
-    const images = getImages(request.user.directories.backgrounds);
+    const images = getImages(
+        request.user.directories.backgrounds,
+        'name',
+        MEDIA_REQUEST_TYPE.IMAGE | MEDIA_REQUEST_TYPE.VIDEO,
+    );
     const config = { width: dimensions.bg[0], height: dimensions.bg[1] };
     response.json({ images, config });
 });

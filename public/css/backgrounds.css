@@ -10,6 +10,60 @@
     z-index: -1;
 }
 
+#bg_video {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    display: none;
+    object-fit: cover;
+    object-position: center;
+    pointer-events: none;
+}
+
+#bg_video.active {
+    display: block;
+}
+
+.bg-video-controls {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+    z-index: 3;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--animation-duration) ease;
+}
+
+.bg-video-controls.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.bg-video-mute {
+    background: none;
+    border: none;
+    color: var(--SmartThemeBodyColor);
+}
+
+.bg-video-play {
+    background: none;
+    border: none;
+    color: var(--SmartThemeBodyColor);
+}
+
+.bg-video-volume {
+    width: 140px;
+}
+
 /* Fitting options */
 #background_fitting {
     max-width: 8em;
@@ -21,6 +75,10 @@
     background-position: center;
 }
 
+#bg_video.cover {
+    object-fit: cover;
+}
+
 /* Fit/Contain - shows entire image maintaining aspect ratio */
 #bg1.contain {
     background-size: contain;
@@ -28,9 +86,17 @@
     background-repeat: no-repeat;
 }
 
+#bg_video.contain {
+    object-fit: contain;
+}
+
 /* Stretch - stretches to fill entire space */
 #bg1.stretch {
     background-size: 100% 100%;
+}
+
+#bg_video.stretch {
+    object-fit: fill;
 }
 
 /* Center - centers without scaling */
@@ -38,6 +104,11 @@
     background-size: auto;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+#bg_video.center {
+    object-fit: none;
+    object-position: center;
 }
 
 /* This is the main flex container for the entire drawer */
@@ -261,6 +332,24 @@
     border-radius: inherit;
     background-size: cover;
     background-position: center;
+}
+
+.thumbnail-clipper .bg-video-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.bg-video-indicator {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    z-index: 4;
+    color: var(--white100);
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+    font-size: calc(var(--mainFontSize) * 0.8);
+    pointer-events: none;
 }
 
 .bg_example:not([custom="true"]) .jg-copy,
