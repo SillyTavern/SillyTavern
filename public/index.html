@@ -51,6 +51,11 @@
 <body class="no-blur">
     <div id="preloader"></div>
     <div id="bg1"></div>
+    <video id="bg_video" loop playsinline preload="metadata"></video>
+    <div id="bg_video_controls" class="bg-video-controls">
+        <button id="bg_video_mute" class="bg-video-mute right_menu_button fa-fw fa-solid fa-volume-high" title="Mute" data-i18n="[title]Mute"></button>
+        <input id="bg_video_volume" class="bg-video-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Background volume">
+    </div>
     <div id="character_context_menu" class="hidden">
         <ul>
             <li><button id="character_context_menu_favorite" data-i18n="Favorite">Favorite</button></li>

@@ -24,6 +24,9 @@ const THUMBNAIL_COLUMNS_MAX = 8;
 const THUMBNAIL_COLUMNS_DEFAULT_DESKTOP = 5;
 const THUMBNAIL_COLUMNS_DEFAULT_MOBILE = 3;
 
+const VIDEO_METADATA_PREFIX = 'video::';
+const VIDEO_EXTENSIONS = new Set(['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv', 'mpg']);
+
 /**
  * Storage for frontend-generated background thumbnails.
  * This is used to store thumbnails for backgrounds that cannot be generated on the server.
@@ -72,6 +75,10 @@ export let background_settings = {
     url: generateUrlParameter('__transparent.png', false),
     fitting: 'classic',
     animation: false,
+    type: 'image',
+    videoUrl: '',
+    videoVolume: 1,
+    videoMuted: false,
 };
 
 /**
@@ -82,6 +89,7 @@ export let background_settings = {
 function createThumbnailElement(imageData) {
     const bg = imageData.filename;
     const isCustom = imageData.isCustom;
+    const isVideo = isVideoBackground(bg);
 
     const thumbnail = $('#background_template .bg_example').clone();
 
@@ -89,18 +97,34 @@ function createThumbnailElement(imageData) {
     clipper.className = 'thumbnail-clipper lazy-load-background';
     clipper.style.backgroundImage = PLACEHOLDER_IMAGE;
 
+    if (isVideo) {
+        const video = document.createElement('video');
+        video.className = 'bg-video-thumb';
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        clipper.appendChild(video);
+        const indicator = document.createElement('span');
+        indicator.className = 'bg-video-indicator fa-solid fa-film';
+        clipper.appendChild(indicator);
+        thumbnail.addClass('bg-video');
+    }
+
     const titleElement = thumbnail.find('.BGSampleTitle');
     clipper.appendChild(titleElement.get(0));
     thumbnail.append(clipper);
 
-    const url = generateUrlParameter(bg, isCustom);
+    const url = serializeBackgroundUrl(generateUrlParameter(bg, isCustom), isVideo);
     const title = isCustom ? bg.split('/').pop() : bg;
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
 
     thumbnail.attr('title', title);
     thumbnail.attr('bgfile', bg);
     thumbnail.attr('custom', String(isCustom));
+    thumbnail.attr('data-media-type', isVideo ? 'video' : 'image');
     thumbnail.data('url', url);
+    thumbnail.data('mediaType', isVideo ? 'video' : 'image');
     titleElement.text(friendlyTitle);
 
     return thumbnail.get(0);
@@ -132,6 +156,17 @@ export function loadBackgroundSettings(settings) {
     if (!Object.hasOwn(backgroundSettings, 'animation')) {
         backgroundSettings.animation = false;
     }
+    if (!Object.hasOwn(backgroundSettings, 'videoVolume')) {
+        backgroundSettings.videoVolume = 1;
+    }
+    if (!Object.hasOwn(backgroundSettings, 'videoMuted')) {
+        backgroundSettings.videoMuted = false;
+    }
+    if (!Object.hasOwn(backgroundSettings, 'type')) {
+        const isVideoSetting = typeof backgroundSettings.url === 'string'
+            && backgroundSettings.url.startsWith(VIDEO_METADATA_PREFIX);
+        backgroundSettings.type = isVideoSetting || isVideoBackground(backgroundSettings.name) ? 'video' : 'image';
+    }
 
     // If a value is already saved, use it. Otherwise, determine default based on screen size.
     let columns = backgroundSettings.thumbnailColumns;
@@ -142,7 +177,11 @@ export function loadBackgroundSettings(settings) {
     background_settings.thumbnailColumns = columns;
     applyThumbnailColumns(background_settings.thumbnailColumns);
 
-    setBackground(backgroundSettings.name, backgroundSettings.url);
+    const normalizedUrl = stripVideoPrefix(backgroundSettings.url);
+    background_settings.videoVolume = backgroundSettings.videoVolume;
+    background_settings.videoMuted = backgroundSettings.videoMuted;
+    updateVideoControlsState();
+    setBackground(backgroundSettings.name, normalizedUrl, backgroundSettings.type === 'video');
     setFittingClass(backgroundSettings.fitting);
     $('#background_fitting').val(backgroundSettings.fitting);
     $('#background_thumbnails_animation').prop('checked', background_settings.animation);
@@ -154,8 +193,9 @@ export function loadBackgroundSettings(settings) {
  * @param {{url: string, path:string}} backgroundInfo
  */
 async function forceSetBackground(backgroundInfo) {
+    const parsedBackground = parseBackgroundMetadata(backgroundInfo.url);
     saveBackgroundMetadata(backgroundInfo.url);
-    $('#bg1').css('background-image', backgroundInfo.url);
+    applyBackgroundToDom(parsedBackground.cssUrl, parsedBackground.isVideo);
 
     const list = chat_metadata[LIST_METADATA_KEY] || [];
     const bg = backgroundInfo.path;
@@ -169,8 +209,14 @@ async function forceSetBackground(backgroundInfo) {
 
 async function onChatChanged() {
     const lockedUrl = chat_metadata[BG_METADATA_KEY];
+    const lockedBackground = parseBackgroundMetadata(lockedUrl);
+    const fallbackBackground = parseBackgroundMetadata(background_settings.url);
 
-    $('#bg1').css('background-image', lockedUrl || background_settings.url);
+    if (lockedBackground.cssUrl) {
+        applyBackgroundToDom(lockedBackground.cssUrl, lockedBackground.isVideo);
+    } else {
+        applyBackgroundToDom(fallbackBackground.cssUrl, fallbackBackground.isVideo);
+    }
 
     renderChatBackgrounds();
     highlightLockedBackground();
@@ -179,6 +225,102 @@ async function onChatChanged() {
 
 function getBackgroundPath(fileUrl) {
     return `backgrounds/${encodeURIComponent(fileUrl)}`;
+}
+
+function getExtensionFromPath(filePath) {
+    if (!filePath) {
+        return '';
+    }
+    const sanitizedPath = String(filePath).split('?')[0].split('#')[0];
+    const basename = sanitizedPath.split('/').pop() || '';
+    if (!basename.includes('.')) {
+        return '';
+    }
+    return basename.split('.').pop().toLowerCase();
+}
+
+function isVideoBackground(filePath) {
+    const extension = getExtensionFromPath(filePath);
+    return VIDEO_EXTENSIONS.has(extension);
+}
+
+function serializeBackgroundUrl(cssUrl, isVideo) {
+    return isVideo ? `${VIDEO_METADATA_PREFIX}${cssUrl}` : cssUrl;
+}
+
+function stripVideoPrefix(backgroundUrl) {
+    if (!backgroundUrl || typeof backgroundUrl !== 'string') {
+        return backgroundUrl;
+    }
+    return backgroundUrl.startsWith(VIDEO_METADATA_PREFIX)
+        ? backgroundUrl.slice(VIDEO_METADATA_PREFIX.length)
+        : backgroundUrl;
+}
+
+function parseBackgroundMetadata(backgroundUrl) {
+    if (!backgroundUrl || typeof backgroundUrl !== 'string') {
+        return { cssUrl: '', isVideo: false };
+    }
+
+    if (backgroundUrl.startsWith(VIDEO_METADATA_PREFIX)) {
+        return {
+            cssUrl: backgroundUrl.slice(VIDEO_METADATA_PREFIX.length),
+            isVideo: true,
+        };
+    }
+
+    return { cssUrl: backgroundUrl, isVideo: false };
+}
+
+function extractCssUrl(cssUrl) {
+    if (!cssUrl) {
+        return '';
+    }
+    const match = String(cssUrl).match(/url\(["']?(.*?)["']?\)/);
+    return match ? match[1] : '';
+}
+
+function getBackgroundMediaUrl(bg, isCustom) {
+    return isCustom ? encodeURI(bg) : getBackgroundPath(bg);
+}
+
+function applyBackgroundToDom(cssUrl, isVideo) {
+    const videoElement = document.getElementById('bg_video');
+    const controls = document.getElementById('bg_video_controls');
+    if (isVideo && videoElement) {
+        const videoUrl = extractCssUrl(cssUrl);
+        if (!videoUrl) {
+            videoElement.pause();
+            videoElement.removeAttribute('src');
+            videoElement.load();
+            videoElement.classList.remove('active');
+            controls?.classList.remove('active');
+            $('#bg1').css('background-image', 'none');
+            return;
+        }
+        if (videoElement.getAttribute('src') !== videoUrl) {
+            videoElement.setAttribute('src', videoUrl);
+            videoElement.load();
+        }
+        videoElement.volume = background_settings.videoVolume;
+        videoElement.muted = background_settings.videoMuted;
+        videoElement.classList.add('active');
+        controls?.classList.add('active');
+        updateVideoControlsState();
+        videoElement.play().catch(() => {});
+        $('#bg1').css('background-image', 'none');
+        return;
+    }
+
+    if (videoElement) {
+        videoElement.pause();
+        videoElement.removeAttribute('src');
+        videoElement.load();
+        videoElement.classList.remove('active');
+    }
+    controls?.classList.remove('active');
+
+    $('#bg1').css('background-image', cssUrl || 'none');
 }
 
 function highlightLockedBackground() {
@@ -205,8 +347,9 @@ function onLockBackgroundClick(event = null) {
 
     // Take the global background's URL and save it to the chat's metadata.
     const urlToLock = event ? $(event.target).closest('.bg_example').data('url') : background_settings.url;
+    const parsedBackground = parseBackgroundMetadata(urlToLock);
     saveBackgroundMetadata(urlToLock);
-    $('#bg1').css('background-image', urlToLock);
+    applyBackgroundToDom(parsedBackground.cssUrl, parsedBackground.isVideo);
 
     // Update UI states to reflect the new lock.
     highlightLockedBackground();
@@ -222,7 +365,8 @@ function onUnlockBackgroundClick(_event = null) {
     removeBackgroundMetadata();
 
     // Revert the view to the current global background.
-    $('#bg1').css('background-image', background_settings.url);
+    const fallbackBackground = parseBackgroundMetadata(background_settings.url);
+    applyBackgroundToDom(fallbackBackground.cssUrl, fallbackBackground.isVideo);
 
     // Update UI states to reflect the removal of the lock.
     highlightLockedBackground();
@@ -250,16 +394,18 @@ function removeBackgroundMetadata() {
 function onSelectBackgroundClick(e) {
     const bgFile = $(this).attr('bgfile');
     const isCustom = $(this).attr('custom') === 'true';
+    const isVideo = $(this).data('mediaType') === 'video';
     const backgroundCssUrl = getUrlParameter(this);
     const bypassGlobalLock = !isCustom && e.shiftKey;
 
     if ((isChatBackgroundLocked() || isCustom) && !bypassGlobalLock) {
         // If a background is locked, update the locked background directly
         saveBackgroundMetadata(backgroundCssUrl);
-        $('#bg1').css('background-image', backgroundCssUrl);
+        const parsedBackground = parseBackgroundMetadata(backgroundCssUrl);
+        applyBackgroundToDom(parsedBackground.cssUrl, parsedBackground.isVideo);
     } else {
         // Otherwise, update the global background setting
-        setBackground(bgFile, backgroundCssUrl);
+        setBackground(bgFile, stripVideoPrefix(backgroundCssUrl), isVideo);
     }
 
     // Update UI highlights to reflect the changes.
@@ -586,9 +732,19 @@ function activateLazyLoader() {
                 if (parentThumbnail) {
                     const bg = parentThumbnail.getAttribute('bgfile');
                     const isCustom = parentThumbnail.getAttribute('custom') === 'true';
-                    resolveImageUrl(bg, isCustom)
-                        .then(url => { clipper.style.backgroundImage = url; })
-                        .catch(() => { clipper.style.backgroundImage = PLACEHOLDER_IMAGE; });
+                    const isVideo = parentThumbnail.getAttribute('data-media-type') === 'video';
+                    if (isVideo) {
+                        const video = clipper.querySelector('.bg-video-thumb');
+                        if (video instanceof HTMLVideoElement) {
+                            video.src = getBackgroundMediaUrl(bg, isCustom);
+                            video.play().catch(() => {});
+                        }
+                        clipper.style.backgroundImage = 'none';
+                    } else {
+                        resolveImageUrl(bg, isCustom)
+                            .then(url => { clipper.style.backgroundImage = url; })
+                            .catch(() => { clipper.style.backgroundImage = PLACEHOLDER_IMAGE; });
+                    }
                 }
 
                 clipper.classList.remove('lazy-load-background');
@@ -622,24 +778,32 @@ function generateUrlParameter(bg, isCustom) {
  * @returns {Promise<string>} CSS URL of the background
  */
 async function resolveImageUrl(bg, isCustom) {
-    const fileExtension = bg.split('.').pop().toLowerCase();
-    const isAnimated = ['mp4', 'webp'].includes(fileExtension);
-    const thumbnailUrl = isAnimated && !background_settings.animation
+    const fileExtension = getExtensionFromPath(bg);
+    const isVideo = VIDEO_EXTENSIONS.has(fileExtension);
+    const isAnimatedImage = ['gif', 'webp'].includes(fileExtension);
+    const thumbnailUrl = isAnimatedImage && !background_settings.animation
         ? await getThumbnailFromStorage(bg, isCustom)
         : isCustom
             ? bg
             : getThumbnailUrl('bg', bg);
 
+    if (isVideo) {
+        return PLACEHOLDER_IMAGE;
+    }
+
     return `url("${thumbnailUrl}")`;
 }
 
-async function setBackground(bg, url) {
+async function setBackground(bg, url, isVideo = null) {
     // Only change the visual background if one is not locked for the current chat.
+    const shouldUseVideo = isVideo ?? isVideoBackground(bg);
     if (!isChatBackgroundLocked()) {
-        $('#bg1').css('background-image', url);
+        applyBackgroundToDom(url, shouldUseVideo);
     }
     background_settings.name = bg;
-    background_settings.url = url;
+    background_settings.url = serializeBackgroundUrl(url, shouldUseVideo);
+    background_settings.type = shouldUseVideo ? 'video' : 'image';
+    background_settings.videoUrl = shouldUseVideo ? extractCssUrl(url) : '';
     saveSettingsDebounced();
 }
 
@@ -831,6 +995,10 @@ function setFittingClass(fitting) {
     for (const option of ['cover', 'contain', 'stretch', 'center']) {
         backgrounds.toggleClass(option, option === fitting);
     }
+    const video = $('#bg_video');
+    for (const option of ['cover', 'contain', 'stretch', 'center']) {
+        video.toggleClass(option, option === fitting);
+    }
     background_settings.fitting = fitting;
 }
 
@@ -961,6 +1129,24 @@ export function initBackgrounds() {
         await onChatChanged();
     });
 
+    $('#bg_video_volume').on('input', function () {
+        const volume = Number($(this).val());
+        background_settings.videoVolume = Math.min(1, Math.max(0, volume));
+        if (background_settings.videoVolume > 0) {
+            background_settings.videoMuted = false;
+        } else {
+            background_settings.videoMuted = true;
+        }
+        applyVideoAudioSettings();
+        saveSettingsDebounced();
+    });
+
+    $('#bg_video_mute').on('click', function () {
+        background_settings.videoMuted = !background_settings.videoMuted;
+        applyVideoAudioSettings();
+        saveSettingsDebounced();
+    });
+
     Object.values(BG_TABS).forEach(tabId => {
         setupScrollToTop({
             scrollContainerId: tabId,
@@ -970,4 +1156,27 @@ export function initBackgrounds() {
     });
 
     $('#bg_tabs').tabs();
+}
+
+function applyVideoAudioSettings() {
+    const videoElement = document.getElementById('bg_video');
+    if (videoElement) {
+        videoElement.volume = background_settings.videoVolume;
+        videoElement.muted = background_settings.videoMuted;
+    }
+    updateVideoControlsState();
+}
+
+function updateVideoControlsState() {
+    const slider = document.getElementById('bg_video_volume');
+    const button = document.getElementById('bg_video_mute');
+    if (slider) {
+        slider.value = String(background_settings.videoVolume);
+    }
+    if (button) {
+        const isMuted = background_settings.videoMuted || background_settings.videoVolume === 0;
+        button.classList.toggle('fa-volume-high', !isMuted);
+        button.classList.toggle('fa-volume-xmark', isMuted);
+        button.setAttribute('title', isMuted ? 'Unmute' : 'Mute');
+    }
 }
