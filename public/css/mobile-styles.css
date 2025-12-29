@@ -222,6 +222,7 @@
     }
 
     #bg1,
+    #bg_video,
     #bg_custom {
         height: 100vh !important;
         height: 100dvh !important;
@@ -229,6 +230,16 @@
         width: 100dvw !important;
         background-position: center;
 
+    }
+
+    .bg-video-controls {
+        right: 8px;
+        bottom: 8px;
+        padding: 4px 8px;
+    }
+
+    .bg-video-volume {
+        width: 110px;
     }
 
 

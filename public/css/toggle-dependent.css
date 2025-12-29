@@ -374,6 +374,7 @@ body.no-blur * {
 } */
 
 body.no-blur #bg1,
+body.no-blur #bg_video,
 body.no-blur #bg_custom {
     filter: unset;
 
