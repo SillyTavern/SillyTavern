@@ -9034,9 +9034,9 @@ export function getOverswipeBehavior(messageId, message = undefined) {
     //Non-user and non-prompt hidden messages will regenerate.
     else if (!message?.is_user && !message?.is_system) return OVERSWIPE_BEHAVIOR.REGENERATE;
     //If the chat_tree is enabled, more messages can be swiped.
-    else if (tree.enabled()) {
+    else if (tree.enabled() && (message?.is_user)) {
         //User messages allow for an edit before triggering a new generation.
-        if (message?.is_user) return OVERSWIPE_BEHAVIOR.EDIT_GENERATE;
+        return OVERSWIPE_BEHAVIOR.EDIT_GENERATE;
     }
     //By default, all other messages will loop. Their swipe chevrons will only be shown if there is more than one swipe.
     else { return OVERSWIPE_BEHAVIOR.LOOP; }
