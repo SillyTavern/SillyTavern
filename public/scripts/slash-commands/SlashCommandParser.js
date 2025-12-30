@@ -26,6 +26,7 @@ import {
     VariableOperatorDefinitions,
     isValidVariableShorthandName,
     parseMacroContext,
+    SimpleAutoCompleteOption,
 } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
 import { MacroFlagDefinitions, MacroFlagType } from '../macros/engine/MacroFlags.js';
 import { MacroParser } from '../macros/engine/MacroParser.js';
@@ -587,16 +588,34 @@ export class SlashCommandParser {
 
                     // For variable shorthand in {{if}} condition, adjust identifier and start position
                     // Same fix as for regular variable shorthands - identifier must be just the var name
+                    // Also handle ! inversion prefix: !.var or !$var or !macroName
                     const trimmedCondition = conditionText.trim();
-                    const isTypingVarShorthand = trimmedCondition.startsWith('.') || trimmedCondition.startsWith('$');
+                    const hasInversion = trimmedCondition.startsWith('!');
+                    // Trim whitespace after ! to handle "! $myvar" syntax
+                    const conditionAfterInversion = hasInversion ? trimmedCondition.slice(1).trimStart() : trimmedCondition;
+                    const isTypingVarShorthand = conditionAfterInversion.startsWith('.') || conditionAfterInversion.startsWith('$');
                     let resultIdentifier = conditionText;
                     let resultStart = conditionStartInText;
 
                     if (isTypingVarShorthand) {
-                        // Identifier = just the variable name part (without prefix)
-                        resultIdentifier = trimmedCondition.slice(1);
-                        // Start = after the prefix
-                        resultStart = conditionStartInText + (conditionText.indexOf(trimmedCondition[0])) + 1;
+                        // Identifier = just the variable name part (without prefix and without !)
+                        resultIdentifier = conditionAfterInversion.slice(1);
+                        // Start = after the ! (if any) and the prefix
+                        const prefixChar = conditionAfterInversion[0];
+                        const prefixPosInCondition = conditionText.indexOf(prefixChar, hasInversion ? 1 : 0);
+                        resultStart = conditionStartInText + prefixPosInCondition + 1;
+                    } else if (hasInversion && conditionAfterInversion.length === 0) {
+                        // Just ! (possibly with whitespace) typed - identifier should be empty so other options can match
+                        resultIdentifier = '';
+                        // Start at end of actual condition text (including any whitespace after !)
+                        // This ensures cursor is within the name range for filtering
+                        resultStart = conditionStartInText + conditionText.length;
+                    } else if (hasInversion && conditionAfterInversion.length > 0) {
+                        // Typing a macro name after ! (e.g., !descr) - identifier should be just the macro name
+                        resultIdentifier = conditionAfterInversion;
+                        // Start = after the ! and any whitespace, at the beginning of the macro name
+                        const macroNameStart = trimmedCondition.indexOf(conditionAfterInversion);
+                        resultStart = conditionStartInText + macroNameStart;
                     }
 
                     const result = new AutoCompleteNameResult(
@@ -1095,13 +1114,33 @@ export class SlashCommandParser {
         // Get the condition text being typed (trimmed for detection)
         const conditionText = (context.args[0] || '').trim();
 
-        // Check if condition starts with a variable shorthand prefix
-        const isTypingVariableShorthand = conditionText.startsWith('.') || conditionText.startsWith('$');
+        // Check for inversion prefix (!) - also trim whitespace after !
+        const hasInversionPrefix = conditionText.startsWith('!');
+        const conditionAfterInversion = hasInversionPrefix ? conditionText.slice(1).trimStart() : conditionText;
+
+        const inversionOption = new SimpleAutoCompleteOption({
+            name: '!',
+            symbol: '🔁',
+            description: 'Invert condition (NOT)',
+            detailedDescription: 'Inverts the condition result. If the condition is truthy, it becomes falsy, and vice versa.<br><br>Example: <code>{{if !myVar}}</code> executes when <code>myVar</code> is empty or zero.',
+            type: 'inverse',
+        });
+
+        // Check if condition starts with a variable shorthand prefix (with or without !)
+        const isTypingVariableShorthand = conditionAfterInversion.startsWith('.') || conditionAfterInversion.startsWith('$');
 
         if (isTypingVariableShorthand) {
             // User is typing a variable shorthand - reuse #buildVariableShorthandOptions
-            const prefix = /** @type {'.'|'$'} */ (conditionText[0]);
-            const varNameTyped = conditionText.slice(1); // Variable name after the prefix
+            const prefix = /** @type {'.'|'$'} */ (conditionAfterInversion[0]);
+            const varNameTyped = conditionAfterInversion.slice(1); // Variable name after the prefix
+
+            // If inverted, show the ! as non-selectable context
+            if (hasInversionPrefix) {
+                inversionOption.valueProvider = () => ''; // Already typed
+                inversionOption.makeSelectable = false;
+                inversionOption.sortPriority = 0;
+                options.push(inversionOption);
+            }
 
             // Create a synthetic context for #buildVariableShorthandOptions
             /** @type {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} */
@@ -1119,12 +1158,30 @@ export class SlashCommandParser {
                 variableValue: '',
             };
 
-            return this.#buildVariableShorthandOptions(varContext, { forIfCondition: true, paddingAfter });
+            const varOptions = this.#buildVariableShorthandOptions(varContext, { forIfCondition: true, paddingAfter });
+            options.push(...varOptions);
+            return options;
         }
 
-        // Not typing a variable shorthand - show macro options and variable shorthand prefixes
-        // Add variable shorthand prefix options at the top when no condition is typed yet
+        // Not typing a variable shorthand - show macro options, variable shorthand prefixes, and inversion
+
+        // Show ! inversion option at the top when nothing typed, or keep it visible (non-selectable) if already typed
         if (conditionText.length === 0) {
+            // Nothing typed - offer ! as selectable option
+            inversionOption.valueProvider = () => '!';
+            inversionOption.makeSelectable = true;
+            inversionOption.sortPriority = -1; // Show at very top
+            options.push(inversionOption);
+        } else if (hasInversionPrefix && conditionAfterInversion.length === 0) {
+            // Just ! typed - show it as non-selectable context, then show macro names and variable prefixes
+            inversionOption.valueProvider = () => ''; // Already typed
+            inversionOption.makeSelectable = false;
+            inversionOption.sortPriority = -1;
+            options.push(inversionOption);
+        }
+
+        // Add variable shorthand prefix options when no content typed yet (or just ! typed)
+        if (conditionAfterInversion.length === 0) {
             for (const [, prefixDef] of VariableShorthandDefinitions) {
                 const prefixOption = new VariableShorthandAutoCompleteOption(prefixDef);
                 // Complete with just the prefix symbol

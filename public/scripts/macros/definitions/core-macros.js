@@ -126,7 +126,7 @@ export function registerCoreMacros() {
             if (/^\s*!/.test(rawCondition)) {
                 inverted = true;
                 // Strip the ! from the resolved condition if it was the prefix
-                condition = condition.replace(/^!/, '');
+                condition = condition.replace(/^!\s*/, '');
             }
 
             // Check if condition is a variable shorthand (.varname or $varname)

@@ -1317,3 +1317,112 @@ export function parseMacroContext(macroText, cursorOffset) {
         isTypingValue: false,
     };
 }
+
+/**
+ * A simple, generic autocomplete option for displaying basic items with name, symbol, and description.
+ * Useful for simple options like inversion markers, prefixes, etc. without needing a full custom class.
+ *
+ * @extends AutoCompleteOption
+ */
+export class SimpleAutoCompleteOption extends AutoCompleteOption {
+    /** @type {string} */
+    #description;
+
+    /** @type {string|null} */
+    #detailedDescription;
+
+    /**
+     * @param {Object} config - Configuration for the option.
+     * @param {string} config.name - The option name/key (used for matching).
+     * @param {string} [config.symbol=' '] - Icon/symbol shown in the type column.
+     * @param {string} [config.description=''] - Short description shown inline.
+     * @param {string} [config.detailedDescription] - Longer description for details panel (supports HTML). Falls back to description if not provided.
+     * @param {string} [config.type='simple'] - Type identifier for CSS/data attributes.
+     */
+    constructor({ name, symbol = ' ', description = '', detailedDescription = null, type = 'simple' }) {
+        super(name, symbol, type);
+        this.#description = description;
+        this.#detailedDescription = detailedDescription;
+    }
+
+    /** @returns {string} */
+    get description() {
+        return this.#description;
+    }
+
+    /** @returns {string} */
+    get detailedDescription() {
+        return this.#detailedDescription ?? this.#description;
+    }
+
+    /**
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = document.createElement('li');
+        li.classList.add('item');
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', this.type);
+
+        // Type icon
+        const typeSpan = document.createElement('span');
+        typeSpan.classList.add('type', 'monospace');
+        typeSpan.textContent = this.typeIcon;
+        li.append(typeSpan);
+
+        // Name
+        const specs = document.createElement('span');
+        specs.classList.add('specs');
+        const nameSpan = document.createElement('span');
+        nameSpan.classList.add('name', 'monospace');
+        this.name.split('').forEach(char => {
+            const span = document.createElement('span');
+            span.textContent = char;
+            nameSpan.append(span);
+        });
+        specs.append(nameSpan);
+        li.append(specs);
+
+        // Stopgap
+        const stopgap = document.createElement('span');
+        stopgap.classList.add('stopgap');
+        li.append(stopgap);
+
+        // Help/description
+        const help = document.createElement('span');
+        help.classList.add('help');
+        const content = document.createElement('span');
+        content.classList.add('helpContent');
+        content.textContent = this.#description;
+        help.append(content);
+        li.append(help);
+
+        return li;
+    }
+
+    /**
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        // Header with name
+        const specs = document.createElement('div');
+        specs.classList.add('specs');
+        const nameDiv = document.createElement('div');
+        nameDiv.classList.add('name', 'monospace');
+        nameDiv.textContent = this.name;
+        specs.append(nameDiv);
+        frag.append(specs);
+
+        // Description
+        if (this.detailedDescription) {
+            const helpDiv = document.createElement('div');
+            helpDiv.classList.add('help');
+            helpDiv.innerHTML = this.detailedDescription;
+            frag.append(helpDiv);
+        }
+
+        return frag;
+    }
+}
