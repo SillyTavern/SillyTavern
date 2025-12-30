@@ -38,6 +38,9 @@ class DashScopeTtsProvider {
                 </select>
             </div>
             <div class="tts_block">
+                <input id="dashscope_connect" class="menu_button" type="button" value="Test Connection" />
+            </div>
+            <div class="tts_block">
                 <label for="dashscope_tts_model">Model</label>
                 <select id="dashscope_tts_model" class="text_pole">
                     <option value="qwen3-tts-flash">qwen3-tts-flash</option>
@@ -94,6 +97,15 @@ class DashScopeTtsProvider {
         $('#dashscope_tts_api_host').on('change', this.onSettingsChange.bind(this));
         $('#dashscope_tts_model').on('change', this.onSettingsChange.bind(this));
         $('#dashscope_tts_format').on('change', this.onSettingsChange.bind(this));
+
+        $('#dashscope_connect').on('click', () => {
+            try {
+                this.onTestConnectionClick();
+            } catch (error) {
+                console.error('DashScope TTS: Error in connect click handler:', error);
+                toastr.error(`Connection test failed: ${error.message}`);
+            }
+        });
 
         $('#api_key_dashscope').toggleClass('success', !!secret_state[SECRET_KEYS.DASHSCOPE]);
         [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
@@ -235,4 +247,54 @@ class DashScopeTtsProvider {
             toastr.error(`Could not generate preview: ${error.message}`);
         }
     }
+
+    async onTestConnectionClick() {
+        try {
+            const apiHost = this.settings.apiHost || this.defaultSettings.apiHost;
+            const model = this.settings.model || this.defaultSettings.model;
+            const format = this.settings.format || this.defaultSettings.format;
+
+            console.log(`DashScope TTS: Testing connection to ${apiHost}`);
+
+            // Test by attempting to generate a short piece of audio
+            const testText = 'Test';
+            const response = await fetch('/api/dashscope/test-connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getRequestHeaders(),
+                },
+                body: JSON.stringify({
+                    text: testText,
+                    apiHost: apiHost,
+                    model: model,
+                    format: format,
+                    voiceId: 'Cherry',
+                }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                let errorMsg;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMsg = errorJson.error || `HTTP ${response.status}`;
+                } catch (e) {
+                    errorMsg = `HTTP ${response.status}: ${errorText}`;
+                }
+
+                console.error('DashScope TTS test connection error:', errorMsg);
+                throw new Error(errorMsg);
+            }
+
+            const result = await response.json();
+            const hostLabel = apiHost.includes('intl') ? 'International (Singapore)' : 'China (Beijing)';
+            toastr.success(`DashScope TTS: Successfully connected to ${hostLabel}`);
+            console.log('DashScope TTS: Connection test passed', result);
+        } catch (error) {
+            console.error('DashScope TTS: Connection test failed:', error);
+            toastr.error(`DashScope TTS: ${error.message}`);
+        }
+    }
 }
+

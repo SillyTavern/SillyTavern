@@ -124,3 +124,82 @@ router.post('/generate-voice', async (request, response) => {
         return response.status(500).json({ error: 'Internal server error' });
     }
 });
+
+router.post('/test-connection', async (request, response) => {
+    try {
+        const {
+            text,
+            voiceId,
+            apiHost = 'https://dashscope.aliyuncs.com',
+            model = 'qwen3-tts-flash',
+            languageType = 'Chinese',
+            format = 'wav',
+        } = request.body;
+
+        const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);
+
+        if (!apiKey) {
+            console.warn('DashScope TTS: Missing API key');
+            return response.status(400).json({ error: 'API key is required' });
+        }
+
+        // Use simple test text if not provided
+        const testText = text || 'Test';
+
+        const apiUrl = `${apiHost}/api/v1/services/aigc/multimodal-generation/generation`;
+
+        const requestBody = {
+            model,
+            input: {
+                text: testText,
+                voice: voiceId || 'Cherry',
+                language_type: languageType,
+            },
+        };
+
+        console.debug('DashScope TTS Test Connection Request:', {
+            url: apiUrl,
+            body: { ...requestBody, input: { ...requestBody.input, voice: '[REDACTED]' } },
+        });
+
+        const apiResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!apiResponse.ok) {
+            let errorMessage = `HTTP ${apiResponse.status}`;
+            try {
+                const errorData = await apiResponse.json();
+                console.error('DashScope TTS test connection API error (JSON):', errorData);
+                errorMessage = errorData.error?.message || errorData.message || errorData.detail || errorMessage;
+            } catch (jsonError) {
+                try {
+                    const errorText = await apiResponse.text();
+                    console.error('DashScope TTS test connection API error (Text):', errorText);
+                    errorMessage = errorText || errorMessage;
+                } catch (textError) {
+                    console.error('DashScope TTS: Failed to read test connection error response:', textError);
+                }
+            }
+            return response.status(500).json({ error: errorMessage });
+        }
+
+        const responseData = await apiResponse.json();
+        console.debug('DashScope TTS: Test connection successful');
+
+        return response.json({
+            success: true,
+            message: 'Connection test successful',
+            apiHost: apiHost,
+        });
+    } catch (error) {
+        console.error('DashScope TTS test connection failed:', error);
+        return response.status(500).json({ error: error.message || 'Internal server error' });
+    }
+});
+
