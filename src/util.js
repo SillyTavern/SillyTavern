@@ -1567,98 +1567,99 @@ export function tryDeleteFile(filePath) {
  */
 export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4, chunkSize = 16 * 1024) {
     return new Promise((resolve, reject) => {
-        let pipeline = null;
-        let readStream = null;
-        let resolved = false;
+        let readStream;
+        try {
+            readStream = fs.createReadStream(filePath, { highWaterMark: chunkSize });
+        } catch (err) {
+            return reject(err);
+        }
+
+        let pipeline;
         let chunksRead = 0;
+        let foundObject = undefined;
+        let finished = false;
+        let error = null;
 
         const cleanup = () => {
-            if (!resolved) {
-                resolved = true;
-                if (pipeline) {
-                    pipeline.unpipe();
-                }
-                else if (readStream) {
-                    readStream.destroy();
-                }
+            if (finished) return;
+            finished = true;
+            if (pipeline) {
+                pipeline.unpipe();
+            }
+            if (readStream && !readStream.destroyed) {
+                readStream.destroy();
+                // Do not resolve here. Wait for 'close' event to ensure file lock is released.
             }
         };
 
-        const resolveAndCleanup = (value) => {
-            if (!resolved) {
-                cleanup();
-                resolve(value);
+        readStream.on('close', () => {
+            if (error) {
+                reject(error);
+            } else {
+                // Safe to resolve now. The file is closed.
+                resolve(foundObject);
             }
-        };
+        });
+
+        readStream.on('error', (err) => {
+            if (finished) return;
+            error = err;
+            cleanup();
+        });
+
+        readStream.on('data', () => {
+            chunksRead++;
+            if (chunksRead >= maxChunks) {
+                cleanup();
+            }
+        });
+
         // This cuts the chunk after \n and stops the stream after sending the rest down the pipeline.
         const newlineTransform = new Transform({
             transform(chunk, encoding, callback) {
-                if (!resolved) {
-                    if (chunk.includes('\n')) {
-                        // Find the position of the first newline
-                        const newlineIndex = chunk.indexOf('\n');
-                        // Cut the chunk at the newline position
-                        const modifiedChunk = chunk.slice(0, newlineIndex);
-                        // Push the modified chunk
-                        this.push(modifiedChunk);
-                        // Mark as resolved to stop processing
-                        resolveAndCleanup(null);
-                        return callback();
-                    } else {
-                        // No newline found, push the chunk as is
-                        this.push(chunk);
-                    }
+                if (finished) return callback();
+                if (chunk.includes('\n')) {
+                    // Find the position of the first newline
+                    const newlineIndex = chunk.indexOf('\n');
+                    // Cut the chunk at the newline position
+                    this.push(chunk.slice(0, newlineIndex));
+                    // Mark as resolved to stop processing
+                    cleanup();
+                } else {
+                    // No newline found, push the chunk as is
+                    this.push(chunk);
                 }
                 callback();
             },
         });
 
-        try {
+        pipeline = chain([
+            readStream,
+            newlineTransform,
+            parser(),
+            // https://github.com/uhop/stream-json/wiki/Pick
+            pick({
+                // Filter for objects with a matching stack.
+                filter: (stack) => _.isEqual(stack, match),
+                once: true, // Stop after first match
+            }),
+            streamValues(),
+        ]);
 
-            readStream = fs.createReadStream(filePath,{ highWaterMark: chunkSize });
-
-            // Track chunks read
-            readStream.on('data', (chunk) => {
-                chunksRead++;
-                if (chunksRead >= maxChunks && !resolved) {
-                    resolveAndCleanup(null); // Chunk limit reached
-                    return;
-                }
-            });
-            pipeline = chain([
-                readStream,
-                newlineTransform,
-                parser(),
-                // https://github.com/uhop/stream-json/wiki/Pick
-                pick({
-                    // Filter for objects with a matching stack.
-                    filter: (stack) => {
-                        return _.isEqual(stack, match);
-                    },
-                    once: true, // Stop after first match
-                }),
-                streamValues(),
-            ]);
-
-            pipeline.on('data', (data) => {
-                if (!resolved) {
-                    resolveAndCleanup(data);
-                }
-            });
-
-            pipeline.on('end', () => {
-                resolveAndCleanup(null); // A match was not found.
-            });
-
-            pipeline.on('error', (err) => {
-                cleanup();
-                reject(err);
-            });
-
-        } catch (err) {
+        pipeline.on('data', (data) => {
+            foundObject = data;
             cleanup();
-            reject(err);
-        }
+        });
+
+        pipeline.on('end', () => {
+            cleanup();
+        });
+
+        pipeline.on('error', (err) => {
+            if (finished) return;
+            error = err;
+            cleanup();
+        });
     });
 }
 
