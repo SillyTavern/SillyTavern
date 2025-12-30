@@ -1,6 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { DashScopeRealtimeTTS, pcmToWav } from '../dashscope-realtime.js';
 
 export const router = express.Router();
 
@@ -13,6 +14,21 @@ const getAudioMimeType = (format) => {
         'flac': 'audio/flac',
     };
     return mimeTypes[format] || 'audio/wav';
+};
+
+/**
+ * Detect voice type from voice_id format
+ * @param {string} voiceId - Voice ID to check
+ * @returns {'official'|'vd'|'vc'} Voice type
+ */
+const detectVoiceType = (voiceId) => {
+    if (voiceId.startsWith('qwen-tts-vd-')) {
+        return 'vd'; // Voice Design
+    } else if (voiceId.startsWith('qwen-tts-vc-')) {
+        return 'vc'; // Voice Clone
+    } else {
+        return 'official'; // Official voices (Cherry, Ryan, etc.)
+    }
 };
 
 router.post('/generate-voice', async (request, response) => {
@@ -34,36 +50,56 @@ router.post('/generate-voice', async (request, response) => {
             return response.status(400).json({ error: 'Missing required parameters: text, voiceId, and apiKey are required' });
         }
 
+        // Detect voice type to determine which API to use
+        const voiceType = detectVoiceType(voiceId);
+        console.debug(`DashScope TTS: Detected voice type: ${voiceType} for voice: ${voiceId}`);
+
+        // Voice Design (VD) and Voice Clone (VC) require WebSocket Realtime API
+        if (voiceType === 'vd' || voiceType === 'vc') {
+            try {
+                const realtimeModel = voiceType === 'vd' 
+                    ? 'qwen3-tts-vd-realtime-2025-12-16'
+                    : 'qwen3-tts-vc-realtime-2025-11-27';
+                
+                console.debug(`DashScope TTS: Using Realtime WebSocket API with model: ${realtimeModel}`);
+                
+                const wsUrl = apiHost.replace('https://', 'wss://') + '/api-ws/v1/realtime';
+                const ttsClient = new DashScopeRealtimeTTS(apiKey, realtimeModel, voiceId);
+                
+                const pcmAudioBuffer = await ttsClient.synthesize(text, wsUrl);
+                console.debug(`DashScope TTS: Received PCM audio: ${pcmAudioBuffer.length} bytes`);
+                
+                // Convert PCM to WAV format
+                const wavBuffer = pcmToWav(pcmAudioBuffer);
+                console.debug(`DashScope TTS: Converted to WAV: ${wavBuffer.length} bytes`);
+                
+                response.setHeader('Content-Type', 'audio/wav');
+                response.setHeader('Content-Length', wavBuffer.length);
+                return response.send(wavBuffer);
+            } catch (wsError) {
+                console.error('DashScope TTS: WebSocket Realtime API failed:', wsError);
+                return response.status(500).json({ 
+                    error: `WebSocket synthesis failed: ${wsError.message}`,
+                });
+            }
+        }
+
+        // Official voices use REST API
         const apiUrl = `${apiHost}/api/v1/services/aigc/multimodal-generation/generation`;
 
-        // If voiceDescription is provided, this is a Voice Design voice
-        let requestBody;
-        if (voiceDescription) {
-            console.debug('DashScope TTS: Using Voice Design with description');
-            requestBody = {
-                model: 'qwen3-tts-vd-realtime-2025-12-16',
-                input: {
-                    text,
-                    voice_description: voiceDescription,
-                    language_type: languageType,
-                },
-            };
-        } else {
-            // Regular system voice or Voice Clone
-            requestBody = {
-                model,
-                input: {
-                    text,
-                    voice: voiceId,
-                    language_type: languageType,
-                },
-            };
-        }
+        const requestBody = {
+            model,
+            input: {
+                text,
+                voice: voiceId,
+                language_type: languageType,
+            },
+        };
 
         console.debug('DashScope TTS Request:', {
             url: apiUrl,
-            hasDescription: !!voiceDescription,
             model: requestBody.model,
+            voiceType: 'official',
         });
 
         const apiResponse = await fetch(apiUrl, {
@@ -304,6 +340,7 @@ router.post('/create-voice-design', async (request, response) => {
         const {
             name,
             description,
+            apiHost = 'https://dashscope.aliyuncs.com',
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);
@@ -313,12 +350,69 @@ router.post('/create-voice-design', async (request, response) => {
             return response.status(400).json({ error: 'Missing required parameters: name, description, and apiKey are required' });
         }
 
-        // Voice Design doesn't create a persistent voice ID like Voice Clone
-        // Instead, we generate a unique identifier and store the description client-side
-        // The description will be sent with each TTS request
-        const voiceId = `vd_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        // Sanitize the preferred_name: only alphanumeric and underscores allowed, max 16 chars
+        const preferredName = name
+            .replace(/[^a-zA-Z0-9_]/g, '_') // Replace non-alphanumeric and non-underscore chars with underscore
+            .substring(0, 16) // Limit to 16 characters
+            .replace(/_+/g, '_') // Replace multiple underscores with single underscore
+            .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
 
-        console.info('DashScope Voice Design: Created voice identifier:', name);
+        if (!preferredName || preferredName.length === 0) {
+            return response.status(400).json({ error: 'Voice name must contain at least one valid character (alphanumeric or underscore)' });
+        }
+
+        const apiUrl = `${apiHost}/api/v1/services/audio/tts/customization`;
+
+        // Voice Design creation request to DashScope
+        const requestBody = {
+            model: 'qwen-voice-design', // Model for voice design creation
+            input: {
+                action: 'create',
+                target_model: 'qwen3-tts-vd-realtime-2025-12-16', // Target synthesis model
+                preferred_name: preferredName,
+                voice_prompt: description, // Use description as voice prompt
+                preview_text: 'This is a preview of the voice design.',
+                language: 'zh', // Chinese language
+            },
+        };
+
+        console.debug('DashScope Voice Design Request:', {
+            url: apiUrl,
+            name: name,
+        });
+
+        const apiResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!apiResponse.ok) {
+            let errorMessage = `HTTP ${apiResponse.status}`;
+            try {
+                const errorData = await apiResponse.json();
+                console.error('DashScope Voice Design API error (JSON):', errorData);
+                errorMessage = errorData.error?.message || errorData.message || errorData.code || errorMessage;
+            } catch (jsonError) {
+                const errorText = await apiResponse.text();
+                console.error('DashScope Voice Design API error (Text):', errorText);
+                errorMessage = errorText || errorMessage;
+            }
+            return response.status(500).json({ error: errorMessage });
+        }
+
+        const responseData = await apiResponse.json();
+        const voiceId = responseData?.output?.voice;
+
+        if (!voiceId) {
+            console.error('DashScope Voice Design: No voice ID in response:', responseData);
+            return response.status(500).json({ error: 'Failed to get voice ID from API response' });
+        }
+
+        console.info('DashScope Voice Design: Successfully created voice:', name, 'with ID:', voiceId);
         return response.json({
             success: true,
             voiceId: voiceId,

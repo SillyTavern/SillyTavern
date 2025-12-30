@@ -154,9 +154,21 @@ class DashScopeTtsProvider {
         });
 
         try {
+            await this.checkReady();
+        } catch (error) {
+            console.debug('DashScope: Settings loaded, but not ready', error);
+        }
+
+        try {
             await initVoiceMap();
         } catch (error) {
             console.debug('DashScope: Voice map init failed, continuing');
+        }
+    }
+
+    async checkReady() {
+        if (!secret_state[SECRET_KEYS.DASHSCOPE]) {
+            throw new Error('API Key is required');
         }
     }
 
@@ -181,6 +193,10 @@ class DashScopeTtsProvider {
             throw error;
         }
         return voice;
+    }
+
+    async fetchTtsVoiceObjects() {
+        return this.getAllVoices();
     }
 
     mapLanguageToDashScopeType(lang) {
@@ -377,7 +393,7 @@ class DashScopeTtsProvider {
                         <div style="font-weight: bold;">${voice.name}</div>
                         <small style="opacity: 0.7;">${typeLabel} • ${date}</small>
                     </div>
-                    <button class="menu_button menu_button_icon" onclick="SillyTavern.extensions.tts.providers.DashScope.previewCustomVoice('${voice.voiceId}')" title="Preview">
+                    <button type="button" class="menu_button menu_button_icon" onclick="SillyTavern.extensions.tts.providers.DashScope.previewCustomVoice('${voice.voiceId}', event)" title="Preview">
                         <i class="fa-solid fa-play"></i>
                     </button>
                     <button class="menu_button menu_button_icon caution" onclick="SillyTavern.extensions.tts.providers.DashScope.deleteCustomVoice(${index})" title="Delete">
@@ -533,20 +549,8 @@ class DashScopeTtsProvider {
     
     async previewCustomVoice(voiceId) {
         try {
-            const previewText = 'Hello, this is a preview of the custom voice.';
-            const response = await this.fetchTtsGeneration(previewText, voiceId, 'Chinese');
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const audio = await response.blob();
-            const srcUrl = await getBase64Async(audio);
-            
-            this.audioElement.src = srcUrl;
-            await this.audioElement.play();
-            
-            toastr.success('Playing custom voice preview');
+            await this.checkReady();
+            await this.previewTtsVoice(voiceId);
         } catch (error) {
             console.error('DashScope Custom Voice Preview Error:', error);
             toastr.error(`Preview failed: ${error.message}`);
@@ -592,7 +596,10 @@ if (!SillyTavern.extensions.tts.providers) {
     SillyTavern.extensions.tts.providers = {};
 }
 SillyTavern.extensions.tts.providers.DashScope = {
-    previewCustomVoice: function(voiceId) {
+    previewCustomVoice: function(voiceId, event) {
+        if (event?.preventDefault) {
+            event.preventDefault();
+        }
         const provider = globalThis.dashscopeProviderInstance;
         if (provider) {
             provider.previewCustomVoice(voiceId);
