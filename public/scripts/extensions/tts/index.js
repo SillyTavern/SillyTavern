@@ -1,6 +1,6 @@
 import { cancelTtsPlay, eventSource, event_types, getCurrentChatId, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
-import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
+import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique, regexFromString } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -639,12 +639,16 @@ async function processTtsQueue() {
     }
 
     if (extension_settings.tts.apply_regex) {
-        const regexPattern = extension_settings.tts.regex_pattern || '[^a-zA-Z0-9\\s.,!?;:\'"()-]+';
+        const regexPattern = extension_settings.tts.regex_pattern || '/[^a-zA-Z0-9\\s.,!?;:\'"()-]+/g';
         try {
-            const regex = new RegExp(regexPattern, 'g');
-            text = text.replace(regex, '').trim();
-            // Clean up extra spaces that might be left after removal
-            text = text.replace(/\s+/g, ' ').trim();
+            const regex = regexFromString(regexPattern);
+            if (!regex) {
+                console.error('Invalid regex pattern:', regexPattern);
+            } else {
+                text = text.replace(regex, '').trim();
+                // Clean up extra spaces that might be left after removal
+                text = text.replace(/\s+/g, ' ').trim();
+            }
         } catch (error) {
             console.error('Invalid regex pattern:', error);
         }
@@ -840,6 +844,7 @@ function loadSettings() {
     $('#tts_apply_regex').prop('checked', extension_settings.tts.apply_regex);
     $('#tts_regex_pattern').val(extension_settings.tts.regex_pattern);
     $('#tts_regex_block').toggle(extension_settings.tts.apply_regex);
+    updateRegexPatternWarning();
     $('#playback_rate').val(extension_settings.tts.playback_rate);
     $('#playback_rate_counter').val(Number(extension_settings.tts.playback_rate).toFixed(2));
     $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
@@ -856,7 +861,7 @@ const defaultSettings = {
     playback_rate: 1,
     multi_voice_enabled: false,
     apply_regex: false,
-    regex_pattern: '[^a-zA-Z0-9\\s.,!?;:\'"()-]+',
+    regex_pattern: '[^a-zA-Z0-9\\s.,!?;:\'"()—–~@#$%&*+=/\\\\<>\\[\\]{}]+',
 };
 
 function setTtsStatus(status, success) {
@@ -957,15 +962,33 @@ function onMultiVoiceClick() {
     initVoiceMap();
 }
 
-function onApplyRegexClick() {
+function onApplyRegexChange() {
     extension_settings.tts.apply_regex = !!$('#tts_apply_regex').prop('checked');
     saveSettingsDebounced();
     $('#tts_regex_block').toggle(extension_settings.tts.apply_regex);
+    updateRegexPatternWarning();
 }
 
 function onRegexPatternChange() {
     extension_settings.tts.regex_pattern = $('#tts_regex_pattern').val();
     saveSettingsDebounced();
+    updateRegexPatternWarning();
+}
+
+function updateRegexPatternWarning() {
+    if (!extension_settings.tts.apply_regex) {
+        $('#tts_regex_warning').addClass('display-none');
+        return;
+    }
+
+    const pattern = $('#tts_regex_pattern').val();
+    if (!pattern) {
+        $('#tts_regex_warning').addClass('display-none');
+        return;
+    }
+
+    const regex = regexFromString(pattern);
+    $('#tts_regex_warning').toggleClass('display-none', !!regex);
 }
 
 //##############//
@@ -1477,7 +1500,7 @@ jQuery(async function () {
         $('#tts_narrate_by_paragraphs').on('click', onNarrateByParagraphsClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_multi_voice_enabled').on('click', onMultiVoiceClick);
-        $('#tts_apply_regex').on('click', onApplyRegexClick);
+        $('#tts_apply_regex').on('input', onApplyRegexChange);
         $('#tts_regex_pattern').on('input', onRegexPatternChange);
 
         $('#playback_rate').on('input', function () {
