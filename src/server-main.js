@@ -68,6 +68,7 @@ import { init as settingsInit } from './endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
 import { migrateFlatSecrets } from './endpoints/secrets.js';
+import { migrateGroupChatsMetadataFormat } from './endpoints/groups.js';
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -265,6 +266,7 @@ async function preSetupTasks() {
     console.log();
 
     const directories = await getUserDirectoriesList();
+    await migrateGroupChatsMetadataFormat(directories);
     await checkForNewContent(directories);
     await ensureThumbnailCache(directories);
     await diskCache.verify(directories);

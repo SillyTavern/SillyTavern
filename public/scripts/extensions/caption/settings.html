@@ -18,6 +18,7 @@
                     <label for="caption_multimodal_api" data-i18n="API">API</label>
                     <select id="caption_multimodal_api" class="flex1 text_pole">
                         <option value="aimlapi">AI/ML API</option>
+                        <option value="chutes">Chutes</option>
                         <option value="anthropic">Claude</option>
                         <option value="cohere">Cohere</option>
                         <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
@@ -55,6 +56,9 @@
                         <option data-type="moonshot" value="moonshot-v1-8k-vision-preview">moonshot-v1-8k-vision-preview</option>
                         <option data-type="moonshot" value="moonshot-v1-32k-vision-preview">moonshot-v1-32k-vision-preview</option>
                         <option data-type="moonshot" value="moonshot-v1-128k-vision-preview">moonshot-v1-128k-vision-preview</option>
+                        <option data-type="openai" value="gpt-5.2">gpt-5.2</option>
+                        <option data-type="openai" value="gpt-5.2-2025-12-11">gpt-5.2-2025-12-11</option>
+                        <option data-type="openai" value="gpt-5.2-chat-latest">gpt-5.2-chat-latest</option>
                         <option data-type="openai" value="gpt-5.1">gpt-5.1</option>
                         <option data-type="openai" value="gpt-5.1-2025-11-13">gpt-5.1-2025-11-13</option>
                         <option data-type="openai" value="gpt-5.1-chat-latest">gpt-5.1-chat-latest</option>
@@ -85,6 +89,8 @@
                         <option data-type="openai" value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
                         <option data-type="openai" value="gpt-4.5-preview">gpt-4.5-preview</option>
                         <option data-type="openai" value="gpt-4.5-preview-2025-02-27">gpt-4.5-preview-2025-02-27</option>
+                        <option data-type="anthropic" value="claude-opus-4-5">claude-opus-4-5</option>
+                        <option data-type="anthropic" value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                         <option data-type="anthropic" value="claude-sonnet-4-5">claude-sonnet-4-5</option>
                         <option data-type="anthropic" value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929</option>
                         <option data-type="anthropic" value="claude-haiku-4-5">claude-haiku-4-5</option>
@@ -106,6 +112,7 @@
                         <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                         <option data-type="google" value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                         <option data-type="google" value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+                        <option data-type="google" value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                         <option data-type="google" value="gemini-2.5-pro">gemini-2.5-pro</option>
                         <option data-type="google" value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
                         <option data-type="google" value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
@@ -135,6 +142,7 @@
                         <option data-type="google" value="gemini-robotics-er-1.5-preview">gemini-robotics-er-1.5-preview</option>
                         <option data-type="vertexai" value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                         <option data-type="vertexai" value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+                        <option data-type="vertexai" value="gemini-3-flash-preview">gemini-3-flash-preview</option>
                         <option data-type="vertexai" value="gemini-2.5-pro">gemini-2.5-pro</option>
                         <option data-type="vertexai" value="gemini-2.5-flash">gemini-2.5-flash</option>
                         <option data-type="vertexai" value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
@@ -159,16 +167,17 @@
                         <option data-type="ollama" value="mistral-small3.2">mistral-small3.2</option>
                         <option data-type="ollama" value="llama3.2-vision">llama3.2-vision</option>
                         <option data-type="ollama" value="llama4">llama4</option>
+                        <option data-type="zai" value="glm-4.6v">glm-4.6v</option>
+                        <option data-type="zai" value="glm-4.6v-flashx">glm-4.6v-flashx</option>
+                        <option data-type="zai" value="glm-4.6v-flash">glm-4.6v-flash</option>
                         <option data-type="zai" value="glm-4.5v">glm-4.5v</option>
+                        <option data-type="zai" value="autoglm-phone-multilingual">autoglm-phone-multilingual</option>
                         <option data-type="llamacpp" value="llamacpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="ooba" value="ooba_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="vllm" value="vllm_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="custom" value="custom_current" data-i18n="currently_selected">[Currently selected]</option>
                     </select>
-                </div>
-                <div data-type="zai">
-                    <b>Will use Common API. Coding API is not supported!</b>
                 </div>
                 <div data-type="ollama">
                     <div>

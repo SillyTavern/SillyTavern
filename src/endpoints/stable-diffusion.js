@@ -9,7 +9,7 @@ import FormData from 'form-data';
 import urlJoin from 'url-join';
 import _ from 'lodash';
 
-import { delay, getBasicAuthHeader, tryParse } from '../util.js';
+import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { AIMLAPI_HEADERS } from '../constants.js';
 
@@ -603,6 +603,108 @@ comfy.post('/generate', async (request, response) => {
     }
 });
 
+const comfyRunPod = express.Router();
+
+comfyRunPod.post('/ping', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.COMFY_RUNPOD);
+
+        if (!key) {
+            console.warn('RunPod key not found.');
+            return response.sendStatus(400);
+        }
+
+        const url = new URL(urlJoin(request.body.url, '/health'));
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${key}` },
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        /** @type {any} */
+        const data = await result.json();
+        if (data.workers.ready <= 0) {
+            console.warn(`No workers reported as ready. ${result}`);
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+comfyRunPod.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.COMFY_RUNPOD);
+
+        if (!key) {
+            console.warn('RunPod key not found.');
+            return response.sendStatus(400);
+        }
+
+        let jobId;
+        let item;
+        const url = new URL(urlJoin(request.body.url, '/run'));
+
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            if (!response.writableEnded && !item) {
+                const interruptUrl = new URL(urlJoin(request.body.url, `/cancel/${jobId}`));
+                fetch(interruptUrl, { method: 'POST', headers: { 'Authorization': `Bearer ${key}` } });
+            }
+            controller.abort();
+        });
+        const workflow = JSON.parse(request.body.prompt).prompt;
+        const wrappedWorkflow = workflow?.input?.workflow ? workflow : ({ input: { workflow: workflow } });
+        const runpodPrompt = JSON.stringify(wrappedWorkflow);
+
+        console.debug('ComfyUI RunPod request:', wrappedWorkflow);
+
+        const promptResult = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${key}` },
+            body: runpodPrompt,
+        });
+        if (!promptResult.ok) {
+            const text = await promptResult.text();
+            throw new Error('ComfyUI returned an error.', { cause: tryParse(text) });
+        }
+
+        /** @type {any} */
+        const data = await promptResult.json();
+        jobId = data.id;
+        const statusUrl = new URL(urlJoin(request.body.url, `/status/${jobId}`));
+        while (true) {
+            const result = await fetch(statusUrl, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${key}` },
+            });
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+            /** @type {any} */
+            const status = await result.json();
+            if (status.output) {
+                item = status.output.images[0];
+            }
+            if (item) {
+                break;
+            }
+            await delay(500);
+        }
+        const format = path.extname(item.filename).slice(1).toLowerCase() || 'png';
+        return response.send({ format: format, data: item.data });
+    } catch (error) {
+        console.error('ComfyUI error:', error);
+        response.status(500).send(error.message);
+        return response;
+    }
+});
+
 const together = express.Router();
 
 together.post('/models', async (request, response) => {
@@ -1083,6 +1185,89 @@ electronhub.post('/sizes', async (request, response) => {
     return response.send({ sizes });
 });
 
+const chutes = express.Router();
+
+chutes.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('Chutes key not found.');
+            return response.sendStatus(400);
+        }
+
+        const modelsResponse = await fetch('https://api.chutes.ai/chutes/?template=diffusion&include_public=true&limit=999', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.warn('Chutes returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const data = await modelsResponse.json();
+
+        const chutesData = /** @type {{items: Array<{name: string}>}} */ (data);
+        const models = chutesData.items.map(x => ({ value: x.name, text: x.name })).sort((a, b) => a?.text?.localeCompare(b?.text));
+        return response.send(models);
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+chutes.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+
+        if (!key) {
+            console.warn('Chutes key not found.');
+            return response.sendStatus(400);
+        }
+
+        const bodyParams = {
+            model: request.body.model,
+            prompt: request.body.prompt,
+            negative_prompt: request.body.negative_prompt,
+            guidance_scale: request.body.guidance_scale || 7.0,
+            width: request.body.width || 1024,
+            height: request.body.height || 1024,
+            num_inference_steps: request.body.steps || 10,
+        };
+
+        console.debug('Chutes request:', bodyParams);
+
+        const result = await fetch('https://image.chutes.ai/generate', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(bodyParams),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Chutes returned an error:', text);
+            return response.sendStatus(500);
+        }
+
+        const buffer = await result.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+
+        return response.send({ image: base64 });
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 const nanogpt = express.Router();
 
 nanogpt.post('/models', async (request, response) => {
@@ -1560,15 +1745,78 @@ aimlapi.post('/generate-image', async (req, res) => {
     }
 });
 
+const zai = express.Router();
+
+zai.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
+
+        if (!key) {
+            console.warn('Z.AI key not found.');
+            return response.sendStatus(400);
+        }
+
+        console.debug('Z.AI image request:', request.body);
+
+        const generateResponse = await fetch('https://api.z.ai/api/paas/v4/images/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+            body: JSON.stringify({
+                prompt: request.body.prompt,
+                model: request.body.model,
+                quality: request.body.quality,
+                size: request.body.size,
+            }),
+        });
+
+        if (!generateResponse.ok) {
+            const text = await generateResponse.text();
+            console.warn('Z.AI returned an error.', text);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await generateResponse.json();
+        console.debug('Z.AI image response:', data);
+
+        const url = data?.data?.[0]?.url;
+        if (!url || !isValidUrl(url) || !new URL(url).hostname.endsWith('.z.ai')) {
+            console.warn('Z.AI returned an invalid image URL.');
+            return response.sendStatus(500);
+        }
+
+        const imageResponse = await fetch(url);
+        if (!imageResponse.ok) {
+            console.warn('Z.AI image fetch returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const buffer = await imageResponse.arrayBuffer();
+        const image = Buffer.from(buffer).toString('base64');
+        const format = path.extname(url).substring(1).toLowerCase() || 'png';
+
+        return response.send({ image, format });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
+router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
 router.use('/huggingface', huggingface);
+router.use('/chutes', chutes);
 router.use('/electronhub', electronhub);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
 router.use('/falai', falai);
 router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
+router.use('/zai', zai);

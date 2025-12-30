@@ -196,6 +196,7 @@ export const CHAT_COMPLETION_SOURCES = {
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
+    CHUTES: 'chutes',
     ELECTRONHUB: 'electronhub',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
@@ -453,6 +454,8 @@ export const AZURE_OPENAI_KEYS = [
     'reasoning_effort',
 ];
 
+export const OPENAI_VERBOSITY_MODELS = /^gpt-5/;
+
 export const OPENAI_REASONING_EFFORT_MODELS = [
     'o1',
     'o3-mini',
@@ -470,6 +473,9 @@ export const OPENAI_REASONING_EFFORT_MODELS = [
     'gpt-5.1',
     'gpt-5.1-2025-11-13',
     'gpt-5.1-chat-latest',
+    'gpt-5.2',
+    'gpt-5.2-2025-12-11',
+    'gpt-5.2-chat-latest',
 ];
 
 export const OPENAI_REASONING_EFFORT_MAP = {
@@ -512,6 +518,16 @@ export const MEDIA_EXTENSIONS = [
     'm4a',
     'aiff',
 ];
+
+/**
+ * Bitwise flag-style media request types.
+ */
+export const MEDIA_REQUEST_TYPE = {
+    IMAGE: 0b001,
+    VIDEO: 0b010,
+    AUDIO: 0b100,
+};
+
 
 export const ZAI_ENDPOINT = {
     COMMON: 'common',

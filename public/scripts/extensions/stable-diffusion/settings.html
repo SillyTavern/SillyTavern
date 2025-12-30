@@ -39,6 +39,7 @@
             <select id="sd_source">
                 <option value="aimlapi">AI/ML API</option>
                 <option value="bfl">BFL (Black Forest Labs)</option>
+                <option value="chutes">Chutes</option>
                 <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="electronhub">Electron Hub</option>
@@ -49,6 +50,7 @@
                 <option value="nanogpt">NanoGPT</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI</option>
+                <option value="openrouter">OpenRouter</option>
                 <option value="pollinations">Pollinations</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
                 <option value="stability">Stability AI</option>
@@ -56,6 +58,7 @@
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
                 <option value="xai">xAI (Grok)</option>
+                <option value="zai">Z.AI (CogView)</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -93,6 +96,9 @@
                 <i data-i18n="Hint: Save an API key in the Hugging Face (Text Completion) API settings to use it here.">Hint: Save an API key in the Hugging Face (Text Completion) API settings to use it here.</i>
                 <label for="sd_huggingface_model_id" data-i18n="Model ID">Model ID</label>
                 <input id="sd_huggingface_model_id" type="text" class="text_pole"  data-i18n="[placeholder]e.g. black-forest-labs/FLUX.1-dev" placeholder="e.g. black-forest-labs/FLUX.1-dev" value="" />
+            </div>
+            <div data-sd-source="chutes">
+                <i data-i18n="Hint: Save an API key in the Chutes (Chat Completion) API settings to use it here.">Hint: Save an API key in the Chutes (Chat Completion) API settings to use it here.</i>
             </div>
             <div data-sd-source="electronhub">
                 <i data-i18n="Hint: Save an API key in the Electron Hub (Chat Completion) API settings to use it here.">Hint: Save an API key in the Electron Hub (Chat Completion) API settings to use it here.</i>
@@ -160,16 +166,19 @@
                     </div>
                 </div>
             </div>
-            <div data-sd-source="openai,aimlapi">
-                <div data-sd-model="dall-e-3" class="flex-container">
-                    <div class="flex1">
+            <div data-sd-source="zai">
+                <b>Will use Common API. Coding API is not supported!</b>
+            </div>
+            <div data-sd-source="openai,aimlapi,zai">
+                <div class="flex-container">
+                    <div data-sd-model="dall-e-3" class="flex1">
                         <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
                         <select id="sd_openai_style">
                             <option value="vivid">Vivid</option>
                             <option value="natural">Natural</option>
                         </select>
                     </div>
-                    <div class="flex1">
+                    <div data-sd-model="dall-e-3,cogview-4-250304" class="flex1">
                         <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
                         <select id="sd_openai_quality">
                             <option value="standard" data-i18n="Standard">Standard</option>
@@ -189,14 +198,44 @@
                 </div>
             </div>
             <div data-sd-source="comfy">
-                <label for="sd_comfy_url">ComfyUI URL</label>
-                <div class="flex-container flexnowrap">
-                    <input id="sd_comfy_url" type="text" class="text_pole" data-i18n="[placeholder]sd_comfy_url" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
-                    <div id="sd_comfy_validate" class="menu_button menu_button_icon">
-                        <i class="fa-solid fa-check"></i>
-                        <span data-i18n="Connect">
-                            Connect
-                        </span>
+                <label for="sd_comfy_type">Server Type</label>
+                <select id="sd_comfy_type">
+                    <option value="standard">Standard Server</option>
+                    <option value="runpod_serverless">RunPod Serverless Endpoint</option>
+                </select>
+                <div data-sd-comfy-type="standard">
+                    <label for="sd_comfy_url">ComfyUI URL</label>
+                    <div class="flex-container flexnowrap">
+                        <input id="sd_comfy_url" type="text" class="text_pole" data-i18n="[placeholder]sd_comfy_url" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
+                        <div id="sd_comfy_validate" class="menu_button menu_button_icon">
+                            <i class="fa-solid fa-check"></i>
+                            <span data-i18n="Connect">
+                                Connect
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div data-sd-comfy-type="runpod_serverless">
+                    <label for="sd_comfy_runpod_url">ComfyUI RunPod URL</label>
+                    <div class="flex-container flexnowrap">
+                        <input id="sd_comfy_runpod_url" type="text" class="text_pole" data-i18n="[placeholder]sd_comfy_runpod_url" placeholder="eg: https://api.runpod.ai/v2/<your endpoint id>" value="{{comfy_runpod_url}}" />
+                        <div id="sd_comfy_runpod_validate" class="menu_button menu_button_icon">
+                            <i class="fa-solid fa-check"></i>
+                            <span data-i18n="Connect">
+                                Connect
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                        <a href="https://console.runpod.io/user/settings" target="_blank" rel="noopener noreferrer">
+                            <strong data-i18n="API Key">API Key</strong>
+                            <i class="fa-solid fa-share-from-square"></i>
+                        </a>
+                        <span class="expander"></span>
+                        <div id="sd_runpod_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_comfy_runpod">
+                            <i class="fa-fw fa-solid fa-key"></i>
+                            <span data-i18n="Click to set">Click to set</span>
+                        </div>
                     </div>
                 </div>
                 <p><i><b data-i18n="Important:">Important:</b></i><i data-i18n="The server must be accessible from the SillyTavern host machine."> The server must be accessible from the SillyTavern host machine.</i></p>

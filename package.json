@@ -35,6 +35,7 @@
         "bowser": "^2.12.1",
         "bytes": "^3.1.2",
         "chalk": "^5.6.0",
+        "chevrotain": "^11.0.3",
         "command-exists": "^1.2.9",
         "compression": "^1.8.1",
         "cookie-parser": "^1.4.6",
@@ -49,7 +50,6 @@
         "express": "^4.21.0",
         "form-data": "^4.0.4",
         "fuse.js": "^7.1.0",
-        "google-translate-api-browser": "^3.0.1",
         "google-translate-api-x": "^10.7.2",
         "handlebars": "^4.7.8",
         "helmet": "^8.1.0",
@@ -63,7 +63,7 @@
         "is-docker": "^3.0.0",
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",
-        "mime-types": "^3.0.1",
+        "mime-types": "^3.0.2",
         "moment": "^2.30.1",
         "morphdom": "^2.7.7",
         "multer": "^2.0.2",
@@ -113,7 +113,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.14.0",
+    "version": "1.15.0",
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",
@@ -137,6 +137,7 @@
     },
     "main": "server.js",
     "devDependencies": {
+        "@chevrotain/types": "^11.0.3",
         "@types/archiver": "^6.0.3",
         "@types/bytes": "^3.1.5",
         "@types/command-exists": "^1.2.3",
@@ -164,7 +165,8 @@
         "@types/yargs": "^17.0.33",
         "@types/yauzl": "^2.10.3",
         "eslint": "^8.57.1",
+        "eslint-plugin-jest": "^27.9.0",
         "eslint-plugin-jsdoc": "^48.10.0",
-        "eslint-plugin-jest": "^27.9.0"
+        "eslint-plugin-playwright": "^2.3.0"
     }
 }

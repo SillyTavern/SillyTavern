@@ -1,14 +1,14 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, test, expect } from '@jest/globals';
 import { CHAT_COMPLETION_SOURCES } from '../src/constants';
 import { flattenSchema } from '../src/util';
 
 describe('flattenSchema', () => {
-    it('should return the schema if it is not an object', () => {
+    test('should return the schema if it is not an object', () => {
         const schema = 'it is not an object';
         expect(flattenSchema(schema, CHAT_COMPLETION_SOURCES.MAKERSUITE)).toBe(schema);
     });
 
-    it('should handle schema with $defs and $ref', () => {
+    test('should handle schema with $defs and $ref', () => {
         const schema = {
             $schema: 'http://json-schema.org/draft-07/schema#',
             $defs: {
@@ -37,7 +37,7 @@ describe('flattenSchema', () => {
         expect(flattenSchema(schema, CHAT_COMPLETION_SOURCES.MAKERSUITE)).toEqual(expected);
     });
 
-    it('should filter unsupported properties for Google API schema', () => {
+    test('should filter unsupported properties for Google API schema', () => {
         const schema = {
             $defs: {
                 a: {
@@ -68,7 +68,7 @@ describe('flattenSchema', () => {
         expect(flattenSchema(schema, CHAT_COMPLETION_SOURCES.MAKERSUITE)).toEqual(expected);
     });
 
-    it('should not filter properties for non-Google API schema', () => {
+    test('should not filter properties for non-Google API schema', () => {
         const schema = {
             $defs: {
                 a: {

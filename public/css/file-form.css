@@ -33,6 +33,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5em;
+    padding-right: var(--mes-right-spacing);
 }
 
 .mes_file_container .right_menu_button {

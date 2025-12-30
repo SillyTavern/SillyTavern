@@ -8,6 +8,7 @@ import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import readline from 'node:readline';
 
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';
@@ -17,8 +18,9 @@ import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import bytes from 'bytes';
-import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
+import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './constants.js';
 import { serverDirectory } from './server-directory.js';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { isFirefox } from './express-common.js';
 
 /**
@@ -190,16 +192,11 @@ export function getHexString(length) {
 
 /**
  * Formats a byte size into a human-readable string with units
- * @param {number} bytes - The size in bytes to format
+ * @param {number} numBytes - The size in bytes to format
  * @returns {string} The formatted string (e.g., "1.5 MB")
  */
-export function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+export function formatBytes(numBytes) {
+    return bytes.format(numBytes) ?? '';
 }
 
 /**
@@ -221,7 +218,6 @@ export async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
 
                 zipfile.on('entry', (entry) => {
                     if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
-                        console.info(`Extracting ${entry.fileName}`);
                         zipfile.openReadStream(entry, (err, readStream) => {
                             if (err) {
                                 console.warn(`Error opening read stream: ${err.message}`);
@@ -264,6 +260,154 @@ export async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
 }
 
 /**
+ * Normalizes a ZIP entry path for safe extraction.
+ * @param {string} entryName The entry name from the ZIP archive
+ * @returns {string|null} Normalized path or null if invalid
+ */
+export function normalizeZipEntryPath(entryName) {
+    if (typeof entryName !== 'string') {
+        return null;
+    }
+
+    let normalized = entryName.replace(/\\/g, '/').trim();
+
+    if (!normalized) {
+        return null;
+    }
+
+    normalized = normalized.replace(/^\.\/+/g, '');
+    normalized = path.posix.normalize(normalized);
+
+    if (!normalized || normalized === '.' || normalized.startsWith('..')) {
+        return null;
+    }
+
+    if (normalized.startsWith('/')) {
+        normalized = normalized.slice(1);
+    }
+
+    return normalized;
+}
+
+/**
+ * Extracts multiple files from an ArrayBuffer containing a ZIP archive.
+ * @param {ArrayBufferLike} archiveBuffer Buffer containing a ZIP archive
+ * @param {string[]} fileNames Array of file paths to extract
+ * @returns {Promise<Map<string, Buffer>>} Map of normalized paths to their extracted buffers
+ */
+export async function extractFilesFromZipBuffer(archiveBuffer, fileNames) {
+    const targets = new Map();
+
+    if (Array.isArray(fileNames)) {
+        for (const fileName of fileNames) {
+            const normalized = normalizeZipEntryPath(fileName);
+            if (normalized && !targets.has(normalized)) {
+                targets.set(normalized, true);
+            }
+        }
+    }
+
+    if (targets.size === 0) {
+        return new Map();
+    }
+
+    return await new Promise((resolve) => {
+        const results = new Map();
+
+        try {
+            yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+                if (err) {
+                    console.warn(`Error opening ZIP file: ${err.message}`);
+                    return resolve(results);
+                }
+
+                let finished = false;
+                const finalize = () => {
+                    if (finished) {
+                        return;
+                    }
+                    finished = true;
+                    resolve(results);
+                };
+
+                zipfile.readEntry();
+
+                zipfile.on('entry', (entry) => {
+                    const normalizedEntry = normalizeZipEntryPath(entry.fileName);
+                    if (!normalizedEntry || !targets.has(normalizedEntry)) {
+                        return zipfile.readEntry();
+                    }
+
+                    zipfile.openReadStream(entry, (streamErr, readStream) => {
+                        if (streamErr) {
+                            console.warn(`Error opening read stream: ${streamErr.message}`);
+                            return zipfile.readEntry();
+                        }
+
+                        const chunks = [];
+                        readStream.on('data', (chunk) => {
+                            chunks.push(chunk);
+                        });
+
+                        readStream.on('end', () => {
+                            results.set(normalizedEntry, Buffer.concat(chunks));
+                            targets.delete(normalizedEntry);
+
+                            if (targets.size === 0) {
+                                finalize();
+                            } else {
+                                zipfile.readEntry();
+                            }
+                        });
+
+                        readStream.on('error', (streamError) => {
+                            console.warn(`Error reading stream: ${streamError.message}`);
+                            zipfile.readEntry();
+                        });
+                    });
+                });
+
+                zipfile.on('error', (zipError) => {
+                    console.warn('ZIP processing error', zipError);
+                    finalize();
+                });
+
+                zipfile.on('close', () => {
+                    finalize();
+                });
+
+                zipfile.on('end', () => {
+                    finalize();
+                });
+            });
+        } catch (error) {
+            console.warn('Failed to process ZIP buffer', error);
+            resolve(results);
+        }
+    });
+}
+
+/**
+ * Ensures a directory exists, creating it if necessary.
+ * @param {string} dirPath Path to the directory
+ * @returns {boolean} True if the directory exists or was created, false on error
+ */
+export function ensureDirectory(dirPath) {
+    try {
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        } else if (!fs.statSync(dirPath).isDirectory()) {
+            console.warn(`ensureDirectory: Path ${dirPath} exists and is not a directory.`);
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error(`ensureDirectory: Failed to prepare directory ${dirPath}`, error);
+        return false;
+    }
+}
+
+/**
  * Extracts all images from a ZIP archive.
  * @param {string} zipFilePath Path to the ZIP archive
  * @returns {Promise<[string, Buffer][]>} Array of image buffers
@@ -286,7 +430,6 @@ export async function getImageBuffers(zipFilePath) {
                 zipfile.on('entry', (entry) => {
                     const mimeType = mime.lookup(entry.fileName);
                     if (mimeType && mimeType.startsWith('image/') && !entry.fileName.startsWith('__MACOSX')) {
-                        console.info(`Extracting ${entry.fileName}`);
                         zipfile.openReadStream(entry, (err, readStream) => {
                             if (err) {
                                 reject(err);
@@ -389,17 +532,27 @@ export function uuidv4() {
     });
 }
 
-export function humanizedISO8601DateTime(date) {
-    let baseDate = typeof date === 'number' ? new Date(date) : new Date();
-    let humanYear = baseDate.getFullYear();
-    let humanMonth = (baseDate.getMonth() + 1);
-    let humanDate = baseDate.getDate();
-    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
-    let humanMinute = (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
-    let humanSecond = (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
-    let humanMillisecond = (baseDate.getMilliseconds() < 10 ? '0' : '') + baseDate.getMilliseconds();
-    let HumanizedDateTime = (humanYear + '-' + humanMonth + '-' + humanDate + ' @' + humanHour + 'h ' + humanMinute + 'm ' + humanSecond + 's ' + humanMillisecond + 'ms');
-    return HumanizedDateTime;
+/**
+ * Gets a humanized date time string from a given timestamp.
+ * @param {number} timestamp Timestamp in milliseconds
+ * @returns {string} Humanized date time string in the format `YYYY-MM-DD@HHhMMmSSsMSms`
+ */
+export function humanizedDateTime(timestamp = Date.now()) {
+    const date = new Date(timestamp);
+    const dt = {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+        second: date.getSeconds(),
+        millisecond: date.getMilliseconds(),
+    };
+    for (const key in dt) {
+        const padLength = key === 'millisecond' ? 3 : 2;
+        dt[key] = dt[key].toString().padStart(padLength, '0');
+    }
+    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s${dt.millisecond}ms`;
 }
 
 export function tryParse(str) {
@@ -500,9 +653,10 @@ export function removeOldBackups(directory, prefix, limit = null) {
  * Get a list of images in a directory.
  * @param {string} directoryPath Path to the directory containing the images
  * @param {'name' | 'date'} sortBy Sort images by name or date
+ * @param {number} type Bitwise flag representing media types to include
  * @returns {string[]} List of image file names
  */
-export function getImages(directoryPath, sortBy = 'name') {
+export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_TYPE.IMAGE) {
     function getSortFunction() {
         switch (sortBy) {
             case 'name':
@@ -515,10 +669,24 @@ export function getImages(directoryPath, sortBy = 'name') {
     }
 
     return fs
-        .readdirSync(directoryPath)
+        .readdirSync(directoryPath, { withFileTypes: true })
+        .filter(dirent => dirent.isFile())
+        .map(dirent => dirent.name)
         .filter(file => {
-            const type = mime.lookup(file);
-            return type && type.startsWith('image/');
+            const fileType = mime.lookup(file);
+            if (!fileType) {
+                return false;
+            }
+            if ((type & MEDIA_REQUEST_TYPE.IMAGE) && fileType.startsWith('image/')) {
+                return true;
+            }
+            if ((type & MEDIA_REQUEST_TYPE.VIDEO) && fileType.startsWith('video/')) {
+                return true;
+            }
+            if ((type & MEDIA_REQUEST_TYPE.AUDIO) && fileType.startsWith('audio/')) {
+                return true;
+            }
+            return false;
         })
         .sort(getSortFunction());
 }
@@ -1295,6 +1463,84 @@ export function flattenSchema(schema, api) {
     const flattenedSchema = resolve(schemaCopy);
     delete flattenedSchema.$schema;
     return flattenedSchema;
+}
+
+/**
+ * Writes to a file, creating it's parent directories if needed.
+ * @param {string} filePath
+ * @param {string} data
+ */
+export function tryWriteFileSync(filePath, data) {
+    const directory = path.dirname(filePath);
+    //Ensure the directory exists.
+    if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+    }
+    writeFileAtomicSync(filePath, data, 'utf8');
+}
+
+/**
+* Attempts to read a file as utf8.
+* @param {string} filePath
+* @returns {string|null}
+*/
+export function tryReadFileSync(filePath) {
+    try {
+        if (fs.existsSync(filePath)) {
+            return fs.readFileSync(filePath, 'utf8');
+        }
+    } catch (error) {
+        console.error(`Error reading ${filePath}: ${error.message}`);
+    }
+    return null;
+}
+
+/**
+* Attempts to delete a file.
+* @param {string} filePath Target file.
+* @returns {boolean} Returns true if the file was found and deleted.
+*/
+export function tryDeleteFile(filePath) {
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.info(`Deleted file: ${filePath}`);
+        return true;
+    } else {
+        console.error(`File not found '${filePath}'`);
+        return false;
+    }
+}
+
+/**
+ * Reads the first line of a file asynchronously.
+ * @param {string} filePath Path to the file
+ * @returns {Promise<string>} The first line of the file
+ */
+export function readFirstLine(filePath) {
+    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input: stream });
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        rl.on('line', line => {
+            resolved = true;
+            rl.close();
+            stream.close();
+            resolve(line);
+        });
+
+        rl.on('error', error => {
+            resolved = true;
+            reject(error);
+        });
+
+        // Handle empty files
+        stream.on('end', () => {
+            if (!resolved) {
+                resolved = true;
+                resolve('');
+            }
+        });
+    });
 }
 
 /**

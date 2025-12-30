@@ -8,7 +8,7 @@ import {
     animation_easing,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
-import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename, saveBase64AsFile, getFileExtension } from '../../utils.js';
+import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename, saveBase64AsFile, getFileExtension, getVideoThumbnail, clamp } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -19,17 +19,14 @@ import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnum
 import { t, translate } from '../../i18n.js';
 import { Popup } from '../../popup.js';
 import { deleteMediaFromServer } from '../../chats.js';
+import { MEDIA_REQUEST_TYPE, VIDEO_EXTENSIONS } from '../../constants.js';
 
+const isVideo = (/** @type {string} */ url) => VIDEO_EXTENSIONS.some(ext => new RegExp(`.${ext}$`, 'i').test(url));
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
 let deleteModeActive = false;
 
-// Exposed defaults for future tweaking
-let thumbnailHeight = 150;
-let paginationVisiblePages = 10;
-let paginationMaxLinesPerPage = 2;
-let galleryMaxRows = 3;
 
 // Remove all draggables associated with the gallery
 $('#movingDivs').on('click', '.dragClose', function () {
@@ -98,7 +95,7 @@ function initSettings() {
 
 /**
  * Retrieves the gallery folder for a given character.
- * @param {import('../../char-data.js').v1CharData} char Character data
+ * @param {Character} char Character data
  * @returns {string} The gallery folder for the character
  */
 function getGalleryFolder(char) {
@@ -122,17 +119,34 @@ async function getGalleryItems(url) {
             folder: url,
             sortField: sortObj.field,
             sortOrder: sortObj.order,
+            type: MEDIA_REQUEST_TYPE.IMAGE | MEDIA_REQUEST_TYPE.VIDEO,
         }),
     });
 
     url = await getSanitizedFilename(url);
 
     const data = await response.json();
-    const items = data.map((file) => ({
-        src: `user/images/${url}/${file}`,
-        srct: `user/images/${url}/${file}`,
-        title: '', // Optional title for each item
-    }));
+    const items = [];
+
+    for (const file of data) {
+        const item = {
+            src: `user/images/${url}/${file}`,
+            srct: `user/images/${url}/${file}`,
+            title: '', // Optional title for each item
+        };
+
+        if (isVideo(file)) {
+            try {
+                // 150px of max height with some allowance for various aspect ratios
+                const maxSide = Math.round(150 * 1.5);
+                item.srct = await getVideoThumbnail(item.src, maxSide, maxSide);
+            } catch (error) {
+                console.error('Failed to generate video thumbnail for gallery:', error);
+            }
+        }
+
+        items.push(item);
+    }
 
     return items;
 }
@@ -145,7 +159,7 @@ async function getGalleryFolders() {
     try {
         const response = await fetch('/api/images/folders', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {
@@ -165,7 +179,7 @@ async function getGalleryFolders() {
  */
 async function deleteGalleryItem(url) {
     const isDeleted = await deleteMediaFromServer(url, false);
-    if (isDeleted){
+    if (isDeleted) {
         toastr.success(t`Image deleted successfully.`);
     }
 }
@@ -198,6 +212,12 @@ function getSortOrder() {
  * @returns {Promise<void>} - Promise representing the completion of the gallery initialization.
  */
 async function initGallery(items, url) {
+    // Exposed defaults for future tweaking
+    const thumbnailHeight = 150;
+    const paginationVisiblePages = 5;
+    const paginationMaxLinesPerPage = 2;
+    const galleryMaxRows = clamp(Math.floor((window.innerHeight * 0.9 - 75) / thumbnailHeight), 1, 10);
+
     const nonce = `nonce-${Math.random().toString(36).substring(2, 15)}`;
     const gallery = $('#dragGallery');
     gallery.addClass(nonce);
@@ -210,6 +230,7 @@ async function initGallery(items, url) {
         galleryMaxRows: galleryMaxRows,
         galleryPaginationTopButtons: false,
         galleryNavigationOverlayButtons: true,
+        galleryPaginationMode: 'rectangles',
         galleryTheme: {
             navigationBar: { background: 'none', borderTop: '', borderBottom: '', borderRight: '', borderLeft: '' },
             navigationBreadcrumb: { background: '#111', color: '#fff', colorHover: '#ccc', borderRadius: '4px' },
@@ -399,7 +420,7 @@ async function makeMovable(url) {
     // Create a hidden file input
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = 'image/*';
+    fileInput.accept = 'image/*,video/*';
     fileInput.multiple = true;
     fileInput.style.display = 'none';
 
@@ -617,12 +638,19 @@ function makeDragImg(id, url) {
     const newElement = document.importNode(template.content, true);
 
     // Step 2: Append the given image
-    const imgElem = document.createElement('img');
-    imgElem.src = url;
+    const mediaElement = isVideo(url)
+        ? document.createElement('video')
+        : document.createElement('img');
+    mediaElement.src = url;
+    if (mediaElement instanceof HTMLVideoElement) {
+        mediaElement.controls = true;
+        mediaElement.autoplay = true;
+    }
+
     let uniqueId = `draggable_${id}`;
     const draggableElem = /** @type {HTMLElement} */ (newElement.querySelector('.draggable'));
     if (draggableElem) {
-        draggableElem.appendChild(imgElem);
+        draggableElem.appendChild(mediaElement);
 
         // Find a unique id for the draggable element
 

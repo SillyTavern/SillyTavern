@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight } from './utils.js';
 
 import {
     Generate,
@@ -7,6 +7,7 @@ import {
     addOneMessage,
     characters,
     chat,
+    chatElement,
     chat_metadata,
     comment_avatar,
     deactivateSendButtons,
@@ -763,6 +764,98 @@ export function initDefaultSlashCommands() {
             </ul>
         </div>
         `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'message-role',
+        callback: messageRoleCallback,
+        returns: 'The role of the message sender',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'at',
+                description: 'the ID of the message to modify (index-based, corresponding to message id). If omitted, the last message is chosen.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will modify the message right before the last message in chat. At must be nonzero.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '',
+                enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Role to set for the message sender (user, assistant, system)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: commonEnumProviders.messageRoles,
+            }),
+        ],
+        helpString: `
+        <div>
+            Changes the role of a message sender to one of your choice.
+            If no role is provided, just gets the current role of the message sender.
+            If no index is provided, the last message is chosen.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/message-role | /echo</code></pre>
+                    Will output the role of the sender of the last message.
+                </li>
+                <li>
+                    <pre><code>/message-role at=-2 assistant</code></pre>
+                    Will change the third message from the bottom to be sent by the assistant.
+                </li>
+            </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'message-name',
+        callback: messageNameCallback,
+        returns: 'The name of the message sender',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'at',
+                description: 'the ID of the message to modify (index-based, corresponding to message id). If omitted, the last message is chosen.\nNegative values are accepted and will work similarly to how \'depth\' usually works. For example, -1 will modify the message right before the last message in chat. At must be nonzero.',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '',
+                enumProvider: commonEnumProviders.messages({ allowIdAfter: true }),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Persona name, character name, or unique character identifier (avatar key)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: (executor) => {
+                    let modifyAt = Number(executor.namedArgumentList.find(arg => arg.name === 'at')?.value ?? (chat.length - 1));
+                    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+                        modifyAt = chat.length + modifyAt;
+                    }
+                    return chat[modifyAt]?.is_user
+                        ? commonEnumProviders.personas()
+                        : commonEnumProviders.characters('character')();
+                },
+            }),
+        ],
+        helpString: `
+        <div>
+            Changes the name of a message sender to one of your choice.
+            If no name is provided, just gets the current name of the message sender.
+            If no index is provided, the last message is chosen.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/message-name | /echo</code></pre>
+                    Will output the name of the sender of the last message.
+                </li>
+                <li>
+                    <pre><code>/message-name at=-2 "Chloe"</code></pre>
+                    Will change the third message from the bottom to be sent by "Chloe".
+                </li>
+            </ul>
+        </div>
+    `,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'sendas',
@@ -2552,6 +2645,7 @@ export function initDefaultSlashCommands() {
                 enumList: [
                     new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
                     new SlashCommandEnumValue('zai', 'Z.AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'zai')), 'Z'),
+                    new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
                     ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
@@ -2579,13 +2673,13 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
             <div>
-                ${t`Set the API url / server url for the currently selected API, including the port. If no argument is provided, it will return the current API url.`}
+                ${t`Set the API URL / server URL / endpoint for the currently selected API, including the port. If no argument is provided, it will return the current API url.`}
             </div>
             <div>
                 ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible and Z.AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
@@ -4509,6 +4603,119 @@ export function getNameAndAvatarForMessage(character, name = null) {
     };
 }
 
+/**
+ * Changes the character role on a message at a given index.
+ * @param {object?} args - Named arguments
+ * @param {string} role - Role to change to.
+ *
+ * @returns {Promise<string>} The updated message role.
+ */
+async function messageRoleCallback(args, role) {
+    let modifyAt = Number(args?.at ?? (chat.length - 1));
+    // Convert possible depth parameter to index
+    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        modifyAt = chat.length + modifyAt;
+    }
+
+    const message = chat[modifyAt];
+    if (!message) {
+        toastr.warning(t`No message found at the specified index.`);
+        return '';
+    }
+
+    role = String(role ?? '').trim().toLowerCase();
+    if (!role || !['user', 'assistant', 'system'].includes(role)) {
+        return message?.extra?.type === system_message_types.NARRATOR
+            ? 'system'
+            : message.is_user ? 'user' : 'assistant';
+    }
+
+    message.extra = message.extra || {};
+    if (role === 'system') {
+        message.extra.type = system_message_types.NARRATOR;
+    } else {
+        delete message.extra.type;
+    }
+    message.is_user = role === 'user';
+
+    await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
+    const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
+    if (existingMessage.length) {
+        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        existingMessage.remove();
+    }
+    await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
+    await saveChatConditional();
+
+    return role;
+}
+
+/**
+ * Changes the character name on a message at a given index.
+ * @param {object?} args - Named arguments
+ * @param {string} name - Name to change to.
+ *
+ * @returns {Promise<string>} The updated message name.
+ */
+async function messageNameCallback(args, name) {
+    let modifyAt = Number(args?.at ?? (chat.length - 1));
+    // Convert possible depth parameter to index
+    if (!isNaN(modifyAt) && (modifyAt < 0 || Object.is(modifyAt, -0))) {
+        // Negative value means going back from current chat length. (E.g.: 8 messages, Depth 1 means insert at index 7)
+        modifyAt = chat.length + modifyAt;
+    }
+
+    const message = chat[modifyAt];
+    if (!message) {
+        toastr.warning(t`No message found at the specified index.`);
+        return '';
+    }
+
+    name = String(name ?? '').trim();
+    if (!name) {
+        return message.name;
+    }
+
+    let newName = '';
+
+    if (message.is_user) {
+        const persona = findPersona({ name: name });
+        if (persona) {
+            message.name = newName = persona.name;
+            message.force_avatar = getThumbnailUrl('persona', persona.avatar);
+            message.original_avatar = persona.avatar;
+        } else {
+            message.name = newName = name;
+            message.force_avatar = default_avatar;
+            message.original_avatar = default_avatar;
+        }
+    } else {
+        const character = findChar({ name: name });
+        if (character) {
+            const characterInfo = getNameAndAvatarForMessage(character, name);
+            message.name = newName = characterInfo.name;
+            message.force_avatar = characterInfo.force_avatar;
+            message.original_avatar = characterInfo.original_avatar;
+        } else {
+            message.name = newName = name;
+            message.force_avatar = default_avatar;
+            message.original_avatar = default_avatar;
+        }
+    }
+
+    await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
+    const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
+    if (existingMessage.length) {
+        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        existingMessage.remove();
+    }
+    await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
+    await saveChatConditional();
+
+    return newName;
+}
+
 export async function sendMessageAs(args, text) {
     let name = args.name?.trim();
 
@@ -4833,6 +5040,7 @@ function getModelOptions(quiet) {
         { id: 'aphrodite_model', api: 'textgenerationwebui', type: textgen_types.APHRODITE },
         { id: 'ollama_model', api: 'textgenerationwebui', type: textgen_types.OLLAMA },
         { id: 'tabby_model', api: 'textgenerationwebui', type: textgen_types.TABBY },
+        { id: 'llamacpp_model', api: 'textgenerationwebui', type: textgen_types.LLAMACPP },
         { id: 'featherless_model', api: 'textgenerationwebui', type: textgen_types.FEATHERLESS },
         { id: 'model_openai_select', api: 'openai', type: chat_completion_sources.OPENAI },
         { id: 'model_claude_select', api: 'openai', type: chat_completion_sources.CLAUDE },
@@ -4845,6 +5053,7 @@ function getModelOptions(quiet) {
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
+        { id: 'model_chutes_select', api: 'openai', type: chat_completion_sources.CHUTES },
         { id: 'model_siliconflow_select', api: 'openai', type: chat_completion_sources.SILICONFLOW },
         { id: 'model_electronhub_select', api: 'openai', type: chat_completion_sources.ELECTRONHUB },
         { id: 'model_nanogpt_select', api: 'openai', type: chat_completion_sources.NANOGPT },
@@ -5184,6 +5393,36 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
         }
 
         return oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
+    }
+
+    const isCurrentlyVertexAI = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI;
+    if (api === chat_completion_sources.VERTEXAI || (!api && isCurrentlyVertexAI)) {
+        const defaultRegion = 'us-central1';
+        const permittedValues = Array
+            .from(document.querySelectorAll('#vertexai_region_suggestions option'))
+            .map(e => e instanceof HTMLOptionElement ? e.value : '')
+            .filter(x => x);
+
+        if (!url) {
+            return oai_settings.vertexai_region || defaultRegion;
+        }
+
+        if (!permittedValues.includes(url)) {
+            !isQuiet && toastr.info(t`Generation requests may fail.`, t`Unknown VertexAI region '${url}'`);
+        }
+
+        if (!isCurrentlyVertexAI && autoConnect) {
+            toastr.warning(t`VertexAI is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
+        $('#vertexai_region').val(url).trigger('input');
+
+        if (autoConnect) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return oai_settings.vertexai_region || defaultRegion;
     }
 
     // Special handling for Kobold Classic API
@@ -5581,13 +5820,15 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     );
     return ac;
 }
-/**@type {HTMLTextAreaElement} */
-const sendTextarea = document.querySelector('#send_textarea');
-setSlashCommandAutoComplete(sendTextarea);
-sendTextarea.addEventListener('input', () => {
-    if (sendTextarea.value[0] == '/') {
-        sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
-    } else {
-        sendTextarea.style.fontFamily = null;
-    }
-});
+
+export async function initSlashCommandAutoComplete() {
+    const sendTextarea = /** @type {HTMLTextAreaElement} */ (document.querySelector('#send_textarea'));
+    setSlashCommandAutoComplete(sendTextarea);
+    sendTextarea.addEventListener('input', () => {
+        if (sendTextarea.value && sendTextarea.value[0] == '/') {
+            sendTextarea.style.fontFamily = 'var(--monoFontFamily, monospace)';
+        } else {
+            sendTextarea.style.fontFamily = null;
+        }
+    });
+}

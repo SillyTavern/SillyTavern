@@ -1,8 +1,10 @@
+import { lodash } from '../lib.js';
 import { addOneMessage, chat, displayVersion, setSendButtonState, system_avatar, systemUserName } from '../script.js';
 import { t } from './i18n.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { getSlashCommandsHelp } from './slash-commands.js';
 import { SlashCommandBrowser } from './slash-commands/SlashCommandBrowser.js';
+import { MacroBrowser, getMacrosHelp } from './macros/MacroBrowser.js';
 import { renderTemplateAsync } from './templates.js';
 
 /** @type {Record<string, ChatMessage>} */
@@ -30,89 +32,67 @@ export const system_message_types = {
 };
 
 export async function initSystemMessages() {
+    /** @type {ChatMessage} */
+    const defaultMessage = {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        extra: { swipeable: false },
+    };
     /** @type {Record<string, ChatMessage>} */
     const result = {
-        help: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        /** @type {ChatMessage} */
+        help: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('help'),
-        },
-        slash_commands: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        slash_commands: lodash.merge(structuredClone(defaultMessage), {
             mes: '',
-        },
-        hotkeys: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        hotkeys: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('hotkeys'),
-        },
-        formatting: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        formatting: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('formatting'),
-        },
-        macros: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
-            mes: await renderTemplateAsync('macros'),
-        },
-        welcome: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        macros: lodash.merge(structuredClone(defaultMessage), {
+            mes: '',
+        }),
+        /** @type {ChatMessage} */
+        welcome: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('welcome', { displayVersion }),
             extra: {
                 uses_system_ui: true,
             },
-        },
-        empty: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        empty: lodash.merge(structuredClone(defaultMessage), {
             mes: 'No one hears you. <b>Hint&#58;</b> add more members to the group!',
-        },
-        generic: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        generic: lodash.merge(structuredClone(defaultMessage), {
             mes: 'Generic system message. User `text` parameter to override the contents',
-        },
-        welcome_prompt: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        welcome_prompt: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('welcomePrompt'),
             extra: {
                 uses_system_ui: true,
                 isSmallSys: true,
             },
-        },
-        assistant_note: {
-            name: systemUserName,
-            force_avatar: system_avatar,
-            is_user: false,
-            is_system: true,
+        }),
+        /** @type {ChatMessage} */
+        assistant_note: lodash.merge(structuredClone(defaultMessage), {
             mes: await renderTemplateAsync('assistantNote'),
             extra: {
                 uses_system_ui: true,
                 isSmallSys: true,
             },
-        },
+        }),
     };
 
     Object.assign(system_messages, result);
@@ -132,6 +112,8 @@ export async function initSystemMessages() {
 
 /**
  * Gets a system message by type.
+ * By default system messages are not swipeable.
+ * This can be overridden by setting extra.swipeable to true.
  * @param {string} type Type of system message
  * @param {string} [text] Text to be sent
  * @param {ChatMessageExtra} [extra] Additional data to be added to the message
@@ -152,6 +134,10 @@ export function getSystemMessageByType(type, text, extra = {}) {
 
     if (type === system_message_types.SLASH_COMMANDS) {
         newMessage.mes = getSlashCommandsHelp();
+    }
+
+    if (type === system_message_types.MACROS) {
+        newMessage.mes = getMacrosHelp();
     }
 
     if (!newMessage.extra || typeof newMessage.extra !== 'object') {
@@ -181,5 +167,16 @@ export function sendSystemMessage(type, text, extra = {}) {
         spinner.remove();
         browser.renderInto(parent);
         browser.search.focus();
+    }
+
+    if (type === system_message_types.MACROS) {
+        const browser = new MacroBrowser();
+        const spinner = document.querySelector('#chat .last_mes .custom-macroHelp');
+        if (spinner) {
+            const parent = spinner.parentElement;
+            spinner.remove();
+            browser.renderInto(parent);
+            browser.searchInput?.focus();
+        }
     }
 }

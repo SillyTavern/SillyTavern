@@ -5,8 +5,8 @@ import { regexFromString } from '../../utils.js';
 import { lodash } from '../../../lib.js';
 
 /**
- * @enum {number} Regex scripts types
  * @readonly
+ * @enum {number} Regex scripts types
  */
 export const SCRIPT_TYPES = {
     // ORDER MATTERS: defines the regex script priority
@@ -33,6 +33,61 @@ export const SCRIPT_TYPE_UNKNOWN = -1;
  * @type {Readonly<GetRegexScriptsOptions>}
  */
 const DEFAULT_GET_REGEX_SCRIPTS_OPTIONS = Object.freeze({ allowedOnly: false });
+
+/**
+ * Manages the compiled regex cache with LRU eviction.
+ */
+export class RegexProvider {
+    /** @type {Map<string, RegExp>} */
+    #cache = new Map();
+    /** @type {number} */
+    #maxSize = 1000;
+
+    static instance = new RegexProvider();
+
+    /**
+     * Gets a regex instance by its string representation.
+     * @param {string} regexString The regex string to retrieve
+     * @returns {RegExp?} Compiled regex or null if invalid
+     */
+    get(regexString) {
+        const isCached = this.#cache.has(regexString);
+        const regex = isCached
+            ? this.#cache.get(regexString)
+            : regexFromString(regexString);
+
+        if (!regex) {
+            return null;
+        }
+
+        if (isCached) {
+            // LRU: Move to end by re-inserting
+            this.#cache.delete(regexString);
+            this.#cache.set(regexString, regex);
+        } else {
+            // Evict oldest if at capacity
+            if (this.#cache.size >= this.#maxSize) {
+                const firstKey = this.#cache.keys().next().value;
+                this.#cache.delete(firstKey);
+            }
+            this.#cache.set(regexString, regex);
+        }
+
+        // Reset lastIndex for global/sticky regexes
+        if (regex.global || regex.sticky) {
+            regex.lastIndex = 0;
+        }
+
+        return regex;
+    }
+
+    /**
+     * Clears the entire cache.
+     */
+    clear() {
+        this.#cache.clear();
+    }
+}
 
 /**
  * Retrieves the list of regex scripts by combining the scripts from the extension settings and the character data
@@ -105,7 +160,7 @@ export async function saveScriptsByType(scripts, scriptType) {
 
 /**
  * Check if character's regexes are allowed to be used; if character is undefined, returns false
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {boolean}
  */
 export function isScopedScriptsAllowed(character) {
@@ -114,7 +169,7 @@ export function isScopedScriptsAllowed(character) {
 
 /**
  * Allow character's regexes to be used; if character is undefined, do nothing
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {void}
  */
 export function allowScopedScripts(character) {
@@ -133,7 +188,7 @@ export function allowScopedScripts(character) {
 
 /**
  * Disallow character's regexes to be used; if character is undefined, do nothing
- * @param {import('../../char-data.js').v1CharData|undefined} character
+ * @param {Character|undefined} character
  * @returns {void}
  */
 export function disallowScopedScripts(character) {
@@ -220,8 +275,8 @@ export function getCurrentPresetName() {
 }
 
 /**
- * @enum {number} Where the regex script should be applied
  * @readonly
+ * @enum {number} Where the regex script should be applied
  */
 export const regex_placement = {
     /**
@@ -237,8 +292,8 @@ export const regex_placement = {
 };
 
 /**
- * @enum {number} How to substitute parameters in the find regex
  * @readonly
+ * @enum {number} How to substitute parameters in the find regex
  */
 export const substitute_find_regex = {
     NONE: 0,
@@ -353,7 +408,7 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
         }
     };
     const regexString = getRegexString();
-    const findRegex = regexFromString(regexString);
+    const findRegex = RegexProvider.instance.get(regexString);
 
     // The user skill issued. Return with nothing.
     if (!findRegex) {
@@ -402,7 +457,7 @@ export function runRegexScript(regexScript, rawString, { characterOverride } = {
 function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
     trimStrings.forEach((trimString) => {
-        const subTrimString = substituteParams(trimString, undefined, characterOverride);
+        const subTrimString = substituteParams(trimString, { name2Override: characterOverride });
         finalString = finalString.replaceAll(subTrimString, '');
     });
 
