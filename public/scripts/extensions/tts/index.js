@@ -861,7 +861,7 @@ const defaultSettings = {
     playback_rate: 1,
     multi_voice_enabled: false,
     apply_regex: false,
-    regex_pattern: '[^a-zA-Z0-9\\s.,!?;:\'"()—–~@#$%&*+=/\\\\<>\\[\\]{}]+',
+    regex_pattern: '/[^a-zA-Z0-9\\s.,!?;:\'"()—–@#$%&*+=/\\\\<>\\[\\]{}]+/g',
 };
 
 function setTtsStatus(status, success) {
@@ -1501,7 +1501,7 @@ jQuery(async function () {
         $('#tts_narrate_by_paragraphs').on('click', onNarrateByParagraphsClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_multi_voice_enabled').on('click', onMultiVoiceClick);
-        $('#tts_apply_regex').on('input', onApplyRegexChange);
+        $('#tts_apply_regex').on('change', onApplyRegexChange);
         $('#tts_regex_pattern').on('input', onRegexPatternChange);
 
         $('#playback_rate').on('input', function () {
