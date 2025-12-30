@@ -579,19 +579,37 @@ export class SlashCommandParser {
                     } else {
                         conditionStartOffset = context.identifierStart + identifier.length;
                     }
-                    const conditionStartInText = macro.start + 2 + conditionStartOffset;
+                    let conditionStartInText = macro.start + 2 + conditionStartOffset;
 
                     // Build if-condition options using macroContent for padding calculation
                     const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
                     const options = this.#buildIfConditionOptions(context, allMacros, macroContent);
 
+                    // For variable shorthand in {{if}} condition, adjust identifier and start position
+                    // Same fix as for regular variable shorthands - identifier must be just the var name
+                    const trimmedCondition = conditionText.trim();
+                    const isTypingVarShorthand = trimmedCondition.startsWith('.') || trimmedCondition.startsWith('$');
+                    let resultIdentifier = conditionText;
+                    let resultStart = conditionStartInText;
+
+                    if (isTypingVarShorthand) {
+                        // Identifier = just the variable name part (without prefix)
+                        resultIdentifier = trimmedCondition.slice(1);
+                        // Start = after the prefix
+                        resultStart = conditionStartInText + (conditionText.indexOf(trimmedCondition[0])) + 1;
+                    }
+
                     const result = new AutoCompleteNameResult(
-                        conditionText,
-                        conditionStartInText,
+                        resultIdentifier,
+                        resultStart,
                         options,
                         false,
-                        () => 'Use {{macro}} syntax for dynamic conditions',
-                        () => 'Enter a macro name or {{macro}} for the condition',
+                        () => isTypingVarShorthand
+                            ? 'Enter a variable name for the condition'
+                            : 'Use {{macro}} syntax for dynamic conditions',
+                        () => isTypingVarShorthand
+                            ? 'Enter a variable name or select from the list'
+                            : 'Enter a macro name or {{macro}} for the condition',
                     );
                     return result;
                 }
@@ -880,9 +898,13 @@ export class SlashCommandParser {
     /**
      * Builds autocomplete options for variable shorthand syntax (.varName or $varName).
      * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+     * @param {Object} [opts] - Optional configuration.
+     * @param {boolean} [opts.forIfCondition=false] - If true, options are for {{if}} condition (closes with }}).
+     * @param {string} [opts.paddingAfter=''] - Whitespace to add before closing }}.
      * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
      */
-    #buildVariableShorthandOptions(context) {
+    #buildVariableShorthandOptions(context, opts = {}) {
+        const { forIfCondition = false, paddingAfter = '' } = opts;
         /** @type {(VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
         const options = [];
 
@@ -910,6 +932,11 @@ export class SlashCommandParser {
             // Add existing variables that match the typed name
             for (const varName of existingVariables) {
                 const option = new VariableNameAutoCompleteOption(varName, scope, false);
+                // For {{if}} condition, provide full value with closing braces
+                if (forIfCondition) {
+                    option.valueProvider = () => `${varName}${paddingAfter}}}`; // No variable prefix, as that has been written and committed already.
+                    option.makeSelectable = true;
+                }
                 // Variables matching the typed prefix get higher priority
                 if (varName.startsWith(context.variableName)) {
                     option.sortPriority = 3;
@@ -929,6 +956,9 @@ export class SlashCommandParser {
                     // Make it non-selectable since it can't be used
                     newVarOption.valueProvider = () => '';
                     newVarOption.makeSelectable = false;
+                } else if (forIfCondition) {
+                    // For {{if}} condition, provide full value with closing braces
+                    newVarOption.valueProvider = () => `${context.variablePrefix}${context.variableName}${paddingAfter}}}`;
                 }
                 options.push(newVarOption);
             }
@@ -1061,6 +1091,49 @@ export class SlashCommandParser {
         // e.g., "  if pers" -> leading padding = "  " (whitespace before 'if', used before '}}')
         const leadingMatch = macroInnerText.match(/^(\s*)/);
         const paddingAfter = leadingMatch ? leadingMatch[1] : '';
+
+        // Get the condition text being typed (trimmed for detection)
+        const conditionText = (context.args[0] || '').trim();
+
+        // Check if condition starts with a variable shorthand prefix
+        const isTypingVariableShorthand = conditionText.startsWith('.') || conditionText.startsWith('$');
+
+        if (isTypingVariableShorthand) {
+            // User is typing a variable shorthand - reuse #buildVariableShorthandOptions
+            const prefix = /** @type {'.'|'$'} */ (conditionText[0]);
+            const varNameTyped = conditionText.slice(1); // Variable name after the prefix
+
+            // Create a synthetic context for #buildVariableShorthandOptions
+            /** @type {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} */
+            const varContext = {
+                ...context,
+                isVariableShorthand: true,
+                variablePrefix: prefix,
+                variableName: varNameTyped,
+                isTypingVariableName: true,
+                isTypingOperator: false,
+                isTypingValue: false,
+                isOperatorComplete: false,
+                hasInvalidTrailingChars: false,
+                variableOperator: null,
+                variableValue: '',
+            };
+
+            return this.#buildVariableShorthandOptions(varContext, { forIfCondition: true, paddingAfter });
+        }
+
+        // Not typing a variable shorthand - show macro options and variable shorthand prefixes
+        // Add variable shorthand prefix options at the top when no condition is typed yet
+        if (conditionText.length === 0) {
+            for (const [, prefixDef] of VariableShorthandDefinitions) {
+                const prefixOption = new VariableShorthandAutoCompleteOption(prefixDef);
+                // Complete with just the prefix symbol
+                prefixOption.valueProvider = () => prefixDef.type;
+                prefixOption.makeSelectable = true;
+                prefixOption.sortPriority = 0; // Show at top
+                options.push(prefixOption);
+            }
+        }
 
         // Add zero-arg macros as condition shorthand options
         for (const macro of allMacros) {
