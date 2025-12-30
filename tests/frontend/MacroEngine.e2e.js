@@ -2098,6 +2098,18 @@ test.describe('MacroEngine', () => {
 
             expect(output).toBe('falsy');
         });
+
+        // Inline {{if}} should not break outer {{else}} detection
+        test('should handle inline if inside scoped if with else', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{if 0}}{{if::1::inner}}{{else}}outer-else{{/if}}');
+            expect(output).toBe('outer-else');
+        });
+
+        // Another inline if scenario - inner inline if should not affect outer else
+        test('should correctly find outer else with multiple inline ifs', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{if 0}}{{if::1::a}}{{if::1::b}}{{else}}found{{/if}}');
+            expect(output).toBe('found');
+        });
     });
 });
 

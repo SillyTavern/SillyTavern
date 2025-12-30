@@ -50,6 +50,7 @@ import { MacroRegistry } from './MacroRegistry.js';
  * @property {boolean} isClosing - Whether this macro has the closing block flag (/).
  * @property {number} startOffset - Start position in the source text.
  * @property {number} endOffset - End position in the source text (inclusive).
+ * @property {number} argCount - Number of arguments provided to the macro.
  */
 
 /**
@@ -135,7 +136,7 @@ class MacroCstWalker {
     }
 
     /**
-     * Extracts basic info from a macro CST node: name, closing flag, and position.
+     * Extracts basic info from a macro CST node: name, closing flag, position, and argument count.
      * Returns null for variable expressions or nodes without valid identifiers.
      *
      * @param {CstNode} macroNode - A macro CST node from the parser.
@@ -156,13 +157,18 @@ class MacroCstWalker {
             return null;
         }
 
-        // Get identifier from macroBody
+        // Get identifier and arguments from macroBody
         const macroBodyNode = /** @type {CstNode?} */ ((children.macroBody || [])[0]);
         const bodyChildren = macroBodyNode?.children || {};
         const identifierTokens = /** @type {IToken[]} */ (bodyChildren['Macro.identifier'] || []);
         const name = identifierTokens[0]?.image || '';
 
         if (!name) return null;
+
+        // Count arguments (arguments rule contains argument nodes)
+        const argumentsNode = /** @type {CstNode?} */ ((bodyChildren.arguments || [])[0]);
+        const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
+        const argCount = argumentNodes.length;
 
         // Check for closing block flag
         const flagTokens = /** @type {IToken[]} */ (children.flags || []);
@@ -173,6 +179,7 @@ class MacroCstWalker {
             isClosing,
             startOffset: startToken.startOffset,
             endOffset: endToken.endOffset,
+            argCount,
         };
     }
 
@@ -1066,7 +1073,8 @@ class MacroCstWalker {
 
     /**
      * Finds the matching closing macro for an opening macro at the given index.
-     * Handles nested scopes by tracking depth.
+     * Handles nested scopes by tracking depth. Only counts opening macros that
+     * can accept scoped content (inline macros with all args filled don't count).
      *
      * @param {Array<{ index: number, item: DocumentItemMacro, name: string, isClosing: boolean, matched: boolean }>} macroInfos
      * @param {number} openingIdx - Index in macroInfos array of the opening macro.
@@ -1092,8 +1100,11 @@ class MacroCstWalker {
                     return i;
                 }
             } else {
-                // Another opening macro with the same name increases depth
-                depth++;
+                // Only increment depth for opening macros that can accept scoped content
+                // Inline macros (e.g., {{if condition::content}}) don't need closing tags
+                if (this.#canAcceptScopedContent(info.item.node, info.name)) {
+                    depth++;
+                }
             }
         }
 

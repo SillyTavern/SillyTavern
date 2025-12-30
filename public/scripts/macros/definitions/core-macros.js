@@ -95,7 +95,8 @@ export function registerCoreMacros() {
 
     /**
      * Splits raw content on the first {{else}} macro at nesting depth 0.
-     * Tracks {{if}}/{{/if}} pairs to find the correct top-level else.
+     * Tracks scoped {{if}}/{{/if}} pairs to find the correct top-level else.
+     * Only {{if}} with 1 argument (condition only) are considered scoped blocks.
      *
      * @param {string} content - The raw content to split
      * @returns {{ thenBranch: string, elseBranch: string | undefined }}
@@ -109,7 +110,9 @@ export function registerCoreMacros() {
             const info = MacroCstWalker.extractMacroInfo(macroNode);
             if (!info) continue;
 
-            if (info.name === 'if' && !info.isClosing) {
+            // Only track scoped {{if}} blocks (1 arg = condition only, expects {{/if}})
+            // Inline {{if condition::content}} has 2 args and doesn't affect depth
+            if (info.name === 'if' && !info.isClosing && info.argCount === 1) {
                 depth++;
             } else if (info.name === 'if' && info.isClosing) {
                 depth--;
