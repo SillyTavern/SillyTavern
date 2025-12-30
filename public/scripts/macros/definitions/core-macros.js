@@ -326,11 +326,11 @@ export function registerCoreMacros() {
             {
                 name: 'word',
                 sampleValue: 'word',
-                description: 'Word to ban for textgenerationwebui backend.',
+                description: 'Word to ban for Text Completion backend.',
                 type: 'string',
             },
         ],
-        description: 'Bans a word for textgenerationwebui backend. (Strips quotes surrounding the banned word, if present)',
+        description: 'Bans a word for Text Completion backend. (Strips quotes surrounding the banned word, if present)',
         returns: '',
         exampleUsage: ['{{banned::delve}}'],
         handler: ({ unnamedArgs: [bannedWord] }) => {
