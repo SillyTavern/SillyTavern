@@ -976,19 +976,20 @@ function onRegexPatternChange() {
 }
 
 function updateRegexPatternWarning() {
+    const warning = $('#tts_regex_warning');
     if (!extension_settings.tts.apply_regex) {
-        $('#tts_regex_warning').addClass('display-none');
+        warning.hide();
         return;
     }
 
     const pattern = $('#tts_regex_pattern').val();
     if (!pattern) {
-        $('#tts_regex_warning').addClass('display-none');
+        warning.hide();
         return;
     }
 
     const regex = regexFromString(pattern);
-    $('#tts_regex_warning').toggleClass('display-none', !!regex);
+    warning.toggle(!regex);
 }
 
 //##############//
