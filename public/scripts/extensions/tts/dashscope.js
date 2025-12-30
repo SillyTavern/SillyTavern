@@ -14,6 +14,7 @@ class DashScopeTtsProvider {
         apiHost: 'https://dashscope.aliyuncs.com',
         model: 'qwen3-tts-flash',
         format: 'wav',
+        customVoices: [], // Store custom voices: [{ name, voiceId, type: 'clone'/'design', description, createdAt }]
     };
 
     static defaultVoices = [
@@ -52,6 +53,36 @@ class DashScopeTtsProvider {
                     <option value="wav">WAV</option>
                 </select>
             </div>
+            
+            <hr class="sysMsg" />
+            <h4>🎨 Custom Voice Creation</h4>
+            
+            <div class="tts_block">
+                <label><i class="fa-solid fa-microphone"></i> Voice Clone (VC)</label>
+                <small class="notes">Upload 3+ seconds audio to clone a voice</small>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input type="file" id="dashscope_voice_clone_file" accept="audio/*" style="flex: 1;" />
+                    <input id="dashscope_voice_clone_name" class="text_pole" type="text" placeholder="Voice name" style="flex: 1;" />
+                </div>
+                <input id="dashscope_create_clone" class="menu_button" type="button" value="Create Cloned Voice" style="margin-top: 5px;" />
+            </div>
+            
+            <div class="tts_block">
+                <label><i class="fa-solid fa-wand-magic-sparkles"></i> Voice Design (VD)</label>
+                <small class="notes">Describe the voice you want to create</small>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input id="dashscope_voice_design_name" class="text_pole" type="text" placeholder="Voice name" style="flex: 1;" />
+                </div>
+                <textarea id="dashscope_voice_design_desc" class="text_pole" rows="3" placeholder="Example: A warm and gentle female voice, clear pronunciation, moderate speed, suitable for storytelling..." style="margin-top: 5px; width: 100%; resize: vertical;"></textarea>
+                <input id="dashscope_create_design" class="menu_button" type="button" value="Create Designed Voice" style="margin-top: 5px;" />
+            </div>
+            
+            <div class="tts_block" id="dashscope_custom_voices_block">
+                <label><i class="fa-solid fa-list"></i> Custom Voices</label>
+                <div id="dashscope_custom_voices_list" style="margin-top: 10px;">
+                    <small class="notes">No custom voices yet. Create one above!</small>
+                </div>
+            </div>
         </div>
         `;
     }
@@ -61,6 +92,9 @@ class DashScopeTtsProvider {
             if (key !== SECRET_KEYS.DASHSCOPE) return;
             $('#api_key_dashscope').toggleClass('success', !!secret_state[SECRET_KEYS.DASHSCOPE]);
         }.bind(this);
+        
+        // Store instance globally for onclick handlers
+        globalThis.dashscopeProviderInstance = this;
     }
 
     dispose() {
@@ -97,6 +131,13 @@ class DashScopeTtsProvider {
         $('#dashscope_tts_api_host').on('change', this.onSettingsChange.bind(this));
         $('#dashscope_tts_model').on('change', this.onSettingsChange.bind(this));
         $('#dashscope_tts_format').on('change', this.onSettingsChange.bind(this));
+        
+        // Custom voice buttons
+        $('#dashscope_create_clone').on('click', this.onCreateCloneClick.bind(this));
+        $('#dashscope_create_design').on('click', this.onCreateDesignClick.bind(this));
+        
+        // Load custom voices
+        this.renderCustomVoices();
 
         $('#dashscope_connect').on('click', () => {
             try {
@@ -120,7 +161,15 @@ class DashScopeTtsProvider {
     }
 
     getAllVoices() {
-        return [...DashScopeTtsProvider.defaultVoices];
+        const systemVoices = [...DashScopeTtsProvider.defaultVoices];
+        const customVoices = (this.settings.customVoices || []).map(cv => ({
+            name: `${cv.name} (${cv.type === 'clone' ? '🎤' : '✨'})`,
+            voice_id: cv.voiceId,
+            lang: 'custom',
+            preview_url: null,
+            isCustom: true,
+        }));
+        return [...systemVoices, ...customVoices];
     }
 
     async getVoice(voiceName) {
@@ -173,6 +222,13 @@ class DashScopeTtsProvider {
             console.error('DashScope TTS fetchTtsGeneration error:', error.message);
             throw error;
         }
+        
+        // Check if this is a Voice Design voice and get its description
+        let voiceDescription = null;
+        const customVoice = (this.settings.customVoices || []).find(v => v.voiceId === voiceId);
+        if (customVoice && customVoice.type === 'design' && customVoice.description) {
+            voiceDescription = customVoice.description;
+        }
 
         const requestBody = {
             text: inputText,
@@ -181,6 +237,7 @@ class DashScopeTtsProvider {
             model: this.settings.model || this.defaultSettings.model,
             format: this.settings.format || this.defaultSettings.format,
             languageType: languageType,
+            voiceDescription: voiceDescription, // Pass description for Voice Design voices
         };
 
         try {
@@ -296,5 +353,256 @@ class DashScopeTtsProvider {
             toastr.error(`DashScope TTS: ${error.message}`);
         }
     }
+    
+    renderCustomVoices() {
+        const listContainer = $('#dashscope_custom_voices_list');
+        const customVoices = this.settings.customVoices || [];
+        
+        if (customVoices.length === 0) {
+            listContainer.html('<small class="notes">No custom voices yet. Create one above!</small>');
+            return;
+        }
+        
+        let html = '<div class="custom_voices_grid" style="display: flex; flex-direction: column; gap: 8px;">';
+        
+        customVoices.forEach((voice, index) => {
+            const icon = voice.type === 'clone' ? '🎤' : '✨';
+            const typeLabel = voice.type === 'clone' ? 'Voice Clone' : 'Voice Design';
+            const date = new Date(voice.createdAt).toLocaleDateString();
+            
+            html += `
+                <div class="custom_voice_item" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;">
+                    <span style="font-size: 20px;">${icon}</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold;">${voice.name}</div>
+                        <small style="opacity: 0.7;">${typeLabel} • ${date}</small>
+                    </div>
+                    <button class="menu_button menu_button_icon" onclick="SillyTavern.extensions.tts.providers.DashScope.previewCustomVoice('${voice.voiceId}')" title="Preview">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button class="menu_button menu_button_icon caution" onclick="SillyTavern.extensions.tts.providers.DashScope.deleteCustomVoice(${index})" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        listContainer.html(html);
+    }
+    
+    async onCreateCloneClick() {
+        try {
+            const fileInput = document.getElementById('dashscope_voice_clone_file');
+            const nameInput = $('#dashscope_voice_clone_name');
+            
+            const file = fileInput.files[0];
+            const name = nameInput.val().trim();
+            
+            if (!file) {
+                toastr.warning('Please select an audio file');
+                return;
+            }
+            
+            if (!name) {
+                toastr.warning('Please enter a voice name');
+                return;
+            }
+            
+            if (!secret_state[SECRET_KEYS.DASHSCOPE]) {
+                toastr.error('API Key is required');
+                return;
+            }
+            
+            toastr.info('Creating cloned voice... This may take a moment.');
+            
+            // Convert file to base64
+            const base64Audio = await this.fileToBase64(file);
+            
+            const response = await fetch('/api/dashscope/create-voice-clone', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    name: name,
+                    audioData: base64Audio,
+                    apiHost: this.settings.apiHost || this.defaultSettings.apiHost,
+                }),
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // Add to custom voices
+            if (!this.settings.customVoices) {
+                this.settings.customVoices = [];
+            }
+            
+            this.settings.customVoices.push({
+                name: name,
+                voiceId: result.voiceId,
+                type: 'clone',
+                createdAt: new Date().toISOString(),
+            });
+            
+            saveTtsProviderSettings();
+            this.renderCustomVoices();
+            
+            // Clear inputs
+            fileInput.value = '';
+            nameInput.val('');
+            
+            toastr.success(`Voice "${name}" created successfully!`);
+        } catch (error) {
+            console.error('DashScope Voice Clone Error:', error);
+            toastr.error(`Failed to create cloned voice: ${error.message}`);
+        }
+    }
+    
+    async onCreateDesignClick() {
+        try {
+            const nameInput = $('#dashscope_voice_design_name');
+            const descInput = $('#dashscope_voice_design_desc');
+            
+            const name = nameInput.val().trim();
+            const description = descInput.val().trim();
+            
+            if (!name) {
+                toastr.warning('Please enter a voice name');
+                return;
+            }
+            
+            if (!description) {
+                toastr.warning('Please enter a voice description');
+                return;
+            }
+            
+            if (!secret_state[SECRET_KEYS.DASHSCOPE]) {
+                toastr.error('API Key is required');
+                return;
+            }
+            
+            toastr.info('Creating designed voice... This may take a moment.');
+            
+            const response = await fetch('/api/dashscope/create-voice-design', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    name: name,
+                    description: description,
+                    apiHost: this.settings.apiHost || this.defaultSettings.apiHost,
+                }),
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // Add to custom voices
+            if (!this.settings.customVoices) {
+                this.settings.customVoices = [];
+            }
+            
+            this.settings.customVoices.push({
+                name: name,
+                voiceId: result.voiceId,
+                type: 'design',
+                description: description,
+                createdAt: new Date().toISOString(),
+            });
+            
+            saveTtsProviderSettings();
+            this.renderCustomVoices();
+            
+            // Clear inputs
+            nameInput.val('');
+            descInput.val('');
+            
+            toastr.success(`Voice "${name}" created successfully!`);
+        } catch (error) {
+            console.error('DashScope Voice Design Error:', error);
+            toastr.error(`Failed to create designed voice: ${error.message}`);
+        }
+    }
+    
+    async previewCustomVoice(voiceId) {
+        try {
+            const previewText = 'Hello, this is a preview of the custom voice.';
+            const response = await this.fetchTtsGeneration(previewText, voiceId, 'Chinese');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const audio = await response.blob();
+            const srcUrl = await getBase64Async(audio);
+            
+            this.audioElement.src = srcUrl;
+            await this.audioElement.play();
+            
+            toastr.success('Playing custom voice preview');
+        } catch (error) {
+            console.error('DashScope Custom Voice Preview Error:', error);
+            toastr.error(`Preview failed: ${error.message}`);
+        }
+    }
+    
+    deleteCustomVoice(index) {
+        if (!this.settings.customVoices || index >= this.settings.customVoices.length) {
+            return;
+        }
+        
+        const voice = this.settings.customVoices[index];
+        
+        if (confirm(`Delete custom voice "${voice.name}"?`)) {
+            this.settings.customVoices.splice(index, 1);
+            saveTtsProviderSettings();
+            this.renderCustomVoices();
+            toastr.info(`Voice "${voice.name}" deleted`);
+        }
+    }
+    
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
 }
+
+// Export instance methods for onclick handlers
+if (typeof SillyTavern === 'undefined') {
+    globalThis.SillyTavern = {};
+}
+if (!SillyTavern.extensions) {
+    SillyTavern.extensions = {};
+}
+if (!SillyTavern.extensions.tts) {
+    SillyTavern.extensions.tts = {};
+}
+if (!SillyTavern.extensions.tts.providers) {
+    SillyTavern.extensions.tts.providers = {};
+}
+SillyTavern.extensions.tts.providers.DashScope = {
+    previewCustomVoice: function(voiceId) {
+        const provider = globalThis.dashscopeProviderInstance;
+        if (provider) {
+            provider.previewCustomVoice(voiceId);
+        }
+    },
+    deleteCustomVoice: function(index) {
+        const provider = globalThis.dashscopeProviderInstance;
+        if (provider) {
+            provider.deleteCustomVoice(index);
+        }
+    },
+};
 
