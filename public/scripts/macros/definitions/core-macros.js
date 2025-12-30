@@ -131,7 +131,7 @@ export function registerCoreMacros() {
 
             // Check if condition is a variable shorthand (.varname or $varname)
             // If so, resolve it using the appropriate variable macro
-            const varShorthandRegex = new RegExp(`^[.\$]${MACRO_VARIABLE_SHORTHAND_PATTERN}\$`);
+            const varShorthandRegex = new RegExp(`^[.$]${MACRO_VARIABLE_SHORTHAND_PATTERN}$`);
             const varShorthandMatch = condition.match(varShorthandRegex);
             if (varShorthandMatch) {
                 const [, prefix, varName] = varShorthandMatch;

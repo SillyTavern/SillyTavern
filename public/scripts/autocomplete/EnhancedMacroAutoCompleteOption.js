@@ -509,7 +509,7 @@ export const ValidVariableShorthandSymbols = new Set(Object.values(VariableShort
  * Invalid: my-, my--, -var, 123var
  * @type {RegExp}
  */
-const VARIABLE_SHORTHAND_NAME_PATTERN = new RegExp(`^${MACRO_VARIABLE_SHORTHAND_PATTERN.source}`);;
+const VARIABLE_SHORTHAND_NAME_PATTERN = new RegExp(`^${MACRO_VARIABLE_SHORTHAND_PATTERN.source}`);
 
 /**
  * Checks if a variable name is valid for use with variable shorthand syntax.
@@ -761,16 +761,13 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
 
         // Description
         const desc = document.createElement('p');
+        const variableSuggestion = this.#scope === 'local'
+            ? 'Local variables are scoped to the current chat.'
+            : 'Global variables are shared across all chats.';
         if (this.#isNewVariable) {
-            desc.textContent = `Creates a new ${scopeLabel.toLowerCase()} variable named "${this.#varName}". ${this.#scope === 'local'
-                ? 'Local variables are scoped to the current chat.'
-                : 'Global variables are shared across all chats.'
-                }`;
+            desc.textContent = `Creates a new ${scopeLabel.toLowerCase()} variable named "${this.#varName}". ${variableSuggestion}`;
         } else {
-            desc.textContent = `Access or modify the ${scopeLabel.toLowerCase()} variable "${this.#varName}". ${this.#scope === 'local'
-                ? 'Local variables are scoped to the current chat.'
-                : 'Global variables are shared across all chats.'
-                }`;
+            desc.textContent = `Access or modify the ${scopeLabel.toLowerCase()} variable "${this.#varName}". ${variableSuggestion}`;
         }
         details.append(desc);
 
