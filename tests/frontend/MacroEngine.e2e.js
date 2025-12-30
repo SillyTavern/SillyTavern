@@ -1818,6 +1818,111 @@ test.describe('MacroEngine', () => {
             // setvar returns '', then getvar returns "spaced"
             expect(output).toBe('spaced');
         });
+
+        // Variable with hyphen in name: {{.my-var}}
+        test('should handle variable name with hyphens', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.my-var}}', { local: { 'my-var': 'hyphenated' } });
+            expect(output).toBe('hyphenated');
+        });
+
+        // Variable with underscore: {{.my_var}}
+        test('should handle variable name with underscores', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.my_var}}', { local: { 'my_var': 'underscored' } });
+            expect(output).toBe('underscored');
+        });
+
+        // Non-existent variable returns empty string
+        test('should return empty string for non-existent variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, 'Value:[{{.nonexistent}}]', { local: {} });
+            expect(output).toBe('Value:[]');
+        });
+
+        // Increment non-existent variable (should start from 0)
+        test('should increment non-existent variable starting from 0', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.newcounter++}}', { local: {} });
+            expect(output).toBe('1');
+        });
+
+        // Chain multiple operations
+        test('should handle multiple variable operations in sequence', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.x = 5}}{{.x++}}{{.x += 10}}{{.x}}', { local: {} });
+            // setvar returns '', incvar returns '6', addvar returns '', getvar returns '16'
+            expect(output).toBe('616');
+        });
+    });
+
+    test.describe('Variable Shorthand in {{if}} Macro', () => {
+        // {{if .myvar}}...{{/if}} - truthy local variable
+        test('should evaluate truthy local variable in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .flag}}Yes{{/if}}', { local: { flag: '1' } });
+            expect(output).toBe('Yes');
+        });
+
+        // {{if .myvar}}...{{/if}} - falsy local variable
+        test('should evaluate falsy local variable in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .flag}}Yes{{/if}}', { local: { flag: '' } });
+            expect(output).toBe('');
+        });
+
+        // {{if $globalvar}}...{{/if}} - truthy global variable
+        test('should evaluate truthy global variable in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if $enabled}}Active{{/if}}', { global: { enabled: 'true' } });
+            expect(output).toBe('Active');
+        });
+
+        // {{if !.myvar}}...{{/if}} - inverted condition
+        test('should evaluate inverted variable condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if !.flag}}Not set{{/if}}', { local: { flag: '' } });
+            expect(output).toBe('Not set');
+        });
+
+        // {{if !$globalvar}}...{{/if}} - inverted global
+        test('should evaluate inverted global variable condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if !$disabled}}Enabled{{/if}}', { global: { disabled: '' } });
+            expect(output).toBe('Enabled');
+        });
+
+        // {{if ! .myvar}}...{{/if}} - inverted with whitespace
+        test('should evaluate inverted condition with whitespace after !', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if ! .empty}}Empty{{/if}}', { local: { empty: '' } });
+            expect(output).toBe('Empty');
+        });
+
+        // Non-existent variable is falsy
+        test('should treat non-existent variable as falsy in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .nonexistent}}Yes{{else}}No{{/if}}', { local: {} });
+            expect(output).toBe('No');
+        });
+
+        // {{if .myvar}}...{{else}}...{{/if}} - with else branch
+        test('should handle else branch with variable shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .active}}On{{else}}Off{{/if}}', { local: { active: 'yes' } });
+            expect(output).toBe('On');
+        });
+
+        // Variable with hyphen in if condition
+        test('should handle variable with hyphen in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .is-valid}}Valid{{/if}}', { local: { 'is-valid': '1' } });
+            expect(output).toBe('Valid');
+        });
+
+        // Combine set and if
+        test('should work with variable set before if check', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.ready = yes}}{{if .ready}}Ready!{{/if}}', { local: {} });
+            expect(output).toBe('Ready!');
+        });
+
+        // Zero is falsy
+        test('should treat zero as falsy in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .count}}Has count{{else}}No count{{/if}}', { local: { count: '0' } });
+            expect(output).toBe('No count');
+        });
+
+        // Non-zero number is truthy
+        test('should treat non-zero number as truthy in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if .count}}Count: {{.count}}{{/if}}', { local: { count: '42' } });
+            expect(output).toBe('Count: 42');
+        });
     });
 });
 

@@ -868,6 +868,67 @@ test.describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
+
+        // {{ .myvar }} - Whitespace around variable shorthand
+        test('should tokenize variable shorthand with surrounding whitespace', async ({ page }) => {
+            const input = '{{ .myvar }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{$myVar123}} - Variable with numbers
+        test('should tokenize variable with numbers in name', async ({ page }) => {
+            const input = '{{$myVar123}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.GlobalPrefix', text: '$' },
+                { type: 'Var.Identifier', text: 'myVar123' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.my_var}} - Variable with underscore
+        test('should tokenize variable with underscore in name', async ({ page }) => {
+            const input = '{{.my_var}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'my_var' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.counter ++ }} - Increment with whitespace
+        test('should tokenize increment operator with surrounding whitespace', async ({ page }) => {
+            const input = '{{.counter ++ }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'counter' },
+                { type: 'Var.Increment', text: '++' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
     });
 
     test.describe('Macro Output Modifiers', () => {
