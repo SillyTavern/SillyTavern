@@ -263,7 +263,7 @@ class MacroCstWalker {
         const name = identifierTokens[0]?.image || '';
 
         // Extract flag tokens and parse them into a MacroFlags object (now inside macroBody)
-        const flagTokens = /** @type {IToken[]} */ (bodyChildren['flags'] || []);
+        const flagTokens = /** @type {IToken[]} */ (children.flags || []);
         const flagSymbols = flagTokens.map(token => token.image);
         const flags = flagSymbols.length > 0 ? parseFlags(flagSymbols) : createEmptyFlags();
 
@@ -956,7 +956,7 @@ class MacroCstWalker {
         if (!name) return null;
 
         // Check for closing block flag (inside macroBody)
-        const flagTokens = /** @type {IToken[]} */ (bodyChildren['flags'] || []);
+        const flagTokens = /** @type {IToken[]} */ (children.flags || []);
         const isClosing = flagTokens.some(token => token.image === MacroFlagType.CLOSING_BLOCK);
 
         return { name, isClosing };

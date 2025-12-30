@@ -47,6 +47,15 @@ class MacroParser extends CstParser {
         $.macro = $.RULE('macro', () => {
             $.CONSUME(Tokens.Macro.Start);
 
+            // Optional flags before the identifier (e.g., {{!user}}, {{?~macro}}, {{>filtered}})
+            // Both regular flags and filter flag are captured under the 'flags' label
+            $.MANY(() => {
+                $.OR1([
+                    { ALT: () => $.CONSUME(Tokens.Macro.Flags, { LABEL: 'flags' }) },
+                    { ALT: () => $.CONSUME(Tokens.Macro.FilterFlag, { LABEL: 'flags' }) },
+                ]);
+            });
+
             // Branch: either a variable expression (starts with . or $) or a regular macro
             $.OR([
                 // Variable expression branch
@@ -60,15 +69,6 @@ class MacroParser extends CstParser {
 
         // Regular macro body (flags + identifier + optional arguments)
         $.macroBody = $.RULE('macroBody', () => {
-            // Optional flags before the identifier (e.g., {{!user}}, {{?~macro}}, {{>filtered}})
-            // Both regular flags and filter flag are captured under the 'flags' label
-            $.MANY(() => {
-                $.OR1([
-                    { ALT: () => $.CONSUME(Tokens.Macro.Flags, { LABEL: 'flags' }) },
-                    { ALT: () => $.CONSUME(Tokens.Macro.FilterFlag, { LABEL: 'flags' }) },
-                ]);
-            });
-
             // Macro identifier (name)
             $.OR2([
                 { ALT: () => $.CONSUME(Tokens.Macro.DoubleSlash, { LABEL: 'Macro.identifier' }) },
