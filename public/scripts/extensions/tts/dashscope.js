@@ -315,9 +315,31 @@ class DashScopeTtsProvider {
             });
 
             if (!response.ok) {
-                let errorText = await response.text();
-                toastr.error(errorText, 'DashScope TTS Generation Failed');
-                const error = new Error(errorText || `HTTP ${response.status}`);
+                let rawErrorText = await response.text();
+                let userMessage = rawErrorText;
+
+                // Try to parse JSON error responses to extract a meaningful message
+                try {
+                    const parsed = JSON.parse(rawErrorText);
+                    if (parsed && typeof parsed.message === 'string' && parsed.message.trim()) {
+                        userMessage = parsed.message;
+                    } else if (parsed && typeof parsed.error === 'string' && parsed.error.trim()) {
+                        userMessage = parsed.error;
+                    } else if (parsed?.error?.message) {
+                        userMessage = parsed.error.message;
+                    } else if (parsed && typeof parsed.detail === 'string' && parsed.detail.trim()) {
+                        userMessage = parsed.detail;
+                    }
+                } catch (e) {
+                    // rawErrorText is not JSON; keep it as-is
+                }
+
+                if (!userMessage || !userMessage.trim()) {
+                    userMessage = `HTTP ${response.status}`;
+                }
+
+                toastr.error(userMessage, 'DashScope TTS Generation Failed');
+                const error = new Error(userMessage);
                 console.error('DashScope TTS fetchTtsGeneration error:', error.message);
                 throw error;
             }
@@ -425,37 +447,69 @@ class DashScopeTtsProvider {
         const listContainer = $('#dashscope_custom_voices_list');
         const customVoices = this.settings.customVoices || [];
 
+        listContainer.empty();
+
         if (customVoices.length === 0) {
-            listContainer.html('<small class="notes">No custom voices yet. Create one above!</small>');
+            listContainer.append($('<small class="notes">').text('No custom voices yet. Create one above!'));
             return;
         }
 
-        let html = '<div class="custom_voices_grid" style="display: flex; flex-direction: column; gap: 8px;">';
+        const grid = $('<div>')
+            .addClass('custom_voices_grid')
+            .attr('style', 'display: flex; flex-direction: column; gap: 8px;');
 
         customVoices.forEach((voice, index) => {
             const icon = voice.type === 'clone' ? '🎤' : '✨';
             const typeLabel = voice.type === 'clone' ? 'Voice Clone' : 'Voice Design';
             const date = new Date(voice.createdAt).toLocaleDateString();
 
-            html += `
-                <div class="custom_voice_item" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;">
-                    <span style="font-size: 20px;">${icon}</span>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold;">${voice.name}</div>
-                        <small style="opacity: 0.7;">${typeLabel} • ${date}</small>
-                    </div>
-                    <button type="button" class="menu_button menu_button_icon" onclick="SillyTavern.extensions.tts.providers.DashScope.previewCustomVoice('${voice.voiceId}', event)" title="Preview">
-                        <i class="fa-solid fa-play"></i>
-                    </button>
-                    <button class="menu_button menu_button_icon caution" onclick="SillyTavern.extensions.tts.providers.DashScope.deleteCustomVoice(${index})" title="Delete">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-            `;
+            const item = $('<div>')
+                .addClass('custom_voice_item')
+                .attr('style', 'display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;');
+
+            const iconSpan = $('<span>').attr('style', 'font-size: 20px;').text(icon);
+
+            const contentDiv = $('<div>').attr('style', 'flex: 1;');
+            const nameDiv = $('<div>').attr('style', 'font-weight: bold;').text(voice.name);
+            const metaSmall = $('<small>').attr('style', 'opacity: 0.7;').text(`${typeLabel} • ${date}`);
+            contentDiv.append(nameDiv, metaSmall);
+
+            const previewButton = $('<button>', {
+                type: 'button',
+                class: 'menu_button menu_button_icon',
+                title: 'Preview',
+            });
+            previewButton.append($('<i>').addClass('fa-solid fa-play'));
+            previewButton.on('click', (event) => {
+                if (event?.preventDefault) {
+                    event.preventDefault();
+                }
+                const provider = globalThis.dashscopeProviderInstance;
+                if (provider) {
+                    provider.previewCustomVoice(voice.voiceId);
+                }
+            });
+
+            const deleteButton = $('<button>', {
+                class: 'menu_button menu_button_icon caution',
+                title: 'Delete',
+            });
+            deleteButton.append($('<i>').addClass('fa-solid fa-trash'));
+            deleteButton.on('click', (event) => {
+                if (event?.preventDefault) {
+                    event.preventDefault();
+                }
+                const provider = globalThis.dashscopeProviderInstance;
+                if (provider) {
+                    provider.deleteCustomVoice(index);
+                }
+            });
+
+            item.append(iconSpan, contentDiv, previewButton, deleteButton);
+            grid.append(item);
         });
 
-        html += '</div>';
-        listContainer.html(html);
+        listContainer.append(grid);
     }
 
     async onCreateCloneClick() {

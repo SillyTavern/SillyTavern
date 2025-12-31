@@ -136,7 +136,7 @@ router.post('/generate-voice', async (request, response) => {
                     console.error('DashScope TTS: Failed to read error response:', textError);
                 }
             }
-            return response.status(500).json({ error: errorMessage });
+            return response.status(apiResponse.status).json({ error: errorMessage });
         }
 
         /** @type {any} */
@@ -295,6 +295,13 @@ router.post('/create-voice-clone', async (request, response) => {
         const mimeType = dataUrlMatch[1];
         const base64Payload = dataUrlMatch[2];
 
+        // Validate MIME type is audio format
+        const allowedAudioMimes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/flac', 'audio/x-wav', 'audio/x-flac'];
+        if (!allowedAudioMimes.includes(mimeType.toLowerCase())) {
+            console.warn(`DashScope Voice Clone: Invalid MIME type: ${mimeType}`);
+            return response.status(400).json({ error: `Unsupported audio format: ${mimeType}. Supported: MP3, WAV, FLAC` });
+        }
+
         let audioBuffer;
         try {
             audioBuffer = Buffer.from(base64Payload, 'base64');
@@ -361,7 +368,7 @@ router.post('/create-voice-clone', async (request, response) => {
                 console.error('DashScope Voice Clone API error (Text):', errorText);
                 errorMessage = errorText || errorMessage;
             }
-            return response.status(500).json({ error: errorMessage });
+            return response.status(apiResponse.status).json({ error: errorMessage });
         }
 
         const responseData = await apiResponse.json();
@@ -400,12 +407,8 @@ router.post('/create-voice-design', async (request, response) => {
             return response.status(400).json({ error: 'Missing required parameters: name, description, and apiKey are required' });
         }
 
-        // Sanitize the preferred_name: only alphanumeric and underscores allowed, max 16 chars
-        const preferredName = name
-            .replace(/[^a-zA-Z0-9_]/g, '_') // Replace non-alphanumeric and non-underscore chars with underscore
-            .substring(0, 16) // Limit to 16 characters
-            .replace(/_+/g, '_') // Replace multiple underscores with single underscore
-            .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+        // Sanitize the preferred_name using shared sanitizer
+        const preferredName = sanitizeVoiceName(name);
 
         if (!preferredName || preferredName.length === 0) {
             return response.status(400).json({ error: 'Voice name must contain at least one valid character (alphanumeric or underscore)' });
@@ -451,7 +454,7 @@ router.post('/create-voice-design', async (request, response) => {
                 console.error('DashScope Voice Design API error (Text):', errorText);
                 errorMessage = errorText || errorMessage;
             }
-            return response.status(500).json({ error: errorMessage });
+            return response.status(apiResponse.status).json({ error: errorMessage });
         }
 
         const responseData = await apiResponse.json();

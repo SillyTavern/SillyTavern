@@ -183,11 +183,6 @@ class DashScopeRealtimeTTS {
 
         // Wait for completion or error
         return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                this.close();
-                reject(new Error('Synthesis timeout'));
-            }, 30000); // 30 second timeout
-
             const checkCompletion = setInterval(() => {
                 if (this.completed) {
                     clearInterval(checkCompletion);
@@ -202,6 +197,12 @@ class DashScopeRealtimeTTS {
                     this.close();
                 }
             }, 100);
+
+            const timeout = setTimeout(() => {
+                clearInterval(checkCompletion);
+                this.close();
+                reject(new Error('Synthesis timeout'));
+            }, 30000); // 30 second timeout
         });
     }
 
