@@ -3,7 +3,9 @@ import path from 'node:path';
 
 import express from 'express';
 import sanitize from 'sanitize-filename';
+import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import { tryParse } from '../util.js';
 
 /**
  * Reads a World Info file and returns its contents
@@ -33,6 +35,38 @@ export function readWorldInfoFile(directories, worldInfoName, allowDummy) {
 }
 
 export const router = express.Router();
+
+router.post('/list', async (request, response) => {
+    try {
+        const data = [];
+        const jsonFiles = (await fs.promises.readdir(request.user.directories.worlds, { withFileTypes: true }))
+            .filter((file) => file.isFile() && path.extname(file.name).toLowerCase() === '.json')
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        for (const file of jsonFiles) {
+            try {
+                const filePath = path.join(request.user.directories.worlds, file.name);
+                const fileContents = await fs.promises.readFile(filePath, 'utf8');
+                const fileContentsParsed = tryParse(fileContents) || {};
+                const fileExtensions = fileContentsParsed?.extensions || {};
+                const fileNameWithoutExt = path.parse(file.name).name;
+                const fileData = {
+                    file_id: fileNameWithoutExt,
+                    name: fileContentsParsed?.name || fileNameWithoutExt,
+                    extensions: _.isObjectLike(fileExtensions) ? fileExtensions : {},
+                };
+                data.push(fileData);
+            } catch (err) {
+                console.warn(`Error reading or parsing World Info file ${file.name}:`, err);
+            }
+        }
+
+        return response.send(data);
+    } catch (err) {
+        console.error('Error reading World Info directory:', err);
+        return response.sendStatus(500);
+    }
+});
 
 router.post('/get', (request, response) => {
     if (!request.body?.name) {

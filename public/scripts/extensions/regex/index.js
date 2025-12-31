@@ -8,7 +8,7 @@ import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashComman
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSortableDelay, isFalseBoolean, isTrueBoolean, regexFromString, setInfoBlock, uuidv4 } from '../../utils.js';
-import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetAPI, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, runRegexScript, saveScriptsByType, SCRIPT_TYPE_UNKNOWN, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
+import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetAPI, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, RegexProvider, runRegexScript, saveScriptsByType, SCRIPT_TYPE_UNKNOWN, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
 import { getPresetManager } from '../../preset-manager.js';
@@ -1088,7 +1088,7 @@ function populateDebuggerRuleList(container) {
         }
     });
 
-    container.data('allScripts', [...globalScripts, ...scopedScripts, ...presetScripts]);
+    container.data('allScripts', [...globalScripts, ...presetScripts, ...scopedScripts]);
 
     const renderRule = (script) => {
         if (!script.id) script.id = uuidv4();
@@ -1147,18 +1147,18 @@ function populateDebuggerRuleList(container) {
         rulesContainer.append(globalList);
     }
 
-    if (scopedScripts.length > 0) {
-        rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Scoped Rules` + '</div>');
-        const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
-        scopedScripts.forEach(script => scopedList.append(renderRule(script)));
-        rulesContainer.append(scopedList);
-    }
-
     if (presetScripts.length > 0) {
         rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Preset Rules` + '</div>');
         const presetList = $('<ul id="regex_debugger_rules_preset" class="sortable-list"></ul>');
         presetScripts.forEach(script => presetList.append(renderRule(script)));
         rulesContainer.append(presetList);
+    }
+
+    if (scopedScripts.length > 0) {
+        rulesContainer.append('<div class="list-header regex-debugger-list-header">' + t`Scoped Rules` + '</div>');
+        const scopedList = $('<ul id="regex_debugger_rules_scoped" class="sortable-list"></ul>');
+        scopedScripts.forEach(script => scopedList.append(renderRule(script)));
+        rulesContainer.append(scopedList);
     }
 }
 
@@ -1628,6 +1628,8 @@ async function checkCharEmbeddedRegexScripts() {
         }
     }
 
+    // Clear cache and reload scripts
+    RegexProvider.instance.clear();
     await loadRegexScripts();
 }
 
@@ -1855,6 +1857,14 @@ jQuery(async () => {
     });
 
     $('#bulk_regex_move_to_scoped').on('click', async () => {
+        if (this_chid === undefined) {
+            toastr.error(t`No character selected.`);
+            return;
+        }
+        if (selected_group) {
+            toastr.error(t`Cannot edit scoped scripts in group chats.`);
+            return;
+        }
         const confirm = await callGenericPopup(t`Are you sure you want to move the selected regex scripts to scoped?`, POPUP_TYPE.CONFIRM);
         if (!confirm) {
             return;
@@ -1921,6 +1931,7 @@ jQuery(async () => {
         // @ts-ignore
         $(selector).sortable({
             delay: getSortableDelay(),
+            handle: '.drag-handle',
             stop: async function () {
                 const oldScripts = getter();
                 const newScripts = [];

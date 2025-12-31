@@ -259,7 +259,7 @@ class MediaWikiScraper {
         try {
             const result = await fetch('/api/plugins/fandom/probe-mediawiki', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;
@@ -352,7 +352,7 @@ class FandomScraper {
         try {
             const result = await fetch('/api/plugins/fandom/probe', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;
@@ -528,7 +528,7 @@ class YouTubeScraper {
     async scrape() {
         let lang = '';
         const template = $(await renderExtensionTemplateAsync('attachments', 'youtube-scrape', {}));
-        const videoUrl = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel', rows: 2 });
+        const videoUrl = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel' });
 
         template.find('input[name="youtubeLanguageCode"]').on('input', function () {
             lang = String($(this).val()).trim();

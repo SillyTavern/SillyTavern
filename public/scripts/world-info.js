@@ -96,6 +96,7 @@ export const METADATA_KEY = 'world_info';
 export const DEFAULT_DEPTH = 4;
 export const DEFAULT_WEIGHT = 100;
 export const MAX_SCAN_DEPTH = 1000;
+const MAX_COMMENT_LENGTH = 100;
 const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
@@ -810,6 +811,47 @@ export function getWorldInfoSettings() {
         world_info_use_group_scoring,
         world_info_max_recursion_steps,
     };
+}
+
+/**
+ * Updates the world info settings.
+ * @param {WorldInfoSettings} settings - Settings object
+ * @param {string[]} [activeWorldInfo] - Optional array of active world info names
+ */
+export function updateWorldInfoSettings(settings, activeWorldInfo) {
+    console.debug('[WI] Updating world info settings', settings, activeWorldInfo);
+
+    /** @type {Record<keyof WorldInfoSettings, (value: any) => void>} */
+    const fields = {
+        world_info_depth: (value) => world_info_depth = Number(value),
+        world_info_min_activations: (value) => world_info_min_activations = Number(value),
+        world_info_min_activations_depth_max: (value) => world_info_min_activations_depth_max = Number(value),
+        world_info_budget: (value) => world_info_budget = Number(value),
+        world_info_include_names: (value) => world_info_include_names = Boolean(value),
+        world_info_recursive: (value) => world_info_recursive = Boolean(value),
+        world_info_overflow_alert: (value) => world_info_overflow_alert = Boolean(value),
+        world_info_case_sensitive: (value) => world_info_case_sensitive = Boolean(value),
+        world_info_match_whole_words: (value) => world_info_match_whole_words = Boolean(value),
+        world_info_character_strategy: (value) => world_info_character_strategy = Number(value),
+        world_info_budget_cap: (value) => world_info_budget_cap = Number(value),
+        world_info_use_group_scoring: (value) => world_info_use_group_scoring = Boolean(value),
+        world_info_max_recursion_steps: (value) => world_info_max_recursion_steps = Number(value),
+        // Unused
+        world_info: (_value) => {},
+    };
+
+    for (const [key, setter] of Object.entries(fields)) {
+        if (Object.hasOwn(settings, key)) {
+            setter(settings[key]);
+        }
+    }
+
+    if (Array.isArray(activeWorldInfo)) {
+        delete settings.world_info;
+        selected_world_info = activeWorldInfo;
+    }
+
+    saveSettingsDebounced();
 }
 
 export const world_info_position = {
@@ -2423,7 +2465,7 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         let counter = 0;
         for (const entry of Object.values(data.entries)) {
             if (!entry.comment && Array.isArray(entry.key) && entry.key.length > 0) {
-                entry.comment = entry.key[0];
+                entry.comment = entry.key.join(', ').slice(0, MAX_COMMENT_LENGTH);
                 setWIOriginalDataValue(data, entry.uid, 'comment', entry.comment);
                 counter++;
             }
@@ -2846,6 +2888,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 await saveWorldInfo(name, data);
             }
             $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(data.entries[uid][entryPropName].join(', '), commentInput);
+            }
         });
 
         input.toggleClass('empty', !entry[entryPropName].length);
@@ -2880,6 +2927,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
                 await saveWorldInfo(name, data);
                 $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            }
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(value, commentInput);
             }
         });
         input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
@@ -3190,6 +3242,17 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
 }
 
 /**
+ * Update commentInput's placeholder.
+ * @param {string} keys Text to display in commentInput's placeholder.
+ * @param {JQuery<HTMLElement>} commentInput The comment input element.
+ */
+function setCommentPlaceholder(keys, commentInput) {
+    // Limit placeholder text to avoid performance issues.
+    keys = keys.slice(0, MAX_COMMENT_LENGTH);
+    commentInput.attr('placeholder', (keys || t`Entry Title/Memo`));
+}
+
+/**
  * Main function to build the WI entry editor template.
  * @param {string} name - The name of the world info file.
  * @param {object} data - The world info data object.
@@ -3206,6 +3269,11 @@ export async function getWorldEntry(name, data, entry) {
 
     // Comment
     const commentInput = headerTemplate.find('textarea[name="comment"]');
+
+    //Update the commentInput's placeholder.
+    const keys = entry['key'].join(', ');
+    setCommentPlaceholder(keys, commentInput);
+
     commentInput.data('uid', entry.uid);
     commentInput.on('input', async function (_, { skipReset = false, noSave = false } = {}) {
         const uid = $(this).data('uid');
@@ -4818,6 +4886,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         }
 
         // Final check if we should really continue scan, and extend the current WI recurse buffer
+        const curScanState = scanState;
         scanState = nextScanState;
         if (scanState) {
             const text = successfulNewEntriesForRecursion
@@ -4829,6 +4898,45 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
         } else {
             logNextState('[WI] Scan done. No new entries to prompt. Stopping.');
         }
+
+        // Fire an event after each scan loop, so extensions can hook into the current scanning state
+        const args = {
+            state: {
+                current: curScanState,
+                next: scanState,
+                loopCount: count,
+            },
+            new: {
+                all: newEntries,
+                successful: successfulNewEntries,
+            },
+            activated: {
+                entries: allActivatedEntries,
+                text: allActivatedText,
+            },
+            sortedEntries,
+            recursionDelay: {
+                availableLevels: availableRecursionDelayLevels,
+                currentLevel: currentRecursionDelayLevel,
+            },
+            budget: {
+                current: budget,
+                overflowed: token_budget_overflowed,
+            },
+            timedEffects,
+        };
+        await eventSource.emit(event_types.WORLDINFO_SCAN_DONE, args);
+
+        // Some fields are allowed to be changed by listeners, those will be handled here manually. They can be updated via changed the args from the listeners.
+        // Any array provided directly can be modified by updating it's elements, adding or removing elements. This has to be done consistently.
+        if (args.state.next !== scanState) {
+            logNextState('[WI] Scan state changed from', scanState, 'to', args.state.next);
+            scanState = args.state.next;
+        }
+        allActivatedText = args.activated.text;
+        currentRecursionDelayLevel = args.recursionDelay.currentLevel;
+        budget = args.budget.current;
+        token_budget_overflowed = args.budget.overflowed;
     }
 
     console.debug('[WI] --- BUILDING PROMPT ---');

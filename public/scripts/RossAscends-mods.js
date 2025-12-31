@@ -19,6 +19,7 @@ import {
     substituteParams,
     sendTextareaMessage,
     doNavbarIconClick,
+    isSwipingAllowed,
 } from '../script.js';
 
 import {
@@ -36,7 +37,7 @@ import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, SWIPE_SOURCE } from './constants.js';
 
 import { Popup } from './popup.js';
 import { accountStorage } from './util/AccountStorage.js';
@@ -161,43 +162,37 @@ export function shouldSendOnEnter() {
     }
 }
 
-//RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
-//Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
-//Does not break old characters/chats, as the code just uses whatever timestamp exists in the chat.
-//New chats made with characters will use this new formatting.
-export function humanizedDateTime() {
-    const now = new Date(Date.now());
+/**
+ * Gets a humanized date time string from a given timestamp.
+ * @param {number} timestamp Timestamp in milliseconds
+ * @returns {string} Humanized date time string in the format `YYYY-MM-DD@HHhMMmSSsMSms`
+ */
+export function humanizedDateTime(timestamp = Date.now()) {
+    const date = new Date(timestamp);
     const dt = {
-        year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate(),
-        hour: now.getHours(), minute: now.getMinutes(), second: now.getSeconds(),
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+        hour: date.getHours(),
+        minute: date.getMinutes(),
+        second: date.getSeconds(),
+        millisecond: date.getMilliseconds(),
     };
     for (const key in dt) {
-        dt[key] = dt[key].toString().padStart(2, '0');
+        const padLength = key === 'millisecond' ? 3 : 2;
+        dt[key] = dt[key].toString().padStart(padLength, '0');
     }
-    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s`;
+    return `${dt.year}-${dt.month}-${dt.day}@${dt.hour}h${dt.minute}m${dt.second}s${dt.millisecond}ms`;
 }
 
-//this is a common format version to display a timestamp on each chat message
-//returns something like: June 19, 2023 2:20pm
-export function getMessageTimeStamp() {
-    const date = Date.now();
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const d = new Date(date);
-    const month = months[d.getMonth()];
-    const day = d.getDate();
-    const year = d.getFullYear();
-    let hours = d.getHours();
-    const minutes = ('0' + d.getMinutes()).slice(-2);
-    let meridiem = 'am';
-    if (hours >= 12) {
-        meridiem = 'pm';
-        hours -= 12;
-    }
-    if (hours === 0) {
-        hours = 12;
-    }
-    const formattedDate = month + ' ' + day + ', ' + year + ' ' + hours + ':' + minutes + meridiem;
-    return formattedDate;
+/**
+ * Gets a timestamp for messages in ISO 8601 format.
+ * @param {number} timestamp - optional timestamp in milliseconds
+ * @returns {string} ISO 8601 formatted timestamp
+ */
+export function getMessageTimeStamp(timestamp = Date.now()) {
+    const date = new Date(timestamp);
+    return date.toISOString();
 }
 
 
@@ -402,6 +397,8 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
+                    || (secret_state[SECRET_KEYS.CHUTES] && oai_settings.chat_completion_source == chat_completion_sources.CHUTES)
+                    || (secret_state[SECRET_KEYS.SILICONFLOW] && oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW)
                     || (secret_state[SECRET_KEYS.ELECTRONHUB] && oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB)
                     || (secret_state[SECRET_KEYS.NANOGPT] && oai_settings.chat_completion_source == chat_completion_sources.NANOGPT)
                     || (secret_state[SECRET_KEYS.DEEPSEEK] && oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK)
@@ -410,6 +407,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.MOONSHOT] && oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT)
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
+                    || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
                     || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
@@ -927,7 +925,7 @@ export function initRossMods() {
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButR.css('display') === 'flex') {
+            if (SwipeButR.is(':visible')) {
                 SwipeButR.trigger('click');
             }
         }
@@ -951,7 +949,7 @@ export function initRossMods() {
         var SwipeButL = $('.swipe_left:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
-            if (SwipeButL.css('display') === 'flex') {
+            if (SwipeButL.is(':visible')) {
                 SwipeButL.trigger('click');
             }
         }
@@ -972,10 +970,10 @@ export function initRossMods() {
 
     function isModifiedKeyboardEvent(event) {
         return (event instanceof KeyboardEvent &&
-            event.shiftKey ||
+            (event.shiftKey ||
             event.ctrlKey ||
             event.altKey ||
-            event.metaKey);
+            event.metaKey));
     }
 
     $(document).on('keydown', async function (event) {
@@ -1109,29 +1107,31 @@ export function initRossMods() {
 
         if (event.key == 'ArrowLeft') {        //swipes left
             if (
+                isSwipingAllowed() &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_left:last').css('display') === 'flex' &&
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus() &&
-                !isModifiedKeyboardEvent(event)
+                !isModifiedKeyboardEvent(event) &&
+                !(document.activeElement instanceof HTMLVideoElement)
             ) {
-                $('.swipe_left:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
+                $('.swipe_left:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;
             }
         }
         if (event.key == 'ArrowRight') { //swipes right
             if (
+                isSwipingAllowed() &&
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $('.swipe_right:last').css('display') === 'flex' &&
                 $('#send_textarea').val() === '' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus() &&
-                !isModifiedKeyboardEvent(event)
+                !isModifiedKeyboardEvent(event) &&
+                !(document.activeElement instanceof HTMLVideoElement)
             ) {
-                $('.swipe_right:last').trigger('click', { source: 'keyboard', repeated: event.repeat });
+                $('.swipe_right:last').trigger('click', { source: SWIPE_SOURCE.KEYBOARD, repeated: event.repeat });
                 return;
             }
         }

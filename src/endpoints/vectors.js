@@ -34,6 +34,9 @@ const SOURCES = [
     'webllm',
     'koboldcpp',
     'vertexai',
+    'electronhub',
+    'openrouter',
+    'chutes',
 ];
 
 /**
@@ -52,6 +55,10 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'togetherai':
         case 'mistral':
         case 'openai':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'electronhub':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'openrouter':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'transformers':
             return getTransformersVector(text);
@@ -73,6 +80,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return sourceSettings.embeddings[text];
         case 'koboldcpp':
             return sourceSettings.embeddings[text];
+        case 'chutes':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -100,6 +109,12 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
             case 'togetherai':
             case 'mistral':
             case 'openai':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'electronhub':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'openrouter':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'transformers':
@@ -132,6 +147,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
             case 'koboldcpp':
                 results.push(...texts.map(x => sourceSettings.embeddings[x]));
                 break;
+            case 'chutes':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
         }
@@ -155,6 +173,14 @@ function getSourceSettings(source, request) {
         case 'openai':
             return {
                 model: String(request.body.model),
+            };
+        case 'electronhub':
+            return {
+                model: String(request.body.model || 'text-embedding-3-small'),
+            };
+        case 'openrouter':
+            return {
+                model: String(request.body.model) || 'openai/text-embedding-3-large',
             };
         case 'cohere':
             return {
@@ -207,6 +233,10 @@ function getSourceSettings(source, request) {
             return {
                 model: String(request.body.model),
                 embeddings: request.body.embeddings ?? {},
+            };
+        case 'chutes':
+            return {
+                model: String(request.body.model || 'chutes-qwen-qwen3-embedding-8b'),
             };
         default:
             return {};

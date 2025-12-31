@@ -667,7 +667,14 @@ export async function sendExpressionCall(spriteFolderName, expression, { force =
     }
 }
 
-async function setSpriteFolderCommand(_, folder) {
+/**
+ * Slash command callback for /setspritefolder
+ * @param {object} param Command parameters
+ * @param {string} param.name Character name override
+ * @param {string} folder Folder path, can be full or partial with leading slash
+ * @returns {Promise<string>} Empty string
+ */
+async function setSpriteFolderCommand({ name }, folder) {
     if (!folder) {
         console.log('Clearing sprite set');
         folder = '';
@@ -675,8 +682,12 @@ async function setSpriteFolderCommand(_, folder) {
 
     if (folder.startsWith('/') || folder.startsWith('\\')) {
         const currentLastMessage = getLastCharacterMessage();
+        if (currentLastMessage.name === null && !name) {
+            toastr.error('At least one character message is required to set a sprites subfolder.', 'Provide the name with "name=" argument.');
+            return '';
+        }
         folder = folder.slice(1);
-        folder = `${currentLastMessage.name}/${folder}`;
+        folder = `${name || currentLastMessage.name}/${folder}`;
     }
 
     $('#expression_override').val(folder.trim());
@@ -1414,7 +1425,7 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
             if (extension_settings.expressions.api == EXPRESSION_API.local) {
                 const apiResult = await fetch('/api/extra/classify/labels', {
                     method: 'POST',
-                    headers: getRequestHeaders(),
+                    headers: getRequestHeaders({ omitContentType: true }),
                 });
 
                 if (apiResult.ok) {
@@ -2322,6 +2333,16 @@ function migrateSettings() {
         name: 'expression-folder-override',
         aliases: ['spriteoverride', 'costume'],
         callback: setSpriteFolderCommand,
+        namedArgumentList:[
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name to set a subfolder for. If not provided, the character who last sent a message will be used.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'optional folder', [ARGUMENT_TYPE.STRING], false,

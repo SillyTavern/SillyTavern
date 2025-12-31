@@ -286,7 +286,7 @@ async function createConnectionProfile(forceName = null) {
     });
     const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
-    let name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
+    let name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName);
     // If it's cancelled, it will be false
     if (!name) {
         return null;
@@ -607,7 +607,6 @@ async function renderDetailsContent(detailsContent) {
         }, {});
         const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
         let newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
-            rows: 2,
             customButtons: [{
                 text: t`Save and Update`,
                 classes: ['popup-button-ok'],

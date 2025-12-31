@@ -139,8 +139,8 @@ async function downloadAssetsList(url) {
                         assetTypeMenu.append(await renderExtensionTemplateAsync('assets', 'installation'));
                     }
 
-                    for (const i in availableAssets[assetType].sort((a, b) => a?.name && b?.name && a['name'].localeCompare(b['name']))) {
-                        const asset = availableAssets[assetType][i];
+                    for (const asset of availableAssets[assetType].sort((a, b) => a?.name && b?.name && a['name'].localeCompare(b['name']))) {
+                        const i = availableAssets[assetType].indexOf(asset);
                         const elemId = `assets_install_${assetType}_${i}`;
                         let element = $('<div />', { id: elemId, class: 'asset-download-button right_menu_button' });
                         const label = $('<i class="fa-fw fa-solid fa-download fa-lg"></i>');
@@ -425,7 +425,7 @@ async function updateCurrentAssets() {
     try {
         const result = await fetch('/api/assets/get', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
         currentAssets = result.ok ? (await result.json()) : {};
     }

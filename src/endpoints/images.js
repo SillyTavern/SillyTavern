@@ -6,7 +6,7 @@ import express from 'express';
 import sanitize from 'sanitize-filename';
 
 import { clientRelativePath, removeFileExtension, getImages, isPathUnderParent } from '../util.js';
-import { MEDIA_EXTENSIONS } from '../constants.js';
+import { MEDIA_EXTENSIONS, MEDIA_REQUEST_TYPE } from '../constants.js';
 
 /**
  * Ensure the directory for the provided file path exists.
@@ -93,6 +93,7 @@ router.post('/list/:folder?', (request, response) => {
         }
 
         const directoryPath = path.join(request.user.directories.userImages, sanitize(request.body.folder));
+        const type = Number(request.body.type ?? MEDIA_REQUEST_TYPE.IMAGE);
         const sort = request.body.sortField || 'date';
         const order = request.body.sortOrder || 'asc';
 
@@ -100,7 +101,7 @@ router.post('/list/:folder?', (request, response) => {
             fs.mkdirSync(directoryPath, { recursive: true });
         }
 
-        const images = getImages(directoryPath, sort);
+        const images = getImages(directoryPath, sort, type);
         if (order === 'desc') {
             images.reverse();
         }

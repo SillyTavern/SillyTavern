@@ -14,6 +14,7 @@
 @import url(css/data-maid.css);
 @import url(css/secrets.css);
 @import url(css/backgrounds.css);
+@import url(css/chat-backups.css);
 
 :root {
     interpolate-size: allow-keywords;
@@ -388,6 +389,11 @@ input[type='checkbox']:focus-visible {
     margin-bottom: 10px;
 }
 
+.mes_text p:last-child,
+.mes_reasoning p:last-child {
+    margin-bottom: 0;
+}
+
 .mes_text li tt,
 .mes_reasoning li tt {
     display: inline-block;
@@ -637,6 +643,16 @@ input[type='checkbox']:focus-visible {
     display: flex;
 }
 
+.mes .mes_media_gallery,
+.mes .mes_media_list {
+    display: none;
+}
+
+.mes[data-media-display="gallery"] .mes_media_gallery,
+.mes[data-media-display="list"] .mes_media_list {
+    display: flex;
+}
+
 small {
     color: var(--SmartThemeBodyColor);
     opacity: 0.7;
@@ -660,11 +676,6 @@ small {
 
 .mes.smallSysMes .mes_text p:last-child {
     margin: 0;
-}
-
-.mes.smallSysMes .swipe_right,
-.mes.smallSysMes .swipe_left {
-    display: none !important;
 }
 
 .mes.smallSysMes .mes_text {
@@ -1215,6 +1226,14 @@ body .panelControlBar {
     --swipeCounterMargin: 5px;
 }
 
+/* https://stackoverflow.com/a/31819499 */
+/* This has much better performance than .transform on large chats*/
+.slide {
+    animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
+    -webkit-animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
+    will-change: transform;
+}
+
 .swipe_right,
 .swipe_left {
     width: 25px;
@@ -1227,6 +1246,7 @@ body .panelControlBar {
     font-size: 20px;
     cursor: pointer;
     align-self: center;
+    pointer-events: auto;
 }
 
 .swipe_left {
@@ -1239,9 +1259,11 @@ body .panelControlBar {
     position: absolute;
     right: 0;
     bottom: 0;
+    pointer-events: none;
 }
 
 .swipes-counter {
+    opacity: 0.3;
     color: var(--SmartThemeBodyColor);
     font-size: 12px;
     padding: 0 5px;
@@ -1253,16 +1275,14 @@ body .panelControlBar {
     justify-content: center;
     margin-bottom: var(--swipeCounterMargin);
     height: var(--swipeCounterHeight);
+    pointer-events: auto;
 }
 
-body:not(.swipeAllMessages) .mes:not(.last_mes) .swipes-counter {
-    visibility: hidden;
-}
 
 body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
-    opacity: 0.3 !important;
-    display: flex !important;
+    opacity: 0.3;
+    display: flex;
 }
 
 .swipe_left {
@@ -1273,6 +1293,51 @@ body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
 .swipe_right {
     right: 5px;
     align-self: center;
+    display: flex;
+}
+
+/* The last swipe must be highlighted */
+.last_swipe :is(.swipes-counter, .swipe_right) {
+    opacity: 0.7;
+    /* Doubled opacity needs a longer transition to match a non active arrow. */
+    /* (Duration * Active Opacity / Inactive Opacity * 2) */
+    transition-duration: calc(var(--animation-duration-2x) * 0.7/0.3);
+}
+
+.fade :is(.swipes-counter, .swipe_left, .swipe_right){
+    /* Fade in and out: */
+    /* https://nerdy.dev/using-starting-style-and-transition-behavior-for-enter-and-exit-stage-effects */
+    /* https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior#description */
+    transition: opacity calc(var(--animation-duration) * 2) ease-in;
+
+    /* Fade in. */
+    @supports (transition-behavior: allow-discrete) {
+        transition:
+            opacity var(--animation-duration-2x) ease-in,
+            display var(--animation-duration-2x) ease-in,
+            visibility var(--animation-duration-2x) ease-in;
+        transition-behavior: allow-discrete;
+    }
+}
+
+/* Hide all but the last message. */
+body:not(.swipeAllMessages) .mes:not(.last_mes) :is(.swipe_left, .swipe_right, .swipes-counter),
+/* Hide non-visible swipe_left. */
+.mes:not(.swipes_visible) .swipe_left,
+/* Only hide swipe_right if it's not visible, and not the last swipe. */
+.mes:not(.swipes_visible, .last_swipe) :is(.swipe_right),
+/* Hide all swipe buttons if .hideAllSwipeButtons. */
+body.hideAllSwipeButtons :is(.swipe_left, .swipe_right),
+.swipes-counter[hidden],
+.swipe_right[hidden],
+.swipe_left[hidden] {
+    /* Fade out */
+    opacity: 0 !important;
+    /* With display:none, the swipes-counter div wil collapse, shifting the chevron. */
+    visibility: hidden;
+    /* Interactivity has limited availability https://caniuse.com/?search=interactivity */
+    interactivity: inert;
+    pointer-events: none;
 }
 
 .ui-settings {
@@ -3464,10 +3529,17 @@ grammarly-extension {
     padding: 2px;
 }
 
+.alternate_greeting:first-of-type .move_up_alternate_greeting,
+.alternate_greeting:last-of-type .move_down_alternate_greeting {
+    filter: brightness(75%) grayscale(1);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .alternate_greeting summary {
     list-style-position: outside;
     margin-left: 1em;
-    padding-left: 1em;
+    padding-left: 5px;
 }
 
 .alternate_greeting textarea {
@@ -4423,11 +4495,12 @@ input[type="range"]::-webkit-slider-thumb {
     field-sizing: content;
 }
 
-body[data-generating="true"] #send_but,
-body[data-generating="true"] #mes_continue,
-body[data-generating="true"] #mes_impersonate,
-body[data-generating="true"] #chat .last_mes .mes_buttons,
-body[data-generating="true"] #chat .last_mes .mes_reasoning_actions {
+body:is([data-generating="true"], [data-swiping="true"]) :is(
+    #send_but,
+    #mes_continue,
+    #mes_impersonate,
+    #chat .last_mes .mes_buttons,
+    #chat .last_mes .mes_reasoning_actions) {
     display: none;
 }
 
@@ -4945,6 +5018,23 @@ a:hover {
 }
 
 /* Message images/video */
+.mes .mes_media_wrapper:empty {
+    display: none;
+}
+
+.mes .mes_media_wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    padding-right: var(--mes-right-spacing);
+}
+
+.mes_media_wrapper:not(:empty)~.mes_file_wrapper:not(:empty) {
+    margin-top: 0.5em;
+}
+
 .mes .mes_img_container,
 .mes .mes_video_container {
     max-width: 100%;
@@ -4953,7 +5043,8 @@ a:hover {
     position: relative;
     width: fit-content;
     transition: all var(--animation-duration);
-    padding: 0.5rem;
+    border-radius: 5px;
+    overflow: hidden;
 }
 
 .mes .mes_video_container:has(.mes_video[src]) {
@@ -4961,7 +5052,6 @@ a:hover {
 }
 
 .mes_img {
-    border-radius: 5px;
     max-width: 100%;
     max-height: 40vh;
     image-rendering: -webkit-optimize-contrast;
@@ -4978,7 +5068,7 @@ a:hover {
 .mes_img_controls,
 .mes_video_controls {
     position: absolute;
-    top: 0.1em;
+    top: 0;
     left: 0;
     width: 100%;
     display: flex;
@@ -4986,14 +5076,25 @@ a:hover {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 1em;
+    padding: 10px;
     z-index: 1;
     transition: opacity var(--animation-duration) ease-in-out;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), transparent);
 }
 
 .mes_img_swipes {
     top: unset;
-    bottom: 0.1rem;
+    bottom: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+}
+
+/* Pass-through pointer events to the swipe buttons only */
+.mes .mes_video_container .mes_img_swipes {
+    pointer-events: none;
+}
+
+.mes .mes_video_container .mes_img_swipes :is(.mes_img_swipe_left, .mes_img_swipe_right) {
+    pointer-events: auto;
 }
 
 .mes_img_swipes .right_menu_button,
@@ -5029,11 +5130,18 @@ a:hover {
 .mes_img_container:focus-within .mes_img_swipes,
 .mes_img_container:hover .mes_img_controls,
 .mes_img_container:focus-within .mes_img_controls,
-.mes_video_container:hover .mes_video_controls {
+.mes_video_container:hover .mes_video_controls,
+.mes_video_container:has(.mes_video.error) .mes_img_swipes,
+.mes_video_container:hover .mes_img_swipes {
     opacity: 1;
 }
 
-.mes .mes_img_container.img_extra {
+.mes_media_container:has(.error) .mes_img_controls,
+.mes_media_container:has(.error) .mes_img_swipes {
+    background: none;
+}
+
+.mes .mes_img_container {
     display: flex;
 }
 
@@ -5041,8 +5149,7 @@ body:not(.caption) .mes_img_caption {
     display: none;
 }
 
-.mes_img_container:not(.img_swipes) .mes_img_swipes,
-body:not(.sd) .mes_img_swipes {
+.mes_img_container:not(.img_swipes) .mes_img_swipes {
     display: none;
 }
 
@@ -5129,7 +5236,6 @@ body:not(.sd) .mes_img_swipes {
 .mes_video {
     max-width: 100%;
     max-height: 400px;
-    border-radius: 5px;
     background: #000;
 }
 

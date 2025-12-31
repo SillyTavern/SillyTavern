@@ -107,7 +107,7 @@ export async function checkHordeStatus() {
     try {
         const response = await fetch('/api/horde/status', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {
@@ -328,7 +328,7 @@ export function loadHordeSettings(settings) {
 async function showKudos() {
     const response = await fetch('/api/horde/user-info', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
     if (!response.ok) {
@@ -343,8 +343,9 @@ async function showKudos() {
         return;
     }
 
-    console.log('Horde user data', data);
-    toastr.info(`Kudos: ${data.kudos}`, data.username);
+    console.log('Horde user data', data.user, 'shared key data', data.sharedKey);
+    const kudos = data.sharedKey?.kudos ?? data.user?.kudos ?? 0;
+    toastr.info(`Kudos: ${kudos}`, data.user.username);
 }
 
 function hordeModelTextString(model) {
