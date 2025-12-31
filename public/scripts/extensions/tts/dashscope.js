@@ -10,6 +10,8 @@ class DashScopeTtsProvider {
     voices = [];
     audioElement = document.createElement('audio');
 
+    maxCloneFileSize = 5 * 1024 * 1024; // 5 MB safeguard
+
     defaultSettings = {
         apiHost: 'https://dashscope.aliyuncs.com',
         model: 'qwen3-tts-flash',
@@ -60,8 +62,10 @@ class DashScopeTtsProvider {
             <div class="tts_block">
                 <label><i class="fa-solid fa-microphone"></i> Voice Clone (VC)</label>
                 <small class="notes">Upload 3+ seconds audio to clone a voice</small>
-                <div style="display: flex; gap: 10px; margin-top: 5px;">
-                    <input type="file" id="dashscope_voice_clone_file" accept="audio/*" style="flex: 1;" />
+                <div style="display: flex; gap: 10px; margin-top: 5px; align-items: center;">
+                    <input type="file" id="dashscope_voice_clone_file" accept="audio/*" style="display: block; position: absolute; left: -9999px; width: 1px; height: 1px;" />
+                    <button id="dashscope_voice_clone_select" class="menu_button" type="button" style="flex: 0 0 auto; white-space: nowrap;">Select Audio</button>
+                    <span id="dashscope_voice_clone_filename" style="flex: 1; font-size: 12px; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file selected</span>
                     <input id="dashscope_voice_clone_name" class="text_pole" type="text" placeholder="Voice name" style="flex: 1;" />
                 </div>
                 <input id="dashscope_create_clone" class="menu_button" type="button" value="Create Cloned Voice" style="margin-top: 5px;" />
@@ -135,6 +139,10 @@ class DashScopeTtsProvider {
         // Custom voice buttons
         $('#dashscope_create_clone').on('click', this.onCreateCloneClick.bind(this));
         $('#dashscope_create_design').on('click', this.onCreateDesignClick.bind(this));
+        $('#dashscope_voice_clone_select').on('click', () => {
+            $('#dashscope_voice_clone_file').trigger('click');
+        });
+        $('#dashscope_voice_clone_file').on('change', this.onCloneFileChanged.bind(this));
         
         // Load custom voices
         this.renderCustomVoices();
@@ -411,12 +419,18 @@ class DashScopeTtsProvider {
         try {
             const fileInput = document.getElementById('dashscope_voice_clone_file');
             const nameInput = $('#dashscope_voice_clone_name');
+            const nameLabel = document.getElementById('dashscope_voice_clone_filename');
             
             const file = fileInput.files[0];
             const name = nameInput.val().trim();
             
             if (!file) {
                 toastr.warning('Please select an audio file');
+                return;
+            }
+
+            if (file.size > this.maxCloneFileSize) {
+                toastr.warning('Audio file is too large (max 5MB)');
                 return;
             }
             
@@ -470,6 +484,9 @@ class DashScopeTtsProvider {
             // Clear inputs
             fileInput.value = '';
             nameInput.val('');
+            if (nameLabel) {
+                nameLabel.textContent = 'No file selected';
+            }
             
             toastr.success(`Voice "${name}" created successfully!`);
         } catch (error) {
@@ -579,6 +596,18 @@ class DashScopeTtsProvider {
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
+    }
+
+    onCloneFileChanged() {
+        const fileInput = document.getElementById('dashscope_voice_clone_file');
+        const nameLabel = document.getElementById('dashscope_voice_clone_filename');
+
+        if (!fileInput || !nameLabel) {
+            return;
+        }
+
+        const file = fileInput.files?.[0];
+        nameLabel.textContent = file ? file.name : 'No file selected';
     }
 }
 

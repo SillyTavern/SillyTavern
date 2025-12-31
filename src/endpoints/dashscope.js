@@ -31,6 +31,17 @@ const detectVoiceType = (voiceId) => {
     }
 };
 
+// Sanitize voice name: keep alphanumeric/underscore, max 16 chars
+const sanitizeVoiceName = (name) => {
+    return name
+        .replace(/[^a-zA-Z0-9_]/g, '_')
+        .substring(0, 16)
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+};
+
+const MAX_VOICE_CLONE_AUDIO_SIZE = 5 * 1024 * 1024; // 5 MB safety cap
+
 router.post('/generate-voice', async (request, response) => {
     try {
         const {
@@ -263,6 +274,8 @@ router.post('/create-voice-clone', async (request, response) => {
             name,
             audioData, // base64 data URL: "data:audio/...;base64,..."
             apiHost = 'https://dashscope.aliyuncs.com',
+            previewText = '你好，这是克隆的音色测试。',
+            language = 'zh',
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);
@@ -274,21 +287,59 @@ router.post('/create-voice-clone', async (request, response) => {
 
         const apiUrl = `${apiHost}/api/v1/services/audio/tts/customization`;
 
+        // Validate and normalize data URL
+        const dataUrlMatch = audioData.match(/^data:([^;]+);base64,(.+)$/);
+        if (!dataUrlMatch) {
+            return response.status(400).json({ error: 'Invalid audioData format: expected data URL with base64 payload' });
+        }
+
+        const mimeType = dataUrlMatch[1];
+        const base64Payload = dataUrlMatch[2];
+
+        let audioBuffer;
+        try {
+            audioBuffer = Buffer.from(base64Payload, 'base64');
+        } catch (err) {
+            console.error('DashScope Voice Clone: Base64 decode failed:', err);
+            return response.status(400).json({ error: 'Invalid audioData payload (base64 decode failed)' });
+        }
+
+        if (audioBuffer.length === 0) {
+            return response.status(400).json({ error: 'Audio data is empty' });
+        }
+
+        if (audioBuffer.length > MAX_VOICE_CLONE_AUDIO_SIZE) {
+            console.warn(`DashScope Voice Clone: audio too large (${audioBuffer.length} bytes)`);
+            return response.status(400).json({ error: 'Audio file too large. Please keep under 5MB.' });
+        }
+
+        const preferredName = sanitizeVoiceName(name);
+        if (!preferredName) {
+            return response.status(400).json({ error: 'Voice name must contain at least one alphanumeric character' });
+        }
+
+        // Reconstruct sanitized data URL to avoid unexpected headers
+        const normalizedDataUrl = `data:${mimeType};base64,${base64Payload}`;
+
         const requestBody = {
             model: 'qwen-voice-enrollment', // Fixed model name for voice enrollment
             input: {
                 action: 'create',
                 target_model: 'qwen3-tts-vc-realtime-2025-11-27',
-                preferred_name: name,
+                preferred_name: preferredName,
+                preview_text: previewText,
+                language,
                 audio: {
-                    data: audioData, // Already in data URL format
+                    data: normalizedDataUrl,
                 },
             },
         };
 
         console.debug('DashScope Voice Clone Request:', {
             url: apiUrl,
-            name: name,
+            name: preferredName,
+            size: audioBuffer.length,
+            mimeType: mimeType,
         });
 
         const apiResponse = await fetch(apiUrl, {
