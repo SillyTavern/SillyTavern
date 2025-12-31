@@ -17,7 +17,6 @@ class DashScopeTtsProvider {
         modelOfficialVoice: 'qwen3-tts-flash',
         modelVcVoice: 'qwen3-tts-vc-realtime-2025-11-27',
         modelVdVoice: 'qwen3-tts-vd-realtime-2025-12-16',
-        selectedModelType: 'official', // 'official', 'vc', or 'vd'
         format: 'wav',
         customVoices: [], // Store custom voices: [{ name, voiceId, type: 'clone'/'design', description, createdAt }]
     };
@@ -48,27 +47,24 @@ class DashScopeTtsProvider {
             </div>
             <div class="tts_block">
                 <label>Model Selection (Choose Voice Type)</label>
-                <div style="display: flex; gap: 10px; margin-top: 8px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
-                        <input type="radio" id="dashscope_model_official" name="dashscope_model_type" value="official" class="dashscope_model_radio" />
-                        <span style="white-space: nowrap;">
-                            <strong>Official Voice</strong><br />
-                            <small style="opacity: 0.8;">qwen3-tts-flash</small>
-                        </span>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+                    <label style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-weight: 700;">Official Voice</span>
+                        <select id="dashscope_model_official_select" class="text_pole">
+                            <option value="qwen3-tts-flash">qwen3-tts-flash</option>
+                        </select>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
-                        <input type="radio" id="dashscope_model_vc" name="dashscope_model_type" value="vc" class="dashscope_model_radio" />
-                        <span style="white-space: nowrap;">
-                            <strong>Voice Clone (VC)</strong><br />
-                            <small style="opacity: 0.8;">qwen3-tts-vc-realtime...</small>
-                        </span>
+                    <label style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-weight: 700;">Voice Clone (VC)</span>
+                        <select id="dashscope_model_vc_select" class="text_pole">
+                            <option value="qwen3-tts-vc-realtime-2025-11-27">qwen3-tts-vc-realtime-2025-11-27</option>
+                        </select>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
-                        <input type="radio" id="dashscope_model_vd" name="dashscope_model_type" value="vd" class="dashscope_model_radio" />
-                        <span style="white-space: nowrap;">
-                            <strong>Voice Design (VD)</strong><br />
-                            <small style="opacity: 0.8;">qwen3-tts-vd-realtime...</small>
-                        </span>
+                    <label style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-weight: 700;">Voice Design (VD)</span>
+                        <select id="dashscope_model_vd_select" class="text_pole">
+                            <option value="qwen3-tts-vd-realtime-2025-12-16">qwen3-tts-vd-realtime-2025-12-16</option>
+                        </select>
                     </label>
                 </div>
             </div>
@@ -119,7 +115,7 @@ class DashScopeTtsProvider {
             if (key !== SECRET_KEYS.DASHSCOPE) return;
             $('#api_key_dashscope').toggleClass('success', !!secret_state[SECRET_KEYS.DASHSCOPE]);
         }.bind(this);
-        
+
         // Store instance globally for onclick handlers
         globalThis.dashscopeProviderInstance = this;
     }
@@ -132,7 +128,9 @@ class DashScopeTtsProvider {
 
     onSettingsChange() {
         this.settings.apiHost = $('#dashscope_tts_api_host').val();
-        this.settings.selectedModelType = $('input[name="dashscope_model_type"]:checked').val() || 'official';
+        this.settings.modelOfficialVoice = $('#dashscope_model_official_select').val() || this.defaultSettings.modelOfficialVoice;
+        this.settings.modelVcVoice = $('#dashscope_model_vc_select').val() || this.defaultSettings.modelVcVoice;
+        this.settings.modelVdVoice = $('#dashscope_model_vd_select').val() || this.defaultSettings.modelVdVoice;
         this.settings.format = $('#dashscope_tts_format').find(':selected').val();
         saveTtsProviderSettings();
     }
@@ -152,13 +150,17 @@ class DashScopeTtsProvider {
         }
 
         $('#dashscope_tts_api_host').val(this.settings.apiHost || this.defaultSettings.apiHost);
-        $(`input[name="dashscope_model_type"][value="${this.settings.selectedModelType || 'official'}"]`).prop('checked', true);
+        $('#dashscope_model_official_select').val(this.settings.modelOfficialVoice || this.defaultSettings.modelOfficialVoice);
+        $('#dashscope_model_vc_select').val(this.settings.modelVcVoice || this.defaultSettings.modelVcVoice);
+        $('#dashscope_model_vd_select').val(this.settings.modelVdVoice || this.defaultSettings.modelVdVoice);
         $('#dashscope_tts_format').val(this.settings.format || this.defaultSettings.format);
 
         $('#dashscope_tts_api_host').on('change', this.onSettingsChange.bind(this));
-        $('.dashscope_model_radio').on('change', this.onSettingsChange.bind(this));
+        $('#dashscope_model_official_select').on('change', this.onSettingsChange.bind(this));
+        $('#dashscope_model_vc_select').on('change', this.onSettingsChange.bind(this));
+        $('#dashscope_model_vd_select').on('change', this.onSettingsChange.bind(this));
         $('#dashscope_tts_format').on('change', this.onSettingsChange.bind(this));
-        
+
         // Custom voice buttons
         $('#dashscope_create_clone').on('click', this.onCreateCloneClick.bind(this));
         $('#dashscope_create_design').on('click', this.onCreateDesignClick.bind(this));
@@ -166,7 +168,7 @@ class DashScopeTtsProvider {
             $('#dashscope_voice_clone_file').trigger('click');
         });
         $('#dashscope_voice_clone_file').on('change', this.onCloneFileChanged.bind(this));
-        
+
         // Load custom voices
         this.renderCustomVoices();
 
@@ -269,7 +271,7 @@ class DashScopeTtsProvider {
             console.error('DashScope TTS fetchTtsGeneration error:', error.message);
             throw error;
         }
-        
+
         // Check if this is a Voice Design voice and get its description
         let voiceDescription = null;
         const customVoice = (this.settings.customVoices || []).find(v => v.voiceId === voiceId);
@@ -277,20 +279,22 @@ class DashScopeTtsProvider {
             voiceDescription = customVoice.description;
         }
 
-        // Determine model based on selected model type or voice_id prefix
-        let selectedModel = this.defaultSettings.modelOfficialVoice;
-        const modelType = this.settings.selectedModelType || 'official';
-        
-        if (modelType === 'vc') {
-            selectedModel = this.defaultSettings.modelVcVoice;
-        } else if (modelType === 'vd') {
-            selectedModel = this.defaultSettings.modelVdVoice;
+        // Determine model based on voice_id or known custom voice type
+        let selectedModel = this.settings.modelOfficialVoice || this.defaultSettings.modelOfficialVoice;
+        const vcModel = this.settings.modelVcVoice || this.defaultSettings.modelVcVoice;
+        const vdModel = this.settings.modelVdVoice || this.defaultSettings.modelVdVoice;
+
+        // If the voice is one of the saved custom voices, trust its type
+        if (customVoice) {
+            if (customVoice.type === 'clone') {
+                selectedModel = vcModel;
+            } else if (customVoice.type === 'design') {
+                selectedModel = vdModel;
+            }
         } else if (voiceId && voiceId.startsWith('qwen-tts-vc-')) {
-            // Auto-detect VC voices
-            selectedModel = this.defaultSettings.modelVcVoice;
+            selectedModel = vcModel;
         } else if (voiceId && voiceId.startsWith('qwen-tts-vd-')) {
-            // Auto-detect VD voices
-            selectedModel = this.defaultSettings.modelVdVoice;
+            selectedModel = vdModel;
         }
 
         const requestBody = {
@@ -416,23 +420,23 @@ class DashScopeTtsProvider {
             toastr.error(`DashScope TTS: ${error.message}`);
         }
     }
-    
+
     renderCustomVoices() {
         const listContainer = $('#dashscope_custom_voices_list');
         const customVoices = this.settings.customVoices || [];
-        
+
         if (customVoices.length === 0) {
             listContainer.html('<small class="notes">No custom voices yet. Create one above!</small>');
             return;
         }
-        
+
         let html = '<div class="custom_voices_grid" style="display: flex; flex-direction: column; gap: 8px;">';
-        
+
         customVoices.forEach((voice, index) => {
             const icon = voice.type === 'clone' ? '🎤' : '✨';
             const typeLabel = voice.type === 'clone' ? 'Voice Clone' : 'Voice Design';
             const date = new Date(voice.createdAt).toLocaleDateString();
-            
+
             html += `
                 <div class="custom_voice_item" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;">
                     <span style="font-size: 20px;">${icon}</span>
@@ -449,20 +453,20 @@ class DashScopeTtsProvider {
                 </div>
             `;
         });
-        
+
         html += '</div>';
         listContainer.html(html);
     }
-    
+
     async onCreateCloneClick() {
         try {
             const fileInput = document.getElementById('dashscope_voice_clone_file');
             const nameInput = $('#dashscope_voice_clone_name');
             const nameLabel = document.getElementById('dashscope_voice_clone_filename');
-            
+
             const file = fileInput.files[0];
             const name = nameInput.val().trim();
-            
+
             if (!file) {
                 toastr.warning('Please select an audio file');
                 return;
@@ -472,22 +476,22 @@ class DashScopeTtsProvider {
                 toastr.warning('Audio file is too large (max 5MB)');
                 return;
             }
-            
+
             if (!name) {
                 toastr.warning('Please enter a voice name');
                 return;
             }
-            
+
             if (!secret_state[SECRET_KEYS.DASHSCOPE]) {
                 toastr.error('API Key is required');
                 return;
             }
-            
+
             toastr.info('Creating cloned voice... This may take a moment.');
-            
+
             // Convert file to base64
             const base64Audio = await this.fileToBase64(file);
-            
+
             const response = await fetch('/api/dashscope/create-voice-clone', {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -497,68 +501,68 @@ class DashScopeTtsProvider {
                     apiHost: this.settings.apiHost || this.defaultSettings.apiHost,
                 }),
             });
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(errorText || `HTTP ${response.status}`);
             }
-            
+
             const result = await response.json();
-            
+
             // Add to custom voices
             if (!this.settings.customVoices) {
                 this.settings.customVoices = [];
             }
-            
+
             this.settings.customVoices.push({
                 name: name,
                 voiceId: result.voiceId,
                 type: 'clone',
                 createdAt: new Date().toISOString(),
             });
-            
+
             saveTtsProviderSettings();
             this.renderCustomVoices();
-            
+
             // Clear inputs
             fileInput.value = '';
             nameInput.val('');
             if (nameLabel) {
                 nameLabel.textContent = 'No file selected';
             }
-            
+
             toastr.success(`Voice "${name}" created successfully!`);
         } catch (error) {
             console.error('DashScope Voice Clone Error:', error);
             toastr.error(`Failed to create cloned voice: ${error.message}`);
         }
     }
-    
+
     async onCreateDesignClick() {
         try {
             const nameInput = $('#dashscope_voice_design_name');
             const descInput = $('#dashscope_voice_design_desc');
-            
+
             const name = nameInput.val().trim();
             const description = descInput.val().trim();
-            
+
             if (!name) {
                 toastr.warning('Please enter a voice name');
                 return;
             }
-            
+
             if (!description) {
                 toastr.warning('Please enter a voice description');
                 return;
             }
-            
+
             if (!secret_state[SECRET_KEYS.DASHSCOPE]) {
                 toastr.error('API Key is required');
                 return;
             }
-            
+
             toastr.info('Creating designed voice... This may take a moment.');
-            
+
             const response = await fetch('/api/dashscope/create-voice-design', {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -568,19 +572,19 @@ class DashScopeTtsProvider {
                     apiHost: this.settings.apiHost || this.defaultSettings.apiHost,
                 }),
             });
-            
+
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(errorText || `HTTP ${response.status}`);
             }
-            
+
             const result = await response.json();
-            
+
             // Add to custom voices
             if (!this.settings.customVoices) {
                 this.settings.customVoices = [];
             }
-            
+
             this.settings.customVoices.push({
                 name: name,
                 voiceId: result.voiceId,
@@ -588,21 +592,21 @@ class DashScopeTtsProvider {
                 description: description,
                 createdAt: new Date().toISOString(),
             });
-            
+
             saveTtsProviderSettings();
             this.renderCustomVoices();
-            
+
             // Clear inputs
             nameInput.val('');
             descInput.val('');
-            
+
             toastr.success(`Voice "${name}" created successfully!`);
         } catch (error) {
             console.error('DashScope Voice Design Error:', error);
             toastr.error(`Failed to create designed voice: ${error.message}`);
         }
     }
-    
+
     async previewCustomVoice(voiceId) {
         try {
             await this.checkReady();
@@ -612,14 +616,14 @@ class DashScopeTtsProvider {
             toastr.error(`Preview failed: ${error.message}`);
         }
     }
-    
+
     deleteCustomVoice(index) {
         if (!this.settings.customVoices || index >= this.settings.customVoices.length) {
             return;
         }
-        
+
         const voice = this.settings.customVoices[index];
-        
+
         if (confirm(`Delete custom voice "${voice.name}"?`)) {
             this.settings.customVoices.splice(index, 1);
             saveTtsProviderSettings();
@@ -627,7 +631,7 @@ class DashScopeTtsProvider {
             toastr.info(`Voice "${voice.name}" deleted`);
         }
     }
-    
+
     fileToBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();

@@ -51,7 +51,6 @@ router.post('/generate-voice', async (request, response) => {
             model = 'qwen3-tts-flash',
             languageType = 'Chinese',
             format = 'wav',
-            voiceDescription = null, // For Voice Design voices
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);
@@ -68,28 +67,28 @@ router.post('/generate-voice', async (request, response) => {
         // Voice Design (VD) and Voice Clone (VC) require WebSocket Realtime API
         if (voiceType === 'vd' || voiceType === 'vc') {
             try {
-                const realtimeModel = voiceType === 'vd' 
+                const realtimeModel = voiceType === 'vd'
                     ? 'qwen3-tts-vd-realtime-2025-12-16'
                     : 'qwen3-tts-vc-realtime-2025-11-27';
-                
+
                 console.debug(`DashScope TTS: Using Realtime WebSocket API with model: ${realtimeModel}`);
-                
+
                 const wsUrl = apiHost.replace('https://', 'wss://') + '/api-ws/v1/realtime';
                 const ttsClient = new DashScopeRealtimeTTS(apiKey, realtimeModel, voiceId);
-                
+
                 const pcmAudioBuffer = await ttsClient.synthesize(text, wsUrl);
                 console.debug(`DashScope TTS: Received PCM audio: ${pcmAudioBuffer.length} bytes`);
-                
+
                 // Convert PCM to WAV format
                 const wavBuffer = pcmToWav(pcmAudioBuffer);
                 console.debug(`DashScope TTS: Converted to WAV: ${wavBuffer.length} bytes`);
-                
+
                 response.setHeader('Content-Type', 'audio/wav');
                 response.setHeader('Content-Length', wavBuffer.length);
                 return response.send(wavBuffer);
             } catch (wsError) {
                 console.error('DashScope TTS: WebSocket Realtime API failed:', wsError);
-                return response.status(500).json({ 
+                return response.status(500).json({
                     error: `WebSocket synthesis failed: ${wsError.message}`,
                 });
             }
@@ -197,7 +196,6 @@ router.post('/test-connection', async (request, response) => {
             apiHost = 'https://dashscope.aliyuncs.com',
             model = 'qwen3-tts-flash',
             languageType = 'Chinese',
-            format = 'wav',
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);
@@ -253,7 +251,8 @@ router.post('/test-connection', async (request, response) => {
             return response.status(500).json({ error: errorMessage });
         }
 
-        const responseData = await apiResponse.json();
+        // Consume response body (we only need to verify 2xx status)
+        await apiResponse.json();
         console.debug('DashScope TTS: Test connection successful');
 
         return response.json({
