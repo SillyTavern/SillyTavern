@@ -1,19 +1,17 @@
-name: tts_test
-
 services:
   sillytavern:
     build: ..
-    container_name: sillytavern_tts_test
+    container_name: sillytavern
     hostname: sillytavern
     image: ghcr.io/sillytavern/sillytavern:latest
     environment:
       - NODE_ENV=production
       - FORCE_COLOR=1
     ports:
-      - "8002:8000"
+      - "8000:8000"
     volumes:
-      - "/home/zqy/learningFile/SillyTavernTest/tts_cache/config:/home/node/app/config"
-      - "/home/zqy/learningFile/SillyTavernTest/tts_cache/data:/home/node/app/data"
-      - "/home/zqy/learningFile/SillyTavernTest/tts_cache/plugins:/home/node/app/plugins"
-      - "/home/zqy/learningFile/SillyTavernTest/tts_cache/extensions:/home/node/app/public/scripts/extensions/third-party"
+      - "./config:/home/node/app/config"
+      - "./data:/home/node/app/data"
+      - "./plugins:/home/node/app/plugins"
+      - "./extensions:/home/node/app/public/scripts/extensions/third-party"
     restart: unless-stopped
