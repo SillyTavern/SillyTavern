@@ -638,19 +638,13 @@ async function processTtsQueue() {
             : text.replaceAll('*', '').trim(); // remove just the asterisks
     }
 
-    if (extension_settings.tts.apply_regex) {
-        const regexPattern = extension_settings.tts.regex_pattern || '/[^a-zA-Z0-9\\s.,!?;:\'"()-]+/g';
-        try {
-            const regex = regexFromString(regexPattern);
-            if (!regex) {
-                console.error('Invalid regex pattern:', regexPattern);
-            } else {
-                text = text.replace(regex, '').trim();
-                // Clean up extra spaces that might be left after removal
-                text = text.replace(/\s+/g, ' ').trim();
-            }
-        } catch (error) {
-            console.error('Invalid regex pattern:', error);
+    if (extension_settings.tts.apply_regex && extension_settings.tts.regex_pattern) {
+        const regex = regexFromString(extension_settings.tts.regex_pattern);
+        if (regex) {
+            // Clean up extra spaces that might be left after removal
+            text = text.replace(regex, '').replace(/\s+/g, ' ').trim();
+        } else {
+            console.warn('Invalid regex pattern:', extension_settings.tts.regex_pattern);
         }
     }
 
@@ -861,7 +855,7 @@ const defaultSettings = {
     playback_rate: 1,
     multi_voice_enabled: false,
     apply_regex: false,
-    regex_pattern: '/[^a-zA-Z0-9\\s.,!?;:\'"()—–@#$%&*+=/\\\\<>\\[\\]{}]+/g',
+    regex_pattern: '',
 };
 
 function setTtsStatus(status, success) {
@@ -970,7 +964,7 @@ function onApplyRegexChange() {
 }
 
 function onRegexPatternChange() {
-    extension_settings.tts.regex_pattern = $('#tts_regex_pattern').val();
+    extension_settings.tts.regex_pattern = $('#tts_regex_pattern').val().toString();
     saveSettingsDebounced();
     updateRegexPatternWarning();
 }
@@ -982,7 +976,7 @@ function updateRegexPatternWarning() {
         return;
     }
 
-    const pattern = $('#tts_regex_pattern').val();
+    const pattern = extension_settings.tts.regex_pattern;
     if (!pattern) {
         warning.hide();
         return;
