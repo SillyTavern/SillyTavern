@@ -14,7 +14,10 @@ class DashScopeTtsProvider {
 
     defaultSettings = {
         apiHost: 'https://dashscope.aliyuncs.com',
-        model: 'qwen3-tts-flash',
+        modelOfficialVoice: 'qwen3-tts-flash',
+        modelVcVoice: 'qwen3-tts-vc-realtime-2025-11-27',
+        modelVdVoice: 'qwen3-tts-vd-realtime-2025-12-16',
+        selectedModelType: 'official', // 'official', 'vc', or 'vd'
         format: 'wav',
         customVoices: [], // Store custom voices: [{ name, voiceId, type: 'clone'/'design', description, createdAt }]
     };
@@ -44,10 +47,30 @@ class DashScopeTtsProvider {
                 <input id="dashscope_connect" class="menu_button" type="button" value="Test Connection" />
             </div>
             <div class="tts_block">
-                <label for="dashscope_tts_model">Model</label>
-                <select id="dashscope_tts_model" class="text_pole">
-                    <option value="qwen3-tts-flash">qwen3-tts-flash</option>
-                </select>
+                <label>Model Selection (Choose Voice Type)</label>
+                <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
+                        <input type="radio" id="dashscope_model_official" name="dashscope_model_type" value="official" class="dashscope_model_radio" />
+                        <span style="white-space: nowrap;">
+                            <strong>Official Voice</strong><br />
+                            <small style="opacity: 0.8;">qwen3-tts-flash</small>
+                        </span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
+                        <input type="radio" id="dashscope_model_vc" name="dashscope_model_type" value="vc" class="dashscope_model_radio" />
+                        <span style="white-space: nowrap;">
+                            <strong>Voice Clone (VC)</strong><br />
+                            <small style="opacity: 0.8;">qwen3-tts-vc-realtime...</small>
+                        </span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; flex: 1;">
+                        <input type="radio" id="dashscope_model_vd" name="dashscope_model_type" value="vd" class="dashscope_model_radio" />
+                        <span style="white-space: nowrap;">
+                            <strong>Voice Design (VD)</strong><br />
+                            <small style="opacity: 0.8;">qwen3-tts-vd-realtime...</small>
+                        </span>
+                    </label>
+                </div>
             </div>
             <div class="tts_block">
                 <label for="dashscope_tts_format">Audio Format</label>
@@ -109,7 +132,7 @@ class DashScopeTtsProvider {
 
     onSettingsChange() {
         this.settings.apiHost = $('#dashscope_tts_api_host').val();
-        this.settings.model = $('#dashscope_tts_model').find(':selected').val();
+        this.settings.selectedModelType = $('input[name="dashscope_model_type"]:checked').val() || 'official';
         this.settings.format = $('#dashscope_tts_format').find(':selected').val();
         saveTtsProviderSettings();
     }
@@ -129,11 +152,11 @@ class DashScopeTtsProvider {
         }
 
         $('#dashscope_tts_api_host').val(this.settings.apiHost || this.defaultSettings.apiHost);
-        $('#dashscope_tts_model').val(this.settings.model || this.defaultSettings.model);
+        $(`input[name="dashscope_model_type"][value="${this.settings.selectedModelType || 'official'}"]`).prop('checked', true);
         $('#dashscope_tts_format').val(this.settings.format || this.defaultSettings.format);
 
         $('#dashscope_tts_api_host').on('change', this.onSettingsChange.bind(this));
-        $('#dashscope_tts_model').on('change', this.onSettingsChange.bind(this));
+        $('.dashscope_model_radio').on('change', this.onSettingsChange.bind(this));
         $('#dashscope_tts_format').on('change', this.onSettingsChange.bind(this));
         
         // Custom voice buttons
@@ -254,11 +277,27 @@ class DashScopeTtsProvider {
             voiceDescription = customVoice.description;
         }
 
+        // Determine model based on selected model type or voice_id prefix
+        let selectedModel = this.defaultSettings.modelOfficialVoice;
+        const modelType = this.settings.selectedModelType || 'official';
+        
+        if (modelType === 'vc') {
+            selectedModel = this.defaultSettings.modelVcVoice;
+        } else if (modelType === 'vd') {
+            selectedModel = this.defaultSettings.modelVdVoice;
+        } else if (voiceId && voiceId.startsWith('qwen-tts-vc-')) {
+            // Auto-detect VC voices
+            selectedModel = this.defaultSettings.modelVcVoice;
+        } else if (voiceId && voiceId.startsWith('qwen-tts-vd-')) {
+            // Auto-detect VD voices
+            selectedModel = this.defaultSettings.modelVdVoice;
+        }
+
         const requestBody = {
             text: inputText,
             voiceId: voiceId,
             apiHost: this.settings.apiHost || this.defaultSettings.apiHost,
-            model: this.settings.model || this.defaultSettings.model,
+            model: selectedModel,
             format: this.settings.format || this.defaultSettings.format,
             languageType: languageType,
             voiceDescription: voiceDescription, // Pass description for Voice Design voices
@@ -332,7 +371,7 @@ class DashScopeTtsProvider {
     async onTestConnectionClick() {
         try {
             const apiHost = this.settings.apiHost || this.defaultSettings.apiHost;
-            const model = this.settings.model || this.defaultSettings.model;
+            const model = this.defaultSettings.modelOfficialVoice; // Use official voice model for connection test
             const format = this.settings.format || this.defaultSettings.format;
 
             console.log(`DashScope TTS: Testing connection to ${apiHost}`);
