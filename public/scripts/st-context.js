@@ -53,6 +53,18 @@ import {
     swipe_right,
     swipe_left,
     generateRaw,
+    showSwipeButtons,
+    hideSwipeButtons,
+    deleteMessage,
+    refreshSwipeButtons,
+    swipe,
+    isSwipingAllowed,
+    swipeState,
+    ensureMessageMediaIsArray,
+    getMediaDisplay,
+    getMediaIndex,
+    scrollChatToBottom,
+    scrollOnMediaLoad,
 } from '../script.js';
 import {
     extension_settings,
@@ -83,12 +95,13 @@ import { tokenizers, getTextTokens, getTokenCount, getTokenCountAsync, getTokeni
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { timestampToMoment, uuidv4 } from './utils.js';
-import { getGlobalVariable, getLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
+import { addGlobalVariable, addLocalVariable, decrementGlobalVariable, decrementLocalVariable, deleteGlobalVariable, deleteLocalVariable, getGlobalVariable, getLocalVariable, incrementGlobalVariable, incrementLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
 import { ConnectionManagerRequestService } from './extensions/shared.js';
-import { updateReasoningUI, parseReasoningFromString } from './reasoning.js';
+import { updateReasoningUI, parseReasoningFromString, getReasoningTemplateByName } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
+import { macros } from './macros/macro-system.js';
 
 export function getContext() {
     return {
@@ -117,6 +130,7 @@ export function getContext() {
         eventTypes: event_types,
         addOneMessage,
         deleteLastMessage,
+        deleteMessage,
         generate: Generate,
         sendStreamingRequest,
         sendGenerationRequest,
@@ -152,7 +166,9 @@ export function getContext() {
         timestampToMoment,
         /** @deprecated Handlebars for extensions are no longer supported. */
         registerHelper: () => { },
+        /** @deprecated Use `macros.register(name, { handler, description })` from scripts/macros/macro-system.js instead. */
         registerMacro: MacrosParser.registerMacro.bind(MacrosParser),
+        /** @deprecated Use `macros.registry.unregisterMacro(name)` from scripts/macros/macro-system.js instead. */
         unregisterMacro: MacrosParser.unregisterMacro.bind(MacrosParser),
         registerFunctionTool: ToolManager.registerFunctionTool.bind(ToolManager),
         unregisterFunctionTool: ToolManager.unregisterFunctionTool.bind(ToolManager),
@@ -203,15 +219,38 @@ export function getContext() {
         humanizedDateTime,
         updateMessageBlock,
         appendMediaToMessage,
-        swipe: { left: swipe_left, right: swipe_right },
+        ensureMessageMediaIsArray,
+        getMediaDisplay,
+        getMediaIndex,
+        scrollChatToBottom,
+        scrollOnMediaLoad,
+        macros,
+        swipe: {
+            left: swipe_left,
+            right: swipe_right,
+            to: swipe,
+            show: showSwipeButtons,
+            hide: hideSwipeButtons,
+            refresh: refreshSwipeButtons,
+            isAllowed: isSwipingAllowed,
+            state: () => swipeState,
+        },
         variables: {
             local: {
                 get: getLocalVariable,
                 set: setLocalVariable,
+                del: deleteLocalVariable,
+                add: addLocalVariable,
+                inc: incrementLocalVariable,
+                dec: decrementLocalVariable,
             },
             global: {
                 get: getGlobalVariable,
                 set: setGlobalVariable,
+                del: deleteGlobalVariable,
+                add: addGlobalVariable,
+                inc: incrementGlobalVariable,
+                dec: decrementGlobalVariable,
             },
         },
         loadWorldInfo,
@@ -232,6 +271,7 @@ export function getContext() {
         ConnectionManagerRequestService,
         updateReasoningUI,
         parseReasoningFromString,
+        getReasoningTemplateByName,
         unshallowCharacter,
         unshallowGroupMembers,
         openThirdPartyExtensionMenu,

@@ -40,6 +40,7 @@ export const enumIcons = {
     server: '🖥️',
     popup: '🗔',
     image: '🖼️',
+    video: '🎥',
     key: '🔑',
 
     true: '✔️',
@@ -263,6 +264,22 @@ export const commonEnumProviders = {
     },
 
     /**
+     * Media items attached to a specific message
+     * @returns {(executor:SlashCommandExecutor, scope:SlashCommandScope) => SlashCommandEnumValue[]}
+     */
+    messageMedia: () => (executor, _scope) => {
+        const messageId = Number(executor.namedArgumentList.find(it => ['mesId', 'id'].includes(it.name))?.value || '');
+        if (isNaN(messageId) || messageId === null || messageId < 0 || messageId >= chat.length) {
+            return [];
+        }
+        const message = chat[messageId];
+        if (!Array.isArray(message?.extra?.media)) {
+            return [];
+        }
+        return message.extra.media.map((media, index) => new SlashCommandEnumValue(index.toString(), media.title || message.extra.title || '[Untitled]', enumTypes.enum, enumIcons[media.type] || enumIcons.file));
+    },
+
+    /**
      * All names used in the current chat.
      *
      * @returns {SlashCommandEnumValue[]}
@@ -311,5 +328,11 @@ export const commonEnumProviders = {
         new SlashCommandEnumValue('object', null, enumTypes.type, enumIcons.dictionary),
         new SlashCommandEnumValue('null', null, enumTypes.type, enumIcons.null),
         new SlashCommandEnumValue('undefined', null, enumTypes.type, enumIcons.undefined),
+    ],
+
+    messageRoles: () => [
+        new SlashCommandEnumValue('user', null, enumTypes.enum, enumIcons.user),
+        new SlashCommandEnumValue('assistant', null, enumTypes.enum, enumIcons.assistant),
+        new SlashCommandEnumValue('system', null, enumTypes.enum, enumIcons.system),
     ],
 };

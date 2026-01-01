@@ -68,7 +68,7 @@ class DataMaidDialog {
     async getReport() {
         const response = await fetch('/api/data-maid/report', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {

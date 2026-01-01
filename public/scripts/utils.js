@@ -27,7 +27,7 @@ export const shiftDownByOne = (e, i, a) => a[i] = e - 1;
  */
 export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= totalNumber %>';
 
-export const localizePagination = function(container) {
+export const localizePagination = function (container) {
     container.find('[title="Next page"]').attr('title', t`Next page`);
     container.find('[title="Previous page"]').attr('title', t`Previous page`);
     container.find('[title="First page"]').attr('title', t`First page`);
@@ -35,12 +35,30 @@ export const localizePagination = function(container) {
 };
 
 /**
+ * Checks if the current environment supports negative lookbehind in regular expressions.
+ * @returns {boolean} True if negative lookbehind is supported, false otherwise.
+ */
+export function canUseNegativeLookbehind() {
+    let result = canUseNegativeLookbehind['result'];
+    if (typeof result !== 'boolean') {
+        try {
+            new RegExp('(?<!_)');
+            result = true;
+        } catch (e) {
+            result = false;
+        }
+        canUseNegativeLookbehind['result'] = result;
+    }
+    return result;
+}
+
+/**
  * Renders a dropdown for selecting page size in pagination.
  * @param {number} pageSize Page size
  * @param {number[]} sizeChangerOptions Array of page size options
  * @returns {string} The rendered dropdown element as a string
  */
-export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
+export const renderPaginationDropdown = function (pageSize, sizeChangerOptions) {
     const sizeSelect = document.createElement('select');
     sizeSelect.classList.add('J-paginationjs-size-select');
 
@@ -62,7 +80,7 @@ export const renderPaginationDropdown = function(pageSize, sizeChangerOptions) {
     return sizeSelect.outerHTML;
 };
 
-export const paginationDropdownChangeHandler = function(event, size) {
+export const paginationDropdownChangeHandler = function (event, size) {
     let dropdown = $(event?.originalEvent?.currentTarget || event.delegateTarget).find('select');
     dropdown.find('[selected]').removeAttr('selected');
     dropdown.find(`[value=${size}]`).attr('selected', '');
@@ -82,7 +100,7 @@ export const navigation_option = {
  * @param {any} item The item to check.
  * @returns {boolean} True if the item is an object, false otherwise.
  */
-function isObject(item) {
+export function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
 
@@ -122,8 +140,18 @@ export function ensurePlainObject(obj) {
     return obj;
 }
 
+/**
+ * Escapes text for safe HTML rendering.
+ * @param {string?} str
+ * @returns {string}
+ */
 export function escapeHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -390,6 +418,16 @@ export async function urlContentToDataUri(url, params) {
 }
 
 /**
+ * Fuzzily compares two files for equality. Only checks attributes, not contents.
+ * @param {File} a First file
+ * @param {File} b Second file
+ * @returns {boolean} True if the files are probably the same, false otherwise.
+ */
+export function isSameFile(a, b) {
+    return a.lastModified === b.lastModified && a.name === b.name && a.size === b.size && a.type === b.type;
+}
+
+/**
  * Returns a promise that resolves to the file's text.
  * @param {Blob} file The file to read.
  * @returns {Promise<string>} A promise that resolves to the file's text.
@@ -458,6 +496,10 @@ export async function parseJsonFile(file) {
 
 /**
  * Calculates a hash code for a string.
+ * cyrb53 (c) 2018 bryc ({@link https://github.com/bryc/code/blob/master/jshash/experimental/cyrb53.js|github.com/bryc})
+ * License: Public domain (or MIT if needed). Attribution appreciated.
+ * A fast and simple 53-bit string hash function with decent collision resistance.
+ * Largely inspired by MurmurHash2/3, but with a focus on speed/simplicity.
  * @param {string} str The string to hash.
  * @param {number} [seed=0] The seed to use for the hash.
  * @returns {number} The hash code.
@@ -901,6 +943,21 @@ export function humanFileSize(bytes, si = false, dp = 1) {
 }
 
 /**
+ * Formats time in seconds to MM:SS format
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+export function formatTime(seconds) {
+    if (!isFinite(seconds) || isNaN(seconds)) {
+        return '0:00';
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
  * Counts the number of occurrences of a character in a string.
  * @param {string} string The string to count occurrences in.
  * @param {string} character The character to count occurrences of.
@@ -991,7 +1048,7 @@ const dateCache = new Map();
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {string|number} timestamp String or number representing a date.
+ * @param {MessageTimestamp} timestamp String or number representing a date.
  * @returns {import('moment').Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
@@ -1008,11 +1065,16 @@ export function timestampToMoment(timestamp) {
 
 /**
  * Parses a timestamp and returns a moment object representing the parsed date and time.
- * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @param {MessageTimestamp} timestamp - The timestamp to parse. It can be a string or a number.
  * @returns {string} - If the timestamp is valid, returns an ISO 8601 string.
  */
 function parseTimestamp(timestamp) {
     if (!timestamp) return;
+
+    // Date object
+    if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+    }
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
@@ -1043,6 +1105,8 @@ function parseTimestamp(timestamp) {
         ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
         return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
     };
+    // 2024-07-12@01h31m37s123ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s(\d{1,3})ms/ });
     // 2024-7-12@01h31m37s
     dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
     // 2024-6-5 @14h 56m 50s 682ms
@@ -1109,7 +1173,7 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
  */
 export function isDataURL(str) {
     const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
-    return regex.test(str);
+    return typeof str === 'string' && regex.test(str);
 }
 
 /**
@@ -1126,6 +1190,120 @@ export function getImageSizeFromDataURL(dataUrl) {
         };
         image.onerror = function () {
             reject(new Error('Failed to load image'));
+        };
+    });
+}
+
+/**
+ * Gets the duration of a video from a data URL.
+ * @param {string} dataUrl Video data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getVideoDurationFromDataURL(dataUrl) {
+    const video = document.createElement('video');
+    video.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadedmetadata = function () {
+            resolve(video.duration);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
+ * Gets a thumbnail image from a video URL.
+ * @param {string} videoUrl URL of the video
+ * @param {number|null} [maxWidth=null] Maximum width of the thumbnail
+ * @param {number|null} [maxHeight=null] Maximum height of the thumbnail
+ * @param {string} [type='image/jpeg'] MIME type of the thumbnail
+ * @returns {Promise<string>} Promise that resolves to a data URL of the video thumbnail
+ */
+export function getVideoThumbnail(videoUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadeddata = function () {
+            // Set the time to capture the thumbnail at the middle of the video
+            video.currentTime = video.duration / 2;
+        };
+        video.onseeked = function () {
+            // Create a canvas to draw the thumbnail
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(video.videoWidth, video.videoHeight, maxWidth, maxHeight);
+
+            canvas.width = thumbnailWidth;
+            canvas.height = thumbnailHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
+            ctx.drawImage(video, 0, 0, thumbnailWidth, thumbnailHeight);
+            // Get the data URL of the thumbnail
+            const dataUrl = canvas.toDataURL(type);
+            resolve(dataUrl);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
+ * Calculates the thumbnail size for a media element while maintaining aspect ratio.
+ * @param {number} width Media width
+ * @param {number} height Media height
+ * @param {number?} maxWidth Max width (null = no limit)
+ * @param {number?} maxHeight Max height (null = no limit)
+ * @returns {{ thumbnailWidth: number, thumbnailHeight: number }} Thumbnail size
+ */
+export function calculateThumbnailSize(width, height, maxWidth, maxHeight) {
+    // Calculate the thumbnail dimensions while maintaining the aspect ratio
+    const aspectRatio = width / height;
+    let thumbnailWidth = maxWidth;
+    let thumbnailHeight = maxHeight;
+
+    if (maxWidth === null) {
+        thumbnailWidth = width;
+        maxWidth = width;
+    }
+
+    if (maxHeight === null) {
+        thumbnailHeight = height;
+        maxHeight = height;
+    }
+
+    // Do not upscale if image is already smaller than max dimensions
+    if (width <= maxWidth && height <= maxHeight) {
+        thumbnailWidth = width;
+        thumbnailHeight = height;
+    } else {
+        if (width > height) {
+            thumbnailHeight = maxWidth / aspectRatio;
+        } else {
+            thumbnailWidth = maxHeight * aspectRatio;
+        }
+    }
+
+    return { thumbnailWidth: Math.round(thumbnailWidth), thumbnailHeight: Math.round(thumbnailHeight) };
+}
+
+/**
+ * Gets the duration of an audio from a data URL.
+ * @param {string} dataUrl Audio data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getAudioDurationFromDataURL(dataUrl) {
+    const audio = document.createElement('audio');
+    audio.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        audio.onloadedmetadata = function () {
+            resolve(audio.duration);
+        };
+        audio.onerror = function () {
+            reject(new Error('Failed to load audio'));
         };
     });
 }
@@ -1596,33 +1774,7 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-
-            // Calculate the thumbnail dimensions while maintaining the aspect ratio
-            const aspectRatio = img.width / img.height;
-            let thumbnailWidth = maxWidth;
-            let thumbnailHeight = maxHeight;
-
-            if (maxWidth === null) {
-                thumbnailWidth = img.width;
-                maxWidth = img.width;
-            }
-
-            if (maxHeight === null) {
-                thumbnailHeight = img.height;
-                maxHeight = img.height;
-            }
-
-            // Do not upscale if image is already smaller than max dimensions
-            if (img.width <= maxWidth && img.height <= maxHeight) {
-                thumbnailWidth = img.width;
-                thumbnailHeight = img.height;
-            } else {
-                if (img.width > img.height) {
-                    thumbnailHeight = maxWidth / aspectRatio;
-                } else {
-                    thumbnailWidth = maxHeight * aspectRatio;
-                }
-            }
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(img.width, img.height, maxWidth, maxHeight);
 
             // Set the canvas dimensions and draw the resized image
             canvas.width = thumbnailWidth;
@@ -1826,7 +1978,7 @@ export async function extractTextFromOffice(blob) {
         try {
             const result = await fetch('/api/plugins/office/probe', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;
@@ -2292,6 +2444,7 @@ export async function fetchFaFile(name) {
         .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
+
 export async function fetchFa() {
     return [...new Set((await Promise.all([
         fetchFaFile('fontawesome.min.css'),
@@ -2407,7 +2560,7 @@ export function findPersona({ name = null, allowAvatar = true, insensitive = tru
  * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
  * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
  * @param {boolean} [options.quiet=false] - Whether to suppress warnings
- * @returns {import('./char-data.js').v1CharData?} - The found character or null if not found
+ * @returns {Character?} - The found character or null if not found
  */
 export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
     const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
@@ -2622,6 +2775,17 @@ export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibi
     };
     btn.addEventListener('click', onActivate);
 
+    let frameHandle = null;
+    const resizeObserver = new ResizeObserver(() => {
+        if (frameHandle !== null) {
+            cancelAnimationFrame(frameHandle);
+        }
+        frameHandle = requestAnimationFrame(() => {
+            updateButtonVisibilityThrottled();
+        });
+    });
+    resizeObserver.observe(drawer);
+
     // Initial state check
     updateButtonVisibility();
 
@@ -2629,6 +2793,7 @@ export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibi
     return () => {
         scrollContainer.removeEventListener('scroll', onScroll);
         btn.removeEventListener('click', onActivate);
+        resizeObserver.disconnect();
     };
 }
 
@@ -2687,4 +2852,47 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
             console.error('Unknown content type', customContentType);
             break;
     }
+}
+
+/**
+ * If value is less than min, it's set to min.
+ * If value is greater than max, it's set to max.
+ * @param {number} value The target value.
+ * @param {number} min The minimum for value.
+ * @param {number} max The maximum for value.
+ * @returns {number} The clamped value.
+ */
+export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+/**
+ * Shakes the targetElement.
+ * @param {HTMLElement|JQuery<HTMLElement>} targetElement
+ * @param {number} distance Distance in pixels.
+ * @param {number} duration Duration in milliseconds.
+ * @param {string} easing CSS easing function.
+ */
+export function shakeElement(targetElement, distance = 10, duration = 100, easing = 'ease-in-out') {
+    // Don't call the JQuery animation.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+    if (targetElement instanceof jQuery) targetElement = targetElement[0];
+
+    return targetElement.animate([
+        { transform: 'translateX(0)' },
+        { transform: `translateX(${distance}px)` },
+        { transform: 'translateX(0)' },
+    ], { duration, easing });
+}
+
+/**
+ * Creates a promise that rejects after a specified delay.
+ * Used for Promise.race fallbacks.
+ * @param {number} ms The delay in milliseconds.
+ * @param {string?} [errorMessage='']
+ * @returns {Promise<never>} A promise that rejects.
+ */
+export function createTimeout(ms, errorMessage = '') {
+    errorMessage ??= `Operation timed out after ${ms}ms.`;
+    return new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(errorMessage)), ms);
+    });
 }

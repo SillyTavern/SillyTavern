@@ -1,0 +1,54 @@
+.chatBackupsList {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: height var(--animation-duration) ease;
+    max-height: min(25dvh, 250px);
+    overflow-y: auto;
+    border-radius: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
+    width: 100%;
+}
+
+.chatBackupsList:not(.open),
+.chatBackupsList:empty {
+    display: none;
+}
+
+.chatBackupsListItem {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 5px 7px;
+    font-size: smaller;
+    background: var(--black30a);
+}
+
+.chatBackupsListItemName {
+    opacity: 0.75;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chatBackupsListItemInfo {
+    opacity: 0.75;
+}
+
+.chatBackupsListItemActions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.chatBackupsListItemActions .right_menu_button {
+    font-size: var(--mainFontSize);
+}

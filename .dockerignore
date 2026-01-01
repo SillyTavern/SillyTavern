@@ -15,3 +15,7 @@ access.log
 /public/scripts/extensions/third-party
 /colab
 .gemini
+/docker/config
+/docker/extensions
+/docker/data
+/docker/plugins

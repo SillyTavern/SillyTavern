@@ -237,6 +237,14 @@
     display: none;
 }
 
+.world_entry .select2-selection--multiple,
+.world_entry textarea.keyprimarytextpole,
+.world_entry textarea.keysecondarytextpole {
+    max-height: 160px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 span.select2-container .select2-selection__choice__display:has(> .regex_item),
 span.select2-container .select2-results__option:has(> .result_block .regex_item) {
     background-color: #D27D2D30;

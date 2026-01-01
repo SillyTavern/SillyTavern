@@ -6,7 +6,13 @@
         "moduleResolution": "node",
         "allowUmdGlobalAccess": true,
         "allowSyntheticDefaultImports": true,
-        "strictBindCallApply": true
+        "strictBindCallApply": true,
+        "baseUrl": ".",
+        "paths": {
+            "/*": [
+                "./*"
+            ]
+        }
     },
     "exclude": [
         "**/node_modules/**",

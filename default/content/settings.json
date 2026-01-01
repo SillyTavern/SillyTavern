@@ -22,14 +22,15 @@
         "world_info_budget_cap": 0
     },
     "textgenerationwebui_settings": {
-        "temp": 0.5,
-        "top_p": 0.9,
+        "temp": 1,
+        "top_p": 0.95,
         "top_k": 0,
         "top_a": 0,
         "tfs": 1,
         "epsilon_cutoff": 0,
         "eta_cutoff": 0,
         "typical_p": 1,
+        "min_p": 0.01,
         "rep_pen": 1.1,
         "rep_pen_range": 0,
         "no_repeat_ngram_size": 0,
@@ -190,6 +191,7 @@
         "custom_stopping_strings_macro": true,
         "fuzzy_search": true,
         "encode_tags": false,
+        "experimental_macro_engine": false,
         "enableLabMode": false,
         "enableZenSliders": false,
         "ui_mode": 1,
@@ -430,6 +432,7 @@
         "rep_pen": 1.1,
         "rep_pen_range": 600,
         "top_p": 0.95,
+        "min_p": 0.01,
         "top_a": 0,
         "top_k": 0,
         "typical": 1,
@@ -461,7 +464,6 @@
         "stream_openai": true,
         "openai_max_context": 4095,
         "openai_max_tokens": 300,
-        "wrap_in_quotes": false,
         "prompts": [
             {
                 "name": "Main Prompt",
@@ -630,6 +632,8 @@
         "show_external_models": false,
         "proxy_password": "",
         "assistant_prefill": "",
-        "assistant_impersonation": ""
+        "assistant_impersonation": "",
+        "use_sysprompt": false,
+        "squash_system_messages": false
     }
 }
