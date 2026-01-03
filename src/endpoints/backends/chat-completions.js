@@ -83,7 +83,7 @@ const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
-const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_SILICONFLOW = 'https://api.siliconflow.cn/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
 /**
