@@ -2404,7 +2404,7 @@ export function addCopyToCodeBlocks(messageElement) {
  * @returns {void}
  */
 export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
-    const { messageElement: renderedMessage, params } = createMessageElement(mes, { type: 'normal', scroll: true, forceId: null });
+    const { messageElement: renderedMessage, params } = createMessageElement(mes, { type: 'normal', scroll: scroll, forceId: forceId });
 
     //last_mes should always be updated.
     chatElement.find('.mes').removeClass('last_mes');
@@ -2580,7 +2580,7 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
     // Set the swipes counter for all non-user messages.
     if (!params.isUser) {
-        updateSwipeCounter(newMessageId);
+        updateSwipeCounter(newMessageId, { message:mes, messageElement: newMessage });
     }
 
     return { messageElement:newMessage, params };
