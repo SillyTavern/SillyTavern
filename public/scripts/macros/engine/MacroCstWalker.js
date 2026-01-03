@@ -157,8 +157,8 @@ class MacroCstWalker {
             if (!info) continue;
 
             if (info.isClosing) {
-                // Closing tag - pop matching opener from stack
-                if (unclosedStack.length > 0 && unclosedStack[unclosedStack.length - 1].name === info.name) {
+                // Closing tag - pop matching opener from stack (case-insensitive match)
+                if (unclosedStack.length > 0 && unclosedStack[unclosedStack.length - 1].name.toLowerCase() === info.name.toLowerCase()) {
                     unclosedStack.pop();
                 }
                 // If no matching opener, ignore (orphan closing tag)
@@ -1015,8 +1015,8 @@ class MacroCstWalker {
         for (let i = openingIdx + 1; i < macroInfos.length; i++) {
             const info = macroInfos[i];
 
-            // Only consider macros with the same name
-            if (info.name !== targetName) continue;
+            // Only consider macros with the same name (case-insensitive)
+            if (info.name.toLowerCase() !== targetName.toLowerCase()) continue;
 
             // Skip already matched macros
             if (info.matched) continue;
