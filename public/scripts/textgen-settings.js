@@ -229,6 +229,8 @@ export const textgenerationwebui_settings = {
     featherless_model: '',
     generic_model: '',
     extensions: {},
+    adaptive_target: -0.01,
+    adaptive_decay: 0.9,
 };
 
 export {
@@ -313,6 +315,8 @@ export const setting_names = [
     'generic_model',
     'extensions',
     'json_schema_allow_empty',
+    'adaptive_target',
+    'adaptive_decay',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -989,6 +993,8 @@ export function initTextGenSettings() {
             'xtc_probability_textgenerationwebui': 0,
             'nsigma_textgenerationwebui': 0,
             'min_keep_textgenerationwebui': 0,
+            'adaptive_target_textgenerationwebui': -0.01,
+            'adaptive_decay_textgenerationwebui': 0.9,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
@@ -1630,6 +1636,8 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
         'nsigma': settings.nsigma,
         'top_n_sigma': settings.nsigma,
         'min_keep': settings.min_keep,
+        'adaptive_target': settings.adaptive_target,
+        'adaptive_decay': settings.adaptive_decay,
         parseSequenceBreakers: function () {
             try {
                 return JSON.parse(this.dry_sequence_breakers);
