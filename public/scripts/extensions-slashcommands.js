@@ -1,4 +1,4 @@
-import { disableExtension, enableExtension, extension_settings, extensionNames, findExtension } from './extensions.js';
+import { disableExtension, enableExtension, extensionNames, findExtension } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
