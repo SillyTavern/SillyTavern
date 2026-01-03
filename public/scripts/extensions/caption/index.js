@@ -602,7 +602,7 @@ jQuery(async function () {
             const modelIds = await response.json();
             if (Array.isArray(modelIds) && modelIds.length > 0) {
                 modelIds.sort().forEach((modelId) => {
-                    if (!modelId || typeof modelId !== 'string' || options.some(o => o.value === modelId)) {
+                    if (!modelId || typeof modelId !== 'string' || options.some(o => o.value === modelId && o.dataset.type === api)) {
                         return;
                     }
                     const option = document.createElement('option');
