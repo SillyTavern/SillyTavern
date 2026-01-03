@@ -1569,26 +1569,56 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
+// Lock to prevent concurrent reloadCurrentChat calls causing duplicate messages
+let isReloadingChat = false;
+let pendingReloadPromise = null;
+
+/**
+ * Reloads the current chat, clearing and re-fetching all messages.
+ * Uses a lock mechanism to prevent concurrent calls from causing duplicate messages.
+ * @returns {Promise<void>}
+ */
 export async function reloadCurrentChat() {
-    preserveNeutralChat();
-    await clearChat();
-    chat.length = 0;
-
-    if (selected_group) {
-        await getGroupChat(selected_group, true);
-    }
-    else if (this_chid !== undefined) {
-        await getChat();
-    }
-    else {
-        resetChatState();
-        restoreNeutralChat();
-        await getCharacters();
-        await printMessages();
-        await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+    // If already reloading, return the pending promise to avoid concurrent execution
+    if (isReloadingChat) {
+        if (!pendingReloadPromise) {
+            pendingReloadPromise = new Promise(resolve => {
+                const checkInterval = setInterval(() => {
+                    if (!isReloadingChat) {
+                        clearInterval(checkInterval);
+                        pendingReloadPromise = null;
+                        resolve();
+                    }
+                }, 50);
+            });
+        }
+        return pendingReloadPromise;
     }
 
-    refreshSwipeButtons();
+    isReloadingChat = true;
+    try {
+        preserveNeutralChat();
+        await clearChat();
+        chat.length = 0;
+
+        if (selected_group) {
+            await getGroupChat(selected_group, true);
+        }
+        else if (this_chid !== undefined) {
+            await getChat();
+        }
+        else {
+            resetChatState();
+            restoreNeutralChat();
+            await getCharacters();
+            await printMessages();
+            await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+        }
+
+        refreshSwipeButtons();
+    } finally {
+        isReloadingChat = false;
+    }
 }
 
 /**
