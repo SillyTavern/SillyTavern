@@ -5,6 +5,7 @@ import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js'
 import { inject_ids } from '../../constants.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { MacroEngine } from '../engine/MacroEngine.js';
+import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../engine/MacroLexer.js';
 
 /**
  * Marker used by {{else}} to split content in {{if}} blocks.
@@ -94,14 +95,14 @@ export function registerCoreMacros() {
     // {{if condition}}content{{/if}} -> conditional content
     // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
     // {{if !condition}}content{{/if}} -> inverted conditional (negated)
-    // Condition can be a macro name (resolved automatically) or any value
+    // Condition can be a macro name (resolved automatically), variable shorthand (.var or $var), or any value
     MacroRegistry.registerMacro('if', {
         category: MacroCategory.UTILITY,
-        description: 'Conditional macro. Returns the content if the condition is truthy, otherwise returns nothing (or the else branch if present). Prefix the condition with ! to invert. If the condition is a registered macro name (without braces), it will be resolved first.',
+        description: 'Conditional macro. Returns the content if the condition is truthy, otherwise returns nothing (or the else branch if present). Prefix the condition with ! to invert. If the condition is a registered macro name (without braces), it will be resolved first. Variable shorthands (.varname for local, $varname for global) are also supported.',
         unnamedArgs: [
             {
                 name: 'condition',
-                description: 'The condition to evaluate. Prefix with ! to invert. Can be a macro name (auto-resolved) or a value. Falsy: empty string, "false", "off", "0".',
+                description: 'The condition to evaluate. Prefix with ! to invert. Can be a macro name (auto-resolved), variable shorthand (.var or $var), or a value. Falsy: empty string, "false", "off", "0".',
             },
             {
                 name: 'content',
@@ -114,6 +115,8 @@ export function registerCoreMacros() {
             '{{if charVersion}}{{charVersion}}{{else}}No version{{/if}}',
             '{{if !personality}}No personality defined{{/if}}',
             '{{if {{getvar::showHeader}}}}# Header{{/if}}',
+            '{{if .myvar}}Local var exists{{/if}}',
+            '{{if $globalFlag}}Global flag is set{{/if}}',
         ],
         returns: 'The content if condition is truthy, else branch or empty string otherwise.',
         handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], flags, env, trimContent }) => {
@@ -123,16 +126,27 @@ export function registerCoreMacros() {
             if (/^\s*!/.test(rawCondition)) {
                 inverted = true;
                 // Strip the ! from the resolved condition if it was the prefix
-                condition = condition.replace(/^!/, '');
+                condition = condition.replace(/^!\s*/, '');
             }
 
-            // Check if condition is a registered macro name (without braces)
-            // If so, resolve it first (only for macros that accept 0 required args)
-            const macroDef = MacroRegistry.getPrimaryMacro(condition);
-            if (macroDef && macroDef.minArgs === 0) {
-                // Use MacroEngine.evaluate to properly resolve the macro with full context
-                // This ensures all handler args (cst, normalize, list, etc.) are correctly provided
-                condition = MacroEngine.evaluate(`{{${condition}}}`, env);
+            // Check if condition is a variable shorthand (.varname or $varname)
+            // If so, resolve it using the appropriate variable macro
+            const varShorthandRegex = new RegExp(`^([.$])(${MACRO_VARIABLE_SHORTHAND_PATTERN.source})$`);
+            const varShorthandMatch = condition.match(varShorthandRegex);
+            if (varShorthandMatch) {
+                const [, prefix, varName] = varShorthandMatch;
+                const varMacro = prefix === '.' ? 'getvar' : 'getglobalvar';
+                // Resolve the variable using MacroEngine.evaluate
+                condition = MacroEngine.evaluate(`{{${varMacro}::${varName}}}`, env);
+            } else {
+                // Check if condition is a registered macro name (without braces)
+                // If so, resolve it first (only for macros that accept 0 required args)
+                const macroDef = MacroRegistry.getPrimaryMacro(condition);
+                if (macroDef && macroDef.minArgs === 0) {
+                    // Use MacroEngine.evaluate to properly resolve the macro with full context
+                    // This ensures all handler args (cst, normalize, list, etc.) are correctly provided
+                    condition = MacroEngine.evaluate(`{{${condition}}}`, env);
+                }
             }
 
             // Check if condition is falsy: empty string or isFalseBoolean

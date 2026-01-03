@@ -16,28 +16,42 @@ const IDENTIFIER_LEXER_PATTERN = /[a-zA-Z][\w-_]*/;
  */
 export const MACRO_IDENTIFIER_PATTERN = /^[a-zA-Z][\w-_]*$/;
 
+/**
+ * Pattern for valid variable shorthand identifiers.
+ * Must start with a letter, followed by word chars (letters, digits, underscore) or hyphens,
+ * but must end with a word character (not a hyphen).
+ *
+ * Used for variable shorthand syntax like .varName or $varName.
+ */
+export const MACRO_VARIABLE_SHORTHAND_PATTERN = /[a-zA-Z](?:[\w\-_]*[\w])?/;
+
 /** @enum {string} */
-const modes = {
+const modes = Object.freeze({
     plaintext: 'plaintext_mode',
     macro_def: 'macro_def_mode',
     macro_identifier_end: 'macro_identifier_end_mode',
     macro_args: 'macro_args_mode',
     macro_filter_modifer: 'macro_filter_modifer_mode',
     macro_filter_modifier_end: 'macro_filter_modifier_end_mode',
-};
+    // Variable shorthand modes
+    var_identifier: 'var_identifier_mode',
+    var_after_identifier: 'var_after_identifier_mode',
+    var_value: 'var_value_mode',
+});
 
-/** @readonly */
-const Tokens = {
-    // General capture-all plaintext without macros. Consumes any character that is not the first '{' of a macro opener '{{'.
+/**
+ * All lexer tokens used by the macro parser.
+ * @readonly
+ */
+const Tokens = Object.freeze({
+/** General capture-all plaintext without macros. Consumes any character that is not the first '{' of a macro opener '{{'. */
     Plaintext: createToken({ name: 'Plaintext', pattern: /(?:[^{]|\{(?!\{))+/u, line_breaks: true }),
-    // Single literal '{' that appears immediately before a macro opener '{{'.
+    /** Single literal '{' that appears immediately before a macro opener '{{' */
     PlaintextOpenBrace: createToken({ name: 'Plaintext.OpenBrace', pattern: /\{(?=\{\{)/ }),
 
-    // General macro capture
+    /** General macro capture */
     Macro: {
         Start: createToken({ name: 'Macro.Start', pattern: /\{\{/ }),
-        // Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
-        // We need this, because this token is going to switch lexer mode, while the general identifier does not.
         /**
          * Macro execution flags - special symbols that modify macro resolution behavior.
          * - `!` = immediate resolve (TBD)
@@ -45,24 +59,26 @@ const Tokens = {
          * - `~` = re-evaluate (TBD)
          * - `/` = closing block marker for scoped macros
          * - `#` = preserve whitespace (don't auto-trim scoped content), also legacy handlebars compatibility
-         * - `.` = variable shorthand (TBD)
-         * - `$` = variable shorthand alternative (TBD)
          */
-        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/.$]/ }),
+        Flags: createToken({ name: 'Macro.Flag', pattern: /[!?~#/]/ }),
         /**
          * Filter flag (`>`) - separate token because it changes parsing behavior.
          * When present, `|` characters inside the macro are treated as filter/pipe operators.
          */
         FilterFlag: createToken({ name: 'Macro.FilterFlag', pattern: />/ }),
         DoubleSlash: createToken({ name: 'Macro.DoubleSlash', pattern: /\/\// }),
+        /**
+         * Separate macro identifier needed, that is similar to the global indentifier, but captures the actual macro "name"
+         * We need this, because this token is going to switch lexer mode, while the general identifier does not.
+         */
         Identifier: createToken({ name: 'Macro.Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
-        // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
+        /** At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces */
         EndOfIdentifier: createToken({ name: 'Macro.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
         BeforeEnd: createToken({ name: 'Macro.BeforeEnd', pattern: /(?=\}\})/, group: Lexer.SKIPPED }),
         End: createToken({ name: 'Macro.End', pattern: /\}\}/ }),
     },
 
-    // Captures that only appear inside arguments
+    /** Captures that only appear inside arguments */
     Args: {
         DoubleColon: createToken({ name: 'Args.DoubleColon', pattern: /::/ }),
         Colon: createToken({ name: 'Args.Colon', pattern: /:/ }),
@@ -74,7 +90,7 @@ const Tokens = {
         EscapedPipe: createToken({ name: 'Filter.EscapedPipe', pattern: /\\\|/ }),
         Pipe: createToken({ name: 'Filter.Pipe', pattern: /\|/ }),
         Identifier: createToken({ name: 'Filter.Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
-        // At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces
+        /** At the end of an identifier, there has to be whitspace, or must be directly followed by colon/double-colon separator, output modifier or closing braces */
         EndOfIdentifier: createToken({ name: 'Filter.EndOfIdentifier', pattern: /(?:\s+|(?=:{1,2})|(?=[|}]))/, group: Lexer.SKIPPED }),
     },
 
@@ -82,22 +98,54 @@ const Tokens = {
     Identifier: createToken({ name: 'Identifier', pattern: IDENTIFIER_LEXER_PATTERN }),
     WhiteSpace: createToken({ name: 'WhiteSpace', pattern: /\s+/, group: Lexer.SKIPPED }),
 
-    // Capture unknown characters one by one, to still allow other tokens being matched once they are there.
-    // This includes any possible braces that is not the double closing braces as MacroEnd.
+    /** Variable shorthand tokens */
+    Var: {
+        /** Local variable prefix (`.`) - triggers variable shorthand for local variables */
+        LocalPrefix: createToken({ name: 'Var.LocalPrefix', pattern: /\./ }),
+        /** Global variable prefix (`$`) - triggers variable shorthand for global variables */
+        GlobalPrefix: createToken({ name: 'Var.GlobalPrefix', pattern: /\$/ }),
+        /**
+         * Variable identifier - allows hyphens inside but not at the end to avoid conflict with -- operator.
+         * Pattern: starts with letter, optionally followed by word chars/hyphens, but must end with word char.
+         * Examples: myVar, my-var, my_var, myVar123, my-long-var-name
+         * Invalid: my-, my--, -var
+         */
+        Identifier: createToken({ name: 'Var.Identifier', pattern: MACRO_VARIABLE_SHORTHAND_PATTERN }),
+        /** Increment operator (`++`) */
+        Increment: createToken({ name: 'Var.Increment', pattern: /\+\+/ }),
+        /** Decrement operator (`--`) */
+        Decrement: createToken({ name: 'Var.Decrement', pattern: /--/ }),
+        /** Add/append operator (`+=`) - must come before Equals to avoid conflict */
+        PlusEquals: createToken({ name: 'Var.PlusEquals', pattern: /\+=/ }),
+        /** Set operator (`=`) */
+        Equals: createToken({ name: 'Var.Equals', pattern: /=/ }),
+    },
+
+    /**
+     * Capture unknown characters one by one, to still allow other tokens being matched once they are there.
+     * This includes any possible braces that is not the double closing braces as MacroEnd.
+     */
     Unknown: createToken({ name: 'Unknown', pattern: /([^}]|\}(?!\}))/ }),
 
-    // TODO: Capture-all rest for now, that is not the macro end or opening of a new macro. Might be replaced later down the line.
+    /** TODO: Capture-all rest for now, that is not the macro end or opening of a new macro. Might be replaced later down the line. */
     Text: createToken({ name: 'Text', pattern: /.+(?=\}\}|\{\{)/, line_breaks: true }),
 
-    // DANGER ZONE: Careful with this token. This is used as a way to pop the current mode, if no other token matches.
-    // Can be used in modes that don't have a "defined" end really, like when capturing a single argument, argument list, etc.
-    // Has to ALWAYS be the last token.
+    /**
+     * DANGER ZONE: Careful with this token. This is used as a way to pop the current mode, if no other token matches.
+     * Can be used in modes that don't have a "defined" end really, like when capturing a single argument, argument list, etc.
+     * Has to ALWAYS be the last token.
+     */
     ModePopper: createToken({ name: 'ModePopper', pattern: () => [''], line_breaks: false, group: Lexer.SKIPPED }),
-};
+});
 
 /** @type {Map<string,string>} Saves all token definitions that are marked as entering modes */
 const enterModesMap = new Map();
 
+/**
+ * Lexer definition object that maps states/modes to their token rules.
+ * Each mode defines which tokens are valid in that context and how to transition between modes.
+ * @readonly
+ */
 const Def = {
     modes: {
         [modes.plaintext]: [
@@ -110,6 +158,11 @@ const Def = {
 
             // An explicit double-slash will be treated above flags to consume, as it'll introduce a comment macro. Directly following is the args then.
             enter(Tokens.Macro.DoubleSlash, modes.macro_args),
+
+            // Variable shorthand prefixes - must come before flags to take precedence
+            // These enter the variable identifier mode to parse variable expressions
+            enter(Tokens.Var.LocalPrefix, modes.var_identifier),
+            enter(Tokens.Var.GlobalPrefix, modes.var_identifier),
 
             using(Tokens.Macro.Flags),
             // Filter flag is separate because it affects parsing behavior for pipes
@@ -164,6 +217,40 @@ const Def = {
             // Valid options after a filter itenfier: whitespace, colon/double-colon (captured), macro end braces, or output modifier pipe.
             exits(Tokens.Macro.BeforeEnd, modes.macro_identifier_end),
             exits(Tokens.Filter.EndOfIdentifier, modes.macro_filter_modifer),
+        ],
+
+        // After seeing `.` or `$`, expect a variable identifier
+        [modes.var_identifier]: [
+            using(Tokens.WhiteSpace),
+            // Consume the variable identifier and move to operator detection
+            enter(Tokens.Var.Identifier, modes.var_after_identifier, { andExits: modes.var_identifier }),
+            // If no valid identifier found, exit back (will result in parser error)
+            exits(Tokens.ModePopper, modes.var_identifier),
+        ],
+        // After the variable identifier, look for operators or end
+        [modes.var_after_identifier]: [
+            using(Tokens.WhiteSpace),
+            // Check for operators
+            using(Tokens.Var.Increment),
+            using(Tokens.Var.Decrement),
+            enter(Tokens.Var.PlusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Equals, modes.var_value, { andExits: modes.var_after_identifier }),
+            // If we see the end, exit
+            exits(Tokens.Macro.BeforeEnd, modes.var_after_identifier),
+            // Fallback exit
+            exits(Tokens.ModePopper, modes.var_after_identifier),
+        ],
+        // After `=` or `+=`, capture the value (can contain nested macros)
+        [modes.var_value]: [
+            // Nested macros in value
+            enter(Tokens.Macro.Start, modes.macro_def),
+
+            using(Tokens.Identifier),
+            using(Tokens.WhiteSpace),
+            using(Tokens.Unknown),
+
+            // Exit when we're about to see the end
+            exits(Tokens.ModePopper, modes.var_value),
         ],
     },
     defaultMode: modes.plaintext,

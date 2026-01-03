@@ -661,6 +661,7 @@ export class ToolManager {
             chat_completion_sources.AZURE_OPENAI,
             chat_completion_sources.ZAI,
             chat_completion_sources.SILICONFLOW,
+            chat_completion_sources.NANOGPT,
         ];
         return supportedSources.includes(settings.chat_completion_source);
     }
