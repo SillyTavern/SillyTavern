@@ -221,7 +221,7 @@ class MacroRegistry {
                     if (typeof aliasDef.alias !== 'string' || !aliasDef.alias.trim()) throw new Error(`Macro "${name}" options.aliases[${i}].alias must be a non-empty string.`);
                     const aliasName = aliasDef.alias.trim();
                     if (!isIdentifierValid(aliasName)) throw new Error(`Macro "${name}" options.aliases[${i}].alias "${aliasName}" is invalid. Must start with a letter, followed by word chars or hyphens.`);
-                    if (aliasName === name) throw new Error(`Macro "${name}" options.aliases[${i}].alias cannot be the same as the macro name.`);
+                    if (aliasName.toLowerCase() === name.toLowerCase()) throw new Error(`Macro "${name}" options.aliases[${i}].alias cannot be the same as the macro name (insensitive).`);
                     const visible = aliasDef.visible !== false; // Default to true
                     aliases.push({ alias: aliasName, visible });
                 }
@@ -368,7 +368,8 @@ class MacroRegistry {
                 delayArgResolution = rawDelayArgResolution;
             }
 
-            if (this.#macros.has(name)) {
+            const nameKey = name.toLowerCase();
+            if (this.#macros.has(nameKey)) {
                 logMacroRegisterWarning({ macroName: name, message: `Macro "${name}" is already registered and will be overwritten.` });
             }
 
@@ -401,21 +402,22 @@ class MacroRegistry {
                 aliasVisible: null,
             };
 
-            this.#macros.set(name, definition);
+            this.#macros.set(nameKey, definition);
 
             // Register alias entries pointing to the same definition
             for (const { alias, visible } of aliases) {
-                if (this.#macros.has(alias)) {
+                const aliasKey = alias.toLowerCase();
+                if (this.#macros.has(aliasKey)) {
                     logMacroRegisterWarning({ macroName: name, message: `Alias "${alias}" for macro "${name}" overwrites an existing macro.` });
                 }
                 /** @type {MacroDefinition} */
                 const aliasEntry = {
                     ...definition,
-                    name: alias, // The lookup name is the alias
+                    name: alias, // The lookup name is the alias (preserves original casing for display)
                     aliasOf: name,
                     aliasVisible: visible,
                 };
-                this.#macros.set(alias, aliasEntry);
+                this.#macros.set(aliasKey, aliasEntry);
             }
 
             return definition;
@@ -438,7 +440,7 @@ class MacroRegistry {
     unregisterMacro(name) {
         if (typeof name !== 'string' || !name.trim()) throw new Error('Macro name must be a non-empty string');
         name = name.trim();
-        return this.#macros.delete(name);
+        return this.#macros.delete(name.toLowerCase());
     }
 
     /**
@@ -450,7 +452,7 @@ class MacroRegistry {
     hasMacro(name) {
         if (typeof name !== 'string' || !name.trim()) return false;
         name = name.trim();
-        return this.#macros.has(name);
+        return this.#macros.has(name.toLowerCase());
     }
 
     /**
@@ -462,7 +464,7 @@ class MacroRegistry {
     getMacro(name) {
         if (typeof name !== 'string' || !name.trim()) return undefined;
         name = name.trim();
-        return this.#macros.get(name);
+        return this.#macros.get(name.toLowerCase());
     }
 
     /**

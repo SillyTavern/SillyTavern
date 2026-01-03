@@ -165,10 +165,12 @@ class MacroEngine {
         if (!name) return raw;
 
         // First check if this is a dynamic macro to use. If so, we will create a temporary macro definition for it and use that over any registered macro.
+        // Dynamic macro keys are normalized to lowercase for case-insensitive matching.
         /** @type {MacroDefinition?} */
         let defOverride = null;
-        if (Object.hasOwn(env.dynamicMacros, name)) {
-            const impl = env.dynamicMacros[name];
+        const nameLower = name.toLowerCase();
+        if (Object.hasOwn(env.dynamicMacros, nameLower)) {
+            const impl = env.dynamicMacros[nameLower];
             defOverride = {
                 name,
                 aliases: [],
