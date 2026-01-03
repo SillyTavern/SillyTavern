@@ -217,7 +217,7 @@ class MacroRegistry {
                     if (typeof aliasDef.alias !== 'string' || !aliasDef.alias.trim()) throw new Error(`Macro "${name}" options.aliases[${i}].alias must be a non-empty string.`);
                     const aliasName = aliasDef.alias.trim();
                     if (!isIdentifierValid(aliasName)) throw new Error(`Macro "${name}" options.aliases[${i}].alias "${aliasName}" is invalid. Must start with a letter, followed by word chars or hyphens.`);
-                    if (aliasName === name) throw new Error(`Macro "${name}" options.aliases[${i}].alias cannot be the same as the macro name.`);
+                    if (aliasName.toLowerCase() === name.toLowerCase()) throw new Error(`Macro "${name}" options.aliases[${i}].alias cannot be the same as the macro name (insensitive).`);
                     const visible = aliasDef.visible !== false; // Default to true
                     aliases.push({ alias: aliasName, visible });
                 }
