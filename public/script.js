@@ -2580,10 +2580,10 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
     // Set the swipes counter for all non-user messages.
     if (!params.isUser) {
-        updateSwipeCounter(newMessageId, { message:mes, messageElement: newMessage });
+        updateSwipeCounter(newMessageId, { message: mes, messageElement: newMessage });
     }
 
-    return { messageElement:newMessage, params };
+    return { messageElement: newMessage, params };
 }
 
 /**
