@@ -1,4 +1,5 @@
 import { substituteParams } from '../../script.js';
+import { power_user } from '../power-user.js';
 import { delay, escapeRegex, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
@@ -72,6 +73,50 @@ export class SlashCommandClosure {
             if (a.key.includes('*') && b.key.includes('*')) return b.key.indexOf('*') - a.key.indexOf('*');
             return 0;
         });
+        if (power_user.experimental_macro_engine) {
+            /** @type {Map<string, SlashCommandClosure>} */
+            const closures = new Map();
+            /** @type {Record<string,string|MacroHandler>} */
+            const dynamicMacros = {
+                'pipe': () => scope.pipe,
+                'var': (context) => scope.getVariable(context.unnamedArgs[0], context.unnamedArgs[1]),
+                'arg': (context) => {
+                    const argName = context.unnamedArgs[0];
+                    if (!argName) {
+                        return '';
+                    }
+
+                    const replacer = macroList.find(it => it.key == `arg::${argName}`)?.value;
+                    if (replacer instanceof SlashCommandClosure) {
+                        replacer.abortController = this.abortController;
+                        replacer.breakController = this.breakController;
+                        replacer.scope.parent = this.scope;
+                        if (this.debugController && !replacer.debugController) {
+                            replacer.debugController = this.debugController;
+                        }
+
+                        const closureKey = `__closure_${uuidv4()}__`;
+                        closures.set(closureKey, replacer);
+                        return `\n${closureKey}\n`;
+                    }
+
+                    return replacer;
+                },
+            };
+            for (const macro of macroList) {
+                if (!/(?:arg)::/.test(macro.key) && typeof macro.value === 'string') {
+                    dynamicMacros[macro.key] = macro.value;
+                } else {
+                    console.warn(`Macro ${macro.key} is not eligible for dynamic substitution. Consider using dynamicMacros directly.`);
+                }
+            }
+            const substitutedText = substituteParams(text, { dynamicMacros });
+            if (closures.size > 0) {
+                const parts = substitutedText.split('\n').map(part => closures.has(part) ? closures.get(part) : part);
+                return parts.length === 1 ? parts[0] : parts;
+            }
+            return substitutedText;
+        }
         const macros = macroList.map(it=>escapeMacro(it)).join('|');
         const re = new RegExp(`(?<pipe>{{pipe}})|(?:{{var::(?<var>[^\\s]+?)(?:::(?<varIndex>(?!}}).+))?}})|(?:{{(?<macro>${macros})}})`);
         let done = '';

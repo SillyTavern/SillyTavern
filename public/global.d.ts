@@ -21,6 +21,7 @@ declare global {
     type MessageTimestamp = string | number | Date;
     type Character = import('./scripts/char-data').v1CharData;
     type ChatMessageExtra = BaseMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
+    type MacroHandler = import('./scripts/macros/macro-system').MacroHandler;
 
     interface Group {
         id: string;
