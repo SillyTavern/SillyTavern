@@ -2406,17 +2406,6 @@ export function addCopyToCodeBlocks(messageElement) {
 export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
     const { messageElement: renderedMessage, params } = createMessageElement(mes, { type: 'normal', scroll: scroll, forceId: forceId });
 
-    //last_mes should always be updated.
-    chatElement.find('.mes').removeClass('last_mes');
-    chatElement.find('.mes').last().addClass('last_mes');
-    if (showSwipes) {
-        refreshSwipeButtons();
-    }
-    // Don't scroll if not inserting last
-    if (!insertAfter && !insertBefore && scroll) {
-        scrollChatToBottom({ waitForFrame: true });
-    }
-
     // Callers push the new message to chat before calling addOneMessage
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
@@ -2455,6 +2444,17 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
     updateEditArrowClasses();
+
+    //last_mes should always be updated.
+    chatElement.find('.mes').removeClass('last_mes');
+    chatElement.find('.mes').last().addClass('last_mes');
+    if (showSwipes) {
+        refreshSwipeButtons();
+    }
+    // Don't scroll if not inserting last
+    if (!insertAfter && !insertBefore && scroll) {
+        scrollChatToBottom({ waitForFrame: true });
+    }
 }
 
 /**
