@@ -2093,7 +2093,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.del(id);
@@ -2117,7 +2116,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.del(id);
@@ -2140,7 +2138,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.del(id);
@@ -2163,7 +2160,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.del(id);
@@ -2186,7 +2182,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.del(`${id}_a`);
@@ -2212,7 +2207,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.del(`${id}_outer`);
@@ -2239,7 +2233,6 @@ test.describe('MacroEngine', () => {
             const output = await page.evaluate(async (id) => {
                 const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
                 const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
-                // eslint-disable-next-line no-undef
                 const ctx = SillyTavern.getContext();
 
                 ctx.variables.local.set(`${id}_flag`, '');
@@ -2357,7 +2350,6 @@ async function evaluateWithEngineAndVariables(page, input, variables) {
         const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
 
         // Get the SillyTavern context for variable access
-        // eslint-disable-next-line no-undef
         const ctx = SillyTavern.getContext();
 
         // Pre-set local variables
