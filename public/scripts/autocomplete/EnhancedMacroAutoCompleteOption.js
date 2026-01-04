@@ -13,6 +13,7 @@ import {
 import { enumIcons } from '../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../macros/engine/MacroLexer.js';
+import { onbordingExperimentalMacroEngine } from '../macros/engine/MacroDiagnostics.js';
 
 /** @typedef {import('../macros/engine/MacroRegistry.js').MacroDefinition} MacroDefinition */
 
@@ -1063,6 +1064,10 @@ export function parseMacroContext(macroText, cursorOffset) {
         }
     }
 
+    if (flags.length > 0) {
+        onbordingExperimentalMacroEngine('macro flags');
+    }
+
     // Check for variable shorthand prefix (. or $)
     // These trigger variable expression mode instead of regular macro parsing
     /** @type {'.'|'$'|null} */
@@ -1152,6 +1157,8 @@ export function parseMacroContext(macroText, cursorOffset) {
         // For ++ and --, the operator is complete (no value needed)
         // For invalid trailing chars, none of the typing flags will be true
         const isOperatorComplete = (variableOperator === '++' || variableOperator === '--');
+
+        onbordingExperimentalMacroEngine('variable shorthands');
 
         // Return early for variable shorthand - different structure than regular macros
         return {
@@ -1277,6 +1284,10 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     const leftPadding = macroText.match(/^\s+/)?.[0] ?? '';
+
+    if (leftPadding) {
+        onbordingExperimentalMacroEngine('leading whitespace');
+    }
 
     // Clean identifier: strip trailing colons (for partial :: typing)
     let cleanIdentifier = identifierOnly.replace(/:+$/, '');
