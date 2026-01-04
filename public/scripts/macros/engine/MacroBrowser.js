@@ -5,6 +5,7 @@
 
 import { MacroRegistry, MacroCategory } from './MacroRegistry.js';
 import { performFuzzySearch } from '../../power-user.js';
+import { escapeRegex } from '/scripts/utils.js';
 
 /** @typedef {import('./MacroRegistry.js').MacroDefinition} MacroDefinition */
 /** @typedef {import('./MacroRegistry.js').MacroValueType} MacroValueType */
@@ -328,6 +329,11 @@ function getCategoryConfig(category) {
 export function formatMacroSignature(macro) {
     // Use displayOverride if provided
     if (macro.displayOverride) {
+        if (macro.aliasOf) {
+            // Replace all occurrences of the macro name with the alias for this list
+            const escapedMainName = escapeRegex(macro.aliasOf);
+            return macro.displayOverride.replace(new RegExp(`(?<=[\\b{\\s])${escapedMainName}(?=[\\b}:\\s])`, 'g'), `${macro.name}`);
+        }
         return macro.displayOverride;
     }
 
