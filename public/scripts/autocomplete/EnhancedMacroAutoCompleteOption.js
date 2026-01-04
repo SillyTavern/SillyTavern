@@ -907,20 +907,33 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
     /** @type {string} */
     #macroName;
 
+    /** @type {string} */
+    #paddingBefore;
+
+    /** @type {string} */
+    #paddingAfter;
+
     /**
      * @param {string} macroName - The name of the macro to close.
+     * @param {Object} [options] - Optional configuration.
+     * @param {string} [options.paddingBefore=''] - Whitespace to add after {{ (matching opening tag style).
+     * @param {string} [options.paddingAfter=''] - Whitespace to add before }} (matching opening tag style).
      */
-    constructor(macroName) {
+    constructor(macroName, options = {}) {
         // The closing tag is what we're suggesting - use /macroName as the name for matching
         const closingTag = `/${macroName}`;
         super(closingTag, '{/');
         this.#macroName = macroName;
+        this.#paddingBefore = options.paddingBefore ?? '';
+        this.#paddingAfter = options.paddingAfter ?? '';
 
         // Custom valueProvider to return the correct replacement text
         // Autocomplete REPLACES the typed identifier entirely, so return the full closing tag
+        // Include the same whitespace padding as the opening tag
         this.valueProvider = () => {
             // Return full closing tag content (without {{ since that's before the identifier)
-            return `/${macroName}}}`;
+            // Format: paddingBefore + /macroName + paddingAfter + }}
+            return `${this.#paddingBefore}/${macroName}${this.#paddingAfter}}}`;
         };
 
         // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
