@@ -808,10 +808,12 @@ export class SlashCommandParser {
         if (unclosedScopes.length > 0) {
             // Suggest closing the innermost (last) unclosed scope first
             const innermostScope = unclosedScopes[unclosedScopes.length - 1];
-            // Preserve the same whitespace padding as the opening tag
+            // Preserve whitespace padding from the opening tag
+            // Pass currentPadding so the closing tag can replace user-typed whitespace with the target padding
             const closingOption = new MacroClosingTagAutoCompleteOption(innermostScope.name, {
                 paddingBefore: innermostScope.paddingBefore,
                 paddingAfter: innermostScope.paddingAfter,
+                currentPadding: context.paddingBefore,
             });
             options.push(closingOption);
 

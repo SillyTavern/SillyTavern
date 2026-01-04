@@ -916,8 +916,9 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
     /**
      * @param {string} macroName - The name of the macro to close.
      * @param {Object} [options] - Optional configuration.
-     * @param {string} [options.paddingBefore=''] - Whitespace to add after {{ (matching opening tag style).
-     * @param {string} [options.paddingAfter=''] - Whitespace to add before }} (matching opening tag style).
+     * @param {string} [options.paddingBefore=''] - Whitespace after {{ in opening tag (target padding).
+     * @param {string} [options.paddingAfter=''] - Whitespace before }} in opening tag (target padding).
+     * @param {string} [options.currentPadding=''] - Whitespace the user has already typed after {{.
      */
     constructor(macroName, options = {}) {
         // The closing tag is what we're suggesting - use /macroName as the name for matching
@@ -927,12 +928,16 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         this.#paddingBefore = options.paddingBefore ?? '';
         this.#paddingAfter = options.paddingAfter ?? '';
 
+        // Calculate the replacement offset to replace any existing whitespace the user typed
+        // This allows us to normalize the whitespace to match the opening tag's style
+        const currentPadding = options.currentPadding ?? '';
+        // Negative offset to start replacement earlier (eating the user's whitespace)
+        this.replacementStartOffset = -currentPadding.length;
+
         // Custom valueProvider to return the correct replacement text
-        // Autocomplete REPLACES the typed identifier entirely, so return the full closing tag
-        // Include the same whitespace padding as the opening tag
+        // Includes the target paddingBefore from the opening tag, replacing any user-typed whitespace
         this.valueProvider = () => {
-            // Return full closing tag content (without {{ since that's before the identifier)
-            // Format: paddingBefore + /macroName + paddingAfter + }}
+            // Return: paddingBefore + /macroName + paddingAfter + }}
             return `${this.#paddingBefore}/${macroName}${this.#paddingAfter}}}`;
         };
 
