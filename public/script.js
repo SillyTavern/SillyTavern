@@ -8,6 +8,7 @@ import {
     Popper,
     initLibraryShims,
     default as libs,
+    lodash,
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
@@ -1414,7 +1415,6 @@ export async function showMoreMessages(messagesToLoad = null) {
 }
 
 export async function printMessages() {
-    const t1 = performance.now();
     let startIndex = 0;
     let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
@@ -1423,24 +1423,56 @@ export async function printMessages() {
         chatElement.append('<div id="show_more_messages">Show more messages</div>');
     }
 
-    const messagesElement = document.createDocumentFragment();
-    for (let i = startIndex; i < chat.length; i++) {
-        const item = chat[i];
-        const { messageElement } = createMessageElement(item, { scroll: false, forceId: i, showSwipes: false });
-        messagesElement.appendChild(messageElement[0]);
-    }
-    //Append to chat in one DOM update.
-    chatElement.append(messagesElement);
+    await redisplayChat({ startIndex, fade: false });
 
-    chatElement.find('.mes').removeClass('last_mes');
-    chatElement.find('.mes').last().addClass('last_mes');
-    refreshSwipeButtons(false, false);
-    applyStylePins();
-    applyCharacterTagsToMessageDivs();
-    updateEditArrowClasses();
-    console.log(`Rendered ${chat.length - startIndex} messages in ${(performance.now() - t1) / 1000} seconds.`);
     scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
+}
+
+/**
+ * Visually updates all chat messages including and after index by removing them, then adding them.
+ * @param {object} [options] Options
+ * @param {ChatMessage[]} [options.targetChat=chat] All messages in chat before startIndex will remain unchanged.
+ * @param {Number} [options.startIndex=0] Everything including and after startIndex will be replaced.
+ * @param {Boolean} [options.fade=true] When false, the swipe chevrons will not fade in.
+ */
+export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = true } = {}) {
+    //.find is faster than .children.
+    const messageElements = chatElement.find('.mes');
+    messageElements.removeClass('last_mes');
+
+    //Remove messages after index.
+    messageElements.filter(`.mes[mesid="${startIndex}"]`).nextAll('.mes').addBack().remove();
+
+    let t1 = performance.now();
+
+    const messages = targetChat.slice(startIndex);
+
+    if (messages.length > 0) {
+        const lastMessage = messages.pop();
+
+        const newMessageElements = messages.map( (message, offset) => {
+            let i = startIndex + offset;
+            const { messageElement } = createMessageElement(message, { scroll: false, forceId: i, showSwipes: false });
+            return messageElement[0];
+        });
+
+        const lastMessageId = targetChat.length - 1;
+        const { messageElement:lastMessageElement } = createMessageElement(lastMessage, { scroll: false, forceId: lastMessageId, showSwipes: false });
+        //The last_mes has been removed, add it to the new last message.
+        lastMessageElement.addClass('last_mes');
+
+        //Append to chat in one DOM update.
+        chatElement.append(...newMessageElements, lastMessageElement[0]);
+
+        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length,  1) });
+    }
+
+    refreshSwipeButtons(false, true);
+    applyStylePins();
+    updateEditArrowClasses();
+
+    console.info(`Rendered ${targetChat.length - startIndex} messages in ${(performance.now() - t1) / 1000} seconds.`);
 }
 
 export function scrollOnMediaLoad() {
@@ -9601,23 +9633,6 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
- * Visually updates all chat messages including andd after index by removing them, then adding them.
- * @param {ChatMessage[]} chat All messages in chat before index will remain unchanged.
- * @param {Number} index The last unchanged messageId.
- */
-export async function redisplayChat(chat, index) {
-    //Remove messages after index.
-    chatElement.children(`.mes[mesid="${index}"]`).nextAll('.mes').addBack().remove();
-
-    //Skip to index, then add extra messages.
-    for (let i = index; i <= chat.length - 1; i++) {
-        //addOneMessage will update last_mes.
-        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
-    }
-    refreshSwipeButtons();
-}
-
-/**
  * Formats a counter for a swipe view.
  * @param {number} current The current number of items.
  * @param {number} total The total number of items.
@@ -9771,7 +9786,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId);
+                await redisplayChat({ startIndex: mesId });
             }
             else {
                 await Popup.show.confirm(
