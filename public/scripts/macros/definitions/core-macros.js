@@ -4,8 +4,9 @@ import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
-import { MacroEngine } from '../engine/MacroEngine.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../engine/MacroLexer.js';
+import { MacroParser } from '../engine/MacroParser.js';
+import { MacroCstWalker } from '../engine/MacroCstWalker.js';
 
 /**
  * Marker used by {{else}} to split content in {{if}} blocks.
@@ -92,6 +93,40 @@ export function registerCoreMacros() {
         },
     });
 
+    /**
+     * Splits raw content on the first {{else}} macro at nesting depth 0.
+     * Tracks scoped {{if}}/{{/if}} pairs to find the correct top-level else.
+     * Only {{if}} with 1 argument (condition only) are considered scoped blocks.
+     *
+     * @param {string} content - The raw content to split
+     * @returns {{ thenBranch: string, elseBranch: string | undefined }}
+     */
+    function splitOnTopLevelElse(content) {
+        const { cst } = MacroParser.parseDocument(content);
+        const macroNodes = /** @type {import('chevrotain').CstNode[]} */ (cst?.children?.macro || []);
+
+        let depth = 0;
+        for (const macroNode of macroNodes) {
+            const info = MacroCstWalker.extractMacroInfo(macroNode);
+            if (!info) continue;
+
+            // Only track scoped {{if}} blocks (1 arg = condition only, expects {{/if}})
+            // Inline {{if condition::content}} has 2 args and doesn't affect depth
+            if (info.name === 'if' && !info.isClosing && info.argCount === 1) {
+                depth++;
+            } else if (info.name === 'if' && info.isClosing) {
+                depth--;
+            } else if (info.name === 'else' && depth === 0) {
+                return {
+                    thenBranch: content.slice(0, info.startOffset),
+                    elseBranch: content.slice(info.endOffset + 1),
+                };
+            }
+        }
+
+        return { thenBranch: content, elseBranch: undefined };
+    }
+
     // {{if condition}}content{{/if}} -> conditional content
     // {{if condition}}then-content{{else}}else-content{{/if}} -> conditional with else branch
     // {{if !condition}}content{{/if}} -> inverted conditional (negated)
@@ -119,15 +154,22 @@ export function registerCoreMacros() {
             '{{if $globalFlag}}Global flag is set{{/if}}',
         ],
         returns: 'The content if condition is truthy, else branch or empty string otherwise.',
-        handler: ({ unnamedArgs: [condition, content], rawArgs: [rawCondition], flags, env, trimContent }) => {
-            // Check if the ORIGINAL condition (before macro resolution) starts with !
-            // We use raw args to check this, as the resolved value might start with ! from a variable
+        // Delay argument resolution so nested macros are only evaluated in the chosen branch
+        delayArgResolution: true,
+        handler: ({ unnamedArgs: [rawCondition, rawContent], flags, resolve, trimContent }) => {
+            // With delayArgResolution: true, args contain raw (unresolved) text.
+            // We resolve the condition first, then only resolve the chosen branch.
+
+            // Check if the condition starts with ! for inversion
             let inverted = false;
+            let condition = rawCondition;
             if (/^\s*!/.test(rawCondition)) {
                 inverted = true;
-                // Strip the ! from the resolved condition if it was the prefix
-                condition = condition.replace(/^!\s*/, '');
+                condition = rawCondition.replace(/^\s*!\s*/, '');
             }
+
+            // Resolve the condition (may contain nested macros like {{getvar::x}})
+            condition = resolve(condition);
 
             // Check if condition is a variable shorthand (.varname or $varname)
             // If so, resolve it using the appropriate variable macro
@@ -136,16 +178,13 @@ export function registerCoreMacros() {
             if (varShorthandMatch) {
                 const [, prefix, varName] = varShorthandMatch;
                 const varMacro = prefix === '.' ? 'getvar' : 'getglobalvar';
-                // Resolve the variable using MacroEngine.evaluate
-                condition = MacroEngine.evaluate(`{{${varMacro}::${varName}}}`, env);
+                condition = resolve(`{{${varMacro}::${varName}}}`);
             } else {
                 // Check if condition is a registered macro name (without braces)
                 // If so, resolve it first (only for macros that accept 0 required args)
                 const macroDef = MacroRegistry.getPrimaryMacro(condition);
                 if (macroDef && macroDef.minArgs === 0) {
-                    // Use MacroEngine.evaluate to properly resolve the macro with full context
-                    // This ensures all handler args (cst, normalize, list, etc.) are correctly provided
-                    condition = MacroEngine.evaluate(`{{${condition}}}`, env);
+                    condition = resolve(`{{${condition}}}`);
                 }
             }
 
@@ -153,17 +192,23 @@ export function registerCoreMacros() {
             let isFalsy = condition === '' || isFalseBoolean(condition);
             if (inverted) isFalsy = !isFalsy;
 
-            // Split content on else marker (if present)
-            const [thenBranch, elseBranch] = content.split(ELSE_MARKER);
-            const result = !isFalsy ? thenBranch : elseBranch;
+            // Split raw content on {{else}} macro at the top nesting level
+            // We need to track nesting depth to find the correct {{else}} for this if
+            const { thenBranch, elseBranch } = splitOnTopLevelElse(rawContent);
 
-            // Trim branches unless # flag is set (preserveWhitespace)
-            // The engine auto-trims the whole scoped content, but we still need to trim
-            // around the {{else}} marker since that's internal to this macro
-            if (flags.preserveWhitespace) {
-                return result ?? '';
+            // Only resolve the chosen branch
+            const chosenBranch = !isFalsy ? thenBranch : elseBranch;
+            if (chosenBranch === undefined) {
+                return '';
             }
-            return trimContent(result ?? '');
+
+            // Resolve nested macros in the chosen branch
+            // Trim result unless # flag is set (preserveWhitespace)
+            let result = resolve(chosenBranch);
+            if (!flags.preserveWhitespace) {
+                result = trimContent(result);
+            }
+            return result;
         },
     });
 

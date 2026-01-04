@@ -71,6 +71,7 @@ export const MacroValueType = Object.freeze({
  * @property {MacroValueType|MacroValueType[]} [returnType=MacroValueType.STRING] - The type(s) this macro returns. Defaults to string.
  * @property {string} [displayOverride] - Override the auto-generated macro signature for display (must include curly braces, e.g. "{{macro::arg}}").
  * @property {string|string[]} [exampleUsage] - Example usage(s) shown in documentation (must include curly braces).
+ * @property {boolean} [delayArgResolution=false] - If true, nested macros in arguments or scope are NOT resolved before calling the handler. The handler receives raw argument text and must call resolve() manually. Use sparingly - only for control-flow macros like {{if}}.
  * @property {MacroHandler} handler - The handler function for the macro.
  */
 
@@ -103,7 +104,7 @@ export const MacroValueType = Object.freeze({
 /**
  * @typedef {Object} MacroExecutionContext
  * @property {string} name
- * @property {string[]} args - All unnamed arguments passed to the macro.
+ * @property {string[]} args - All unnamed arguments passed to the macro. If delayArgResolution is true, these contain raw (unresolved) text.
  * @property {string[]} unnamedArgs - Unnamed positional arguments (both required and optional, up to the defined count).
  * @property {string[]|null} list - List arguments (after unnamed args), or null if list is not enabled.
  * @property {{ [key: string]: string }|null} namedArgs - Reserved for future named argument support.
@@ -111,12 +112,13 @@ export const MacroValueType = Object.freeze({
  * @property {boolean} isScoped - Whether this macro was invoked using scoped syntax (opening + closing tags).
  * @property {string} raw - The inner macro content with nested macros resolved.
  * @property {string} rawOriginal - The original full macro text including braces, before any resolution.
- * @property {string[]} rawArgs - The original arguments passed to the macro.
+ * @property {string[]} rawArgs - The original arguments passed to the macro (always unresolved).
  * @property {MacroEnv} env
  * @property {CstNode|null} cstNode
  * @property {{ startOffset: number, endOffset: number }|null} range
  * @property {(value: any) => string} normalize - Normalize function to use on unsure macro results to make sure they return strings as expected.
  * @property {(content: string, options?: { trimIndent?: boolean }) => string} trimContent - Trims scoped content with optional indentation dedent. Defaults to trimming indentation.
+ * @property {(text: string) => string} resolve - Evaluates macros in the given text using the same environment. Use when delayArgResolution is true.
  */
 
 /**
@@ -134,6 +136,7 @@ export const MacroValueType = Object.freeze({
  * @property {MacroValueType|MacroValueType[]} returnType - The type(s) this macro returns.
  * @property {string|null} displayOverride - Override for the auto-generated macro signature display.
  * @property {string[]} exampleUsage - Example usage strings for documentation.
+ * @property {boolean} delayArgResolution - If true, nested macros in arguments are NOT resolved before calling the handler. The handler receives raw argument text and must call resolve() manually. Use sparingly - only for control-flow macros like {{if}}.
  * @property {MacroHandler} handler
  * @property {MacroSource} source
  * @property {string|null} aliasOf - If this is an alias, the primary macro name this is an alias of. Can also be used to check if this is an alias macro.
@@ -203,6 +206,7 @@ class MacroRegistry {
                 returnType: rawReturnType,
                 displayOverride: rawDisplayOverride,
                 exampleUsage: rawExampleUsage,
+                delayArgResolution: rawDelayArgResolution,
                 handler,
             } = options;
 
@@ -358,6 +362,12 @@ class MacroRegistry {
                 }
             }
 
+            let delayArgResolution = false;
+            if (rawDelayArgResolution !== undefined) {
+                if (typeof rawDelayArgResolution !== 'boolean') throw new Error(`Macro "${name}" options.delayArgResolution must be a boolean when provided.`);
+                delayArgResolution = rawDelayArgResolution;
+            }
+
             const nameKey = name.toLowerCase();
             if (this.#macros.has(nameKey)) {
                 logMacroRegisterWarning({ macroName: name, message: `Macro "${name}" is already registered and will be overwritten.` });
@@ -381,6 +391,7 @@ class MacroRegistry {
                 returnType,
                 displayOverride,
                 exampleUsage,
+                delayArgResolution,
                 handler,
                 source: {
                     name: source,
@@ -551,6 +562,7 @@ class MacroRegistry {
             range: call.range,
             normalize: MacroEngine.normalizeMacroResult.bind(MacroEngine),
             trimContent: MacroEngine.trimScopedContent.bind(MacroEngine),
+            resolve: (text) => MacroEngine.evaluate(text, call.env),
         };
 
         const result = def.handler(executionContext);

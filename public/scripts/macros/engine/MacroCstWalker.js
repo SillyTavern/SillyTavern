@@ -45,6 +45,15 @@ import { MacroRegistry } from './MacroRegistry.js';
  */
 
 /**
+ * @typedef {Object} MacroNodeInfo
+ * @property {string} name - The macro identifier name.
+ * @property {boolean} isClosing - Whether this macro has the closing block flag (/).
+ * @property {number} startOffset - Start position in the source text.
+ * @property {number} endOffset - End position in the source text (inclusive).
+ * @property {number} argCount - Number of arguments provided to the macro.
+ */
+
+/**
  * The singleton instance of the MacroCstWalker.
  *
  * @type {MacroCstWalker}
@@ -124,6 +133,54 @@ class MacroCstWalker {
         }
 
         return result;
+    }
+
+    /**
+     * Extracts basic info from a macro CST node: name, closing flag, position, and argument count.
+     * Returns null for variable expressions or nodes without valid identifiers.
+     *
+     * @param {CstNode} macroNode - A macro CST node from the parser.
+     * @returns {MacroNodeInfo | null}
+     */
+    extractMacroInfo(macroNode) {
+        const children = macroNode?.children || {};
+
+        // Variable expressions don't have standard macro identifiers
+        if ((children.variableExpr || [])[0]) {
+            return null;
+        }
+
+        // Get start/end tokens for position
+        const startToken = /** @type {IToken?} */ ((children['Macro.Start'] || [])[0]);
+        const endToken = /** @type {IToken?} */ ((children['Macro.End'] || [])[0]);
+        if (!startToken || !endToken) {
+            return null;
+        }
+
+        // Get identifier and arguments from macroBody
+        const macroBodyNode = /** @type {CstNode?} */ ((children.macroBody || [])[0]);
+        const bodyChildren = macroBodyNode?.children || {};
+        const identifierTokens = /** @type {IToken[]} */ (bodyChildren['Macro.identifier'] || []);
+        const name = identifierTokens[0]?.image || '';
+
+        if (!name) return null;
+
+        // Count arguments (arguments rule contains argument nodes)
+        const argumentsNode = /** @type {CstNode?} */ ((bodyChildren.arguments || [])[0]);
+        const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
+        const argCount = argumentNodes.length;
+
+        // Check for closing block flag
+        const flagTokens = /** @type {IToken[]} */ (children.flags || []);
+        const isClosing = flagTokens.some(token => token.image === MacroFlagType.CLOSING_BLOCK);
+
+        return {
+            name,
+            isClosing,
+            startOffset: startToken.startOffset,
+            endOffset: endToken.endOffset,
+            argCount,
+        };
     }
 
     /**
@@ -278,6 +335,10 @@ class MacroCstWalker {
         const argumentsNode = /** @type {CstNode?} */ ((bodyChildren.arguments || [])[0]);
         const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
 
+        // Check if this macro has delayArgResolution flag - if so, skip nested macro evaluation
+        const macroDef = MacroRegistry.getMacro(name);
+        const delayArgResolution = macroDef?.delayArgResolution === true;
+
         /** @type {string[]} */
         const args = [];
         /** @type {({ value: string } & TokenRange)[]} */
@@ -286,18 +347,20 @@ class MacroCstWalker {
         const rawArgs = [];
 
         for (const argNode of argumentNodes) {
-            const argValue = this.#evaluateArgumentNode(argNode, context);
+            const location = this.#getArgumentLocation(argNode);
+            const rawArgText = location ? text.slice(location.startOffset, location.endOffset + 1) : '';
+            rawArgs.push(rawArgText);
+
+            // If delayArgResolution is true, use raw text; otherwise evaluate nested macros
+            const argValue = delayArgResolution ? rawArgText : this.#evaluateArgumentNode(argNode, context);
             args.push(argValue);
 
-            const location = this.#getArgumentLocation(argNode);
             if (location) {
                 evaluatedArguments.push({
                     value: argValue,
                     ...location,
                 });
             }
-
-            rawArgs.push(location ? text.slice(location.startOffset, location.endOffset + 1) : '');
         }
 
         // If this macro has scoped content, evaluate it and append as the last argument
@@ -305,12 +368,21 @@ class MacroCstWalker {
             // Handle empty scoped content (when opening and closing are adjacent)
             if (scopedContent.startOffset > scopedContent.endOffset) {
                 args.push('');
+                rawArgs.push('');
             } else {
-                let scopedValue = this.#evaluateScopedContent(scopedContent, context);
+                const rawScopedText = text.slice(scopedContent.startOffset, scopedContent.endOffset + 1);
+                rawArgs.push(rawScopedText);
 
-                // Auto-trim scoped content unless the '#' (preserveWhitespace) flag is set
-                if (!flags.preserveWhitespace) {
-                    scopedValue = trimContent(scopedValue);
+                // If delayArgResolution is true, use raw text; otherwise evaluate nested macros
+                let scopedValue;
+                if (delayArgResolution) {
+                    scopedValue = rawScopedText;
+                } else {
+                    scopedValue = this.#evaluateScopedContent(scopedContent, context);
+                    // Auto-trim scoped content unless the '#' (preserveWhitespace) flag is set
+                    if (!flags.preserveWhitespace) {
+                        scopedValue = trimContent(scopedValue);
+                    }
                 }
 
                 args.push(scopedValue);
@@ -1001,7 +1073,8 @@ class MacroCstWalker {
 
     /**
      * Finds the matching closing macro for an opening macro at the given index.
-     * Handles nested scopes by tracking depth.
+     * Handles nested scopes by tracking depth. Only counts opening macros that
+     * can accept scoped content (inline macros with all args filled don't count).
      *
      * @param {Array<{ index: number, item: DocumentItemMacro, name: string, isClosing: boolean, matched: boolean }>} macroInfos
      * @param {number} openingIdx - Index in macroInfos array of the opening macro.
@@ -1027,8 +1100,11 @@ class MacroCstWalker {
                     return i;
                 }
             } else {
-                // Another opening macro with the same name increases depth
-                depth++;
+                // Only increment depth for opening macros that can accept scoped content
+                // Inline macros (e.g., {{if condition::content}}) don't need closing tags
+                if (this.#canAcceptScopedContent(info.item.node, info.name)) {
+                    depth++;
+                }
             }
         }
 

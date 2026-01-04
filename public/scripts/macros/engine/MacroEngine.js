@@ -188,6 +188,7 @@ class MacroEngine {
                 source: { name: 'dynamic', isExtension: false, isThirdParty: false },
                 aliasOf: null,
                 aliasVisible: null,
+                delayArgResolution: false,
                 handler: typeof impl === 'function' ? impl : () => impl,
             };
         }

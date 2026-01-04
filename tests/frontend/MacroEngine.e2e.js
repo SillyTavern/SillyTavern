@@ -1924,6 +1924,186 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('Count: 42');
         });
     });
+
+    const getUniqueVariableId = () => `dt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    test.describe('Delayed Argument Resolution ({{if}} branch isolation)', () => {
+        // Core feature: setvar in non-chosen branch should NOT execute
+        test('should NOT execute setvar in false branch', async ({ page }) => {
+            const id = getUniqueVariableId();
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.del(id);
+
+                const input = `{{if 0}}{{setvar::${id}::should-not-set}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                // Variable should NOT be set because the branch was not taken
+                const result = ctx.variables.local.get(id);
+                ctx.variables.local.del(id);
+                return result;
+            }, id);
+
+            expect(output).toBe('');
+        });
+
+        // setvar in true branch SHOULD execute
+        test('should execute setvar in true branch', async ({ page }) => {
+            const id = getUniqueVariableId();
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.del(id);
+
+                const input = `{{if 1}}{{setvar::${id}::was-set}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                const result = ctx.variables.local.get(id);
+                ctx.variables.local.del(id);
+                return result;
+            }, id);
+
+            expect(output).toBe('was-set');
+        });
+
+        // With else branch: only the chosen branch's setvar should execute
+        test('should only execute setvar in chosen else branch', async ({ page }) => {
+            const id = getUniqueVariableId();
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.del(id);
+
+                const input = `{{if 0}}{{setvar::${id}::then-branch}}{{else}}{{setvar::${id}::else-branch}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                const result = ctx.variables.local.get(id);
+                ctx.variables.local.del(id);
+                return result;
+            }, id);
+
+            expect(output).toBe('else-branch');
+        });
+
+        // Verify then branch setvar executes, not else branch
+        test('should only execute setvar in chosen then branch', async ({ page }) => {
+            const id = getUniqueVariableId();
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.del(id);
+
+                const input = `{{if 1}}{{setvar::${id}::then-branch}}{{else}}{{setvar::${id}::else-branch}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                const result = ctx.variables.local.get(id);
+                ctx.variables.local.del(id);
+                return result;
+            }, id);
+
+            expect(output).toBe('then-branch');
+        });
+
+        // Multiple setvars in branches - only chosen branch's setvars execute
+        test('should execute multiple setvars only in chosen branch', async ({ page }) => {
+            const id = getUniqueVariableId();
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.del(`${id}_a`);
+                ctx.variables.local.del(`${id}_b`);
+
+                const input = `{{if 0}}{{setvar::${id}_a::wrong}}{{setvar::${id}_b::wrong}}{{else}}{{setvar::${id}_a::right}}{{setvar::${id}_b::right}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                const a = ctx.variables.local.get(`${id}_a`);
+                const b = ctx.variables.local.get(`${id}_b`);
+                ctx.variables.local.del(`${id}_a`);
+                ctx.variables.local.del(`${id}_b`);
+                return `a=${a},b=${b}`;
+            }, id);
+
+            expect(output).toBe('a=right,b=right');
+        });
+
+        // Nested if with delayed resolution - inner if should also work correctly
+        test('should handle nested if with delayed resolution', async ({ page }) => {
+            const id = `dt_nested_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.del(`${id}_outer`);
+                ctx.variables.local.del(`${id}_inner`);
+
+                // Outer if is true, inner if is false
+                const input = `{{if 1}}{{setvar::${id}_outer::yes}}{{if 0}}{{setvar::${id}_inner::wrong}}{{else}}{{setvar::${id}_inner::correct}}{{/if}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                const outer = ctx.variables.local.get(`${id}_outer`);
+                const inner = ctx.variables.local.get(`${id}_inner`);
+                ctx.variables.local.del(`${id}_outer`);
+                ctx.variables.local.del(`${id}_inner`);
+                return `outer=${outer},inner=${inner}`;
+            }, id);
+
+            expect(output).toBe('outer=yes,inner=correct');
+        });
+
+        // Variable-based condition with delayed resolution
+        test('should work with variable shorthand condition and delayed resolution', async ({ page }) => {
+            const id = `dt_varsh_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            const output = await page.evaluate(async (id) => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const ctx = SillyTavern.getContext();
+
+                ctx.variables.local.set(`${id}_flag`, '');
+                ctx.variables.local.del(`${id}_result`);
+
+                const input = `{{if .${id}_flag}}{{setvar::${id}_result::truthy}}{{else}}{{setvar::${id}_result::falsy}}{{/if}}`;
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                MacroEngine.evaluate(input, env);
+
+                const result = ctx.variables.local.get(`${id}_result`);
+                ctx.variables.local.del(`${id}_flag`);
+                ctx.variables.local.del(`${id}_result`);
+                return result;
+            }, id);
+
+            expect(output).toBe('falsy');
+        });
+
+        // Inline {{if}} should not break outer {{else}} detection
+        test('should handle inline if inside scoped if with else', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{if 0}}{{if::1::inner}}{{else}}outer-else{{/if}}');
+            expect(output).toBe('outer-else');
+        });
+
+        // Another inline if scenario - inner inline if should not affect outer else
+        test('should correctly find outer else with multiple inline ifs', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{if 0}}{{if::1::a}}{{if::1::b}}{{else}}found{{/if}}');
+            expect(output).toBe('found');
+        });
+    });
 });
 
 /**
