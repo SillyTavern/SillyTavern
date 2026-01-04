@@ -692,8 +692,10 @@ export class AutoComplete {
      */
     async select() {
         if (this.isReplaceable && this.selectedItem.value !== null) {
-            this.textarea.value = `${this.text.slice(0, this.effectiveParserResult.start)}${this.selectedItem.replacer}${this.text.slice(this.effectiveParserResult.start + this.effectiveParserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
-            this.textarea.selectionStart = this.effectiveParserResult.start + this.selectedItem.replacer.length;
+            // Apply per-option replacement offset (e.g., for closing tags that need to replace leading whitespace)
+            const effectiveStart = this.effectiveParserResult.start + (this.selectedItem.replacementStartOffset ?? 0);
+            this.textarea.value = `${this.text.slice(0, effectiveStart)}${this.selectedItem.replacer}${this.text.slice(this.effectiveParserResult.start + this.effectiveParserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
+            this.textarea.selectionStart = effectiveStart + this.selectedItem.replacer.length;
             this.textarea.selectionEnd = this.textarea.selectionStart;
             this.show(false, false, true);
         } else {
