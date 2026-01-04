@@ -897,6 +897,9 @@ export class SlashCommandParser {
             if (!macroContext) {
                 macroContext = /** @type {EnhancedMacroAutoCompleteOptions} */ ({
                     paddingAfter: context.paddingBefore, // Match whitespace before the macro - will only be used if the macro gets auto-closed
+                    flags: context.flags,
+                    currentFlag: context.currentFlag,
+                    fullText: context.fullText,
                 });
             }
 

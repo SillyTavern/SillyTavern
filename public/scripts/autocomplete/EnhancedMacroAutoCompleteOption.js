@@ -54,6 +54,9 @@ import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../macros/engine/MacroLexer.js
  * @property {boolean} [noBraces=false] - If true, display without {{ }} braces (for use as values, e.g., in {{if}} conditions).
  * @property {string} [paddingAfter=''] - Whitespace to add before closing }} (for matching opening whitespace style).
  * @property {boolean} [closeWithBraces=false] - If true, the completion will add }} to close the macro.
+ * @property {string[]} [flags=[]] - The currently already written flags for this autocomplete.
+ * @property {string} [currentFlag] - The current flag that is present, if any.
+ * @property {string} [fullText] - The currently written full text.
  */
 
 export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
@@ -62,6 +65,9 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
 
     /** @type {MacroAutoCompleteContext|null} */
     #context = null;
+
+    /** @type {EnhancedMacroAutoCompleteOptions|null} */
+    #options = null;
 
     /** @type {boolean} */
     #noBraces = false;
@@ -83,12 +89,12 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         if (contextOrOptions && typeof contextOrOptions === 'object') {
             if ('noBraces' in contextOrOptions || 'paddingAfter' in contextOrOptions || 'closeWithBraces' in contextOrOptions) {
                 // It's an options object
-                const options = /** @type {EnhancedMacroAutoCompleteOptions} */ (contextOrOptions);
-                this.#noBraces = options.noBraces ?? false;
-                this.#paddingAfter = options.paddingAfter ?? '';
+                this.#options = /** @type {EnhancedMacroAutoCompleteOptions} */ (contextOrOptions);
+                this.#noBraces = this.#options.noBraces ?? false;
+                this.#paddingAfter = this.#options.paddingAfter ?? '';
 
                 // If noBraces mode with closeWithBraces, complete with name + padding + }}
-                if (options.closeWithBraces) {
+                if (this.#options.closeWithBraces) {
                     this.valueProvider = () => `${macro.name}${this.#paddingAfter}}}`;
                     this.makeSelectable = true;
                 }
@@ -109,6 +115,12 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
                 this.valueProvider = () => `${macro.name}${this.#paddingAfter}}}`;
                 this.makeSelectable = true; // Required when using valueProvider
             }
+        }
+
+        // {{//}} needs special handling. If we autocomplete right after **one** slash is already typed, we need to replace that, as it's treated as a flag otherwise.
+        const fullText = this.#options?.fullText ?? this.#context?.fullText ?? '';
+        if (macro.name === '//' && fullText.endsWith('/')) {
+            this.replacementStartOffset = (this.replacementStartOffset ?? 0) - 1; // Cut the leading slash
         }
     }
 
