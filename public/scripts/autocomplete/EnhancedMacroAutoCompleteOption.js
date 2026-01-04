@@ -1065,7 +1065,7 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     if (flags.length > 0) {
-        onboardingExperimentalMacroEngine('macro flags');
+        void onboardingExperimentalMacroEngine('macro flags');
     }
 
     // Check for variable shorthand prefix (. or $)
@@ -1158,7 +1158,7 @@ export function parseMacroContext(macroText, cursorOffset) {
         // For invalid trailing chars, none of the typing flags will be true
         const isOperatorComplete = (variableOperator === '++' || variableOperator === '--');
 
-        onboardingExperimentalMacroEngine('variable shorthands');
+        void onboardingExperimentalMacroEngine('variable shorthands');
 
         // Return early for variable shorthand - different structure than regular macros
         return {
@@ -1286,7 +1286,7 @@ export function parseMacroContext(macroText, cursorOffset) {
     const leftPadding = macroText.match(/^\s+/)?.[0] ?? '';
 
     if (leftPadding) {
-        onboardingExperimentalMacroEngine('leading whitespace');
+        void onboardingExperimentalMacroEngine('leading whitespace');
     }
 
     // Clean identifier: strip trailing colons (for partial :: typing)

@@ -2723,7 +2723,7 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
         else if (/{{\s*[.$]/.test(content)) feature = 'variable shorthands';
         else if (/\{\{(?:(?!\}\}).)*\{\{(?=[\s\S]*?\}\}[\s\S]*?\}\})/.test(content)) feature = 'nested macro';
 
-        if (feature) onboardingExperimentalMacroEngine(feature);
+        if (feature) void onboardingExperimentalMacroEngine(feature);
     }
 
     const environment = {};

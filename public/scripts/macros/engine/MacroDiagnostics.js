@@ -43,7 +43,7 @@ export const onboardingExperimentalMacroEngineMutex = new SimpleMutex(onboarding
 export const onboardingExperimentalMacroEngine = onboardingExperimentalMacroEngineMutex.update.bind(onboardingExperimentalMacroEngineMutex);
 
 async function onboardingExperimentalMacroEngineUnsafe(feature = null) {
-    // Show a popup once telling a user that they are using experimental features hat only work with the new engine.
+    // Show a popup once telling a user that they are using experimental features that only work with the new engine.
     // Ask them if they want to turn the experimental engine on.
     if (power_user.experimental_macro_engine) return;
 
