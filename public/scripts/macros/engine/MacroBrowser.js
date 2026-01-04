@@ -3,11 +3,11 @@
  * Similar to SlashCommandBrowser but for the macro system.
  */
 
-import { MacroRegistry, MacroCategory } from './engine/MacroRegistry.js';
-import { performFuzzySearch } from '../power-user.js';
+import { MacroRegistry, MacroCategory } from './MacroRegistry.js';
+import { performFuzzySearch } from '../../power-user.js';
 
-/** @typedef {import('./engine/MacroRegistry.js').MacroDefinition} MacroDefinition */
-/** @typedef {import('./engine/MacroRegistry.js').MacroValueType} MacroValueType */
+/** @typedef {import('./MacroRegistry.js').MacroDefinition} MacroDefinition */
+/** @typedef {import('./MacroRegistry.js').MacroValueType} MacroValueType */
 
 /**
  * Category display names and order for documentation.

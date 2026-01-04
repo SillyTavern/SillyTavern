@@ -9,7 +9,7 @@ import {
     createSourceIndicator,
     createAliasIndicator,
     renderMacroDetails,
-} from '../macros/MacroBrowser.js';
+} from '../macros/engine/MacroBrowser.js';
 import { enumIcons } from '../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../macros/engine/MacroLexer.js';
