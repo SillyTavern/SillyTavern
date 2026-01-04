@@ -4,7 +4,7 @@ import { eventSource, event_types, saveSettings, saveSettingsDebounced, getReque
 import { showLoader } from './loader.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
-import { delay, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
+import { delay, equalsIgnoreCaseAndAccents, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
 import { getContext } from './st-context.js';
 import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
@@ -329,6 +329,21 @@ export async function disableExtension(name, reload = true) {
     } else {
         requiresReload = true;
     }
+}
+
+/**
+ * Finds an extension by name, allowing omission of the "third-party/" prefix.
+ *
+ * @param {string} name - The name of the extension to find
+ * @returns {{name: string, enabled: boolean}|null} Object with name and enabled properties, or null if not found
+ */
+export function findExtension(name) {
+    const internalExtensionName = extensionNames.find(extName => {
+        return equalsIgnoreCaseAndAccents(extName, name) || equalsIgnoreCaseAndAccents(extName, `third-party/${name}`);
+    });
+    if (!internalExtensionName) return null;
+    const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
+    return { name: internalExtensionName, enabled: isEnabled };
 }
 
 /**
