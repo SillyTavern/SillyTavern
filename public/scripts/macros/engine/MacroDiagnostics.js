@@ -31,7 +31,7 @@ import { SimpleMutex } from '/scripts/util/SimpleMutex.js';
 
 
 // Use mutex here so even on parallel usage without awaiting the popup, this will only show up once.
-export const onbordingExperimentalMacroEngineMutext = new SimpleMutex(onbordingExperimentalMacroEngineUnsafe);
+export const onboardingExperimentalMacroEngineMutex = new SimpleMutex(onboardingExperimentalMacroEngineUnsafe);
 
 /**
  * Onboards the user to use the experimental macro engine.
@@ -40,9 +40,9 @@ export const onbordingExperimentalMacroEngineMutext = new SimpleMutex(onbordingE
  * @param {string|null} feature - The feature that requires the experimental macro engine, or null if not applicable or unknown.
  * @returns {Promise<void>} - A promise that resolves when the user has been onboarded.
  */
-export const onbordingExperimentalMacroEngine = onbordingExperimentalMacroEngineMutext.update.bind(onbordingExperimentalMacroEngineMutext);
+export const onboardingExperimentalMacroEngine = onboardingExperimentalMacroEngineMutex.update.bind(onboardingExperimentalMacroEngineMutex);
 
-async function onbordingExperimentalMacroEngineUnsafe(feature = null) {
+async function onboardingExperimentalMacroEngineUnsafe(feature = null) {
     // Show a popup once telling a user that they are using experimental features hat only work with the new engine.
     // Ask them if they want to turn the experimental engine on.
     if (power_user.experimental_macro_engine) return;

@@ -39,7 +39,7 @@ import { macros as macroSystem } from '../macros/macro-system.js';
 import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 import { chat_metadata } from '/script.js';
 import { extension_settings } from '../extensions.js';
-import { onbordingExperimentalMacroEngine } from '../macros/engine/MacroDiagnostics.js';
+import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnostics.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -619,7 +619,7 @@ export class SlashCommandParser {
                         resultStart = conditionStartInText + macroNameStart;
                     }
 
-                    await onbordingExperimentalMacroEngine('{{if}} macro');
+                    await onboardingExperimentalMacroEngine('{{if}} macro');
 
                     const result = new AutoCompleteNameResult(
                         resultIdentifier,
@@ -739,7 +739,7 @@ export class SlashCommandParser {
                         scopedMacroName: scopedMacro.name,
                     };
 
-                    await onbordingExperimentalMacroEngine('scoped macros');
+                    await onboardingExperimentalMacroEngine('scoped macros');
 
                     // Only show the scoped macro's details - no list of other macros
                     // This creates a "details only" view showing the scoped arg being typed
