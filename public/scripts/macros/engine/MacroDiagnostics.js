@@ -57,7 +57,7 @@ async function onboardingExperimentalMacroEngineUnsafe(feature = null) {
                 <span>${t`Recognized Feature: `}<strong>${feature}</strong></span>
             </div>` : ''}
         <p>${t`For more information on the new macro engine, visit the <br />${`<a href="https://docs.sillytavern.app/usage/core-concepts/macros/">${t`Macro Documentation`}</a>`}.`}</p>
-        <p>${t`You can enable the engine anytime time under:<br />${t`User Settings`} → ${t`Experimental Macro Engine`}`}</p>
+        <p>${t`You can enable the engine any time under:<br />${t`User Settings`} → ${t`Experimental Macro Engine`}`}</p>
         <p>${t`Would you like to enable it now?`}</p>`);
     if (result == POPUP_RESULT.AFFIRMATIVE) {
         power_user.experimental_macro_engine = true;
