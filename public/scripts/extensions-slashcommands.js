@@ -1,11 +1,11 @@
-import { disableExtension, enableExtension, extension_settings, extensionNames } from './extensions.js';
+import { disableExtension, enableExtension, extensionNames, findExtension } from './extensions.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { equalsIgnoreCaseAndAccents, isFalseBoolean, isTrueBoolean } from './utils.js';
+import { isFalseBoolean, isTrueBoolean } from './utils.js';
 
 /**
  * @param {'enable' | 'disable' | 'toggle'} action - The action to perform on the extension
@@ -22,30 +22,28 @@ function getExtensionActionCallback(action) {
         }
 
         const reload = !isFalseBoolean(args?.reload?.toString());
-        const internalExtensionName = findExtension(extensionName);
-        if (!internalExtensionName) {
+        const extension = findExtension(extensionName);
+        if (!extension) {
             toastr.warning(`Extension ${extensionName} does not exist.`);
             return '';
         }
 
-        const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
-
-        if (action === 'enable' && isEnabled) {
-            toastr.info(`Extension ${extensionName} is already enabled.`);
-            return internalExtensionName;
+        if (action === 'enable' && extension.enabled) {
+            toastr.info(`Extension ${extension.name} is already enabled.`);
+            return extension.name;
         }
 
-        if (action === 'disable' && !isEnabled) {
-            toastr.info(`Extension ${extensionName} is already disabled.`);
-            return internalExtensionName;
+        if (action === 'disable' && !extension.enabled) {
+            toastr.info(`Extension ${extension.name} is already disabled.`);
+            return extension.name;
         }
 
         if (action === 'toggle') {
-            action = isEnabled ? 'disable' : 'enable';
+            action = extension.enabled ? 'disable' : 'enable';
         }
 
         if (reload) {
-            toastr.info(`${action.charAt(0).toUpperCase() + action.slice(1)}ing extension ${extensionName} and reloading...`);
+            toastr.info(`${action.charAt(0).toUpperCase() + action.slice(1)}ing extension ${extension.name} and reloading...`);
 
             // Clear input, so it doesn't stay because the command didn't "finish",
             // and wait for a bit to both show the toast and let the clear bubble through.
@@ -54,33 +52,21 @@ function getExtensionActionCallback(action) {
         }
 
         if (action === 'enable') {
-            await enableExtension(internalExtensionName, reload);
+            await enableExtension(extension.name, reload);
         } else {
-            await disableExtension(internalExtensionName, reload);
+            await disableExtension(extension.name, reload);
         }
 
-        toastr.success(`Extension ${extensionName} ${action}d.`);
+        toastr.success(`Extension ${extension.name} ${action}d.`);
 
 
-        console.info(`Extension ${action}ed: ${extensionName}`);
+        console.info(`Extension ${action}ed: ${extension.name}`);
         if (!reload) {
             console.info('Reload not requested, so page needs to be reloaded manually for changes to take effect.');
         }
 
-        return internalExtensionName;
+        return extension.name;
     };
-}
-
-/**
- * Finds an extension by name, allowing omission of the "third-party/" prefix.
- *
- * @param {string} name - The name of the extension to find
- * @returns {string?} - The matched extension name or undefined if not found
- */
-function findExtension(name) {
-    return extensionNames.find(extName => {
-        return equalsIgnoreCaseAndAccents(extName, name) || equalsIgnoreCaseAndAccents(extName, `third-party/${name}`);
-    });
 }
 
 /**
@@ -244,14 +230,13 @@ export function registerExtensionSlashCommands() {
         name: 'extension-state',
         callback: async (_, extensionName) => {
             if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
-            const internalExtensionName = findExtension(extensionName);
-            if (!internalExtensionName) {
+            const extension = findExtension(extensionName);
+            if (!extension) {
                 toastr.warning(`Extension ${extensionName} does not exist.`);
                 return '';
             }
 
-            const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
-            return String(isEnabled);
+            return String(extension.enabled);
         },
         returns: 'The state of the extension, whether it is enabled.',
         unnamedArgumentList: [
@@ -282,8 +267,8 @@ export function registerExtensionSlashCommands() {
         aliases: ['extension-installed'],
         callback: async (_, extensionName) => {
             if (typeof extensionName !== 'string') throw new Error('Extension name must be a string. Closures or arrays are not allowed.');
-            const exists = findExtension(extensionName) !== undefined;
-            return exists ? 'true' : 'false';
+            const extension = findExtension(extensionName);
+            return extension !== null ? 'true' : 'false';
         },
         returns: 'Whether the extension exists and is installed.',
         unnamedArgumentList: [
