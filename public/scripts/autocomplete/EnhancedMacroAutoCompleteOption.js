@@ -1051,7 +1051,7 @@ export function parseMacroContext(macroText, cursorOffset) {
     while (i < macroText.length) {
         const char = macroText[i];
         // Check if this looks like a closing tag: `/` followed by an identifier character
-        if (char === '/' && i + 1 < macroText.length && /[a-zA-Z_]/.test(macroText[i + 1])) {
+        if (char === '/' && i + 1 < macroText.length && /[a-zA-Z/]/.test(macroText[i + 1])) {
             // This is a closing tag identifier, not a flag - stop parsing flags
             break;
         }
