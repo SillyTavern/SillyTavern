@@ -2494,17 +2494,14 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
  * @param {ChatMessage} mes Message object
  * @param {object} [options] Options
  * @param {string} [options.type='normal'] Message type
- * @param {number} [options.insertAfter=null] Message ID to insert the new message after
- * @param {boolean} [options.scroll=true] Whether to scroll to the new message
- * @param {number} [options.insertBefore=null] Message ID to insert the new message before
  * @param {number} [options.forceId=null] Force the message ID
- * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
  * @returns {{messageElement: JQuery<HTMLElement>, params: object}} Rendered HTMLElement.
  */
-export function createMessageElement(mes, { type = 'normal', forceId = null, showSwipes = true } = {}) {
+export function createMessageElement(mes, { type = 'normal', forceId = null } = {}) {
     let messageText = mes['mes'];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+    const mesId = forceId ?? chat.length - 1;
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -2518,10 +2515,8 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
     }
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
-    const isSystem = mes.is_system;
-    const title = mes.title;
 
-    //for non-user mesages
+    //for non-user messages
     if (!mes['is_user']) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
@@ -2549,7 +2544,7 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
     messageText = messageFormatting(
         messageText,
         mes.name,
-        isSystem,
+        mes.is_system,
         mes.is_user,
         chat.indexOf(mes),
         sanitizerOverrides,
@@ -2559,18 +2554,18 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
     let bookmarkLink = mes?.extra?.bookmark_link ?? '';
 
     let params = {
-        mesId: forceId ?? chat.length - 1,
+        mesId,
         mes: messageText,
         swipeId: mes.swipe_id ?? 0,
         characterName: mes.name,
         isUser: mes.is_user,
-        avatarImg: avatarImg,
-        bias: bias,
-        isSystem: isSystem,
-        title: title,
-        bookmarkLink: bookmarkLink,
+        avatarImg,
+        bias,
+        isSystem: mes.is_system,
+        title: mes.title,
+        bookmarkLink,
         forceAvatar: mes.force_avatar,
-        timestamp: timestamp,
+        timestamp,
         extra: mes.extra,
         tokenCount: mes.extra?.token_count ?? 0,
         type: mes.extra?.type ?? '',
@@ -2589,10 +2584,10 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
     }
 
     //shows or hides the Prompt display button
-    let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
+    let mesIdToFind = type === 'swipe' ? mesId - 1 : mesId;  //Number(newMessage.attr('mesId'));
 
     //if we have itemized messages, and the array isn't null..
-    if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+    if (mes.is_user === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
         const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(mesIdToFind));
         if (itemizedPrompt) {
             newMessage.find('.mes_prompt').show();
@@ -2611,7 +2606,7 @@ export function createMessageElement(mes, { type = 'normal', forceId = null, sho
 
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
     // Set the swipes counter for all non-user messages.
-    if (!params.isUser) {
+    if (!mes.is_user) {
         updateSwipeCounter(newMessageId, { message: mes, messageElement: newMessage });
     }
 
