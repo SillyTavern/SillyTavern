@@ -1612,20 +1612,22 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
 
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
-
 /**
- * Deletes messages from mesId message to lastMesId.
- * @param {Number} mesId
- * @param {Number} lastMesId
+ * Deletes a range of messages where fromMesId <= id <= toMesId.
+ * The DOM elements must exist and be in order.
+ * All messages after fromMesId will be redisplayed.
+ * @param {Number} fromMesId
+ * @param {Number} [toMesId=chat.length]
  */
-export async function deleteMessages(mesId, lastMesId) {
-    chat.splice(mesId, 1 + (lastMesId - mesId));
+export async function deleteMessages(fromMesId, toMesId = chat.length) {
+    chat.splice(fromMesId, 1 + (toMesId - fromMesId));
 
     chat_metadata['tainted'] = true;
 
+
+    await redisplayChat({ startIndex: fromMesId });
     updateViewMessageIds();
     saveChatDebounced();
-
 
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
