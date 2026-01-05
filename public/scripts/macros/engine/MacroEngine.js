@@ -192,7 +192,7 @@ class MacroEngine {
                     logMacroRuntimeWarning({ message: `Dynamic macro "${name}" has invalid options: ${error.message}`, call });
                 }
             } else if (['string', 'number', 'boolean', 'function'].includes((typeof impl))) {
-                // Case 1: string or handler function
+                // Case 1 & 2: string or handler function
                 if (['number', 'boolean'].includes(typeof impl)) {
                     logMacroRuntimeWarning({ message: `Dynamic macro "${name}" uses unsupported number/boolean format.`, call });
                 }
