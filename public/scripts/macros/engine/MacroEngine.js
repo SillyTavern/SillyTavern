@@ -11,7 +11,7 @@ import { ELSE_MARKER } from '../definitions/core-macros.js';
 
 /**
  * A processor function that transforms text before or after macro evaluation.
-*
+ *
  * @callback MacroProcessor
  * @param {string} text - The text to process.
  * @param {MacroEnv} env - The macro environment.
