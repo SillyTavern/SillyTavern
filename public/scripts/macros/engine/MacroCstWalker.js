@@ -190,7 +190,7 @@ class MacroCstWalker {
      * @param {Object} options
      * @param {string} options.text - The document text.
      * @param {CstNode} options.cst - The parsed CST.
-     * @returns {Array<{ name: string, startOffset: number, endOffset: number }>} - Array of unclosed macro info, innermost last.
+     * @returns {Array<{ name: string, startOffset: number, endOffset: number, paddingBefore: string, paddingAfter: string }>} - Array of unclosed macro info, innermost last.
      */
     findUnclosedScopes(options) {
         const { text, cst } = options;
@@ -203,7 +203,7 @@ class MacroCstWalker {
         // Don't process scoped macros - we want to find the raw opening/closing pairs
         // Just extract macro info and find unmatched openers
 
-        /** @type {Array<{ name: string, startOffset: number, endOffset: number }>} */
+        /** @type {Array<{ name: string, startOffset: number, endOffset: number, paddingBefore: string, paddingAfter: string }>} */
         const unclosedStack = [];
 
         // Extract macro names and closing status
@@ -222,16 +222,54 @@ class MacroCstWalker {
             } else {
                 // Opening tag - check if this macro can accept scoped content
                 if (this.#canAcceptScopedContent(item.node, info.name)) {
+                    // Extract whitespace padding from the macro
+                    const { paddingBefore, paddingAfter } = this.#extractMacroPadding(item.node, text);
+
                     unclosedStack.push({
                         name: info.name,
                         startOffset: item.startOffset,
                         endOffset: item.endOffset,
+                        paddingBefore,
+                        paddingAfter,
                     });
                 }
             }
         }
 
         return unclosedStack;
+    }
+
+    /**
+     * Extracts the whitespace padding from a macro node.
+     * Returns the whitespace after {{ and before }}.
+     *
+     * @param {CstNode} macroNode - The macro CST node.
+     * @param {string} text - The source text.
+     * @returns {{ paddingBefore: string, paddingAfter: string }}
+     */
+    #extractMacroPadding(macroNode, text) {
+        const children = macroNode.children || {};
+        const startToken = /** @type {IToken?} */ ((children['Macro.Start'] || [])[0]);
+        const endToken = /** @type {IToken?} */ ((children['Macro.End'] || [])[0]);
+
+        if (!startToken || !endToken) {
+            return { paddingBefore: '', paddingAfter: '' };
+        }
+
+        // Get the raw text inside the macro (between {{ and }})
+        const innerStart = startToken.endOffset + 1;
+        const innerEnd = endToken.startOffset;
+        const innerText = text.slice(innerStart, innerEnd);
+
+        // Extract leading whitespace (paddingBefore)
+        const leadingMatch = innerText.match(/^(\s*)/);
+        const paddingBefore = leadingMatch ? leadingMatch[1] : '';
+
+        // Extract trailing whitespace (paddingAfter)
+        const trailingMatch = innerText.match(/(\s*)$/);
+        const paddingAfter = trailingMatch ? trailingMatch[1] : '';
+
+        return { paddingBefore, paddingAfter };
     }
 
     /** @typedef {{ type: 'plaintext', startOffset: number, endOffset: number, token: IToken }} DocumentItemPlaintext */
