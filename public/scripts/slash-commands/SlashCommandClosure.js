@@ -105,7 +105,7 @@ export class SlashCommandClosure {
 
                     const findMacroMatch = (/** @type {{args: string[]}} */ i) => {
                         // Exact match
-                        if (i.args.toString() === context.list.toString()) {
+                        if (i.args.length === context.list.length && i.args.every((arg, index) => arg === context.list[index])) {
                             return true;
                         }
                         // Wildcard match - if any definition arg is '*', it matches any value at that position
