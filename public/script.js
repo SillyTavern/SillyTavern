@@ -8136,7 +8136,7 @@ async function branchChat() {
     mes['swipe_id'] = mes['swipes']?.length;
     //Delete chat after mesId
     await spliceStickToChat([], chat, mesId + 1);
-    await redisplayChat(chat, mesId + 1);
+    await redisplayChat({ startIndex: mesId + 1 });
 
     await messageEditDone(div);
 
@@ -10000,7 +10000,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
             const lastMesId = Number(chatElement.children().last().attr('mesid'));
 
             await deleteMessages(mesId + 1, lastMesId); // This should happen after the swipe
-            await redisplayChat(chat, mesId + 1);
             //Swipe in starting from the opposite side.
             await animateSwipeTransition(mesId + 1, { xStart: `${-swipeRange}px`, xEnd: `${0}px`, duration: swipeDuration, classes:counterClass });
 
@@ -10256,7 +10255,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
         //Swap in updated messages.
         if (tree.enabled()) {
-            await redisplayChat(chat, mesId + 1);
+            await redisplayChat({ startIndex: mesId + 1 });
         }
 
         //Animate expanding to the new message height.
