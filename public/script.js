@@ -9134,6 +9134,14 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
 
         const message = chat[messageId];
 
+        if (typeof message !== 'object') {
+            console.warn(`refreshSwipeButtons was called on messageElement #${index}, which has no object in chat.`)
+            // Hide the buttons on messages without objects..
+            div.classList.toggle('last_swipe', false);
+            div.classList.toggle('swipes_visible', false);
+            return;
+        }
+
         //Chevrons should not fade-in during printMessages. //https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3539315919
         div.classList.toggle('fade', fade);
 
@@ -9932,7 +9940,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
             }
             else {
                 await Popup.show.confirm(
-                    t`ERROR: <code>loadMessageFromSwipe</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
+                    t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
                     t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
                     { okButton: 'OK', cancelButton: false },
                 );
@@ -10293,11 +10301,11 @@ export async function swipe(event, direction, { source, repeated, message = chat
         syncMesToSwipe(mesId);
 
         if (chat[mesId]['swipe_id'] === undefined) {              // if there is no swipe-message in the last spot of the chat array
-            chat[mesId]['swipe_id'] = 0;                        // set it to id 0
-            chat[mesId]['swipes'] = [];                         // empty the array
-            chat[mesId]['swipe_info'] = [];
-            chat[mesId]['swipes'][0] = chat[mesId]['mes'];  //assign swipe array with last chat[mesId] from chat
-            chat[mesId]['swipe_info'][0] = {
+            chat[mesId]['swipe_id'] ??= 0;                        // set it to id 0
+            chat[mesId]['swipes'] ??= [];                         // empty the array
+            chat[mesId]['swipe_info'] ??= [];
+            chat[mesId]['swipes'][0] ??= chat[mesId]['mes'];  //assign swipe array with last chat[mesId] from chat
+            chat[mesId]['swipe_info'][0] ??= {
                 'send_date': chat[mesId]['send_date'],
                 'gen_started': chat[mesId]['gen_started'],
                 'gen_finished': chat[mesId]['gen_finished'],
@@ -11962,7 +11970,7 @@ jQuery(async function () {
             selectedSwipe !== undefined &&
             // Slash commands should not create popups.
             !fromSlashCommand &&
-        //If the chatTree is enabled, then old swipes and user swipes can be deleted.
+            //If the chatTree is enabled, then old swipes and user swipes can be deleted.
             (tree.enabled()) || (
                 !message.is_user &&
                 Number(this_edit_mes_id) === chat.length - 1
