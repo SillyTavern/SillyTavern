@@ -11952,14 +11952,21 @@ jQuery(async function () {
         const message = chat[this_edit_mes_id];
         const selectedSwipe = message['swipe_id'] ?? undefined;
         const swipesArray = Array.isArray(message['swipes']) ? message['swipes'] : [];
-        let canDeleteSwipe;
+        const canDeleteSwipe = (
+            //`Confirm message deletion` must be enabed.
+            power_user.confirm_message_delete &&
+            // The message must have swipes
+            swipesArray.length > 1 &&
+            // The swipe_id must be set.
+            selectedSwipe !== undefined &&
+            // Slash commands should not create popups.
+            !fromSlashCommand &&
         //If the chatTree is enabled, then old swipes and user swipes can be deleted.
-        if (tree.enabled()) {
-            canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && swipesArray.length > 1 && selectedSwipe !== undefined;
-        }
-        else {
-            canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && !message.is_user && swipesArray.length > 1 && Number(this_edit_mes_id) === chat.length - 1 && selectedSwipe !== undefined;
-        }
+            (tree.enabled()) || (
+                !message.is_user &&
+                Number(this_edit_mes_id) === chat.length - 1
+            )
+        );
         await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
 
