@@ -4,7 +4,7 @@ import { t } from './i18n.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { getSlashCommandsHelp } from './slash-commands.js';
 import { SlashCommandBrowser } from './slash-commands/SlashCommandBrowser.js';
-import { MacroBrowser, getMacrosHelp } from './macros/MacroBrowser.js';
+import { MacroBrowser, getMacrosHelp } from './macros/engine/MacroBrowser.js';
 import { renderTemplateAsync } from './templates.js';
 
 /** @type {Record<string, ChatMessage>} */

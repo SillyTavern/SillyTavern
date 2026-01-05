@@ -283,6 +283,7 @@ import { AudioPlayer } from './scripts/audio-player.js';
 import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
+import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -1609,7 +1610,15 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
-export async function reloadCurrentChat() {
+export const reloadChatMutex = new SimpleMutex(reloadCurrentChatUnsafe);
+export const reloadCurrentChat = reloadChatMutex.update.bind(reloadChatMutex);
+
+/**
+ * Reloads the current chat unsafely, without mutex protection.
+ * Use `reloadCurrentChat` instead to ensure thread safety.
+ * @returns {Promise<void>} A promise that resolves when the chat is reloaded.
+ */
+export async function reloadCurrentChatUnsafe() {
     preserveNeutralChat();
     await clearChat();
     chat.length = 0;
@@ -2753,6 +2762,20 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
             dynamicMacros: additionalMacro ?? {},
             postProcessFn: postProcessFn ?? ((x) => x),
         });
+    }
+
+    // Try to roughly detect experimental macro features to show the onboarding if needed.
+    // This does not have to be 100% accurate, only best effort what we can quickly check.
+    // Only do this if the warning wasn't shown yet, to prevent needless regex checks.
+    if (accountStorage.getItem('slash_command_experimental_engine_warning_shown') !== 'true') {
+        let feature = /** @type {string|null} */ (null);
+        if (/{{\s*if/.test(content)) feature = '{{if}} macro';
+        else if (/{{\s*\//.test(content)) feature = 'scoped macro';
+        else if (/{{\s*[!?~#/]/.test(content)) feature = 'macro flags';
+        else if (/{{\s*[.$]/.test(content)) feature = 'variable shorthands';
+        else if (/\{\{(?:(?!\}\}).)*\{\{(?=[\s\S]*?\}\}[\s\S]*?\}\})/.test(content)) feature = 'nested macro';
+
+        if (feature) void onboardingExperimentalMacroEngine(feature);
     }
 
     const environment = {};

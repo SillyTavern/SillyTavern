@@ -1399,6 +1399,28 @@
                                         <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
+
+                                    <div data-tg-type="koboldcpp" id="adaptive_p_block" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Adaptive-P">Adaptive-P</label>
+                                            <a href="https://github.com/MrJackSpade/adaptive-p-docs" target="_blank">
+                                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                                            </a>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
+                                            <div data-tg-samplers="adaptive_target" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Target">Target</small>
+                                                <input class="neo-range-slider" type="range" id="adaptive_target_textgenerationwebui" min="-0.01" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="-0.01" max="1" step="0.01" data-for="adaptive_target_textgenerationwebui" id="adaptive_target_counter_textgenerationwebui">
+                                            </div>
+                                            <div data-tg-samplers="adaptive_decay" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Decay">Decay</small>
+                                                <input class="neo-range-slider" type="range" id="adaptive_decay_textgenerationwebui" min="0" max="0.99" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="0.99" step="0.01" data-for="adaptive_decay_textgenerationwebui" id="adaptive_decay_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" data-tg-samplers="smoothing_factor" id="smoothingBlock" name="smoothingBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>

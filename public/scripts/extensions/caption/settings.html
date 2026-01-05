@@ -177,7 +177,15 @@
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="vllm" value="vllm_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="custom" value="custom_current" data-i18n="currently_selected">[Currently selected]</option>
+                        <option data-type="custom" value="custom_custom" data-i18n="[Custom model]">[Custom model]</option>
                     </select>
+                </div>
+                <div data-type="custom">
+                    <label for="caption_custom_model">
+                        <span data-i18n="Model Id">Model Id</span>
+                        <small data-i18n="(for [Custom model] option)">(for [Custom model] option)</small>
+                    </label>
+                    <input id="caption_custom_model" class="text_pole" type="text" placeholder="e.g. gpt-4o" />
                 </div>
                 <div data-type="ollama">
                     <div>
