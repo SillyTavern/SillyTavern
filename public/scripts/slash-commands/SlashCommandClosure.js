@@ -74,6 +74,8 @@ export class SlashCommandClosure {
             },
         };
 
+        // Special marker to denote closures in the substituted text
+        const CLOSURE_BOUNDARY = '\uFFF0~CLOSURE~\uFFF0';
         /** @type {Map<string, SlashCommandClosure>} */
         const closures = new Map();
         /** @type {Record<string, { args: string[], value: string|SlashCommandClosure }[]>} */
@@ -122,9 +124,9 @@ export class SlashCommandClosure {
                             replacer.debugController = this.debugController;
                         }
 
-                        const closureKey = `__closure_${uuidv4()}__`;
+                        const closureKey = uuidv4();
                         closures.set(closureKey, replacer);
-                        return `\n${closureKey}\n`;
+                        return `${CLOSURE_BOUNDARY}${closureKey}${CLOSURE_BOUNDARY}`;
                     }
 
                     return String(replacer ?? '');
@@ -136,7 +138,7 @@ export class SlashCommandClosure {
 
         // If any closures were inserted, split the text accordingly
         if (closures.size > 0) {
-            const parts = substitutedText.split('\n').map(part => closures.has(part) ? closures.get(part) : part);
+            const parts = substitutedText.split(CLOSURE_BOUNDARY).map(part => closures.has(part) ? closures.get(part) : part).filter(Boolean);
             return parts.length === 1 ? parts[0] : parts;
         }
 
