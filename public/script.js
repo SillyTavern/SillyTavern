@@ -1468,7 +1468,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
         applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length,  1) });
     }
 
-    refreshSwipeButtons(false, true);
+    refreshSwipeButtons(false, fade);
     applyStylePins();
     updateEditArrowClasses();
 
