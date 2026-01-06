@@ -6485,7 +6485,8 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
 
     } else {
         console.debug('entering chat update routine for non-swipe post');
-        const newMessage = chat[chat.push({}) - 1];
+        const newMessage = {};
+        chat.push(newMessage);
         newMessage['extra'] = {};
         newMessage['name'] = name2;
         newMessage['is_user'] = false;
