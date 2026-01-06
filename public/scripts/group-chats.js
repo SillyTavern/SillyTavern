@@ -274,8 +274,8 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     // Add integrity slug if missing
-    if (!metadata['integrity']) {
-        metadata['integrity'] = uuidv4();
+    if (!metadata.integrity) {
+        metadata.integrity = uuidv4();
     }
 
     await loadItemizedPrompts(getCurrentChatId());
@@ -559,8 +559,8 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
         return values.filter(x => x.length).join('\n');
     }
 
-    const scenarioOverride = String(chat_metadata['scenario'] || '');
-    const mesExamplesOverride = String(chat_metadata['mes_example'] || '');
+    const scenarioOverride = String(chat_metadata.scenario || '');
+    const mesExamplesOverride = String(chat_metadata.mes_example || '');
 
     return createLazyFields({
         description: () => collectField('Description', c => c.description),
@@ -593,16 +593,16 @@ async function getFirstCharacterMessage(character) {
     }
 
     const mes = {};
-    mes['is_user'] = false;
-    mes['is_system'] = false;
-    mes['name'] = character.name;
-    mes['send_date'] = getMessageTimeStamp();
-    mes['original_avatar'] = character.avatar;
-    mes['extra'] = { 'gen_id': Date.now() * Math.random() * 1000000 };
-    mes['mes'] = messageText
+    mes.is_user = false;
+    mes.is_system = false;
+    mes.name = character.name;
+    mes.send_date = getMessageTimeStamp();
+    mes.original_avatar = character.avatar;
+    mes.extra = { 'gen_id': Date.now() * Math.random() * 1000000 };
+    mes.mes = messageText
         ? substituteParams(messageText.trim(), { name2Override: character.name })
         : '';
-    mes['force_avatar'] =
+    mes.force_avatar =
         character.avatar != 'none'
             ? getThumbnailUrl('avatar', character.avatar)
             : default_avatar;
@@ -628,7 +628,7 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
         return;
     }
     const chatId = group.chat_id;
-    group['date_last_chat'] = Date.now();
+    group.date_last_chat = Date.now();
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata },
@@ -2179,7 +2179,7 @@ export async function openGroupChat(groupId, chatId) {
     await clearChat();
     chat.length = 0;
     group.chat_id = chatId;
-    group['date_last_chat'] = Date.now();
+    group.date_last_chat = Date.now();
     updateChatMetadata({}, true);
 
     await editGroup(groupId, true, false);

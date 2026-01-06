@@ -103,8 +103,8 @@ async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
 
 function getMainChatName() {
     if (chat_metadata) {
-        if (chat_metadata['main_chat']) {
-            return chat_metadata['main_chat'];
+        if (chat_metadata.main_chat) {
+            return chat_metadata.main_chat;
         }
         // groups didn't support bookmarks before chat metadata was introduced
         else if (selected_group) {
@@ -112,8 +112,8 @@ function getMainChatName() {
         }
         else if (characters[this_chid].chat && characters[this_chid].chat.includes(bookmarkNameToken)) {
             const tokenIndex = characters[this_chid].chat.lastIndexOf(bookmarkNameToken);
-            chat_metadata['main_chat'] = characters[this_chid].chat.substring(0, tokenIndex).trim();
-            return chat_metadata['main_chat'];
+            chat_metadata.main_chat = characters[this_chid].chat.substring(0, tokenIndex).trim();
+            return chat_metadata.main_chat;
         }
     }
     return null;
@@ -127,7 +127,7 @@ export function showBookmarksButtons() {
             $('#option_convert_to_group').show();
         }
 
-        if (chat_metadata['main_chat']) {
+        if (chat_metadata.main_chat) {
             // In bookmark chat
             $('#option_back_to_main').show();
             $('#option_new_bookmark').show();
@@ -184,10 +184,10 @@ export async function createBranch(mesId) {
     if (typeof lastMes.extra !== 'object') {
         lastMes.extra = {};
     }
-    if (typeof lastMes.extra['branches'] !== 'object') {
-        lastMes.extra['branches'] = [];
+    if (typeof lastMes.extra.branches !== 'object') {
+        lastMes.extra.branches = [];
     }
-    lastMes.extra['branches'].push(name);
+    lastMes.extra.branches.push(name);
     return name;
 }
 
@@ -236,7 +236,7 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
         await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
     }
 
-    lastMes.extra['bookmark_link'] = name;
+    lastMes.extra.bookmark_link = name;
 
     const mes = $(`.mes[mesid="${mesId}"]`);
     updateBookmarkDisplay(mes, name);

@@ -3271,7 +3271,7 @@ export async function getWorldEntry(name, data, entry) {
     const commentInput = headerTemplate.find('textarea[name="comment"]');
 
     //Update the commentInput's placeholder.
-    const keys = entry['key'].join(', ');
+    const keys = entry.key.join(', ');
     setCommentPlaceholder(keys, commentInput);
 
     commentInput.data('uid', entry.uid);

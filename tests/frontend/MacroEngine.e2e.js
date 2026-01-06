@@ -639,8 +639,8 @@ test.describe('MacroEngine', () => {
             await page.evaluate(async ([originalHash]) => {
                 /** @type {import('../../public/script.js')} */
                 const { chat_metadata } = await import('./script.js');
-                originalHash = chat_metadata['chat_id_hash'];
-                chat_metadata['chat_id_hash'] = 123456;
+                originalHash = chat_metadata.chat_id_hash;
+                chat_metadata.chat_id_hash = 123456;
             }, [originalHash]);
 
             const input = 'Choices: {{pick::red::green::blue}}, {{pick::red::green::blue}}.';
@@ -668,7 +668,7 @@ test.describe('MacroEngine', () => {
             await page.evaluate(async ([originalHash]) => {
                 /** @type {import('../../public/script.js')} */
                 const { chat_metadata } = await import('./script.js');
-                chat_metadata['chat_id_hash'] = originalHash;
+                chat_metadata.chat_id_hash = originalHash;
             }, [originalHash]);
         });
     });

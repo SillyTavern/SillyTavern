@@ -206,10 +206,10 @@ export async function generateHorde(prompt, params, signal, reportProgress) {
 
     // No idea what these do
     params['n'] = 1;
-    params['frmtadsnsp'] = false;
-    params['frmtrmblln'] = false;
-    params['frmtrmspch'] = false;
-    params['frmttriminc'] = false;
+    params.frmtadsnsp = false;
+    params.frmtrmblln = false;
+    params.frmtrmspch = false;
+    params.frmttriminc = false;
 
     const payload = {
         'prompt': prompt,

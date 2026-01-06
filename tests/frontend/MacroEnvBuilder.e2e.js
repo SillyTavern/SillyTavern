@@ -246,9 +246,9 @@ test.describe('MacroEnvBuilder', () => {
                     hasLower: 'mymacro' in env.dynamicMacros,
                     hasUpper: 'uppercase' in env.dynamicMacros,
                     hasLowercase: 'lowercase' in env.dynamicMacros,
-                    value1: env.dynamicMacros['mymacro'],
-                    value2: env.dynamicMacros['uppercase'],
-                    value3: env.dynamicMacros['lowercase'],
+                    value1: env.dynamicMacros.mymacro,
+                    value2: env.dynamicMacros.uppercase,
+                    value3: env.dynamicMacros.lowercase,
                 };
             });
 
@@ -274,8 +274,8 @@ test.describe('MacroEnvBuilder', () => {
 
                 const env = MacroEnvBuilder.buildFromRawEnv(ctx);
                 return {
-                    value: env.dynamicMacros['greeting'],
-                    type: typeof env.dynamicMacros['greeting'],
+                    value: env.dynamicMacros.greeting,
+                    type: typeof env.dynamicMacros.greeting,
                 };
             });
 
@@ -296,7 +296,7 @@ test.describe('MacroEnvBuilder', () => {
                 };
 
                 const env = MacroEnvBuilder.buildFromRawEnv(ctx);
-                const storedValue = env.dynamicMacros['dyn'];
+                const storedValue = env.dynamicMacros.dyn;
                 return {
                     isFunction: typeof storedValue === 'function',
                     callResult: typeof storedValue === 'function' ? storedValue() : null,
@@ -324,7 +324,7 @@ test.describe('MacroEnvBuilder', () => {
                 };
 
                 const env = MacroEnvBuilder.buildFromRawEnv(ctx);
-                const storedValue = env.dynamicMacros['greet'];
+                const storedValue = env.dynamicMacros.greet;
                 return {
                     isObject: typeof storedValue === 'object' && storedValue !== null,
                     hasHandler: typeof storedValue?.handler === 'function',
@@ -358,10 +358,10 @@ test.describe('MacroEnvBuilder', () => {
 
                 const env = MacroEnvBuilder.buildFromRawEnv(ctx);
                 return {
-                    stringType: typeof env.dynamicMacros['stringval'],
-                    funcType: typeof env.dynamicMacros['funcval'],
-                    optionsType: typeof env.dynamicMacros['optionsval'],
-                    optionsHasHandler: typeof env.dynamicMacros['optionsval']?.handler === 'function',
+                    stringType: typeof env.dynamicMacros.stringval,
+                    funcType: typeof env.dynamicMacros.funcval,
+                    optionsType: typeof env.dynamicMacros.optionsval,
+                    optionsHasHandler: typeof env.dynamicMacros.optionsval?.handler === 'function',
                 };
             });
 

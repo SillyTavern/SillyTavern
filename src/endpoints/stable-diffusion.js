@@ -228,7 +228,7 @@ router.post('/get-model', async (request, response) => {
         });
         /** @type {any} */
         const data = await result.json();
-        return response.send(data['sd_model_checkpoint']);
+        return response.send(data.sd_model_checkpoint);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -277,8 +277,8 @@ router.post('/set-model', async (request, response) => {
             /** @type {any} */
             const progressState = await getProgress();
 
-            const progress = progressState['progress'];
-            const jobCount = progressState['state']['job_count'];
+            const progress = progressState.progress;
+            const jobCount = progressState.state.job_count;
             if (progress === 0.0 && jobCount === 0) {
                 break;
             }
@@ -834,7 +834,7 @@ drawthings.post('/get-model', async (request, response) => {
         /** @type {any} */
         const data = await result.json();
 
-        return response.send(data['model']);
+        return response.send(data.model);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -853,7 +853,7 @@ drawthings.post('/get-upscaler', async (request, response) => {
         /** @type {any} */
         const data = await result.json();
 
-        return response.send(data['upscaler']);
+        return response.send(data.upscaler);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

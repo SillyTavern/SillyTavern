@@ -1911,13 +1911,13 @@ export function addDOMPurifyHooks() {
     });
 
     DOMPurify.addHook('uponSanitizeAttribute', (node, data, config) => {
-        if (!config['MESSAGE_SANITIZE']) {
+        if (!config.MESSAGE_SANITIZE) {
             return;
         }
 
         /* Retain the classes on UI elements of messages that interact with the main UI */
         const permittedNodeTypes = ['BUTTON', 'DIV'];
-        if (config['MESSAGE_ALLOW_SYSTEM_UI'] && node.classList.contains('menu_button') && permittedNodeTypes.includes(node.nodeName)) {
+        if (config.MESSAGE_ALLOW_SYSTEM_UI && node.classList.contains('menu_button') && permittedNodeTypes.includes(node.nodeName)) {
             return;
         }
 
@@ -1938,7 +1938,7 @@ export function addDOMPurifyHooks() {
     });
 
     DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
-        if (!config['MESSAGE_SANITIZE']) {
+        if (!config.MESSAGE_SANITIZE) {
             return;
         }
 

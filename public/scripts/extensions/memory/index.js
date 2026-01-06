@@ -452,7 +452,7 @@ async function onChatEvent() {
         .catch(console.error)
         .finally(() => {
             lastMessageId = context.chat?.length ?? null;
-            lastMessageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1]['mes']) ?? '');
+            lastMessageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1].mes) ?? '');
         });
 }
 

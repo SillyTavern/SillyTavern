@@ -126,16 +126,16 @@ class ElevenLabsTtsProvider {
         this.settings = this.defaultSettings;
 
         // Migrate old settings
-        if (settings['multilingual'] !== undefined) {
+        if (settings.multilingual !== undefined) {
             settings.model = settings.multilingual ? 'eleven_multilingual_v1' : 'eleven_monolingual_v1';
-            delete settings['multilingual'];
+            delete settings.multilingual;
         }
 
         if (Object.hasOwn(settings, 'apiKey')) {
             if (settings.apiKey && !secret_state[SECRET_KEYS.ELEVENLABS]){
                 await writeSecret(SECRET_KEYS.ELEVENLABS, settings.apiKey);
             }
-            delete settings['apiKey'];
+            delete settings.apiKey;
         }
 
         $('#elevenlabs_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.ELEVENLABS]);
