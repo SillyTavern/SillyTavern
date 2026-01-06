@@ -1392,6 +1392,10 @@ export class SlashCommandParser {
     }
 
     replaceGetvar(value) {
+        // Not needed with the new parser.
+        if (power_user.experimental_macro_engine) {
+            return value;
+        }
         return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
             cmd = cmd.toLowerCase();

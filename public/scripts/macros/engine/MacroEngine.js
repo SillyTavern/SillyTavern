@@ -1,11 +1,12 @@
 import { MacroParser } from './MacroParser.js';
 import { MacroCstWalker } from './MacroCstWalker.js';
-import { MacroRegistry } from './MacroRegistry.js';
+import { MacroRegistry, MacroValueType } from './MacroRegistry.js';
 import { logMacroGeneralError, logMacroInternalError, logMacroRuntimeWarning, logMacroSyntaxWarning } from './MacroDiagnostics.js';
 import { ELSE_MARKER } from '../definitions/core-macros.js';
 
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
+/** @typedef {import('./MacroRegistry.js').MacroDefinitionOptions} MacroDefinitionOptions */
 /** @typedef {import('./MacroRegistry.js').MacroDefinition} MacroDefinition */
 
 /**
@@ -166,31 +167,44 @@ class MacroEngine {
 
         // First check if this is a dynamic macro to use. If so, we will create a temporary macro definition for it and use that over any registered macro.
         // Dynamic macro keys are normalized to lowercase for case-insensitive matching.
-        /** @type {MacroDefinition?} */
+        /** @type {MacroDefinition|null} */
         let defOverride = null;
         const nameLower = name.toLowerCase();
         if (Object.hasOwn(env.dynamicMacros, nameLower)) {
             const impl = env.dynamicMacros[nameLower];
-            defOverride = {
-                name,
-                aliases: [],
-                category: 'dynamic',
-                description: 'Dynamic macro',
-                minArgs: 0,
-                maxArgs: 0,
-                unnamedArgDefs: [],
-                list: null,
-                strictArgs: true, // Fail dynamic macros if they are called with arguments
-                returns: null,
-                returnType: 'string',
-                displayOverride: null,
-                exampleUsage: [],
-                source: { name: 'dynamic', isExtension: false, isThirdParty: false },
-                aliasOf: null,
-                aliasVisible: null,
-                delayArgResolution: false,
-                handler: typeof impl === 'function' ? impl : () => impl,
-            };
+
+            // Dynamic macros support three formats:
+            // 1. string - direct value, no args allowed
+            // 2. function - handler function, no args allowed (legacy behavior)
+            // 3. MacroDefinitionOptions object - full definition with handler, args, type validation, etc.
+
+            // Check if this looks like a MacroDefinitionOptions object (has handler property)
+            const looksLikeOptions = impl && typeof impl === 'object' &&
+                'handler' in impl && typeof impl.handler === 'function';
+
+            if (looksLikeOptions) {
+                // Case 3: MacroDefinitionOptions - use the full definition builder
+                try {
+                    const options = /** @type {MacroDefinitionOptions} */ (impl);
+                    defOverride = MacroRegistry.buildMacroDefFromOptions(name, options);
+                } catch (error) {
+                    // If building fails, log warning and fall through to check registered macros
+                    logMacroRuntimeWarning({ message: `Dynamic macro "${name}" has invalid options: ${error.message}`, call });
+                }
+            } else if (['string', 'number', 'boolean', 'function'].includes((typeof impl))) {
+                // Case 1 & 2: string or handler function
+                if (['number', 'boolean'].includes(typeof impl)) {
+                    logMacroRuntimeWarning({ message: `Dynamic macro "${name}" uses unsupported number/boolean format.`, call });
+                }
+                defOverride = MacroRegistry.buildMacroDefFromOptions(name, {
+                    handler: typeof impl === 'function' ? impl : () => String(impl ?? ''),
+                    category: 'dynamic',
+                    description: 'Dynamic macro',
+                    returnType: MacroValueType.STRING,
+                });
+            } else {
+                logMacroRuntimeWarning({ message: `Dynamic macro "${name}" is not defined correctly (must be string, a handler function, or a macro def options object with handler property).`, call });
+            }
         }
 
         // If not, check if the macro exists and is registered

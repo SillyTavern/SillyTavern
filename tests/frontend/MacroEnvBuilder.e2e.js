@@ -205,28 +205,213 @@ test.describe('MacroEnvBuilder', () => {
         });
     });
 
-    test('merges dynamicMacros properties into env.dynamicMacros', async ({ page }) => {
-        const dynamicMacros = await page.evaluate(async () => {
-            /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
-            const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+    test.describe('Dynamic macros in env', () => {
+        test('merges dynamicMacros properties into env.dynamicMacros', async ({ page }) => {
+            const dynamicMacros = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
 
-            /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js').MacroEnvRawContext} */
-            const ctx = {
-                content: '',
-                dynamicMacros: {
-                    simple: 'value',
-                    number: 42,
-                    nested: { foo: 'bar' },
-                },
-            };
+                const ctx = {
+                    content: '',
+                    dynamicMacros: {
+                        simple: 'value',
+                        number: 42,
+                    },
+                };
 
-            const env = MacroEnvBuilder.buildFromRawEnv(ctx);
-            return env.dynamicMacros;
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return env.dynamicMacros;
+            });
+
+            expect(dynamicMacros.simple).toBe('value');
+            expect(dynamicMacros.number).toBe(42);
         });
 
-        expect(dynamicMacros.simple).toBe('value');
-        expect(dynamicMacros.number).toBe(42);
-        expect(dynamicMacros.nested).toEqual({ foo: 'bar' });
+        test('normalizes dynamic macro keys to lowercase', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    dynamicMacros: {
+                        MyMacro: 'value1',
+                        UPPERCASE: 'value2',
+                        lowercase: 'value3',
+                    },
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return {
+                    hasLower: 'mymacro' in env.dynamicMacros,
+                    hasUpper: 'uppercase' in env.dynamicMacros,
+                    hasLowercase: 'lowercase' in env.dynamicMacros,
+                    value1: env.dynamicMacros['mymacro'],
+                    value2: env.dynamicMacros['uppercase'],
+                    value3: env.dynamicMacros['lowercase'],
+                };
+            });
+
+            expect(result.hasLower).toBe(true);
+            expect(result.hasUpper).toBe(true);
+            expect(result.hasLowercase).toBe(true);
+            expect(result.value1).toBe('value1');
+            expect(result.value2).toBe('value2');
+            expect(result.value3).toBe('value3');
+        });
+
+        test('accepts string values for dynamic macros', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    dynamicMacros: {
+                        greeting: 'Hello, World!',
+                    },
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return {
+                    value: env.dynamicMacros['greeting'],
+                    type: typeof env.dynamicMacros['greeting'],
+                };
+            });
+
+            expect(result.value).toBe('Hello, World!');
+            expect(result.type).toBe('string');
+        });
+
+        test('accepts handler functions for dynamic macros', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    dynamicMacros: {
+                        dyn: () => 'handler result',
+                    },
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                const storedValue = env.dynamicMacros['dyn'];
+                return {
+                    isFunction: typeof storedValue === 'function',
+                    callResult: typeof storedValue === 'function' ? storedValue() : null,
+                };
+            });
+
+            expect(result.isFunction).toBe(true);
+            expect(result.callResult).toBe('handler result');
+        });
+
+        test('accepts MacroDefinitionOptions objects for dynamic macros', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    dynamicMacros: {
+                        greet: {
+                            description: 'A greeting macro',
+                            unnamedArgs: [{ name: 'name' }],
+                            handler: ({ unnamedArgs: [name] }) => `Hello, ${name}!`,
+                        },
+                    },
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                const storedValue = env.dynamicMacros['greet'];
+                return {
+                    isObject: typeof storedValue === 'object' && storedValue !== null,
+                    hasHandler: typeof storedValue?.handler === 'function',
+                    hasDescription: typeof storedValue?.description === 'string',
+                    hasUnnamedArgs: Array.isArray(storedValue?.unnamedArgs),
+                };
+            });
+
+            expect(result.isObject).toBe(true);
+            expect(result.hasHandler).toBe(true);
+            expect(result.hasDescription).toBe(true);
+            expect(result.hasUnnamedArgs).toBe(true);
+        });
+
+        test('supports mixed dynamic macro value types', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    dynamicMacros: {
+                        stringVal: 'direct string',
+                        funcVal: () => 'from function',
+                        optionsVal: {
+                            handler: () => 'from options',
+                            unnamedArgs: 1,
+                        },
+                    },
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return {
+                    stringType: typeof env.dynamicMacros['stringval'],
+                    funcType: typeof env.dynamicMacros['funcval'],
+                    optionsType: typeof env.dynamicMacros['optionsval'],
+                    optionsHasHandler: typeof env.dynamicMacros['optionsval']?.handler === 'function',
+                };
+            });
+
+            expect(result.stringType).toBe('string');
+            expect(result.funcType).toBe('function');
+            expect(result.optionsType).toBe('object');
+            expect(result.optionsHasHandler).toBe(true);
+        });
+
+        test('handles null dynamicMacros gracefully', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    dynamicMacros: null,
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return {
+                    hasDynamicMacros: 'dynamicMacros' in env,
+                    isEmpty: Object.keys(env.dynamicMacros).length === 0,
+                };
+            });
+
+            expect(result.hasDynamicMacros).toBe(true);
+            expect(result.isEmpty).toBe(true);
+        });
+
+        test('handles undefined dynamicMacros gracefully', async ({ page }) => {
+            const result = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const ctx = {
+                    content: '',
+                    // dynamicMacros not provided
+                };
+
+                const env = MacroEnvBuilder.buildFromRawEnv(ctx);
+                return {
+                    hasDynamicMacros: 'dynamicMacros' in env,
+                    isEmpty: Object.keys(env.dynamicMacros).length === 0,
+                };
+            });
+
+            expect(result.hasDynamicMacros).toBe(true);
+            expect(result.isEmpty).toBe(true);
+        });
     });
 
     test('sets system.model field from getGeneratingModel helper', async ({ page }) => {

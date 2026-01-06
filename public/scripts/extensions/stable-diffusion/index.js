@@ -320,6 +320,7 @@ const defaultSettings = {
     // OpenAI settings
     openai_style: 'vivid',
     openai_quality: 'standard',
+    openai_quality_gpt: 'auto',
     openai_duration: '8',
 
     style: 'Default',
@@ -528,6 +529,7 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_openai_quality_gpt').val(extension_settings.sd.openai_quality_gpt);
     $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
     $('#sd_comfy_type').val(extension_settings.sd.comfy_type);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
@@ -1850,7 +1852,7 @@ function switchModelSpecificControls(modelId) {
 
     modelControls.each(function () {
         const models = String($(this).attr('data-sd-model') || '').split(',').map(m => m.trim());
-        $(this).toggle(models.includes(modelId));
+        $(this).toggle(models.some(m => modelId.includes(m)));
     });
 }
 
@@ -2169,6 +2171,7 @@ async function loadOpenAiModels() {
         { value: 'gpt-image-1.5', text: 'gpt-image-1.5' },
         { value: 'gpt-image-1-mini', text: 'gpt-image-1-mini' },
         { value: 'gpt-image-1', text: 'gpt-image-1' },
+        { value: 'chatgpt-image-latest', text: 'chatgpt-image-latest' },
         { value: 'dall-e-3', text: 'dall-e-3' },
         { value: 'dall-e-2', text: 'dall-e-2' },
         { value: 'sora-2', text: 'sora-2' },
@@ -3697,7 +3700,7 @@ async function generateOpenAiImage(prompt, signal) {
 
     const isDalle2 = /dall-e-2/.test(extension_settings.sd.model);
     const isDalle3 = /dall-e-3/.test(extension_settings.sd.model);
-    const isGptImg = /gpt-image-1/.test(extension_settings.sd.model);
+    const isGptImg = /gpt-image-(1|latest)/.test(extension_settings.sd.model);
     const isSora2 = /sora-2/.test(extension_settings.sd.model);
 
     if (isDalle2 && prompt.length > dalle2PromptLimit) {
@@ -3770,7 +3773,7 @@ async function generateOpenAiImage(prompt, signal) {
             model: extension_settings.sd.model,
             size: `${width}x${height}`,
             n: 1,
-            quality: isDalle3 ? extension_settings.sd.openai_quality : undefined,
+            quality: isDalle3 ? extension_settings.sd.openai_quality : (isGptImg ? extension_settings.sd.openai_quality_gpt : undefined),
             style: isDalle3 ? extension_settings.sd.openai_style : undefined,
             response_format: isDalle2 || isDalle3 ? 'b64_json' : undefined,
             moderation: isGptImg ? 'low' : undefined,
@@ -5307,6 +5310,10 @@ jQuery(async () => {
     });
     $('#sd_electronhub_quality').on('change', function () {
         extension_settings.sd.electronhub_quality = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#sd_openai_quality_gpt').on('input', function () {
+        extension_settings.sd.openai_quality_gpt = String($(this).val());
         saveSettingsDebounced();
     });
 

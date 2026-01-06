@@ -1296,10 +1296,14 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
 }
 
 /**
- * Embed media content in OpenRouter messages.
+ * Embed media content in OpenRouter messages (OpenAI-compatible).
  * @param {object[]} messages Array of messages
+ * @param {object} options Options for embedding
+ * @param {boolean} [options.audio] Enable audio embedding (default: true)
+ * @param {boolean} [options.video] Enable video embedding (default: true)
+ * @returns {void}
  */
-export function embedOpenRouterMedia(messages) {
+export function embedOpenRouterMedia(messages, { audio = true, video = true } = { audio: true, video: true }) {
     if (!Array.isArray(messages)) {
         return;
     }
@@ -1310,11 +1314,11 @@ export function embedOpenRouterMedia(messages) {
         }
 
         for (const contentPart of message.content) {
-            if (contentPart?.type === 'video_url' && contentPart.video_url?.url?.startsWith('data:')) {
+            if (video && contentPart?.type === 'video_url' && contentPart.video_url?.url?.startsWith('data:')) {
                 contentPart.type = 'input_video';
             }
 
-            if (contentPart?.type === 'audio_url' && contentPart.audio_url?.url?.startsWith('data:')) {
+            if (audio && contentPart?.type === 'audio_url' && contentPart.audio_url?.url?.startsWith('data:')) {
                 const formatMap = {
                     'audio/mpeg': 'mp3',
                     'audio/wav': 'wav',
