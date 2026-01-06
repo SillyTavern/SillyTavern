@@ -12041,8 +12041,9 @@ jQuery(async function () {
             }
             if (this_edit_mes_id === undefined && $('#mes_stop').is(':visible')) {
                 $('#mes_stop').trigger('click');
+                if (chat.length === 0) return;
                 const lastMessage = chat[chat.length - 1];
-                if (chat.length && Array.isArray(lastMessage.swipes) && lastMessage.swipe_id == lastMessage.swipes.length) {
+                if (Array.isArray(lastMessage.swipes) && lastMessage.swipe_id == lastMessage.swipes.length) {
                     $('.last_mes .swipe_left').trigger('click');
                 }
             }
