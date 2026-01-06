@@ -6544,7 +6544,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
     } else {
         item['swipe_id'] = 0;
         item['swipes'] = [];
-        item['swipes'][0] = lastMessage['mes'];
+        item['swipes'][0] = item['mes'];
         item['swipe_info'][0] = {
             send_date: item['send_date'],
             gen_started: item['gen_started'],
