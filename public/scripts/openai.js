@@ -4689,6 +4689,9 @@ function getMaxContextOpenAI(value) {
     else if (value.includes('gpt-4.1')) {
         return max_1mil;
     }
+    else if (value.includes('gpt-audio')) {
+        return max_128k;
+    }
     else if (value.startsWith('o1')) {
         return max_128k;
     }
@@ -4705,6 +4708,9 @@ function getMaxContextOpenAI(value) {
         return max_8k;
     }
     else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
+        return max_32k;
+    }
+    else if (value.includes('gpt-realtime')) {
         return max_32k;
     }
     else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
