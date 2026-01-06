@@ -5946,21 +5946,30 @@ export function isAudioInliningSupported() {
         return false;
     }
 
-    // Only Gemini models support audio for now
     const audioSupportedModels = [
         'gemini-2.0',
         'gemini-2.5',
         'gemini-3',
         'gemini-exp-1206',
+        'gpt-4o-audio',
+        'gpt-4o-realtime',
+        'gpt-4o-mini-audio',
+        'gpt-4o-mini-realtime',
+        'gpt-audio',
+        'gpt-realtime',
     ];
 
     switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.OPENAI:
+            return audioSupportedModels.some(model => oai_settings.openai_model.includes(model));
         case chat_completion_sources.MAKERSUITE:
             return audioSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.VERTEXAI:
             return audioSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
         case chat_completion_sources.OPENROUTER:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.input_modalities?.includes('audio'));
+        case chat_completion_sources.CUSTOM:
+            return true;
         default:
             return false;
     }
