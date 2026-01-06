@@ -6546,10 +6546,10 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         newLastMessage['swipes'] = [];
         newLastMessage['swipes'][0] = lastMessage['mes'];
         newLastMessage['swipe_info'][0] = {
-            send_date: lastMessage['send_date'],
-            gen_started: lastMessage['gen_started'],
-            gen_finished: lastMessage['gen_finished'],
-            extra: structuredClone(lastMessage['extra']),
+            send_date: newLastMessage['send_date'],
+            gen_started: newLastMessage['gen_started'],
+            gen_finished: newLastMessage['gen_finished'],
+            extra: structuredClone(newLastMessage['extra']),
         };
     }
 
