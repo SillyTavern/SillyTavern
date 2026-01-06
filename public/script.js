@@ -6528,49 +6528,49 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
     }
 
-    const newLastMessage = chat[chat.length - 1];
-    if (newLastMessage['swipe_info'] === undefined) {
-        newLastMessage['swipe_info'] = [];
+    const item = chat[chat.length - 1];
+    if (item['swipe_info'] === undefined) {
+        item['swipe_info'] = [];
     }
-    if (newLastMessage['swipe_id'] !== undefined) {
-        const swipeId = newLastMessage['swipe_id'];
-        newLastMessage['swipes'][swipeId] = newLastMessage['mes'];
-        newLastMessage['swipe_info'][swipeId] = {
-            send_date: newLastMessage['send_date'],
-            gen_started: newLastMessage['gen_started'],
-            gen_finished: newLastMessage['gen_finished'],
-            extra: structuredClone(newLastMessage['extra']),
+    if (item['swipe_id'] !== undefined) {
+        const swipeId = item['swipe_id'];
+        item['swipes'][swipeId] = item['mes'];
+        item['swipe_info'][swipeId] = {
+            send_date: item['send_date'],
+            gen_started: item['gen_started'],
+            gen_finished: item['gen_finished'],
+            extra: structuredClone(item['extra']),
         };
     } else {
-        newLastMessage['swipe_id'] = 0;
-        newLastMessage['swipes'] = [];
-        newLastMessage['swipes'][0] = lastMessage['mes'];
-        newLastMessage['swipe_info'][0] = {
-            send_date: newLastMessage['send_date'],
-            gen_started: newLastMessage['gen_started'],
-            gen_finished: newLastMessage['gen_finished'],
-            extra: structuredClone(newLastMessage['extra']),
+        item['swipe_id'] = 0;
+        item['swipes'] = [];
+        item['swipes'][0] = lastMessage['mes'];
+        item['swipe_info'][0] = {
+            send_date: item['send_date'],
+            gen_started: item['gen_started'],
+            gen_finished: item['gen_finished'],
+            extra: structuredClone(item['extra']),
         };
     }
 
     if (Array.isArray(swipes) && swipes.length > 0) {
-        const swipeInfoExtra = structuredClone(newLastMessage.extra ?? {});
+        const swipeInfoExtra = structuredClone(item.extra ?? {});
         delete swipeInfoExtra.token_count;
         delete swipeInfoExtra.reasoning;
         delete swipeInfoExtra.reasoning_duration;
         const swipeInfo = {
-            send_date: newLastMessage.send_date,
-            gen_started: newLastMessage.gen_started,
-            gen_finished: newLastMessage.gen_finished,
+            send_date: item.send_date,
+            gen_started: item.gen_started,
+            gen_finished: item.gen_finished,
             extra: swipeInfoExtra,
         };
         const swipeInfoArray = Array(swipes.length).fill().map(() => structuredClone(swipeInfo));
-        parseReasoningInSwipes(swipes, swipeInfoArray, newLastMessage.extra?.reasoning_duration);
-        newLastMessage.swipes.push(...swipes);
-        newLastMessage.swipe_info.push(...swipeInfoArray);
+        parseReasoningInSwipes(swipes, swipeInfoArray, item.extra?.reasoning_duration);
+        item.swipes.push(...swipes);
+        item.swipe_info.push(...swipeInfoArray);
     }
 
-    statMesProcess(newLastMessage, type, characters, this_chid, oldMessage);
+    statMesProcess(item, type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }
 
