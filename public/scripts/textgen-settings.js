@@ -74,7 +74,6 @@ const LLAMACPP_DEFAULT_ORDER = [
     'min_p',
     'xtc',
     'temperature',
-    'adaptive_p',
 ];
 const OOBA_DEFAULT_ORDER = [
     'repetition_penalty',
