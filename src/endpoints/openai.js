@@ -402,7 +402,7 @@ router.post('/electronhub/models', async (request, response) => {
         }
 
         const data = await result.json();
-        const models = data && Array.isArray(data.data) ? data.data : [];
+        const models = data && Array.isArray(data['data']) ? data['data'] : [];
         return response.json(models);
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);
