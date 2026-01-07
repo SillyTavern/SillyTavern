@@ -205,7 +205,7 @@ export async function generateHorde(prompt, params, signal, reportProgress) {
     delete params.prompt;
 
     // No idea what these do
-    params['n'] = 1;
+    params.n = 1;
     params.frmtadsnsp = false;
     params.frmtrmblln = false;
     params.frmtrmspch = false;
