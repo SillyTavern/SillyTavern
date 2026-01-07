@@ -2442,8 +2442,8 @@ export async function fetchFaFile(name) {
     const sheet = style.sheet;
     style.remove();
     return [...sheet.cssRules]
-        .filter(rule => rule.style?.content)
-        .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
+        .filter(rule => rule['style']?.content)
+        .map(rule => rule['selectorText'].split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
 

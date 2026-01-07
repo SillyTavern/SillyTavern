@@ -736,8 +736,8 @@ class PresetManager {
         }
 
         if (!this.isAdvancedFormatting() && this.apiId !== 'openai') {
-            settings.genamt = amount_gen;
-            settings.max_length = max_context;
+            settings['genamt'] = amount_gen;
+            settings['max_length'] = max_context;
         }
 
         return settings;
