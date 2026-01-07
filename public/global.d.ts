@@ -235,7 +235,6 @@ declare global {
     };
 
     type SwipeEvent = JQuery.TriggeredEvent<any, any, HTMLElement, HTMLElement>;
-
 }
 
 //Overrides for public/scripts/chats.js

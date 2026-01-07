@@ -2120,7 +2120,7 @@ export function initDefaultSlashCommands() {
                 isRequired: true,
                 enumProvider: (executor, scope) => [
                     ...commonEnumProviders.variables('scope')(executor, scope),
-                    ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
+                    ...(typeof globalThis.qrEnumProviderExecutables === 'function') ? globalThis.qrEnumProviderExecutables() : [],
                 ],
             }),
         ],
@@ -3572,7 +3572,7 @@ async function runCallback(args, name) {
         return result.pipe;
     }
 
-    if (typeof window['executeQuickReplyByName'] !== 'function') {
+    if (typeof globalThis.executeQuickReplyByName !== 'function') {
         throw new Error(t`Quick Reply extension is not loaded`);
     }
 
@@ -3583,7 +3583,7 @@ async function runCallback(args, name) {
             abortController: args._abortController,
             debugController: args._debugController,
         };
-        return await window['executeQuickReplyByName'](name, args, options);
+        return await globalThis.executeQuickReplyByName(name, args, options);
     } catch (error) {
         throw new Error(t`Error running Quick Reply "${name}": ${error.message}`);
     }

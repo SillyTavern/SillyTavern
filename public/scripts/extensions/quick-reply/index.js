@@ -185,7 +185,7 @@ const init = async () => {
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
 
-    window['executeQuickReplyByName'] = async(name, args = {}, options = {}) => {
+    globalThis.executeQuickReplyByName = async(name, args = {}, options = {}) => {
         let qr = [
             ...settings.config.setList,
             ...(settings.chatConfig?.setList ?? []),

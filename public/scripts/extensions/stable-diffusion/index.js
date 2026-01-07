@@ -426,7 +426,7 @@ function processTriggers(chat, _, abort, type) {
     }
 }
 
-window['SD_ProcessTriggers'] = processTriggers;
+globalThis.SD_ProcessTriggers = processTriggers;
 
 function getSdRequestBody() {
     switch (extension_settings.sd.source) {
