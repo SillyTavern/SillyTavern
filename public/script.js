@@ -7382,10 +7382,14 @@ export async function getChat() {
             contentType: 'application/json',
         });
         if (response[0] !== undefined) {
-            chat.splice(0, chat.length, ...response);
-            chat_metadata = chat[0].chat_metadata ?? {};
 
-            chat.shift();
+            if (response[0].chat_metadata) {
+                /** @type {ChatHeader} */
+                const chatHeader = response.shift();
+                chat_metadata = chatHeader.chat_metadata ?? {};
+            }
+            chat.splice(0, chat.length, ...response);
+
             chat.forEach(ensureMessageMediaIsArray);
         }
         if (!chat_metadata.integrity) {
