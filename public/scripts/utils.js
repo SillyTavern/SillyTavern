@@ -39,7 +39,9 @@ export const localizePagination = function (container) {
  * @returns {boolean} True if negative lookbehind is supported, false otherwise.
  */
 export function canUseNegativeLookbehind() {
-    let result = canUseNegativeLookbehind.result;
+    /** @type {(() => boolean) & { result?: boolean }} */
+    const fn = canUseNegativeLookbehind;
+    let result = fn.result;
     if (typeof result !== 'boolean') {
         try {
             new RegExp('(?<!_)');
@@ -47,7 +49,7 @@ export function canUseNegativeLookbehind() {
         } catch (e) {
             result = false;
         }
-        canUseNegativeLookbehind.result = result;
+        fn.result = result;
     }
     return result;
 }
