@@ -38,6 +38,7 @@ declare global {
         avatar_url?: string;
         hideMutedSprites?: boolean;
         fav?: boolean;
+        date_last_chat?: MessageTimestamp;
     }
 
     interface ChatFile extends Array<ChatMessage> {
