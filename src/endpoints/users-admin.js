@@ -163,7 +163,7 @@ router.post('/create', requireAdminMiddleware, async (request, response) => {
         }
 
         const handles = await getAllUserHandles();
-        const handle = lodash.kebabCase(String(request.body.handle).toLowerCase().trim());
+        const handle = lodash.deburr(String(request.body.handle).toLowerCase().trim()).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
         if (!handle) {
             console.warn('Create user failed: Invalid handle');
@@ -241,7 +241,7 @@ router.post('/slugify', requireAdminMiddleware, async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        const text = lodash.kebabCase(String(request.body.text).toLowerCase().trim());
+        const text = lodash.deburr(String(request.body.text).toLowerCase().trim()).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
         return response.send(text);
     } catch (error) {
