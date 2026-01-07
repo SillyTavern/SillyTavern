@@ -2,6 +2,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import mime from 'mime-types';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { OPENROUTER_HEADERS } from '../constants.js';
 
 export const router = express.Router();
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
@@ -119,6 +120,7 @@ router.post('/image/generate', async (req, res) => {
         const response = await fetch(`${API_OPENROUTER}/chat/completions`, {
             method: 'POST',
             headers: {
+                ...OPENROUTER_HEADERS,
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
             },
