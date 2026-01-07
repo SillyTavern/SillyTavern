@@ -746,7 +746,7 @@ function overlapChunks(chunk, index, chunks, overlapSize) {
     return overlappedChunk;
 }
 
-window.vectors_rearrangeChat = rearrangeChat;
+window['vectors_rearrangeChat'] = rearrangeChat;
 
 const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
 
