@@ -760,9 +760,26 @@ router.post('/group/get', (request, response) => {
     }
 
     const id = request.body.id;
-    const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+    const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
     return response.send(getChatData(chatFilePath));
+});
+
+router.post('/group/info', async (request, response) => {
+    try {
+        if (!request.body || !request.body.id) {
+            return response.sendStatus(400);
+        }
+
+        const id = request.body.id;
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
+
+        const chatInfo = await getChatInfo(chatFilePath);
+        return response.send(chatInfo);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
 });
 
 router.post('/group/delete', (request, response) => {
@@ -772,13 +789,13 @@ router.post('/group/delete', (request, response) => {
         }
 
         const id = request.body.id;
-        const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
         //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error('The group chat file was not deleted.\'');
+            console.error('The group chat file was not deleted.');
             return response.sendStatus(400);
         }
     } catch (error) {
