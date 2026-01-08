@@ -1,19 +1,20 @@
-FROM node:lts-alpine3.22
+FROM node:lts-alpine3.23
 
 # Arguments
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-RUN apk add --no-cache gcompat tini git git-lfs
+RUN apk add --no-cache gcompat tini git git-lfs su-exec shadow
 
-# Create app directory
+# Create app directory and set ownership
 WORKDIR ${APP_HOME}
+RUN chown node:node ${APP_HOME}
 
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
-# Bundle app source
-COPY . ./
+# Bundle app source and set ownership
+COPY --chown=node:node . ./
 
 RUN \
   echo "*** Install npm packages ***" && \
