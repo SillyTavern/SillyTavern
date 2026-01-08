@@ -36,10 +36,14 @@ export const localizePagination = function (container) {
 
 /**
  * Checks if the current environment supports negative lookbehind in regular expressions.
+ * @type {{ (): boolean; result?: boolean }} Defines the function as a memoized object with a cached result.
  * @returns {boolean} True if negative lookbehind is supported, false otherwise.
  */
 export function canUseNegativeLookbehind() {
-    /** @type {(() => boolean) & { result?: boolean }} */
+    /**
+     * A reference to the function itself, typed as a callable object with a cache property.
+     * @type {{ (): boolean; result?: boolean }}
+     */
     const fn = canUseNegativeLookbehind;
     let result = fn.result;
     if (typeof result !== 'boolean') {
