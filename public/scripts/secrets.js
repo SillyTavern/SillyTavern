@@ -575,11 +575,11 @@ async function openKeyManagerDialog(key) {
     template.find('button[data-action="add-secret"]').on('click', async function () {
         let label = '';
         let result = POPUP_RESULT.CANCELLED;
-        const value = await Popup.show.input(t`Add Secret`, t`Enter the secret value (can be empty):`, '', {
+        const value = await Popup.show.input(t`Add Secret`, t`Secret value (can be empty):`, '', {
             customInputs: [{
                 id: 'newSecretLabel',
                 type: 'text',
-                label: t`Enter a label for the secret (optional):`,
+                label: t`Label (optional):`,
             }],
             onClose: popup => {
                 if (popup.result) {

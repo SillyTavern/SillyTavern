@@ -397,8 +397,8 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name || jsonData.chat_metadata)) {
                     chatData.chat_items = (itemCounter - 1);
-                    chatData.mes = jsonData['mes'] || '[The message is empty]';
-                    chatData.last_mes = jsonData['send_date'] || new Date(Math.round(stats.mtimeMs)).toISOString();
+                    chatData.mes = jsonData.mes || '[The message is empty]';
+                    chatData.last_mes = jsonData.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
 
                     res(chatData);
                 } else {

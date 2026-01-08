@@ -175,7 +175,7 @@ class CosyVoiceProvider {
         };
 
         if (streaming) {
-            params['streaming'] = 1;
+            params.streaming = 1;
         }
 
         const url = `${this.settings.provider_endpoint}/`;

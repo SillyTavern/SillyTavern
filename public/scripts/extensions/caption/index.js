@@ -204,7 +204,7 @@ async function sendCaptionedMessage(caption, image, mimeType) {
             inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
     context.chat.push(message);
     const messageId = context.chat.length - 1;
     await eventSource.emit(event_types.MESSAGE_SENT, messageId);

@@ -746,7 +746,7 @@ function overlapChunks(chunk, index, chunks, overlapSize) {
     return overlappedChunk;
 }
 
-window['vectors_rearrangeChat'] = rearrangeChat;
+globalThis.vectors_rearrangeChat = rearrangeChat;
 
 const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
 
@@ -1620,7 +1620,7 @@ jQuery(async () => {
     }
 
     // Migrate from old settings
-    if (settings['enabled']) {
+    if (settings.enabled) {
         settings.enabled_chats = true;
     }
 

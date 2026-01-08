@@ -207,13 +207,13 @@ class CoquiTtsProvider {
         this.settings.customVoices = {};
         for (let voiceName in this.settings.voiceMapDict) {
             const voiceId = this.settings.voiceMapDict[voiceName];
-            this.settings.customVoices[voiceName] = voiceId['model_id'];
+            this.settings.customVoices[voiceName] = voiceId.model_id;
 
-            if (voiceId['model_language'] != null)
-                this.settings.customVoices[voiceName] += '[' + voiceId['model_language'] + ']';
+            if (voiceId.model_language != null)
+                this.settings.customVoices[voiceName] += '[' + voiceId.model_language + ']';
 
-            if (voiceId['model_speaker'] != null)
-                this.settings.customVoices[voiceName] += '[' + voiceId['model_speaker'] + ']';
+            if (voiceId.model_speaker != null)
+                this.settings.customVoices[voiceName] += '[' + voiceId.model_speaker + ']';
         }
 
         // Update UI select list with voices
@@ -493,8 +493,8 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select language</option>')
                 .val('none');
 
-            for (let i = 0; i < model_settings['languages'].length; i++) {
-                const language_label = JSON.stringify(model_settings['languages'][i]).replaceAll('"', '');
+            for (let i = 0; i < model_settings.languages.length; i++) {
+                const language_label = JSON.stringify(model_settings.languages[i]).replaceAll('"', '');
                 $('#coqui_api_model_settings_language').append(new Option(language_label, i));
             }
         }
@@ -512,8 +512,8 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select speaker</option>')
                 .val('none');
 
-            for (let i = 0; i < model_settings['speakers'].length; i++) {
-                const speaker_label = JSON.stringify(model_settings['speakers'][i]).replaceAll('"', '');
+            for (let i = 0; i < model_settings.speakers.length; i++) {
+                const speaker_label = JSON.stringify(model_settings.speakers[i]).replaceAll('"', '');
                 $('#coqui_api_model_settings_speaker').append(new Option(speaker_label, i));
             }
         }
@@ -525,7 +525,7 @@ class CoquiTtsProvider {
         $('#coqui_api_model_install_status').show();
 
         // Check if already installed and propose to do it otherwise
-        const model_id = modelDict[model_language][model_dataset][model_name]['id'];
+        const model_id = modelDict[model_language][model_dataset][model_name].id;
         console.debug(DEBUG_PREFIX,'Check if model is already installed',model_id);
         let result = await CoquiTtsProvider.checkmodel_state(model_id);
         result = await result.json();

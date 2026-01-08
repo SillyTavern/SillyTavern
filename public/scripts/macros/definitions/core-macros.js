@@ -433,13 +433,13 @@ export function registerCoreMacros() {
 }
 
 function getChatIdHash() {
-    const cachedIdHash = chat_metadata['chat_id_hash'];
+    const cachedIdHash = chat_metadata.chat_id_hash;
     if (typeof cachedIdHash === 'number') {
         return cachedIdHash;
     }
 
-    const chatId = chat_metadata['main_chat'] ?? getCurrentChatId();
+    const chatId = chat_metadata.main_chat ?? getCurrentChatId();
     const chatIdHash = getStringHash(chatId);
-    chat_metadata['chat_id_hash'] = chatIdHash;
+    chat_metadata.chat_id_hash = chatIdHash;
     return chatIdHash;
 }

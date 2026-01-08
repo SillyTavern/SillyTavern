@@ -36,10 +36,16 @@ export const localizePagination = function (container) {
 
 /**
  * Checks if the current environment supports negative lookbehind in regular expressions.
+ * @type {{ (): boolean; result?: boolean }} Defines the function as a memoized object with a cached result.
  * @returns {boolean} True if negative lookbehind is supported, false otherwise.
  */
 export function canUseNegativeLookbehind() {
-    let result = canUseNegativeLookbehind['result'];
+    /**
+     * A reference to the function itself, typed as a callable object with a cache property.
+     * @type {{ (): boolean; result?: boolean }}
+     */
+    const fn = canUseNegativeLookbehind;
+    let result = fn.result;
     if (typeof result !== 'boolean') {
         try {
             new RegExp('(?<!_)');
@@ -47,7 +53,7 @@ export function canUseNegativeLookbehind() {
         } catch (e) {
             result = false;
         }
-        canUseNegativeLookbehind['result'] = result;
+        fn.result = result;
     }
     return result;
 }
@@ -2440,8 +2446,8 @@ export async function fetchFaFile(name) {
     const sheet = style.sheet;
     style.remove();
     return [...sheet.cssRules]
-        .filter(rule => rule.style?.content)
-        .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
+        .filter(rule => rule['style']?.content)
+        .map(rule => rule['selectorText'].split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
 

@@ -410,8 +410,8 @@ export class ToolManager {
         if (tools.length) {
             console.log('[ToolManager] Registered function tools:', tools);
 
-            data['tools'] = tools;
-            data['tool_choice'] = 'auto';
+            data.tools = tools;
+            data.tool_choice = 'auto';
         }
     }
 
