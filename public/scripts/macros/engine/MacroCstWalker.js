@@ -42,7 +42,7 @@ import { MacroRegistry } from './MacroRegistry.js';
  *           content), this is the substring being evaluated. CST node positions are always relative to this text.
  *
  *           - Careful, this also means when resolving macros inside macro arguments, this will NOT be the text of
- *           the argument currently being resolved, but the rull macro text with identifier and all macros.
+ *           the argument currently being resolved, but the full macro text with identifier and all macros.
  * @property {number} contextOffset - Base offset from the original top-level document. At the top level this is 0.
  *           When re-parsing nested content (arguments/scoped), this is set to the substring's start position in
  *           the original document. Used to calculate globalOffset for macros that need deterministic positioning.
@@ -88,7 +88,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     evaluateDocument(options) {
-        const { text, cst, env, resolveMacro, trimContent } = options;
+        const { text, cst, contextOffset, env, resolveMacro, trimContent } = options;
 
         if (typeof text !== 'string') {
             throw new Error('MacroCstWalker.evaluateDocument: text must be a string');
@@ -104,7 +104,7 @@ class MacroCstWalker {
         }
 
         /** @type {EvaluationContext} */
-        const context = { text, contextOffset: 0, env, resolveMacro, trimContent };
+        const context = { text, contextOffset, env, resolveMacro, trimContent };
         let items = this.#collectDocumentItems(cst);
 
         // Process scoped macros: find opening/closing pairs and merge them
