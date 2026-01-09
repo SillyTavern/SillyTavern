@@ -345,7 +345,7 @@ export function registerCoreMacros() {
         description: 'Picks a random item from a list, but keeps the choice stable for a given chat and macro position.',
         returns: 'Stable randomly selected item from the list.',
         exampleUsage: ['{{pick::blonde::brown::red::black::blue}}'],
-        handler: ({ list, range, env }) => {
+        handler: ({ list, globalOffset, env }) => {
             // Handle old legacy cases, where we have to split the list manually
             if (list.length === 1) {
                 list = readSingleArgsRandomList(list[0]);
@@ -355,12 +355,19 @@ export function registerCoreMacros() {
                 return '';
             }
 
+            // NOTE:
+            // When changing the hashing logic, make sure to update unit test functionality
+            // in registerTestablePick() to be identical.
+
             const chatIdHash = getChatIdHash();
 
             // Use the full original input string for deterministic behavior
             const rawContentHash = env.contentHash;
 
-            const offset = typeof range?.startOffset === 'number' ? range.startOffset : 0;
+            // Use globalOffset for deterministic seeding - this ensures identical macros
+            // at different positions in the document produce different results, even when
+            // nested inside arguments or scoped content
+            const offset = globalOffset;
 
             const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
             const finalSeed = getStringHash(combinedSeedString);

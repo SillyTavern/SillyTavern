@@ -114,8 +114,11 @@ export const MacroValueType = Object.freeze({
  * @property {string} rawOriginal - The original full macro text including braces, before any resolution.
  * @property {string[]} rawArgs - The original arguments passed to the macro (always unresolved).
  * @property {MacroEnv} env
- * @property {CstNode|null} cstNode
- * @property {{ startOffset: number, endOffset: number }|null} range
+ * @property {CstNode} cstNode
+ * @property {{ startOffset: number, endOffset: number }} range - Range relative to the current evaluation context's text.
+ * @property {number} globalOffset - The offset of this macro in the original top-level document.
+ *           This combines the context's base offset with the local range. Use this for deterministic
+ *           seeding (e.g., in {{pick}}) to ensure identical macros at different positions produce different results.
  * @property {(value: any) => string} normalize - Normalize function to use on unsure macro results to make sure they return strings as expected.
  * @property {(content: string, options?: { trimIndent?: boolean }) => string} trimContent - Trims scoped content with optional indentation dedent. Defaults to trimming indentation.
  * @property {(text: string) => string} resolve - Evaluates macros in the given text using the same environment. Use when delayArgResolution is true.
@@ -363,6 +366,7 @@ class MacroRegistry {
             env: call.env,
             cstNode: call.cstNode,
             range: call.range,
+            globalOffset: call.globalOffset,
             normalize: MacroEngine.normalizeMacroResult.bind(MacroEngine),
             trimContent: MacroEngine.trimScopedContent.bind(MacroEngine),
             resolve: (text) => MacroEngine.evaluate(text, call.env),

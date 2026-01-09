@@ -138,6 +138,7 @@ class MacroEngine {
         try {
             evaluated = MacroCstWalker.evaluateDocument({
                 text: preProcessed,
+                contextOffset: 0,
                 cst,
                 env: safeEnv,
                 resolveMacro: this.#resolveMacro.bind(this),

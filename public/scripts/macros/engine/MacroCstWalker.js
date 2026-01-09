@@ -18,7 +18,10 @@ import { MacroRegistry } from './MacroRegistry.js';
  * @property {string} rawInner
  * @property {string} rawWithBraces
  * @property {string[]} rawArgs
- * @property {{ startOffset: number, endOffset: number }} range
+ * @property {{ startOffset: number, endOffset: number }} range - Range relative to the current evaluation context's text.
+ * @property {number} globalOffset - The offset of this macro in the original top-level document.
+ *           This combines the context's base offset with the local range. Use this for deterministic
+ *           seeding (e.g., in {{pick}}) to ensure identical macros at different positions produce different results.
  * @property {CstNode} cstNode
  */
 
@@ -40,6 +43,9 @@ import { MacroRegistry } from './MacroRegistry.js';
  *
  *           - Careful, this also means when resolving macros inside macro arguments, this will NOT be the text of
  *           the argument currently being resolved, but the rull macro text with identifier and all macros.
+ * @property {number} contextOffset - Base offset from the original top-level document. At the top level this is 0.
+ *           When re-parsing nested content (arguments/scoped), this is set to the substring's start position in
+ *           the original document. Used to calculate globalOffset for macros that need deterministic positioning.
  * @property {MacroEnv} env - The macro environment containing context like user/char names, variables, and the
  *           original full content (env.content). This remains constant throughout the evaluation.
  * @property {(call: MacroCall) => string} resolveMacro - Callback to resolve a macro call to its result string.
@@ -98,7 +104,7 @@ class MacroCstWalker {
         }
 
         /** @type {EvaluationContext} */
-        const context = { text, env, resolveMacro, trimContent };
+        const context = { text, contextOffset: 0, env, resolveMacro, trimContent };
         let items = this.#collectDocumentItems(cst);
 
         // Process scoped macros: find opening/closing pairs and merge them
@@ -349,7 +355,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateMacroNode(macroNode, context, scopedContent) {
-        const { text, env, resolveMacro, trimContent } = context;
+        const { text, contextOffset, env, resolveMacro, trimContent } = context;
 
         const children = macroNode.children || {};
 
@@ -475,6 +481,7 @@ class MacroCstWalker {
             rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
             rawArgs,
             range,
+            globalOffset: contextOffset + range.startOffset,
             cstNode: macroNode,
             env,
         };
@@ -494,7 +501,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateVariableExpr(macroNode, variableExprNode, context) {
-        const { text, env, resolveMacro } = context;
+        const { text, contextOffset, env, resolveMacro } = context;
 
         const children = macroNode.children || {};
         const varChildren = variableExprNode.children || {};
@@ -568,6 +575,7 @@ class MacroCstWalker {
             rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
             rawArgs: args,
             range,
+            globalOffset: contextOffset + range.startOffset,
             cstNode: macroNode,
             env,
         };
@@ -664,11 +672,14 @@ class MacroCstWalker {
             return '';
         }
 
-        const { text } = context;
+        const { text, contextOffset } = context;
         const rawContent = text.slice(location.startOffset, location.endOffset + 1);
 
+        // Calculate the new base offset: parent's contextOffset + this argument's start position
+        const newContextOffset = contextOffset + location.startOffset;
+
         // Use the shared helper to evaluate the content, which handles scoped macros
-        return this.#evaluateRawContent(rawContent, context);
+        return this.#evaluateRawContent(rawContent, newContextOffset, context);
     }
 
     /**
@@ -679,10 +690,11 @@ class MacroCstWalker {
      * evaluation to ensure consistent handling of nested and scoped macros.
      *
      * @param {string} rawContent - The raw text content to evaluate.
+     * @param {number} newContextOffset - The offset of rawContent's start position in the original top-level document.
      * @param {EvaluationContext} context - The parent evaluation context (used for env, resolveMacro, trimContent).
      * @returns {string} The evaluated content with all macros resolved.
      */
-    #evaluateRawContent(rawContent, context) {
+    #evaluateRawContent(rawContent, newContextOffset, context) {
         // If empty, return as-is
         if (!rawContent) {
             return '';
@@ -697,10 +709,11 @@ class MacroCstWalker {
             return rawContent;
         }
 
-        // Create a new context with the content as the text
-        // This is important: positions in the parsed CST are relative to rawContent
+        // Create a new context with the content as the text and updated contextOffset
+        // This is important: positions in the parsed CST are relative to rawContent,
+        // but contextOffset tracks the absolute position in the original document
         /** @type {EvaluationContext} */
-        const contentContext = { ...context, text: rawContent };
+        const contentContext = { ...context, text: rawContent, contextOffset: newContextOffset };
 
         // Collect items and process scoped macros
         let items = this.#collectDocumentItems(cst);
@@ -897,14 +910,17 @@ class MacroCstWalker {
      * @returns {string} - The evaluated scoped content with nested macros resolved.
      */
     #evaluateScopedContent(scopedContent, context) {
-        const { text } = context;
+        const { text, contextOffset } = context;
         const { startOffset, endOffset } = scopedContent;
 
         // Extract the raw content between opening and closing tags
         const rawContent = text.slice(startOffset, endOffset + 1);
 
+        // Calculate the new base offset: parent's contextOffset + this scoped content's start position
+        const newContextOffset = contextOffset + startOffset;
+
         // Use the shared helper to evaluate the content
-        return this.#evaluateRawContent(rawContent, context);
+        return this.#evaluateRawContent(rawContent, newContextOffset, context);
     }
 
     // ========================================================================
