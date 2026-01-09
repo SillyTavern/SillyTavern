@@ -765,7 +765,7 @@ class PromptManager {
         eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => this.renderDebounced());
 
         // Re-render when the character changes.
-        eventSource.on('chatLoaded', (event) => {
+        eventSource.on(event_types.CHAT_LOADED, (event) => {
             this.handleCharacterSelected(event);
             this.saveServiceSettings().then(() => this.renderDebounced());
         });

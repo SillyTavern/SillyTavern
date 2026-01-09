@@ -7389,26 +7389,30 @@ export async function unshallowCharacter(characterId) {
 }
 
 export async function getChat() {
-    //console.log('/api/chats/get -- entered for -- ' + characters[this_chid].name);
     try {
         await unshallowCharacter(this_chid);
 
-        const response = await $.ajax({
-            type: 'POST',
-            url: '/api/chats/get',
-            data: JSON.stringify({
+        const response = await fetch('/api/chats/get', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            cache: 'no-cache',
+            body: JSON.stringify({
                 ch_name: characters[this_chid].name,
                 file_name: characters[this_chid].chat,
                 avatar_url: characters[this_chid].avatar,
             }),
-            dataType: 'json',
-            contentType: 'application/json',
         });
-        if (Array.isArray(response) && response.length > 0) {
+
+        if (!response.ok) {
+            throw new Error('Chat could not be loaded');
+        }
+
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
             /** @type {ChatHeader} */
-            const chatHeader = response.shift();
+            const chatHeader = data.shift();
             chat_metadata = chatHeader?.chat_metadata ?? {};
-            chat.splice(0, chat.length, ...response);
+            chat.splice(0, chat.length, ...data);
             chat.forEach(ensureMessageMediaIsArray);
         } else {
             // An empty/corrupted chat file
@@ -7419,15 +7423,15 @@ export async function getChat() {
             chat_metadata.integrity = uuidv4();
         }
         await getChatResult();
-        eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
+        eventSource.emit(event_types.CHAT_LOADED, { detail: { id: this_chid, character: characters[this_chid] } });
 
         // Focus on the textarea if not already focused on a visible text input
-        setTimeout(function () {
+        delay(debounce_timeout.short).then(() => {
             if ($(document.activeElement).is('input:visible, textarea:visible')) {
                 return;
             }
             $('#send_textarea').trigger('click').trigger('focus');
-        }, 200);
+        });
     } catch (error) {
         await getChatResult();
         console.log(error);
