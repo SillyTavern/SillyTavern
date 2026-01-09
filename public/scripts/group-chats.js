@@ -2123,7 +2123,7 @@ export async function createNewGroupChat(groupId) {
 /**
  * Retrieves past chats for a specified group.
  * @param {string} groupId Group ID
- * @returns {Promise<Array>} Array of past chats
+ * @returns {Promise<Array<import('../../src/endpoints/chats.js').ChatInfo>>} Array of past chats
  */
 export async function getGroupPastChats(groupId) {
     const group = groups.find(x => x.id === groupId);
