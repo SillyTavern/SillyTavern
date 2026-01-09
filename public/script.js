@@ -2446,19 +2446,15 @@ export function addCopyToCodeBlocks(messageElement) {
  * @returns {JQuery<HTMLElement>} The newly added message element
  */
 export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true, insert = true } = {}) {
+    // Callers push the new message to chat before calling addOneMessage
+    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
+
     let messageText = mes.mes;
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
-    }
-
-    // Forbidden black magic
-    // This allows to use "continue" on user messages
-    if (type === 'swipe' && mes.swipe_id === undefined) {
-        mes.swipe_id = 0;
-        mes.swipes = [mes.mes];
     }
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
@@ -2479,7 +2475,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             }
         }
         //old processing:
-        //if messge is from sytem, use the name provided in the message JSONL to proceed,
+        //if message is from system, use the name provided in the message JSONL to proceed,
         //if not system message, use name2 (char's name) to proceed
         //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
     } else if (mes.is_user && mes.force_avatar) {
@@ -2521,6 +2517,18 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     };
 
     const renderedMessage = getMessageFromTemplate(params);
+    let newMessage;
+
+    if (type === 'swipe') {
+        // Forbidden black magic
+        // This allows to use "continue" on user messages
+        mes.swipe_id ??= 0;
+        mes.swipes ??= [mes.mes];
+        //This keeps listeners intact.
+        newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
+    } else {
+        newMessage = insert ? chatElement.find(`[mesid="${newMessageId}"]`) : renderedMessage;
+    }
 
     if (type !== 'swipe' && insert) {
         if (!insertAfter && !insertBefore) {
@@ -2535,10 +2543,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         }
     }
 
-    // Callers push the new message to chat before calling addOneMessage
-    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
-
-    const newMessage = insert ? chatElement.find(`[mesid="${newMessageId}"]`) : renderedMessage;
     const isSmallSys = mes?.extra?.isSmallSys;
 
     if (isSmallSys === true) {
@@ -2549,12 +2553,9 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.addClass('toolCall');
     }
 
-    //shows or hides the Prompt display button
-    let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
-
     //if we have itemized messages, and the array isn't null..
     if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(mesIdToFind));
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(newMessageId));
         if (itemizedPrompt) {
             newMessage.find('.mes_prompt').show();
         }
@@ -2565,32 +2566,13 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
-    if (type === 'swipe') {
-        newMessage.attr('swipeid', params.swipeId);
-        newMessage.find('.mes_text').html(messageText).attr('title', title);
-        newMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
-        updateReasoningUI(newMessage);
-        appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-        if (power_user.timestamp_model_icon && params.extra?.api) {
-            insertSVGIcon(newMessage, params.extra);
-        }
-
-        if (mes.swipe_id == mes.swipes.length - 1) {
-            newMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
-            newMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
-        } else {
-            newMessage.find('.mes_timer').empty();
-            newMessage.find('.tokenCounterDisplay').empty();
-        }
-    } else {
-        newMessage.find('.mes_text').append(messageText);
-        appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-    }
+    newMessage.find('.mes_text').html(messageText);
+    appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
 
     addCopyToCodeBlocks(newMessage);
 
     // Set the swipes counter for all non-user messages.
-    if (!params.isUser) {
+    if (!mes.is_user) {
         updateSwipeCounter(newMessageId, { messageElement: newMessage });
     }
 
