@@ -1855,9 +1855,9 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
  * the value in `extra.api`.
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
- * @param {Object} extra - Contains the API and model details.
- * @param {string} extra.api - The name of the API, used to determine which SVG to fetch.
- * @param {string} extra.model - The model name, used to check for the substring "claude".
+ * @param {ChatMessageExtra} extra - Contains the API and model details.
+ * param {string} extra.api - The name of the API, used to determine which SVG to fetch.
+ * param {string} extra.model - The model name, used to check for the substring "claude".
  */
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
@@ -1903,56 +1903,6 @@ function insertSVGIcon(mes, extra) {
 
     createModelImage('timestamp-icon', '.timestamp');
     createModelImage('thinking-icon', '.mes_reasoning_header_title', true);
-}
-
-
-function getMessageFromTemplate({
-    mesId,
-    swipeId,
-    characterName,
-    isUser,
-    avatarImg,
-    bias,
-    isSystem,
-    title,
-    timerValue,
-    timerTitle,
-    bookmarkLink,
-    forceAvatar,
-    timestamp,
-    tokenCount,
-    extra,
-    type,
-}) {
-    const mes = messageTemplate.clone();
-    mes.attr({
-        'mesid': mesId,
-        'swipeid': swipeId,
-        'ch_name': characterName,
-        'is_user': isUser,
-        'is_system': !!isSystem,
-        'bookmark_link': bookmarkLink,
-        'force_avatar': !!forceAvatar,
-        'timestamp': timestamp,
-        ...(type ? { type } : {}),
-    });
-    mes.find('.avatar img').attr('src', avatarImg);
-    mes.find('.ch_name .name_text').text(characterName);
-    mes.find('.mes_bias').html(bias);
-    mes.find('.timestamp').text(timestamp).attr('title', `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`);
-    mes.find('.mesIDDisplay').text(`#${mesId}`);
-    tokenCount && mes.find('.tokenCounterDisplay').text(`${tokenCount}t`);
-    title && mes.attr('title', title);
-    timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
-    bookmarkLink && updateBookmarkDisplay(mes);
-
-    updateReasoningUI(mes);
-
-    if (power_user.timestamp_model_icon && extra?.api) {
-        insertSVGIcon(mes, extra);
-    }
-
-    return mes;
 }
 
 /**
@@ -2459,7 +2409,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
     const isSystem = mes.is_system;
-    const title = mes.title;
 
     //for non-user messages
     if (!mes.is_user) {
@@ -2495,28 +2444,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         sanitizerOverrides,
         false,
     );
-    const bias = messageFormatting(mes.extra?.bias ?? '', '', false, false, -1, {}, false);
-    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
-
-    let params = {
-        mesId: forceId ?? chat.length - 1,
-        swipeId: mes.swipe_id ?? 0,
-        characterName: mes.name,
-        isUser: mes.is_user,
-        avatarImg: avatarImg,
-        bias: bias,
-        isSystem: isSystem,
-        title: title,
-        bookmarkLink: bookmarkLink,
-        forceAvatar: mes.force_avatar,
-        timestamp: timestamp,
-        extra: mes.extra,
-        tokenCount: mes.extra?.token_count ?? 0,
-        type: mes.extra?.type ?? '',
-        ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token),
-    };
-
-    const renderedMessage = getMessageFromTemplate(params);
     let newMessage;
 
     if (type === 'swipe') {
@@ -2527,19 +2454,57 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         //This keeps listeners intact.
         newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
     } else {
-        newMessage = insert ? chatElement.find(`[mesid="${newMessageId}"]`) : renderedMessage;
+        newMessage = insert ? chatElement.find(`[mesid="${newMessageId}"]`) : messageTemplate.clone();
     }
+
+    const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
+    const tokenCount = mes.extra?.token_count ?? 0;
+    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
+
+    newMessage.attr({
+        'mesid': newMessageId,
+        'swipeid': mes.swipe_id ?? 0,
+        'ch_name': mes.name,
+        'is_user': mes.is_user,
+        'is_system': !!mes.is_system,
+        'bookmark_link': bookmarkLink,
+        'force_avatar': !!mes.force_avatar,
+        'timestamp': timestamp,
+        // ...(type ?? { type }),
+        'type': mes.extra?.type ?? '',
+    });
+
+    newMessage.find('.avatar img').attr('src', avatarImg);
+    newMessage.find('.ch_name .name_text').text(mes.name);
+    newMessage.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
+    newMessage.find('.mesIDDisplay').text(`#${newMessageId}`);
+    tokenCount ?? newMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+    mes.title ?? newMessage.attr('title', mes.title);
+    timerValue ?? newMessage.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    bookmarkLink && updateBookmarkDisplay(newMessage);
+
+    if (typeof(mes.extra?.bias) === 'string') {
+        const bias = messageFormatting(mes.extra?.bias, '', false, false, -1, {}, false);
+        newMessage.find('.mes_bias').html(bias);
+    }
+
+    updateReasoningUI(newMessage);
+
+    if (power_user.timestamp_model_icon && mes.extra?.api) {
+        insertSVGIcon(newMessage, mes.extra);
+    }
+
 
     if (type !== 'swipe' && insert) {
         if (!insertAfter && !insertBefore) {
-            chatElement.append(renderedMessage);
+            chatElement.append(newMessage);
         }
         else if (insertAfter) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
-            $(renderedMessage).insertAfter(target);
+            $(newMessage).insertAfter(target);
         } else {
             const target = chatElement.find(`.mes[mesid="${insertBefore}"]`);
-            $(renderedMessage).insertBefore(target);
+            $(newMessage).insertBefore(target);
         }
     }
 
@@ -2554,7 +2519,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     //if we have itemized messages, and the array isn't null..
-    if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+    if (mes.is_user === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
         const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(newMessageId));
         if (itemizedPrompt) {
             newMessage.find('.mes_prompt').show();
