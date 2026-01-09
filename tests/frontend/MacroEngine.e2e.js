@@ -1589,6 +1589,61 @@ test.describe('MacroEngine', () => {
             const output = await evaluateWithEngine(page, input);
             expect(output).toBe('middle[first][second]');
         });
+
+        test.describe('scoped macros nested inside arguments', () => {
+            test('should resolve scoped macro inside another macro argument', async ({ page }) => {
+                // {{reverse}}hello{{/reverse}} inside setvar's value argument should resolve first
+                const input = '{{setvar::testvar::{{reverse}}hello{{/reverse}}}} {{getvar::testvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' olleh');
+            });
+
+            test('should resolve scoped if macro inside setvar argument', async ({ page }) => {
+                // {{if true}}true branch{{/if}} inside setvar should resolve to "true branch"
+                const input = '{{setvar::testvar::{{if true}}true branch{{/if}}}} {{getvar::testvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' true branch');
+            });
+
+            test('should resolve scoped if/else macro inside setvar argument', async ({ page }) => {
+                const input = '{{setvar::testvar::{{if 0}}wrong{{else}}correct{{/if}}}} {{getvar::testvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' correct');
+            });
+
+            test('should resolve multiple scoped macros inside single argument', async ({ page }) => {
+                // Two scoped macros in the same argument
+                const input = '{{setvar::testvar::{{reverse}}ab{{/reverse}}-{{reverse}}cd{{/reverse}}}} {{getvar::testvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' ba-dc');
+            });
+
+            test('should resolve deeply nested scoped macros in arguments', async ({ page }) => {
+                // Scoped macro inside scoped macro inside argument
+                const input = '{{setvar::outer::{{setvar::inner::{{reverse}}xyz{{/reverse}}}}{{getvar::inner}}}} {{getvar::outer}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' zyx');
+            });
+
+            test('should resolve scoped macro with text before and after in argument', async ({ page }) => {
+                const input = '{{setvar::testvar::before {{reverse}}mid{{/reverse}} after}} {{getvar::testvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' before dim after');
+            });
+
+            test('should handle scoped macro inside first argument when macro has multiple args', async ({ page }) => {
+                // setvar has two args: name and value. Test scoped in value position.
+                const input = '{{setvar::myvar::prefix-{{reverse}}abc{{/reverse}}-suffix}}{{getvar::myvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('prefix-cba-suffix');
+            });
+
+            test('should handle multiline scoped content inside argument', async ({ page }) => {
+                const input = '{{setvar::testvar::{{if true}}\ntrue\nbranch\n{{/if}}}} {{getvar::testvar}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe(' true\nbranch');
+            });
+        });
     });
 
     test.describe('{{if}} conditional macro', () => {
