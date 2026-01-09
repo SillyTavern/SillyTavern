@@ -2375,6 +2375,43 @@ export function addCopyToCodeBlocks(messageElement) {
     }
 }
 
+/**
+ * Shows or hides the Prompt display button
+ * @param {ChatMessage} message
+ * @param {*} options
+ */
+function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
+
+    //if we have itemized messages, and the array isn't null..
+    if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
+        if (itemizedPrompt) {
+            messageElement.find('.mes_prompt').show();
+        }
+    }
+}
+
+/**
+ * Gets messageFormatting for a ChatMessage object.
+ * @param {ChatMessage} message
+ * @param {*} options
+ * @returns
+ */
+function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
+
+    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
+    const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
+
+    return messageFormatting(
+        message.extra.display_text ?? message.mes,
+        message.name,
+        message.is_system,
+        message.is_user,
+        messageId,
+        sanitizerOverrides,
+        false,
+    );
+}
 
 /**
  * Adds a single message to the chat.
@@ -2393,16 +2430,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     // Callers push the new message to chat before calling addOneMessage
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
-    let messageText = mes.mes;
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
 
-    if (mes?.extra?.display_text) {
-        messageText = mes.extra.display_text;
-    }
-
     let avatarImg = getThumbnailUrl('persona', user_avatar);
-    const isSystem = mes.is_system;
 
     //for non-user messages
     if (!mes.is_user) {
@@ -2426,18 +2457,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         avatarImg = mes.force_avatar;
     }
 
-    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
-    const sanitizerOverrides = mes.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
-
-    messageText = messageFormatting(
-        messageText,
-        mes.name,
-        isSystem,
-        mes.is_user,
-        chat.indexOf(mes),
-        sanitizerOverrides,
-        false,
-    );
+    const messageHTML = getMessageTextHTML(mes, { newMessageId });
     let newMessage;
 
     if (type === 'swipe') {
@@ -2512,13 +2532,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.addClass('toolCall');
     }
 
-    //if we have itemized messages, and the array isn't null..
-    if (!mes.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(newMessageId));
-        if (itemizedPrompt) {
-            newMessage.find('.mes_prompt').show();
-        }
-    }
+    updateMessageItemizedPromptButton(mes, { messageId: newMessageId, newMessage });
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).hide();
@@ -2526,8 +2540,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     });
 
     appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-    newMessage.find('.mes_text').html(messageText);
-
+    newMessage.find('.mes_text').html(messageHTML);
     addCopyToCodeBlocks(newMessage);
 
     // Set the swipes counter for all non-user messages.
