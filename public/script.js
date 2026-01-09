@@ -1455,16 +1455,19 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
         const newMessageElements = messages.map( (message, offset) => {
             let i = startIndex + offset;
             const messageElement = updateMessageElement(message, { forceId: i });
+
             return messageElement[0];
         });
 
         const lastMessageId = targetChat.length - 1;
         const lastMessageElement = updateMessageElement(lastMessage, { forceId: lastMessageId });
+
         //The last_mes has been removed, add it to the new last message.
         lastMessageElement.addClass('last_mes');
+        newMessageElements.push(lastMessageElement[0]);
 
         //Append to chat in one DOM update.
-        chatElement.append(...newMessageElements, lastMessageElement[0]);
+        chatElement.append(newMessageElements);
 
         applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length,  1) });
     }
@@ -2386,7 +2389,6 @@ export function addCopyToCodeBlocks(messageElement) {
  * Shows or hides the Prompt display button
  * @param {ChatMessage} message
  * @param {*} options
- *
  */
 function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
 
@@ -2405,7 +2407,7 @@ function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(m
  * @param {*} options
  * @returns
  */
-function getMessageHTML(message, { messageId = chat.indexOf(message) }) {
+function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
 
     // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
     const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
@@ -2425,16 +2427,15 @@ function getMessageHTML(message, { messageId = chat.indexOf(message) }) {
  * Adds a single message to the chat.
  * @param {ChatMessage} mes Message object
  * @param {object} [options] Options
- * @param {string} [options.type=undefined] Deprecated. Use updateSwipe instead.
+ * @param {string} [options.type=undefined|'swipe'] Deprecated. Use updateMessageElement instead.
  * @param {number} [options.insertAfter=null] Message ID to insert the new message after
  * @param {boolean} [options.scroll=true] Whether to scroll to the new message
  * @param {number} [options.insertBefore=null] Message ID to insert the new message before
  * @param {number} [options.forceId=null] Force the message ID
  * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
- * @returns {JQuery<HTMLElement>}
+ * @returns {JQuery<HTMLElement>} The newly added message element
  */
 export function addOneMessage(mes, { type = undefined, insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
-
     // Callers push the new message to chat before calling addOneMessage
     const messageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
@@ -2513,22 +2514,17 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
         // Special case for persona images.
         avatarImg = mes.force_avatar;
     }
+
+    const messageId = typeof forceId == 'number' ? forceId : chat.length - 1;
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
-    const mesId = forceId ?? chat.length - 1;
-    const messageId = typeof forceId == 'number' ? forceId : chat.length - 1;
-
-    const messageHTML = getMessageHTML(mes, { messageId });
-
-    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
-
+    const messageHTML = getMessageTextHTML(mes, { messageId });
+    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
     const tokenCount = mes.extra?.token_count ?? 0;
     const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
 
-    // const messageElement = messageTemplate.clone();
-    // const type = mes.extra?.type;
     messageElement.attr({
-        'mesid': mesId,
+        'mesid': messageId,
         'swipeid': mes.swipe_id ?? 0,
         'ch_name': mes.name,
         'is_user': mes.is_user,
@@ -2543,7 +2539,7 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
     messageElement.find('.avatar img').attr('src', avatarImg);
     messageElement.find('.ch_name .name_text').text(mes.name);
     messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
-    messageElement.find('.mesIDDisplay').text(`#${mesId}`);
+    messageElement.find('.mesIDDisplay').text(`#${messageId}`);
     tokenCount ?? messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     mes.title ?? messageElement.attr('title', mes.title);
     timerValue ?? messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -2568,14 +2564,14 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
         messageElement.addClass('toolCall');
     }
 
-    updateMessageItemizedPromptButton(mes, { messageId: mesId, messageElement });
+    updateMessageItemizedPromptButton(mes, { messageId, messageElement });
 
     messageElement.find('.avatar img').on('error', function () {
         $(this).hide();
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
-    messageElement.find('.mes_text').append(messageHTML);
+    messageElement.find('.mes_text').html(messageHTML);
     appendMediaToMessage(mes, messageElement, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
 
     addCopyToCodeBlocks(messageElement);
