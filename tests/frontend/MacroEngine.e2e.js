@@ -818,6 +818,59 @@ test.describe('MacroEngine', () => {
             // Should be one of the valid options
             expect(['X', 'Y', 'Z'].includes(outputs[0])).toBeTruthy();
         });
+
+        test('should use different seeds for identical picks inside different if blocks (delayArgResolution)', async ({ page }) => {
+            await registerTestablePick(page);
+
+            // Key regression test: picks inside {{if}} blocks use resolve() which must preserve globalOffset
+            // This tests the fix for macros with delayArgResolution that call resolve() internally
+            const output = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                // Two identical pick macros inside different if blocks
+                // Before the fix, both would get contextOffset=0 when resolve() was called
+                // After the fix, resolve() passes the caller's globalOffset as contextOffset
+                const input = '{{if true}}{{testablePick::A::B::C}}{{/if}}###{{if true}}{{testablePick::A::B::C}}{{/if}}';
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                return MacroEngine.evaluate(input, env);
+            });
+
+            const parts = output.split('###');
+            expect(parts.length).toBe(2);
+
+            const seed1 = parts[0].match(/seed:([^|]+)/)?.[1];
+            const seed2 = parts[1].match(/seed:([^|]+)/)?.[1];
+
+            expect(seed1).toBeTruthy();
+            expect(seed2).toBeTruthy();
+            // Seeds must be different because the {{if}} blocks are at different positions
+            expect(seed1).not.toBe(seed2);
+        });
+
+        test('should maintain stability for picks inside if blocks across evaluations', async ({ page }) => {
+            // Picks inside if blocks should still be deterministic
+            const outputs = await page.evaluate(async () => {
+                /** @type {import('../../public/scripts/macros/engine/MacroEngine.js')} */
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                /** @type {import('../../public/scripts/macros/engine/MacroEnvBuilder.js')} */
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+
+                const input = '{{if true}}{{pick::X::Y::Z}}{{/if}}';
+                const env1 = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                const env2 = MacroEnvBuilder.buildFromRawEnv({ content: input });
+                const result1 = MacroEngine.evaluate(input, env1);
+                const result2 = MacroEngine.evaluate(input, env2);
+                return [result1, result2];
+            });
+
+            // Same input should produce same output (deterministic)
+            expect(outputs[0]).toBe(outputs[1]);
+            // Should be one of the valid options
+            expect(['X', 'Y', 'Z'].includes(outputs[0])).toBeTruthy();
+        });
     });
 
     test.describe('Dynamic macros', () => {
