@@ -36,8 +36,13 @@ for dir in $DEFAULT_DIRS; do
         DIR_GID=$(stat -c '%g' "$dir")
 
         if [ "$DIR_UID" != "$TARGET_UID" ] || [ "$DIR_GID" != "$TARGET_GID" ]; then
-            echo "Fixing permissions for: $dir (Detected mismatch)"
-            chown -R node:node "$dir"
+            echo "Ownership mismatch detected for '$dir'. Adjusting permissions to UID:$TARGET_UID GID:$TARGET_GID..."
+
+            if chown -R node:node "$dir"; then
+                echo "Successfully updated permissions for '$dir'."
+            else
+                echo "Error: Failed to update permissions for '$dir'. Please check host volume permissions."
+            fi
         fi
     fi
 done
