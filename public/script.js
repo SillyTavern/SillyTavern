@@ -2138,6 +2138,9 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
         }
         const newChatHeight = chatElement.prop('scrollHeight');
         const diff = newChatHeight - chatHeight;
+        if (Math.abs(diff) < 1) {
+            return;
+        }
         chatElement.scrollTop(scrollPosition + diff);
     };
 
@@ -10018,7 +10021,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
         thisMesDiv.css('height', thisMesDivHeight);
         expandNewMessage(thisMesDiv);
 
-        appendMediaToMessage(chat[mesId], thisMesDiv);
+        if (run_generate) {
+            appendMediaToMessage(chat[mesId], thisMesDiv);
+        }
 
         await eventSource.emit(event_types.MESSAGE_SWIPED, (mesId));
 
