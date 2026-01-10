@@ -702,7 +702,6 @@ async function firstLoadInit() {
     initDynamicStyles();
     initTags();
     initBookmarks();
-    initMacros();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -7753,6 +7752,9 @@ export async function getSettings() {
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
         selected_button = settings.selected_button;
+
+        // TODO: Move me into firstLoadInit when experimental toggle is removed
+        initMacros();
 
         if (data.enable_extensions) {
             const enableAutoUpdate = Boolean(data.enable_extensions_auto_update);
