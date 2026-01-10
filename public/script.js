@@ -9514,6 +9514,14 @@ export async function createOrEditCharacter(e) {
             toastr.error(t`Failed to create character`);
         }
     } else {
+        // Guard clause: Ensure we're in a valid edit state before proceeding
+        // This prevents spurious saves when the form is in an indeterminate state (e.g., on fresh page loads)
+        const actiontype = $('#form_create').attr('actiontype');
+        if (actiontype !== 'editcharacter' || this_chid === undefined || !formData.get('ch_name')) {
+            console.debug('Skipping character edit: form is not in a valid edit state', { actiontype, this_chid, ch_name: formData.get('ch_name') });
+            return;
+        }
+
         try {
             let url = '/api/characters/edit';
 
