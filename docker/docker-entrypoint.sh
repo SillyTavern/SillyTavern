@@ -17,26 +17,21 @@ if [ "$CURRENT_UID" != "$TARGET_UID" ] || [ "$CURRENT_GID" != "$TARGET_GID" ]; t
     usermod -o -u "$TARGET_UID" -g "$TARGET_GID" node
 fi
 
-# List of default directories
+# List of default directories that must be writable
+# This list matches the standard volume mounts in docker-compose.yml
 DEFAULT_DIRS="config data plugins public/scripts/extensions/third-party"
 
 for dir in $DEFAULT_DIRS; do
+    # 1. Create directory if it doesn't exist (Docker creates root-owned dirs otherwise)
     if [ ! -d "$dir" ]; then
         echo "Creating missing directory: $dir"
         mkdir -p "$dir"
         # Immediate chown for the new folder
         chown node:node "$dir"
     fi
-done
 
-# Define all directories that need permission checks (Default + Backups)
-# Including the old 'backups' dir here so it can be fixed IF it exists.
-CHECK_DIRS="$DEFAULT_DIRS backups"
-
-for dir in $CHECK_DIRS; do
-    # Only process if the directory exists
+    # 2. Permissions check with skip if already owned by the target UID/GID
     if [ -d "$dir" ]; then
-        # Only runs chown if ownership doesn't match
         DIR_UID=$(stat -c '%u' "$dir")
         DIR_GID=$(stat -c '%g' "$dir")
 
