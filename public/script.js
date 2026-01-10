@@ -7754,6 +7754,7 @@ export async function getSettings() {
         selected_button = settings.selected_button;
 
         // TODO: Move me into firstLoadInit when experimental toggle is removed
+        // power_user.experimental_macro_engine
         initMacros();
 
         if (data.enable_extensions) {
