@@ -2525,8 +2525,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
-    newMessage.find('.mes_text').html(messageText);
     appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
+    newMessage.find('.mes_text').html(messageText);
 
     addCopyToCodeBlocks(newMessage);
 
