@@ -521,9 +521,9 @@ class MacroCstWalker {
         const operatorNode = /** @type {CstNode?} */ ((varChildren.variableOperator || [])[0]);
         const operatorChildren = operatorNode?.children || {};
 
-        // Determine operation and value
+        // Determine operation and whether a value expression is expected
         let operation = 'get';
-        let value = null;
+        let hasValueExpr = false;
 
         if (operatorNode) {
             const operatorTokens = /** @type {IToken[]} */ (operatorChildren['Var.operator'] || []);
@@ -540,35 +540,35 @@ class MacroCstWalker {
                         break;
                     case '=':
                         operation = 'set';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '+=':
                         operation = 'add';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '-=':
                         operation = 'sub';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '||':
                         operation = 'logicalOr';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '??':
                         operation = 'nullishCoalescing';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '||=':
                         operation = 'logicalOrAssign';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '??=':
                         operation = 'nullishCoalescingAssign';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     case '==':
                         operation = 'equals';
-                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        hasValueExpr = true;
                         break;
                     default:
                         logMacroInternalError({ message: `Lexer found macro operator that is not implemented for variable shorthand expressions in macro node '${macroNode.name}'.` });
@@ -577,8 +577,34 @@ class MacroCstWalker {
             }
         }
 
+        // Create a lazy value resolver that caches its result on first call.
+        // This ensures the value expression is only evaluated when actually needed,
+        // which is important for performance and because some macros are stateful.
+        const lazyValue = hasValueExpr ? this.#createLazyValue(operatorChildren, context) : () => '';
+
         // Execute the operation using direct variable API calls
-        return this.#executeVariableOperation(varName, isGlobal, operation, value);
+        return this.#executeVariableOperation(varName, isGlobal, operation, lazyValue);
+    }
+
+    /**
+     * Creates a lazy value resolver that caches its result on first call.
+     * This ensures the value expression is only evaluated when actually needed.
+     *
+     * @param {Record<string, any>} operatorChildren - The children of the variableOperator node.
+     * @param {EvaluationContext} context - The evaluation context.
+     * @returns {() => string} A function that returns the evaluated value, caching the result.
+     */
+    #createLazyValue(operatorChildren, context) {
+        let cached = null;
+        let resolved = false;
+
+        return () => {
+            if (!resolved) {
+                cached = this.#evaluateVariableValue(operatorChildren, context);
+                resolved = true;
+            }
+            return cached;
+        };
     }
 
     /**
@@ -587,10 +613,10 @@ class MacroCstWalker {
      * @param {string} varName - The variable name.
      * @param {boolean} isGlobal - Whether this is a global ($) or local (.) variable.
      * @param {string} operation - The operation to perform.
-     * @param {string | null} value - The value for operations that require one.
+     * @param {() => string} lazyValue - A lazy function that returns the value when called. Only evaluated when needed.
      * @returns {string} The result of the operation.
      */
-    #executeVariableOperation(varName, isGlobal, operation, value) {
+    #executeVariableOperation(varName, isGlobal, operation, lazyValue) {
         const ctx = SillyTavern.getContext();
         const vars = isGlobal ? ctx.variables.global : ctx.variables.local;
 
@@ -613,7 +639,7 @@ class MacroCstWalker {
                 return normalize(vars.get(varName));
 
             case 'set':
-                vars.set(varName, value);
+                vars.set(varName, lazyValue());
                 return '';
 
             case 'inc':
@@ -623,53 +649,57 @@ class MacroCstWalker {
                 return normalize(vars.dec(varName));
 
             case 'add':
-                vars.add(varName, value);
+                vars.add(varName, lazyValue());
                 return '';
 
             case 'sub': {
                 // Subtract by adding the negative value
-                const numValue = Number(value);
+                const numValue = Number(lazyValue());
                 if (!isNaN(numValue)) vars.add(varName, -numValue);
-                else logMacroRuntimeWarning({ message: `Variable shorthand "-=" operator requires a numeric value, got: "${value}"` });
+                else logMacroRuntimeWarning({ message: `Variable shorthand "-=" operator requires a numeric value, got: "${lazyValue()}"` });
                 return '';
             }
 
             case 'logicalOr': {
                 // Returns default value if variable is falsy, otherwise returns variable value
+                // Value is only resolved if needed (when variable is falsy)
                 const currentValue = vars.get(varName);
-                return isFalsy(currentValue) ? normalize(value) : normalize(currentValue);
+                return isFalsy(currentValue) ? normalize(lazyValue()) : normalize(currentValue);
             }
 
             case 'nullishCoalescing': {
                 // Returns default value only if variable doesn't exist, otherwise returns variable value (even if falsy)
+                // Value is only resolved if needed (when variable doesn't exist)
                 const exists = vars.has(varName);
-                return exists ? normalize(vars.get(varName)) : normalize(value);
+                return exists ? normalize(vars.get(varName)) : normalize(lazyValue());
             }
 
             case 'logicalOrAssign': {
                 // If variable is falsy, set it to value and return value; otherwise return current value
+                // Value is only resolved if needed (when variable is falsy)
                 const currentValue = vars.get(varName);
                 if (isFalsy(currentValue)) {
-                    vars.set(varName, value);
-                    return normalize(value);
+                    vars.set(varName, lazyValue());
+                    return normalize(lazyValue());
                 }
                 return normalize(currentValue);
             }
 
             case 'nullishCoalescingAssign': {
                 // If variable doesn't exist, set it to value and return value; otherwise return current value
+                // Value is only resolved if needed (when variable doesn't exist)
                 const exists = vars.has(varName);
                 if (!exists) {
-                    vars.set(varName, value);
-                    return normalize(value);
+                    vars.set(varName, lazyValue());
+                    return normalize(lazyValue());
                 }
                 return normalize(vars.get(varName));
             }
 
             case 'equals': {
-                // String equality comparison
+                // String equality comparison - value is always needed
                 const currentValue = normalize(vars.get(varName));
-                const compareValue = normalize(value);
+                const compareValue = normalize(lazyValue());
                 return currentValue === compareValue ? 'true' : 'false';
             }
 

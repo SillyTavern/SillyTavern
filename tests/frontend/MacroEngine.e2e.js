@@ -2721,6 +2721,88 @@ test.describe('MacroEngine', () => {
         });
     });
 
+    test.describe('Variable Shorthand Lazy Evaluation', () => {
+        // Tests to verify that fallback value expressions are only evaluated when needed.
+        // This is important for performance and because some macros are stateful.
+
+        // ?? should NOT evaluate fallback when variable exists
+        test('should NOT evaluate ?? fallback when variable exists', async ({ page }) => {
+            // Use setvar in the fallback - if lazy evaluation works, tracker should remain unset
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ?? {{.tracker = evaluated}}fallback}}[{{.tracker}}]', { local: { myvar: 'exists' } });
+            // myvar exists, so ?? returns 'exists' and the fallback (which would set tracker) is NOT evaluated
+            expect(output).toBe('exists[]');
+        });
+
+        test('should evaluate ?? fallback when variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ?? {{.tracker = evaluated}}fallback}}[{{.tracker}}]', { local: {} });
+            // myvar doesn't exist, so ?? evaluates and returns the fallback, setting tracker
+            expect(output).toBe('fallback[evaluated]');
+        });
+
+        // || should NOT evaluate fallback when variable is truthy
+        test('should NOT evaluate || fallback when variable is truthy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar || {{.tracker = evaluated}}fallback}}[{{.tracker}}]', { local: { myvar: 'truthy' } });
+            // myvar is truthy, so || returns 'truthy' and the fallback is NOT evaluated
+            expect(output).toBe('truthy[]');
+        });
+
+        test('should evaluate || fallback when variable is falsy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar || {{.tracker = evaluated}}fallback}}[{{.tracker}}]', { local: { myvar: '' } });
+            // myvar is falsy, so || evaluates and returns the fallback, setting tracker
+            expect(output).toBe('fallback[evaluated]');
+        });
+
+        // ??= should NOT evaluate value when variable exists
+        test('should NOT evaluate ??= value when variable exists', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ??= {{.tracker = evaluated}}newval}}[{{.tracker}}]', { local: { myvar: 'exists' } });
+            // myvar exists, so ??= returns current value and the value expression is NOT evaluated
+            expect(output).toBe('exists[]');
+        });
+
+        test('should evaluate ??= value when variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ??= {{.tracker = evaluated}}newval}}[{{.tracker}}]', { local: {} });
+            // myvar doesn't exist, so ??= evaluates value, sets myvar, and returns it
+            expect(output).toBe('newval[evaluated]');
+        });
+
+        // ||= should NOT evaluate value when variable is truthy
+        test('should NOT evaluate ||= value when variable is truthy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ||= {{.tracker = evaluated}}newval}}[{{.tracker}}]', { local: { myvar: 'truthy' } });
+            // myvar is truthy, so ||= returns current value and the value expression is NOT evaluated
+            expect(output).toBe('truthy[]');
+        });
+
+        test('should evaluate ||= value when variable is falsy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ||= {{.tracker = evaluated}}newval}}[{{.tracker}}]', { local: { myvar: '' } });
+            // myvar is falsy, so ||= evaluates value, sets myvar, and returns it
+            expect(output).toBe('newval[evaluated]');
+        });
+
+        // Operators that ALWAYS evaluate value should still work
+        test('should always evaluate = value expression', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar = {{.tracker = evaluated}}value}}[{{.tracker}}]', { local: {} });
+            expect(output).toBe('[evaluated]');
+        });
+
+        test('should always evaluate += value expression', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar += {{.tracker = evaluated}}5}}[{{.tracker}}]', { local: { myvar: '10' } });
+            expect(output).toBe('[evaluated]');
+        });
+
+        test('should always evaluate == value expression', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar == {{.tracker = evaluated}}test}}[{{.tracker}}]', { local: { myvar: 'test' } });
+            expect(output).toBe('true[evaluated]');
+        });
+
+        // Value should only be evaluated once (caching test)
+        test('should only evaluate value expression once when needed', async ({ page }) => {
+            // Use addvar to track how many times the value is evaluated (addvar returns empty string)
+            const output = await evaluateWithEngineAndVariables(page, '{{.counter = 0}}{{.myvar ??= {{.counter += 1}}value}}{{.counter}}', { local: {} });
+            // counter should be 1 (value evaluated exactly once)
+            expect(output).toBe('value1');
+        });
+    });
+
     test.describe('Variable Shorthand in {{if}} Macro', () => {
         // {{if .myvar}}...{{/if}} - truthy local variable
         test('should evaluate truthy local variable in if condition', async ({ page }) => {
