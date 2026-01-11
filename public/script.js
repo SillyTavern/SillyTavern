@@ -2120,10 +2120,6 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
             chatElement.scrollTop(scrollPosition);
             return;
         }
-        const newScrollPosition = chatElement.scrollTop();
-        if (newScrollPosition > scrollPosition) {
-            return;
-        }
         const newChatHeight = chatElement.prop('scrollHeight');
         const diff = newChatHeight - chatHeight;
         chatElement.scrollTop(scrollPosition + diff);
