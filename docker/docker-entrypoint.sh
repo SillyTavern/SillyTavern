@@ -5,7 +5,7 @@ if [ ! -e "config/config.yaml" ]; then
     cp -r "default/config.yaml" "config/config.yaml"
 fi
 
-# Middle Ground Logic: Only fix permissions if PUID/PGID are set (non-root-mode)
+# non-root-mode: Only fix permissions if PUID/PGID are set
 if [ -n "$PUID" ] && [ -n "$PGID" ]; then
     TARGET_UID=$PUID
     TARGET_GID=$PGID
@@ -50,6 +50,6 @@ else
     EXEC_PREFIX=""
 fi
 
-# Execute commands using the determined prefix
+# Execute postinstall to auto-populate config.yaml with missing values and using the determined prefix
 $EXEC_PREFIX npm run postinstall
 exec $EXEC_PREFIX node server.js --listen "$@"
