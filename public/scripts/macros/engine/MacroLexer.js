@@ -112,7 +112,7 @@ const Tokens = Object.freeze({
          */
         Identifier: createToken({ name: 'Var.Identifier', pattern: MACRO_VARIABLE_SHORTHAND_PATTERN }),
 
-        /** All tokens that are valid operators insie a variable shorthand expression */
+        /** All tokens that are valid operators inside a variable shorthand expression */
         Operators: {
             /** Increment operator (`++`) */
             Increment: createToken({ name: 'Var.Increment', pattern: /\+\+/ }),

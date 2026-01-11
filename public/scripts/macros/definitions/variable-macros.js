@@ -254,7 +254,7 @@ export function registerVariableMacros() {
         description: 'Gets the value of a global variable.',
         returns: 'The value of the global variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getglobalvar::myvar}}', '{{getglobalvar  myintvar}}'],
+        exampleUsage: ['{{getglobalvar::myvar}}', '{{getglobalvar myintvar}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.global.get(name);
             return normalize(result);
