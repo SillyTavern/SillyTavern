@@ -2599,13 +2599,13 @@ export async function createGenerationParameters(settings, model, type, messages
     }
 
     // Remove logit bias/logprobs/stop-strings if not supported by the model
-    const isVision = (m) => ['gpt', 'vision'].every(x => m.includes(x));
+    const isVision = (m) => ['gpt', 'vision'].every(x => typeof m === 'string' && m.includes(x));
     if (gptSources.includes(settings.chat_completion_source) && isVision(model)) {
         delete generate_data.logit_bias;
         delete generate_data.stop;
         delete generate_data.logprobs;
     }
-    if (gptSources.includes(settings.chat_completion_source) && model.includes('gpt-4.5')) {
+    if (gptSources.includes(settings.chat_completion_source) && /gpt-4.5/.test(model)) {
         delete generate_data.logprobs;
     }
 

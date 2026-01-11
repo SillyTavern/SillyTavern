@@ -108,9 +108,13 @@ class MacroEngine {
      *
      * @param {string} input - The input string to evaluate.
      * @param {MacroEnv} env - The environment to pass to the macro handler.
+     * @param {Object} [options={}] - Optional evaluation settings.
+     * @param {number} [options.contextOffset=0] - Base offset from the original top-level document.
+     *        Used when evaluating nested content (via resolve() in handlers) to preserve global
+     *        positioning for macros like {{pick}} that seed on position.
      * @returns {string} The resolved string.
      */
-    evaluate(input, env) {
+    evaluate(input, env, { contextOffset = 0 } = {}) {
         if (!input) {
             return '';
         }
@@ -138,6 +142,7 @@ class MacroEngine {
         try {
             evaluated = MacroCstWalker.evaluateDocument({
                 text: preProcessed,
+                contextOffset,
                 cst,
                 env: safeEnv,
                 resolveMacro: this.#resolveMacro.bind(this),

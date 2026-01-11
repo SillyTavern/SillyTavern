@@ -18,7 +18,10 @@ import { MacroRegistry } from './MacroRegistry.js';
  * @property {string} rawInner
  * @property {string} rawWithBraces
  * @property {string[]} rawArgs
- * @property {{ startOffset: number, endOffset: number }} range
+ * @property {{ startOffset: number, endOffset: number }} range - Range relative to the current evaluation context's text.
+ * @property {number} globalOffset - The offset of this macro in the original top-level document.
+ *           This combines the context's base offset with the local range. Use this for deterministic
+ *           seeding (e.g., in {{pick}}) to ensure identical macros at different positions produce different results.
  * @property {CstNode} cstNode
  */
 
@@ -31,10 +34,21 @@ import { MacroRegistry } from './MacroRegistry.js';
  */
 
 /**
+ * Context passed through the CST evaluation process.
+ *
  * @typedef {Object} EvaluationContext
- * @property {string} text
- * @property {MacroEnv} env
- * @property {(call: MacroCall) => string} resolveMacro
+ * @property {string} text - The text being evaluated at the current level. This is NOT the same as env.content.
+ *           At the top level, this is the full document text. When evaluating nested content (arguments or scoped
+ *           content), this is the substring being evaluated. CST node positions are always relative to this text.
+ *
+ *           - Careful, this also means when resolving macros inside macro arguments, this will NOT be the text of
+ *           the argument currently being resolved, but the full macro text with identifier and all macros.
+ * @property {number} contextOffset - Base offset from the original top-level document. At the top level this is 0.
+ *           When re-parsing nested content (arguments/scoped), this is set to the substring's start position in
+ *           the original document. Used to calculate globalOffset for macros that need deterministic positioning.
+ * @property {MacroEnv} env - The macro environment containing context like user/char names, variables, and the
+ *           original full content (env.content). This remains constant throughout the evaluation.
+ * @property {(call: MacroCall) => string} resolveMacro - Callback to resolve a macro call to its result string.
  * @property {(content: string, options?: { trimIndent?: boolean }) => string} trimContent - Shared utility function that trims scoped content with optional indentation dedent.
  */
 
@@ -74,7 +88,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     evaluateDocument(options) {
-        const { text, cst, env, resolveMacro, trimContent } = options;
+        const { text, cst, contextOffset, env, resolveMacro, trimContent } = options;
 
         if (typeof text !== 'string') {
             throw new Error('MacroCstWalker.evaluateDocument: text must be a string');
@@ -90,7 +104,7 @@ class MacroCstWalker {
         }
 
         /** @type {EvaluationContext} */
-        const context = { text, env, resolveMacro, trimContent };
+        const context = { text, contextOffset, env, resolveMacro, trimContent };
         let items = this.#collectDocumentItems(cst);
 
         // Process scoped macros: find opening/closing pairs and merge them
@@ -341,7 +355,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateMacroNode(macroNode, context, scopedContent) {
-        const { text, env, resolveMacro, trimContent } = context;
+        const { text, contextOffset, env, resolveMacro, trimContent } = context;
 
         const children = macroNode.children || {};
 
@@ -467,6 +481,7 @@ class MacroCstWalker {
             rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
             rawArgs,
             range,
+            globalOffset: contextOffset + range.startOffset,
             cstNode: macroNode,
             env,
         };
@@ -486,7 +501,7 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateVariableExpr(macroNode, variableExprNode, context) {
-        const { text, env, resolveMacro } = context;
+        const { text, contextOffset, env, resolveMacro } = context;
 
         const children = macroNode.children || {};
         const varChildren = variableExprNode.children || {};
@@ -560,6 +575,7 @@ class MacroCstWalker {
             rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
             rawArgs: args,
             range,
+            globalOffset: contextOffset + range.startOffset,
             cstNode: macroNode,
             env,
         };
@@ -642,9 +658,13 @@ class MacroCstWalker {
      * Evaluates a single argument node by resolving nested macros and reconstructing
      * the original argument text.
      *
-     * @param {CstNode} argNode
-     * @param {EvaluationContext} context
-     * @returns {string}
+     * This method extracts the argument's raw text and re-parses it to properly
+     * handle scoped macros (opening/closing tag pairs) that may appear within
+     * the argument content.
+     *
+     * @param {CstNode} argNode - The argument CST node to evaluate.
+     * @param {EvaluationContext} context - The evaluation context containing the parent document's text and environment.
+     * @returns {string} The evaluated argument with all nested macros (including scoped ones) resolved.
      */
     #evaluateArgumentNode(argNode, context) {
         const location = this.#getArgumentLocation(argNode);
@@ -652,38 +672,87 @@ class MacroCstWalker {
             return '';
         }
 
-        const { text } = context;
+        const { text, contextOffset } = context;
+        const rawContent = text.slice(location.startOffset, location.endOffset + 1);
 
-        const nestedMacros = /** @type {CstNode[]} */ ((argNode.children || {}).macro || []);
+        // Calculate the new base offset: parent's contextOffset + this argument's start position
+        const newContextOffset = contextOffset + location.startOffset;
 
-        // If there are no nested macros, we can just return the original text
-        if (nestedMacros.length === 0) {
-            return text.slice(location.startOffset, location.endOffset + 1);
+        // Use the shared helper to evaluate the content, which handles scoped macros
+        return this.#evaluateRawContent(rawContent, newContextOffset, context);
+    }
+
+    /**
+     * Evaluates a text content string by parsing it and resolving all macros,
+     * including scoped macro pairs (opening/closing tags).
+     *
+     * This is the core helper used by both argument evaluation and scoped content
+     * evaluation to ensure consistent handling of nested and scoped macros.
+     *
+     * @param {string} rawContent - The raw text content to evaluate.
+     * @param {number} newContextOffset - The offset of rawContent's start position in the original top-level document.
+     * @param {EvaluationContext} context - The parent evaluation context (used for env, resolveMacro, trimContent).
+     * @returns {string} The evaluated content with all macros resolved.
+     */
+    #evaluateRawContent(rawContent, newContextOffset, context) {
+        // If empty, return as-is
+        if (!rawContent) {
+            return '';
         }
 
-        // If there are macros, evaluate them one by one in appearing order, inside the argument, before we return the resolved argument
-        const nestedWithRange = nestedMacros.map(node => ({
-            node,
-            range: this.#getMacroRange(node),
-        }));
+        // Re-evaluate the content to find all nested macros including scoped pairs
+        // We need to parse and evaluate this content as if it were a standalone document
+        const { cst } = MacroParser.parseDocument(rawContent);
 
-        nestedWithRange.sort((a, b) => a.range.startOffset - b.range.startOffset);
+        // If parsing fails, return the raw content
+        if (!cst || typeof cst !== 'object' || !cst.children) {
+            return rawContent;
+        }
 
+        // Create a new context with the content as the text and updated contextOffset
+        // This is important: positions in the parsed CST are relative to rawContent,
+        // but contextOffset tracks the absolute position in the original document
+        /** @type {EvaluationContext} */
+        const contentContext = { ...context, text: rawContent, contextOffset: newContextOffset };
+
+        // Collect items and process scoped macros
+        let items = this.#collectDocumentItems(cst);
+        items = this.#processScopedMacros(items, rawContent);
+
+        // If no items, return raw content
+        if (items.length === 0) {
+            return rawContent;
+        }
+
+        // Evaluate items in order
         let result = '';
-        let cursor = location.startOffset;
+        let cursor = 0;
 
-        for (const entry of nestedWithRange) {
-            if (entry.range.startOffset < cursor) {
-                continue;
+        for (const item of items) {
+            if (item.startOffset > cursor) {
+                result += rawContent.slice(cursor, item.startOffset);
             }
 
-            result += text.slice(cursor, entry.range.startOffset);
-            result += this.#evaluateMacroNode(entry.node, context);
-            cursor = entry.range.endOffset + 1;
+            if (item.type === 'plaintext') {
+                result += rawContent.slice(item.startOffset, item.endOffset + 1);
+                cursor = item.endOffset + 1;
+            } else if (item.keepRaw) {
+                // Unmatched closing macros stay as raw text
+                result += rawContent.slice(item.startOffset, item.endOffset + 1);
+                cursor = item.endOffset + 1;
+            } else {
+                result += this.#evaluateMacroNode(item.node, contentContext, item.scopedContent);
+                // If this macro has scoped content, skip past the closing macro
+                if (item.scopedContent && item.scopedContent.closingEndOffset > item.endOffset) {
+                    cursor = item.scopedContent.closingEndOffset + 1;
+                } else {
+                    cursor = item.endOffset + 1;
+                }
+            }
         }
 
-        if (cursor <= location.endOffset) {
-            result += text.slice(cursor, location.endOffset + 1);
+        if (cursor < rawContent.length) {
+            result += rawContent.slice(cursor);
         }
 
         return result;
@@ -836,76 +905,22 @@ class MacroCstWalker {
      * This resolves any nested macros within the scoped content.
      *
      * @param {{ startOffset: number, endOffset: number }} scopedContent - The range of the scoped content.
-     * @param {EvaluationContext} context - The evaluation context.
+     * @param {EvaluationContext} context - The evaluation context. The `text` property contains the parent
+     *        document text, and offsets in scopedContent are relative to that parent text.
      * @returns {string} - The evaluated scoped content with nested macros resolved.
      */
     #evaluateScopedContent(scopedContent, context) {
-        const { text, env, resolveMacro, trimContent } = context;
+        const { text, contextOffset } = context;
         const { startOffset, endOffset } = scopedContent;
 
         // Extract the raw content between opening and closing tags
         const rawContent = text.slice(startOffset, endOffset + 1);
 
-        // If empty, return empty string
-        if (!rawContent) {
-            return '';
-        }
+        // Calculate the new base offset: parent's contextOffset + this scoped content's start position
+        const newContextOffset = contextOffset + startOffset;
 
-        // Re-evaluate the scoped content to resolve any nested macros
-        // We need to parse and evaluate this content as if it were a standalone document
-        const { cst: scopedCst } = MacroParser.parseDocument(rawContent);
-
-        // If parsing fails, return the raw content
-        if (!scopedCst || typeof scopedCst !== 'object' || !scopedCst.children) {
-            return rawContent;
-        }
-
-        // Create a new context with the scoped content text
-        /** @type {EvaluationContext} */
-        const scopedContext = { text: rawContent, env, resolveMacro, trimContent };
-
-        // Collect items from the scoped content CST
-        let items = this.#collectDocumentItems(scopedCst);
-
-        // Process any nested scoped macros within this content
-        items = this.#processScopedMacros(items, rawContent);
-
-        // Evaluate the items
-        if (items.length === 0) {
-            return rawContent;
-        }
-
-        let result = '';
-        let cursor = 0;
-
-        for (const item of items) {
-            if (item.startOffset > cursor) {
-                result += rawContent.slice(cursor, item.startOffset);
-            }
-
-            if (item.type === 'plaintext') {
-                result += rawContent.slice(item.startOffset, item.endOffset + 1);
-                cursor = item.endOffset + 1;
-            } else if (item.keepRaw) {
-                // Unmatched closing macros stay as raw text
-                result += rawContent.slice(item.startOffset, item.endOffset + 1);
-                cursor = item.endOffset + 1;
-            } else {
-                result += this.#evaluateMacroNode(item.node, scopedContext, item.scopedContent);
-                // If this macro has scoped content, skip past the closing macro
-                if (item.scopedContent && item.scopedContent.closingEndOffset > item.endOffset) {
-                    cursor = item.scopedContent.closingEndOffset + 1;
-                } else {
-                    cursor = item.endOffset + 1;
-                }
-            }
-        }
-
-        if (cursor < rawContent.length) {
-            result += rawContent.slice(cursor);
-        }
-
-        return result;
+        // Use the shared helper to evaluate the content
+        return this.#evaluateRawContent(rawContent, newContextOffset, context);
     }
 
     // ========================================================================

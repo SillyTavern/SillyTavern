@@ -2297,7 +2297,7 @@ async function loadGoogleModels() {
 }
 
 async function loadZaiModels() {
-    return ['cogview-4-250304'].map(name => ({ value: name, text: name }));
+    return ['cogview-4-250304', 'cogvideox-3', 'viduq1-text'].map(name => ({ value: name, text: name }));
 }
 
 async function loadOpenRouterModels() {
@@ -3274,7 +3274,7 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
@@ -3299,6 +3299,12 @@ function getClosestAspectRatio(width, height, source) {
                     '9:16': 9 / 16,
                     '4:3': 4 / 3,
                     '3:4': 3 / 4,
+                };
+            case 'zai':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '9:16': 9 / 16,
                 };
             default:
                 console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
@@ -3328,22 +3334,41 @@ function getClosestAspectRatio(width, height, source) {
  * Get closest size for Electron Hub
  * @param {number} width - The width of the image
  * @param {number} height - The height of the image
+ * @param {string[]} sizes - Available sizes
  * @returns {Promise<string>} - The closest size
  */
-async function getClosestSize(width, height) {
-    const response = await fetch('/api/sd/electronhub/sizes', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            model: extension_settings.sd.model,
-        }),
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text);
+async function getClosestSize(width, height, sizes = []) {
+    const sizesData = [];
+
+    if (Array.isArray(sizes) && sizes.length > 0) {
+        sizesData.push(...sizes);
+    } else if (extension_settings.sd.source === sources.electronhub) {
+        const response = await fetch('/api/sd/electronhub/sizes', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                model: extension_settings.sd.model,
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text);
+        }
+        const result = await response.json();
+        sizesData.push(...result.sizes);
+    } else {
+        return null;
     }
-    const result = await response.json();
-    const sizesData = result.sizes;
+
+    const targetWidth = Number(width);
+    const targetHeight = Number(height);
+
+    if (isNaN(targetWidth) || isNaN(targetHeight)) {
+        return null;
+    }
+
+    const targetAspect = targetWidth / targetHeight;
+    const targetResolution = targetWidth * targetHeight;
 
     const closestSize = sizesData.reduce((closest, size) => {
         if (!size || typeof size !== 'string') {
@@ -3356,16 +3381,14 @@ async function getClosestSize(width, height) {
 
         const sizeWidth = Number(sizeParts[0]);
         const sizeHeight = Number(sizeParts[1]);
-        const targetWidth = Number(width);
-        const targetHeight = Number(height);
 
-        if (isNaN(sizeWidth) || isNaN(sizeHeight) || isNaN(targetWidth) || isNaN(targetHeight)) {
+        if (isNaN(sizeWidth) || isNaN(sizeHeight)) {
             return closest;
         }
 
-        const sizeArea = sizeWidth * sizeHeight;
-        const targetArea = targetWidth * targetHeight;
-        const diff = Math.abs(sizeArea - targetArea);
+        const aspectDiff = Math.abs((sizeWidth / sizeHeight) - targetAspect) / targetAspect;
+        const resolutionDiff = Math.abs(sizeWidth * sizeHeight - targetResolution) / targetResolution;
+        const diff = aspectDiff + resolutionDiff;
 
         return diff < closest.diff ? { size, diff } : closest;
     }, { size: null, diff: Infinity });
@@ -4245,38 +4268,69 @@ async function generateGoogleImage(prompt, negativePrompt, signal) {
  * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
  */
 async function generateZaiImage(prompt, signal) {
-    // Round width and height to nearest multiple of 16, and clamp to 512-2048 range
-    let width = clamp(Math.round(extension_settings.sd.width / 16) * 16, 512, 2048);
-    let height = clamp(Math.round(extension_settings.sd.height / 16) * 16, 512, 2048);
-
-    // Make sure the pixel count does not exceed 2^21px
-    while ((width * height) > Math.pow(2, 21)) {
-        if (width >= height) {
-            width -= 16;
-        } else {
-            height -= 16;
+    if (/(cogvideox|vidu)/.test(extension_settings.sd.model)) {
+        const videoParams = {};
+        if (/cogvideox/.test(extension_settings.sd.model)) {
+            const cogVideoSizes = ['1280x720', '720x1280', '1024x1024', '1080x1920', '2048x1080', '3840x2160'];
+            videoParams.quality = extension_settings.sd.openai_quality === 'hd' ? 'quality' : 'speed';
+            videoParams.size = await getClosestSize(extension_settings.sd.width, extension_settings.sd.height, cogVideoSizes);
         }
+        if (/vidu/.test(extension_settings.sd.model)) {
+            videoParams.aspect_ratio = getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'zai');
+        }
+
+        const videoResult = await fetch('/api/sd/zai/generate-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                ...videoParams,
+            }),
+        });
+
+        if (videoResult.ok) {
+            const data = await videoResult.json();
+            return { format: data.format, data: data.video };
+        }
+
+        const text = await videoResult.text();
+        throw new Error(text);
+    } else {
+        // Round width and height to nearest multiple of 16, and clamp to 512-2048 range
+        let width = clamp(Math.round(extension_settings.sd.width / 16) * 16, 512, 2048);
+        let height = clamp(Math.round(extension_settings.sd.height / 16) * 16, 512, 2048);
+
+        // Make sure the pixel count does not exceed 2^21px
+        while ((width * height) > Math.pow(2, 21)) {
+            if (width >= height) {
+                width -= 16;
+            } else {
+                height -= 16;
+            }
+        }
+
+        const result = await fetch('/api/sd/zai/generate', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                quality: extension_settings.sd.openai_quality,
+                size: `${width}x${height}`,
+            }),
+        });
+
+        if (result.ok) {
+            const data = await result.json();
+            return { format: data.format, data: data.image };
+        }
+
+        const text = await result.text();
+        throw new Error(text);
     }
-
-    const result = await fetch('/api/sd/zai/generate', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        signal: signal,
-        body: JSON.stringify({
-            prompt: prompt,
-            model: extension_settings.sd.model,
-            quality: extension_settings.sd.openai_quality,
-            size: `${width}x${height}`,
-        }),
-    });
-
-    if (result.ok) {
-        const data = await result.json();
-        return { format: data.format, data: data.image };
-    }
-
-    const text = await result.text();
-    throw new Error(text);
 }
 
 /**

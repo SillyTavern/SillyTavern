@@ -703,7 +703,6 @@ async function firstLoadInit() {
     initDynamicStyles();
     initTags();
     initBookmarks();
-    initMacros();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -1438,33 +1437,26 @@ export async function printMessages() {
  * @param {Boolean} [options.fade=true] When false, the swipe chevrons will not fade in.
  */
 export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = true } = {}) {
-    //.find is faster than .children.
     const messageElements = chatElement.find('.mes');
     messageElements.removeClass('last_mes');
 
     //Remove messages after index.
     messageElements.filter(`.mes[mesid="${startIndex}"]`).nextAll('.mes').addBack().remove();
 
-    let t1 = performance.now();
+    const t1 = performance.now();
 
     const messages = targetChat.slice(startIndex);
 
     if (messages.length > 0) {
-        const lastMessage = messages.pop();
-
         const newMessageElements = messages.map( (message, offset) => {
-            let i = startIndex + offset;
+            const i = startIndex + offset;
             const messageElement = updateMessageElement(message, { forceId: i });
 
             return messageElement[0];
         });
 
-        const lastMessageId = targetChat.length - 1;
-        const lastMessageElement = updateMessageElement(lastMessage, { forceId: lastMessageId });
-
         //The last_mes has been removed, add it to the new last message.
-        lastMessageElement.addClass('last_mes');
-        newMessageElements.push(lastMessageElement[0]);
+        newMessageElements.at(-1).classList.add('last_mes');
 
         //Append to chat in one DOM update.
         chatElement.append(newMessageElements);
@@ -1476,7 +1468,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
     applyStylePins();
     updateEditArrowClasses();
 
-    console.info(`Rendered ${targetChat.length - startIndex} messages in ${(performance.now() - t1) / 1000} seconds.`);
+    console.info(`Rendered ${targetChat.length - startIndex} messages in ${((performance.now() - t1) / 1000).toFixed(3)} seconds.`);
 }
 
 export function scrollOnMediaLoad() {
@@ -1864,8 +1856,6 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {ChatMessageExtra} extra - Contains the API and model details.
- * param {string} extra.api - The name of the API, used to determine which SVG to fetch.
- * param {string} extra.model - The model name, used to check for the substring "claude".
  */
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
@@ -2138,7 +2128,7 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
     // Set media display attribute
     messageElement.attr('data-media-display', mediaDisplay);
     // Toggle text visibility
-    messageElement.find('.mes_text').toggleClass('displayNone', hideMessageText);
+    messageElement.find('.mes_text').toggleClass('inline_media', hideMessageText);
 
     /**
      * Appends a single image attachment to the message element.
@@ -2393,7 +2383,7 @@ export function addCopyToCodeBlocks(messageElement) {
 function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
 
     //if we have itemized messages, and the array isn't null..
-    if (message.is_user === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+    if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
         const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
         if (itemizedPrompt) {
             messageElement.find('.mes_prompt').show();
@@ -2519,8 +2509,8 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
     const messageHTML = getMessageTextHTML(mes, { messageId });
-    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
-    const tokenCount = mes.extra?.token_count ?? 0;
+    const bookmarkLink = mes?.extra?.bookmark_link;
+    const tokenCount = mes.extra?.token_count;
     const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
 
     messageElement.attr({
@@ -2540,12 +2530,12 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
     messageElement.find('.ch_name .name_text').text(mes.name);
     messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
     messageElement.find('.mesIDDisplay').text(`#${messageId}`);
-    tokenCount ?? messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
-    mes.title ?? messageElement.attr('title', mes.title);
-    timerValue ?? messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+    mes.title && messageElement.attr('title', mes.title);
+    timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
     bookmarkLink && updateBookmarkDisplay(messageElement);
 
-    if (typeof(mes.extra?.bias) === 'string') {
+    if (mes.extra?.bias !== '') {
         const bias = messageFormatting(mes.extra?.bias, '', false, false, -1, {}, false);
         messageElement.find('.mes_bias').html(bias);
     }
@@ -2572,8 +2562,6 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
     });
 
     messageElement.find('.mes_text').html(messageHTML);
-    appendMediaToMessage(mes, messageElement, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-
     addCopyToCodeBlocks(messageElement);
 
     // Set the swipes counter for all non-user messages.
@@ -7767,6 +7755,10 @@ export async function getSettings() {
 
         selected_button = settings.selected_button;
 
+        // TODO: Move me into firstLoadInit when experimental toggle is removed
+        // power_user.experimental_macro_engine
+        initMacros();
+
         if (data.enable_extensions) {
             const enableAutoUpdate = Boolean(data.enable_extensions_auto_update);
             const isVersionChanged = settings.currentVersion !== currentVersion;
@@ -10011,7 +10003,9 @@ export async function swipe(event, direction, { source, repeated, message = chat
         thisMesDiv.css('height', thisMesDivHeight);
         expandNewMessage(thisMesDiv);
 
-        appendMediaToMessage(chat[mesId], thisMesDiv);
+        if (run_generate) {
+            appendMediaToMessage(chat[mesId], thisMesDiv);
+        }
 
         await eventSource.emit(event_types.MESSAGE_SWIPED, (mesId));
 
