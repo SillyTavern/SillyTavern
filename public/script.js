@@ -2481,7 +2481,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     timerValue && newMessage.find('.mes_timer').attr('title', timerTitle).text(timerValue);
     bookmarkLink && updateBookmarkDisplay(newMessage);
 
-    if (mes.extra?.bias) {
+    if (mes.extra?.bias !== '') {
         const bias = messageFormatting(mes.extra?.bias, '', false, false, -1, {}, false);
         newMessage.find('.mes_bias').html(bias);
     }
