@@ -31,9 +31,9 @@ if [ -n "$PUID" ] && [ -n "$PGID" ]; then
             if [ "$DIR_UID" != "$TARGET_UID" ] || [ "$DIR_GID" != "$TARGET_GID" ]; then
                 echo "Adjusting permissions for '$dir'..."
                 if chown -R node:node "$dir"; then
-                    echo "Successfully updated permissions for '$dir'."
+                    echo "Successfully updated permissions for '$dir' to node."
                 else
-                    echo "Error: Failed to update permissions for '$dir'."
+                    echo "Error: Failed to update permissions for '$dir' to node."
                 fi
             fi
         fi
@@ -47,6 +47,24 @@ if [ -n "$PUID" ] && [ -n "$PGID" ]; then
 else
     # Default mode: stay as root
     echo "Running in default (root) mode."
+    
+    # Reset permissions back to root if they were changed previously
+    DEFAULT_DIRS="config data plugins public/scripts/extensions/third-party"
+    for dir in $DEFAULT_DIRS; do
+        if [ -d "$dir" ]; then
+            DIR_UID=$(stat -c '%u' "$dir")
+            # If the directory is NOT owned by root (UID 0), reset it
+            if [ "$DIR_UID" != "0" ]; then
+                echo "Adjusting permissions for '$dir'..."
+                if chown -R root:root "$dir"; then
+                    echo "Successfully updated permissions for '$dir' to root."
+                else
+                    echo "Error: Failed to update permissions for '$dir' to root."
+                fi
+            fi
+        fi
+    done
+
     EXEC_PREFIX=""
 fi
 
