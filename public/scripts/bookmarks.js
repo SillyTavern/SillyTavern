@@ -102,7 +102,7 @@ async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
         return null;
     }
 
-    return `${name} - ${humanizedDateTime()}`;
+    return name;
 }
 
 function getMainChatName() {
