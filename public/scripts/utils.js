@@ -683,21 +683,24 @@ export function isElementInViewport(el) {
  * @param {{ (name: string): boolean; }} exists Function to check if name exists.
  * @param {Object} [options] The options.
  * @param {((baseName: string, i: number) => string)|null} [options.nameBuilder=null] Function to build the name.
- *        Starts with index 0 (check original name). If not provided, uses "${baseName} (${i})".
+ *        Starts with the index provided by `startIndex` (default is 1). If not provided, uses "${baseName} (${i})".
  * @param {number} [options.maxTries=1000] The maximum number of tries to find a unique name. Default is 1000.
  * @param {number} [options.startIndex=1] The index to start with when building the name. Default is 1.
  *        When set to 0, the intention is to also check if the basename (without applied index) is free.
- * @returns {string} A unique name.
+ * @returns {string|null} A unique name. Null if no unique name could be find in `maxTries`.
  */
 export function getUniqueName(baseName, exists, { nameBuilder = null, maxTries = 1000, startIndex = 1 } = {}) {
     nameBuilder ??= (baseName, i) => i == 0 ? baseName : `${baseName} (${i})`;
     let i = startIndex;
-    let name = nameBuilder(baseName, i);
-    while (exists(name) && i <= maxTries) {
+    let name;
+    while (i < maxTries + startIndex) {
         name = nameBuilder(baseName, i);
+        if (!exists(name)) {
+            return name;
+        }
         i++;
     }
-    return name;
+    return null;
 }
 
 /**
