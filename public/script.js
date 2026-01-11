@@ -1856,8 +1856,6 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {ChatMessageExtra} extra - Contains the API and model details.
- * param {string} extra.api - The name of the API, used to determine which SVG to fetch.
- * param {string} extra.model - The model name, used to check for the substring "claude".
  */
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
@@ -2458,8 +2456,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
-    const tokenCount = mes.extra?.token_count ?? 0;
-    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    const tokenCount = mes.extra?.token_count;
+    const bookmarkLink = mes?.extra?.bookmark_link;
 
     newMessage.attr({
         'mesid': newMessageId,
@@ -2478,12 +2476,12 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     newMessage.find('.ch_name .name_text').text(mes.name);
     newMessage.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
     newMessage.find('.mesIDDisplay').text(`#${newMessageId}`);
-    tokenCount ?? newMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
-    mes.title ?? newMessage.attr('title', mes.title);
-    timerValue ?? newMessage.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    tokenCount && newMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+    mes.title && newMessage.attr('title', mes.title);
+    timerValue && newMessage.find('.mes_timer').attr('title', timerTitle).text(timerValue);
     bookmarkLink && updateBookmarkDisplay(newMessage);
 
-    if (typeof(mes.extra?.bias) === 'string') {
+    if (mes.extra?.bias) {
         const bias = messageFormatting(mes.extra?.bias, '', false, false, -1, {}, false);
         newMessage.find('.mes_bias').html(bias);
     }
@@ -2519,7 +2517,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     //if we have itemized messages, and the array isn't null..
-    if (mes.is_user === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+    if (!mes.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
         const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(newMessageId));
         if (itemizedPrompt) {
             newMessage.find('.mes_prompt').show();
