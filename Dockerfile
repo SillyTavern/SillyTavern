@@ -4,6 +4,7 @@ FROM node:lts-alpine3.23
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
+# For optional non-root-mode adding shadow (for usermod/groupmod) and su-exec (to drop privileges optionally)
 RUN apk add --no-cache gcompat tini git git-lfs su-exec shadow
 
 # Create app directory and set ownership

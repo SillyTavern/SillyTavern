@@ -1,63 +1,55 @@
 #!/bin/sh
 
-# Default to 1000 if PUID/PGID are not set
-TARGET_UID=${PUID:-1000}
-TARGET_GID=${PGID:-1000}
-
-# Get the current UID/GID of the 'node' user
-CURRENT_UID=$(id -u node)
-CURRENT_GID=$(id -g node)
-
-# If the requested PUID/PGID differs from the current 'node' user, update it.
-if [ "$CURRENT_UID" != "$TARGET_UID" ] || [ "$CURRENT_GID" != "$TARGET_GID" ]; then
-    echo "Updating 'node' user to UID:$TARGET_UID / GID:$TARGET_GID..."
-    # Change the group ID
-    groupmod -o -g "$TARGET_GID" node
-    # Change the user ID and primary group
-    usermod -o -u "$TARGET_UID" -g "$TARGET_GID" node
-fi
-
-# List of default directories that must be writable
-# This list matches the standard volume mounts in docker-compose.yml
-DEFAULT_DIRS="config data plugins public/scripts/extensions/third-party"
-
-for dir in $DEFAULT_DIRS; do
-    # 1. Create directory if it doesn't exist (Docker creates root-owned dirs otherwise)
-    if [ ! -d "$dir" ]; then
-        echo "Creating missing directory: $dir"
-        mkdir -p "$dir"
-        # Immediate chown for the new folder
-        chown node:node "$dir"
-    fi
-
-    # 2. Permissions check with skip if already owned by the target UID/GID
-    if [ -d "$dir" ]; then
-        DIR_UID=$(stat -c '%u' "$dir")
-        DIR_GID=$(stat -c '%g' "$dir")
-
-        if [ "$DIR_UID" != "$TARGET_UID" ] || [ "$DIR_GID" != "$TARGET_GID" ]; then
-            echo "Ownership mismatch detected for '$dir'. Adjusting permissions to UID:$TARGET_UID GID:$TARGET_GID..."
-
-            if chown -R node:node "$dir"; then
-                echo "Successfully updated permissions for '$dir'."
-            else
-                echo "Error: Failed to update permissions for '$dir'. Please check host volume permissions."
-            fi
-        fi
-    fi
-done
-
-# Handle config.yaml default
 if [ ! -e "config/config.yaml" ]; then
     echo "Resource not found, copying from defaults: config.yaml"
     cp -r "default/config.yaml" "config/config.yaml"
-    # Ensure the new file is owned by node
-    chown node:node "config/config.yaml"
 fi
 
-# Execute postinstall as the 'node' user
-# This populates config.yaml with missing values safely
-su-exec node:node npm run postinstall
+# Middle Ground Logic: Only fix permissions if PUID/PGID are set (non-root-mode)
+if [ -n "$PUID" ] && [ -n "$PGID" ]; then
+    TARGET_UID=$PUID
+    TARGET_GID=$PGID
+    echo "Non-root mode requested (UID:$TARGET_UID GID:$TARGET_GID)."
 
-# Start the server as the 'node' user
-exec su-exec node:node node server.js --listen "$@"
+    # Update the 'node' user
+    groupmod -o -g "$TARGET_GID" node
+    usermod -o -u "$TARGET_UID" -g "$TARGET_GID" node
+
+    # List of default directories to fix
+    DEFAULT_DIRS="config data plugins public/scripts/extensions/third-party"
+
+    for dir in $DEFAULT_DIRS; do
+        if [ ! -d "$dir" ]; then
+            mkdir -p "$dir"
+            chown node:node "$dir"
+        fi
+
+        if [ -d "$dir" ]; then
+            DIR_UID=$(stat -c '%u' "$dir")
+            DIR_GID=$(stat -c '%g' "$dir")
+
+            if [ "$DIR_UID" != "$TARGET_UID" ] || [ "$DIR_GID" != "$TARGET_GID" ]; then
+                echo "Adjusting permissions for '$dir'..."
+                if chown -R node:node "$dir"; then
+                    echo "Successfully updated permissions for '$dir'."
+                else
+                    echo "Error: Failed to update permissions for '$dir'."
+                fi
+            fi
+        fi
+    done
+    
+    # Final ownership for the config file created above
+    chown node:node "config/config.yaml"
+
+    # Set execution prefix to run as node user
+    EXEC_PREFIX="su-exec node:node"
+else
+    # Default mode: stay as root
+    echo "Running in default (root) mode."
+    EXEC_PREFIX=""
+fi
+
+# Execute commands using the determined prefix
+$EXEC_PREFIX npm run postinstall
+exec $EXEC_PREFIX node server.js --listen "$@"
