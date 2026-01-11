@@ -8,6 +8,7 @@ import {
     Popper,
     initLibraryShims,
     default as libs,
+    lodash,
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
@@ -1422,17 +1423,52 @@ export async function printMessages() {
         chatElement.append('<div id="show_more_messages">Show more messages</div>');
     }
 
-    for (let i = startIndex; i < chat.length; i++) {
-        const item = chat[i];
-        addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
-    }
+    await redisplayChat({ startIndex, fade: false });
 
-    chatElement.find('.mes').removeClass('last_mes');
-    chatElement.find('.mes').last().addClass('last_mes');
-    refreshSwipeButtons(false, false);
-    applyStylePins();
     scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
+}
+
+/**
+ * Visually updates all chat messages including and after index by removing them, then adding them.
+ * @param {object} [options] Options
+ * @param {ChatMessage[]} [options.targetChat=chat] All messages in chat before startIndex will remain unchanged.
+ * @param {Number} [options.startIndex=0] Everything including and after startIndex will be replaced.
+ * @param {Boolean} [options.fade=true] When false, the swipe chevrons will not fade in.
+ */
+export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = true } = {}) {
+    const messageElements = chatElement.find('.mes');
+    messageElements.removeClass('last_mes');
+
+    //Remove messages after index.
+    messageElements.filter(`.mes[mesid="${startIndex}"]`).nextAll('.mes').addBack().remove();
+
+    const t1 = performance.now();
+
+    const messages = targetChat.slice(startIndex);
+
+    if (messages.length > 0) {
+        const newMessageElements = messages.map( (message, offset) => {
+            const i = startIndex + offset;
+            const messageElement = addOneMessage(message, { scroll: false, forceId: i, showSwipes: false, insert: false });
+
+            return messageElement[0];
+        });
+
+        //The last_mes has been removed, add it to the new last message.
+        newMessageElements.at(-1).classList.add('last_mes');
+
+        //Append to chat in one DOM update.
+        chatElement.append(newMessageElements);
+
+        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length,  1) });
+    }
+
+    refreshSwipeButtons(false, fade);
+    applyStylePins();
+    updateEditArrowClasses();
+
+    console.info(`Rendered ${targetChat.length - startIndex} messages in ${((performance.now() - t1) / 1000).toFixed(3)} seconds.`);
 }
 
 export function scrollOnMediaLoad() {
@@ -2406,9 +2442,10 @@ export function addCopyToCodeBlocks(messageElement) {
  * @param {number} [options.insertBefore=null] Message ID to insert the new message before
  * @param {number} [options.forceId=null] Force the message ID
  * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
- * @returns {void}
+ * @param {boolean} [options.insert=true] Whether to insert the message into the DOM.
+ * @returns {JQuery<HTMLElement>} The newly added message element
  */
-export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
+export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true, insert = true } = {}) {
     let messageText = mes.mes;
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
@@ -2485,7 +2522,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     const renderedMessage = getMessageFromTemplate(params);
 
-    if (type !== 'swipe') {
+    if (type !== 'swipe' && insert) {
         if (!insertAfter && !insertBefore) {
             chatElement.append(renderedMessage);
         }
@@ -2501,7 +2538,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     // Callers push the new message to chat before calling addOneMessage
     const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
-    const newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
+    const newMessage = insert ? chatElement.find(`[mesid="${newMessageId}"]`) : renderedMessage;
     const isSmallSys = mes?.extra?.isSmallSys;
 
     if (isSmallSys === true) {
@@ -2529,25 +2566,24 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     });
 
     if (type === 'swipe') {
-        const swipeMessage = chatElement.find(`[mesid="${newMessageId}"]`);
-        swipeMessage.attr('swipeid', params.swipeId);
-        swipeMessage.find('.mes_text').html(messageText).attr('title', title);
-        swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
-        updateReasoningUI(swipeMessage);
-        appendMediaToMessage(mes, swipeMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
+        newMessage.attr('swipeid', params.swipeId);
+        newMessage.find('.mes_text').html(messageText).attr('title', title);
+        newMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
+        updateReasoningUI(newMessage);
+        appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
         if (power_user.timestamp_model_icon && params.extra?.api) {
-            insertSVGIcon(swipeMessage, params.extra);
+            insertSVGIcon(newMessage, params.extra);
         }
 
         if (mes.swipe_id == mes.swipes.length - 1) {
-            swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
-            swipeMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
+            newMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
+            newMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
         } else {
-            swipeMessage.find('.mes_timer').empty();
-            swipeMessage.find('.tokenCounterDisplay').empty();
+            newMessage.find('.mes_timer').empty();
+            newMessage.find('.tokenCounterDisplay').empty();
         }
     } else {
-        chatElement.find(`[mesid="${newMessageId}"] .mes_text`).append(messageText);
+        newMessage.find('.mes_text').append(messageText);
         appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
     }
 
@@ -2555,7 +2591,12 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     // Set the swipes counter for all non-user messages.
     if (!params.isUser) {
-        updateSwipeCounter(newMessageId);
+        updateSwipeCounter(newMessageId, { messageElement: newMessage });
+    }
+
+    // The caller should handle the rest after adding a message to DOM.
+    if (!insert) {
+        return newMessage;
     }
 
     //last_mes should always be updated.
@@ -2572,6 +2613,8 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
     updateEditArrowClasses();
+
+    return newMessage;
 }
 
 /**
@@ -9620,23 +9663,6 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
- * Visually updates all chat messages including andd after index by removing them, then adding them.
- * @param {ChatMessage[]} chat All messages in chat before index will remain unchanged.
- * @param {Number} index The last unchanged messageId.
- */
-export async function redisplayChat(chat, index) {
-    //Remove messages after index.
-    chatElement.children(`.mes[mesid="${index}"]`).nextAll('.mes').addBack().remove();
-
-    //Skip to index, then add extra messages.
-    for (let i = index; i <= chat.length - 1; i++) {
-        //addOneMessage will update last_mes.
-        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
-    }
-    refreshSwipeButtons();
-}
-
-/**
  * Formats a counter for a swipe view.
  * @param {number} current The current number of items.
  * @param {number} total The total number of items.
@@ -9790,7 +9816,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId);
+                await redisplayChat({ startIndex: mesId });
             }
             else {
                 await Popup.show.confirm(
