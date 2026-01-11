@@ -82,18 +82,21 @@ async function getExistingChatNames() {
 }
 
 async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
-    const chatNames = await getExistingChatNames();
+    const mainChatName = (getCurrentChatDetails()).sessionName;
 
-    const body = await renderTemplateAsync('createCheckpoint', { isReplace: isReplace });
-    let name = forceName ?? await Popup.show.input('Create Checkpoint', body);
+    function buildCheckpointName(name, i) {
+        // Strip off existing suffixes, then build new name
+        name = name.replace(new RegExp(` - ${bookmarkNameToken}\\d+$`), '');
+        return `${name} - ${bookmarkNameToken}${i}`;
+    }
+    const existingChats = await getExistingChatNames();
+    const suggestedName = getUniqueName(mainChatName, (x) => existingChats.includes(x), { nameBuilder: buildCheckpointName });
+
+    const body = await renderTemplateAsync('createCheckpoint', { isReplace: isReplace, suggestedName: suggestedName });
+    let name = forceName ?? await Popup.show.input('Create Checkpoint', body, suggestedName);
     // Special handling for confirmed empty input (=> auto-generate name)
     if (name === '') {
-        for (let i = chatNames.length; i < 1000; i++) {
-            name = bookmarkNameToken + i;
-            if (!chatNames.includes(name)) {
-                break;
-            }
-        }
+        name = suggestedName;
     }
     if (!name) {
         return null;
