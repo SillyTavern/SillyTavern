@@ -2454,7 +2454,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         //This keeps listeners intact.
         newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
     } else {
-        newMessage = insert ? chatElement.find(`[mesid="${newMessageId}"]`) : messageTemplate.clone();
+        newMessage = messageTemplate.clone();
     }
 
     const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
