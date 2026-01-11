@@ -499,13 +499,13 @@ export const VariableShorthandDefinitions = new Map([
         type: VariableShorthandType.LOCAL,
         name: 'Local Variable',
         description: 'Access or modify a local variable (scoped to current chat).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)'],
     }],
     [VariableShorthandType.GLOBAL, {
         type: VariableShorthandType.GLOBAL,
         name: 'Global Variable',
         description: 'Access or modify a global variable (shared across all chats).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)'],
     }],
 ]);
 
@@ -626,6 +626,12 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}counter++}} - Increment`,
             `{{${prefix}counter--}} - Decrement`,
             `{{${prefix}myvar += text}} - Append/add`,
+            `{{${prefix}score -= 5}} - Subtract`,
+            `{{${prefix}myvar || default}} - Get with fallback if falsy`,
+            `{{${prefix}myvar ?? default}} - Get with fallback if undefined`,
+            `{{${prefix}myvar ||= value}} - Set if falsy, get value`,
+            `{{${prefix}myvar ??= value}} - Set if undefined, get value`,
+            `{{${prefix}myvar == test}} - Compare (returns true/false)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -796,6 +802,12 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}${this.#varName}++}} - Increment`,
             `{{${prefix}${this.#varName}--}} - Decrement`,
             `{{${prefix}${this.#varName} += text}} - Append/add`,
+            `{{${prefix}${this.#varName} -= 5}} - Subtract`,
+            `{{${prefix}${this.#varName} || default}} - Get with fallback if falsy`,
+            `{{${prefix}${this.#varName} ?? default}} - Get with fallback if undefined`,
+            `{{${prefix}${this.#varName} ||= value}} - Set if falsy, get value`,
+            `{{${prefix}${this.#varName} ??= value}} - Set if undefined, get value`,
+            `{{${prefix}${this.#varName} == test}} - Compare (returns true/false)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -836,6 +848,42 @@ export const VariableOperatorDefinitions = new Map([
         symbol: '+=',
         name: 'Add',
         description: 'Add to the variable (numeric addition or string concatenation).',
+        needsValue: true,
+    }],
+    ['-=', {
+        symbol: '-=',
+        name: 'Subtract',
+        description: 'Subtract a numeric value from the variable.',
+        needsValue: true,
+    }],
+    ['||', {
+        symbol: '||',
+        name: 'Logical Or',
+        description: 'Return the fallback value if the variable is falsy, otherwise return the variable value.',
+        needsValue: true,
+    }],
+    ['??', {
+        symbol: '??',
+        name: 'Nullish Coalescing',
+        description: 'Return the fallback value only if the variable does not exist, otherwise return the variable value (even if falsy).',
+        needsValue: true,
+    }],
+    ['||=', {
+        symbol: '||=',
+        name: 'Logical Or Assign',
+        description: 'If the variable is falsy, set it to the value and return it; otherwise return the current value.',
+        needsValue: true,
+    }],
+    ['??=', {
+        symbol: '??=',
+        name: 'Nullish Coalescing Assign',
+        description: 'If the variable does not exist, set it to the value and return it; otherwise return the current value.',
+        needsValue: true,
+    }],
+    ['==', {
+        symbol: '==',
+        name: 'Equals',
+        description: 'Compare the variable value to another value. Returns "true" or "false".',
         needsValue: true,
     }],
 ]);
@@ -1131,7 +1179,8 @@ export function parseMacroContext(macroText, cursorOffset) {
             i++;
         }
 
-        // Check for operators: ++, --, +=, =
+        // Check for operators: ++, --, +=, -=, ||=, ??=, ||, ??, ==, =
+        // Order matters: longer operators must be checked before shorter ones
         // Also track partial operator prefixes for autocomplete
         const operatorText = macroText.slice(i);
         let hasInvalidTrailingChars = false;
@@ -1143,13 +1192,31 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (operatorText.startsWith('--')) {
             variableOperator = '--';
             i += 2;
+        } else if (operatorText.startsWith('||=')) {
+            variableOperator = '||=';
+            i += 3;
+        } else if (operatorText.startsWith('??=')) {
+            variableOperator = '??=';
+            i += 3;
+        } else if (operatorText.startsWith('||')) {
+            variableOperator = '||';
+            i += 2;
+        } else if (operatorText.startsWith('??')) {
+            variableOperator = '??';
+            i += 2;
         } else if (operatorText.startsWith('+=')) {
             variableOperator = '+=';
+            i += 2;
+        } else if (operatorText.startsWith('-=')) {
+            variableOperator = '-=';
+            i += 2;
+        } else if (operatorText.startsWith('==')) {
+            variableOperator = '==';
             i += 2;
         } else if (operatorText.startsWith('=')) {
             variableOperator = '=';
             i += 1;
-        } else if (operatorText.startsWith('+') || operatorText.startsWith('-')) {
+        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?')) {
             // Partial operator prefix - user is typing an operator
             partialOperator = operatorText[0];
         } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
@@ -1159,8 +1226,12 @@ export function parseMacroContext(macroText, cursorOffset) {
             invalidTrailingChars = operatorText.trim();
         }
 
-        // If operator requires a value (= or +=), parse the value
-        if (variableOperator === '=' || variableOperator === '+=') {
+        // Check if operator requires a value
+        const operatorDef = variableOperator ? VariableOperatorDefinitions.get(variableOperator) : null;
+        const operatorNeedsValue = operatorDef?.needsValue ?? false;
+
+        // If operator requires a value, parse the value
+        if (operatorNeedsValue) {
             // Skip whitespace after operator
             while (i < macroText.length && /\s/.test(macroText[i])) {
                 i++;
@@ -1178,9 +1249,9 @@ export function parseMacroContext(macroText, cursorOffset) {
             isTypingVariableName = true;
         } else if (!variableOperator && !hasInvalidTrailingChars) {
             // Cursor is after variable name but no operator yet (and no invalid chars)
-            // This includes partial operator prefixes like '+' or '-'
+            // This includes partial operator prefixes like '+', '-', '|', '?'
             isTypingOperator = true;
-        } else if (variableOperator === '=' || variableOperator === '+=') {
+        } else if (operatorNeedsValue) {
             // Operator that requires value - cursor is in value area
             isTypingValue = true;
         }

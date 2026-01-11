@@ -2803,6 +2803,73 @@ test.describe('MacroEngine', () => {
         });
     });
 
+    test.describe('Variable Shorthand Edge Cases', () => {
+        // Operators requiring a value but value is empty
+        test('should handle = operator with empty value', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar = }}[{{.myvar}}]', { local: {} });
+            // Empty value after = should set the variable to empty string
+            expect(output).toBe('[]');
+        });
+
+        test('should handle += operator with empty value', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar += }}[{{.myvar}}]', { local: { myvar: 'existing' } });
+            // Empty value after += should add nothing
+            expect(output).toBe('[existing]');
+        });
+
+        test('should handle -= operator with empty value (non-numeric)', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar -= }}[{{.myvar}}]', { local: { myvar: '10' } });
+            // Empty value is NaN, so subtraction fails silently and returns empty
+            expect(output).toBe('[10]');
+        });
+
+        test('should handle || operator with empty fallback', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '[{{.myvar || }}]', { local: { myvar: '' } });
+            // Falsy myvar, empty fallback - returns empty string
+            expect(output).toBe('[]');
+        });
+
+        test('should handle ?? operator with empty fallback', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '[{{.myvar ?? }}]', { local: {} });
+            // Undefined myvar, empty fallback - returns empty string
+            expect(output).toBe('[]');
+        });
+
+        test('should handle == operator with empty comparison value', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar == }}', { local: { myvar: '' } });
+            // Empty var equals empty value - should be true
+            expect(output).toBe('true');
+        });
+
+        test('should handle == operator comparing non-empty to empty', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar == }}', { local: { myvar: 'value' } });
+            // Non-empty var vs empty value - should be false
+            expect(output).toBe('false');
+        });
+
+        // Operators that don't take values - should return raw if invalid
+        test('should return raw with trailing content after ++ operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar++5}}', { local: { myvar: '5' } });
+            expect(output).toBe('{{.myvar++5}}');
+        });
+
+        test('should return empty with trailing content after -- operator', async ({ page }) => {
+            // This is a weird case. The "--" operator does not accept value expression, but writing it like this,
+            // makes the parser treat "myvar--5" as the variable identifier, as dashes and numbers are allowed.
+            // This is intended, so this resolving to null, as the variable does not exist, is also intended.
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar--5}}', { local: { myvar: '10' } });
+            expect(output).toBe('');
+        });
+
+        test('should return raw with trailing content after -- operator separated by spaces', async ({ page }) => {
+            // This is a weird case. The "--" operator does not accept value expression, but writing it like this,
+            // makes the parser treat "myvar--5" as the variable identifier, as dashes and numbers are allowed.
+            // This is intended, so this resolving to null, as the variable does not exist, is also intended.
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar -- 5}}', { local: { myvar: '10' } });
+            expect(output).toBe('{{.myvar -- 5}}');
+        });
+    });
+
     test.describe('Variable Shorthand in {{if}} Macro', () => {
         // {{if .myvar}}...{{/if}} - truthy local variable
         test('should evaluate truthy local variable in if condition', async ({ page }) => {
