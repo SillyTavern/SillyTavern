@@ -274,7 +274,7 @@ export function registerVariableMacros() {
         description: 'Checks if a global variable exists.',
         returns: '"true" if the variable exists, "false" otherwise.',
         returnType: MacroValueType.STRING,
-        exampleUsage: ['{{hasglobalvar::myvar}}', '{{hasglobalvar some-global-var'],
+        exampleUsage: ['{{hasglobalvar::myvar}}', '{{hasglobalvar some-global-var}}'],
         handler: ({ unnamedArgs: [name] }) => {
             return ctx.variables.global.has(name) ? 'true' : 'false';
         },
