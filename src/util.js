@@ -582,13 +582,16 @@ export function clientRelativePath(root, inputPath) {
  * Returns a name that is unique among the names that exist.
  * @param {string} name The name to check.
  * @param {{ (name: string): boolean; }} exists Function to check if name exists.
+ * @param {Object} [options] The options.
+ * @param {((baseName: string, i: number) => string)|null} [options.nameBuilder=null] Function to build the name. If not provided, uses "${baseName} (${i})".
  * @returns {string} A unique name.
  */
-export function getUniqueName(name, exists) {
+export function getUniqueName(name, exists, { nameBuilder = null } = {}) {
     let i = 1;
     let baseName = name;
+    nameBuilder ??= (baseName, i) => `${baseName} (${i})`;
     while (exists(name)) {
-        name = `${baseName} (${i})`;
+        name = nameBuilder(baseName, i);
         i++;
     }
     return name;

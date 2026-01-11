@@ -681,13 +681,17 @@ export function isElementInViewport(el) {
  * Returns a name that is unique among the names that exist.
  * @param {string} name The name to check.
  * @param {{ (name: string): boolean; }} exists Function to check if name exists.
+ * @param {Object} [options] The options.
+ * @param {((baseName: string, i: number) => string)|null} [options.nameBuilder=null] Function to build the name. If not provided, uses "${baseName} (${i})".
+ * @param {number} [options.maxTries=1000] The maximum number of tries to find a unique name. Default is 1000.
  * @returns {string} A unique name.
  */
-export function getUniqueName(name, exists) {
+export function getUniqueName(name, exists, { nameBuilder = null, maxTries = 1000 } = {}) {
     let i = 1;
     let baseName = name;
-    while (exists(name)) {
-        name = `${baseName} (${i})`;
+    nameBuilder ??= (baseName, i) => `${baseName} (${i})`;
+    while (exists(name) && i <= maxTries) {
+        name = nameBuilder(baseName, i);
         i++;
     }
     return name;
