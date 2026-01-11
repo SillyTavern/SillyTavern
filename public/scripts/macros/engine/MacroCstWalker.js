@@ -3,9 +3,12 @@
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
 /** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
 
+import { logMacroInternalError, logMacroRuntimeWarning } from './MacroDiagnostics.js';
+import { MacroEngine } from './MacroEngine.js';
 import { parseFlags, createEmptyFlags, MacroFlagType } from './MacroFlags.js';
 import { MacroParser } from './MacroParser.js';
 import { MacroRegistry } from './MacroRegistry.js';
+import { isFalseBoolean } from '/scripts/utils.js';
 
 /**
  * @typedef {Object} MacroCall
@@ -493,7 +496,10 @@ class MacroCstWalker {
     }
 
     /**
-     * Evaluates a variable expression node and routes it to the appropriate variable macro.
+     * Evaluates a variable expression node using direct variable API calls.
+     * Supports operators: get, set (=), add (+=), sub (-=), inc (++), dec (--),
+     * logical or (||), nullish coalescing (??), logical or assign (||=),
+     * nullish coalescing assign (??=), and equality comparison (==).
      *
      * @param {CstNode} macroNode - The parent macro node.
      * @param {CstNode} variableExprNode - The variableExpr CST node.
@@ -501,9 +507,6 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateVariableExpr(macroNode, variableExprNode, context) {
-        const { text, contextOffset, env, resolveMacro } = context;
-
-        const children = macroNode.children || {};
         const varChildren = variableExprNode.children || {};
 
         // Extract scope (. for local, $ for global)
@@ -528,60 +531,152 @@ class MacroCstWalker {
 
             if (operatorToken) {
                 const operatorImage = operatorToken.image;
-                if (operatorImage === '++') {
-                    operation = 'inc';
-                } else if (operatorImage === '--') {
-                    operation = 'dec';
-                } else if (operatorImage === '=') {
-                    operation = 'set';
-                    value = this.#evaluateVariableValue(operatorChildren, context);
-                } else if (operatorImage === '+=') {
-                    operation = 'add';
-                    value = this.#evaluateVariableValue(operatorChildren, context);
+                switch (operatorImage) {
+                    case '++':
+                        operation = 'inc';
+                        break;
+                    case '--':
+                        operation = 'dec';
+                        break;
+                    case '=':
+                        operation = 'set';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '+=':
+                        operation = 'add';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '-=':
+                        operation = 'sub';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '||':
+                        operation = 'logicalOr';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '??':
+                        operation = 'nullishCoalescing';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '||=':
+                        operation = 'logicalOrAssign';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '??=':
+                        operation = 'nullishCoalescingAssign';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    case '==':
+                        operation = 'equals';
+                        value = this.#evaluateVariableValue(operatorChildren, context);
+                        break;
+                    default:
+                        logMacroInternalError({ message: `Lexer found macro operator that is not implemented for variable shorthand expressions in macro node '${macroNode.name}'.` });
+                        break;
                 }
             }
         }
 
-        // Map operation to macro name
-        const macroNameMap = {
-            get: isGlobal ? 'getglobalvar' : 'getvar',
-            set: isGlobal ? 'setglobalvar' : 'setvar',
-            inc: isGlobal ? 'incglobalvar' : 'incvar',
-            dec: isGlobal ? 'decglobalvar' : 'decvar',
-            add: isGlobal ? 'addglobalvar' : 'addvar',
-        };
+        // Execute the operation using direct variable API calls
+        return this.#executeVariableOperation(varName, isGlobal, operation, value);
+    }
 
-        const targetMacroName = macroNameMap[operation];
+    /**
+     * Executes a variable operation using the SillyTavern context API.
+     *
+     * @param {string} varName - The variable name.
+     * @param {boolean} isGlobal - Whether this is a global ($) or local (.) variable.
+     * @param {string} operation - The operation to perform.
+     * @param {string | null} value - The value for operations that require one.
+     * @returns {string} The result of the operation.
+     */
+    #executeVariableOperation(varName, isGlobal, operation, value) {
+        const ctx = SillyTavern.getContext();
+        const vars = isGlobal ? ctx.variables.global : ctx.variables.local;
 
-        // Build args array based on operation
-        const args = [varName];
-        if (value !== null) {
-            args.push(value);
+        /**
+        * Normalizes macro results into a string.
+        * @param {any} value
+        * @returns {string}
+        */
+        const normalize = MacroEngine.normalizeMacroResult.bind(MacroEngine);
+
+        /**
+         * Checks if a value is falsy (empty string, 0, '0', false, 'false', null, undefined).
+         * @param {any} val
+         * @returns {boolean}
+         */
+        const isFalsy = (val) => !val || isFalseBoolean(val);
+
+        switch (operation) {
+            case 'get':
+                return normalize(vars.get(varName));
+
+            case 'set':
+                vars.set(varName, value);
+                return '';
+
+            case 'inc':
+                return normalize(vars.inc(varName));
+
+            case 'dec':
+                return normalize(vars.dec(varName));
+
+            case 'add':
+                vars.add(varName, value);
+                return '';
+
+            case 'sub': {
+                // Subtract by adding the negative value
+                const numValue = Number(value);
+                if (!isNaN(numValue)) vars.add(varName, -numValue);
+                else logMacroRuntimeWarning({ message: `Variable shorthand "-=" operator requires a numeric value, got: "${value}"` });
+                return '';
+            }
+
+            case 'logicalOr': {
+                // Returns default value if variable is falsy, otherwise returns variable value
+                const currentValue = vars.get(varName);
+                return isFalsy(currentValue) ? normalize(value) : normalize(currentValue);
+            }
+
+            case 'nullishCoalescing': {
+                // Returns default value only if variable doesn't exist, otherwise returns variable value (even if falsy)
+                const exists = vars.has(varName);
+                return exists ? normalize(vars.get(varName)) : normalize(value);
+            }
+
+            case 'logicalOrAssign': {
+                // If variable is falsy, set it to value and return value; otherwise return current value
+                const currentValue = vars.get(varName);
+                if (isFalsy(currentValue)) {
+                    vars.set(varName, value);
+                    return normalize(value);
+                }
+                return normalize(currentValue);
+            }
+
+            case 'nullishCoalescingAssign': {
+                // If variable doesn't exist, set it to value and return value; otherwise return current value
+                const exists = vars.has(varName);
+                if (!exists) {
+                    vars.set(varName, value);
+                    return normalize(value);
+                }
+                return normalize(vars.get(varName));
+            }
+
+            case 'equals': {
+                // String equality comparison
+                const currentValue = normalize(vars.get(varName));
+                const compareValue = normalize(value);
+                return currentValue === compareValue ? 'true' : 'false';
+            }
+
+            default:
+                logMacroRuntimeWarning({ message: `Unknown variable shorthand operation: "${operation}"` });
+                return '';
         }
-
-        const range = this.#getMacroRange(macroNode);
-
-        /** @type {MacroCall} */
-        const call = {
-            name: targetMacroName,
-            args,
-            flags: createEmptyFlags(),
-            isScoped: false,
-            isVariableShorthand: true,
-            rawInner: text.slice(
-                (/** @type {IToken|undefined} */ (children['Macro.Start']?.[0])?.endOffset ?? range.startOffset) + 1,
-                (/** @type {IToken|undefined} */ (children['Macro.End']?.[0])?.startOffset ?? range.endOffset + 1) - 1,
-            ),
-            rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
-            rawArgs: args,
-            range,
-            globalOffset: contextOffset + range.startOffset,
-            cstNode: macroNode,
-            env,
-        };
-
-        const result = resolveMacro(call);
-        return typeof result === 'string' ? result : String(result ?? '');
     }
 
     /**

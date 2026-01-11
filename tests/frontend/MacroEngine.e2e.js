@@ -2559,6 +2559,166 @@ test.describe('MacroEngine', () => {
             // setvar returns '', incvar returns '6', addvar returns '', getvar returns '16'
             expect(output).toBe('616');
         });
+
+        // {{.myvar -= 5}} - subtract from local variable
+        test('should subtract from local variable with -= shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar -= 3}}Then: {{.myvar}}', { local: { myvar: '10' } });
+            // subvar returns '', then "Then: ", then getvar returns "7"
+            expect(output).toBe('Then: 7');
+        });
+
+        // {{$myvar -= 5}} - subtract from global variable
+        test('should subtract from global variable with -= shorthand', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar -= 5}}{{$myvar}}', { global: { myvar: '20' } });
+            expect(output).toBe('15');
+        });
+
+        // {{.myvar || default}} - returns default when falsy
+        test('should return default value with || when variable is falsy (empty)', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar || fallback}}', { local: { myvar: '' } });
+            expect(output).toBe('fallback');
+        });
+
+        test('should return default value with || when variable is falsy (zero)', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar || fallback}}', { local: { myvar: '0' } });
+            expect(output).toBe('fallback');
+        });
+
+        test('should return variable value with || when truthy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar || fallback}}', { local: { myvar: 'existing' } });
+            expect(output).toBe('existing');
+        });
+
+        test('should return default value with || when variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.nonexistent || default}}', { local: {} });
+            expect(output).toBe('default');
+        });
+
+        // {{.myvar ?? default}} - returns default only when undefined
+        test('should return default value with ?? when variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ?? fallback}}', { local: {} });
+            expect(output).toBe('fallback');
+        });
+
+        test('should return empty string with ?? when variable exists but is empty', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '[{{.myvar ?? fallback}}]', { local: { myvar: '' } });
+            expect(output).toBe('[]');
+        });
+
+        test('should return zero with ?? when variable exists and is zero', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ?? fallback}}', { local: { myvar: '0' } });
+            expect(output).toBe('0');
+        });
+
+        test('should return variable value with ?? when it exists', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ?? fallback}}', { local: { myvar: 'value' } });
+            expect(output).toBe('value');
+        });
+
+        // {{.myvar ||= default}} - sets and returns default when falsy
+        test('should set and return default with ||= when variable is falsy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ||= newval}}{{.myvar}}', { local: { myvar: '' } });
+            // ||= returns 'newval', then getvar also returns 'newval'
+            expect(output).toBe('newvalnewval');
+        });
+
+        test('should not set and return current with ||= when variable is truthy', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ||= newval}}{{.myvar}}', { local: { myvar: 'existing' } });
+            // ||= returns 'existing', then getvar returns 'existing'
+            expect(output).toBe('existingexisting');
+        });
+
+        test('should set and return default with ||= when variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ||= created}}{{.myvar}}', { local: {} });
+            expect(output).toBe('createdcreated');
+        });
+
+        // {{.myvar ??= default}} - sets and returns default only when undefined
+        test('should set and return default with ??= when variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ??= created}}{{.myvar}}', { local: {} });
+            expect(output).toBe('createdcreated');
+        });
+
+        test('should not set and return current with ??= when variable exists but is empty', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '[{{.myvar ??= newval}}][{{.myvar}}]', { local: { myvar: '' } });
+            // ??= returns '' (current value), then getvar returns '' (unchanged)
+            expect(output).toBe('[][]');
+        });
+
+        test('should not set and return current with ??= when variable exists and is zero', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ??= newval}}{{.myvar}}', { local: { myvar: '0' } });
+            // ??= returns '0', then getvar returns '0'
+            expect(output).toBe('00');
+        });
+
+        // {{.myvar == value}} - equality comparison
+        test('should return true when variable equals value with ==', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar == hello}}', { local: { myvar: 'hello' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when variable does not equal value with ==', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar == world}}', { local: { myvar: 'hello' } });
+            expect(output).toBe('false');
+        });
+
+        test('should compare empty variable correctly with ==', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ==}}', { local: { myvar: '' } });
+            expect(output).toBe('true');
+        });
+
+        test('should compare numeric value correctly with ==', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar == 42}}', { local: { myvar: '42' } });
+            expect(output).toBe('true');
+        });
+
+        // Global variable versions of new operators
+        test('should use || with global variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar || globaldefault}}', { global: { myvar: '' } });
+            expect(output).toBe('globaldefault');
+        });
+
+        test('should use ?? with global variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar ?? globaldefault}}', { global: {} });
+            expect(output).toBe('globaldefault');
+        });
+
+        test('should use ||= with global variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar ||= gset}}{{$myvar}}', { global: { myvar: '' } });
+            expect(output).toBe('gsetgset');
+        });
+
+        test('should use ??= with global variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar ??= gcreated}}{{$myvar}}', { global: {} });
+            expect(output).toBe('gcreatedgcreated');
+        });
+
+        test('should use == with global variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{$myvar == test}}', { global: { myvar: 'test' } });
+            expect(output).toBe('true');
+        });
+
+        // Nested macro in fallback value
+        test('should support nested macro in || fallback value', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar || Hello {{user}}}}', { local: {} });
+            expect(output).toBe('Hello User');
+        });
+
+        test('should support nested macro in ?? fallback value', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar ?? Hello {{user}}}}', { local: {} });
+            expect(output).toBe('Hello User');
+        });
+
+        // Whitespace handling with new operators
+        test('should handle whitespace with || operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{ .myvar || spaced }}', { local: {} });
+            expect(output).toBe('spaced');
+        });
+
+        test('should handle whitespace with ?? operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{ .myvar ?? spaced }}', { local: {} });
+            expect(output).toBe('spaced');
+        });
     });
 
     test.describe('Variable Shorthand in {{if}} Macro', () => {
@@ -2812,6 +2972,53 @@ test.describe('MacroEngine', () => {
         test('should correctly find outer else with multiple inline ifs', async ({ page }) => {
             const output = await evaluateWithEngine(page, '{{if 0}}{{if::1::a}}{{if::1::b}}{{else}}found{{/if}}');
             expect(output).toBe('found');
+        });
+    });
+
+    test.describe('Variable Macros (hasvar, deletevar)', () => {
+        // {{hasvar::name}} - check if local variable exists
+        test('should return true when local variable exists', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasvar::myvar}}', { local: { myvar: 'value' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when local variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasvar::nonexistent}}', { local: {} });
+            expect(output).toBe('false');
+        });
+
+        test('should return true when local variable exists but is empty', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasvar::myvar}}', { local: { myvar: '' } });
+            expect(output).toBe('true');
+        });
+
+        // {{hasglobalvar::name}} - check if global variable exists
+        test('should return true when global variable exists', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasglobalvar::myvar}}', { global: { myvar: 'value' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when global variable does not exist', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasglobalvar::nonexistent}}', { global: {} });
+            expect(output).toBe('false');
+        });
+
+        // {{deletevar::name}} - delete local variable
+        test('should delete local variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasvar::myvar}}{{deletevar::myvar}}{{hasvar::myvar}}', { local: { myvar: 'value' } });
+            expect(output).toBe('truefalse');
+        });
+
+        // {{deleteglobalvar::name}} - delete global variable
+        test('should delete global variable', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{hasglobalvar::myvar}}{{deleteglobalvar::myvar}}{{hasglobalvar::myvar}}', { global: { myvar: 'value' } });
+            expect(output).toBe('truefalse');
+        });
+
+        // Combining hasvar with if
+        test('should use hasvar in if condition', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{if {{hasvar::myvar}} == true}}exists{{else}}missing{{/if}}', { local: { myvar: '' } });
+            expect(output).toBe('exists');
         });
     });
 });
