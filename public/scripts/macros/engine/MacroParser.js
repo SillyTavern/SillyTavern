@@ -92,7 +92,7 @@ class MacroParser extends CstParser {
             $.OPTION2(() => $.SUBRULE($.variableOperator));
         });
 
-        // Variable operator: ++, --, = value, += value, -= value, ||, ??, ||=, ??=, ==
+        // Variable operator: ++, --, = value, += value, -= value, ||, ??, ||=, ??=, ==, !=
         $.variableOperator = $.RULE('variableOperator', () => {
             $.OR4([
                 { ALT: () => $.CONSUME(Tokens.Var.Operators.Increment, { LABEL: 'Var.operator' }) },
@@ -135,14 +135,20 @@ class MacroParser extends CstParser {
                 },
                 {
                     ALT: () => {
-                        $.CONSUME(Tokens.Var.Operators.PlusEquals, { LABEL: 'Var.operator' });
+                        $.CONSUME(Tokens.Var.Operators.NotEquals, { LABEL: 'Var.operator' });
                         $.SUBRULE7($.variableValue, { LABEL: 'Var.value' });
                     },
                 },
                 {
                     ALT: () => {
-                        $.CONSUME(Tokens.Var.Operators.Equals, { LABEL: 'Var.operator' });
+                        $.CONSUME(Tokens.Var.Operators.PlusEquals, { LABEL: 'Var.operator' });
                         $.SUBRULE8($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.Equals, { LABEL: 'Var.operator' });
+                        $.SUBRULE9($.variableValue, { LABEL: 'Var.value' });
                     },
                 },
             ]);

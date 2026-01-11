@@ -130,6 +130,8 @@ const Tokens = Object.freeze({
             MinusEquals: createToken({ name: 'Var.MinusEquals', pattern: /-=/ }),
             /** Equality comparison operator (`==`) - compares variable to value */
             DoubleEquals: createToken({ name: 'Var.DoubleEquals', pattern: /==/ }),
+            /** Not equals comparison operator (`!=`) - compares variable to value, returns inverted result */
+            NotEquals: createToken({ name: 'Var.NotEquals', pattern: /!=/ }),
             /** Add/append operator (`+=`) - must come before Equals to avoid conflict */
             PlusEquals: createToken({ name: 'Var.PlusEquals', pattern: /\+=/ }),
             /** Set operator (`=`) */
@@ -255,6 +257,7 @@ const Def = {
             enter(Tokens.Var.Operators.LogicalOr, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.MinusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.DoubleEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.NotEquals, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.PlusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.Equals, modes.var_value, { andExits: modes.var_after_identifier }),
             // If we see the end, exit

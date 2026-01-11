@@ -2672,6 +2672,32 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('true');
         });
 
+        // {{.myvar != value}} - inequality comparison
+        test('should return true when variable does not equal value with !=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar != world}}', { local: { myvar: 'hello' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when variable equals value with !=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar != hello}}', { local: { myvar: 'hello' } });
+            expect(output).toBe('false');
+        });
+
+        test('should compare empty variable correctly with !=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar !=}}', { local: { myvar: '' } });
+            expect(output).toBe('false');
+        });
+
+        test('should compare non-empty to empty with !=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar != }}', { local: { myvar: 'value' } });
+            expect(output).toBe('true');
+        });
+
+        test('should compare numeric value correctly with !=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar != 99}}', { local: { myvar: '42' } });
+            expect(output).toBe('true');
+        });
+
         // Global variable versions of new operators
         test('should use || with global variable', async ({ page }) => {
             const output = await evaluateWithEngineAndVariables(page, '{{$myvar || globaldefault}}', { global: { myvar: '' } });

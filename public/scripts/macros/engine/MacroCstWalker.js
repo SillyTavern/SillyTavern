@@ -570,6 +570,10 @@ class MacroCstWalker {
                         operation = 'equals';
                         hasValueExpr = true;
                         break;
+                    case '!=':
+                        operation = 'notEquals';
+                        hasValueExpr = true;
+                        break;
                     default:
                         logMacroInternalError({ message: `Lexer found macro operator that is not implemented for variable shorthand expressions in macro node '${macroNode.name}'.` });
                         break;
@@ -701,6 +705,13 @@ class MacroCstWalker {
                 const currentValue = normalize(vars.get(varName));
                 const compareValue = normalize(lazyValue());
                 return currentValue === compareValue ? 'true' : 'false';
+            }
+
+            case 'notEquals': {
+                // String inequality comparison - value is always needed
+                const currentValue = normalize(vars.get(varName));
+                const compareValue = normalize(lazyValue());
+                return currentValue !== compareValue ? 'true' : 'false';
             }
 
             default:
