@@ -61,8 +61,7 @@ async function onboardingExperimentalMacroEngineUnsafe(feature = null) {
         <p>${t`Would you like to enable it now?`}</p>`);
     if (result == POPUP_RESULT.AFFIRMATIVE) {
         power_user.experimental_macro_engine = true;
-        $('#experimental_macro_engine').prop('checked', power_user.experimental_macro_engine);
-        saveSettingsDebounced();
+        $('#experimental_macro_engine').prop('checked', power_user.experimental_macro_engine).trigger('input');
     }
 
     // Only show this once
