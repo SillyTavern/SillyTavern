@@ -86,8 +86,8 @@ async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
 
     function buildCheckpointName(name, i) {
         // Strip off existing suffixes, then build new name
-        name = name.replace(new RegExp(` - ${bookmarkNameToken}\\d+$`), '');
-        return `${name} - ${bookmarkNameToken}${i}`;
+        const cleanName = name.replace(new RegExp(` - ${bookmarkNameToken}\\d+$`), '');
+        return `${cleanName} - ${bookmarkNameToken}${i}`;
     }
     const existingChats = await getExistingChatNames();
     const suggestedName = getUniqueName(mainChatName, (x) => existingChats.includes(x), { nameBuilder: buildCheckpointName });
@@ -179,11 +179,16 @@ export async function createBranch(mesId) {
 
     function buildBranchName(name, i) {
         // Strip off existing suffixes, then build new name
-        name = name.replace(/ - Branch #\d+$/, '');
-        return `${name} - Branch #${i}`;
+        const cleanName = name.replace(/ - Branch #\d+$/, '');
+        return `${cleanName} - Branch #${i}`;
     }
     const existingChats = await getExistingChatNames();
     const name = getUniqueName(mainChatName, (x) => existingChats.includes(x), { nameBuilder: buildBranchName });
+    if (!name) {
+        console.error('Could not generate a unique branch name.');
+        toastr.error('Could not generate a unique branch name.', 'Branch creation failed');
+        return;
+    }
 
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
