@@ -12,6 +12,7 @@ import {
     saveChatConditional,
     saveItemizedPrompts,
     setActiveGroup,
+    getCurrentChatDetails,
 } from '../script.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import {
@@ -170,9 +171,16 @@ export async function createBranch(mesId) {
     }
 
     const lastMes = chat[mesId];
-    const mainChat = selected_group ? groups?.find(x => x.id == selected_group)?.chat_id : characters[this_chid].chat;
-    const newMetadata = { main_chat: mainChat };
-    let name = `Branch #${mesId} - ${humanizedDateTime()}`;
+    const mainChatName = (getCurrentChatDetails()).sessionName;
+    const newMetadata = { main_chat: mainChatName };
+
+    function buildBranchName(name, i) {
+        // Strip off existing suffixes, then build new name
+        name = name.replace(/ - Branch #\d+$/, '');
+        return `${name} - Branch #${i}`;
+    }
+    const existingChats = await getExistingChatNames();
+    const name = getUniqueName(mainChatName, (x) => existingChats.includes(x), { nameBuilder: buildBranchName });
 
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
