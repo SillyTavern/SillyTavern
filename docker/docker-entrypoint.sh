@@ -29,7 +29,9 @@ if [ -n "$PUID" ] && [ -n "$PGID" ]; then
             DIR_GID=$(stat -c '%g' "$dir")
 
             if [ "$DIR_UID" != "$TARGET_UID" ] || [ "$DIR_GID" != "$TARGET_GID" ]; then
-                echo "Adjusting permissions for '$dir'..."
+                echo "Ownership mismatch detected for '$dir'."
+                echo "Adjusting permissions to UID:$TARGET_UID GID:$TARGET_GID."
+                echo "This may take a while for large libraries and slow devices. Please wait..."
                 if chown -R node:node "$dir"; then
                     echo "Successfully updated permissions for '$dir' to node."
                 else
@@ -55,7 +57,8 @@ else
             DIR_UID=$(stat -c '%u' "$dir")
             # If the directory is NOT owned by root (UID 0), reset it
             if [ "$DIR_UID" != "0" ]; then
-                echo "Adjusting permissions for '$dir'..."
+                echo "Ownership mismatch detected for '$dir'. Adjusting permissions to root."
+                echo "This may take a while for large libraries and slow devices. Please wait..."
                 if chown -R root:root "$dir"; then
                     echo "Successfully updated permissions for '$dir' to root."
                 else
