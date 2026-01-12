@@ -14,7 +14,7 @@ RUN chown node:node ${APP_HOME}
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
-# Bundle app source and sets ownership to user node
+# Bundle app source and sets ownership
 COPY --chown=node:node . ./
 
 RUN \
