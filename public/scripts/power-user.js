@@ -4017,7 +4017,7 @@ jQuery(() => {
         saveSettingsDebounced();
 
         eventSource.once(event_types.SETTINGS_UPDATED, function() {
-            toastr.info(
+            toastr.warning(
                 t`Click here to reload.`,
                 t`Toggling the Experimental Macro Engine requires a reload.`,
                 {
