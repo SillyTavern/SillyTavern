@@ -3,7 +3,6 @@
 /** @typedef {import('chevrotain').ILexingError} ILexingError */
 /** @typedef {import('chevrotain').IRecognitionException} IRecognitionException */
 
-import { saveSettingsDebounced } from '/script.js';
 import { t } from '/scripts/i18n.js';
 import { Popup, POPUP_RESULT } from '/scripts/popup.js';
 import { power_user } from '/scripts/power-user.js';
