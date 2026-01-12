@@ -11683,14 +11683,16 @@ jQuery(async function () {
         const oldScroll = chatElement[0].scrollTop;
         const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
-        clone.mes = $(this).closest('.mes').find('.edit_textarea').val().toString();
+        const this_edit_mes_element = $(this).closest('.mes');
+        clone.mes = this_edit_mes_element.find('.edit_textarea').val().toString();
 
         if (power_user.trim_spaces) {
             clone.mes = clone.mes.trim();
         }
 
         chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
-        addOneMessage(clone, { insertAfter: this_edit_mes_id });
+        const newMessageElement = addOneMessage(clone, { insert: false });
+        this_edit_mes_element.after(newMessageElement);
 
         updateViewMessageIds();
         await saveChatConditional();
