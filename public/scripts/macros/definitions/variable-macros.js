@@ -117,6 +117,7 @@ export function registerVariableMacros() {
 
     // {{hasvar::name}} -> returns 'true' or 'false'
     MacroRegistry.registerMacro('hasvar', {
+        aliases: [{ alias: 'varexists' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -136,6 +137,7 @@ export function registerVariableMacros() {
 
     // {{deletevar::name}} -> returns ''
     MacroRegistry.registerMacro('deletevar', {
+        aliases: [{ alias: 'flushvar' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -263,6 +265,7 @@ export function registerVariableMacros() {
 
     // {{hasglobalvar::name}} -> returns 'true' or 'false'
     MacroRegistry.registerMacro('hasglobalvar', {
+        aliases: [{ alias: 'globalvarexists' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -282,6 +285,7 @@ export function registerVariableMacros() {
 
     // {{deleteglobalvar::name}} -> returns ''
     MacroRegistry.registerMacro('deleteglobalvar', {
+        aliases: [{ alias: 'flushglobalvar' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
