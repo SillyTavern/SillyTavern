@@ -4,7 +4,7 @@ FROM node:lts-alpine3.23
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-# For optional non-root-mode adding shadow (for usermod/groupmod) and su-exec (to drop privileges optionally)
+# Added su-exec and shadow to support optional PUID/PGID user mapping
 RUN apk add --no-cache gcompat tini git git-lfs su-exec shadow
 
 # Create app directory and set ownership
@@ -14,7 +14,7 @@ RUN chown node:node ${APP_HOME}
 # Set NODE_ENV to production
 ENV NODE_ENV=production
 
-# Bundle app source and set ownership
+# Bundle app source and sets ownership to user node
 COPY --chown=node:node . ./
 
 RUN \
@@ -26,6 +26,8 @@ RUN \
   rm -f "config.yaml" || true && \
   ln -s "./config/config.yaml" "config.yaml" || true && \
   mkdir "config" || true
+# Set ownership
+RUN chown -R node:node config
 
 # Pre-compile public libraries
 RUN \
