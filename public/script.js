@@ -2406,7 +2406,7 @@ function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
     const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
 
     return messageFormatting(
-        message.extra.display_text ?? message.mes,
+        message.extra?.display_text ?? message.mes,
         message.name,
         message.is_system,
         message.is_user,
@@ -2421,17 +2421,21 @@ function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
  * @param {ChatMessage} mes Message object
  * @param {object} [options] Options
  * @param {string} [options.type='normal'] Message type
- * @param {number} [options.insertAfter=null] Message ID to insert the new message after
+ * @param {number} [options.insertAfter=undefined] Message ID to insert the new message after
  * @param {boolean} [options.scroll=true] Whether to scroll to the new message
- * @param {number} [options.insertBefore=null] Message ID to insert the new message before
+ * @param {number} [options.insertBefore=undefined] Message ID to insert the new message before
  * @param {number} [options.forceId=null] Force the message ID
  * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
  * @param {boolean} [options.insert=true] Whether to insert the message into the DOM.
  * @returns {JQuery<HTMLElement>} The newly added message element
  */
-export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true, insert = true } = {}) {
+export function addOneMessage(mes, { type = 'normal', insertAfter = undefined, scroll = true, insertBefore = undefined, forceId = null, showSwipes = true, insert = true } = {}) {
+    let newMessageId = chat.length - 1;
     // Callers push the new message to chat before calling addOneMessage
-    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
+
+    if (typeof(forceId) == 'number') newMessageId = forceId;
+    else if (typeof(insertBefore) == 'number') newMessageId = insertBefore - 1;
+    else if (typeof(insertAfter) == 'number') newMessageId = insertAfter + 1;
 
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
