@@ -222,6 +222,7 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMes
 
 export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
     let thisPromptSet = undefined;
+    priorPromptArrayItemForRawPromptDisplay = -1;
 
     for (let i = 0; i < itemizedPrompts.length; i++) {
         console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
@@ -262,7 +263,7 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
 
     /** @type {HTMLElement} */
     const diffPrevPrompt = popup.dlg.querySelector('#diffPrevPrompt');
-    if (priorPromptArrayItemForRawPromptDisplay) {
+    if (priorPromptArrayItemForRawPromptDisplay >= 0) {
         diffPrevPrompt.style.display = '';
         diffPrevPrompt.addEventListener('click', function () {
             const dmp = new DiffMatchPatch();
@@ -371,6 +372,8 @@ export function swapItemizedPrompts(sourceMessageId, targetMessageId) {
     targetPrompts.forEach(prompt => {
         prompt.mesId = sourceMessageId;
     });
+
+    itemizedPrompts.sort((a, b) => a.mesId - b.mesId);
 }
 
 /**
