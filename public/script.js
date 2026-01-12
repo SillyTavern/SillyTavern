@@ -1394,16 +1394,18 @@ export async function showMoreMessages(messagesToLoad = null) {
     const showMoreButton = $('#show_more_messages');
     const isButtonInView = isElementInViewport(showMoreButton[0]);
 
-
     const firstId = clamp(messageId - count, 0, Infinity);
-    let messageElements = [];
-    chat.slice(firstId, messageId).forEach((message,id)=>{
+    const messageElements = [];
+    chat.slice(firstId, messageId).forEach((message, id) => {
         messageElements.push(addOneMessage(message, { scroll: false, forceId: firstId + id, showSwipes: false, insert: false }));
     });
     // This could be faster: https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
     // Fallback to chatElement if the button isn't where it's expected to be.
-    if (showMoreButton[0]) showMoreButton.after(messageElements);
-    else chatElement.prepend(messageElements);
+    if (showMoreButton[0]) {
+        showMoreButton.after(messageElements);
+    } else {
+        chatElement.prepend(messageElements);
+    }
 
     refreshSwipeButtons();
 
@@ -1454,7 +1456,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
     const messages = targetChat.slice(startIndex);
 
     if (messages.length > 0) {
-        const newMessageElements = messages.map( (message, offset) => {
+        const newMessageElements = messages.map((message, offset) => {
             const i = startIndex + offset;
             const messageElement = addOneMessage(message, { scroll: false, forceId: i, showSwipes: false, insert: false });
 
@@ -1467,7 +1469,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
         //Append to chat in one DOM update.
         chatElement.append(newMessageElements);
 
-        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length,  1) });
+        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length, 1) });
     }
 
     refreshSwipeButtons(false, fade);
@@ -2439,9 +2441,9 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = undefined, s
     let newMessageId;
     // Callers push the new message to chat before calling addOneMessage
 
-    if (typeof(forceId) === 'number') newMessageId = forceId;
-    else if (typeof(insertBefore) === 'number') newMessageId = insertBefore - 1;
-    else if (typeof(insertAfter) === 'number') newMessageId = insertAfter + 1;
+    if (typeof (forceId) === 'number') newMessageId = forceId;
+    else if (typeof (insertBefore) === 'number') newMessageId = insertBefore - 1;
+    else if (typeof (insertAfter) === 'number') newMessageId = insertAfter + 1;
     else {
         const index = chat.indexOf(mes);
         if (index !== -1) {
