@@ -2430,12 +2430,19 @@ function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
  * @returns {JQuery<HTMLElement>} The newly added message element
  */
 export function addOneMessage(mes, { type = 'normal', insertAfter = undefined, scroll = true, insertBefore = undefined, forceId = null, showSwipes = true, insert = true } = {}) {
-    let newMessageId = chat.length - 1;
+    let newMessageId;
     // Callers push the new message to chat before calling addOneMessage
 
     if (typeof(forceId) === 'number') newMessageId = forceId;
     else if (typeof(insertBefore) === 'number') newMessageId = insertBefore - 1;
     else if (typeof(insertAfter) === 'number') newMessageId = insertAfter + 1;
+    else {
+        const index = chat.indexOf(mes);
+        if (index !== -1) {
+            newMessageId = index;
+        }
+        else newMessageId = chat.length - 1;
+    }
 
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
