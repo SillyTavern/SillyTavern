@@ -2406,7 +2406,7 @@ function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
     const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
 
     return messageFormatting(
-        message.extra?.display_text ?? message.mes,
+        message.extra?.display_text || message.mes,
         message.name,
         message.is_system,
         message.is_user,
