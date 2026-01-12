@@ -350,3 +350,42 @@ export function initItemizedPrompts() {
         await deleteItemizedPrompts(name);
     });
 }
+
+/**
+ * Swaps the itemized prompts between two messages. Useful when moving messages around in the chat.
+ * @param {number} sourceMessageId Source message ID
+ * @param {number} targetMessageId Target message ID
+ */
+export function swapItemizedPrompts(sourceMessageId, targetMessageId) {
+    if (!Array.isArray(itemizedPrompts)) {
+        return;
+    }
+
+    const sourcePrompts = itemizedPrompts.filter(x => x.mesId === sourceMessageId);
+    const targetPrompts = itemizedPrompts.filter(x => x.mesId === targetMessageId);
+
+    sourcePrompts.forEach(prompt => {
+        prompt.mesId = targetMessageId;
+    });
+
+    targetPrompts.forEach(prompt => {
+        prompt.mesId = sourceMessageId;
+    });
+}
+
+/**
+ * Deletes the itemized prompt for a specific message.
+ * Shifts down other itemized prompts as necessary.
+ * @param {number} messageId Message ID to delete itemized prompt for
+ */
+export function deleteItemizedPromptForMessage(messageId) {
+    if (!Array.isArray(itemizedPrompts)) {
+        return;
+    }
+
+    itemizedPrompts = itemizedPrompts.filter(x => x.mesId !== messageId);
+
+    for (const prompt of itemizedPrompts.filter(x => x.mesId > messageId)) {
+        prompt.mesId -= 1;
+    }
+}
