@@ -3,10 +3,10 @@
 dataRoot: ./data
 # -- SERVER CONFIGURATION --
 # Listen for incoming connections
-listen: false
+listen: true
 # Listen on a specific address, supports IPv4 and IPv6
 listenAddress:
-  ipv4: 0.0.0.0
+  ipv4: 127.0.0.1
   ipv6: '[::]'
 # Enables IPv6 and/or IPv4 protocols. Need to have at least one enabled!
 # - Use option "auto" to automatically detect support
@@ -51,7 +51,7 @@ ssl:
   keyPassphrase: ""
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
-whitelistMode: true
+whitelistMode: false
 # Whitelist will also verify IP in X-Forwarded-For / X-Real-IP headers
 enableForwardedWhitelist: true
 # Whitelist of allowed IP addresses
@@ -61,11 +61,11 @@ whitelist:
 # Automatically whitelist Docker host and gateway IPs
 whitelistDockerHosts: true
 # Toggle basic authentication for endpoints
-basicAuthMode: false
+basicAuthMode: true
 # Basic authentication credentials
 basicAuthUser:
-  username: "user"
-  password: "password"
+  username: whispy
+  password: Wh1sp4y@25
 # Enables CORS proxy middleware
 enableCorsProxy: false
 # -- REQUEST PROXY CONFIGURATION --
@@ -79,13 +79,14 @@ requestProxy:
     - localhost
     - 127.0.0.1
 # Enable multi-user mode
-enableUserAccounts: false
+enableUserAccounts: true
 # Enable discreet login mode: hides user list on the login screen
-enableDiscreetLogin: false
+enableDiscreetLogin: true
 # If `basicAuthMode` and this are enabled then
 # the username and passwords for basic auth are the same as those
 # for the individual accounts
-perUserBasicAuth: false
+perUserBasicAuth: true
+enableUserRegistration: true
 
 # -- SSO LOGIN CONFIGURATION --
 sso:
@@ -290,16 +291,6 @@ claude:
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")
   apiVersion: 'v1beta'
-  # Enables caching of the system prompt (if supported). Only for OpenRouter.
-  # -- IMPORTANT! --
-  # Use only when the prompt before the chat history is static and doesn't change between requests
-  # (e.g {{random}} macro or lorebooks not as in-chat injections).
-  # Otherwise, you'll just waste money on cache misses.
-  enableSystemPromptCache: false
-  # https://ai.google.dev/gemini-api/docs/imagen#imagen-configuration
-  image:
-    # Leave empty to use the API-default value.
-    personGeneration: 'allow_adult'
 # -- SERVER PLUGIN CONFIGURATION --
 enableServerPlugins: false
 # Attempt to automatically update server plugins on startup

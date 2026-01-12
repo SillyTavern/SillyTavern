@@ -1063,7 +1063,7 @@ class PromptManager {
      * @returns {boolean} True if the prompt is a marker, false otherwise.
      */
     isPromptInspectionAllowed(prompt) {
-        return true;
+        return false;
     }
 
     /**

@@ -116,18 +116,6 @@
         "type": "background"
     },
     {
-        "filename": "default_Seraphina.png",
-        "type": "character"
-    },
-    {
-        "filename": "Seraphina",
-        "type": "sprites"
-    },
-    {
-        "filename": "Eldoria.json",
-        "type": "world"
-    },
-    {
         "filename": "user-default.png",
         "type": "avatar"
     },

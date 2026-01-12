@@ -1,0 +1,335 @@
+Starting update process at Tue Dec  9 06:31:49 UTC 2025
+Characters to process: Val Brennan Dead_Guy Lilith
+========================================
+
+Processing character: Val
+Template books: Z-hyperion-Val Z-hyperion-Ravenwood Z-hyperion-prompt
+----------------------------------------
+  Processing: /root/SillyTavern/data/syntaxshoe/settings.json (User: syntaxshoe)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/silverleash-27/settings.json (User: silverleash-27)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/whispy/settings.json (User: whispy)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/r-3-dpixel/settings.json (User: r-3-dpixel)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/aijah/settings.json (User: aijah)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/catsplosion/settings.json (User: catsplosion)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/hyperion/settings.json (User: hyperion)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/ameow/settings.json (User: ameow)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/mal/settings.json (User: mal)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/pearl/settings.json (User: pearl)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/romarin/settings.json (User: romarin)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/vaggie/settings.json (User: vaggie)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/iquit/settings.json (User: iquit)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/test/settings.json (User: test)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/hype-test/settings.json (User: hype-test)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/rachiedash/settings.json (User: rachiedash)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/default-user/settings.json (User: default-user)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/actuallytrashley/settings.json (User: actuallytrashley)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/testicles/settings.json (User: testicles)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/genevieve/settings.json (User: genevieve)
+    + Case 5: Name does not exist, inserting new entry.
+    ➤ Added at approximately line unknown
+    ✓ File updated successfully.
+  Processing: /root/SillyTavern/data/bee/settings.json (User: bee)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/i-ashborn/settings.json (User: i-ashborn)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/akairingo/settings.json (User: akairingo)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+----------------------------------------
+
+Processing character: Brennan
+Template books: Z-hyperion-Brennan Z-hyperion-Ravenwood Z-hyperion-prompt
+----------------------------------------
+  Processing: /root/SillyTavern/data/syntaxshoe/settings.json (User: syntaxshoe)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/silverleash-27/settings.json (User: silverleash-27)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/whispy/settings.json (User: whispy)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/r-3-dpixel/settings.json (User: r-3-dpixel)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/aijah/settings.json (User: aijah)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/catsplosion/settings.json (User: catsplosion)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/hyperion/settings.json (User: hyperion)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/ameow/settings.json (User: ameow)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/mal/settings.json (User: mal)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/pearl/settings.json (User: pearl)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/romarin/settings.json (User: romarin)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/vaggie/settings.json (User: vaggie)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/iquit/settings.json (User: iquit)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/test/settings.json (User: test)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/hype-test/settings.json (User: hype-test)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/rachiedash/settings.json (User: rachiedash)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/default-user/settings.json (User: default-user)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/actuallytrashley/settings.json (User: actuallytrashley)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/testicles/settings.json (User: testicles)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/genevieve/settings.json (User: genevieve)
+    + Case 5: Name does not exist, inserting new entry.
+    ➤ Added at approximately line 24
+    ✓ File updated successfully.
+  Processing: /root/SillyTavern/data/bee/settings.json (User: bee)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/i-ashborn/settings.json (User: i-ashborn)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/akairingo/settings.json (User: akairingo)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+----------------------------------------
+
+Processing character: Dead_Guy
+Template books: Z-hyperion-Dead-Guy Z-hyperion-prompt
+----------------------------------------
+  Processing: /root/SillyTavern/data/syntaxshoe/settings.json (User: syntaxshoe)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/silverleash-27/settings.json (User: silverleash-27)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/whispy/settings.json (User: whispy)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/r-3-dpixel/settings.json (User: r-3-dpixel)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/aijah/settings.json (User: aijah)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/catsplosion/settings.json (User: catsplosion)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/hyperion/settings.json (User: hyperion)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/ameow/settings.json (User: ameow)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/mal/settings.json (User: mal)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/pearl/settings.json (User: pearl)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/romarin/settings.json (User: romarin)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/vaggie/settings.json (User: vaggie)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/iquit/settings.json (User: iquit)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/test/settings.json (User: test)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/hype-test/settings.json (User: hype-test)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/rachiedash/settings.json (User: rachiedash)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/default-user/settings.json (User: default-user)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/actuallytrashley/settings.json (User: actuallytrashley)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/testicles/settings.json (User: testicles)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/genevieve/settings.json (User: genevieve)
+    + Case 5: Name does not exist, inserting new entry.
+    ➤ Added at approximately line 24
+    ✓ File updated successfully.
+  Processing: /root/SillyTavern/data/bee/settings.json (User: bee)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/i-ashborn/settings.json (User: i-ashborn)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+      - Kept: Z-hyperion-Ravenwood
+    ✓ No insertions needed.
+  Processing: /root/SillyTavern/data/akairingo/settings.json (User: akairingo)
+    ! Case 4c: Name exists, has additional books not in template (preserved):
+      - Kept: Z-hyperion-Dead_Guy
+    ✓ No insertions needed.
+----------------------------------------
+
+Processing character: Lilith
+Template books: Z-hyperion-Lilith Z-hyperion-Ravenwood Z-hyperion-prompt
+----------------------------------------
+  Processing: /root/SillyTavern/data/syntaxshoe/settings.json (User: syntaxshoe)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/silverleash-27/settings.json (User: silverleash-27)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/whispy/settings.json (User: whispy)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/r-3-dpixel/settings.json (User: r-3-dpixel)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/aijah/settings.json (User: aijah)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/catsplosion/settings.json (User: catsplosion)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/hyperion/settings.json (User: hyperion)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/ameow/settings.json (User: ameow)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/mal/settings.json (User: mal)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/pearl/settings.json (User: pearl)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/romarin/settings.json (User: romarin)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/vaggie/settings.json (User: vaggie)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/iquit/settings.json (User: iquit)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/test/settings.json (User: test)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/hype-test/settings.json (User: hype-test)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/rachiedash/settings.json (User: rachiedash)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/default-user/settings.json (User: default-user)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/actuallytrashley/settings.json (User: actuallytrashley)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/testicles/settings.json (User: testicles)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/genevieve/settings.json (User: genevieve)
+    + Case 5: Name does not exist, inserting new entry.
+    ➤ Added at approximately line 24
+    ✓ File updated successfully.
+  Processing: /root/SillyTavern/data/bee/settings.json (User: bee)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/i-ashborn/settings.json (User: i-ashborn)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+  Processing: /root/SillyTavern/data/akairingo/settings.json (User: akairingo)
+    ✓ Case 4a: Name exists, extraBooks match exactly.
+    ✓ No changes needed.
+----------------------------------------
+
+Update process completed at Tue Dec  9 06:31:55 UTC 2025
+========================================
