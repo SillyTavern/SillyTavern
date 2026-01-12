@@ -1682,7 +1682,7 @@ export async function sendTextareaMessage() {
  * @param {boolean} isSystem If the message was sent by the system
  * @param {boolean} isUser If the message was sent by the user
  * @param {number} messageId Message index in chat array
- * @param {object} [sanitizerOverrides] DOMPurify sanitizer option overrides
+ * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] DOMPurify sanitizer option overrides
  * @param {boolean} [isReasoning] If the message is reasoning output
  * @returns {string} HTML string
  */
@@ -1831,7 +1831,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
     }
 
-    /** @type {import('dompurify').Config & { RETURN_DOM_FRAGMENT: false; RETURN_DOM: false }} */
+    /** @type {DOMPurify.Config} */
     const config = {
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,
@@ -2377,11 +2377,13 @@ export function addCopyToCodeBlocks(messageElement) {
 
 /**
  * Shows or hides the Prompt display button
- * @param {ChatMessage} message
- * @param {*} options
+ * @param {ChatMessage} message Message object
+ * @param {object} options Options
+ * @param {number} [options.messageId] Message ID
+ * @param {JQuery<HTMLElement>} [options.messageElement] Message element
+ * @return {void}
  */
 function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
-
     //if we have itemized messages, and the array isn't null..
     if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
         const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
@@ -2394,12 +2396,13 @@ function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(m
 /**
  * Gets messageFormatting for a ChatMessage object.
  * @param {ChatMessage} message
- * @param {*} options
- * @returns
+ * @param {object} options Options
+ * @param {number} [options.messageId] Message ID
+ * @returns {string} Formatted message HTML
  */
 function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
-
     // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
+    /** @type {Partial<DOMPurify.Config>} */
     const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
 
     return messageFormatting(
@@ -2457,7 +2460,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         avatarImg = mes.force_avatar;
     }
 
-    const messageHTML = getMessageTextHTML(mes, { newMessageId });
+    const messageHTML = getMessageTextHTML(mes, { messageId: newMessageId });
     let newMessage;
 
     if (type === 'swipe') {
@@ -2532,7 +2535,7 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         newMessage.addClass('toolCall');
     }
 
-    updateMessageItemizedPromptButton(mes, { messageId: newMessageId, newMessage });
+    updateMessageItemizedPromptButton(mes, { messageId: newMessageId, messageElement: newMessage });
 
     newMessage.find('.avatar img').on('error', function () {
         $(this).hide();
