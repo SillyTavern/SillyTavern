@@ -1391,18 +1391,24 @@ export async function showMoreMessages(messagesToLoad = null) {
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = chatElement.prop('scrollHeight');
-    const isButtonInView = isElementInViewport($('#show_more_messages')[0]);
+    const showMoreButton = $('#show_more_messages');
+    const isButtonInView = isElementInViewport(showMoreButton[0]);
 
-    while (messageId > 0 && count > 0) {
-        let newMessageId = messageId - 1;
-        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId, showSwipes: false });
-        count--;
-        messageId--;
-    }
+
+    const firstId = clamp(messageId - count, 0, Infinity);
+    let messageElements = [];
+    chat.slice(firstId, messageId).forEach((message,id)=>{
+        messageElements.push(addOneMessage(message, { scroll: false, forceId: firstId + id, showSwipes: false, insert: false }));
+    });
+    // This could be faster: https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
+    // Fallback to chatElement if the button isn't where it's expected to be.
+    if (showMoreButton[0]) showMoreButton.after(messageElements);
+    else chatElement.prepend(messageElements);
+
     refreshSwipeButtons();
 
-    if (messageId == 0) {
-        $('#show_more_messages').remove();
+    if (firstId === 0) {
+        showMoreButton.remove();
     }
 
     if (isButtonInView) {
