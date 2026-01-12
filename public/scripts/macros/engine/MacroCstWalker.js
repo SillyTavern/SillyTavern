@@ -636,7 +636,7 @@ class MacroCstWalker {
          * @param {any} val
          * @returns {boolean}
          */
-        const isFalsy = (val) => !val || isFalseBoolean(val);
+        const isFalsy = (val) => !val || isFalseBoolean(normalize(val));
 
         switch (operation) {
             case 'get':
