@@ -2433,9 +2433,9 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = undefined, s
     let newMessageId = chat.length - 1;
     // Callers push the new message to chat before calling addOneMessage
 
-    if (typeof(forceId) == 'number') newMessageId = forceId;
-    else if (typeof(insertBefore) == 'number') newMessageId = insertBefore - 1;
-    else if (typeof(insertAfter) == 'number') newMessageId = insertAfter + 1;
+    if (typeof(forceId) === 'number') newMessageId = forceId;
+    else if (typeof(insertBefore) === 'number') newMessageId = insertBefore - 1;
+    else if (typeof(insertAfter) === 'number') newMessageId = insertAfter + 1;
 
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
@@ -2514,7 +2514,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = undefined, s
     if (power_user.timestamp_model_icon && mes.extra?.api) {
         insertSVGIcon(newMessage, mes.extra);
     }
-
 
     if (type !== 'swipe' && insert) {
         if (!insertAfter && !insertBefore) {
