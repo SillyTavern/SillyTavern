@@ -622,11 +622,11 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
         const prefix = this.#varDef.type;
         const examples = [
             `{{${prefix}myvar}} - Get variable value`,
-            `{{${prefix}myvar = value}} - Set variable`,
-            `{{${prefix}counter++}} - Increment`,
-            `{{${prefix}counter--}} - Decrement`,
-            `{{${prefix}myvar += text}} - Append/add`,
-            `{{${prefix}score -= 5}} - Subtract`,
+            `{{${prefix}myvar = value}} - Set variable (returns nothing)`,
+            `{{${prefix}counter++}} - Increment and get value`,
+            `{{${prefix}counter--}} - Decrement and get value`,
+            `{{${prefix}myvar += text}} - Append/add (returns nothing)`,
+            `{{${prefix}score -= 5}} - Subtract (returns nothing)`,
             `{{${prefix}myvar || default}} - Get with fallback if falsy`,
             `{{${prefix}myvar ?? default}} - Get with fallback if undefined`,
             `{{${prefix}myvar ||= value}} - Set if falsy, get value`,
@@ -831,31 +831,31 @@ export const VariableOperatorDefinitions = new Map([
     ['=', {
         symbol: '=',
         name: 'Set',
-        description: 'Set the variable to a new value.',
+        description: 'Set the variable to a new value. Returns nothing.',
         needsValue: true,
     }],
     ['++', {
         symbol: '++',
         name: 'Increment',
-        description: 'Increment the variable by 1 (numeric).',
+        description: 'Increment the variable by 1 (numeric). Returns the new value.',
         needsValue: false,
     }],
     ['--', {
         symbol: '--',
         name: 'Decrement',
-        description: 'Decrement the variable by 1 (numeric).',
+        description: 'Decrement the variable by 1 (numeric). Returns the new value.',
         needsValue: false,
     }],
     ['+=', {
         symbol: '+=',
         name: 'Add',
-        description: 'Add to the variable (numeric addition or string concatenation).',
+        description: 'Add to the variable (numeric addition or string concatenation). Returns nothing.',
         needsValue: true,
     }],
     ['-=', {
         symbol: '-=',
         name: 'Subtract',
-        description: 'Subtract a numeric value from the variable.',
+        description: 'Subtract a numeric value from the variable. Returns nothing.',
         needsValue: true,
     }],
     ['||', {
