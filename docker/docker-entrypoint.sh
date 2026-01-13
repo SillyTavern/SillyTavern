@@ -3,6 +3,7 @@
 # Function to handle startup logic (Config check + Postinstall + Start)
 start_sillytavern() {
     local PREFIX="$1"
+    shift # Remove the first argument (PREFIX) so $@ contains the rest
     
     # Config Check
     if [ ! -e "config/config.yaml" ]; then
