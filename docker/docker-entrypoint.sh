@@ -4,7 +4,7 @@
 start_sillytavern() {
     local PREFIX="$1"
     shift # Remove the first argument (PREFIX) so $@ contains the rest
-    
+
     # Config Check
     if [ ! -e "config/config.yaml" ]; then
         echo "Resource not found, copying from defaults: config.yaml"
@@ -33,7 +33,7 @@ for mount in $RAW_MOUNTS; do
         # so that the app can write adjacent files (e.g. key.pem).
         PARENT_DIR=$(dirname "$mount")
 
-        # Performance Safety: If the file is in the root of the app, 
+        # Performance Safety: If the file is in the root of the app,
         # we do NOT add the parent (App Root), or we will recursively scan the whole app.
         if [ "$PARENT_DIR" = "/home/node/app" ]; then
             MOUNTED_DIRS="$MOUNTED_DIRS $mount"
@@ -83,7 +83,7 @@ if [ "$(id -u)" = "0" ]; then
                 fi
             fi
         done
-        
+
         # Fix config file specifically
         chown node:node "config/config.yaml" 2>/dev/null
 

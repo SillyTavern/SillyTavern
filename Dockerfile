@@ -47,9 +47,6 @@ RUN \
 # Fix extension repos permissions
 RUN git config --global --add safe.directory "*"
 
-# Switch to non-root user
-USER node
-
 EXPOSE 8000
 
 # Ensure proper handling of kernel signals
