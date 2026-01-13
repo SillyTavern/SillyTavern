@@ -111,14 +111,32 @@ const Tokens = Object.freeze({
          * Invalid: my-, my--, -var
          */
         Identifier: createToken({ name: 'Var.Identifier', pattern: MACRO_VARIABLE_SHORTHAND_PATTERN }),
-        /** Increment operator (`++`) */
-        Increment: createToken({ name: 'Var.Increment', pattern: /\+\+/ }),
-        /** Decrement operator (`--`) */
-        Decrement: createToken({ name: 'Var.Decrement', pattern: /--/ }),
-        /** Add/append operator (`+=`) - must come before Equals to avoid conflict */
-        PlusEquals: createToken({ name: 'Var.PlusEquals', pattern: /\+=/ }),
-        /** Set operator (`=`) */
-        Equals: createToken({ name: 'Var.Equals', pattern: /=/ }),
+
+        /** All tokens that are valid operators inside a variable shorthand expression */
+        Operators: {
+            /** Increment operator (`++`) */
+            Increment: createToken({ name: 'Var.Increment', pattern: /\+\+/ }),
+            /** Decrement operator (`--`) */
+            Decrement: createToken({ name: 'Var.Decrement', pattern: /--/ }),
+            /** Nullish coalescing assignment operator (`??=`) - sets var if undefined, must come before NullishCoalescing */
+            NullishCoalescingEquals: createToken({ name: 'Var.NullishCoalescingEquals', pattern: /\?\?=/ }),
+            /** Nullish coalescing operator (`??`) - returns default if var undefined */
+            NullishCoalescing: createToken({ name: 'Var.NullishCoalescing', pattern: /\?\?/ }),
+            /** Logical OR assignment operator (`||=`) - sets var if falsy, must come before LogicalOr */
+            LogicalOrEquals: createToken({ name: 'Var.LogicalOrEquals', pattern: /\|\|=/ }),
+            /** Logical OR operator (`||`) - returns default if var falsy */
+            LogicalOr: createToken({ name: 'Var.LogicalOr', pattern: /\|\|/ }),
+            /** Subtract operator (`-=`) - subtracts value from variable */
+            MinusEquals: createToken({ name: 'Var.MinusEquals', pattern: /-=/ }),
+            /** Equality comparison operator (`==`) - compares variable to value */
+            DoubleEquals: createToken({ name: 'Var.DoubleEquals', pattern: /==/ }),
+            /** Not equals comparison operator (`!=`) - compares variable to value, returns inverted result */
+            NotEquals: createToken({ name: 'Var.NotEquals', pattern: /!=/ }),
+            /** Add/append operator (`+=`) - must come before Equals to avoid conflict */
+            PlusEquals: createToken({ name: 'Var.PlusEquals', pattern: /\+=/ }),
+            /** Set operator (`=`) */
+            Equals: createToken({ name: 'Var.Equals', pattern: /=/ }),
+        },
     },
 
     /**
@@ -230,11 +248,18 @@ const Def = {
         // After the variable identifier, look for operators or end
         [modes.var_after_identifier]: [
             using(Tokens.WhiteSpace),
-            // Check for operators
-            using(Tokens.Var.Increment),
-            using(Tokens.Var.Decrement),
-            enter(Tokens.Var.PlusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
-            enter(Tokens.Var.Equals, modes.var_value, { andExits: modes.var_after_identifier }),
+            // Check for operators - order matters: longer patterns first
+            using(Tokens.Var.Operators.Increment),
+            using(Tokens.Var.Operators.Decrement),
+            enter(Tokens.Var.Operators.NullishCoalescingEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.NullishCoalescing, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.LogicalOrEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.LogicalOr, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.MinusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.DoubleEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.NotEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.PlusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.Equals, modes.var_value, { andExits: modes.var_after_identifier }),
             // If we see the end, exit
             exits(Tokens.Macro.BeforeEnd, modes.var_after_identifier),
             // Fallback exit

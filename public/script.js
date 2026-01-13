@@ -8,6 +8,7 @@ import {
     Popper,
     initLibraryShims,
     default as libs,
+    lodash,
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
@@ -271,7 +272,7 @@ import { extractReasoningFromData, extractReasoningSignatureFromData, initReason
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
-import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
+import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
@@ -1390,18 +1391,26 @@ export async function showMoreMessages(messagesToLoad = null) {
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = chatElement.prop('scrollHeight');
-    const isButtonInView = isElementInViewport($('#show_more_messages')[0]);
+    const showMoreButton = $('#show_more_messages');
+    const isButtonInView = isElementInViewport(showMoreButton[0]);
 
-    while (messageId > 0 && count > 0) {
-        let newMessageId = messageId - 1;
-        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId, showSwipes: false });
-        count--;
-        messageId--;
+    const firstId = clamp(messageId - count, 0, Infinity);
+    const messageElements = [];
+    chat.slice(firstId, messageId).forEach((message, id) => {
+        messageElements.push(addOneMessage(message, { scroll: false, forceId: firstId + id, showSwipes: false, insert: false }));
+    });
+    // This could be faster: https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
+    // Fallback to chatElement if the button isn't where it's expected to be.
+    if (showMoreButton[0]) {
+        showMoreButton.after(messageElements);
+    } else {
+        chatElement.prepend(messageElements);
     }
+
     refreshSwipeButtons();
 
-    if (messageId == 0) {
-        $('#show_more_messages').remove();
+    if (firstId === 0) {
+        showMoreButton.remove();
     }
 
     if (isButtonInView) {
@@ -1422,17 +1431,52 @@ export async function printMessages() {
         chatElement.append('<div id="show_more_messages">Show more messages</div>');
     }
 
-    for (let i = startIndex; i < chat.length; i++) {
-        const item = chat[i];
-        addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
-    }
+    await redisplayChat({ startIndex, fade: false });
 
-    chatElement.find('.mes').removeClass('last_mes');
-    chatElement.find('.mes').last().addClass('last_mes');
-    refreshSwipeButtons(false, false);
-    applyStylePins();
     scrollChatToBottom({ waitForFrame: true });
     delay(debounce_timeout.short).then(() => scrollOnMediaLoad());
+}
+
+/**
+ * Visually updates all chat messages including and after index by removing them, then adding them.
+ * @param {object} [options] Options
+ * @param {ChatMessage[]} [options.targetChat=chat] All messages in chat before startIndex will remain unchanged.
+ * @param {Number} [options.startIndex=0] Everything including and after startIndex will be replaced.
+ * @param {Boolean} [options.fade=true] When false, the swipe chevrons will not fade in.
+ */
+export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = true } = {}) {
+    const messageElements = chatElement.find('.mes');
+    messageElements.removeClass('last_mes');
+
+    //Remove messages after index.
+    messageElements.filter(`.mes[mesid="${startIndex}"]`).nextAll('.mes').addBack().remove();
+
+    const t1 = performance.now();
+
+    const messages = targetChat.slice(startIndex);
+
+    if (messages.length > 0) {
+        const newMessageElements = messages.map((message, offset) => {
+            const i = startIndex + offset;
+            const messageElement = addOneMessage(message, { scroll: false, forceId: i, showSwipes: false, insert: false });
+
+            return messageElement[0];
+        });
+
+        //The last_mes has been removed, add it to the new last message.
+        newMessageElements.at(-1).classList.add('last_mes');
+
+        //Append to chat in one DOM update.
+        chatElement.append(newMessageElements);
+
+        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length, 1) });
+    }
+
+    refreshSwipeButtons(false, fade);
+    applyStylePins();
+    updateEditArrowClasses();
+
+    console.info(`Rendered ${targetChat.length - startIndex} messages in ${((performance.now() - t1) / 1000).toFixed(3)} seconds.`);
 }
 
 export function scrollOnMediaLoad() {
@@ -1502,6 +1546,7 @@ export async function clearChat() {
 }
 
 export async function deleteLastMessage() {
+    deleteItemizedPromptForMessage(chat.length - 1);
     chat.length = chat.length - 1;
     chatElement.children('.mes').last().remove();
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -1557,6 +1602,7 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     chat_metadata.tainted = true;
 
     const startIndex = [0, minId].includes(id) ? id : null;
+    deleteItemizedPromptForMessage(id);
     updateViewMessageIds(startIndex);
     saveChatDebounced();
 
@@ -1646,7 +1692,7 @@ export async function sendTextareaMessage() {
  * @param {boolean} isSystem If the message was sent by the system
  * @param {boolean} isUser If the message was sent by the user
  * @param {number} messageId Message index in chat array
- * @param {object} [sanitizerOverrides] DOMPurify sanitizer option overrides
+ * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] DOMPurify sanitizer option overrides
  * @param {boolean} [isReasoning] If the message is reasoning output
  * @returns {string} HTML string
  */
@@ -1795,7 +1841,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
     }
 
-    /** @type {import('dompurify').Config & { RETURN_DOM_FRAGMENT: false; RETURN_DOM: false }} */
+    /** @type {DOMPurify.Config} */
     const config = {
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,
@@ -1819,9 +1865,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
  * the value in `extra.api`.
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
- * @param {Object} extra - Contains the API and model details.
- * @param {string} extra.api - The name of the API, used to determine which SVG to fetch.
- * @param {string} extra.model - The model name, used to check for the substring "claude".
+ * @param {ChatMessageExtra} extra - Contains the API and model details.
  */
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
@@ -1867,56 +1911,6 @@ function insertSVGIcon(mes, extra) {
 
     createModelImage('timestamp-icon', '.timestamp');
     createModelImage('thinking-icon', '.mes_reasoning_header_title', true);
-}
-
-
-function getMessageFromTemplate({
-    mesId,
-    swipeId,
-    characterName,
-    isUser,
-    avatarImg,
-    bias,
-    isSystem,
-    title,
-    timerValue,
-    timerTitle,
-    bookmarkLink,
-    forceAvatar,
-    timestamp,
-    tokenCount,
-    extra,
-    type,
-}) {
-    const mes = messageTemplate.clone();
-    mes.attr({
-        'mesid': mesId,
-        'swipeid': swipeId,
-        'ch_name': characterName,
-        'is_user': isUser,
-        'is_system': !!isSystem,
-        'bookmark_link': bookmarkLink,
-        'force_avatar': !!forceAvatar,
-        'timestamp': timestamp,
-        ...(type ? { type } : {}),
-    });
-    mes.find('.avatar img').attr('src', avatarImg);
-    mes.find('.ch_name .name_text').text(characterName);
-    mes.find('.mes_bias').html(bias);
-    mes.find('.timestamp').text(timestamp).attr('title', `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`);
-    mes.find('.mesIDDisplay').text(`#${mesId}`);
-    tokenCount && mes.find('.tokenCounterDisplay').text(`${tokenCount}t`);
-    title && mes.attr('title', title);
-    timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
-    bookmarkLink && updateBookmarkDisplay(mes);
-
-    updateReasoningUI(mes);
-
-    if (power_user.timestamp_model_icon && extra?.api) {
-        insertSVGIcon(mes, extra);
-    }
-
-    return mes;
 }
 
 /**
@@ -2134,10 +2128,6 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
         }
         if (scrollBehavior === SCROLL_BEHAVIOR.KEEP) {
             chatElement.scrollTop(scrollPosition);
-            return;
-        }
-        const newScrollPosition = chatElement.scrollTop();
-        if (newScrollPosition > scrollPosition) {
             return;
         }
         const newChatHeight = chatElement.prop('scrollHeight');
@@ -2395,6 +2385,46 @@ export function addCopyToCodeBlocks(messageElement) {
     }
 }
 
+/**
+ * Shows or hides the Prompt display button
+ * @param {ChatMessage} message Message object
+ * @param {object} options Options
+ * @param {number} [options.messageId] Message ID
+ * @param {JQuery<HTMLElement>} [options.messageElement] Message element
+ * @return {void}
+ */
+function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
+    //if we have itemized messages, and the array isn't null..
+    if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
+        if (itemizedPrompt) {
+            messageElement.find('.mes_prompt').show();
+        }
+    }
+}
+
+/**
+ * Gets messageFormatting for a ChatMessage object.
+ * @param {ChatMessage} message
+ * @param {object} options Options
+ * @param {number} [options.messageId] Message ID
+ * @returns {string} Formatted message HTML
+ */
+function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
+    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
+    /** @type {Partial<DOMPurify.Config>} */
+    const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
+
+    return messageFormatting(
+        message.extra?.display_text || message.mes,
+        message.name,
+        message.is_system,
+        message.is_user,
+        messageId,
+        sanitizerOverrides,
+        false,
+    );
+}
 
 /**
  * Adds a single message to the chat.
@@ -2406,27 +2436,30 @@ export function addCopyToCodeBlocks(messageElement) {
  * @param {number} [options.insertBefore=null] Message ID to insert the new message before
  * @param {number} [options.forceId=null] Force the message ID
  * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
- * @returns {void}
+ * @param {boolean} [options.insert=true] Whether to insert the message into the DOM.
+ * @returns {JQuery<HTMLElement>} The newly added message element
  */
-export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
-    let messageText = mes.mes;
-    const momentDate = timestampToMoment(mes.send_date);
-    const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true, insert = true } = {}) {
+    // Callers push the new message to chat before calling addOneMessage
+    const messageId = (() => {
+        if (typeof forceId === 'number') {
+            return forceId;
+        }
+        if (typeof insertBefore === 'number') {
+            return insertBefore - 1;
+        }
+        if (typeof insertAfter === 'number') {
+            return insertAfter + 1;
+        }
+        const index = chat.indexOf(mes);
+        if (index !== -1) {
+            return index;
+        }
+        return chat.length - 1;
+    })();
 
-    if (mes?.extra?.display_text) {
-        messageText = mes.extra.display_text;
-    }
-
-    // Forbidden black magic
-    // This allows to use "continue" on user messages
-    if (type === 'swipe' && mes.swipe_id === undefined) {
-        mes.swipe_id = 0;
-        mes.swipes = [mes.mes];
-    }
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
-    const isSystem = mes.is_system;
-    const title = mes.title;
 
     //for non-user messages
     if (!mes.is_user) {
@@ -2434,128 +2467,111 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             avatarImg = mes.force_avatar;
         } else if (this_chid === undefined) {
             avatarImg = system_avatar;
+        } else if (characters[this_chid] && characters[this_chid].avatar !== 'none') {
+            avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
         } else {
-            if (characters[this_chid].avatar !== 'none') {
-                avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
-            } else {
-                avatarImg = default_avatar;
-            }
+            avatarImg = default_avatar;
         }
         //old processing:
-        //if messge is from sytem, use the name provided in the message JSONL to proceed,
+        //if message is from system, use the name provided in the message JSONL to proceed,
         //if not system message, use name2 (char's name) to proceed
         //characterName = mes.is_system || mes.force_avatar ? mes.name : name2;
     } else if (mes.is_user && mes.force_avatar) {
         // Special case for persona images.
         avatarImg = mes.force_avatar;
     }
+    const momentDate = timestampToMoment(mes.send_date);
+    const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+    const messageHTML = getMessageTextHTML(mes, { messageId });
+    const bookmarkLink = mes?.extra?.bookmark_link;
+    const tokenCount = mes.extra?.token_count;
+    const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
 
-    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
-    const sanitizerOverrides = mes.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
+    let messageElement;
 
-    messageText = messageFormatting(
-        messageText,
-        mes.name,
-        isSystem,
-        mes.is_user,
-        chat.indexOf(mes),
-        sanitizerOverrides,
-        false,
-    );
-    const bias = messageFormatting(mes.extra?.bias ?? '', '', false, false, -1, {}, false);
-    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    if (type === 'swipe') {
+        // Forbidden black magic
+        // This allows to use "continue" on user messages
+        mes.swipe_id ??= 0;
+        mes.swipes ??= [mes.mes];
+        //This keeps listeners intact.
+        messageElement = chatElement.find(`[mesid="${messageId}"]`);
+    } else {
+        messageElement = messageTemplate.clone();
+    }
 
-    let params = {
-        mesId: forceId ?? chat.length - 1,
-        swipeId: mes.swipe_id ?? 0,
-        characterName: mes.name,
-        isUser: mes.is_user,
-        avatarImg: avatarImg,
-        bias: bias,
-        isSystem: isSystem,
-        title: title,
-        bookmarkLink: bookmarkLink,
-        forceAvatar: mes.force_avatar,
-        timestamp: timestamp,
-        extra: mes.extra,
-        tokenCount: mes.extra?.token_count ?? 0,
-        type: mes.extra?.type ?? '',
-        ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token),
-    };
+    messageElement.attr({
+        'mesid': messageId,
+        'swipeid': mes.swipe_id ?? 0,
+        'ch_name': mes.name,
+        'is_user': mes.is_user,
+        'is_system': !!mes.is_system,
+        'bookmark_link': bookmarkLink,
+        'force_avatar': !!mes.force_avatar,
+        'timestamp': timestamp,
+        // ...(type ?? { type }),
+        'type': mes.extra?.type ?? '',
+    });
 
-    const renderedMessage = getMessageFromTemplate(params);
+    messageElement.find('.avatar img').attr('src', avatarImg);
+    messageElement.find('.ch_name .name_text').text(mes.name);
+    messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
+    messageElement.find('.mesIDDisplay').text(`#${messageId}`);
+    tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+    mes.title && messageElement.attr('title', mes.title);
+    timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    bookmarkLink && updateBookmarkDisplay(messageElement);
 
-    if (type !== 'swipe') {
-        if (!insertAfter && !insertBefore) {
-            chatElement.append(renderedMessage);
-        }
-        else if (insertAfter) {
+    if (mes.extra?.bias !== '') {
+        const bias = messageFormatting(mes.extra?.bias, '', false, false, -1, {}, false);
+        messageElement.find('.mes_bias').html(bias);
+    }
+
+    updateReasoningUI(messageElement);
+
+    if (power_user.timestamp_model_icon && mes.extra?.api) {
+        insertSVGIcon(messageElement, mes.extra);
+    }
+
+    if (type !== 'swipe' && insert) {
+        if (typeof insertAfter === 'number' && insertAfter >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
-            $(renderedMessage).insertAfter(target);
-        } else {
+            $(messageElement).insertAfter(target);
+        } else if (typeof insertBefore === 'number' && insertBefore >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertBefore}"]`);
-            $(renderedMessage).insertBefore(target);
+            $(messageElement).insertBefore(target);
+        } else {
+            chatElement.append(messageElement);
         }
     }
 
-    // Callers push the new message to chat before calling addOneMessage
-    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
-
-    const newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
-    const isSmallSys = mes?.extra?.isSmallSys;
-
-    if (isSmallSys === true) {
-        newMessage.addClass('smallSysMes');
+    if (mes?.extra?.isSmallSys === true) {
+        messageElement.addClass('smallSysMes');
     }
 
     if (Array.isArray(mes?.extra?.tool_invocations)) {
-        newMessage.addClass('toolCall');
+        messageElement.addClass('toolCall');
     }
 
-    //shows or hides the Prompt display button
-    let mesIdToFind = type === 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
+    updateMessageItemizedPromptButton(mes, { messageId, messageElement });
 
-    //if we have itemized messages, and the array isn't null..
-    if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(mesIdToFind));
-        if (itemizedPrompt) {
-            newMessage.find('.mes_prompt').show();
-        }
-    }
-
-    newMessage.find('.avatar img').on('error', function () {
+    messageElement.find('.avatar img').on('error', function () {
         $(this).hide();
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
-    if (type === 'swipe') {
-        const swipeMessage = chatElement.find(`[mesid="${newMessageId}"]`);
-        swipeMessage.attr('swipeid', params.swipeId);
-        swipeMessage.find('.mes_text').html(messageText).attr('title', title);
-        swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
-        updateReasoningUI(swipeMessage);
-        appendMediaToMessage(mes, swipeMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-        if (power_user.timestamp_model_icon && params.extra?.api) {
-            insertSVGIcon(swipeMessage, params.extra);
-        }
-
-        if (mes.swipe_id == mes.swipes.length - 1) {
-            swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
-            swipeMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
-        } else {
-            swipeMessage.find('.mes_timer').empty();
-            swipeMessage.find('.tokenCounterDisplay').empty();
-        }
-    } else {
-        chatElement.find(`[mesid="${newMessageId}"] .mes_text`).append(messageText);
-        appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-    }
-
-    addCopyToCodeBlocks(newMessage);
+    appendMediaToMessage(mes, messageElement, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
+    messageElement.find('.mes_text').html(messageHTML);
+    addCopyToCodeBlocks(messageElement);
 
     // Set the swipes counter for all non-user messages.
-    if (!params.isUser) {
-        updateSwipeCounter(newMessageId);
+    if (!mes.is_user) {
+        updateSwipeCounter(messageId, { message: mes, messageElement });
+    }
+
+    // The caller should handle the rest after adding a message to DOM.
+    if (!insert) {
+        return messageElement;
     }
 
     //last_mes should always be updated.
@@ -2570,8 +2586,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         scrollChatToBottom({ waitForFrame: true });
     }
 
-    applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
+    applyCharacterTagsToMessageDivs({ mesIds: messageId });
     updateEditArrowClasses();
+
+    return messageElement;
 }
 
 /**
@@ -4208,6 +4226,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             //do nothing? why does this check exist?
         }
         else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
+            deleteItemizedPromptForMessage(chat.length - 1);
             chat.length = chat.length - 1;
             await removeLastMessage();
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -8120,6 +8139,7 @@ async function messageEditMove(sourceId, targetId) {
         this_edit_mes_id = targetId;
     }
 
+    swapItemizedPrompts(sourceId, targetId);
     updateViewMessageIds();
     refreshSwipeButtons();
     await saveChatConditional();
@@ -9620,23 +9640,6 @@ export async function createOrEditCharacter(e) {
 }
 
 /**
- * Visually updates all chat messages including andd after index by removing them, then adding them.
- * @param {ChatMessage[]} chat All messages in chat before index will remain unchanged.
- * @param {Number} index The last unchanged messageId.
- */
-export async function redisplayChat(chat, index) {
-    //Remove messages after index.
-    chatElement.children(`.mes[mesid="${index}"]`).nextAll('.mes').addBack().remove();
-
-    //Skip to index, then add extra messages.
-    for (let i = index; i <= chat.length - 1; i++) {
-        //addOneMessage will update last_mes.
-        addOneMessage(chat[i], { scroll: false, showSwipes: false, forceId: i });
-    }
-    refreshSwipeButtons();
-}
-
-/**
  * Formats a counter for a swipe view.
  * @param {number} current The current number of items.
  * @param {number} total The total number of items.
@@ -9790,7 +9793,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat(chat, mesId);
+                await redisplayChat({ startIndex: mesId });
             }
             else {
                 await Popup.show.confirm(
@@ -11445,6 +11448,9 @@ jQuery(async function () {
         });
 
         if (this_del_mes >= 0) {
+            for (let i = (chat.length - 1); i >= this_del_mes; i--) {
+                deleteItemizedPromptForMessage(i);
+            }
             chatElement.find(`.mes[mesid="${this_del_mes}"]`).nextAll('div').remove();
             chatElement.find(`.mes[mesid="${this_del_mes}"]`).remove();
             chat.length = this_del_mes;
@@ -11684,14 +11690,16 @@ jQuery(async function () {
         const oldScroll = chatElement[0].scrollTop;
         const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
-        clone.mes = $(this).closest('.mes').find('.edit_textarea').val().toString();
+        const this_edit_mes_element = $(this).closest('.mes');
+        clone.mes = this_edit_mes_element.find('.edit_textarea').val().toString();
 
         if (power_user.trim_spaces) {
             clone.mes = clone.mes.trim();
         }
 
         chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
-        addOneMessage(clone, { insertAfter: this_edit_mes_id });
+        const newMessageElement = addOneMessage(clone, { insert: false });
+        this_edit_mes_element.after(newMessageElement);
 
         updateViewMessageIds();
         await saveChatConditional();

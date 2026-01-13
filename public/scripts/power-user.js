@@ -4015,6 +4015,18 @@ jQuery(() => {
     $('#experimental_macro_engine').on('input', function () {
         power_user.experimental_macro_engine = !!$(this).prop('checked');
         saveSettingsDebounced();
+
+        eventSource.once(event_types.SETTINGS_UPDATED, function() {
+            toastr.warning(
+                t`Click here to reload.`,
+                t`Toggling the Experimental Macro Engine requires a reload.`,
+                {
+                    onclick: () => window.location.reload(),
+                    timeOut: 10000,
+                    preventDuplicates: true,
+                },
+            );
+        });
     });
 
     $('#disable_group_trimming').on('input', function () {
