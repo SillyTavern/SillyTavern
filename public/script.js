@@ -2514,7 +2514,7 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
             avatarImg = mes.force_avatar;
         } else if (this_chid === undefined) {
             avatarImg = system_avatar;
-        } else if (characters[this_chid]?.avatar) {
+        } else if (characters[this_chid] && characters[this_chid].avatar !== 'none') {
             avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
         } else {
             avatarImg = default_avatar;
