@@ -1397,7 +1397,7 @@ export async function showMoreMessages(messagesToLoad = null) {
     const firstId = clamp(messageId - count, 0, Infinity);
     const messageElements = [];
     chat.slice(firstId, messageId).forEach((message, id) => {
-        messageElements.push(updateMessageElement(message, { forceId: firstId + id }));
+        messageElements.push(updateMessageElement(message, { messageId: firstId + id }));
     });
     // This could be faster: https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
     // Fallback to chatElement if the button isn't where it's expected to be.
@@ -1458,7 +1458,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
     if (messages.length > 0) {
         const newMessageElements = messages.map((message, offset) => {
             const i = startIndex + offset;
-            const messageElement = updateMessageElement(message, { forceId: i });
+            const messageElement = updateMessageElement(message, { messageId: i });
 
             return messageElement[0];
         });
@@ -2466,9 +2466,9 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
         mes.swipes ??= [mes.mes];
         //This keeps listeners intact.
         messageElement = chatElement.find(`[mesid="${messageId}"]`);
-        updateMessageElement(mes, { forceId: forceId, messageElement });
+        updateMessageElement(mes, { messageId: forceId, messageElement });
     } else {
-        messageElement = updateMessageElement(mes, { forceId: forceId });
+        messageElement = updateMessageElement(mes, { messageId: forceId });
         if (typeof insertAfter === 'number' && insertAfter >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
             $(messageElement).insertAfter(target);
@@ -2500,11 +2500,11 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
  * Creates the element of a single message as if it were the last message or at forceMesId
  * @param {ChatMessage} mes Message object
  * @param {object} [options] Options
- * @param {number} [options.forceId=undefined] Force the message ID
+ * @param {number} [options.messageId=chat.length - 1] Force the message ID
  * @param {JQuery<HTMLElement>} [options.messageElement=messageTemplate.clone()] This message element will be updated with the ChatMessage object.
  * @returns {JQuery<HTMLElement>} Rendered HTMLElement.
  */
-export function updateMessageElement(mes, { forceId = undefined, messageElement = messageTemplate.clone() } = {}) {
+export function updateMessageElement(mes, { messageId = chat.length - 1, messageElement = messageTemplate.clone() } = {}) {
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
 
@@ -2527,8 +2527,6 @@ export function updateMessageElement(mes, { forceId = undefined, messageElement 
         // Special case for persona images.
         avatarImg = mes.force_avatar;
     }
-
-    const messageId = typeof forceId == 'number' ? forceId : chat.length - 1;
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
     const messageHTML = getMessageTextHTML(mes, { messageId });
