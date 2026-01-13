@@ -2467,12 +2467,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             avatarImg = mes.force_avatar;
         } else if (this_chid === undefined) {
             avatarImg = system_avatar;
+        } else if (characters[this_chid]?.avatar) {
+            avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
         } else {
-            if (characters[this_chid].avatar !== 'none') {
-                avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
-            } else {
-                avatarImg = default_avatar;
-            }
+            avatarImg = default_avatar;
         }
         //old processing:
         //if message is from system, use the name provided in the message JSONL to proceed,
@@ -2536,15 +2534,14 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
     }
 
     if (type !== 'swipe' && insert) {
-        if (!insertAfter && !insertBefore) {
-            chatElement.append(messageElement);
-        }
-        else if (insertAfter) {
+        if (typeof insertAfter === 'number' && insertAfter >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
             $(messageElement).insertAfter(target);
-        } else {
+        } else if (typeof insertBefore === 'number' && insertBefore >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertBefore}"]`);
             $(messageElement).insertBefore(target);
+        } else {
+            chatElement.append(messageElement);
         }
     }
 
