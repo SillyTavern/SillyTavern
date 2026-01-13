@@ -9,6 +9,7 @@ import {
     AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
+    NANOGPT_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
     OPENAI_VERBOSITY_MODELS,
@@ -2227,6 +2228,10 @@ router.post('/generate', async function (request, response) {
             }
             if (request.body.repetition_penalty !== undefined) {
                 bodyParams['repetition_penalty'] = request.body.repetition_penalty;
+            }
+            if (request.body.reasoning_effort) {
+                const effort = NANOGPT_REASONING_EFFORT_MAP[request.body.reasoning_effort];
+                bodyParams['reasoning'] = { effort: effort };
             }
 
             const isClaude = /^claude-/.test(request.body.model);

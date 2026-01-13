@@ -75,6 +75,10 @@ router.post('/libre', async (request, response) => {
 
 router.post('/google', async (request, response) => {
     try {
+        if (request.body.lang === 'pt-BR') {
+            request.body.lang = 'pt';
+        }
+
         const text = String(request.body.text ?? '');
         const lang = String(request.body.lang ?? '');
 

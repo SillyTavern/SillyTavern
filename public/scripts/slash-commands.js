@@ -54,6 +54,7 @@ import {
     system_avatar,
     system_message_types,
     this_chid,
+    updateMessageElement,
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
@@ -4642,7 +4643,8 @@ async function messageRoleCallback(args, role) {
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
     const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
     if (existingMessage.length) {
-        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        const newMessageElement = updateMessageElement(message, { forceId: modifyAt });
+        existingMessage.after(newMessageElement);
         existingMessage.remove();
     }
     await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
@@ -4707,7 +4709,8 @@ async function messageNameCallback(args, name) {
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
     const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
     if (existingMessage.length) {
-        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        const newMessageElement = updateMessageElement(message, { forceId: modifyAt });
+        existingMessage.after(newMessageElement);
         existingMessage.remove();
     }
     await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);

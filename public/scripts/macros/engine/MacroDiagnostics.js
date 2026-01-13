@@ -3,7 +3,6 @@
 /** @typedef {import('chevrotain').ILexingError} ILexingError */
 /** @typedef {import('chevrotain').IRecognitionException} IRecognitionException */
 
-import { saveSettingsDebounced } from '/script.js';
 import { t } from '/scripts/i18n.js';
 import { Popup, POPUP_RESULT } from '/scripts/popup.js';
 import { power_user } from '/scripts/power-user.js';
@@ -61,8 +60,7 @@ async function onboardingExperimentalMacroEngineUnsafe(feature = null) {
         <p>${t`Would you like to enable it now?`}</p>`);
     if (result == POPUP_RESULT.AFFIRMATIVE) {
         power_user.experimental_macro_engine = true;
-        $('#experimental_macro_engine').prop('checked', power_user.experimental_macro_engine);
-        saveSettingsDebounced();
+        $('#experimental_macro_engine').prop('checked', power_user.experimental_macro_engine).trigger('input');
     }
 
     // Only show this once

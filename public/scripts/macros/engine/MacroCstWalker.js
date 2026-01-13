@@ -3,9 +3,12 @@
 /** @typedef {import('./MacroEnv.types.js').MacroEnv} MacroEnv */
 /** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
 
+import { logMacroInternalError, logMacroRuntimeWarning } from './MacroDiagnostics.js';
+import { MacroEngine } from './MacroEngine.js';
 import { parseFlags, createEmptyFlags, MacroFlagType } from './MacroFlags.js';
 import { MacroParser } from './MacroParser.js';
 import { MacroRegistry } from './MacroRegistry.js';
+import { isFalseBoolean } from '/scripts/utils.js';
 
 /**
  * @typedef {Object} MacroCall
@@ -493,7 +496,10 @@ class MacroCstWalker {
     }
 
     /**
-     * Evaluates a variable expression node and routes it to the appropriate variable macro.
+     * Evaluates a variable expression node using direct variable API calls.
+     * Supports operators: get, set (=), add (+=), sub (-=), inc (++), dec (--),
+     * logical or (||), nullish coalescing (??), logical or assign (||=),
+     * nullish coalescing assign (??=), and equality comparison (==).
      *
      * @param {CstNode} macroNode - The parent macro node.
      * @param {CstNode} variableExprNode - The variableExpr CST node.
@@ -501,9 +507,6 @@ class MacroCstWalker {
      * @returns {string}
      */
     #evaluateVariableExpr(macroNode, variableExprNode, context) {
-        const { text, contextOffset, env, resolveMacro } = context;
-
-        const children = macroNode.children || {};
         const varChildren = variableExprNode.children || {};
 
         // Extract scope (. for local, $ for global)
@@ -518,9 +521,9 @@ class MacroCstWalker {
         const operatorNode = /** @type {CstNode?} */ ((varChildren.variableOperator || [])[0]);
         const operatorChildren = operatorNode?.children || {};
 
-        // Determine operation and value
+        // Determine operation and whether a value expression is expected
         let operation = 'get';
-        let value = null;
+        let hasValueExpr = false;
 
         if (operatorNode) {
             const operatorTokens = /** @type {IToken[]} */ (operatorChildren['Var.operator'] || []);
@@ -528,60 +531,193 @@ class MacroCstWalker {
 
             if (operatorToken) {
                 const operatorImage = operatorToken.image;
-                if (operatorImage === '++') {
-                    operation = 'inc';
-                } else if (operatorImage === '--') {
-                    operation = 'dec';
-                } else if (operatorImage === '=') {
-                    operation = 'set';
-                    value = this.#evaluateVariableValue(operatorChildren, context);
-                } else if (operatorImage === '+=') {
-                    operation = 'add';
-                    value = this.#evaluateVariableValue(operatorChildren, context);
+                switch (operatorImage) {
+                    case '++':
+                        operation = 'inc';
+                        break;
+                    case '--':
+                        operation = 'dec';
+                        break;
+                    case '=':
+                        operation = 'set';
+                        hasValueExpr = true;
+                        break;
+                    case '+=':
+                        operation = 'add';
+                        hasValueExpr = true;
+                        break;
+                    case '-=':
+                        operation = 'sub';
+                        hasValueExpr = true;
+                        break;
+                    case '||':
+                        operation = 'logicalOr';
+                        hasValueExpr = true;
+                        break;
+                    case '??':
+                        operation = 'nullishCoalescing';
+                        hasValueExpr = true;
+                        break;
+                    case '||=':
+                        operation = 'logicalOrAssign';
+                        hasValueExpr = true;
+                        break;
+                    case '??=':
+                        operation = 'nullishCoalescingAssign';
+                        hasValueExpr = true;
+                        break;
+                    case '==':
+                        operation = 'equals';
+                        hasValueExpr = true;
+                        break;
+                    case '!=':
+                        operation = 'notEquals';
+                        hasValueExpr = true;
+                        break;
+                    default:
+                        logMacroInternalError({ message: `Lexer found macro operator that is not implemented for variable shorthand expressions in macro node '${macroNode.name}'.` });
+                        break;
                 }
             }
         }
 
-        // Map operation to macro name
-        const macroNameMap = {
-            get: isGlobal ? 'getglobalvar' : 'getvar',
-            set: isGlobal ? 'setglobalvar' : 'setvar',
-            inc: isGlobal ? 'incglobalvar' : 'incvar',
-            dec: isGlobal ? 'decglobalvar' : 'decvar',
-            add: isGlobal ? 'addglobalvar' : 'addvar',
+        // Create a lazy value resolver that caches its result on first call.
+        // This ensures the value expression is only evaluated when actually needed,
+        // which is important for performance and because some macros are stateful.
+        const lazyValue = hasValueExpr ? this.#createLazyValue(operatorChildren, context) : () => '';
+
+        // Execute the operation using direct variable API calls
+        return this.#executeVariableOperation(varName, isGlobal, operation, lazyValue);
+    }
+
+    /**
+     * Creates a lazy value resolver that caches its result on first call.
+     * This ensures the value expression is only evaluated when actually needed.
+     *
+     * @param {Record<string, any>} operatorChildren - The children of the variableOperator node.
+     * @param {EvaluationContext} context - The evaluation context.
+     * @returns {() => string} A function that returns the evaluated value, caching the result.
+     */
+    #createLazyValue(operatorChildren, context) {
+        let cached = null;
+        let resolved = false;
+
+        return () => {
+            if (!resolved) {
+                cached = this.#evaluateVariableValue(operatorChildren, context);
+                resolved = true;
+            }
+            return cached;
         };
+    }
 
-        const targetMacroName = macroNameMap[operation];
+    /**
+     * Executes a variable operation using the SillyTavern context API.
+     *
+     * @param {string} varName - The variable name.
+     * @param {boolean} isGlobal - Whether this is a global ($) or local (.) variable.
+     * @param {string} operation - The operation to perform.
+     * @param {() => string} lazyValue - A lazy function that returns the value when called. Only evaluated when needed.
+     * @returns {string} The result of the operation.
+     */
+    #executeVariableOperation(varName, isGlobal, operation, lazyValue) {
+        const ctx = SillyTavern.getContext();
+        const vars = isGlobal ? ctx.variables.global : ctx.variables.local;
 
-        // Build args array based on operation
-        const args = [varName];
-        if (value !== null) {
-            args.push(value);
+        /**
+        * Normalizes macro results into a string.
+        * @param {any} value
+        * @returns {string}
+        */
+        const normalize = MacroEngine.normalizeMacroResult.bind(MacroEngine);
+
+        /**
+         * Checks if a value is falsy (empty string, 0, '0', false, 'false', null, undefined).
+         * @param {any} val
+         * @returns {boolean}
+         */
+        const isFalsy = (val) => !val || isFalseBoolean(normalize(val));
+
+        switch (operation) {
+            case 'get':
+                return normalize(vars.get(varName));
+
+            case 'set':
+                vars.set(varName, lazyValue());
+                return '';
+
+            case 'inc':
+                return normalize(vars.inc(varName));
+
+            case 'dec':
+                return normalize(vars.dec(varName));
+
+            case 'add':
+                vars.add(varName, lazyValue());
+                return '';
+
+            case 'sub': {
+                // Subtract by adding the negative value
+                const numValue = Number(lazyValue());
+                if (!isNaN(numValue)) vars.add(varName, -numValue);
+                else logMacroRuntimeWarning({ message: `Variable shorthand "-=" operator requires a numeric value, got: "${lazyValue()}"` });
+                return '';
+            }
+
+            case 'logicalOr': {
+                // Returns default value if variable is falsy, otherwise returns variable value
+                // Value is only resolved if needed (when variable is falsy)
+                const currentValue = vars.get(varName);
+                return isFalsy(currentValue) ? normalize(lazyValue()) : normalize(currentValue);
+            }
+
+            case 'nullishCoalescing': {
+                // Returns default value only if variable doesn't exist, otherwise returns variable value (even if falsy)
+                // Value is only resolved if needed (when variable doesn't exist)
+                const exists = vars.has(varName);
+                return exists ? normalize(vars.get(varName)) : normalize(lazyValue());
+            }
+
+            case 'logicalOrAssign': {
+                // If variable is falsy, set it to value and return value; otherwise return current value
+                // Value is only resolved if needed (when variable is falsy)
+                const currentValue = vars.get(varName);
+                if (isFalsy(currentValue)) {
+                    vars.set(varName, lazyValue());
+                    return normalize(lazyValue());
+                }
+                return normalize(currentValue);
+            }
+
+            case 'nullishCoalescingAssign': {
+                // If variable doesn't exist, set it to value and return value; otherwise return current value
+                // Value is only resolved if needed (when variable doesn't exist)
+                const exists = vars.has(varName);
+                if (!exists) {
+                    vars.set(varName, lazyValue());
+                    return normalize(lazyValue());
+                }
+                return normalize(vars.get(varName));
+            }
+
+            case 'equals': {
+                // String equality comparison - value is always needed
+                const currentValue = normalize(vars.get(varName));
+                const compareValue = normalize(lazyValue());
+                return currentValue === compareValue ? 'true' : 'false';
+            }
+
+            case 'notEquals': {
+                // String inequality comparison - value is always needed
+                const currentValue = normalize(vars.get(varName));
+                const compareValue = normalize(lazyValue());
+                return currentValue !== compareValue ? 'true' : 'false';
+            }
+
+            default:
+                logMacroRuntimeWarning({ message: `Unknown variable shorthand operation: "${operation}"` });
+                return '';
         }
-
-        const range = this.#getMacroRange(macroNode);
-
-        /** @type {MacroCall} */
-        const call = {
-            name: targetMacroName,
-            args,
-            flags: createEmptyFlags(),
-            isScoped: false,
-            isVariableShorthand: true,
-            rawInner: text.slice(
-                (/** @type {IToken|undefined} */ (children['Macro.Start']?.[0])?.endOffset ?? range.startOffset) + 1,
-                (/** @type {IToken|undefined} */ (children['Macro.End']?.[0])?.startOffset ?? range.endOffset + 1) - 1,
-            ),
-            rawWithBraces: text.slice(range.startOffset, range.endOffset + 1),
-            rawArgs: args,
-            range,
-            globalOffset: contextOffset + range.startOffset,
-            cstNode: macroNode,
-            env,
-        };
-
-        const result = resolveMacro(call);
-        return typeof result === 'string' ? result : String(result ?? '');
     }
 
     /**

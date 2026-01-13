@@ -222,6 +222,7 @@ export async function itemizedParams(itemizedPrompts, thisPromptSet, incomingMes
 
 export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
     let thisPromptSet = undefined;
+    priorPromptArrayItemForRawPromptDisplay = -1;
 
     for (let i = 0; i < itemizedPrompts.length; i++) {
         console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
@@ -262,7 +263,7 @@ export async function promptItemize(itemizedPrompts, requestedMesId) {
 
     /** @type {HTMLElement} */
     const diffPrevPrompt = popup.dlg.querySelector('#diffPrevPrompt');
-    if (priorPromptArrayItemForRawPromptDisplay) {
+    if (priorPromptArrayItemForRawPromptDisplay >= 0) {
         diffPrevPrompt.style.display = '';
         diffPrevPrompt.addEventListener('click', function () {
             const dmp = new DiffMatchPatch();
@@ -349,4 +350,45 @@ export function initItemizedPrompts() {
     eventSource.on(event_types.GROUP_CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
+}
+
+/**
+ * Swaps the itemized prompts between two messages. Useful when moving messages around in the chat.
+ * @param {number} sourceMessageId Source message ID
+ * @param {number} targetMessageId Target message ID
+ */
+export function swapItemizedPrompts(sourceMessageId, targetMessageId) {
+    if (!Array.isArray(itemizedPrompts)) {
+        return;
+    }
+
+    const sourcePrompts = itemizedPrompts.filter(x => x.mesId === sourceMessageId);
+    const targetPrompts = itemizedPrompts.filter(x => x.mesId === targetMessageId);
+
+    sourcePrompts.forEach(prompt => {
+        prompt.mesId = targetMessageId;
+    });
+
+    targetPrompts.forEach(prompt => {
+        prompt.mesId = sourceMessageId;
+    });
+
+    itemizedPrompts.sort((a, b) => a.mesId - b.mesId);
+}
+
+/**
+ * Deletes the itemized prompt for a specific message.
+ * Shifts down other itemized prompts as necessary.
+ * @param {number} messageId Message ID to delete itemized prompt for
+ */
+export function deleteItemizedPromptForMessage(messageId) {
+    if (!Array.isArray(itemizedPrompts)) {
+        return;
+    }
+
+    itemizedPrompts = itemizedPrompts.filter(x => x.mesId !== messageId);
+
+    for (const prompt of itemizedPrompts.filter(x => x.mesId > messageId)) {
+        prompt.mesId -= 1;
+    }
 }
