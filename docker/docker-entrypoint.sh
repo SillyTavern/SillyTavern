@@ -103,4 +103,4 @@ else
 fi
 
 # Calling function with the determined prefix
-start_sillytavern "$EXEC_PREFIX"
+start_sillytavern "$EXEC_PREFIX" "$@"
