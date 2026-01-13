@@ -272,7 +272,7 @@ import { extractReasoningFromData, extractReasoningSignatureFromData, initReason
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
-import { clearItemizedPrompts, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts } from './scripts/itemized-prompts.js';
+import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
 import { initAccessibility } from './scripts/a11y.js';
@@ -1391,18 +1391,26 @@ export async function showMoreMessages(messagesToLoad = null) {
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = chatElement.prop('scrollHeight');
-    const isButtonInView = isElementInViewport($('#show_more_messages')[0]);
+    const showMoreButton = $('#show_more_messages');
+    const isButtonInView = isElementInViewport(showMoreButton[0]);
 
-    while (messageId > 0 && count > 0) {
-        let newMessageId = messageId - 1;
-        addOneMessage(chat[newMessageId], { insertBefore: messageId >= chat.length ? null : messageId, scroll: false, forceId: newMessageId, showSwipes: false });
-        count--;
-        messageId--;
+    const firstId = clamp(messageId - count, 0, Infinity);
+    const messageElements = [];
+    chat.slice(firstId, messageId).forEach((message, id) => {
+        messageElements.push(addOneMessage(message, { scroll: false, forceId: firstId + id, showSwipes: false, insert: false }));
+    });
+    // This could be faster: https://developer.mozilla.org/en-US/docs/Web/API/Element/insertAdjacentElement
+    // Fallback to chatElement if the button isn't where it's expected to be.
+    if (showMoreButton[0]) {
+        showMoreButton.after(messageElements);
+    } else {
+        chatElement.prepend(messageElements);
     }
+
     refreshSwipeButtons();
 
-    if (messageId == 0) {
-        $('#show_more_messages').remove();
+    if (firstId === 0) {
+        showMoreButton.remove();
     }
 
     if (isButtonInView) {
@@ -1448,7 +1456,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
     const messages = targetChat.slice(startIndex);
 
     if (messages.length > 0) {
-        const newMessageElements = messages.map( (message, offset) => {
+        const newMessageElements = messages.map((message, offset) => {
             const i = startIndex + offset;
             const messageElement = addOneMessage(message, { scroll: false, forceId: i, showSwipes: false, insert: false });
 
@@ -1461,7 +1469,7 @@ export async function redisplayChat({ targetChat = chat, startIndex = 0, fade = 
         //Append to chat in one DOM update.
         chatElement.append(newMessageElements);
 
-        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length,  1) });
+        applyCharacterTagsToMessageDivs({ mesIds: lodash.range(startIndex, targetChat.length, 1) });
     }
 
     refreshSwipeButtons(false, fade);
@@ -1538,6 +1546,7 @@ export async function clearChat() {
 }
 
 export async function deleteLastMessage() {
+    deleteItemizedPromptForMessage(chat.length - 1);
     chat.length = chat.length - 1;
     chatElement.children('.mes').last().remove();
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -1593,6 +1602,7 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
     chat_metadata.tainted = true;
 
     const startIndex = [0, minId].includes(id) ? id : null;
+    deleteItemizedPromptForMessage(id);
     updateViewMessageIds(startIndex);
     saveChatDebounced();
 
@@ -1682,7 +1692,7 @@ export async function sendTextareaMessage() {
  * @param {boolean} isSystem If the message was sent by the system
  * @param {boolean} isUser If the message was sent by the user
  * @param {number} messageId Message index in chat array
- * @param {object} [sanitizerOverrides] DOMPurify sanitizer option overrides
+ * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] DOMPurify sanitizer option overrides
  * @param {boolean} [isReasoning] If the message is reasoning output
  * @returns {string} HTML string
  */
@@ -1831,7 +1841,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
     }
 
-    /** @type {import('dompurify').Config & { RETURN_DOM_FRAGMENT: false; RETURN_DOM: false }} */
+    /** @type {DOMPurify.Config} */
     const config = {
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,
@@ -2375,6 +2385,46 @@ export function addCopyToCodeBlocks(messageElement) {
     }
 }
 
+/**
+ * Shows or hides the Prompt display button
+ * @param {ChatMessage} message Message object
+ * @param {object} options Options
+ * @param {number} [options.messageId] Message ID
+ * @param {JQuery<HTMLElement>} [options.messageElement] Message element
+ * @return {void}
+ */
+function updateMessageItemizedPromptButton(message, { messageId = chat.indexOf(message), messageElement = chatElement.find(`.mes[mesid="${messageId}"]`) }) {
+    //if we have itemized messages, and the array isn't null..
+    if (!message.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(messageId));
+        if (itemizedPrompt) {
+            messageElement.find('.mes_prompt').show();
+        }
+    }
+}
+
+/**
+ * Gets messageFormatting for a ChatMessage object.
+ * @param {ChatMessage} message
+ * @param {object} options Options
+ * @param {number} [options.messageId] Message ID
+ * @returns {string} Formatted message HTML
+ */
+function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
+    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
+    /** @type {Partial<DOMPurify.Config>} */
+    const sanitizerOverrides = message.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
+
+    return messageFormatting(
+        message.extra?.display_text || message.mes,
+        message.name,
+        message.is_system,
+        message.is_user,
+        messageId,
+        sanitizerOverrides,
+        false,
+    );
+}
 
 /**
  * Adds a single message to the chat.
@@ -2391,18 +2441,25 @@ export function addCopyToCodeBlocks(messageElement) {
  */
 export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true, insert = true } = {}) {
     // Callers push the new message to chat before calling addOneMessage
-    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
+    const messageId = (() => {
+        if (typeof forceId === 'number') {
+            return forceId;
+        }
+        if (typeof insertBefore === 'number') {
+            return insertBefore - 1;
+        }
+        if (typeof insertAfter === 'number') {
+            return insertAfter + 1;
+        }
+        const index = chat.indexOf(mes);
+        if (index !== -1) {
+            return index;
+        }
+        return chat.length - 1;
+    })();
 
-    let messageText = mes.mes;
-    const momentDate = timestampToMoment(mes.send_date);
-    const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
-
-    if (mes?.extra?.display_text) {
-        messageText = mes.extra.display_text;
-    }
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
-    const isSystem = mes.is_system;
 
     //for non-user messages
     if (!mes.is_user) {
@@ -2410,12 +2467,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
             avatarImg = mes.force_avatar;
         } else if (this_chid === undefined) {
             avatarImg = system_avatar;
+        } else if (characters[this_chid] && characters[this_chid].avatar !== 'none') {
+            avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
         } else {
-            if (characters[this_chid].avatar !== 'none') {
-                avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
-            } else {
-                avatarImg = default_avatar;
-            }
+            avatarImg = default_avatar;
         }
         //old processing:
         //if message is from system, use the name provided in the message JSONL to proceed,
@@ -2425,20 +2480,14 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         // Special case for persona images.
         avatarImg = mes.force_avatar;
     }
+    const momentDate = timestampToMoment(mes.send_date);
+    const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+    const messageHTML = getMessageTextHTML(mes, { messageId });
+    const bookmarkLink = mes?.extra?.bookmark_link;
+    const tokenCount = mes.extra?.token_count;
+    const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
 
-    // if mes.extra.uses_system_ui is true, set an override on the sanitizer options
-    const sanitizerOverrides = mes.extra?.uses_system_ui ? { MESSAGE_ALLOW_SYSTEM_UI: true } : {};
-
-    messageText = messageFormatting(
-        messageText,
-        mes.name,
-        isSystem,
-        mes.is_user,
-        chat.indexOf(mes),
-        sanitizerOverrides,
-        false,
-    );
-    let newMessage;
+    let messageElement;
 
     if (type === 'swipe') {
         // Forbidden black magic
@@ -2446,17 +2495,13 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         mes.swipe_id ??= 0;
         mes.swipes ??= [mes.mes];
         //This keeps listeners intact.
-        newMessage = chatElement.find(`[mesid="${newMessageId}"]`);
+        messageElement = chatElement.find(`[mesid="${messageId}"]`);
     } else {
-        newMessage = messageTemplate.clone();
+        messageElement = messageTemplate.clone();
     }
 
-    const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
-    const tokenCount = mes.extra?.token_count;
-    const bookmarkLink = mes?.extra?.bookmark_link;
-
-    newMessage.attr({
-        'mesid': newMessageId,
+    messageElement.attr({
+        'mesid': messageId,
         'swipeid': mes.swipe_id ?? 0,
         'ch_name': mes.name,
         'is_user': mes.is_user,
@@ -2468,76 +2513,65 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         'type': mes.extra?.type ?? '',
     });
 
-    newMessage.find('.avatar img').attr('src', avatarImg);
-    newMessage.find('.ch_name .name_text').text(mes.name);
-    newMessage.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
-    newMessage.find('.mesIDDisplay').text(`#${newMessageId}`);
-    tokenCount && newMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
-    mes.title && newMessage.attr('title', mes.title);
-    timerValue && newMessage.find('.mes_timer').attr('title', timerTitle).text(timerValue);
-    bookmarkLink && updateBookmarkDisplay(newMessage);
+    messageElement.find('.avatar img').attr('src', avatarImg);
+    messageElement.find('.ch_name .name_text').text(mes.name);
+    messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
+    messageElement.find('.mesIDDisplay').text(`#${messageId}`);
+    tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+    mes.title && messageElement.attr('title', mes.title);
+    timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    bookmarkLink && updateBookmarkDisplay(messageElement);
 
     if (mes.extra?.bias !== '') {
         const bias = messageFormatting(mes.extra?.bias, '', false, false, -1, {}, false);
-        newMessage.find('.mes_bias').html(bias);
+        messageElement.find('.mes_bias').html(bias);
     }
 
-    updateReasoningUI(newMessage);
+    updateReasoningUI(messageElement);
 
     if (power_user.timestamp_model_icon && mes.extra?.api) {
-        insertSVGIcon(newMessage, mes.extra);
+        insertSVGIcon(messageElement, mes.extra);
     }
-
 
     if (type !== 'swipe' && insert) {
-        if (!insertAfter && !insertBefore) {
-            chatElement.append(newMessage);
-        }
-        else if (insertAfter) {
+        if (typeof insertAfter === 'number' && insertAfter >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
-            $(newMessage).insertAfter(target);
-        } else {
+            $(messageElement).insertAfter(target);
+        } else if (typeof insertBefore === 'number' && insertBefore >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertBefore}"]`);
-            $(newMessage).insertBefore(target);
+            $(messageElement).insertBefore(target);
+        } else {
+            chatElement.append(messageElement);
         }
     }
 
-    const isSmallSys = mes?.extra?.isSmallSys;
-
-    if (isSmallSys === true) {
-        newMessage.addClass('smallSysMes');
+    if (mes?.extra?.isSmallSys === true) {
+        messageElement.addClass('smallSysMes');
     }
 
     if (Array.isArray(mes?.extra?.tool_invocations)) {
-        newMessage.addClass('toolCall');
+        messageElement.addClass('toolCall');
     }
 
-    //if we have itemized messages, and the array isn't null..
-    if (!mes.is_user && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
-        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(newMessageId));
-        if (itemizedPrompt) {
-            newMessage.find('.mes_prompt').show();
-        }
-    }
+    updateMessageItemizedPromptButton(mes, { messageId, messageElement });
 
-    newMessage.find('.avatar img').on('error', function () {
+    messageElement.find('.avatar img').on('error', function () {
         $(this).hide();
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
-    appendMediaToMessage(mes, newMessage, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
-    newMessage.find('.mes_text').html(messageText);
-
-    addCopyToCodeBlocks(newMessage);
+    appendMediaToMessage(mes, messageElement, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
+    messageElement.find('.mes_text').html(messageHTML);
+    addCopyToCodeBlocks(messageElement);
 
     // Set the swipes counter for all non-user messages.
     if (!mes.is_user) {
-        updateSwipeCounter(newMessageId, { messageElement: newMessage });
+        updateSwipeCounter(messageId, { message: mes, messageElement });
     }
 
     // The caller should handle the rest after adding a message to DOM.
     if (!insert) {
-        return newMessage;
+        return messageElement;
     }
 
     //last_mes should always be updated.
@@ -2552,10 +2586,10 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
         scrollChatToBottom({ waitForFrame: true });
     }
 
-    applyCharacterTagsToMessageDivs({ mesIds: newMessageId });
+    applyCharacterTagsToMessageDivs({ mesIds: messageId });
     updateEditArrowClasses();
 
-    return newMessage;
+    return messageElement;
 }
 
 /**
@@ -4192,6 +4226,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             //do nothing? why does this check exist?
         }
         else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
+            deleteItemizedPromptForMessage(chat.length - 1);
             chat.length = chat.length - 1;
             await removeLastMessage();
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -8104,6 +8139,7 @@ async function messageEditMove(sourceId, targetId) {
         this_edit_mes_id = targetId;
     }
 
+    swapItemizedPrompts(sourceId, targetId);
     updateViewMessageIds();
     refreshSwipeButtons();
     await saveChatConditional();
@@ -11412,6 +11448,9 @@ jQuery(async function () {
         });
 
         if (this_del_mes >= 0) {
+            for (let i = (chat.length - 1); i >= this_del_mes; i--) {
+                deleteItemizedPromptForMessage(i);
+            }
             chatElement.find(`.mes[mesid="${this_del_mes}"]`).nextAll('div').remove();
             chatElement.find(`.mes[mesid="${this_del_mes}"]`).remove();
             chat.length = this_del_mes;
@@ -11651,14 +11690,16 @@ jQuery(async function () {
         const oldScroll = chatElement[0].scrollTop;
         const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
-        clone.mes = $(this).closest('.mes').find('.edit_textarea').val().toString();
+        const this_edit_mes_element = $(this).closest('.mes');
+        clone.mes = this_edit_mes_element.find('.edit_textarea').val().toString();
 
         if (power_user.trim_spaces) {
             clone.mes = clone.mes.trim();
         }
 
         chat.splice(Number(this_edit_mes_id) + 1, 0, clone);
-        addOneMessage(clone, { insertAfter: this_edit_mes_id });
+        const newMessageElement = addOneMessage(clone, { insert: false });
+        this_edit_mes_element.after(newMessageElement);
 
         updateViewMessageIds();
         await saveChatConditional();

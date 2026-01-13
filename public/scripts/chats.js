@@ -685,7 +685,7 @@ export function formatCreatorNotes(text, avatarId) {
     const preference = new StylesPreference(avatarId);
     const sanitizeStyles = !preference.get();
     const decodeStyleParam = { prefix: sanitizeStyles ? '#creator_notes_spoiler ' : '' };
-    /** @type {import('dompurify').Config} */
+    /** @type {DOMPurify.Config} */
     const config = {
         RETURN_DOM: false,
         RETURN_DOM_FRAGMENT: false,

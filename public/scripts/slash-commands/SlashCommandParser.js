@@ -1714,7 +1714,33 @@ export class SlashCommandParser {
         return this.testSymbol('/');
     }
     testCommandEnd() {
-        return this.testClosureEnd() || this.testSymbol('|');
+        if (this.testClosureEnd()) return true;
+        // Only treat | as command end if we're not inside macro braces {{}}
+        if (this.testSymbol('|') && !this.isInsideMacroBraces()) return true;
+        return false;
+    }
+
+    /**
+     * Checks if the current position is inside unclosed macro braces {{...}}.
+     * This prevents pipes inside macros from being treated as command separators.
+     * @returns {boolean} True if inside unclosed macro braces.
+     */
+    isInsideMacroBraces() {
+        const textBehind = this.behind;
+        let depth = 0;
+
+        // Scan through the text to track macro brace depth
+        for (let i = 0; i < textBehind.length; i++) {
+            if (textBehind[i] === '{' && textBehind[i + 1] === '{') {
+                depth++;
+                i++; // Skip the second {
+            } else if (textBehind[i] === '}' && textBehind[i + 1] === '}') {
+                depth = Math.max(0, depth - 1);
+                i++; // Skip the second }
+            }
+        }
+
+        return depth > 0;
     }
     parseCommand() {
         const start = this.index + 1;
