@@ -4,7 +4,8 @@ FROM node:lts-alpine3.23
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-RUN apk add --no-cache gcompat tini git git-lfs
+# Added su-exec and shadow to support optional PUID/PGID user mapping
+RUN apk add --no-cache gcompat tini git git-lfs su-exec shadow
 
 # Create app directory and set ownership
 WORKDIR ${APP_HOME}
@@ -25,6 +26,8 @@ RUN \
   rm -f "config.yaml" || true && \
   ln -s "./config/config.yaml" "config.yaml" || true && \
   mkdir "config" || true
+# Set ownership
+RUN chown -R node:node config
 
 # Pre-compile public libraries
 RUN \
