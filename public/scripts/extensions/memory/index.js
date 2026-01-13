@@ -349,6 +349,11 @@ function onMaxMessagesPerRequestInput() {
     saveSettingsDebounced();
 }
 
+/**
+ * Get the latest memory summary from the chat.
+ * @param {ChatMessage[]} chat Chat messages
+ * @returns {string} Latest memory summary or empty string
+ */
 function getLatestMemoryFromChat(chat) {
     if (!Array.isArray(chat) || !chat.length) {
         return '';
@@ -365,6 +370,11 @@ function getLatestMemoryFromChat(chat) {
     return '';
 }
 
+/**
+ * Get the index of the latest memory summary from the chat.
+ * @param {ChatMessage[]} chat Chat messages
+ * @returns {number} Index of the latest memory summary or -1 if not found
+ */
 function getIndexOfLatestChatSummary(chat) {
     if (!Array.isArray(chat) || !chat.length) {
         return -1;

@@ -1508,6 +1508,10 @@ body.hideAllSwipeButtons :is(.swipe_left, .swipe_right),
     opacity: 0.4;
 }
 
+.mes_text.inline_media:not(:has(.edit_textarea)) {
+    display: none;
+}
+
 br {
     display: block;
     margin: 2px 0;

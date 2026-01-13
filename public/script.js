@@ -2135,7 +2135,7 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
     // Set media display attribute
     messageElement.attr('data-media-display', mediaDisplay);
     // Toggle text visibility
-    messageElement.find('.mes_text').toggleClass('displayNone', hideMessageText);
+    messageElement.find('.mes_text').toggleClass('inline_media', hideMessageText);
 
     /**
      * Appends a single image attachment to the message element.

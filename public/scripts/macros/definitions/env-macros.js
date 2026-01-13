@@ -160,17 +160,6 @@ export function registerEnvMacros() {
         handler: ({ env }) => env.system.model,
     });
 
-    // TODO: Move this to the summary extension, where it belongs
-    MacroRegistry.registerMacro('summary', {
-        category: MacroCategory.CHAT,
-        description: 'Latest chat summary from the "Summarize" extension (when available).',
-        returns: 'Latest chat summary.',
-        handler: ({ env }) => {
-            const value = /** @type {any} */ (env.extra).summary;
-            return value == null ? '' : String(value);
-        },
-    });
-
     MacroRegistry.registerMacro('original', {
         category: MacroCategory.CHARACTER,
         description: 'Original message content for {{original}} substitution in in character prompt overrides.',
