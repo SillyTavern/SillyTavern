@@ -75,6 +75,27 @@ const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
     FOLDER: 'TagFilterState_FOLDER',
 });
 
+/**
+ * Map of tag IDs to their corresponding filter types.
+ * Used for actionable tags (Favorites, Groups, Folders).
+ */
+const TAG_ID_TO_FILTER_TYPE = new Map([
+    ['1', FILTER_TYPES.FAV],
+    ['0', FILTER_TYPES.GROUP],
+    ['4', FILTER_TYPES.FOLDER],
+]);
+
+/**
+ * Checks if the given filter helper is the main character list filter.
+ * Filter states are only persisted to storage for the main character list.
+ * Group contexts maintain independent, non-persistent filter states.
+ * @param {FilterHelper} filterHelper - The filter helper to check
+ * @returns {boolean} True if this is the main character list
+ */
+function isMainCharacterList(filterHelper) {
+    return filterHelper === entitiesFilter;
+}
+
 /** @enum {number} */
 export const tag_filter_type = {
     character: 0,
@@ -99,12 +120,18 @@ export const tag_sort_mode = {
 
 /**
  * @type {{ FAV: Tag, GROUP: Tag, FOLDER: Tag, VIEW: Tag, HINT: Tag, UNFILTER: Tag }}
- * A collection of global actional tags for the filter panel
+ * A collection of global actionable tags for the filter panel.
+ *
+ * Tags with `filter_state` property (FAV, GROUP, FOLDER) maintain persistent state:
+ * - In main character list: state is saved to storage and tag.filter_state
+ * - In group contexts: state is ephemeral (stored only in filter helper)
+ *
+ * Tags without `filter_state` (VIEW, HINT, UNFILTER) are action buttons only.
  * */
 const ACTIONABLE_TAGS = {
-    FAV: { id: '1', sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
-    GROUP: { id: '0', sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
-    FOLDER: { id: '4', sort_order: 3, name: 'Show only folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
+    FAV: { id: '1', sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', filter_state: undefined, action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
+    GROUP: { id: '0', sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', filter_state: undefined, action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    FOLDER: { id: '4', sort_order: 3, name: 'Show only folders', color: 'rgba(120, 120, 120, 0.5)', filter_state: undefined, action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
     VIEW: { id: '2', sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: '3', sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
     UNFILTER: { id: '5', sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
@@ -350,16 +377,69 @@ function getTagBlock(tag, entities, hidden = 0, isUseless = false) {
 }
 
 /**
- * Applies the favorite filter to the character list.
- * @param {FilterHelper} _filterHelper Instance of FilterHelper class. Unused since it needs to be applied to both filters.
+ * Common logic for applying actionable tag filters (Favorites, Groups, Folders).
+ * Persists state to storage only for the main character list.
+ * @param {FilterHelper} filterHelper - Instance of FilterHelper class
+ * @param {object} tag - The actionable tag object
+ * @param {string} filterType - The filter type constant
+ * @param {string} storageKey - The storage key for persistence
  */
-function filterByFav(_filterHelper) {
+function applyActionableTagFilter(filterHelper, tag, filterType, storageKey) {
     const state = toggleTagThreeState($(this));
-    ACTIONABLE_TAGS.FAV.filter_state = state;
-    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FAV, state);
-    entitiesFilter.setFilterData(FILTER_TYPES.FAV, state);
-    groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, state);
-    groupMembersFilter.setFilterData(FILTER_TYPES.FAV, state);
+
+    // Only persist to global state and storage for main character list
+    if (isMainCharacterList(filterHelper)) {
+        tag.filter_state = state;
+        accountStorage.setItem(storageKey, state);
+    }
+
+    // Update the filter helper for the current context
+    filterHelper.setFilterData(filterType, state);
+}
+
+/**
+ * Determines the filter state for a tag based on context.
+ * For actionable tags: reads from persisted state (main list) or filter helper (group contexts).
+ * For regular tags: reads from the filter helper's TAG filter data.
+ * @param {object} tag - The tag object
+ * @param {FilterHelper} filterHelper - The filter helper instance
+ * @param {boolean} isFilterActionable - Whether this is an actionable tag with filter_state
+ * @returns {string} The filter state (SELECTED, EXCLUDED, or default)
+ */
+function determineTagFilterState(tag, filterHelper, isFilterActionable) {
+    if (isFilterActionable) {
+        // For actionable tags (Favorites, Groups, Folders):
+        // - In main list: read from tag.filter_state (persisted globally)
+        // - In group contexts: read from filter helper (independent, non-persistent)
+        if (isMainCharacterList(filterHelper)) {
+            return tag.filter_state || DEFAULT_FILTER_STATE;
+        } else {
+            // Read from filter helper for group contexts
+            const filterType = TAG_ID_TO_FILTER_TYPE.get(tag.id) || null;
+            if (filterType) {
+                return filterHelper.getFilterData(filterType) || DEFAULT_FILTER_STATE;
+            }
+        }
+    } else {
+        // For regular tag filters, read from the filter helper for this context
+        const filterData = filterHelper.getFilterData(FILTER_TYPES.TAG);
+
+        if (filterData?.selected?.includes(tag.id)) {
+            return 'SELECTED';
+        } else if (filterData?.excluded?.includes(tag.id)) {
+            return 'EXCLUDED';
+        }
+    }
+
+    return DEFAULT_FILTER_STATE;
+}
+
+/**
+ * Applies the favorite filter to the character list.
+ * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ */
+function filterByFav(filterHelper) {
+    applyActionableTagFilter.call(this, filterHelper, ACTIONABLE_TAGS.FAV, FILTER_TYPES.FAV, ACTIONABLE_FILTER_STORAGE_KEYS.FAV);
 }
 
 /**
@@ -367,10 +447,7 @@ function filterByFav(_filterHelper) {
  * @param {FilterHelper} filterHelper Instance of FilterHelper class.
  */
 function filterByGroups(filterHelper) {
-    const state = toggleTagThreeState($(this));
-    ACTIONABLE_TAGS.GROUP.filter_state = state;
-    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP, state);
-    filterHelper.setFilterData(FILTER_TYPES.GROUP, state);
+    applyActionableTagFilter.call(this, filterHelper, ACTIONABLE_TAGS.GROUP, FILTER_TYPES.GROUP, ACTIONABLE_FILTER_STORAGE_KEYS.GROUP);
 }
 
 /**
@@ -385,10 +462,7 @@ function filterByFolder(filterHelper) {
         return;
     }
 
-    const state = toggleTagThreeState($(this));
-    ACTIONABLE_TAGS.FOLDER.filter_state = state;
-    accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER, state);
-    filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
+    applyActionableTagFilter.call(this, filterHelper, ACTIONABLE_TAGS.FOLDER, FILTER_TYPES.FOLDER, ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER);
 }
 
 function loadTagsSettings(settings) {
@@ -1109,18 +1183,13 @@ function appendTagToList(listElement, tag, { removable = false, isFilter = false
 
     // If this is a tag for a general list and its either a filter or actionable, lets mark its current state
     if ((isFilter || clickableAction) && isGeneralList) {
-        // Get the filter state from the appropriate filter helper instead of the global tag object
         const filterHelper = getFilterHelper($(listElement));
-        const filterData = filterHelper.getFilterData(FILTER_TYPES.TAG);
-        let filterState = DEFAULT_FILTER_STATE;
+        const isFilterActionable = clickableAction && 'filter_state' in tag;
 
-        if (filterData && filterData.selected && filterData.selected.includes(tag.id)) {
-            filterState = 'SELECTED';
-        } else if (filterData && filterData.excluded && filterData.excluded.includes(tag.id)) {
-            filterState = 'EXCLUDED';
+        if (isFilter || isFilterActionable) {
+            const filterState = determineTagFilterState(tag, filterHelper, isFilterActionable);
+            toggleTagThreeState(tagElement, { stateOverride: filterState });
         }
-
-        toggleTagThreeState(tagElement, { stateOverride: filterState });
     }
 
     if (isFilter) {
@@ -1144,9 +1213,11 @@ function onTagFilterClick(listElement) {
 
     let state = toggleTagThreeState($(this));
 
-    // Only save to global tag state if we're in the character list (not group contexts)
     const filterHelper = getFilterHelper($(listElement));
-    if (existingTag && filterHelper === entitiesFilter) {
+
+    // Always update the tag's filter_state for the main character list (for persistence)
+    // For group contexts, we only update the filter helper state, not the global tag object
+    if (existingTag && isMainCharacterList(filterHelper)) {
         existingTag.filter_state = state;
         saveSettingsDebounced();
     }
@@ -2305,8 +2376,7 @@ function restoreSavedTagFilters() {
         if (favState) {
             ACTIONABLE_TAGS.FAV.filter_state = favState;
             entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
-            groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
-            groupMembersFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+            // Group contexts start with default state, not persisted state
         }
         if (groupState) {
             ACTIONABLE_TAGS.GROUP.filter_state = groupState;
@@ -2315,6 +2385,26 @@ function restoreSavedTagFilters() {
         if (folderState) {
             ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
             entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
+        }
+
+        // Restore regular tag filter states from tag objects to entitiesFilter
+        // This ensures that saved tag filters are properly loaded for the main character list
+        const selectedTagIds = [];
+        const excludedTagIds = [];
+
+        for (const tag of tags) {
+            if (tag.filter_state === FILTER_STATES.SELECTED) {
+                selectedTagIds.push(tag.id);
+            } else if (tag.filter_state === FILTER_STATES.EXCLUDED) {
+                excludedTagIds.push(tag.id);
+            }
+        }
+
+        if (selectedTagIds.length > 0 || excludedTagIds.length > 0) {
+            entitiesFilter.setFilterData(FILTER_TYPES.TAG, {
+                excluded: excludedTagIds,
+                selected: selectedTagIds,
+            }, true);
         }
     } catch (e) {
         console.warn('Failed to restore actionable filter states from account storage', e);
