@@ -1758,8 +1758,8 @@ zai.post('/generate', async (request, response) => {
 
         console.debug('Z.AI image request:', request.body);
 
-        // Use Coding API endpoint if requested, otherwise Common API
-        const baseUrl = request.body.use_coding_api
+        // Use Coding API endpoint if configured, otherwise Common API
+        const baseUrl = request.body.zai_endpoint === 'coding'
             ? 'https://api.z.ai/api/coding/paas/v4/images/generations'
             : 'https://api.z.ai/api/paas/v4/images/generations';
 

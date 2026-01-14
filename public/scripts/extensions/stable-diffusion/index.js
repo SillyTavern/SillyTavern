@@ -59,7 +59,7 @@ import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnum
 import { ToolManager } from '../../tool-calling.js';
 import { macros, MacroCategory } from '../../macros/macro-system.js';
 import { t, translate } from '../../i18n.js';
-import { oai_settings } from '../../openai.js';
+import { oai_settings, ZAI_ENDPOINT } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
 
@@ -323,9 +323,6 @@ const defaultSettings = {
     openai_quality_gpt: 'auto',
     openai_duration: '8',
 
-    // Z.AI settings
-    zai_coding_api: false,
-
     style: 'Default',
     styles: defaultStyles,
 
@@ -534,7 +531,6 @@ async function loadSettings() {
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
     $('#sd_openai_quality_gpt').val(extension_settings.sd.openai_quality_gpt);
     $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
-    $('#sd_zai_coding_api').prop('checked', extension_settings.sd.zai_coding_api);
     $('#sd_comfy_type').val(extension_settings.sd.comfy_type);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
@@ -1066,11 +1062,6 @@ async function onOpenAiQualitySelect() {
 
 async function onOpenAiDurationSelect() {
     extension_settings.sd.openai_duration = String($('#sd_openai_duration').find(':selected').val());
-    saveSettingsDebounced();
-}
-
-function onZaiCodingApiChange() {
-    extension_settings.sd.zai_coding_api = !!$('#sd_zai_coding_api').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -4349,7 +4340,7 @@ async function generateZaiImage(prompt, signal) {
                 model: extension_settings.sd.model,
                 quality: extension_settings.sd.openai_quality,
                 size: `${width}x${height}`,
-                use_coding_api: extension_settings.sd.zai_coding_api,
+                zai_endpoint: ZAI_ENDPOINT.COMMON, // Always use Common API for image generation
             }),
         });
 
@@ -5364,7 +5355,6 @@ jQuery(async () => {
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
     $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
-    $('#sd_zai_coding_api').on('input', onZaiCodingApiChange);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_clip_skip').on('input', onClipSkipInput);
