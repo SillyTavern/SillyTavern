@@ -2466,9 +2466,9 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
         mes.swipes ??= [mes.mes];
         //This keeps listeners intact.
         messageElement = chatElement.find(`[mesid="${messageId}"]`);
-        updateMessageElement(mes, { messageId, messageElement });
+        updateMessageElement(mes, { messageId, messageElement, adjustMediaScroll: scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE });
     } else {
-        messageElement = updateMessageElement(mes, { messageId });
+        messageElement = updateMessageElement(mes, { messageId, adjustMediaScroll: scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE });
         if (typeof insertAfter === 'number' && insertAfter >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
             $(messageElement).insertAfter(target);
@@ -2502,9 +2502,10 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
  * @param {object} [options] Options
  * @param {number} [options.messageId=chat.length - 1] Force the message ID
  * @param {JQuery<HTMLElement>} [options.messageElement=messageTemplate.clone()] This message element will be updated with the ChatMessage object.
+ * @param {SCROLL_BEHAVIOR} [options.adjustMediaScroll=SCROLL_BEHAVIOR.NONE] Scroll behavior option passed to appendMediaToMessage.
  * @returns {JQuery<HTMLElement>} Rendered HTMLElement.
  */
-export function updateMessageElement(mes, { messageId = chat.length - 1, messageElement = messageTemplate.clone() } = {}) {
+export function updateMessageElement(mes, { messageId = chat.length - 1, messageElement = messageTemplate.clone(), adjustMediaScroll = SCROLL_BEHAVIOR.NONE } = {}) {
 
     let avatarImg = getThumbnailUrl('persona', user_avatar);
 
@@ -2582,7 +2583,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
         $(this).parent().html('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     });
 
-    appendMediaToMessage(mes, messageElement, scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE);
+    appendMediaToMessage(mes, messageElement, adjustMediaScroll);
     messageElement.find('.mes_text').html(messageHTML);
     addCopyToCodeBlocks(messageElement);
 
