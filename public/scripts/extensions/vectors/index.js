@@ -2037,28 +2037,35 @@ jQuery(async () => {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-threshold-set',
-        callback: async (_, value) => {
-            const parsed = Number(value);
+        name: 'vector-threshold',
+        helpString: 'Set the vector score threshold or return the current threshold if no argument is provided.',
+        returns: 'score threshold value',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Score threshold (number).',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.score_threshold);
+            }
+
+            const parsed = Number(raw);
             if (!Number.isFinite(parsed)) {
                 toastr.warning('Score threshold must be a number.');
                 return '';
             }
 
-            settings.score_threshold = parsed;
-            Object.assign(extension_settings.vectors, settings);
-            saveSettingsDebounced();
             $('#vectors_score_threshold')
-                .val(settings.score_threshold)
+                .val(parsed)
                 .trigger('input');
 
             return String(settings.score_threshold);
         },
-        helpString: 'Set the vector score threshold to a numeric value.',
-        unnamedArgumentList: [
-            new SlashCommandArgument('Score threshold (number).', ARGUMENT_TYPE.NUMBER, true, false),
-        ],
-        returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
