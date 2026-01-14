@@ -62,11 +62,94 @@ const TAG_TEMPLATE = $('#tag_template .tag');
 const FOLDER_TEMPLATE = $('#bogus_folder_template .bogus_folder_select');
 const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 
+/**
+ * Gets the context information (selector and search input) for a filter helper.
+ * Used to reduce code duplication when working with different filter contexts.
+ * @param {FilterHelper} filterHelper - The filter helper instance
+ * @returns {{selector: string, searchInput: string}|null} Context info or null if unknown
+ */
+function getFilterContext(filterHelper) {
+    if (filterHelper === entitiesFilter) {
+        return {
+            selector: CHARACTER_FILTER_SELECTOR,
+            searchInput: '#character_search_bar',
+        };
+    } else if (filterHelper === groupCandidatesFilter) {
+        return {
+            selector: GROUP_FILTER_SELECTOR,
+            searchInput: '#rm_group_filter',
+        };
+    } else if (filterHelper === groupMembersFilter) {
+        return {
+            selector: GROUP_MEMBERS_FILTER_SELECTOR,
+            searchInput: '#rm_group_members_filter',
+        };
+    }
+    return null;
+}
+
+/**
+ * Get the filter helper for a given list selector.
+ * @param {string} listSelector - jQuery selector for the list
+ * @returns {FilterHelper} The appropriate filter helper instance
+ */
 function getFilterHelper(listSelector) {
     if ($(listSelector).is(GROUP_MEMBERS_FILTER_SELECTOR)) {
         return groupMembersFilter;
     }
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
+}
+
+/**
+ * Checks if the given type is a group context.
+ * @param {tag_filter_type} type - The filter type to check
+ * @returns {boolean} True if this is a group context
+ */
+function isGroupContext(type) {
+    return type === tag_filter_type.group_member || type === tag_filter_type.group_members_list;
+}
+
+/**
+ * Gets visible character avatars for a group context.
+ * @param {tag_filter_type} type - The filter type
+ * @param {object} currentGroup - The current group object
+ * @returns {string[]} Array of visible character avatars
+ */
+function getVisibleAvatarsForGroupContext(type, currentGroup) {
+    if (!currentGroup || !Array.isArray(currentGroup.members)) {
+        return [];
+    }
+
+    if (type === tag_filter_type.group_members_list) {
+        // For members list, return current group members
+        return currentGroup.members;
+    } else {
+        // For candidates list, return non-members
+        return characters
+            .filter(c => !currentGroup.members.includes(c.avatar))
+            .map(c => c.avatar);
+    }
+}
+
+/**
+ * Filters actionable tags for group contexts.
+ * In group contexts, hide GROUP and FOLDER filters but keep Favorites and utility buttons.
+ * @param {object[]} actionTags - Array of actionable tag objects
+ * @returns {object[]} Filtered array of actionable tags
+ */
+function filterActionableTagsForGroupContext(actionTags) {
+    return actionTags.filter(tag => {
+        // Always show Favorites
+        if (tag.id === ACTIONABLE_TAGS.FAV.id) {
+            return true;
+        }
+        // Hide GROUP and FOLDER filters in group contexts (not relevant)
+        if (tag.id === ACTIONABLE_TAGS.GROUP.id || tag.id === ACTIONABLE_TAGS.FOLDER.id) {
+            return false;
+        }
+        // Show utility buttons (VIEW, HINT, UNFILTER)
+        return true;
+    });
 }
 
 const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
@@ -1310,15 +1393,45 @@ function printTagFilters(type = tag_filter_type.character) {
     $(FILTER_SELECTOR).empty();
 
     // Print all action tags. (Rework 'Folder' button to some kind of onboarding if no folders are enabled yet)
-    const actionTags = Object.values(ACTIONABLE_TAGS);
+    let actionTags = Object.values(ACTIONABLE_TAGS);
     actionTags.find(x => x == ACTIONABLE_TAGS.FOLDER).name = power_user.bogus_folders ? 'Show only folders' : 'Enable \'Tags as Folder\'\n\nAllows characters to be grouped in folders by their assigned tags.\nTags have to be explicitly chosen as folder to show up.\n\nClick here to start';
+
+    // For group contexts, filter actionable tags to only show relevant ones
+    if (isGroupContext(type)) {
+        actionTags = filterActionableTagsForGroupContext(actionTags);
+    }
+
     printTagList($(FILTER_SELECTOR), { empty: false, sort: false, tags: actionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
     const inListActionTags = Object.values(InListActionable);
     printTagList($(FILTER_SELECTOR), { empty: false, sort: false, tags: inListActionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
-    const characterTagIds = Object.values(tag_map).flat();
-    const tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
+    // Determine which character tags to display based on context
+    let tagsToDisplay;
+
+    if (isGroupContext(type)) {
+        // For group contexts, only show tags that have at least one visible member
+        const currentGroup = selected_group ? groups.find(x => x.id == selected_group) : null;
+        const visibleAvatars = getVisibleAvatarsForGroupContext(type, currentGroup);
+
+        if (visibleAvatars.length > 0) {
+            // Only include tags that are assigned to at least one visible character
+            const characterTagIds = visibleAvatars
+                .map(avatar => tag_map[avatar] || [])
+                .flat()
+                .filter(onlyUnique);
+
+            tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
+        } else {
+            // No group selected, show no tags
+            tagsToDisplay = [];
+        }
+    } else {
+        // For main character list, show all tags as before
+        const characterTagIds = Object.values(tag_map).flat();
+        tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
+    }
+
     printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { isFilter: true, isGeneralList: true } });
 
     // Print bogus folder navigation
@@ -1332,18 +1445,19 @@ function printTagFilters(type = tag_filter_type.character) {
     runTagFilters(FILTER_SELECTOR);
 
     if (power_user.show_tag_filters) {
-        $('.rm_tag_controls .showTagList').addClass('selected');
-        $('.rm_tag_controls').find('.tag:not(.actionable)').show();
+        $(FILTER_SELECTOR).closest('.rm_tag_controls').find('.showTagList').addClass('selected');
+        $(FILTER_SELECTOR).find('.tag:not(.actionable)').show();
     }
 
-    updateTagFilterIndicator();
+    updateTagFilterIndicator(FILTER_SELECTOR);
 }
 
-function updateTagFilterIndicator() {
-    if ($('.rm_tag_controls').find('.tag:not(.actionable)').is('.selected, .excluded')) {
-        $('.rm_tag_controls .showTagList').addClass('indicator');
+function updateTagFilterIndicator(filterSelector) {
+    const selector = filterSelector || CHARACTER_FILTER_SELECTOR;
+    if ($(selector).find('.tag:not(.actionable)').is('.selected, .excluded')) {
+        $(selector).closest('.rm_tag_controls').find('.showTagList').addClass('indicator');
     } else {
-        $('.rm_tag_controls .showTagList').removeClass('indicator');
+        $(selector).closest('.rm_tag_controls').find('.showTagList').removeClass('indicator');
     }
 }
 
@@ -1952,12 +2066,22 @@ function onTagListHintClick() {
     console.debug('show_tag_filters', power_user.show_tag_filters);
 }
 
-function onClearAllFiltersClick() {
+/**
+ * Clears all filters for the current list context.
+ * @param {FilterHelper} filterHelper - The filter helper for the current context
+ */
+function onClearAllFiltersClick(filterHelper) {
     console.debug('clear all filters clicked');
+
+    const context = getFilterContext(filterHelper);
+    if (!context) {
+        console.warn('Unknown filter helper in onClearAllFiltersClick');
+        return;
+    }
 
     // We have to manually go through the elements and unfilter by clicking...
     // Thankfully nearly all filter controls are three-state-toggles
-    const filterTags = $('.rm_tag_controls .rm_tag_filter').find('.tag');
+    const filterTags = $(context.selector).find('.tag');
     for (const tag of filterTags) {
         const toggleState = $(tag).attr('data-toggle-state');
         if (toggleState !== undefined && !isFilterState(toggleState ?? FILTER_STATES.UNDEFINED, FILTER_STATES.UNDEFINED)) {
@@ -1965,8 +2089,8 @@ function onClearAllFiltersClick() {
         }
     }
 
-    // Reset search too
-    $('#character_search_bar').val('').trigger('input');
+    // Reset search input for this context
+    $(context.searchInput).val('').trigger('input');
 }
 
 /**
