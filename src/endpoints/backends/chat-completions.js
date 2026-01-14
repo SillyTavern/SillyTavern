@@ -2394,7 +2394,7 @@ router.post('/generate', async function (request, response) {
 
                 if (dataLines.length > 0) {
                     const lastDataLine = dataLines[dataLines.length - 1];
-                    const jsonStr = lastDataLine.substring(6); 
+                    const jsonStr = lastDataLine.substring(6);
                     if (jsonStr.trim() === '[DONE]') {
                         if (dataLines.length > 1) {
                             const prevDataLine = dataLines[dataLines.length - 2];
@@ -2426,7 +2426,7 @@ router.post('/generate', async function (request, response) {
             const message = fetchResponse.statusText || 'Unknown error occurred';
             const quota_error = fetchResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
             console.error('Chat completion request error: ', message, responseText);
-            
+
             if (!response.headersSent) {
                 response.send({ error: { message }, quota_error: quota_error });
             } else if (!response.writableEnded) {
