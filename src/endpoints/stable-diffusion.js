@@ -1789,13 +1789,11 @@ zai.post('/generate', async (request, response) => {
             return response.sendStatus(500);
         }
 
-        console.debug('Z.AI fetching image from URL:', url);
         const imageResponse = await fetch(url);
         if (!imageResponse.ok) {
             console.warn('Z.AI image fetch returned an error. Status:', imageResponse.status, imageResponse.statusText);
             return response.sendStatus(500);
         }
-        console.debug('Z.AI image fetch successful, status:', imageResponse.status);
 
         const buffer = await imageResponse.arrayBuffer();
         const image = Buffer.from(buffer).toString('base64');
