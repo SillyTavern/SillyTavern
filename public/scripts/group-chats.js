@@ -1674,13 +1674,160 @@ function printGroupMembers() {
                 paginationDropdownChangeHandler(e, size);
             },
             callback: function (data) {
-                $('.rm_group_members').empty();
+                const $list = $('.rm_group_members');
+                $list.empty();
+
                 for (const i of data) {
-                    $('.rm_group_members').append(getGroupCharacterBlock(i.item));
+                    $list.append(getGroupCharacterBlock(i.item));
                 }
+                enableGroupMembersDragAndDrop();
+
                 localizePagination($(that));
             },
         });
+    });
+}
+
+/**
+ * Enables drag-and-drop reordering for group members in the currently rendered list.
+ * Uses HTML5 DnD and updates the underlying members array, then persists (editGroup) like reorderGroupMember().
+ */
+function enableGroupMembersDragAndDrop() {
+    const $container = $('.rm_group_members');
+    if ($container.length === 0) return;
+
+    // Avoid stacking handlers across re-renders/pagination.
+    $container.off('.groupMemberDnd');
+
+    /** @type {string|null} */
+    let draggedId = null;
+
+    function getMembersArrayForCurrentGroup() {
+        const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
+        return thisGroup?.members ?? newGroupMembers;
+    }
+
+    async function persistIfNeeded() {
+        if (openGroupId) {
+            const thisGroup = groups.find((x) => x.id == openGroupId);
+            await editGroup(openGroupId, false, false);
+            updateGroupAvatar(thisGroup);
+        }
+    }
+
+    function moveArrayItem(memberArray, fromIndex, toIndex) {
+        if (!Array.isArray(memberArray)) return false;
+        if (fromIndex === -1 || toIndex === -1) return false;
+        if (fromIndex === toIndex) return false;
+
+        const [item] = memberArray.splice(fromIndex, 1);
+        memberArray.splice(toIndex, 0, item);
+        return true;
+    }
+
+    function clearDropIndicators() {
+        $container.find('.group_member').removeClass('dragover insert-above insert-below');
+    }
+
+    function setDropIndicator($target, dropAfter) {
+        clearDropIndicators();
+        $target.addClass('dragover');
+        $target.addClass(dropAfter ? 'insert-below' : 'insert-above');
+    }
+
+    $container.on('dragstart.groupMemberDnd', '.group_member', function (e) {
+        const id = $(this).data('id');
+        draggedId = id ?? null;
+
+        // Required for Firefox; also makes the intent explicit.
+        try {
+            e.originalEvent.dataTransfer.effectAllowed = 'move';
+            e.originalEvent.dataTransfer.setData('text/plain', String(draggedId ?? ''));
+        } catch {
+            // Ignore; DnD should still work in most browsers.
+        }
+
+        $(this).addClass('dragging');
+    });
+
+    $container.on('dragend.groupMemberDnd', '.group_member', function () {
+        $(this).removeClass('dragging');
+        draggedId = null;
+        clearDropIndicators();
+    });
+
+    // Mark potential drop targets and allow drop.
+    $container.on('dragover.groupMemberDnd', '.group_member', function (e) {
+        // Needed to allow drop.
+        e.preventDefault();
+
+        const overId = $(this).data('id');
+        if (!draggedId || !overId || draggedId === overId) return;
+
+        // Prefer "insert before/after" semantics based on pointer position.
+        try {
+            e.originalEvent.dataTransfer.dropEffect = 'move';
+        } catch {
+            // ignore
+        }
+
+        const rect = this.getBoundingClientRect();
+        const pointerY = e.originalEvent?.clientY ?? (rect.top + rect.height / 2);
+        const dropAfter = pointerY > (rect.top + rect.height / 2);
+
+        setDropIndicator($(this), dropAfter);
+    });
+
+    $container.on('dragleave.groupMemberDnd', '.group_member', function () {
+        $(this).removeClass('dragover insert-above insert-below');
+    });
+
+    $container.on('drop.groupMemberDnd', '.group_member', async function (e) {
+        e.preventDefault();
+
+        // Pull id from state, fallback to dataTransfer for safety.
+        let sourceId = draggedId;
+        if (!sourceId) {
+            try {
+                const fromDt = e.originalEvent.dataTransfer.getData('text/plain');
+                sourceId = fromDt ? String(fromDt) : null;
+            } catch {
+                sourceId = null;
+            }
+        }
+
+        const targetId = $(this).data('id') ?? null;
+
+        clearDropIndicators();
+
+        if (!sourceId || !targetId || sourceId === targetId) return;
+
+        const memberArray = getMembersArrayForCurrentGroup();
+        const fromIndex = memberArray.indexOf(sourceId);
+        const toIndex = memberArray.indexOf(targetId);
+
+        // Decide insert position based on pointer location relative to the hovered element.
+        let insertIndex = toIndex;
+        const rect = this.getBoundingClientRect();
+        const pointerY = e.originalEvent?.clientY ?? (rect.top + rect.height / 2);
+        const dropAfter = pointerY > (rect.top + rect.height / 2);
+
+        // If dropping after, insert one position after the target (taking into account removal shift).
+        if (dropAfter) {
+            insertIndex = toIndex + 1;
+        }
+
+        // Adjust insertIndex if removing an earlier item shifts indices.
+        if (fromIndex < insertIndex) {
+            insertIndex -= 1;
+        }
+
+        const changed = moveArrayItem(memberArray, fromIndex, insertIndex);
+        if (!changed) return;
+
+        // Re-render in persisted order and save if editing an existing group.
+        printGroupMembers();
+        await persistIfNeeded();
     });
 }
 
