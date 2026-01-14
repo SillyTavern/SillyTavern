@@ -2036,6 +2036,161 @@ jQuery(async () => {
         returns: ARGUMENT_TYPE.LIST,
     }));
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-threshold-set',
+        callback: async (_, value) => {
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed)) {
+                toastr.warning('Score threshold must be a number.');
+                return '';
+            }
+
+            settings.score_threshold = parsed;
+            Object.assign(extension_settings.vectors, settings);
+            saveSettingsDebounced();
+            $('#vectors_score_threshold')
+                .val(settings.score_threshold)
+                .trigger('input');
+
+            return String(settings.score_threshold);
+        },
+        helpString: 'Set the vector score threshold to a numeric value.',
+        unnamedArgumentList: [
+            new SlashCommandArgument('Score threshold (number).', ARGUMENT_TYPE.NUMBER, true, false),
+        ],
+        returns: ARGUMENT_TYPE.STRING,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-query-set',
+        callback: async (_, value) => {
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed) || parsed < 0) {
+                toastr.warning('Query messages must be a number greater than or equal to 0.');
+                return '';
+            }
+
+            settings.query = parsed;
+            Object.assign(extension_settings.vectors, settings);
+            saveSettingsDebounced();
+
+            $('#vectors_query')
+                .val(settings.query)
+                .trigger('input');
+
+            return String(settings.query);
+        },
+        helpString: 'Set the vector query messages to a numeric value >= 0.',
+        unnamedArgumentList: [
+            new SlashCommandArgument('Query messages (number >= 0).', ARGUMENT_TYPE.NUMBER, true, false),
+        ],
+        returns: ARGUMENT_TYPE.STRING,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-maxentries-set',
+        callback: async (_, value) => {
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed) || parsed < 0) {
+                toastr.warning('Max entries must be a number greater than or equal to 0.');
+                return '';
+            }
+
+            settings.max_entries = parsed;
+            Object.assign(extension_settings.vectors, settings);
+            saveSettingsDebounced();
+
+            $('#vectors_max_entries')
+                .val(settings.max_entries)
+                .trigger('input');
+
+            return String(settings.max_entries);
+        },
+        helpString: 'Set the vector world info max entries to a numeric value >= 0.',
+        unnamedArgumentList: [
+            new SlashCommandArgument('Max entries (number >= 0).', ARGUMENT_TYPE.NUMBER, true, false),
+        ],
+        returns: ARGUMENT_TYPE.STRING,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-chats-set',
+        callback: async (_, value) => {
+            const parsed = String(value);
+            if (parsed !== 'true' && parsed !== 'false') {
+                toastr.warning('Vectors Enabled for chats must be true or false.');
+                return '';
+            }
+
+            settings.enabled_chats = parsed === 'true';
+            Object.assign(extension_settings.vectors, settings);
+            saveSettingsDebounced();
+
+            $('#vectors_enabled_chats')
+                .prop('checked', settings.enabled_chats)
+                .trigger('input');
+
+            return String(settings.enabled_chats);
+        },
+        helpString: 'Set whether chat vectorization is enabled (true/false).',
+        unnamedArgumentList: [
+            new SlashCommandArgument('Enabled (true/false).', ARGUMENT_TYPE.BOOLEAN, true, false),
+        ],
+        returns: ARGUMENT_TYPE.STRING,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-files-set',
+        callback: async (_, value) => {
+            const parsed = String(value);
+            if (parsed !== 'true' && parsed !== 'false') {
+                toastr.warning('Vectors enabled for Files must be true or false.');
+                return '';
+            }
+
+            settings.enabled_files = parsed === 'true';
+            Object.assign(extension_settings.vectors, settings);
+            saveSettingsDebounced();
+
+            $('#vectors_enabled_files')
+                .prop('checked', settings.enabled_files)
+                .trigger('input');
+
+            return String(settings.enabled_files);
+        },
+        helpString: 'Set whether file vectorization is enabled (true/false).',
+        unnamedArgumentList: [
+            new SlashCommandArgument('Enabled (true/false).', ARGUMENT_TYPE.BOOLEAN, true, false),
+        ],
+        returns: ARGUMENT_TYPE.STRING,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-worldinfo-set',
+        callback: async (_, value) => {
+            const parsed = String(value);
+            if (parsed !== 'true' && parsed !== 'false') {
+                toastr.warning('Vectors Enabled for World Info must be true or false.');
+                return '';
+            }
+
+            settings.enabled_world_info = parsed === 'true';
+            Object.assign(extension_settings.vectors, settings);
+            saveSettingsDebounced();
+
+            $('#vectors_enabled_world_info')
+                .prop('checked', settings.enabled_world_info)
+                .trigger('input');
+
+            return String(settings.enabled_world_info);
+        },
+        helpString: 'Set whether world info vectorization is enabled (true/false).',
+        unnamedArgumentList: [
+            new SlashCommandArgument('Enabled (true/false).', ARGUMENT_TYPE.BOOLEAN, true, false),
+        ],
+        returns: ARGUMENT_TYPE.STRING,
+    }));
+
     registerDebugFunction('purge-everything', 'Purge all vector indices', 'Obliterate all stored vectors for all sources. No mercy.', async () => {
         if (!confirm('Are you sure?')) {
             return;
