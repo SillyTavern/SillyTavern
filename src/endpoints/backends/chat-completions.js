@@ -2386,8 +2386,37 @@ router.post('/generate', async function (request, response) {
         }
 
         if (fetchResponse.ok) {
-            /** @type {any} */
-            const json = await fetchResponse.json();
+            const responseText = await fetchResponse.text();
+            if (responseText.trimStart().startsWith('data: ')) {
+                console.info('Detected SSE format response for non-streaming request');
+                const lines = responseText.split('\n');
+                const dataLines = lines.filter(line => line.startsWith('data: '));
+
+                if (dataLines.length > 0) {
+                    const lastDataLine = dataLines[dataLines.length - 1];
+                    const jsonStr = lastDataLine.substring(6); 
+                    if (jsonStr.trim() === '[DONE]') {
+                        if (dataLines.length > 1) {
+                            const prevDataLine = dataLines[dataLines.length - 2];
+                            const prevJsonStr = prevDataLine.substring(6);
+                            const json = tryParse(prevJsonStr);
+                            console.debug('Chat Completion response (from SSE):', json);
+                            return response.send(json || { error: { message: 'Failed to parse SSE response' } });
+                        }
+                    } else {
+                        const json = tryParse(jsonStr);
+                        console.debug('Chat Completion response (from SSE):', json);
+                        return response.send(json || { error: { message: 'Failed to parse SSE response' } });
+                    }
+                }
+                console.warn('SSE format detected but no valid data found');
+                return response.status(500).send({ error: { message: 'Invalid SSE response format' } });
+            }
+            const json = tryParse(responseText);
+            if (!json) {
+                console.error('Failed to parse response as JSON:', responseText.substring(0, 200));
+                return response.status(500).send({ error: { message: 'Invalid JSON response' } });
+            }
             console.debug('Chat Completion response:', json);
             return response.send(json);
         } else {
@@ -2397,7 +2426,7 @@ router.post('/generate', async function (request, response) {
             const message = fetchResponse.statusText || 'Unknown error occurred';
             const quota_error = fetchResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
             console.error('Chat completion request error: ', message, responseText);
-
+            
             if (!response.headersSent) {
                 response.send({ error: { message }, quota_error: quota_error });
             } else if (!response.writableEnded) {
@@ -2411,7 +2440,6 @@ router.post('/generate', async function (request, response) {
         const message = error.code === 'ECONNREFUSED'
             ? `Connection refused: ${error.message}`
             : error.message || 'Unknown error occurred';
-
         if (!response.headersSent) {
             response.status(502).send({ error: { message, ...error } });
         } else {
