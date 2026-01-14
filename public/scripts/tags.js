@@ -15,7 +15,7 @@ import {
 } from '../script.js';
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
-import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
+import { groupCandidatesFilter, groupMembersFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce, findChar } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -56,12 +56,16 @@ export {
 /** @typedef {import('../script.js').Character} Character */
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
-const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
+const GROUP_FILTER_SELECTOR = '#rm_group_add_members_header ~ .rm_tag_controls .rm_tag_filter';
+const GROUP_MEMBERS_FILTER_SELECTOR = '#rm_group_members_header ~ .rm_tag_controls .rm_tag_filter';
 const TAG_TEMPLATE = $('#tag_template .tag');
 const FOLDER_TEMPLATE = $('#bogus_folder_template .bogus_folder_select');
 const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 
 function getFilterHelper(listSelector) {
+    if ($(listSelector).is(GROUP_MEMBERS_FILTER_SELECTOR)) {
+        return groupMembersFilter;
+    }
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
 
@@ -75,6 +79,7 @@ const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
 export const tag_filter_type = {
     character: 0,
     group_member: 1,
+    group_members_list: 2,
 };
 
 /** @enum {number} */
@@ -354,6 +359,7 @@ function filterByFav(_filterHelper) {
     accountStorage.setItem(ACTIONABLE_FILTER_STORAGE_KEYS.FAV, state);
     entitiesFilter.setFilterData(FILTER_TYPES.FAV, state);
     groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, state);
+    groupMembersFilter.setFilterData(FILTER_TYPES.FAV, state);
 }
 
 /**
@@ -1103,7 +1109,18 @@ function appendTagToList(listElement, tag, { removable = false, isFilter = false
 
     // If this is a tag for a general list and its either a filter or actionable, lets mark its current state
     if ((isFilter || clickableAction) && isGeneralList) {
-        toggleTagThreeState(tagElement, { stateOverride: tag.filter_state ?? DEFAULT_FILTER_STATE });
+        // Get the filter state from the appropriate filter helper instead of the global tag object
+        const filterHelper = getFilterHelper($(listElement));
+        const filterData = filterHelper.getFilterData(FILTER_TYPES.TAG);
+        let filterState = DEFAULT_FILTER_STATE;
+
+        if (filterData && filterData.selected && filterData.selected.includes(tag.id)) {
+            filterState = 'SELECTED';
+        } else if (filterData && filterData.excluded && filterData.excluded.includes(tag.id)) {
+            filterState = 'EXCLUDED';
+        }
+
+        toggleTagThreeState(tagElement, { stateOverride: filterState });
     }
 
     if (isFilter) {
@@ -1127,7 +1144,9 @@ function onTagFilterClick(listElement) {
 
     let state = toggleTagThreeState($(this));
 
-    if (existingTag) {
+    // Only save to global tag state if we're in the character list (not group contexts)
+    const filterHelper = getFilterHelper($(listElement));
+    if (existingTag && filterHelper === entitiesFilter) {
         existingTag.filter_state = state;
         saveSettingsDebounced();
     }
@@ -1201,7 +1220,22 @@ function runTagFilters(listElement) {
 }
 
 function printTagFilters(type = tag_filter_type.character) {
-    const FILTER_SELECTOR = type === tag_filter_type.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
+    let FILTER_SELECTOR;
+    switch (type) {
+        case tag_filter_type.character:
+            FILTER_SELECTOR = CHARACTER_FILTER_SELECTOR;
+            break;
+        case tag_filter_type.group_member:
+            FILTER_SELECTOR = GROUP_FILTER_SELECTOR;
+            break;
+        case tag_filter_type.group_members_list:
+            FILTER_SELECTOR = GROUP_MEMBERS_FILTER_SELECTOR;
+            break;
+        default:
+            FILTER_SELECTOR = CHARACTER_FILTER_SELECTOR;
+            break;
+    }
+
     $(FILTER_SELECTOR).empty();
 
     // Print all action tags. (Rework 'Folder' button to some kind of onboarding if no folders are enabled yet)
@@ -1316,6 +1350,7 @@ export function applyTagsOnGroupSelect(groupId = null) {
 
     groupId = groupId ?? (selected_group ? Number(selected_group) : undefined);
     printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
+    printTagFilters(tag_filter_type.group_members_list);
 }
 
 /**
@@ -2271,6 +2306,7 @@ function restoreSavedTagFilters() {
             ACTIONABLE_TAGS.FAV.filter_state = favState;
             entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
             groupCandidatesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
+            groupMembersFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
         }
         if (groupState) {
             ACTIONABLE_TAGS.GROUP.filter_state = groupState;

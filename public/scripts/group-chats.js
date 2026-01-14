@@ -134,6 +134,7 @@ export const group_generation_mode = {
 export const DEFAULT_AUTO_MODE_DELAY = 5;
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
+export const groupMembersFilter = new FilterHelper(debounce(printGroupMembers, debounce_timeout.quick));
 let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
 /** @type {Map<string, number>} */
@@ -1574,13 +1575,20 @@ function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
     }
 
     if (onlyMembers) {
+        if (doFilter) {
+            candidates = groupMembersFilter.applyFilters(candidates);
+        }
         candidates.sort(sortMembersFn);
+        const useFilterOrder = doFilter && !!$('#rm_group_members_filter').val();
+        if (useFilterOrder) {
+            sortEntitiesList(candidates, useFilterOrder, groupMembersFilter);
+        }
+        groupMembersFilter.clearFuzzySearchCaches();
     } else {
         const useFilterOrder = doFilter && !!$('#rm_group_filter').val();
         sortEntitiesList(candidates, useFilterOrder, groupCandidatesFilter);
+        groupCandidatesFilter.clearFuzzySearchCaches();
     }
-
-    groupCandidatesFilter.clearFuzzySearchCaches();
     return candidates;
 }
 
@@ -1621,7 +1629,7 @@ function printGroupMembers() {
         const pageSize = Number(accountStorage.getItem(storageKey)) || 5;
         const sizeChangerOptions = [5, 10, 25, 50, 100, 200, 500, 1000];
         $(this).pagination({
-            dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
+            dataSource: getGroupCharacters({ doFilter: true, onlyMembers: true }),
             pageRange: 1,
             position: 'top',
             showPageNumbers: false,
@@ -1782,6 +1790,7 @@ function select_group_chats(groupId, skipAnimation) {
     $('#group_avatar_preview').empty().append(getGroupAvatar(group));
     $('#rm_group_restore_avatar').toggle(!!group && isValidImageUrl(group.avatar_url));
     $('#rm_group_filter').val('').trigger('input');
+    $('#rm_group_members_filter').val('').trigger('input');
     $('#rm_group_activation_strategy').val(replyStrategy);
     $(`#rm_group_activation_strategy option[value="${replyStrategy}"]`).prop('selected', true);
     $('#rm_group_generation_mode').val(generationMode);
@@ -2047,6 +2056,11 @@ async function openCharacterDefinition(characterSelect) {
 function filterGroupMembers() {
     const searchValue = String($(this).val()).toLowerCase();
     groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
+}
+
+function filterGroupMemberList() {
+    const searchValue = String($(this).val()).toLowerCase();
+    groupMembersFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 
 async function createGroup() {
@@ -2424,6 +2438,7 @@ jQuery(() => {
         openGroupById(groupId);
     });
     $('#rm_group_filter').on('input', filterGroupMembers);
+    $('#rm_group_members_filter').on('input', filterGroupMemberList);
     $('#rm_group_submit').on('click', createGroup);
     $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
