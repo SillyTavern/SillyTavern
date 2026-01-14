@@ -75,12 +75,9 @@ router.post('/generate-voice', async (req, res) => {
             console.warn('Volcengine Request failed', response.status, response.statusText, logid);
             return res.sendStatus(500);
         }
-
-        // 处理流式响应
         const decoder = new TextDecoder();
         let audioChunks = [];
 
-        // 使用Node.js流事件处理
         await new Promise((resolve, reject) => {
             let buffer = '';
             if (!response.body) {
@@ -88,21 +85,17 @@ router.post('/generate-voice', async (req, res) => {
                 return;
             }
             response.body.on('data', (chunk) => {
-                // 解码并添加到缓冲区
                 buffer += decoder.decode(chunk, { stream: true });
 
-                // 按行分割
                 const lines = buffer.split('\n');
-                buffer = lines.pop() || ''; // 保留不完整的行到缓冲区
+                buffer = lines.pop() || '';
 
-                // 处理每一行完整的JSON
                 for (const line of lines) {
                     if (!line.trim()) continue;
 
                     try {
                         const { data } = JSON.parse(line);
                         if (data) {
-                            // 提取base64音频数据并解码为二进制
                             const audioData = Buffer.from(data, 'base64');
                             audioChunks.push(audioData);
                         }
@@ -113,7 +106,6 @@ router.post('/generate-voice', async (req, res) => {
             });
 
             response.body.on('end', () => {
-                // 处理最后可能剩余的缓冲区数据
                 if (buffer.trim()) {
                     try {
                         const data = JSON.parse(buffer);
@@ -134,7 +126,6 @@ router.post('/generate-voice', async (req, res) => {
             });
         });
 
-        // 合并所有音频块
         const finalAudioData = Buffer.concat(audioChunks);
 
         res.set('Content-Type', 'audio/mp3');

@@ -114,7 +114,6 @@ class VolcengineTtsProvider {
     }
 
     async changeTTSSettings() {
-        // 同步range和number输入值
         const speed = this.settings.speed;
         $('#volcengine-tts-speed').val(speed);
         $('#volcengine-tts-speed_counter').val(speed);
