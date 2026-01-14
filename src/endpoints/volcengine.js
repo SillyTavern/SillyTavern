@@ -108,9 +108,9 @@ router.post('/generate-voice', async (req, res) => {
             response.body.on('end', () => {
                 if (buffer.trim()) {
                     try {
-                        const data = JSON.parse(buffer);
-                        if (data.audio && data.audio.audio_data) {
-                            const audioData = Buffer.from(data.audio.audio_data, 'base64');
+                        const { data } = JSON.parse(buffer);
+                        if (data) {
+                            const audioData = Buffer.from(data, 'base64');
                             audioChunks.push(audioData);
                         }
                     } catch (e) {
