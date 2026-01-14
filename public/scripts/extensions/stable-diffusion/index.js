@@ -323,6 +323,9 @@ const defaultSettings = {
     openai_quality_gpt: 'auto',
     openai_duration: '8',
 
+    // Z.AI settings
+    zai_coding_api: false,
+
     style: 'Default',
     styles: defaultStyles,
 
@@ -531,6 +534,7 @@ async function loadSettings() {
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
     $('#sd_openai_quality_gpt').val(extension_settings.sd.openai_quality_gpt);
     $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
+    $('#sd_zai_coding_api').prop('checked', extension_settings.sd.zai_coding_api);
     $('#sd_comfy_type').val(extension_settings.sd.comfy_type);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
@@ -979,6 +983,13 @@ const resolutionOptions = {
     sd_res_1024x1536: { width: 1024, height: 1536, name: '1024x1536 (2:3, ChatGPT)' },
     sd_res_1024x1792: { width: 1024, height: 1792, name: '1024x1792 (4:7, DALL-E)' },
     sd_res_1792x1024: { width: 1792, height: 1024, name: '1792x1024 (7:4, DALL-E)' },
+    sd_res_1280x1280: { width: 1280, height: 1280, name: '1280x1280 (1:1, Z.AI)' },
+    sd_res_1568x1056: { width: 1568, height: 1056, name: '1568x1056 (3:2, Z.AI)' },
+    sd_res_1056x1568: { width: 1056, height: 1568, name: '1056x1568 (2:3, Z.AI)' },
+    sd_res_1472x1088: { width: 1472, height: 1088, name: '1472x1088 (4:3, Z.AI)' },
+    sd_res_1088x1472: { width: 1088, height: 1472, name: '1088x1472 (3:4, Z.AI)' },
+    sd_res_1728x960: { width: 1728, height: 960, name: '1728x960 (16:9, Z.AI)' },
+    sd_res_960x1728: { width: 960, height: 1728, name: '960x1728 (9:16, Z.AI)' },
 };
 
 function onResolutionChange() {
@@ -1055,6 +1066,11 @@ async function onOpenAiQualitySelect() {
 
 async function onOpenAiDurationSelect() {
     extension_settings.sd.openai_duration = String($('#sd_openai_duration').find(':selected').val());
+    saveSettingsDebounced();
+}
+
+function onZaiCodingApiChange() {
+    extension_settings.sd.zai_coding_api = !!$('#sd_zai_coding_api').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -4333,6 +4349,7 @@ async function generateZaiImage(prompt, signal) {
                 model: extension_settings.sd.model,
                 quality: extension_settings.sd.openai_quality,
                 size: `${width}x${height}`,
+                use_coding_api: extension_settings.sd.zai_coding_api,
             }),
         });
 
@@ -5347,6 +5364,7 @@ jQuery(async () => {
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
     $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
+    $('#sd_zai_coding_api').on('input', onZaiCodingApiChange);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_clip_skip').on('input', onClipSkipInput);
