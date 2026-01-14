@@ -50,10 +50,11 @@ import {
     showMoreMessages,
     stopGeneration,
     substituteParams,
+    syncMesToSwipe,
     system_avatar,
     system_message_types,
     this_chid,
-    syncMesToSwipe,
+    updateMessageElement,
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
@@ -2120,7 +2121,7 @@ export function initDefaultSlashCommands() {
                 isRequired: true,
                 enumProvider: (executor, scope) => [
                     ...commonEnumProviders.variables('scope')(executor, scope),
-                    ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
+                    ...(typeof globalThis.qrEnumProviderExecutables === 'function') ? globalThis.qrEnumProviderExecutables() : [],
                 ],
             }),
         ],
@@ -3572,7 +3573,7 @@ async function runCallback(args, name) {
         return result.pipe;
     }
 
-    if (typeof window['executeQuickReplyByName'] !== 'function') {
+    if (typeof globalThis.executeQuickReplyByName !== 'function') {
         throw new Error(t`Quick Reply extension is not loaded`);
     }
 
@@ -3583,7 +3584,7 @@ async function runCallback(args, name) {
             abortController: args._abortController,
             debugController: args._debugController,
         };
-        return await window['executeQuickReplyByName'](name, args, options);
+        return await globalThis.executeQuickReplyByName(name, args, options);
     } catch (error) {
         throw new Error(t`Error running Quick Reply "${name}": ${error.message}`);
     }
@@ -4642,7 +4643,8 @@ async function messageRoleCallback(args, role) {
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
     const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
     if (existingMessage.length) {
-        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        const newMessageElement = updateMessageElement(message, { messageId: modifyAt });
+        existingMessage.after(newMessageElement);
         existingMessage.remove();
     }
     await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
@@ -4707,7 +4709,8 @@ async function messageNameCallback(args, name) {
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
     const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
     if (existingMessage.length) {
-        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        const newMessageElement = updateMessageElement(message, { messageId: modifyAt });
+        existingMessage.after(newMessageElement);
         existingMessage.remove();
     }
     await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
@@ -4788,7 +4791,7 @@ export async function sendMessageAs(args, text) {
         insertAt = chat.length + insertAt;
     }
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -4840,7 +4843,7 @@ export async function sendNarratorMessage(args, text) {
         insertAt = chat.length + insertAt;
     }
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -4892,7 +4895,7 @@ export async function promptQuietForLoudResponse(who, text) {
         },
     };
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     chat.push(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
@@ -4928,7 +4931,7 @@ async function sendCommentMessage(args, text) {
         insertAt = chat.length + insertAt;
     }
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);

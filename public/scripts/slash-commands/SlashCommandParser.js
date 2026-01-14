@@ -39,6 +39,7 @@ import { macros as macroSystem } from '../macros/macro-system.js';
 import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 import { chat_metadata } from '/script.js';
 import { extension_settings } from '../extensions.js';
+import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnostics.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
@@ -618,6 +619,8 @@ export class SlashCommandParser {
                         resultStart = conditionStartInText + macroNameStart;
                     }
 
+                    await onboardingExperimentalMacroEngine('{{if}} macro');
+
                     const result = new AutoCompleteNameResult(
                         resultIdentifier,
                         resultStart,
@@ -736,6 +739,8 @@ export class SlashCommandParser {
                         scopedMacroName: scopedMacro.name,
                     };
 
+                    await onboardingExperimentalMacroEngine('scoped macros');
+
                     // Only show the scoped macro's details - no list of other macros
                     // This creates a "details only" view showing the scoped arg being typed
                     const macroDef = macroSystem.registry.getPrimaryMacro(scopedMacro.name);
@@ -808,7 +813,13 @@ export class SlashCommandParser {
         if (unclosedScopes.length > 0) {
             // Suggest closing the innermost (last) unclosed scope first
             const innermostScope = unclosedScopes[unclosedScopes.length - 1];
-            const closingOption = new MacroClosingTagAutoCompleteOption(innermostScope.name);
+            // Preserve whitespace padding from the opening tag
+            // Pass currentPadding so the closing tag can replace user-typed whitespace with the target padding
+            const closingOption = new MacroClosingTagAutoCompleteOption(innermostScope.name, {
+                paddingBefore: innermostScope.paddingBefore,
+                paddingAfter: innermostScope.paddingAfter,
+                currentPadding: context.paddingBefore,
+            });
             options.push(closingOption);
 
             // If inside a scoped {{if}}, also suggest {{else}}
@@ -891,6 +902,9 @@ export class SlashCommandParser {
             if (!macroContext) {
                 macroContext = /** @type {EnhancedMacroAutoCompleteOptions} */ ({
                     paddingAfter: context.paddingBefore, // Match whitespace before the macro - will only be used if the macro gets auto-closed
+                    flags: context.flags,
+                    currentFlag: context.currentFlag,
+                    fullText: context.fullText,
                 });
             }
 
@@ -1216,7 +1230,7 @@ export class SlashCommandParser {
      * Uses the MacroParser and MacroCstWalker for accurate analysis.
      *
      * @param {string} textUpToCursor - The document text up to the cursor position.
-     * @returns {Array<{ name: string, startOffset: number, endOffset: number }>}
+     * @returns {Array<{ name: string, startOffset: number, endOffset: number, paddingBefore: string, paddingAfter: string }>}
      */
     #findUnclosedScopes(textUpToCursor) {
         if (!textUpToCursor) return [];
@@ -1239,32 +1253,43 @@ export class SlashCommandParser {
      * Used when the parser fails on incomplete input.
      *
      * @param {string} text - The text to analyze.
-     * @returns {Array<{ name: string, startOffset: number, endOffset: number }>}
+     * @returns {Array<{ name: string, startOffset: number, endOffset: number, paddingBefore: string, paddingAfter: string }>}
      */
     #findUnclosedScopesRegex(text) {
-        // Simple regex to find macro openings and closings
-        // This is a fallback - less accurate but works on partial input
-        const macroPattern = /\{\{(\/?)([\w-]+)/g;
+        // Regex to find macro openings and closings, capturing whitespace padding
+        // Group 1: padding after {{, Group 2: optional /, Group 3: macro name
+        const macroPattern = /\{\{(\s*)(\/?)([\w-]+)/g;
         const stack = [];
 
         let match;
         while ((match = macroPattern.exec(text)) !== null) {
-            const isClosing = match[1] === '/';
-            const name = match[2];
+            const paddingBefore = match[1];
+            const isClosing = match[2] === '/';
+            const name = match[3];
 
             if (isClosing) {
-                // Pop matching opener
-                if (stack.length > 0 && stack[stack.length - 1].name === name) {
+                // Pop matching opener (case-insensitive)
+                if (stack.length > 0 && stack[stack.length - 1].name.toLowerCase() === name.toLowerCase()) {
                     stack.pop();
                 }
             } else {
                 // Check if macro can accept scoped content
                 const macroDef = macroSystem.registry.getPrimaryMacro(name);
                 if (macroDef && macroDef.maxArgs > 0) {
+                    // Try to find closing }} to extract trailing whitespace
+                    let paddingAfter = '';
+                    const afterMatch = text.slice(match.index + match[0].length);
+                    const closingMatch = afterMatch.match(/^[^}]*?(\s*)\}\}/);
+                    if (closingMatch) {
+                        paddingAfter = closingMatch[1];
+                    }
+
                     stack.push({
                         name,
                         startOffset: match.index,
                         endOffset: match.index + match[0].length,
+                        paddingBefore,
+                        paddingAfter,
                     });
                 }
             }
@@ -1367,6 +1392,10 @@ export class SlashCommandParser {
     }
 
     replaceGetvar(value) {
+        // Not needed with the new parser.
+        if (power_user.experimental_macro_engine) {
+            return value;
+        }
         return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
             cmd = cmd.toLowerCase();
@@ -1685,7 +1714,33 @@ export class SlashCommandParser {
         return this.testSymbol('/');
     }
     testCommandEnd() {
-        return this.testClosureEnd() || this.testSymbol('|');
+        if (this.testClosureEnd()) return true;
+        // Only treat | as command end if we're not inside macro braces {{}}
+        if (this.testSymbol('|') && !this.isInsideMacroBraces()) return true;
+        return false;
+    }
+
+    /**
+     * Checks if the current position is inside unclosed macro braces {{...}}.
+     * This prevents pipes inside macros from being treated as command separators.
+     * @returns {boolean} True if inside unclosed macro braces.
+     */
+    isInsideMacroBraces() {
+        const textBehind = this.behind;
+        let depth = 0;
+
+        // Scan through the text to track macro brace depth
+        for (let i = 0; i < textBehind.length; i++) {
+            if (textBehind[i] === '{' && textBehind[i + 1] === '{') {
+                depth++;
+                i++; // Skip the second {
+            } else if (textBehind[i] === '}' && textBehind[i + 1] === '}') {
+                depth = Math.max(0, depth - 1);
+                i++; // Skip the second }
+            }
+        }
+
+        return depth > 0;
     }
     parseCommand() {
         const start = this.index + 1;

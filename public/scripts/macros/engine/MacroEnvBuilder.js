@@ -22,7 +22,7 @@ import { getStringHash } from '/scripts/utils.js';
  * @property {string|null} [original]
  * @property {string|null} [groupOverride]
  * @property {boolean} [replaceCharacterCard]
- * @property {Record<string, any>|null} [dynamicMacros]
+ * @property {Record<string, import('./MacroEnv.types.js').DynamicMacroValue>|null} [dynamicMacros]
  * @property {(value: string) => string} [postProcessFn]
  */
 

@@ -261,6 +261,13 @@ export function registerCoreMacros() {
     MacroRegistry.registerMacro('//', {
         aliases: [{ alias: 'comment', visible: false }],
         category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'comment',
+                type: MacroValueType.STRING,
+                description: 'Any kind of text as comment. If you want multiline comments, consider using a scoped macro like {{//}}First\nSecond{{///}}.',
+            },
+        ],
         list: true,         // We consume any arguments as if this is a list, but we'll ignore them in the handler anyway
         strictArgs: false,  // and we also always remove it, even if the parsing might say it's invalid
         description: 'Comment macro that produces an empty string. Can be used for writing into prompt definitions, without being passed to the context.',
@@ -338,7 +345,7 @@ export function registerCoreMacros() {
         description: 'Picks a random item from a list, but keeps the choice stable for a given chat and macro position.',
         returns: 'Stable randomly selected item from the list.',
         exampleUsage: ['{{pick::blonde::brown::red::black::blue}}'],
-        handler: ({ list, range, env }) => {
+        handler: ({ list, globalOffset, env }) => {
             // Handle old legacy cases, where we have to split the list manually
             if (list.length === 1) {
                 list = readSingleArgsRandomList(list[0]);
@@ -348,12 +355,19 @@ export function registerCoreMacros() {
                 return '';
             }
 
+            // NOTE:
+            // When changing the hashing logic, make sure to update unit test functionality
+            // in registerTestablePick() to be identical.
+
             const chatIdHash = getChatIdHash();
 
             // Use the full original input string for deterministic behavior
             const rawContentHash = env.contentHash;
 
-            const offset = typeof range?.startOffset === 'number' ? range.startOffset : 0;
+            // Use globalOffset for deterministic seeding - this ensures identical macros
+            // at different positions in the document produce different results, even when
+            // nested inside arguments or scoped content
+            const offset = globalOffset;
 
             const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
             const finalSeed = getStringHash(combinedSeedString);
@@ -426,13 +440,13 @@ export function registerCoreMacros() {
 }
 
 function getChatIdHash() {
-    const cachedIdHash = chat_metadata['chat_id_hash'];
+    const cachedIdHash = chat_metadata.chat_id_hash;
     if (typeof cachedIdHash === 'number') {
         return cachedIdHash;
     }
 
-    const chatId = chat_metadata['main_chat'] ?? getCurrentChatId();
+    const chatId = chat_metadata.main_chat ?? getCurrentChatId();
     const chatIdHash = getStringHash(chatId);
-    chat_metadata['chat_id_hash'] = chatIdHash;
+    chat_metadata.chat_id_hash = chatIdHash;
     return chatIdHash;
 }

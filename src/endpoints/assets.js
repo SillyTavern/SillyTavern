@@ -145,7 +145,7 @@ router.post('/get', async (request, response) => {
                     for (let file of files) {
                         if (!file.endsWith('.placeholder')) {
                             //console.debug("Asset VRM model found:",file)
-                            output['vrm']['model'].push(clientRelativePath(request.user.directories.root, file));
+                            output.vrm.model.push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
 
@@ -156,7 +156,7 @@ router.post('/get', async (request, response) => {
                     for (let file of files) {
                         if (!file.endsWith('.placeholder')) {
                             //console.debug("Asset VRM animation found:",file)
-                            output['vrm']['animation'].push(clientRelativePath(request.user.directories.root, file));
+                            output.vrm.animation.push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
                     continue;

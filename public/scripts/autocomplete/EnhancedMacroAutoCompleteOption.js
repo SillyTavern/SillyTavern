@@ -9,10 +9,11 @@ import {
     createSourceIndicator,
     createAliasIndicator,
     renderMacroDetails,
-} from '../macros/MacroBrowser.js';
+} from '../macros/engine/MacroBrowser.js';
 import { enumIcons } from '../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { ValidFlagSymbols } from '../macros/engine/MacroFlags.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../macros/engine/MacroLexer.js';
+import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnostics.js';
 
 /** @typedef {import('../macros/engine/MacroRegistry.js').MacroDefinition} MacroDefinition */
 
@@ -54,6 +55,9 @@ import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../macros/engine/MacroLexer.js
  * @property {boolean} [noBraces=false] - If true, display without {{ }} braces (for use as values, e.g., in {{if}} conditions).
  * @property {string} [paddingAfter=''] - Whitespace to add before closing }} (for matching opening whitespace style).
  * @property {boolean} [closeWithBraces=false] - If true, the completion will add }} to close the macro.
+ * @property {string[]} [flags=[]] - The currently already written flags for this autocomplete.
+ * @property {string} [currentFlag] - The current flag that is present, if any.
+ * @property {string} [fullText] - The currently written full text.
  */
 
 export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
@@ -62,6 +66,9 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
 
     /** @type {MacroAutoCompleteContext|null} */
     #context = null;
+
+    /** @type {EnhancedMacroAutoCompleteOptions|null} */
+    #options = null;
 
     /** @type {boolean} */
     #noBraces = false;
@@ -83,12 +90,12 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         if (contextOrOptions && typeof contextOrOptions === 'object') {
             if ('noBraces' in contextOrOptions || 'paddingAfter' in contextOrOptions || 'closeWithBraces' in contextOrOptions) {
                 // It's an options object
-                const options = /** @type {EnhancedMacroAutoCompleteOptions} */ (contextOrOptions);
-                this.#noBraces = options.noBraces ?? false;
-                this.#paddingAfter = options.paddingAfter ?? '';
+                this.#options = /** @type {EnhancedMacroAutoCompleteOptions} */ (contextOrOptions);
+                this.#noBraces = this.#options.noBraces ?? false;
+                this.#paddingAfter = this.#options.paddingAfter ?? '';
 
                 // If noBraces mode with closeWithBraces, complete with name + padding + }}
-                if (options.closeWithBraces) {
+                if (this.#options.closeWithBraces) {
                     this.valueProvider = () => `${macro.name}${this.#paddingAfter}}}`;
                     this.makeSelectable = true;
                 }
@@ -109,6 +116,12 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
                 this.valueProvider = () => `${macro.name}${this.#paddingAfter}}}`;
                 this.makeSelectable = true; // Required when using valueProvider
             }
+        }
+
+        // {{//}} needs special handling. If we autocomplete right after **one** slash is already typed, we need to replace that, as it's treated as a flag otherwise.
+        const fullText = this.#options?.fullText ?? this.#context?.fullText ?? '';
+        if (macro.name === '//' && fullText.endsWith('/')) {
+            this.replacementStartOffset = (this.replacementStartOffset ?? 0) - 1; // Cut the leading slash
         }
     }
 
@@ -486,13 +499,13 @@ export const VariableShorthandDefinitions = new Map([
         type: VariableShorthandType.LOCAL,
         name: 'Local Variable',
         description: 'Access or modify a local variable (scoped to current chat).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
     }],
     [VariableShorthandType.GLOBAL, {
         type: VariableShorthandType.GLOBAL,
         name: 'Global Variable',
         description: 'Access or modify a global variable (shared across all chats).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
     }],
 ]);
 
@@ -609,10 +622,17 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
         const prefix = this.#varDef.type;
         const examples = [
             `{{${prefix}myvar}} - Get variable value`,
-            `{{${prefix}myvar = value}} - Set variable`,
-            `{{${prefix}counter++}} - Increment`,
-            `{{${prefix}counter--}} - Decrement`,
-            `{{${prefix}myvar += text}} - Append/add`,
+            `{{${prefix}myvar = value}} - Set variable (returns nothing)`,
+            `{{${prefix}counter++}} - Increment and get value`,
+            `{{${prefix}counter--}} - Decrement and get value`,
+            `{{${prefix}myvar += text}} - Append/add (returns nothing)`,
+            `{{${prefix}score -= 5}} - Subtract (returns nothing)`,
+            `{{${prefix}myvar || default}} - Get with fallback if falsy`,
+            `{{${prefix}myvar ?? default}} - Get with fallback if undefined`,
+            `{{${prefix}myvar ||= value}} - Set if falsy, get value`,
+            `{{${prefix}myvar ??= value}} - Set if undefined, get value`,
+            `{{${prefix}myvar == test}} - Compare (returns true/false)`,
+            `{{${prefix}myvar != test}} - Compare not equal (returns true/false)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -783,6 +803,13 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}${this.#varName}++}} - Increment`,
             `{{${prefix}${this.#varName}--}} - Decrement`,
             `{{${prefix}${this.#varName} += text}} - Append/add`,
+            `{{${prefix}${this.#varName} -= 5}} - Subtract`,
+            `{{${prefix}${this.#varName} || default}} - Get with fallback if falsy`,
+            `{{${prefix}${this.#varName} ?? default}} - Get with fallback if undefined`,
+            `{{${prefix}${this.#varName} ||= value}} - Set if falsy, get value`,
+            `{{${prefix}${this.#varName} ??= value}} - Set if undefined, get value`,
+            `{{${prefix}${this.#varName} == test}} - Compare (returns true/false)`,
+            `{{${prefix}${this.#varName} != test}} - Compare not equal (returns true/false)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -804,25 +831,67 @@ export const VariableOperatorDefinitions = new Map([
     ['=', {
         symbol: '=',
         name: 'Set',
-        description: 'Set the variable to a new value.',
+        description: 'Set the variable to a new value. Returns nothing.',
         needsValue: true,
     }],
     ['++', {
         symbol: '++',
         name: 'Increment',
-        description: 'Increment the variable by 1 (numeric).',
+        description: 'Increment the variable by 1 (numeric). Returns the new value.',
         needsValue: false,
     }],
     ['--', {
         symbol: '--',
         name: 'Decrement',
-        description: 'Decrement the variable by 1 (numeric).',
+        description: 'Decrement the variable by 1 (numeric). Returns the new value.',
         needsValue: false,
     }],
     ['+=', {
         symbol: '+=',
         name: 'Add',
-        description: 'Add to the variable (numeric addition or string concatenation).',
+        description: 'Add to the variable (numeric addition or string concatenation). Returns nothing.',
+        needsValue: true,
+    }],
+    ['-=', {
+        symbol: '-=',
+        name: 'Subtract',
+        description: 'Subtract a numeric value from the variable. Returns nothing.',
+        needsValue: true,
+    }],
+    ['||', {
+        symbol: '||',
+        name: 'Logical Or',
+        description: 'Return the fallback value if the variable is falsy, otherwise return the variable value.',
+        needsValue: true,
+    }],
+    ['??', {
+        symbol: '??',
+        name: 'Nullish Coalescing',
+        description: 'Return the fallback value only if the variable does not exist, otherwise return the variable value (even if falsy).',
+        needsValue: true,
+    }],
+    ['||=', {
+        symbol: '||=',
+        name: 'Logical Or Assign',
+        description: 'If the variable is falsy, set it to the value and return it; otherwise return the current value.',
+        needsValue: true,
+    }],
+    ['??=', {
+        symbol: '??=',
+        name: 'Nullish Coalescing Assign',
+        description: 'If the variable does not exist, set it to the value and return it; otherwise return the current value.',
+        needsValue: true,
+    }],
+    ['==', {
+        symbol: '==',
+        name: 'Equals',
+        description: 'Compare the variable value to another value. Returns "true" or "false".',
+        needsValue: true,
+    }],
+    ['!=', {
+        symbol: '!=',
+        name: 'Not Equals',
+        description: 'Compare the variable value to another value. Returns "true" if not equal, "false" if equal.',
         needsValue: true,
     }],
 ]);
@@ -907,20 +976,38 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
     /** @type {string} */
     #macroName;
 
+    /** @type {string} */
+    #paddingBefore;
+
+    /** @type {string} */
+    #paddingAfter;
+
     /**
      * @param {string} macroName - The name of the macro to close.
+     * @param {Object} [options] - Optional configuration.
+     * @param {string} [options.paddingBefore=''] - Whitespace after {{ in opening tag (target padding).
+     * @param {string} [options.paddingAfter=''] - Whitespace before }} in opening tag (target padding).
+     * @param {string} [options.currentPadding=''] - Whitespace the user has already typed after {{.
      */
-    constructor(macroName) {
+    constructor(macroName, options = {}) {
         // The closing tag is what we're suggesting - use /macroName as the name for matching
         const closingTag = `/${macroName}`;
         super(closingTag, '{/');
         this.#macroName = macroName;
+        this.#paddingBefore = options.paddingBefore ?? '';
+        this.#paddingAfter = options.paddingAfter ?? '';
+
+        // Calculate the replacement offset to replace any existing whitespace the user typed
+        // This allows us to normalize the whitespace to match the opening tag's style
+        const currentPadding = options.currentPadding ?? '';
+        // Negative offset to start replacement earlier (eating the user's whitespace)
+        this.replacementStartOffset = -currentPadding.length;
 
         // Custom valueProvider to return the correct replacement text
-        // Autocomplete REPLACES the typed identifier entirely, so return the full closing tag
+        // Includes the target paddingBefore from the opening tag, replacing any user-typed whitespace
         this.valueProvider = () => {
-            // Return full closing tag content (without {{ since that's before the identifier)
-            return `/${macroName}}}`;
+            // Return: paddingBefore + /macroName + paddingAfter + }}
+            return `${this.#paddingBefore}/${macroName}${this.#paddingAfter}}}`;
         };
 
         // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
@@ -1033,7 +1120,7 @@ export function parseMacroContext(macroText, cursorOffset) {
     while (i < macroText.length) {
         const char = macroText[i];
         // Check if this looks like a closing tag: `/` followed by an identifier character
-        if (char === '/' && i + 1 < macroText.length && /[a-zA-Z_]/.test(macroText[i + 1])) {
+        if (char === '/' && i + 1 < macroText.length && /[a-zA-Z/]/.test(macroText[i + 1])) {
             // This is a closing tag identifier, not a flag - stop parsing flags
             break;
         }
@@ -1061,6 +1148,10 @@ export function parseMacroContext(macroText, cursorOffset) {
         if (cursorOffset >= lastFlagEnd - 1) {
             currentFlag = flags[flags.length - 1];
         }
+    }
+
+    if (flags.length > 0) {
+        void onboardingExperimentalMacroEngine('macro flags');
     }
 
     // Check for variable shorthand prefix (. or $)
@@ -1096,7 +1187,8 @@ export function parseMacroContext(macroText, cursorOffset) {
             i++;
         }
 
-        // Check for operators: ++, --, +=, =
+        // Check for operators: ++, --, +=, -=, ||=, ??=, ||, ??, ==, =
+        // Order matters: longer operators must be checked before shorter ones
         // Also track partial operator prefixes for autocomplete
         const operatorText = macroText.slice(i);
         let hasInvalidTrailingChars = false;
@@ -1108,13 +1200,34 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (operatorText.startsWith('--')) {
             variableOperator = '--';
             i += 2;
+        } else if (operatorText.startsWith('||=')) {
+            variableOperator = '||=';
+            i += 3;
+        } else if (operatorText.startsWith('??=')) {
+            variableOperator = '??=';
+            i += 3;
+        } else if (operatorText.startsWith('||')) {
+            variableOperator = '||';
+            i += 2;
+        } else if (operatorText.startsWith('??')) {
+            variableOperator = '??';
+            i += 2;
         } else if (operatorText.startsWith('+=')) {
             variableOperator = '+=';
+            i += 2;
+        } else if (operatorText.startsWith('-=')) {
+            variableOperator = '-=';
+            i += 2;
+        } else if (operatorText.startsWith('==')) {
+            variableOperator = '==';
+            i += 2;
+        } else if (operatorText.startsWith('!=')) {
+            variableOperator = '!=';
             i += 2;
         } else if (operatorText.startsWith('=')) {
             variableOperator = '=';
             i += 1;
-        } else if (operatorText.startsWith('+') || operatorText.startsWith('-')) {
+        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!')) {
             // Partial operator prefix - user is typing an operator
             partialOperator = operatorText[0];
         } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
@@ -1124,8 +1237,12 @@ export function parseMacroContext(macroText, cursorOffset) {
             invalidTrailingChars = operatorText.trim();
         }
 
-        // If operator requires a value (= or +=), parse the value
-        if (variableOperator === '=' || variableOperator === '+=') {
+        // Check if operator requires a value
+        const operatorDef = variableOperator ? VariableOperatorDefinitions.get(variableOperator) : null;
+        const operatorNeedsValue = operatorDef?.needsValue ?? false;
+
+        // If operator requires a value, parse the value
+        if (operatorNeedsValue) {
             // Skip whitespace after operator
             while (i < macroText.length && /\s/.test(macroText[i])) {
                 i++;
@@ -1143,15 +1260,17 @@ export function parseMacroContext(macroText, cursorOffset) {
             isTypingVariableName = true;
         } else if (!variableOperator && !hasInvalidTrailingChars) {
             // Cursor is after variable name but no operator yet (and no invalid chars)
-            // This includes partial operator prefixes like '+' or '-'
+            // This includes partial operator prefixes like '+', '-', '|', '?'
             isTypingOperator = true;
-        } else if (variableOperator === '=' || variableOperator === '+=') {
+        } else if (operatorNeedsValue) {
             // Operator that requires value - cursor is in value area
             isTypingValue = true;
         }
         // For ++ and --, the operator is complete (no value needed)
         // For invalid trailing chars, none of the typing flags will be true
         const isOperatorComplete = (variableOperator === '++' || variableOperator === '--');
+
+        void onboardingExperimentalMacroEngine('variable shorthands');
 
         // Return early for variable shorthand - different structure than regular macros
         return {
@@ -1277,6 +1396,10 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     const leftPadding = macroText.match(/^\s+/)?.[0] ?? '';
+
+    if (leftPadding) {
+        void onboardingExperimentalMacroEngine('leading whitespace');
+    }
 
     // Clean identifier: strip trailing colons (for partial :: typing)
     let cleanIdentifier = identifierOnly.replace(/:+$/, '');

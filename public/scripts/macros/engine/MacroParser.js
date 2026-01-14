@@ -88,25 +88,67 @@ class MacroParser extends CstParser {
             // Variable identifier (name)
             $.CONSUME(Tokens.Var.Identifier, { LABEL: 'Var.identifier' });
 
-            // Optional operator
+            // Optional operator (and expression, if operator requires one)
             $.OPTION2(() => $.SUBRULE($.variableOperator));
         });
 
-        // Variable operator: ++, --, = value, += value
+        // Variable operator: ++, --, = value, += value, -= value, ||, ??, ||=, ??=, ==, !=
         $.variableOperator = $.RULE('variableOperator', () => {
             $.OR4([
-                { ALT: () => $.CONSUME(Tokens.Var.Increment, { LABEL: 'Var.operator' }) },
-                { ALT: () => $.CONSUME(Tokens.Var.Decrement, { LABEL: 'Var.operator' }) },
+                { ALT: () => $.CONSUME(Tokens.Var.Operators.Increment, { LABEL: 'Var.operator' }) },
+                { ALT: () => $.CONSUME(Tokens.Var.Operators.Decrement, { LABEL: 'Var.operator' }) },
                 {
                     ALT: () => {
-                        $.CONSUME(Tokens.Var.Equals, { LABEL: 'Var.operator' });
+                        $.CONSUME(Tokens.Var.Operators.NullishCoalescingEquals, { LABEL: 'Var.operator' });
                         $.SUBRULE($.variableValue, { LABEL: 'Var.value' });
                     },
                 },
                 {
                     ALT: () => {
-                        $.CONSUME(Tokens.Var.PlusEquals, { LABEL: 'Var.operator' });
+                        $.CONSUME(Tokens.Var.Operators.NullishCoalescing, { LABEL: 'Var.operator' });
                         $.SUBRULE2($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.LogicalOrEquals, { LABEL: 'Var.operator' });
+                        $.SUBRULE3($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.LogicalOr, { LABEL: 'Var.operator' });
+                        $.SUBRULE4($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.MinusEquals, { LABEL: 'Var.operator' });
+                        $.SUBRULE5($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.DoubleEquals, { LABEL: 'Var.operator' });
+                        $.SUBRULE6($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.NotEquals, { LABEL: 'Var.operator' });
+                        $.SUBRULE7($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.PlusEquals, { LABEL: 'Var.operator' });
+                        $.SUBRULE8($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+                {
+                    ALT: () => {
+                        $.CONSUME(Tokens.Var.Operators.Equals, { LABEL: 'Var.operator' });
+                        $.SUBRULE9($.variableValue, { LABEL: 'Var.value' });
                     },
                 },
             ]);

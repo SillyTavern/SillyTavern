@@ -284,7 +284,7 @@ function debugTtsPlayback() {
         },
     ));
 }
-window['debugTtsPlayback'] = debugTtsPlayback;
+globalThis.debugTtsPlayback = debugTtsPlayback;
 
 //##################//
 //   Audio Control  //
@@ -321,8 +321,8 @@ async function playAudioData(audioJob) {
         const srcUrl = await getBase64Async(audioBlob);
 
         // VRM lip sync
-        if (extension_settings.vrm?.enabled && typeof window['vrmLipSync'] === 'function') {
-            await window['vrmLipSync'](audioBlob, char);
+        if (extension_settings.vrm?.enabled && typeof globalThis.vrmLipSync === 'function') {
+            await globalThis.vrmLipSync(audioBlob, char);
         }
 
         audioElement.src = srcUrl;
@@ -339,7 +339,7 @@ async function playAudioData(audioJob) {
     });
 }
 
-window['tts_preview'] = function (id) {
+globalThis.tts_preview = function (id) {
     const audio = document.getElementById(id);
 
     if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
@@ -474,8 +474,8 @@ function completeTtsJob() {
 async function tts(text, voiceId, char, voiceMapKey = null) {
     async function processResponse(response) {
         // RVC injection
-        if (typeof window['rvcVoiceConversion'] === 'function' && extension_settings.rvc.enabled)
-            response = await window['rvcVoiceConversion'](response, char, text);
+        if (typeof globalThis.rvcVoiceConversion === 'function' && extension_settings.rvc.enabled)
+            response = await globalThis.rvcVoiceConversion(response, char, text);
 
         await addAudioJob(response, char);
     }
@@ -806,7 +806,7 @@ async function playFullConversation() {
     ttsJobQueue = chat;
 }
 
-window['playFullConversation'] = playFullConversation;
+globalThis.playFullConversation = playFullConversation;
 
 //#############################//
 //  Extension UI and Settings  //

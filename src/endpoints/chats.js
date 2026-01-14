@@ -414,8 +414,8 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name || jsonData.chat_metadata)) {
                     chatData.chat_items = (itemCounter - 1);
-                    chatData.mes = jsonData['mes'] || '[The message is empty]';
-                    chatData.last_mes = jsonData['send_date'] || new Date(Math.round(stats.mtimeMs)).toISOString();
+                    chatData.mes = jsonData.mes || '[The message is empty]';
+                    chatData.last_mes = jsonData.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
 
                     res(chatData);
                 } else {
@@ -777,9 +777,26 @@ router.post('/group/get', (request, response) => {
     }
 
     const id = request.body.id;
-    const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+    const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
     return response.send(getChatData(chatFilePath));
+});
+
+router.post('/group/info', async (request, response) => {
+    try {
+        if (!request.body || !request.body.id) {
+            return response.sendStatus(400);
+        }
+
+        const id = request.body.id;
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
+
+        const chatInfo = await getChatInfo(chatFilePath);
+        return response.send(chatInfo);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
 });
 
 router.post('/group/delete', (request, response) => {
@@ -789,13 +806,13 @@ router.post('/group/delete', (request, response) => {
         }
 
         const id = request.body.id;
-        const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
         //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error('The group chat file was not deleted.\'');
+            console.error('The group chat file was not deleted.');
             return response.sendStatus(400);
         }
     } catch (error) {

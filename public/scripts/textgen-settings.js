@@ -755,7 +755,7 @@ async function getStatusTextgen() {
                     power_user.chat_template_hash = chat_template_hash;
 
                     if (wantsContextSize && 'default_generation_settings' in data) {
-                        const backend_max_context = data['default_generation_settings']['n_ctx'];
+                        const backend_max_context = data.default_generation_settings.n_ctx;
                         if (backend_max_context && typeof backend_max_context === 'number') {
                             const old_value = max_context;
                             if (max_context !== backend_max_context) {
@@ -913,16 +913,16 @@ export function initTextGenSettings() {
             $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
             //special handling for vLLM/Aphrodite topK -1 disable state
             $('#top_k_textgenerationwebui').attr('min', -1);
-            if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings['top_k'] === 0) {
-                textgenerationwebui_settings['top_k'] = -1;
+            if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings.top_k === 0) {
+                textgenerationwebui_settings.top_k = -1;
                 $('#top_k_textgenerationwebui').val('-1').trigger('input');
             }
         } else {
             $('#mirostat_mode_textgenerationwebui').attr('step', 1);
             //undo special vLLM/Aphrodite setup for topK
             $('#top_k_textgenerationwebui').attr('min', 0);
-            if ($('#top_k_textgenerationwebui').val() === '-1' || textgenerationwebui_settings['top_k'] === -1) {
-                textgenerationwebui_settings['top_k'] = 0;
+            if ($('#top_k_textgenerationwebui').val() === '-1' || textgenerationwebui_settings.top_k === -1) {
+                textgenerationwebui_settings.top_k = 0;
                 $('#top_k_textgenerationwebui').val('0').trigger('input');
             }
         }

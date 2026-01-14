@@ -68,7 +68,7 @@ export function registerVariableMacros() {
         description: 'Increments a local variable by 1 and returns the new value. If the variable does not exist, it will be created.',
         returns: 'The new value of the local variable.',
         returnType: MacroValueType.NUMBER,
-        exampleUsage: ['{{incvar::myintvar}}'],
+        exampleUsage: ['{{incvar::myintvar}}', '{{incvar some-local-int-var}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.local.inc(name);
             return normalize(result);
@@ -88,7 +88,7 @@ export function registerVariableMacros() {
         description: 'Decrements a local variable by 1 and returns the new value. If the variable does not exist, it will be created.',
         returns: 'The new value of the local variable.',
         returnType: MacroValueType.NUMBER,
-        exampleUsage: ['{{decvar::myintvar}}'],
+        exampleUsage: ['{{decvar::myintvar}}', '{{decvar some-local-int-var}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.local.dec(name);
             return normalize(result);
@@ -108,10 +108,50 @@ export function registerVariableMacros() {
         description: 'Gets the value of a local variable.',
         returns: 'The value of the local variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getvar::myvar}}', '{{getvar::myintvar}}'],
+        exampleUsage: ['{{getvar::myvar}}', '{{getvar myintvar}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.local.get(name);
             return normalize(result);
+        },
+    });
+
+    // {{hasvar::name}} -> returns 'true' or 'false'
+    MacroRegistry.registerMacro('hasvar', {
+        aliases: [{ alias: 'varexists' }],
+        category: MacroCategory.VARIABLE,
+        unnamedArgs: [
+            {
+                name: 'name',
+                type: MacroValueType.STRING,
+                description: 'The name of the local variable to check.',
+            },
+        ],
+        description: 'Checks if a local variable exists.',
+        returns: '"true" if the variable exists, "false" otherwise.',
+        returnType: MacroValueType.STRING,
+        exampleUsage: ['{{hasvar::myvar}}', '{{hasvar some-local-var}}'],
+        handler: ({ unnamedArgs: [name] }) => {
+            return ctx.variables.local.has(name) ? 'true' : 'false';
+        },
+    });
+
+    // {{deletevar::name}} -> returns ''
+    MacroRegistry.registerMacro('deletevar', {
+        aliases: [{ alias: 'flushvar' }],
+        category: MacroCategory.VARIABLE,
+        unnamedArgs: [
+            {
+                name: 'name',
+                type: MacroValueType.STRING,
+                description: 'The name of the local variable to delete.',
+            },
+        ],
+        description: 'Deletes a local variable.',
+        returns: '',
+        exampleUsage: ['{{deletevar::myvar}}', '{{deletevar some-local-var}}'],
+        handler: ({ unnamedArgs: [name] }) => {
+            ctx.variables.local.del(name);
+            return '';
         },
     });
 
@@ -176,6 +216,7 @@ export function registerVariableMacros() {
         description: 'Increments a global variable by 1 and returns the new value. If the variable does not exist, it will be created.',
         returns: 'The new value of the global variable.',
         returnType: MacroValueType.NUMBER,
+        exampleUsage: ['{{incglobalvar::myintvar}}', '{{incglobalvar some-global-int-var}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.global.inc(name);
             return normalize(result);
@@ -195,7 +236,7 @@ export function registerVariableMacros() {
         description: 'Decrements a global variable by 1 and returns the new value. If the variable does not exist, it will be created.',
         returns: 'The new value of the global variable.',
         returnType: MacroValueType.NUMBER,
-        exampleUsage: ['{{decglobalvar::myintvar}}'],
+        exampleUsage: ['{{decglobalvar::myintvar}}', '{{decglobalvar some-global-int-var}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.global.dec(name);
             return normalize(result);
@@ -215,10 +256,50 @@ export function registerVariableMacros() {
         description: 'Gets the value of a global variable.',
         returns: 'The value of the global variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getglobalvar::myvar}}', '{{getglobalvar::myintvar}}'],
+        exampleUsage: ['{{getglobalvar::myvar}}', '{{getglobalvar myintvar}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.global.get(name);
             return normalize(result);
+        },
+    });
+
+    // {{hasglobalvar::name}} -> returns 'true' or 'false'
+    MacroRegistry.registerMacro('hasglobalvar', {
+        aliases: [{ alias: 'globalvarexists' }],
+        category: MacroCategory.VARIABLE,
+        unnamedArgs: [
+            {
+                name: 'name',
+                type: MacroValueType.STRING,
+                description: 'The name of the global variable to check.',
+            },
+        ],
+        description: 'Checks if a global variable exists.',
+        returns: '"true" if the variable exists, "false" otherwise.',
+        returnType: MacroValueType.STRING,
+        exampleUsage: ['{{hasglobalvar::myvar}}', '{{hasglobalvar some-global-var}}'],
+        handler: ({ unnamedArgs: [name] }) => {
+            return ctx.variables.global.has(name) ? 'true' : 'false';
+        },
+    });
+
+    // {{deleteglobalvar::name}} -> returns ''
+    MacroRegistry.registerMacro('deleteglobalvar', {
+        aliases: [{ alias: 'flushglobalvar' }],
+        category: MacroCategory.VARIABLE,
+        unnamedArgs: [
+            {
+                name: 'name',
+                type: MacroValueType.STRING,
+                description: 'The name of the global variable to delete.',
+            },
+        ],
+        description: 'Deletes a global variable.',
+        returns: '',
+        exampleUsage: ['{{deleteglobalvar::myvar}}', '{{deleteglobalvar some-global-var}}'],
+        handler: ({ unnamedArgs: [name] }) => {
+            ctx.variables.global.del(name);
+            return '';
         },
     });
 }
