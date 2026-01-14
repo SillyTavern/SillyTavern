@@ -4016,6 +4016,11 @@ jQuery(() => {
         power_user.experimental_macro_engine = !!$(this).prop('checked');
         saveSettingsDebounced();
 
+        // Check if the app is ready before showing the toast
+        if (!eventSource.autoFireLastArgs.has(event_types.APP_READY)) {
+            return;
+        }
+
         eventSource.once(event_types.SETTINGS_UPDATED, function() {
             toastr.warning(
                 t`Click here to reload.`,
