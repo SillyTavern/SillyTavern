@@ -30,6 +30,7 @@ import {
     extension_prompt_types,
     extension_prompt_roles,
     deleteMessage,
+    settingsReady,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -4017,7 +4018,7 @@ jQuery(() => {
         saveSettingsDebounced();
 
         // Check if the app is ready before showing the toast
-        if (!eventSource.autoFireLastArgs.has(event_types.APP_READY)) {
+        if (!settingsReady) {
             return;
         }
 
