@@ -2434,11 +2434,11 @@ function getMessageTextHTML(message, { messageId = chat.indexOf(message) }) {
  * @param {number} [options.insertAfter=null] Message ID to insert the new message after
  * @param {boolean} [options.scroll=true] Whether to scroll to the new message
  * @param {number} [options.insertBefore=null] Message ID to insert the new message before
- * @param {number} [options.forceId=undefined] Force the message ID
+ * @param {number} [options.forceId=null] Force the message ID
  * @param {boolean} [options.showSwipes=true] Whether to refresh the swipe buttons.
  * @returns {JQuery<HTMLElement>} The newly added message element
  */
-export function addOneMessage(mes, { type = undefined, insertAfter = null, scroll = true, insertBefore = null, forceId = undefined, showSwipes = true } = {}) {
+export function addOneMessage(mes, { type = undefined, insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
     // Callers push the new message to chat before calling addOneMessage
     const messageId = (() => {
         if (typeof forceId === 'number') {
