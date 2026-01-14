@@ -1758,12 +1758,8 @@ zai.post('/generate', async (request, response) => {
 
         console.debug('Z.AI image request:', request.body);
 
-        // Use Coding API endpoint if configured, otherwise Common API
-        const baseUrl = request.body.zai_endpoint === 'coding'
-            ? 'https://api.z.ai/api/coding/paas/v4/images/generations'
-            : 'https://api.z.ai/api/paas/v4/images/generations';
-
-        const generateResponse = await fetch(baseUrl, {
+        // Always use Common API for image generation (Coding API has stricter rate limits)
+        const generateResponse = await fetch('https://api.z.ai/api/paas/v4/images/generations', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
