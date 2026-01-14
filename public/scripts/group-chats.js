@@ -273,9 +273,9 @@ export async function getGroupChat(groupId, reload = false) {
 
     // Remove chat file header if present
     if (Array.isArray(chatFile) && chatFile.length && Object.hasOwn(chatFile[0], 'chat_metadata')) {
-        metadata = chatFile?.[0]?.chat_metadata ?? {};
-        treeData = chatFile[0]?.tree ?? {};
-        chatFile.shift();
+        const chatHeader = /** @type {ChatHeader} */ (chatFile.shift());
+        metadata = chatHeader?.chat_metadata ?? {};
+        treeData = chatHeader?.tree ?? {};
     }
     const freshChat = !metadata.tainted && (!Array.isArray(chatFile) || !chatFile.length);
 

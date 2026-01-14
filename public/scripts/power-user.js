@@ -4187,7 +4187,7 @@ jQuery(() => {
         {
             power_user.enable_chat_tree = !!$(this).prop('checked');
             saveSettingsDebounced();
-            await switchSwipesAllMessages();
+            switchSwipesAllMessages();
             await reloadCurrentChat();
         }
         else {

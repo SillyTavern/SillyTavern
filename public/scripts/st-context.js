@@ -65,6 +65,8 @@ import {
     getMediaIndex,
     scrollChatToBottom,
     scrollOnMediaLoad,
+    redisplayChat,
+    updateMessageElement,
 } from '../script.js';
 import {
     extension_settings,
@@ -131,6 +133,7 @@ export function getContext() {
         eventSource,
         eventTypes: event_types,
         addOneMessage,
+        updateMessageElement,
         deleteLastMessage,
         deleteMessage,
         generate: Generate,
@@ -270,6 +273,7 @@ export function getContext() {
         getChatCompletionModel,
         printMessages,
         clearChat,
+        redisplayChat,
         ChatCompletionService,
         TextCompletionService,
         ConnectionManagerRequestService,
