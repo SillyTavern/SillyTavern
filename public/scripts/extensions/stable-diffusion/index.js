@@ -59,7 +59,7 @@ import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnum
 import { ToolManager } from '../../tool-calling.js';
 import { macros, MacroCategory } from '../../macros/macro-system.js';
 import { t, translate } from '../../i18n.js';
-import { oai_settings, ZAI_ENDPOINT } from '../../openai.js';
+import { oai_settings } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
 
@@ -4340,7 +4340,6 @@ async function generateZaiImage(prompt, signal) {
                 model: extension_settings.sd.model,
                 quality: extension_settings.sd.openai_quality,
                 size: `${width}x${height}`,
-                zai_endpoint: ZAI_ENDPOINT.COMMON, // Always use Common API for image generation
             }),
         });
 
