@@ -1558,38 +1558,63 @@ function isGroupMember(group, avatarId) {
  * @returns {Array<{item: Character, id: number, type: string}>} Array of group character objects
  */
 function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
-    function sortMembersFn(a, b) {
+    function applyFilterAndSort(results, filter, filterSelector) {
+        let filtered = results;
+        if (doFilter) {
+            filtered = filter.applyFilters(filtered);
+        }
+        const useFilterOrder = doFilter && !!$(filterSelector).val();
+        sortEntitiesList(filtered, useFilterOrder, filter);
+        filter.clearFuzzySearchCaches();
+        return filtered;
+    }
+
+    function handleMembers(results, thisGroup) {
         const membersArray = thisGroup?.members ?? newGroupMembers;
-        const aIndex = membersArray.indexOf(a.item.avatar);
-        const bIndex = membersArray.indexOf(b.item.avatar);
-        return aIndex - bIndex;
+
+        // Create index map for O(1) lookups in member sort function
+        // (separate from characterIndexMap which maps character objects to their array indices)
+        const memberIndexMap = new Map(membersArray.map((avatar, index) => [avatar, index]));
+
+        function sortMembersFn(a, b) {
+            const aIndex = memberIndexMap.get(a.item.avatar) ?? -1;
+            const bIndex = memberIndexMap.get(b.item.avatar) ?? -1;
+            return aIndex - bIndex;
+        }
+
+        // Apply manual member sort before filter and sort
+        let filtered = results;
+        if (doFilter) {
+            filtered = groupMembersFilter.applyFilters(filtered);
+        }
+        filtered.sort(sortMembersFn);
+
+        // Apply conditional filter-based sort and cleanup
+        const useFilterOrder = doFilter && !!$('#rm_group_members_filter').val();
+        if (useFilterOrder) {
+            sortEntitiesList(filtered, useFilterOrder, groupMembersFilter);
+        }
+        groupMembersFilter.clearFuzzySearchCaches();
+        return filtered;
     }
 
     const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
-    let candidates = characters
+
+    // Create index map for O(1) lookups when mapping characters to their array indices
+    // (separate from memberIndexMap used later for sorting members by their group order)
+    const characterIndexMap = new Map(characters.map((char, index) => [char, index]));
+
+    const results = characters
         .filter((x) => isGroupMember(thisGroup, x.avatar) == onlyMembers)
-        .map((x) => ({ item: x, id: characters.indexOf(x), type: 'character' }));
+        .map((x) => ({ item: x, id: characterIndexMap.get(x), type: 'character' }));
 
-    if (doFilter) {
-        candidates = groupCandidatesFilter.applyFilters(candidates);
+    // Early return for candidates (non-members)
+    if (!onlyMembers) {
+        return applyFilterAndSort(results, groupCandidatesFilter, '#rm_group_filter');
     }
 
-    if (onlyMembers) {
-        if (doFilter) {
-            candidates = groupMembersFilter.applyFilters(candidates);
-        }
-        candidates.sort(sortMembersFn);
-        const useFilterOrder = doFilter && !!$('#rm_group_members_filter').val();
-        if (useFilterOrder) {
-            sortEntitiesList(candidates, useFilterOrder, groupMembersFilter);
-        }
-        groupMembersFilter.clearFuzzySearchCaches();
-    } else {
-        const useFilterOrder = doFilter && !!$('#rm_group_filter').val();
-        sortEntitiesList(candidates, useFilterOrder, groupCandidatesFilter);
-        groupCandidatesFilter.clearFuzzySearchCaches();
-    }
-    return candidates;
+    // Handle members with manual sort capability
+    return handleMembers(results, thisGroup);
 }
 
 function printGroupCandidates() {
