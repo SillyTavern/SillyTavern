@@ -388,7 +388,7 @@ let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
 let firstRun = false;
-let settingsReady = false;
+export let settingsReady = false;
 let currentVersion = '0.0.0';
 export let displayVersion = 'SillyTavern';
 
@@ -9463,6 +9463,11 @@ function addAlternateGreeting(template, greeting, index, getArray, popup) {
  * @param {Event} [e] Event that triggered the function call.
  */
 export async function createOrEditCharacter(e) {
+    if (!settingsReady) {
+        console.warn('Settings not ready, aborting character creation/editing.');
+        return;
+    }
+
     $('#rm_info_avatar').html('');
     const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
     formData.set('fav', String(fav_ch_checked));
