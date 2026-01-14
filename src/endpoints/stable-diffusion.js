@@ -1758,6 +1758,7 @@ zai.post('/generate', async (request, response) => {
 
         console.debug('Z.AI image request:', request.body);
 
+        // Always use Common API for image generation (Coding API has stricter rate limits)
         const generateResponse = await fetch('https://api.z.ai/api/paas/v4/images/generations', {
             method: 'POST',
             headers: {
@@ -1790,7 +1791,7 @@ zai.post('/generate', async (request, response) => {
 
         const imageResponse = await fetch(url);
         if (!imageResponse.ok) {
-            console.warn('Z.AI image fetch returned an error.');
+            console.warn('Z.AI image fetch returned an error. Status:', imageResponse.status, imageResponse.statusText);
             return response.sendStatus(500);
         }
 
