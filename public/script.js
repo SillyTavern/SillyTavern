@@ -2466,9 +2466,9 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
         mes.swipes ??= [mes.mes];
         //This keeps listeners intact.
         messageElement = chatElement.find(`[mesid="${messageId}"]`);
-        updateMessageElement(mes, { messageId: forceId, messageElement });
+        updateMessageElement(mes, { messageId, messageElement });
     } else {
-        messageElement = updateMessageElement(mes, { messageId: forceId });
+        messageElement = updateMessageElement(mes, { messageId });
         if (typeof insertAfter === 'number' && insertAfter >= 0) {
             const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
             $(messageElement).insertAfter(target);
