@@ -1168,6 +1168,7 @@ function newTag(tagName) {
  * @property {boolean} [isGeneralList=false] - If true, indicates that this is the general list of tags.
  * @property {boolean} [skipExistsCheck=false] - If true, the tag gets added even if a tag with the same id already exists.
  * @property {boolean} [isCharacterList=false] - If true, indicates that this is the character's list of tags.
+ * @property {boolean} [isInactive=false] - If true, indicates that the tag is inactive (for styling purposes).
  */
 
 /**
@@ -1180,6 +1181,7 @@ function newTag(tagName) {
  * @property {function(object): function} [tagActionSelector=undefined] - An optional override for the action property that can be assigned to each tag via tagOptions.
  * If set, the selector is executed on each tag as input argument. This allows a list of tags to be provided and each tag can have it's action based on the tag object itself.
  * @property {TagOptions} [tagOptions={}] - Options for tag behavior. (Same object will be passed into "appendTagToList")
+ * @property {string[]} [inactiveTags=[]] - List of tag IDs that are considered inactive (for styling purposes).
  */
 
 /**
