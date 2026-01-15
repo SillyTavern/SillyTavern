@@ -125,6 +125,8 @@ export const MacroValueType = Object.freeze({
  *           Use when delayArgResolution is true. By default, preserves the caller's globalOffset so nested
  *           macros like {{pick}} maintain deterministic position-based behavior. Pass offsetDelta to add
  *           an additional offset for uniqueness (e.g., to differentiate between multiple resolve calls).
+ * @property {(message: string, error?: any) => void} warn - Logs a runtime warning with automatic macro call context.
+ *           Use this to report issues in how the macro was invoked (e.g., invalid argument values, edge cases).
  */
 
 /**
@@ -375,6 +377,7 @@ class MacroRegistry {
             resolve: (text, { offsetDelta = 0 } = {}) => MacroEngine.evaluate(text, call.env, {
                 contextOffset: call.globalOffset + offsetDelta,
             }),
+            warn: (message, error = undefined) => logMacroRuntimeWarning({ message, call, def, error }),
         };
 
         const result = def.handler(executionContext);
