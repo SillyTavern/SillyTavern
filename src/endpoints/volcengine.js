@@ -73,12 +73,12 @@ router.post('/generate-voice', async (req, res) => {
         if (!response.ok) {
             const logid = response.headers.get('X-Tt-Logid') || '';
             console.warn('Volcengine Request failed', response.status, response.statusText, logid);
-            return res.sendStatus(500);
+            return res.header('X-Tt-Logid', logid).status(500).send(`TTS Generation Failed: ${response.statusText}`);
         }
         const decoder = new TextDecoder();
-        let audioChunks = [];
 
-        await new Promise((resolve, reject) => {
+        const result = await new Promise((resolve, reject) => {
+            let audioChunks_ = [];
             let buffer = '';
             if (!response.body) {
                 reject(new Error('Response body is null'));
@@ -97,7 +97,7 @@ router.post('/generate-voice', async (req, res) => {
                         const { data } = JSON.parse(line);
                         if (data) {
                             const audioData = Buffer.from(data, 'base64');
-                            audioChunks.push(audioData);
+                            audioChunks_.push(audioData);
                         }
                     } catch (e) {
                         console.error('Error parsing Volcengine TTS stream line:', e);
@@ -108,30 +108,43 @@ router.post('/generate-voice', async (req, res) => {
             response.body.on('end', () => {
                 if (buffer.trim()) {
                     try {
-                        const { data } = JSON.parse(buffer);
+                        const { code, data, message } = JSON.parse(buffer);
+                        switch(code) {
+                            case 40402003: {
+                                reject(`Volcengine TTS stream line code 40402003, ${message}`);
+                                break;
+                            }
+                            case 45000000: {
+                                reject(`Volcengine TTS stream line code 45000000, ${message}`);
+                                break;
+                            }
+                            case 55000000: {
+                                reject(`Volcengine TTS stream line code 55000000, ${message}`);
+                                break;
+                            }
+                        }
                         if (data) {
                             const audioData = Buffer.from(data, 'base64');
-                            audioChunks.push(audioData);
+                            audioChunks_.push(audioData);
                         }
                     } catch (e) {
-                        console.error('Error parsing final Volcengine TTS stream line:', e);
+                        reject(`Error parsing final Volcengine TTS stream line: ${e}`);
                     }
                 }
-                resolve(buffer);
+                resolve(audioChunks_);
             });
 
             response.body.on('error', (error) => {
-                console.error('Error reading Volcengine TTS stream:', error);
-                reject(error);
+                reject(`Error reading Volcengine TTS stream: ${error}`);
             });
         });
 
-        const finalAudioData = Buffer.concat(audioChunks);
+        const finalAudioData = Buffer.concat(result);
 
         res.set('Content-Type', 'audio/mp3');
         res.status(200).send(finalAudioData);
     } catch (error) {
         console.error('Volcengine generate-voice fetch failed', error);
-        res.status(500).send('Internal server error');
+        res.status(500).send(`TTS Generation Failed: ${error}`);
     }
 });
