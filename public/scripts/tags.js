@@ -2297,12 +2297,12 @@ function removeMissingTagFilters() {
 
 function registerTagsSlashCommands() {
     /**
-         * Gets a tag by its name. Optionally can create the tag if it does not exist.
-         * @param {string} tagName - The name of the tag
-         * @param {object} options - Optional arguments
-         * @param {boolean} [options.allowCreate=false] - Whether a new tag should be created if no tag with the name exists
-         * @returns {Tag?} The tag, or null if not found
-         */
+     * Gets a tag by its name. Optionally can create the tag if it does not exist.
+     * @param {string} tagName - The name of the tag
+     * @param {object} options - Optional arguments
+     * @param {boolean} [options.allowCreate=false] - Whether a new tag should be created if no tag with the name exists
+     * @returns {Tag?} The tag, or null if not found
+     */
     function paraGetTag(tagName, { allowCreate = false } = {}) {
         if (!tagName) {
             toastr.warning('Tag name must be provided.');
@@ -2495,13 +2495,13 @@ function registerTagsSlashCommands() {
 }
 
 /**
-     * Function to apply character tags to message divs when rendering the chat
-     * @param {object} options Options for applying character tags
-     * @param {number|number[]} [options.mesIds=[]] An id or array of message IDs to filter by.
-     * If empty, all messages will be processed.
-     * @returns {void}
-     * @description This function iterates through the chat messages and applies character tags
-     */
+ * Function to apply character tags to message divs when rendering the chat
+ * @param {object} options Options for applying character tags
+ * @param {number|number[]} [options.mesIds=[]] An id or array of message IDs to filter by.
+ * If empty, all messages will be processed.
+ * @returns {void}
+ * @description This function iterates through the chat messages and applies character tags
+ */
 export function applyCharacterTagsToMessageDivs({ mesIds = [] } = {}) {
     try {
         const messagesFilter = buildMessagesFilter(mesIds);
@@ -2602,12 +2602,12 @@ function buildMessagesFilter(mesIds) {
 }
 
 /**
-     * Helper function to apply all necessary data attributes to a DOM element.
-     * @param {JQuery<HTMLElement>} $element - The jQuery object for the message div.
-     * @param {object} tagData - An object containing tag information.
-     * @param {string[]} tagData.tagNames - An array of tag names.
-     * @param {string} tagData.joinedTagNames - A comma-separated string of tag names.
-     */
+ * Helper function to apply all necessary data attributes to a DOM element.
+ * @param {JQuery<HTMLElement>} $element - The jQuery object for the message div.
+ * @param {object} tagData - An object containing tag information.
+ * @param {string[]} tagData.tagNames - An array of tag names.
+ * @param {string} tagData.joinedTagNames - A comma-separated string of tag names.
+ */
 function applyTags($element, tagData) {
     $element.attr('data-char-tags', tagData.joinedTagNames);
     tagData.tagNames.forEach(tagName => {
@@ -2622,11 +2622,11 @@ function applyTags($element, tagData) {
 }
 
 /**
-     * Normalizes a tag name by trimming, converting spaces to hyphens, replacing accented characters,
-     * removing special characters, and converting to lowercase.
-     * @param {string} name The tag name to normalize.
-     * @returns {string} The normalized tag name.
-     */
+ * Normalizes a tag name by trimming, converting spaces to hyphens, replacing accented characters,
+ * removing special characters, and converting to lowercase.
+ * @param {string} name The tag name to normalize.
+ * @returns {string} The normalized tag name.
+ */
 function normalizeTagName(name) {
     if (!name?.trim()) {
         return '';
@@ -2641,10 +2641,11 @@ function normalizeTagName(name) {
         .toLowerCase();
 }
 
-/** Extracts the character avatar file name from the avatar source URL.
-     * @param {string} avatarSrc The source URL of the character avatar.
-     * @returns {string|null} The normalized avatar file name, or null if the input is falsy or doesn't contain a valid file name.
-     */
+/**
+ * Extracts the character avatar file name from the avatar source URL.
+ * @param {string} avatarSrc The source URL of the character avatar.
+ * @returns {string|null} The normalized avatar file name, or null if the input is falsy or doesn't contain a valid file name.
+ */
 function extractCharacterAvatar(avatarSrc) {
     if (!avatarSrc) {
         return null;
