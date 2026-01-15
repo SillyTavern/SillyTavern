@@ -1386,6 +1386,8 @@ function onTagFilterClick(listElement) {
 
     // Focus the tag again we were at, if possible. To improve keyboard navigation
     setTimeout(() => parent.find(`.tag[id="${tagId}"]`).trigger('focus'), DEFAULT_PRINT_TIMEOUT + 1);
+
+    updateTagFilterIndicator(listElement);
 }
 
 /**
@@ -1598,13 +1600,16 @@ function printTagFilters(type = tag_filter_type.character) {
     updateTagFilterIndicator(FILTER_SELECTOR);
 }
 
+/**
+ * Updates the tag filter indicator based on the selected/excluded tags in the given filter selector
+ * @param {string|JQuery<HTMLElement>} filterSelector - The selector or jQuery element for the tag filter container
+ */
 function updateTagFilterIndicator(filterSelector) {
     const selector = filterSelector || CHARACTER_FILTER_SELECTOR;
-    if ($(selector).find('.tag:not(.actionable)').is('.selected, .excluded')) {
-        $(selector).closest('.rm_tag_controls').find('.showTagList').addClass('indicator');
-    } else {
-        $(selector).closest('.rm_tag_controls').find('.showTagList').removeClass('indicator');
-    }
+    const tagFilter = typeof selector === 'string' ? $(selector) : selector;
+    const showTagListButton = tagFilter.closest('.rm_tag_controls').find('.showTagList');
+    const hasActiveTags = tagFilter.find('.tag:not(.actionable)').is('.selected, .excluded');
+    showTagListButton.toggleClass('indicator', hasActiveTags);
 }
 
 function onTagRemoveClick(event) {
@@ -2590,14 +2595,14 @@ export function applyCharacterTagsToMessageDivs({ mesIds = [] } = {}) {
 }
 
 /**
-     * Builds a jQuery selector string to filter messages by their IDs.
-     * @param {number|number[]} mesIds - An id or array of message IDs to filter by.
-     * @returns {string} A jQuery selector string that matches messages with the specified IDs.
-     * If mesIds is empty, it returns '.mes' to select all messages.
-     * @example
-     * buildMessagesFilter([1, 5]); // Returns '.mes[mesid="1"],.mes[mesid="5"]'
-     * buildMessagesFilter([]); // Returns '.mes'
-     */
+ * Builds a jQuery selector string to filter messages by their IDs.
+ * @param {number|number[]} mesIds - An id or array of message IDs to filter by.
+ * @returns {string} A jQuery selector string that matches messages with the specified IDs.
+ * If mesIds is empty, it returns '.mes' to select all messages.
+ * @example
+ * buildMessagesFilter([1, 5]); // Returns '.mes[mesid="1"],.mes[mesid="5"]'
+ * buildMessagesFilter([]); // Returns '.mes'
+ */
 function buildMessagesFilter(mesIds) {
     const allMessages = '.mes';
 
