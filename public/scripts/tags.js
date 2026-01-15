@@ -1492,6 +1492,8 @@ function runTagFilters(listElement) {
 }
 
 function printTagFilters(type = tag_filter_type.character) {
+    removeMissingTagFilters();
+
     let FILTER_SELECTOR;
     switch (type) {
         case tag_filter_type.character:
@@ -2262,14 +2264,45 @@ function printViewTagList(tagContainer, empty = true) {
     }
 }
 
+function removeMissingTagFilters() {
+    const tagIds = new Set(tags.map(tag => tag.id));
+
+    for (const helper of [groupCandidatesFilter, groupMembersFilter, entitiesFilter]) {
+        const { selected, excluded } = helper.getFilterData(FILTER_TYPES.TAG);
+        let anyRemoved = false;
+
+        if (Array.isArray(selected)) {
+            for (let i = selected.length - 1; i >= 0; i--) {
+                if (!tagIds.has(selected[i])) {
+                    selected.splice(i, 1);
+                    anyRemoved = true;
+                }
+            }
+        }
+
+        if (Array.isArray(excluded)) {
+            for (let i = excluded.length - 1; i >= 0; i--) {
+                if (!tagIds.has(excluded[i])) {
+                    excluded.splice(i, 1);
+                    anyRemoved = true;
+                }
+            }
+        }
+
+        if (anyRemoved) {
+            helper.setFilterData(FILTER_TYPES.TAG, { selected, excluded });
+        }
+    }
+}
+
 function registerTagsSlashCommands() {
     /**
-     * Gets a tag by its name. Optionally can create the tag if it does not exist.
-     * @param {string} tagName - The name of the tag
-     * @param {object} options - Optional arguments
-     * @param {boolean} [options.allowCreate=false] - Whether a new tag should be created if no tag with the name exists
-     * @returns {Tag?} The tag, or null if not found
-     */
+         * Gets a tag by its name. Optionally can create the tag if it does not exist.
+         * @param {string} tagName - The name of the tag
+         * @param {object} options - Optional arguments
+         * @param {boolean} [options.allowCreate=false] - Whether a new tag should be created if no tag with the name exists
+         * @returns {Tag?} The tag, or null if not found
+         */
     function paraGetTag(tagName, { allowCreate = false } = {}) {
         if (!tagName) {
             toastr.warning('Tag name must be provided.');
@@ -2462,13 +2495,13 @@ function registerTagsSlashCommands() {
 }
 
 /**
- * Function to apply character tags to message divs when rendering the chat
- * @param {object} options Options for applying character tags
- * @param {number|number[]} [options.mesIds=[]] An id or array of message IDs to filter by.
- * If empty, all messages will be processed.
- * @returns {void}
- * @description This function iterates through the chat messages and applies character tags
- */
+     * Function to apply character tags to message divs when rendering the chat
+     * @param {object} options Options for applying character tags
+     * @param {number|number[]} [options.mesIds=[]] An id or array of message IDs to filter by.
+     * If empty, all messages will be processed.
+     * @returns {void}
+     * @description This function iterates through the chat messages and applies character tags
+     */
 export function applyCharacterTagsToMessageDivs({ mesIds = [] } = {}) {
     try {
         const messagesFilter = buildMessagesFilter(mesIds);
@@ -2541,14 +2574,14 @@ export function applyCharacterTagsToMessageDivs({ mesIds = [] } = {}) {
 }
 
 /**
- * Builds a jQuery selector string to filter messages by their IDs.
- * @param {number|number[]} mesIds - An id or array of message IDs to filter by.
- * @returns {string} A jQuery selector string that matches messages with the specified IDs.
- * If mesIds is empty, it returns '.mes' to select all messages.
- * @example
- * buildMessagesFilter([1, 5]); // Returns '.mes[mesid="1"],.mes[mesid="5"]'
- * buildMessagesFilter([]); // Returns '.mes'
- */
+     * Builds a jQuery selector string to filter messages by their IDs.
+     * @param {number|number[]} mesIds - An id or array of message IDs to filter by.
+     * @returns {string} A jQuery selector string that matches messages with the specified IDs.
+     * If mesIds is empty, it returns '.mes' to select all messages.
+     * @example
+     * buildMessagesFilter([1, 5]); // Returns '.mes[mesid="1"],.mes[mesid="5"]'
+     * buildMessagesFilter([]); // Returns '.mes'
+     */
 function buildMessagesFilter(mesIds) {
     const allMessages = '.mes';
 
@@ -2569,12 +2602,12 @@ function buildMessagesFilter(mesIds) {
 }
 
 /**
- * Helper function to apply all necessary data attributes to a DOM element.
- * @param {JQuery<HTMLElement>} $element - The jQuery object for the message div.
- * @param {object} tagData - An object containing tag information.
- * @param {string[]} tagData.tagNames - An array of tag names.
- * @param {string} tagData.joinedTagNames - A comma-separated string of tag names.
- */
+     * Helper function to apply all necessary data attributes to a DOM element.
+     * @param {JQuery<HTMLElement>} $element - The jQuery object for the message div.
+     * @param {object} tagData - An object containing tag information.
+     * @param {string[]} tagData.tagNames - An array of tag names.
+     * @param {string} tagData.joinedTagNames - A comma-separated string of tag names.
+     */
 function applyTags($element, tagData) {
     $element.attr('data-char-tags', tagData.joinedTagNames);
     tagData.tagNames.forEach(tagName => {
@@ -2589,11 +2622,11 @@ function applyTags($element, tagData) {
 }
 
 /**
- * Normalizes a tag name by trimming, converting spaces to hyphens, replacing accented characters,
- * removing special characters, and converting to lowercase.
- * @param {string} name The tag name to normalize.
- * @returns {string} The normalized tag name.
- */
+     * Normalizes a tag name by trimming, converting spaces to hyphens, replacing accented characters,
+     * removing special characters, and converting to lowercase.
+     * @param {string} name The tag name to normalize.
+     * @returns {string} The normalized tag name.
+     */
 function normalizeTagName(name) {
     if (!name?.trim()) {
         return '';
@@ -2609,9 +2642,9 @@ function normalizeTagName(name) {
 }
 
 /** Extracts the character avatar file name from the avatar source URL.
- * @param {string} avatarSrc The source URL of the character avatar.
- * @returns {string|null} The normalized avatar file name, or null if the input is falsy or doesn't contain a valid file name.
- */
+     * @param {string} avatarSrc The source URL of the character avatar.
+     * @returns {string|null} The normalized avatar file name, or null if the input is falsy or doesn't contain a valid file name.
+     */
 function extractCharacterAvatar(avatarSrc) {
     if (!avatarSrc) {
         return null;
