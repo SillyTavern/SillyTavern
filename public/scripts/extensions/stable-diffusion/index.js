@@ -979,6 +979,13 @@ const resolutionOptions = {
     sd_res_1024x1536: { width: 1024, height: 1536, name: '1024x1536 (2:3, ChatGPT)' },
     sd_res_1024x1792: { width: 1024, height: 1792, name: '1024x1792 (4:7, DALL-E)' },
     sd_res_1792x1024: { width: 1792, height: 1024, name: '1792x1024 (7:4, DALL-E)' },
+    sd_res_1280x1280: { width: 1280, height: 1280, name: '1280x1280 (1:1, Z.AI)' },
+    sd_res_1568x1056: { width: 1568, height: 1056, name: '1568x1056 (3:2, Z.AI)' },
+    sd_res_1056x1568: { width: 1056, height: 1568, name: '1056x1568 (2:3, Z.AI)' },
+    sd_res_1472x1088: { width: 1472, height: 1088, name: '1472x1088 (4:3, Z.AI)' },
+    sd_res_1088x1472: { width: 1088, height: 1472, name: '1088x1472 (3:4, Z.AI)' },
+    sd_res_1728x960: { width: 1728, height: 960, name: '1728x960 (16:9, Z.AI)' },
+    sd_res_960x1728: { width: 960, height: 1728, name: '960x1728 (9:16, Z.AI)' },
 };
 
 function onResolutionChange() {
@@ -2297,7 +2304,12 @@ async function loadGoogleModels() {
 }
 
 async function loadZaiModels() {
-    return ['cogview-4-250304', 'cogvideox-3', 'viduq1-text'].map(name => ({ value: name, text: name }));
+    return [
+        { value: 'glm-image', text: 'GLM-Image' },
+        { value: 'cogview-4-250304', text: 'CogView-4' },
+        { value: 'cogvideox-3', text: 'CogVideoX-3' },
+        { value: 'viduq1-text', text: 'Viduq1-Text' },
+    ];
 }
 
 async function loadOpenRouterModels() {
@@ -4268,6 +4280,7 @@ async function generateGoogleImage(prompt, negativePrompt, signal) {
  * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
  */
 async function generateZaiImage(prompt, signal) {
+    // Video generation models (CogVideoX, Viduq1)
     if (/(cogvideox|vidu)/.test(extension_settings.sd.model)) {
         const videoParams = {};
         if (/cogvideox/.test(extension_settings.sd.model)) {
@@ -4298,16 +4311,23 @@ async function generateZaiImage(prompt, signal) {
         const text = await videoResult.text();
         throw new Error(text);
     } else {
-        // Round width and height to nearest multiple of 16, and clamp to 512-2048 range
-        let width = clamp(Math.round(extension_settings.sd.width / 16) * 16, 512, 2048);
-        let height = clamp(Math.round(extension_settings.sd.height / 16) * 16, 512, 2048);
+        // Image generation models (GLM-Image, CogView)
+        // GLM-Image requires multiples of 32, CogView requires multiples of 16
+        const isGlmImage = /glm-image/.test(extension_settings.sd.model);
+        const multiple = isGlmImage ? 32 : 16;
 
-        // Make sure the pixel count does not exceed 2^21px
-        while ((width * height) > Math.pow(2, 21)) {
-            if (width >= height) {
-                width -= 16;
-            } else {
-                height -= 16;
+        // Round width and height to nearest multiple and clamp to 512-2048 range
+        let width = clamp(Math.round(extension_settings.sd.width / multiple) * multiple, 512, 2048);
+        let height = clamp(Math.round(extension_settings.sd.height / multiple) * multiple, 512, 2048);
+
+        // CogView has a 2^21px pixel count limit, GLM-Image does not
+        if (!isGlmImage) {
+            while ((width * height) > Math.pow(2, 21)) {
+                if (width >= height) {
+                    width -= multiple;
+                } else {
+                    height -= multiple;
+                }
             }
         }
 
