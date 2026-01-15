@@ -130,14 +130,16 @@ function getVisibleAvatarsForGroupContext(type, currentGroup) {
         return [];
     }
 
-    if (type === tag_filter_type.group_members_list) {
-        // For members list, return current group members
-        return currentGroup.members;
-    } else {
-        // For candidates list, return non-members
-        return characters
-            .filter(c => !currentGroup.members.includes(c.avatar))
-            .map(c => c.avatar);
+    switch (type) {
+        case tag_filter_type.group_members_list:
+            return currentGroup.members;
+        case tag_filter_type.group_member:
+            return characters
+                .filter(c => !currentGroup.members.includes(c.avatar))
+                .map(c => c.avatar);
+        default:
+            console.warn('getVisibleAvatarsForGroupContext got invalid type, expected 1 or 2, got ', type)
+            return []
     }
 }
 
