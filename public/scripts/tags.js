@@ -116,7 +116,7 @@ function getFilterHelper(listSelector) {
  * @returns {boolean} True if this is a group context
  */
 function isGroupContext(type) {
-    return type === tag_filter_type.group_member || type === tag_filter_type.group_members_list;
+    return [tag_filter_type.group_member, tag_filter_type.group_members_list].includes(type);
 }
 
 /**
