@@ -1188,7 +1188,7 @@ function newTag(tagName) {
  * @param {JQuery<HTMLElement>|string} element - The container element where the tags are to be printed. (Optionally can also be a string selector for the element, which will then be resolved)
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
-function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, sort = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
+function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, sort = true, tagActionSelector = undefined, tagOptions = {}, inactiveTags = [] } = {}) {
     const $element = (typeof element === 'string') ? $(element) : element;
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key, sort);
@@ -1244,7 +1244,9 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
         // Check if we should print this tag
         if (shouldPrintTag(tag) || additionalTagsPrinted++ < availableSlotsForAdditionalTags) {
-            appendTagToList($element, tag, tagOptions);
+            // Check if this tag is in the inactive list
+            const isInactive = inactiveTags.includes(tag.id);
+            appendTagToList($element, tag, { ...tagOptions, isInactive });
         } else {
             tagsSkipped++;
         }
@@ -1266,7 +1268,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
             // Do not bubble further, we are just expanding
             event.stopPropagation();
-            printTagList($element, { tags: tags, addTag: addTag, forEntityOrKey: forEntityOrKey, empty: empty, tagActionSelector: tagActionSelector, tagOptions: tagOptions });
+            printTagList($element, { tags: tags, addTag: addTag, forEntityOrKey: forEntityOrKey, empty: empty, tagActionSelector: tagActionSelector, tagOptions: tagOptions, inactiveTags: inactiveTags });
         };
 
         // Print the placeholder object with its styling and action to show the remaining tags
@@ -1287,7 +1289,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
  * @param {TagOptions} [options={}] - Options for tag behavior
  * @returns {void}
  */
-function appendTagToList(listElement, tag, { removable = false, isFilter = false, action = undefined, removeAction = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
+function appendTagToList(listElement, tag, { removable = false, isFilter = false, action = undefined, removeAction = undefined, isGeneralList = false, skipExistsCheck = false, isInactive = false } = {}) {
     if (!listElement) {
         return;
     }
@@ -1322,6 +1324,9 @@ function appendTagToList(listElement, tag, { removable = false, isFilter = false
     if (tag.icon) {
         tagElement.find('.tag_name').text('').attr('title', `${translate(tag.name)} ${tag.title || ''}`.trim()).addClass(tag.icon);
         tagElement.addClass('actionable');
+    }
+    if (isInactive) {
+        tagElement.addClass('tag-absent');
     }
 
     // We could have multiple ways of actions passed in. The manual arguments have precendence in front of a specified tag action
@@ -1528,20 +1533,28 @@ function printTagFilters(type = tag_filter_type.character) {
 
     // Determine which character tags to display based on context
     let tagsToDisplay;
+    let inactiveTags = [];
 
     if (isGroupContext(type)) {
-        // For group contexts, only show tags that have at least one visible member
+        // For group contexts, show all tags but mark ones without presence in current context as inactive
         const currentGroup = selected_group ? groups.find(x => x.id == selected_group) : null;
         const visibleAvatars = getVisibleAvatarsForGroupContext(type, currentGroup);
 
         if (visibleAvatars.length > 0) {
-            // Only include tags that are assigned to at least one visible character
-            const characterTagIds = visibleAvatars
+            // Get tags that are assigned to at least one visible character
+            const activeCharacterTagIds = visibleAvatars
                 .map(avatar => tag_map[avatar] || [])
                 .flat()
                 .filter(onlyUnique);
 
-            tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
+            // Show all tags that exist in the tag_map
+            const allCharacterTagIds = Object.values(tag_map).flat().filter(onlyUnique);
+            tagsToDisplay = tags.filter(x => allCharacterTagIds.includes(x.id)).sort(compareTagsForSort);
+
+            // Mark tags that are not in the active set as inactive
+            inactiveTags = tagsToDisplay
+                .filter(x => !activeCharacterTagIds.includes(x.id))
+                .map(x => x.id);
         } else {
             // No group selected, show no tags
             tagsToDisplay = [];
@@ -1552,7 +1565,8 @@ function printTagFilters(type = tag_filter_type.character) {
         tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
     }
 
-    printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { isFilter: true, isGeneralList: true } });
+    printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { isFilter: true, isGeneralList: true }, inactiveTags: inactiveTags });
+
 
     // Print bogus folder navigation
     const bogusDrilldown = $(FILTER_SELECTOR).siblings('.rm_tag_bogus_drilldown');

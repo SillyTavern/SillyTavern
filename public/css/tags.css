@@ -67,6 +67,10 @@
     display: none;
 }
 
+.tag.tag-absent {
+    text-decoration: line-through;
+}
+
 .tag.actionable {
     border-radius: 50%;
     aspect-ratio: 1 / 1;
