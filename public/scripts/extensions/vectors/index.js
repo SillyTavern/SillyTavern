@@ -24,7 +24,7 @@ import {
 import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml, isFalseBoolean, isTrueBoolean } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
@@ -32,6 +32,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
@@ -2036,6 +2037,7 @@ jQuery(async () => {
         returns: ARGUMENT_TYPE.LIST,
     }));
 
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'vector-threshold',
         helpString: 'Set the vector score threshold or return the current threshold if no argument is provided.',
@@ -2069,133 +2071,166 @@ jQuery(async () => {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-query-set',
-        callback: async (_, value) => {
-            const parsed = Number(value);
+        name: 'vector-query',
+        helpString: 'Set the vector query messages or returns the current query messages count if no argument is provided',
+        returns: 'the query messages value',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Query messages (number >= 0).',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.query);
+            }
+
+            const parsed = Number(raw);
             if (!Number.isFinite(parsed) || parsed < 0) {
                 toastr.warning('Query messages must be a number greater than or equal to 0.');
                 return '';
             }
 
-            settings.query = parsed;
-            Object.assign(extension_settings.vectors, settings);
-            saveSettingsDebounced();
-
             $('#vectors_query')
-                .val(settings.query)
+                .val(parsed)
                 .trigger('input');
 
             return String(settings.query);
         },
-        helpString: 'Set the vector query messages to a numeric value >= 0.',
-        unnamedArgumentList: [
-            new SlashCommandArgument('Query messages (number >= 0).', ARGUMENT_TYPE.NUMBER, true, false),
-        ],
-        returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-maxentries-set',
-        callback: async (_, value) => {
-            const parsed = Number(value);
+        name: 'vector-maxentries',
+        helpString: 'Set the vector world info max entries or returns the current max entries if no argument is provided',
+        returns: 'world info max entries',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Max entries (number >= 0).',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.max_entries);
+            }
+
+            const parsed = Number(raw);
             if (!Number.isFinite(parsed) || parsed < 0) {
                 toastr.warning('Max entries must be a number greater than or equal to 0.');
                 return '';
             }
 
-            settings.max_entries = parsed;
-            Object.assign(extension_settings.vectors, settings);
-            saveSettingsDebounced();
-
             $('#vectors_max_entries')
-                .val(settings.max_entries)
+                .val(parsed)
                 .trigger('input');
 
             return String(settings.max_entries);
         },
-        helpString: 'Set the vector world info max entries to a numeric value >= 0.',
-        unnamedArgumentList: [
-            new SlashCommandArgument('Max entries (number >= 0).', ARGUMENT_TYPE.NUMBER, true, false),
-        ],
-        returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-chats-set',
-        callback: async (_, value) => {
-            const parsed = String(value);
-            if (parsed !== 'true' && parsed !== 'false') {
-                toastr.warning('Vectors Enabled for chats must be true or false.');
+        name: 'vector-chats-state',
+        helpString: 'Set whether chat vectorization is enabled or return the current boolean if no argument is provided',
+        returns: 'boolean for if chat vectorization is enabled',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Is chat vectorization enabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.enabled_chats);
+            }
+
+            const parsed = isTrueBoolean(raw) ? true : isFalseBoolean(raw) ? false : null;
+            if (parsed === null) {
+                toastr.warning('Vectors enabled for chats must be true or false.');
                 return '';
             }
 
-            settings.enabled_chats = parsed === 'true';
-            Object.assign(extension_settings.vectors, settings);
-            saveSettingsDebounced();
-
             $('#vectors_enabled_chats')
-                .prop('checked', settings.enabled_chats)
+                .prop('checked', parsed)
                 .trigger('input');
 
             return String(settings.enabled_chats);
         },
-        helpString: 'Set whether chat vectorization is enabled (true/false).',
-        unnamedArgumentList: [
-            new SlashCommandArgument('Enabled (true/false).', ARGUMENT_TYPE.BOOLEAN, true, false),
-        ],
-        returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-files-set',
-        callback: async (_, value) => {
-            const parsed = String(value);
-            if (parsed !== 'true' && parsed !== 'false') {
-                toastr.warning('Vectors enabled for Files must be true or false.');
+        name: 'vector-files-state',
+        helpString: 'Set whether file vectorization is enabled or return the current boolean if no argument is provided',
+        returns: 'boolean for if file vectorization is enabled',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Is file vectorization enabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.enabled_files);
+            }
+
+            const parsed = isTrueBoolean(raw) ? true : isFalseBoolean(raw) ? false : null;
+            if (parsed === null) {
+                toastr.warning('Vectors enabled for files must be true or false.');
                 return '';
             }
 
-            settings.enabled_files = parsed === 'true';
-            Object.assign(extension_settings.vectors, settings);
-            saveSettingsDebounced();
-
             $('#vectors_enabled_files')
-                .prop('checked', settings.enabled_files)
+                .prop('checked', parsed)
                 .trigger('input');
 
             return String(settings.enabled_files);
         },
-        helpString: 'Set whether file vectorization is enabled (true/false).',
-        unnamedArgumentList: [
-            new SlashCommandArgument('Enabled (true/false).', ARGUMENT_TYPE.BOOLEAN, true, false),
-        ],
-        returns: ARGUMENT_TYPE.STRING,
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-worldinfo-set',
-        callback: async (_, value) => {
-            const parsed = String(value);
-            if (parsed !== 'true' && parsed !== 'false') {
-                toastr.warning('Vectors Enabled for World Info must be true or false.');
+        name: 'vector-worldinfo-state',
+        helpString: 'Set whether world info vectorization is enabled or return the current boolean if no argument is provided',
+        returns: 'boolean for if world info vectorization is enabled',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Is world info vectorization enabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.enabled_world_info);
+            }
+
+            const parsed = isTrueBoolean(raw) ? true : isFalseBoolean(raw) ? false : null;
+            if (parsed === null) {
+                toastr.warning('Vectors enabled for world info must be true or false.');
                 return '';
             }
 
-            settings.enabled_world_info = parsed === 'true';
-            Object.assign(extension_settings.vectors, settings);
-            saveSettingsDebounced();
-
             $('#vectors_enabled_world_info')
-                .prop('checked', settings.enabled_world_info)
+                .prop('checked', parsed)
                 .trigger('input');
 
             return String(settings.enabled_world_info);
         },
-        helpString: 'Set whether world info vectorization is enabled (true/false).',
-        unnamedArgumentList: [
-            new SlashCommandArgument('Enabled (true/false).', ARGUMENT_TYPE.BOOLEAN, true, false),
-        ],
-        returns: ARGUMENT_TYPE.STRING,
     }));
 
     registerDebugFunction('purge-everything', 'Purge all vector indices', 'Obliterate all stored vectors for all sources. No mercy.', async () => {
