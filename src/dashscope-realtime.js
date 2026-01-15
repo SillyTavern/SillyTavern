@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { delay } from './util.js';
 
 /**
  * DashScope Realtime TTS Client for Voice Design and Voice Clone
@@ -224,13 +225,13 @@ class DashScopeRealtimeTTS {
             this.updateSession();
 
             // Small delay to ensure session update is processed
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await delay(100);
 
             this.appendText(text);
 
             // Commit text buffer to trigger synthesis (for commit mode)
             // For server_commit mode, this is automatic, but doesn't hurt
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await delay(50);
             this.commitTextBuffer();
 
             const audioBuffer = await this.finish();
