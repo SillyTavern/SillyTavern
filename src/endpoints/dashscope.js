@@ -273,7 +273,7 @@ router.post('/create-voice-clone', async (request, response) => {
             name,
             audioData, // base64 data URL: "data:audio/...;base64,..."
             apiHost = 'https://dashscope.aliyuncs.com',
-            previewText = '你好，这是克隆的音色测试。',
+            previewText = 'Hello, this is a voice clone test.',
             language = 'zh',
         } = request.body;
 

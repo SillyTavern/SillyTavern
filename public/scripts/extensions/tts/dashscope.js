@@ -247,12 +247,12 @@ class DashScopeTtsProvider {
             'it-IT': 'Italian',
             'ru-RU': 'Russian',
         };
-        return languageMap[lang] || 'Chinese';
+        return languageMap[lang] || 'English';
     }
 
     async generateTts(text, voiceId) {
         // Determine language from voice or default
-        let languageType = 'Chinese';
+        let languageType = 'English';
         try {
             const voice = await this.getVoice(voiceId);
             languageType = this.mapLanguageToDashScopeType(voice.lang || 'zh-CN');
