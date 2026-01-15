@@ -53,8 +53,6 @@ export {
     removeTagFromMap,
 };
 
-/** @typedef {import('../script.js').Character} Character */
-
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_add_members_header ~ .rm_tag_controls .rm_tag_filter';
 const GROUP_MEMBERS_FILTER_SELECTOR = '#rm_group_members_header ~ .rm_tag_controls .rm_tag_filter';
@@ -90,11 +88,11 @@ function getFilterContext(filterHelper) {
 
 /**
  * Get the filter helper for a given list selector.
- * @param {string} listSelector - jQuery selector for the list
+ * @param {string|JQuery<HTMLElement>} listSelector - jQuery selector for the list
  * @returns {FilterHelper} The appropriate filter helper instance
  */
 function getFilterHelper(listSelector) {
-    const $element = $(listSelector);
+    const $element = typeof listSelector === 'string' ? $(listSelector) : listSelector;
 
     // Check if this filter is in the group members section
     if ($element.closest('#currentGroupMembers').length > 0) {
