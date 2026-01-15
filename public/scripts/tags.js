@@ -138,8 +138,8 @@ function getVisibleAvatarsForGroupContext(type, currentGroup) {
                 .filter(c => !currentGroup.members.includes(c.avatar))
                 .map(c => c.avatar);
         default:
-            console.warn('getVisibleAvatarsForGroupContext got invalid type, expected 1 or 2, got ', type)
-            return []
+            console.warn('getVisibleAvatarsForGroupContext got invalid type, expected 1 or 2, got ', type);
+            return [];
     }
 }
 
@@ -169,16 +169,6 @@ const ACTIONABLE_FILTER_STORAGE_KEYS = Object.freeze({
     FAV: 'TagFilterState_FAV',
     FOLDER: 'TagFilterState_FOLDER',
 });
-
-/**
- * Map of tag IDs to their corresponding filter types.
- * Used for actionable tags (Favorites, Groups, Folders).
- */
-const TAG_ID_TO_FILTER_TYPE = new Map([
-    ['1', FILTER_TYPES.FAV],
-    ['0', FILTER_TYPES.GROUP],
-    ['4', FILTER_TYPES.FOLDER],
-]);
 
 /**
  * Gets the storage key prefix for a filter helper to enable persistence.
@@ -283,6 +273,16 @@ const ACTIONABLE_TAGS = {
     HINT: { id: '3', sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
     UNFILTER: { id: '5', sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
 };
+
+/**
+ * Map of tag IDs to their corresponding filter types.
+ * Used for actionable tags (Favorites, Groups, Folders).
+ */
+const TAG_ID_TO_FILTER_TYPE = new Map([
+    [ACTIONABLE_TAGS.FAV.id, FILTER_TYPES.FAV],
+    [ACTIONABLE_TAGS.GROUP.id, FILTER_TYPES.GROUP],
+    [ACTIONABLE_TAGS.FOLDER.id, FILTER_TYPES.FOLDER],
+]);
 
 /** @type {{[key: string]: Tag}} An optional list of actionables that can be utilized by extensions */
 const InListActionable = {
