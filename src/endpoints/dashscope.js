@@ -40,7 +40,7 @@ const sanitizeVoiceName = (name) => {
         .replace(/^_|_$/g, '');
 };
 
-const MAX_VOICE_CLONE_AUDIO_SIZE = 5 * 1024 * 1024; // 5 MB safety cap
+const MAX_VOICE_CLONE_AUDIO_SIZE = 500 * 1024 * 1024; // 500 MB safety cap
 
 router.post('/generate-voice', async (request, response) => {
     try {
@@ -316,7 +316,7 @@ router.post('/create-voice-clone', async (request, response) => {
 
         if (audioBuffer.length > MAX_VOICE_CLONE_AUDIO_SIZE) {
             console.warn(`DashScope Voice Clone: audio too large (${audioBuffer.length} bytes)`);
-            return response.status(400).json({ error: 'Audio file too large. Please keep under 5MB.' });
+            return response.status(400).json({ error: 'Audio file too large. Please keep under 500MB.' });
         }
 
         const preferredName = sanitizeVoiceName(name);

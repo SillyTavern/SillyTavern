@@ -10,7 +10,7 @@ class DashScopeTtsProvider {
     voices = [];
     audioElement = document.createElement('audio');
 
-    maxCloneFileSize = 5 * 1024 * 1024; // 5 MB safeguard
+    maxCloneFileSize = 500 * 1024 * 1024; // 500 MB safeguard
 
     defaultSettings = {
         apiHost: 'https://dashscope.aliyuncs.com',
@@ -527,7 +527,7 @@ class DashScopeTtsProvider {
             }
 
             if (file.size > this.maxCloneFileSize) {
-                toastr.warning('Audio file is too large (max 5MB)');
+                toastr.warning('Audio file is too large (max 500MB)');
                 return;
             }
 
