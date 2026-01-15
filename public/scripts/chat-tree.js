@@ -4,6 +4,7 @@ import { t } from './i18n.js';
 import { Popup } from './popup.js';
 import { power_user } from './power-user.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { lodash } from '/lib.js';
 
 // https://codegolf.stackexchange.com/a/141220 console.log((f=_=>eval(`try{-~f()}catch(e){}`))())
 // The stack limit differs per browser, 3000 is safe.
@@ -29,7 +30,10 @@ export class Tree {
     constructor(tree = {}, active = true) {
         /** @type {ChatTree} */
         this.chatTree = tree;
+        /** @type {ChatTreeNodes} */
+        this.nodes = {};
         this.active = active;
+        this.lastId = 0;
 
         if (this.active) {
             eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ messageId, swipeId, newSwipeId }) => {
@@ -93,6 +97,201 @@ export class Tree {
     }
 
     /**
+     * Migrate each message in the chatTree.
+     */
+    migrateTree(){
+        this.saveChatToTree(chat);
+        const nodes = [];
+
+        if (typeof this.chatTree?.['branch_id'] === 'number') {
+            const startTime = performance.now();
+            let count = 0; // Used for the Id.
+
+            function migrateBranch(branch, parent, parentId) {
+                if (branch?.length > 0 ) {
+                    branch.forEach((m) => {
+                        const mId = count;
+                        count++;
+                        // let { branch: _b, branch_id: _bi, ...message } = m;
+                        // eslint-disable-next-line no-unused-vars
+                        let { branch: _b, ...message } = m;
+                        if (!isNaN(parentId)) message.parentIds = [parentId]; //Multiple parents are now possible.
+                        //Set the parents children.
+                        if (parent){
+                            parent.childIds ??= [];
+                            parent.childIds.push(mId);
+                        }
+                        message.id = mId;
+                        //This message now has the id of count.
+                        nodes[mId] = message;
+
+                        migrateBranch(m['branch'], message, mId);
+                    });
+                }
+            }
+
+            //Recursively migrate the chatTree.
+            migrateBranch(this.chatTree['branch']);
+            const endTime = performance.now();
+            if (count) {
+                console.log(`Migrated ${count} of chatTree's messages within ${(endTime - startTime) / 1000} seconds`);
+            }
+        }
+        return nodes;
+    }
+
+    /**
+     * Roots are nodes with no parent.
+     * Or nodes with parents that don't exist.
+     * @returns {ChatTreeNode[]}
+     */
+    getRoots() {
+        return Object.values(this.nodes).filter((m) => !m.parentIds);
+    }
+
+    /**
+     * Nodes without children.
+     * @returns {ChatTreeNode[]}
+     */
+    getEnds() {
+        return Object.values(this.nodes).filter((m) => !m.childIds);
+    }
+
+    /**
+     * Returns a node's Id.
+     * @param {ChatTreeNode} node
+     * @returns {number}
+     */
+    id(node) {
+        // https://stackoverflow.com/questions/9907419/how-to-get-a-key-in-a-javascript-object-by-its-value
+        // Is there a faster method?
+        // I'd prefer to avoid storing the ID in the node in the final version.
+        return Number(Object.keys(this.nodes).find(key => this.nodes[key] === node));
+    }
+    /**
+     * Returns a node's parents.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode[]}
+     */
+    parents(node) { return node.parentIds?.map((id) => this.nodes[id]); }
+    /**
+     * Returns a node's children.
+     * @todo Implement multiple parents.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode[]}
+     */
+    children(node) { return node.childIds?.map((id) => this.nodes[id]); }
+
+    /**
+     * Returns a node's siblings.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode[]}
+     */
+    siblings(node) {
+        const parent = this.parents(node)?.[0];
+        if (parent) return this.children(parent);
+        else return [node];
+    }
+
+    /**
+     * Decompresses a node into a ChatMessage.
+     * @param {ChatTreeNode} node
+     * @returns {ChatMessage}
+     */
+    decompress(node) {
+        // eslint-disable-next-line no-unused-vars
+        let { id: _id, branch_id: _bid, parentIds: _pid, childIds: _cid, ...message } = node;
+
+        const siblings = this.siblings(node);
+
+        message['swipes'] = siblings.map((n) => n.mes);
+        message['swipe_id'] = node.branch_id;
+        message['swipe_info'] = siblings.map((n) =>
+        {
+            return {
+                'send_date': n['send_date'],
+                'gen_started': n['gen_started'],
+                'gen_finished': n['gen_finished'],
+                'extra': n['extra'],
+            };
+        });
+        return message;
+    }
+
+    /**
+     * Returns the previous node.
+     * @todo Return all parents.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode?}
+     */
+    prev(node) {
+        if (node.parentIds) return this.nodes[node.parentIds[0]];
+    }
+    /**
+     * Returns next node based on the stored branch_id.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode}
+     */
+    next(node) {
+        if (isNaN(node?.branch_id)) return;
+        const selectedChild = node.childIds[node?.branch_id];
+        if (selectedChild) return this.nodes[selectedChild];
+    }
+
+    /**
+     * Returns the nodes directly under the given node as they would appear in chat.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode[]?}
+     */
+    down(node) {
+        let next = this.next(node);
+        if (!next) return [];
+        const nextNodes = [next];
+        while (next !== undefined) {
+            next = this.next(next);
+            if(next) nextNodes.push(next);
+        }
+        return nextNodes;
+    }
+    /**
+     * Returns the nodes directly above the given node as they would appear in chat.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode[]?}
+     */
+    up(node) {
+        let prev = this.prev(node);
+        if (!prev) return [];
+        const prevNodes = [prev];
+        while (prev !== undefined) {
+            prev = this.prev(prev);
+            if(prev) prevNodes.unshift(prev);
+        }
+        return prevNodes;
+    }
+
+    /**
+     * Returns the full chat that contains the node.
+     * @param {ChatTreeNode} node
+     * @returns {ChatTreeNode[]}
+     */
+    lineage(node) {
+        return [...this.up(node), node, ...this.down(node)];
+    }
+
+    /**
+     * Returns the current chat, regenerated from nodes.
+     * @returns {ChatMessage[]}
+     */
+    getNodeChat() {
+        if (chat.length == 0) return;
+        const rootId = chat[0].swipe_id ?? 0;
+        const root = this.getRoots()[rootId];
+        if (!root) return;
+        const nodeChat = this.lineage(root);
+        return nodeChat.map((node) => this.decompress(node));
+    }
+
+    /**
      * Sets the chatTree if (power_user.enable_chat_tree == true).
      * @param {ChatTree} newTree
      * @returns {ChatTree}
@@ -101,8 +300,27 @@ export class Tree {
         //This is allowed regardless of the stackLimit.
         if (this.toggled()) {
             this.chatTree = newTree;
+
+            if (Object.keys(newTree).length == 0) return this.chatTree;
+            try {
+                this.setNodes(this.migrateTree());
+
+                const reconstructedChat = this.getNodeChat();
+                const equal = lodash.isEqual(chat, reconstructedChat);
+                console.log('Exact reconstruction:', equal, chat, reconstructedChat);
+            } catch (err) {
+                console.trace('Error:', err);
+            }
             return this.chatTree;
         }
+    }
+    /**
+     * Sets nodes and updates the lastId.
+     * @param {ChatTreeNode[]} nodes;
+     */
+    setNodes(nodes) {
+        this.nodes = nodes;
+        this.lastId = Number(Object.keys(nodes).sort().at(-1));
     }
 
     /**
@@ -205,7 +423,7 @@ export class Tree {
                 //Add all messages after index to chatBranch.
                 if (i >= index) {
 
-                    //Push the message without it's branches.
+                    //Push the message without its branches.
                     // eslint-disable-next-line no-unused-vars
                     let { branch: _b, branch_id: _bi, ...message } = branch['branch'][branch_id];
 

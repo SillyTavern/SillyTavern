@@ -73,6 +73,16 @@ declare global {
         branch?: ChatTreeMessage[];
     }
 
+    interface ChatTreeNode extends Omit<ChatMessage, 'swipe_id' | 'swipes' | 'swipe_info'>{
+        branch_id?: number;
+        parentIds?: number[]; // This is an array to allow for future flexibility.
+        childIds?: number[];
+        id: number; // This may be unnecessary.
+    }
+    interface ChatTreeNodes {
+        [key: number]: ChatTreeNode;
+    }
+
     interface ChatMessage {
         name?: string;
         mes?: string;
