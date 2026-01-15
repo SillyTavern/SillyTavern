@@ -80,7 +80,7 @@ import {
     chatElement,
     ensureMessageMediaIsArray,
 } from '../script.js';
-import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -1449,6 +1449,10 @@ async function modifyGroupMember(groupId, groupMember, isDelete) {
 
     printGroupCandidates();
     printGroupMembers();
+
+    // Refresh the tag filters for both lists to reflect any new tags
+    printTagFilters(tag_filter_type.group_member);
+    printTagFilters(tag_filter_type.group_members_list);
 
     const groupHasMembers = getGroupCharacters({ doFilter: false, onlyMembers: true }).length > 0;
     $('#rm_group_submit').prop('disabled', !groupHasMembers);
