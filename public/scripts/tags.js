@@ -97,12 +97,12 @@ function getFilterHelper(listSelector) {
     const $element = $(listSelector);
 
     // Check if this filter is in the group members section
-    if ($element.closest('.rm_tag_controls').prev().is('#rm_group_members_header')) {
+    if ($element.closest('#currentGroupMembers').length > 0) {
         return groupMembersFilter;
     }
 
     // Check if this filter is in the group candidates (add members) section
-    if ($element.closest('.rm_tag_controls').prev().is('#rm_group_add_members_header')) {
+    if ($element.closest('#unaddedCharList').length > 0) {
         return groupCandidatesFilter;
     }
 
