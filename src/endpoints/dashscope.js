@@ -49,7 +49,7 @@ router.post('/generate-voice', async (request, response) => {
             voiceId,
             apiHost = 'https://dashscope.aliyuncs.com',
             model = 'qwen3-tts-flash',
-            languageType = 'Chinese',
+            languageType = 'English',
             format = 'wav',
         } = request.body;
 
@@ -195,7 +195,7 @@ router.post('/test-connection', async (request, response) => {
             voiceId,
             apiHost = 'https://dashscope.aliyuncs.com',
             model = 'qwen3-tts-flash',
-            languageType = 'Chinese',
+            languageType = 'English',
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);

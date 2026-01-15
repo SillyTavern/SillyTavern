@@ -709,9 +709,6 @@ class DashScopeTtsProvider {
 }
 
 // Export instance methods for onclick handlers
-if (typeof SillyTavern === 'undefined') {
-    globalThis.SillyTavern = {};
-}
 if (!SillyTavern.extensions) {
     SillyTavern.extensions = {};
 }
