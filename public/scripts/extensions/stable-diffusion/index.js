@@ -69,6 +69,10 @@ const MODULE_NAME = 'sd';
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const CUSTOM_STOP_EVENT = 'sd_stop_generation';
+
+// Generation tracking for status indicator
+let activeGenerations = 0;
+let generationToast = null;
 const sources = {
     extras: 'extras',
     horde: 'horde',
@@ -2743,6 +2747,60 @@ function ensureSelectionExists(setting, selector) {
 }
 
 /**
+ * Updates the generation status indicator based on active generation count.
+ * Shows/hides various UI indicators to inform user of background image generation.
+ */
+function updateGenerationIndicator() {
+    if (activeGenerations > 0) {
+        // Show persistent toast if not already showing
+        if (!generationToast) {
+            const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
+            generationToast = toastr.info(
+                `<i class="fa-solid fa-spinner fa-spin"></i> Generating image${countText}...`,
+                'Image Generation',
+                {
+                    timeOut: 0,
+                    extendedTimeOut: 0,
+                    tapToDismiss: true,
+                    escapeHtml: false,
+                    onHidden: () => {
+                        generationToast = null;
+                    },
+                },
+            );
+        } else if (activeGenerations > 1) {
+            // Update count in existing toast
+            const toastMessage = $(generationToast).find('.toast-message');
+            if (toastMessage.length) {
+                toastMessage.html(`<i class="fa-solid fa-spinner fa-spin"></i> Generating image (${activeGenerations})...`);
+            }
+        }
+    } else {
+        // Hide toast when done
+        if (generationToast) {
+            toastr.clear(generationToast);
+            generationToast = null;
+        }
+    }
+}
+
+/**
+ * Increments the active generation counter and updates indicators.
+ */
+function startGenerationTracking() {
+    activeGenerations++;
+    updateGenerationIndicator();
+}
+
+/**
+ * Decrements the active generation counter and updates indicators.
+ */
+function endGenerationTracking() {
+    activeGenerations = Math.max(0, activeGenerations - 1);
+    updateGenerationIndicator();
+}
+
+/**
  * Generates an image based on the given trigger word.
  * @param {string} initiator The initiator of the image generation
  * @param {Record<string, object>} args Command arguments
@@ -2804,6 +2862,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     const stopListener = () => abortController.abort('Aborted by user');
 
+    // Track this generation for status indicator
+    startGenerationTracking();
+
     try {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
 
@@ -2816,6 +2877,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
         prompt = eventData.prompt; // Allow extensions to modify the prompt
 
+        // Show stop button after prompt is ready (prompt generation uses separate abort mechanism)
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
 
@@ -2826,6 +2888,18 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         // generate the image
         imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator, abortController.signal);
     } catch (err) {
+        // Check if this was an intentional abort by user
+        const isAborted = abortController.signal.aborted ||
+            err.message === 'Aborted by user' ||
+            err.name === 'AbortError' ||
+            err.type === 'aborted' ||
+            (err.message && err.message.includes('aborted'));
+        if (isAborted) {
+            console.log('SD: Image generation aborted by user');
+            toastr.info('Image generation stopped.', 'Image Generation');
+            return;
+        }
+
         console.trace(err);
         // errors here are most likely due to text generation failure
         // sendGenerationRequest mostly deals with its own errors
@@ -2838,6 +2912,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
+        endGenerationTracking();
     }
 
     return imagePath;
@@ -3155,6 +3230,17 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             throw new Error('Endpoint did not return image data.');
         }
     } catch (err) {
+        // Check if this was an intentional abort by user
+        const isAborted = signal?.aborted ||
+            err.name === 'AbortError' ||
+            err.type === 'aborted' ||
+            (err.message && err.message.includes('aborted'));
+        if (isAborted) {
+            console.log('SD: Image generation aborted by user');
+            toastr.info('Image generation stopped.', 'Image Generation');
+            return;
+        }
+
         console.error('Image generation request error: ', err);
         toastr.error('Image generation failed. Please try again.' + '\n\n' + String(err), 'Image Generation');
         return;
@@ -4642,6 +4728,7 @@ async function addSDGenButtons() {
     const stopGenButton = $('#sd_stop_gen');
     stopGenButton.hide();
     stopGenButton.on('click', () => eventSource.emit(CUSTOM_STOP_EVENT));
+
 }
 
 function isValidState() {
