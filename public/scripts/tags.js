@@ -116,7 +116,7 @@ function getFilterHelper(listSelector) {
  * @returns {boolean} True if this is a group context
  */
 function isGroupContext(type) {
-    return [tag_filter_type.group_member, tag_filter_type.group_members_list].includes(type);
+    return [tag_filter_type.group_candidates_list, tag_filter_type.group_members_list].includes(type);
 }
 
 /**
@@ -133,7 +133,7 @@ function getVisibleAvatarsForGroupContext(type, currentGroup) {
     switch (type) {
         case tag_filter_type.group_members_list:
             return currentGroup.members;
-        case tag_filter_type.group_member:
+        case tag_filter_type.group_candidates_list:
             return characters
                 .filter(c => !currentGroup.members.includes(c.avatar))
                 .map(c => c.avatar);
@@ -198,7 +198,9 @@ function isMainCharacterList(filterHelper) {
 /** @enum {number} */
 export const tag_filter_type = {
     character: 0,
+    /** @deprecated use `group_candidates_list` instead */
     group_member: 1,
+    group_candidates_list: 1,
     group_members_list: 2,
 };
 
@@ -211,7 +213,7 @@ function getTagFilterVisibilitySetting(type) {
     switch (type) {
         case tag_filter_type.character:
             return 'show_tag_filters';
-        case tag_filter_type.group_member:
+        case tag_filter_type.group_candidates_list:
             return 'show_tag_filters_group_candidates';
         case tag_filter_type.group_members_list:
             return 'show_tag_filters_group_members';
@@ -1497,7 +1499,7 @@ function printTagFilters(type = tag_filter_type.character) {
         case tag_filter_type.character:
             FILTER_SELECTOR = CHARACTER_FILTER_SELECTOR;
             break;
-        case tag_filter_type.group_member:
+        case tag_filter_type.group_candidates_list:
             FILTER_SELECTOR = GROUP_FILTER_SELECTOR;
             break;
         case tag_filter_type.group_members_list:
@@ -1663,7 +1665,7 @@ export function applyTagsOnGroupSelect(groupId = null) {
 
     groupId = groupId ?? (selected_group ? Number(selected_group) : undefined);
     printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
-    printTagFilters(tag_filter_type.group_member);
+    printTagFilters(tag_filter_type.group_candidates_list);
     printTagFilters(tag_filter_type.group_members_list);
 }
 
@@ -2197,7 +2199,7 @@ function onTagListHintClick() {
     // Check which section we're in by looking at the sibling header
     const $tagControls = $(this).closest('.rm_tag_controls');
     if ($tagControls.prev().is('#rm_group_add_members_header')) {
-        filterType = tag_filter_type.group_member;
+        filterType = tag_filter_type.group_candidates_list;
     } else if ($tagControls.prev().is('#rm_group_members_header')) {
         filterType = tag_filter_type.group_members_list;
     }
