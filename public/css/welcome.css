@@ -115,6 +115,7 @@ body.hideChatAvatars .welcomePanel .recentChatList .recentChat .avatar {
     cursor: pointer;
     gap: 10px;
     border: 1px solid var(--SmartThemeBorderColor);
+    position: relative;
 }
 
 .welcomeRecent .recentChatList .recentChat .avatar {
@@ -220,6 +221,14 @@ body.big-avatars .welcomeRecent .recentChatList .recentChat .chatMessageContaine
 
 .welcomeRecent .recentChatList .showMoreChats.rotated {
     transform: rotate(180deg);
+}
+
+.welcomeRecent .recentChatList .recentChat .recentChatPinned {
+    top: 1px;
+    left: 1px;
+    position: absolute;
+    opacity: 0.8;
+    color: var(--SmartThemeQuoteColor);
 }
 
 @media screen and (max-width: 1000px) {
