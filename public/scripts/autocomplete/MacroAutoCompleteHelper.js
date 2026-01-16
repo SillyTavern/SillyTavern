@@ -25,7 +25,8 @@ import { MacroFlagDefinitions, MacroFlagType } from '../macros/engine/MacroFlags
 import { MacroParser } from '../macros/engine/MacroParser.js';
 import { MacroCstWalker } from '../macros/engine/MacroCstWalker.js';
 import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnostics.js';
-import { getVariableNames } from '../variables.js';
+import { chat_metadata } from '/script.js';
+import { extension_settings } from '../extensions.js';
 
 /** @typedef {import('./EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} MacroAutoCompleteContext */
 /** @typedef {import('./EnhancedMacroAutoCompleteOption.js').EnhancedMacroAutoCompleteOptions} EnhancedMacroAutoCompleteOptions */
@@ -487,6 +488,24 @@ export function findMacroAtCursor(text, cursorPos) {
         end: closePos,
         content,
     };
+}
+
+/**
+ * Gets variable names from the specified scope.
+ *
+ * @param {'local'|'global'} scope - The variable scope.
+ * @returns {string[]} Array of variable names.
+ */
+export function getVariableNames(scope) {
+    try {
+        if (scope === 'local') {
+            return Object.keys(chat_metadata?.variables ?? {});
+        } else {
+            return Object.keys(extension_settings?.variables?.global ?? {});
+        }
+    } catch {
+        return [];
+    }
 }
 
 /**
