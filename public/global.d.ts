@@ -75,12 +75,19 @@ declare global {
 
     interface ChatTreeNode extends Omit<ChatMessage, 'swipe_id' | 'swipes' | 'swipe_info'>{
         branch_id?: number;
+        parents?: ChatTreeNode[]; // This is an array to allow for future flexibility.
+        children?: ChatTreeNode[];
+        id: number;
+    }
+    interface SerializedChatTreeNode extends Omit<ChatTreeNode, 'parents' | 'children'>{
         parentIds?: number[]; // This is an array to allow for future flexibility.
         childIds?: number[];
-        id: number; // This may be unnecessary.
     }
     interface ChatTreeNodes {
         [key: number]: ChatTreeNode;
+    }
+     interface SerializedChatTreeNodes {
+        [key: number]: SerializedChatTreeNode;
     }
 
     interface ChatMessage {

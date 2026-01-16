@@ -34,6 +34,8 @@ export class Tree {
         this.nodes = {};
         this.active = active;
         this.lastId = 0;
+        this.serialize = undefined;
+        this.updated = true;
 
         if (this.active) {
             eventSource.on(event_types.MESSAGE_SWIPE_DELETED, async ({ messageId, swipeId, newSwipeId }) => {
@@ -97,6 +99,34 @@ export class Tree {
     }
 
     /**
+     * Serialize a node so it can be saved to a file.
+     * @param {ChatTreeNode} node
+     * @returns {[Number, SerializedChatTreeNode]}
+     */
+    serializeNode(node) {
+        const parentIds = node.parents?.map((parent) => parent.id);
+        const childIds = node.children?.map((child) => child.id);
+        // eslint-disable-next-line no-unused-vars
+        const { parents: _p, children: _c, ...serializedNode } = node;
+        if (childIds?.length > 0) serializedNode['childIds'] = childIds;
+        if (parentIds?.length > 0) serializedNode['parentIds'] = parentIds;
+
+        return [node.id, serializedNode];
+    }
+    /**
+     * Returns the serialized nodes, or a cached version if nodes is unchanged.
+     * @returns {SerializedChatTreeNodes}
+     */
+    serializeNodes() {
+        // Return the cache if nodes are unchanged.
+        if (this.updated) {
+            this.serialized = Object.fromEntries(Object.values(this.nodes).map((node) => this.serializeNode(node)));
+            this.updated = false;
+        }
+        return this.serialized;
+    }
+
+    /**
      * Migrate each message in the chatTree.
      */
     migrateTree(){
@@ -115,15 +145,16 @@ export class Tree {
                         // let { branch: _b, branch_id: _bi, ...message } = m;
                         // eslint-disable-next-line no-unused-vars
                         let { branch: _b, ...message } = m;
-                        if (!isNaN(parentId)) message.parentIds = [parentId]; //Multiple parents are now possible.
-                        //Set the parents children.
-                        if (parent){
-                            parent.childIds ??= [];
-                            parent.childIds.push(mId);
-                        }
                         message.id = mId;
                         //This message now has the id of count.
                         nodes[mId] = message;
+
+                        //Set the parents children.
+                        if (parent !== undefined) {
+                            message.parents = [parent];
+                            parent.children ??= [];
+                            parent.children.push(message);
+                        }
 
                         migrateBranch(m['branch'], message, mId);
                     });
@@ -146,7 +177,7 @@ export class Tree {
      * @returns {ChatTreeNode[]}
      */
     getRoots() {
-        return Object.values(this.nodes).filter((m) => !m.parentIds);
+        return Object.values(this.nodes).filter((node) => (node.parents == undefined || node.parents?.length === 0));
     }
 
     /**
@@ -154,43 +185,20 @@ export class Tree {
      * @returns {ChatTreeNode[]}
      */
     getEnds() {
-        return Object.values(this.nodes).filter((m) => !m.childIds);
+        return Object.values(this.nodes).filter((node) => (node.children == undefined || node.children?.length === 0));
     }
-
-    /**
-     * Returns a node's Id.
-     * @param {ChatTreeNode} node
-     * @returns {number}
-     */
-    id(node) {
-        // https://stackoverflow.com/questions/9907419/how-to-get-a-key-in-a-javascript-object-by-its-value
-        // Is there a faster method?
-        // I'd prefer to avoid storing the ID in the node in the final version.
-        return Number(Object.keys(this.nodes).find(key => this.nodes[key] === node));
-    }
-    /**
-     * Returns a node's parents.
-     * @param {ChatTreeNode} node
-     * @returns {ChatTreeNode[]}
-     */
-    parents(node) { return node.parentIds?.map((id) => this.nodes[id]); }
-    /**
-     * Returns a node's children.
-     * @todo Implement multiple parents.
-     * @param {ChatTreeNode} node
-     * @returns {ChatTreeNode[]}
-     */
-    children(node) { return node.childIds?.map((id) => this.nodes[id]); }
-
     /**
      * Returns a node's siblings.
      * @param {ChatTreeNode} node
      * @returns {ChatTreeNode[]}
      */
     siblings(node) {
-        const parent = this.parents(node)?.[0];
-        if (parent) return this.children(parent);
-        else return [node];
+        const parent = node?.parents?.[0];
+        if (parent) return parent.children;
+        // The node has no parent, It must be a root node.
+        else {
+            return this.getRoots();
+        }
     }
 
     /**
@@ -200,7 +208,7 @@ export class Tree {
      */
     decompress(node) {
         // eslint-disable-next-line no-unused-vars
-        let { id: _id, branch_id: _bid, parentIds: _pid, childIds: _cid, ...message } = node;
+        let { id: _id, branch_id: _bid, parents: _p, children: _c, ...message } = node;
 
         const siblings = this.siblings(node);
 
@@ -225,7 +233,7 @@ export class Tree {
      * @returns {ChatTreeNode?}
      */
     prev(node) {
-        if (node.parentIds) return this.nodes[node.parentIds[0]];
+        if (node.parents?.length > 0) return node.parents[0];
     }
     /**
      * Returns next node based on the stored branch_id.
@@ -234,8 +242,8 @@ export class Tree {
      */
     next(node) {
         if (isNaN(node?.branch_id)) return;
-        const selectedChild = node.childIds[node?.branch_id];
-        if (selectedChild) return this.nodes[selectedChild];
+        const selectedChild = node.children[node?.branch_id];
+        if (selectedChild) return selectedChild;
     }
 
     /**
@@ -320,6 +328,7 @@ export class Tree {
      */
     setNodes(nodes) {
         this.nodes = nodes;
+        this.updated = true;
         this.lastId = Number(Object.keys(nodes).sort().at(-1));
     }
 
