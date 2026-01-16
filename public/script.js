@@ -8028,6 +8028,7 @@ export async function messageEdit(editMessageId) {
     const editTextArea = document.createElement('textarea');
     editTextArea.id = 'curEditTextarea';
     editTextArea.className = 'edit_textarea mdHotkeys';
+    editTextArea.dataset.macros = '';
     messageText.append(editTextArea);
 
     const text = trimSpaces(editMessage.mes || '');
