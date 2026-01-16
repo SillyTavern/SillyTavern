@@ -4790,7 +4790,8 @@ function isValidState() {
     }
 }
 
-let buttonAbortController = null;
+/** @type {WeakMap<JQuery<HTMLElement>, AbortController>} */
+const buttonAbortControllers = new WeakMap();
 
 /**
  * "Paintbrush" button handler to generate a new image for a message.
@@ -4814,9 +4815,18 @@ async function sdMessageButton($icon, { animate } = {}) {
 
     const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush', animation: 'fa-fade' };
     const context = getContext();
+    const abortController = (() => {
+        if (buttonAbortControllers.has($icon)) {
+            return buttonAbortControllers.get($icon);
+        } else {
+            const controller = new AbortController();
+            buttonAbortControllers.set($icon, controller);
+            return controller;
+        }
+    })();
 
     if ($icon.hasClass(classes.busy)) {
-        buttonAbortController?.abort('Aborted by user');
+        abortController.abort('Aborted by user');
         console.log('Previous image is still being generated...');
         return;
     }
@@ -4854,13 +4864,12 @@ async function sdMessageButton($icon, { animate } = {}) {
         $media = messageElement.find(`.mes_media_container[data-index="${index}"]`).find('.mes_img, .mes_video');
     }
 
-    buttonAbortController = new AbortController();
     const newMediaAttachment = await generateMediaSwipe(
         selectedMedia,
         message,
         () => setBusyIcon(true),
         () => setBusyIcon(false),
-        buttonAbortController,
+        abortController,
     );
 
     if (!newMediaAttachment) {
