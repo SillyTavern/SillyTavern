@@ -4790,7 +4790,7 @@ function isValidState() {
     }
 }
 
-/** @type {WeakMap<JQuery<HTMLElement>, AbortController>} */
+/** @type {WeakMap<HTMLElement, AbortController>} */
 const buttonAbortControllers = new WeakMap();
 
 /**
@@ -4816,11 +4816,12 @@ async function sdMessageButton($icon, { animate } = {}) {
     const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush', animation: 'fa-fade' };
     const context = getContext();
     const abortController = (() => {
-        if (buttonAbortControllers.has($icon)) {
-            return buttonAbortControllers.get($icon);
+        const nativeElement = $icon.get(0);
+        if (buttonAbortControllers.has(nativeElement)) {
+            return buttonAbortControllers.get(nativeElement);
         } else {
             const controller = new AbortController();
-            buttonAbortControllers.set($icon, controller);
+            buttonAbortControllers.set(nativeElement, controller);
             return controller;
         }
     })();
