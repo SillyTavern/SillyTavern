@@ -32,7 +32,7 @@ readme*
 Update-Instructions.txt
 
 # --- OS & System Junk ---
-.DS_Store
+**/.DS_Store
 *.bat
 *.cmd
 *.exe
