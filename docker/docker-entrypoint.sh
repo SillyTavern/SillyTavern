@@ -20,7 +20,7 @@ start_sillytavern() {
 
 # Dirs that MUST be present at this point (e.g for volumeless docker runs).
 # Please update list, if in the future a related perm issue appear.
-CORE_DIRS="config data plugins public/scripts/extensions/third-party"
+CORE_DIRS="config data plugins public/scripts/extensions/third-party backups"
 
 # Mounted Volumes (External)
 # Parse mounts, handling files vs directories
