@@ -1541,6 +1541,7 @@ function printTagFilters(type = tag_filter_type.character) {
 
     if (isGroupContext(type)) {
         // For group contexts, show all tags but mark ones without presence in current context as inactive
+        // CAUTION: when called by openGroupById, the selected_group variable might not yet be updated
         const currentGroup = selected_group ? groups.find(x => x.id == selected_group) : null;
         const visibleAvatars = getVisibleAvatarsForGroupContext(type, currentGroup);
 
