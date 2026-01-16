@@ -953,7 +953,8 @@ export async function printCharacters(fullRefresh = false) {
 
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
     printTagFilters(tag_filter_type.character);
-    printTagFilters(tag_filter_type.group_member);
+    printTagFilters(tag_filter_type.group_members_list);
+    printTagFilters(tag_filter_type.group_candidates_list);
 
     // We are also always reprinting the lists on character/group edit window, as these ones doesn't get updated otherwise
     applyTagsOnCharacterSelect();

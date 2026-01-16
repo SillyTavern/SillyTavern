@@ -1451,7 +1451,7 @@ async function modifyGroupMember(groupId, groupMember, isDelete) {
     printGroupMembers();
 
     // Refresh the tag filters for both lists to reflect any new tags
-    printTagFilters(tag_filter_type.group_member);
+    printTagFilters(tag_filter_type.group_candidates_list);
     printTagFilters(tag_filter_type.group_members_list);
 
     const groupHasMembers = getGroupCharacters({ doFilter: false, onlyMembers: true }).length > 0;
