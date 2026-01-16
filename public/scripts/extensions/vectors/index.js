@@ -2114,8 +2114,8 @@ jQuery(async () => {
             }
 
             const parsed = Number(raw);
-            if (!Number.isFinite(parsed) || parsed < 0) {
-                toastr.warning('Max entries must be a number greater than or equal to 0.');
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                toastr.warning('Max entries must be a number greater than 0.');
                 return '';
             }
 
