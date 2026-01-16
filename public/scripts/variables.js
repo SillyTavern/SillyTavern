@@ -19,6 +19,24 @@ import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
 
 const MAX_LOOPS = 100;
 
+/**
+ * Gets variable names from the specified scope.
+ *
+ * @param {'local'|'global'} scope - The variable scope.
+ * @returns {string[]} Array of variable names.
+ */
+export function getVariableNames(scope) {
+    try {
+        if (scope === 'local') {
+            return Object.keys(chat_metadata?.variables ?? {});
+        } else {
+            return Object.keys(extension_settings?.variables?.global ?? {});
+        }
+    } catch {
+        return [];
+    }
+}
+
 export function getLocalVariable(name, args = {}) {
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
