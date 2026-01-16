@@ -11,7 +11,8 @@
  * - Dynamically added elements are automatically initialized via MutationObserver
  */
 
-import { AutoComplete } from './AutoComplete.js';
+import { power_user } from '../power-user.js';
+import { AutoComplete, AUTOCOMPLETE_STATE } from './AutoComplete.js';
 import { findMacroAtCursor, findUnclosedScopes, getMacroAutoCompleteAt } from './MacroAutoCompleteHelper.js';
 
 /** Custom attribute name used to mark elements that support macro autocomplete */
@@ -32,15 +33,23 @@ const initializedElements = new WeakSet();
  * @returns {boolean}
  */
 function shouldActivateMacroAutocomplete(text, cursorPos) {
+    // Check if autocomplete is enabled at all
+    if (power_user.stscript.autocomplete.state === AUTOCOMPLETE_STATE.DISABLED) {
+        return false;
+    }
+
+    // Wether setting says autocomplete should only activate after typing {{ and two characters after that
+    const onlyAfter2 = power_user.stscript.autocomplete.state === AUTOCOMPLETE_STATE.MIN_LENGTH;
+
     // Check if we're right after {{ (just typed the second brace)
     if (cursorPos >= 2 && text.slice(cursorPos - 2, cursorPos) === '{{') {
-        return true;
+        return !onlyAfter2;
     }
 
     // Check if we're inside a macro
     const macro = findMacroAtCursor(text, cursorPos);
     if (macro !== null) {
-        return true;
+        return !onlyAfter2 || (macro.content.trim()).length >= 2;
     }
 
     // Check if we're in scoped content of an unclosed scoped macro
