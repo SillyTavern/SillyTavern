@@ -4809,6 +4809,10 @@ async function sdMessageButton($icon, { animate } = {}) {
         $icon.toggleClass(classes.idle, !isBusy);
         $icon.toggleClass(classes.busy, isBusy);
         $media.toggleClass(classes.animation, isBusy);
+
+        // Update generation counter toast
+        const trackingFunction = isBusy ? startGenerationTracking : endGenerationTracking;
+        trackingFunction();
     }
 
     let $media = jQuery();
