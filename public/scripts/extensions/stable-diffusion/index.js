@@ -2752,11 +2752,13 @@ function ensureSelectionExists(setting, selector) {
  */
 function updateGenerationIndicator() {
     if (activeGenerations > 0) {
+        const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
+        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating image`}${countText}...`;
+
         // Show persistent toast if not already showing
         if (!generationToast) {
-            const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
             generationToast = toastr.info(
-                `<i class="fa-solid fa-spinner fa-spin"></i> Generating image${countText}...`,
+                toastText,
                 'Image Generation',
                 {
                     timeOut: 0,
@@ -2772,7 +2774,7 @@ function updateGenerationIndicator() {
             // Update count in existing toast
             const toastMessage = $(generationToast).find('.toast-message');
             if (toastMessage.length) {
-                toastMessage.html(`<i class="fa-solid fa-spinner fa-spin"></i> Generating image (${activeGenerations})...`);
+                toastMessage.html(toastText);
             }
         }
     } else {
