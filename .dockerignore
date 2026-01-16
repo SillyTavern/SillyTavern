@@ -20,6 +20,7 @@
 /data
 /dist
 /node_modules
+/tests
 
 # --- Sensitive Info ---
 **/.env*
@@ -43,7 +44,7 @@ start.sh
 .eslintrc.cjs
 .eslintrc*
 .vscode
-jsconfig.json
+**/jsconfig.json
 .npmignore
 .gemini
 replit.nix
