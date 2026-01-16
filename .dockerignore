@@ -13,7 +13,7 @@
 /docker/plugins
 /public/scripts/extensions/third-party
 
-# --- Folder ---
+# --- The Folders ---
 /backups
 /cache
 /colab
