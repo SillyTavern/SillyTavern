@@ -24,7 +24,7 @@ import {
 import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml, isFalseBoolean, isTrueBoolean } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml, isTrueBoolean } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
@@ -2037,7 +2037,6 @@ jQuery(async () => {
         returns: ARGUMENT_TYPE.LIST,
     }));
 
-
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'vector-threshold',
         helpString: 'Set the vector score threshold or return the current threshold if no argument is provided.',
@@ -2046,8 +2045,6 @@ jQuery(async () => {
             SlashCommandArgument.fromProps({
                 description: 'Score threshold (number).',
                 typeList: [ARGUMENT_TYPE.NUMBER],
-                isRequired: false,
-                acceptsMultiple: false,
             }),
         ],
         callback: async (_args, value) => {
@@ -2057,8 +2054,8 @@ jQuery(async () => {
             }
 
             const parsed = Number(raw);
-            if (!Number.isFinite(parsed)) {
-                toastr.warning('Score threshold must be a number.');
+            if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+                toastr.warning('Score threshold must be a number between 0 and 1.');
                 return '';
             }
 
@@ -2078,8 +2075,6 @@ jQuery(async () => {
             SlashCommandArgument.fromProps({
                 description: 'Query messages (number >= 0).',
                 typeList: [ARGUMENT_TYPE.NUMBER],
-                isRequired: false,
-                acceptsMultiple: false,
             }),
         ],
         callback: async (_args, value) => {
@@ -2103,15 +2098,13 @@ jQuery(async () => {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'vector-maxentries',
+        name: 'vector-max-entries',
         helpString: 'Set the vector world info max entries or returns the current max entries if no argument is provided',
         returns: 'world info max entries',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'Max entries (number >= 0).',
                 typeList: [ARGUMENT_TYPE.NUMBER],
-                isRequired: false,
-                acceptsMultiple: false,
             }),
         ],
         callback: async (_args, value) => {
@@ -2140,10 +2133,8 @@ jQuery(async () => {
         returns: 'boolean for if chat vectorization is enabled',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Is chat vectorization enabled',
+                description: 'boolean to set whether chat vectorization is enabled',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                isRequired: false,
-                acceptsMultiple: false,
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
         ],
@@ -2153,12 +2144,7 @@ jQuery(async () => {
                 return String(settings.enabled_chats);
             }
 
-            const parsed = isTrueBoolean(raw) ? true : isFalseBoolean(raw) ? false : null;
-            if (parsed === null) {
-                toastr.warning('Vectors enabled for chats must be true or false.');
-                return '';
-            }
-
+            const parsed = isTrueBoolean(raw);
             $('#vectors_enabled_chats')
                 .prop('checked', parsed)
                 .trigger('input');
@@ -2173,10 +2159,8 @@ jQuery(async () => {
         returns: 'boolean for if file vectorization is enabled',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Is file vectorization enabled',
+                description: 'boolean to set whether file vectorization is enabled',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                isRequired: false,
-                acceptsMultiple: false,
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
         ],
@@ -2186,12 +2170,7 @@ jQuery(async () => {
                 return String(settings.enabled_files);
             }
 
-            const parsed = isTrueBoolean(raw) ? true : isFalseBoolean(raw) ? false : null;
-            if (parsed === null) {
-                toastr.warning('Vectors enabled for files must be true or false.');
-                return '';
-            }
-
+            const parsed = isTrueBoolean(raw) ;
             $('#vectors_enabled_files')
                 .prop('checked', parsed)
                 .trigger('input');
@@ -2206,10 +2185,8 @@ jQuery(async () => {
         returns: 'boolean for if world info vectorization is enabled',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Is world info vectorization enabled',
+                description: 'boolean to set whether world info vectorization is enabled',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
-                isRequired: false,
-                acceptsMultiple: false,
                 enumList: commonEnumProviders.boolean('trueFalse')(),
             }),
         ],
@@ -2219,12 +2196,7 @@ jQuery(async () => {
                 return String(settings.enabled_world_info);
             }
 
-            const parsed = isTrueBoolean(raw) ? true : isFalseBoolean(raw) ? false : null;
-            if (parsed === null) {
-                toastr.warning('Vectors enabled for world info must be true or false.');
-                return '';
-            }
-
+            const parsed = isTrueBoolean(raw);
             $('#vectors_enabled_world_info')
                 .prop('checked', parsed)
                 .trigger('input');
