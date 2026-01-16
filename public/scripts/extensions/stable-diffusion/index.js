@@ -4832,7 +4832,7 @@ async function sdMessageButton($icon, { animate } = {}) {
 
     if ($icon.hasClass(classes.busy)) {
         abortController.abort('Aborted by user');
-        console.log('Previous image is still being generated...');
+        console.log('SD: Image generation aborted by user');
         return;
     }
 
