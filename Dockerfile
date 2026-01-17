@@ -34,10 +34,11 @@ RUN \
   echo "*** Run Webpack ***" && \
   node "./docker/build-lib.js"
 
-# Set the entrypoint script and cleanup
+# Set the entrypoint script, healthcheck, and cleanup
 RUN \
   echo "*** Cleanup ***" && \
   mv "./docker/docker-entrypoint.sh" "./" && \
+  mv "./docker/healthcheck.cjs" "./" && \
   echo "*** Make docker-entrypoint.sh executable ***" && \
   chmod +x "./docker-entrypoint.sh" && \
   echo "*** Convert line endings to Unix format ***" && \
@@ -46,6 +47,10 @@ RUN \
 
 # Fix extension repos permissions
 RUN git config --global --add safe.directory "*"
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD node healthcheck.cjs
 
 EXPOSE 8000
 
