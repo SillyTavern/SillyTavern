@@ -707,32 +707,3 @@ class DashScopeTtsProvider {
         nameLabel.textContent = file ? file.name : 'No file selected';
     }
 }
-
-// Export instance methods for onclick handlers
-if (!SillyTavern.extensions) {
-    SillyTavern.extensions = {};
-}
-if (!SillyTavern.extensions.tts) {
-    SillyTavern.extensions.tts = {};
-}
-if (!SillyTavern.extensions.tts.providers) {
-    SillyTavern.extensions.tts.providers = {};
-}
-SillyTavern.extensions.tts.providers.DashScope = {
-    previewCustomVoice: function(voiceId, event) {
-        if (event?.preventDefault) {
-            event.preventDefault();
-        }
-        const provider = globalThis.dashscopeProviderInstance;
-        if (provider) {
-            provider.previewCustomVoice(voiceId);
-        }
-    },
-    deleteCustomVoice: function(index) {
-        const provider = globalThis.dashscopeProviderInstance;
-        if (provider) {
-            provider.deleteCustomVoice(index);
-        }
-    },
-};
-
