@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import serverDirectory from '../src/server-directory.js'
+import { serverDirectory } from './server-directory.js';
 
 // Default to 0 seconds (disabled) if not set
 const intervalSeconds = parseInt(process.env.SILLYTAVERN_HEARTBEATINTERVAL || '0');
@@ -8,7 +8,7 @@ const intervalMs = intervalSeconds * 1000;
 
 // Heartbeat disabled
 if (Number.isNaN(intervalSeconds) || intervalSeconds <= 0) {
-    return process.exit(0);
+    process.exit(0);
 }
 
 // Allow a grace period (2 missed beats)
