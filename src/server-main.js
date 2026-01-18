@@ -109,6 +109,11 @@ const CORS = cors({
 
 app.use(CORS);
 
+// Public health check endpoint
+app.get('/api/health', (req, res) => {
+    res.sendStatus(200);
+});
+
 if (cliArgs.listen && cliArgs.basicAuthMode) {
     app.use(basicAuthMiddleware);
 }

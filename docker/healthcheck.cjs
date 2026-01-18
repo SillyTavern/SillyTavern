@@ -3,69 +3,75 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-// Check environment variable first, then try to parse config.yaml, default to 8000
-let port = process.env.SILLYTAVERN_PORT || 8000;
+// Determine paths relative to where the app is running
+const appDir = process.cwd();
+const configPath = path.join(appDir, 'config.yaml');
 
-if (!process.env.SILLYTAVERN_PORT) {
-    try {
-        const configPath = path.join(process.cwd(), 'config', 'config.yaml');
-        if (fs.existsSync(configPath)) {
-            const content = fs.readFileSync(configPath, 'utf8');
-            // Look for "port: 1234" pattern
-            const portMatch = content.match(/^port:\s*(\d+)/m);
-            if (portMatch) {
-                port = parseInt(portMatch[1], 10);
+let config = {
+    port: 8000,
+    ssl: { enabled: false }
+};
+
+// 1. Load from Config File using 'yaml' lib if available, or regex fallback
+try {
+    if (fs.existsSync(configPath)) {
+        const fileContent = fs.readFileSync(configPath, 'utf8');
+        try {
+            const yaml = require('yaml');
+            const parsed = yaml.parse(fileContent);
+            if (parsed) {
+                if (parsed.port) config.port = parsed.port;
+                if (parsed.ssl) config.ssl = { ...config.ssl, ...parsed.ssl };
             }
+        } catch (e) {
+            // Fallback to Regex if yaml lib fails or isn't found
+            const portMatch = fileContent.match(/^port:\s*(\d+)/m);
+            if (portMatch) config.port = parseInt(portMatch[1]);
+            const sslMatch = fileContent.match(/ssl:\s*[\s\S]*?enabled:\s*(true|false)/);
+            if (sslMatch) config.ssl.enabled = (sslMatch[1] === 'true');
         }
-    } catch (e) {
-        // Silently fail and use default/env port
     }
+} catch (err) {
+    // Ignore config errors, stick to defaults/env
 }
 
-// Healthcheck Logic
-function tryConnect(host, isSsl) {
-    const protocol = isSsl ? https : http;
-    const options = {
-        hostname: host,
-        port: port,
-        path: '/',
-        method: 'GET',
-        rejectUnauthorized: false, // Allow self-signed certs
-        timeout: 2000,
-        family: host === '::1' ? 6 : 4, // Explicitly state IP family
-        headers: {
-            'User-Agent': 'Server Healthcheck' // Custom User-Agent for logs
-        }
-    };
+// 2. Override with Environment Variables (Docker specific)
+if (process.env.SILLYTAVERN_PORT) config.port = parseInt(process.env.SILLYTAVERN_PORT);
+if (process.env.SILLYTAVERN_SSL_ENABLED) config.ssl.enabled = (process.env.SILLYTAVERN_SSL_ENABLED === 'true');
 
-    const req = protocol.request(options, (res) => {
-        // Any response means the server is alive
-        process.exit(0);
+const protocol = config.ssl.enabled ? https : http;
+
+const requestOptions = {
+    host: '127.0.0.1',
+    port: config.port,
+    path: '/api/health',
+    timeout: 2000,
+    rejectUnauthorized: false,
+    headers: { 'User-Agent': 'Docker-Healthcheck' }
+};
+
+const performCheck = (options) => {
+    const req = protocol.get(options, (res) => {
+        if (res.statusCode === 200) {
+            process.exit(0);
+        } else {
+            console.error(`Health Check Failed: HTTP ${res.statusCode}`);
+            process.exit(1);
+        }
     });
 
     req.on('error', (err) => {
-        // Case 1: IPv4 failed (Connection Refused) -> Try IPv6
-        if (host === '127.0.0.1' && err.code === 'ECONNREFUSED') {
-            tryConnect('::1', isSsl);
-            return;
+        console.error(`Health Check Failed: ${err.message}`);
+        // IPv6 Fallback
+        if (options.host === '127.0.0.1') {
+            console.log('Retrying with IPv6 [::1]...');
+            performCheck({ ...options, host: '::1' });
+        } else {
+            process.exit(1);
         }
-
-        // Case 2: Protocol mismatch (HTTP -> HTTPS)
-        // ECONNRESET/HPE_INVALID_CONSTANT usually means we sent HTTP to an HTTPS port
-        if (!isSsl && (err.code === 'ECONNRESET' || err.code === 'HPE_INVALID_CONSTANT')) {
-            tryConnect(host, true);
-            return;
-        }
-
-        // Case 3: Genuine Failure
-        // If we are already on IPv6 or SSL and still failing, print error and exit
-        console.error(`Healthcheck failed: ${err.message} (${host}:${port})`);
-        process.exit(1);
     });
 
     req.end();
-}
+};
 
-// Start by trying IPv4 + HTTP.
-// It will automatically fallback to IPv6 or HTTPS if needed.
-tryConnect('127.0.0.1', false);
+performCheck(requestOptions);
