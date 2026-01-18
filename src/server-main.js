@@ -355,13 +355,13 @@ async function postSetupTasks(result) {
         const intervalMs = cliArgs.heartbeatInterval * 1000;
         const heartbeatPath = path.join(globalThis.DATA_ROOT, 'heartbeat.json');
 
-        console.log(`Heartbeat enabled. Updating ${heartbeatPath} every ${cliArgs.heartbeatInterval} seconds`);
+        console.log(`Heartbeat enabled. Updating ${color.green(heartbeatPath)} every ${cliArgs.heartbeatInterval} seconds`);
 
         const writeHeartbeat = () => {
             try {
                 fs.writeFileSync(heartbeatPath, JSON.stringify({ timestamp: Date.now() }));
             } catch (err) {
-                console.error('Failed to write heartbeat file:', err.message);
+                console.error(`Failed to write heartbeat file at ${color.green(heartbeatPath)}:`, err.message);
             }
         };
 
