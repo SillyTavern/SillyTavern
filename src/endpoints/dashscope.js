@@ -288,8 +288,8 @@ router.post('/create-voice-clone', async (request, response) => {
         }
 
         if (!previewText || previewText.trim().length === 0) {
-            return response.status(400).json({ 
-                error: 'Audio text content is required. Please enter the exact text spoken in your audio file for quality verification.' 
+            return response.status(400).json({
+                error: 'Audio text content is required. Please enter the exact text spoken in your audio file for quality verification.',
             });
         }
 
