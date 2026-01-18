@@ -1,71 +1,34 @@
-const http = require('http');
-const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-// Check environment variable first, then try to parse config.yaml, default to 8000
-let port = process.env.SILLYTAVERN_PORT || 8000;
+// Default to 30 seconds if not set
+const intervalSeconds = parseInt(process.env.SILLYTAVERN_HEARTBEAT_INTERVAL || '30');
+const intervalMs = intervalSeconds * 1000;
 
-if (!process.env.SILLYTAVERN_PORT) {
-    try {
-        const configPath = path.join(process.cwd(), 'config', 'config.yaml');
-        if (fs.existsSync(configPath)) {
-            const content = fs.readFileSync(configPath, 'utf8');
-            // Look for "port: 1234" pattern
-            const portMatch = content.match(/^port:\s*(\d+)/m);
-            if (portMatch) {
-                port = parseInt(portMatch[1], 10);
-            }
-        }
-    } catch (e) {
-        // Silently fail and use default/env port
-    }
-}
+// Allow a grace period (2 missed beats)
+const threshold = intervalMs * 2;
 
-// Healthcheck Logic
-function tryConnect(host, isSsl) {
-    const protocol = isSsl ? https : http;
-    const options = {
-        hostname: host,
-        port: port,
-        path: '/',
-        method: 'GET',
-        rejectUnauthorized: false, // Allow self-signed certs
-        timeout: 2000,
-        family: host === '::1' ? 6 : 4, // Explicitly state IP family
-        headers: {
-            'User-Agent': 'Server Healthcheck' // Custom User-Agent for logs
-        }
-    };
+const dataRoot = process.env.SILLYTAVERN_DATA_ROOT || path.join(__dirname, 'data');
+const heartbeatFile = path.join(dataRoot, 'heartbeat.json');
 
-    const req = protocol.request(options, (res) => {
-        // Any response means the server is alive
-        process.exit(0);
-    });
-
-    req.on('error', (err) => {
-        // Case 1: IPv4 failed (Connection Refused) -> Try IPv6
-        if (host === '127.0.0.1' && err.code === 'ECONNREFUSED') {
-            tryConnect('::1', isSsl);
-            return;
-        }
-
-        // Case 2: Protocol mismatch (HTTP -> HTTPS)
-        // ECONNRESET/HPE_INVALID_CONSTANT usually means we sent HTTP to an HTTPS port
-        if (!isSsl && (err.code === 'ECONNRESET' || err.code === 'HPE_INVALID_CONSTANT')) {
-            tryConnect(host, true);
-            return;
-        }
-
-        // Case 3: Genuine Failure
-        // If we are already on IPv6 or SSL and still failing, print error and exit
-        console.error(`Healthcheck failed: ${err.message} (${host}:${port})`);
+try {
+    if (!fs.existsSync(heartbeatFile)) {
+        console.error(`Heartbeat file not found at: ${heartbeatFile}`);
         process.exit(1);
-    });
+    }
 
-    req.end();
+    const stats = fs.statSync(heartbeatFile);
+    const lastModified = stats.mtimeMs;
+    const now = Date.now();
+    const diff = now - lastModified;
+
+    if (diff > threshold) {
+        console.error(`Server is unresponsive. Last heartbeat was ${Math.round(diff / 1000)} seconds ago.`);
+        process.exit(1);
+    }
+
+    process.exit(0);
+} catch (err) {
+    console.error('Healthcheck error:', err.message);
+    process.exit(1);
 }
-
-// Start by trying IPv4 + HTTP.
-// It will automatically fallback to IPv6 or HTTPS if needed.
-tryConnect('127.0.0.1', false);

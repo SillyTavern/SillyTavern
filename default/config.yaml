@@ -38,6 +38,9 @@ browserLaunch:
   avoidLocalhost: false
 # Server port
 port: 8000
+# Interval in seconds to write a heartbeat file. Set to 0 to disable.
+# This is used primarily for Docker healthchecks.
+heartbeatInterval: 0
 # -- SSL options --
 ssl:
   # Enable SSL/TLS encryption
