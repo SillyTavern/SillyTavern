@@ -129,6 +129,8 @@ class DashScopeRealtimeTTS {
             }
         } catch (err) {
             console.error('[DashScope-RT] Failed to parse message:', err);
+            this.error = err;
+            this.completed = true;
         }
     }
 
