@@ -12,19 +12,20 @@
 2. Fork this repository under your account.
 3. Clone the fork onto your machine.
 4. Open the cloned repository in the code editor.
-5. Create a git branch (recommended).
+5. Create a git branch (recommended), review the [git book](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control) if you haven't. It's been translated into many languages including [es](https://git-scm.com/book/es), [ja](https://git-scm.com/book/ja/v2), [ko](https://git-scm.com/book/ko) and [zh](https://git-scm.com/book/zh).
 6. Make your changes and test them locally.
 7. Commit the changes and push the branch to the remote repo.
-8. Go to GitHub, and open a pull request, targeting the upstream branch.
+8. Go to GitHub, and open a pull request, targeting the upstream (`staging`, **not** `release`) branch.
 
 ## Contribution guidelines
 
 1. Our standards are pretty low, but make sure the code is not too ugly:
   - Run VS Code's autoformat when you're done.
   - Check with ESLint by running `npm run lint`, then fix the errors.
+  - Prefer [dot property](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors) access over brackets.
   - Use common sense and follow existing naming conventions.
-2. Create pull requests for the staging branch, 99% of contributions should go there. That way people could test your code before the next stable release.
-3. You can still send a pull request for release in the following scenarios:
+2. Create pull requests for the `staging` branch, 99% of contributions should go there. That way people could test your code before the next stable release.
+3. You can still send a pull request for `release` in the following scenarios:
   - Updating README.
   - Updating GitHub Actions.
   - Hotfixing a critical bug.
@@ -52,7 +53,7 @@ We do not prohibit nor encourage the use of AI tools for coding assistance to he
 - No matter who (or what) wrote the code, you are responsible for it. Make sure to carefully review and test everything before committing, and be ready to discuss and fix any issues that may arise during the review.
 - Maintainers can reject reviewing and accepting PRs of very low quality, i.e. if the time to fix the issues exceeds the time to write the code from scratch.
 - Avoid common mistakes attributed to AI tools, such as: adding/removing unrelated comments, excessive logging, unawareness of the project context and conventions, etc.
-- You are allowed, but not required, to trigger AI tools that are added to the project by maintainers (Gemini, Copilot, Codex). Keep in mind that any feedback (comments, suggestions) that these tools generate is not a call to action; make sure to properly assess it before applying.
+- You are allowed, but not required, to trigger AI tools that are added to the project by maintainers (Gemini `/gemini review`, [Copilot](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review), Codex `@codex review`). Keep in mind that any feedback (comments, suggestions) that these tools generate is not a call to action; make sure to properly assess it before applying.
 
 ## Further reading
 
