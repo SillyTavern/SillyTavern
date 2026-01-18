@@ -4724,7 +4724,6 @@ async function addSDGenButtons() {
     const stopGenButton = $('#sd_stop_gen');
     stopGenButton.hide();
     stopGenButton.on('click', () => eventSource.emit(CUSTOM_STOP_EVENT));
-
 }
 
 function isValidState() {
