@@ -115,9 +115,6 @@ class DashScopeTtsProvider {
             if (key !== SECRET_KEYS.DASHSCOPE) return;
             $('#api_key_dashscope').toggleClass('success', !!secret_state[SECRET_KEYS.DASHSCOPE]);
         }.bind(this);
-
-        // Store instance globally for onclick handlers
-        globalThis.dashscopeProviderInstance = this;
     }
 
     dispose() {
@@ -477,10 +474,7 @@ class DashScopeTtsProvider {
                 if (event?.preventDefault) {
                     event.preventDefault();
                 }
-                const provider = globalThis.dashscopeProviderInstance;
-                if (provider) {
-                    provider.previewCustomVoice(voice.voiceId);
-                }
+                this.previewCustomVoice(voice.voiceId);
             });
 
             const deleteButton = $('<button>', {
@@ -492,10 +486,7 @@ class DashScopeTtsProvider {
                 if (event?.preventDefault) {
                     event.preventDefault();
                 }
-                const provider = globalThis.dashscopeProviderInstance;
-                if (provider) {
-                    provider.deleteCustomVoice(index);
-                }
+                this.deleteCustomVoice(index);
             });
 
             item.append(iconSpan, contentDiv, previewButton, deleteButton);
