@@ -1,14 +1,20 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import serverDirectory from '../src/server-directory.js'
 
-// Default to 30 seconds if not set
-const intervalSeconds = parseInt(process.env.SILLYTAVERN_HEARTBEATINTERVAL || '30');
+// Default to 0 seconds (disabled) if not set
+const intervalSeconds = parseInt(process.env.SILLYTAVERN_HEARTBEATINTERVAL || '0');
 const intervalMs = intervalSeconds * 1000;
+
+// Heartbeat disabled
+if (Number.isNaN(intervalSeconds) || intervalSeconds <= 0) {
+    return process.exit(0);
+}
 
 // Allow a grace period (2 missed beats)
 const threshold = intervalMs * 2;
 
-const dataRoot = process.env.SILLYTAVERN_DATAROOT || path.join(__dirname, 'data');
+const dataRoot = process.env.SILLYTAVERN_DATAROOT || path.join(serverDirectory, 'data');
 const heartbeatFile = path.join(dataRoot, 'heartbeat.json');
 
 try {
