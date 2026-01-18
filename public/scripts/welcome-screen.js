@@ -617,7 +617,7 @@ async function refreshWelcomeScreen({ flashChat = null } = {}) {
         });
         if (chatToFlash instanceof HTMLElement) {
             chatElement.scrollTop = chatToFlash.offsetTop - chatElement.offsetTop - (chatToFlash.clientHeight / 2);
-            flashHighlight($(chatToFlash));
+            flashHighlight($(chatToFlash), 1000);
         }
     } else {
         // Restore scroll position
