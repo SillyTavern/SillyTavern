@@ -353,7 +353,7 @@ async function postSetupTasks(result) {
     if (cliArgs.heartbeatInterval > 0) {
         // Convert seconds to milliseconds for the timer
         const intervalMs = cliArgs.heartbeatInterval * 1000;
-        const heartbeatPath = path.join(cliArgs.dataRoot, 'heartbeat.json');
+        const heartbeatPath = path.join(globalThis.DATA_ROOT, 'heartbeat.json');
 
         console.log(`Heartbeat enabled. Updating ${heartbeatPath} every ${cliArgs.heartbeatInterval} seconds`);
 
