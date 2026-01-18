@@ -47,13 +47,6 @@ RUN \
 # Fix extension repos permissions
 RUN git config --global --add safe.directory "*"
 
-# Set default heartbeat interval (30 seconds)
-ENV SILLYTAVERN_HEARTBEATINTERVAL="30"
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-  CMD node src/healthcheck.js || exit 1
-
 EXPOSE 8000
 
 # Ensure proper handling of kernel signals

@@ -7,6 +7,7 @@ services:
     environment:
       - NODE_ENV=production
       - FORCE_COLOR=1
+      - SILLYTAVERN_HEARTBEATINTERVAL=30
     ports:
       - "8000:8000"
     volumes:
@@ -14,4 +15,10 @@ services:
       - "./data:/home/node/app/data"
       - "./plugins:/home/node/app/plugins"
       - "./extensions:/home/node/app/public/scripts/extensions/third-party"
+    healthcheck:
+      test: ["CMD", "node", "src/healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
     restart: unless-stopped
