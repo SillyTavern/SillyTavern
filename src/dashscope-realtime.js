@@ -21,6 +21,8 @@ class DashScopeRealtimeTTS {
         this.sessionId = null;
         this.completed = false;
         this.error = null;
+        this.checkCompletionInterval = null;
+        this.timeoutHandle = null;
     }
 
     /**
@@ -186,10 +188,9 @@ class DashScopeRealtimeTTS {
 
         // Wait for completion or error
         return new Promise((resolve, reject) => {
-            const checkCompletion = setInterval(() => {
+            this.checkCompletionInterval = setInterval(() => {
                 if (this.completed) {
-                    clearInterval(checkCompletion);
-                    clearTimeout(timeout);
+                    this.cleanupTimers();
 
                     if (this.error) {
                         reject(this.error);
@@ -201,8 +202,8 @@ class DashScopeRealtimeTTS {
                 }
             }, 100);
 
-            const timeout = setTimeout(() => {
-                clearInterval(checkCompletion);
+            this.timeoutHandle = setTimeout(() => {
+                this.cleanupTimers();
                 this.close();
                 reject(new Error('Synthesis timeout'));
             }, 30000); // 30 second timeout
@@ -210,9 +211,24 @@ class DashScopeRealtimeTTS {
     }
 
     /**
+     * Clean up timers to prevent resource leaks
+     */
+    cleanupTimers() {
+        if (this.checkCompletionInterval) {
+            clearInterval(this.checkCompletionInterval);
+            this.checkCompletionInterval = null;
+        }
+        if (this.timeoutHandle) {
+            clearTimeout(this.timeoutHandle);
+            this.timeoutHandle = null;
+        }
+    }
+
+    /**
      * Close WebSocket connection
      */
     close() {
+        this.cleanupTimers();
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.close();
         }
