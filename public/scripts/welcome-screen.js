@@ -35,7 +35,7 @@ import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { sortMoments, timestampToMoment } from './utils.js';
+import { flashHighlight, sortMoments, timestampToMoment } from './utils.js';
 
 const assistantAvatarKey = 'assistant';
 const pinnedChatsKey = 'pinnedChats';
@@ -381,7 +381,7 @@ async function sendWelcomePanel(chats, expand = false) {
             });
         });
         fragment.querySelectorAll('.recentChat .pinChat').forEach((pinButton) => {
-            pinButton.addEventListener('click', (event) => {
+            pinButton.addEventListener('click', async (event) => {
                 event.stopPropagation();
                 const chatItem = pinButton.closest('.recentChat');
                 if (!chatItem) {
@@ -397,7 +397,7 @@ async function sendWelcomePanel(chats, expand = false) {
                 }
                 const currentlyPinned = PinnedChatsManager.isPinned(recentChat);
                 PinnedChatsManager.toggle(recentChat, !currentlyPinned);
-                void refreshWelcomeScreen();
+                await refreshWelcomeScreen({ flashChat: recentChat });
             });
         });
         chatElement.append(fragment.firstChild);
@@ -588,9 +588,11 @@ async function deleteRecentGroupChat(groupId, fileName) {
 
 /**
  * Reopens the welcome screen and restores the scroll position.
+ * @param {object} param Additional parameters
+ * @param {RecentChat} [param.flashChat] Recent chat to flash (if any)
  * @returns {Promise<void>}
  */
-async function refreshWelcomeScreen() {
+async function refreshWelcomeScreen({ flashChat = null } = {}) {
     const chatElement = document.getElementById('chat');
     if (!chatElement) {
         console.error('Chat element not found');
@@ -603,8 +605,24 @@ async function refreshWelcomeScreen() {
 
     await openWelcomeScreen({ force: true, expand });
 
-    // Restore scroll position
-    chatElement.scrollTop = scrollTop + (chatElement.scrollHeight - scrollHeight);
+    // Restore scroll position or flash specific chat
+    if (flashChat) {
+        const recentChats = Array.from(chatElement.querySelectorAll('.recentChat'));
+        const chatToFlash = recentChats.find(el => {
+            const file = el.getAttribute('data-file');
+            const group = el.getAttribute('data-group');
+            const avatar = el.getAttribute('data-avatar');
+            return file === flashChat.chat_name &&
+                ((flashChat.is_group && group === flashChat.group) || (!flashChat.is_group && avatar === flashChat.avatar));
+        });
+        if (chatToFlash instanceof HTMLElement) {
+            chatElement.scrollTop = chatToFlash.offsetTop - chatElement.offsetTop - (chatToFlash.clientHeight / 2);
+            flashHighlight($(chatToFlash));
+        }
+    } else {
+        // Restore scroll position
+        chatElement.scrollTop = scrollTop + (chatElement.scrollHeight - scrollHeight);
+    }
 }
 
 /**
