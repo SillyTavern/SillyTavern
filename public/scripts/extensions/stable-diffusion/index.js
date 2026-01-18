@@ -2864,9 +2864,6 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     const stopListener = () => abortController.abort('Aborted by user');
 
-    // Track this generation for status indicator
-    startGenerationTracking();
-
     try {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
 
@@ -2879,6 +2876,8 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
         prompt = eventData.prompt; // Allow extensions to modify the prompt
 
+        // Track this generation for status indicator
+        startGenerationTracking();
         // Show stop button after prompt is ready (prompt generation uses separate abort mechanism)
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
@@ -3106,8 +3105,10 @@ function getUserAvatarUrl() {
  * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
  */
 async function generatePrompt(quietPrompt) {
+    const toast = toastr.info('Generating image prompt with an LLM...', 'Image Generation');
     const reply = await generateQuietPrompt({ quietPrompt });
     const processedReply = processReply(reply);
+    toastr.clear(toast);
 
     if (!processedReply) {
         toastr.error('Prompt generation produced no text. Make sure you\'re using a valid instruct template and try again', 'Image Generation');
