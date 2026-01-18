@@ -88,7 +88,7 @@ async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
         // Strip off existing suffixes, then build new name
         let cleanName = name.replace(new RegExp(` - ${bookmarkNameToken}\\d+$`), '');
         // Strip off legacy old name prefix too
-        cleanName = name.replace(new RegExp(`^${bookmarkNameToken}\\d+ - `), '');
+        cleanName = cleanName.replace(new RegExp(`^${bookmarkNameToken}\\d+ - `), '');
         return `${cleanName} - ${bookmarkNameToken}${i}`;
     }
     const existingChats = await getExistingChatNames();
@@ -183,7 +183,7 @@ export async function createBranch(mesId) {
         // Strip off existing suffixes, then build new name
         let cleanName = name.replace(/ - Branch #\d+$/, '');
         // Strip off legacy old name prefix too
-        cleanName = name.replace(/^Branch #\d+ - /, '');
+        cleanName = cleanName.replace(/^Branch #\d+ - /, '');
         return `${cleanName} - Branch #${i}`;
     }
     const existingChats = await getExistingChatNames();
