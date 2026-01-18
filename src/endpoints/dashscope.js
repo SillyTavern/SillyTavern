@@ -273,15 +273,24 @@ router.post('/create-voice-clone', async (request, response) => {
             name,
             audioData, // base64 data URL: "data:audio/...;base64,..."
             apiHost = 'https://dashscope.aliyuncs.com',
-            previewText = 'Hello, this is a voice clone test.',
+            previewText,
             language = 'zh',
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.DASHSCOPE);
 
-        if (!name || !audioData || !apiKey) {
-            console.warn('DashScope Voice Clone: Missing required parameters');
-            return response.status(400).json({ error: 'Missing required parameters: name, audioData, and apiKey are required' });
+        if (!apiKey) {
+            return response.status(401).json({ error: 'DashScope API key is not set' });
+        }
+
+        if (!name || !audioData) {
+            return response.status(400).json({ error: 'name and audioData are required' });
+        }
+
+        if (!previewText || previewText.trim().length === 0) {
+            return response.status(400).json({ 
+                error: 'Audio text content is required. Please enter the exact text spoken in your audio file for quality verification.' 
+            });
         }
 
         const apiUrl = `${apiHost}/api/v1/services/audio/tts/customization`;

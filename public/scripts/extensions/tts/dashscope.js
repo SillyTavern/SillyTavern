@@ -87,6 +87,8 @@ class DashScopeTtsProvider {
                     <span id="dashscope_voice_clone_filename" style="flex: 1; font-size: 12px; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file selected</span>
                     <input id="dashscope_voice_clone_name" class="text_pole" type="text" placeholder="Voice name" style="flex: 1;" />
                 </div>
+                <textarea id="dashscope_voice_clone_text" class="text_pole" rows="2" placeholder="Enter the exact text spoken in your audio (must match exactly)" style="margin-top: 5px; width: 100%; resize: vertical;"></textarea>
+                <small class="notes" style="display: block; margin-top: 3px; color: #888;">⚠️ Audio text is required for quality verification. Enter exactly what is said in the audio.</small>
                 <input id="dashscope_create_clone" class="menu_button" type="button" value="Create Cloned Voice" style="margin-top: 5px;" />
             </div>
             
@@ -500,10 +502,12 @@ class DashScopeTtsProvider {
         try {
             const fileInput = document.getElementById('dashscope_voice_clone_file');
             const nameInput = $('#dashscope_voice_clone_name');
+            const textInput = $('#dashscope_voice_clone_text');
             const nameLabel = document.getElementById('dashscope_voice_clone_filename');
 
             const file = fileInput.files[0];
             const name = nameInput.val().trim();
+            const audioText = textInput.val().trim();
 
             if (!file) {
                 toastr.warning('Please select an audio file');
@@ -517,6 +521,11 @@ class DashScopeTtsProvider {
 
             if (!name) {
                 toastr.warning('Please enter a voice name');
+                return;
+            }
+
+            if (!audioText) {
+                toastr.warning('Please enter the text content of your audio file');
                 return;
             }
 
@@ -536,6 +545,7 @@ class DashScopeTtsProvider {
                 body: JSON.stringify({
                     name: name,
                     audioData: base64Audio,
+                    previewText: audioText,
                     apiHost: this.settings.apiHost || this.defaultSettings.apiHost,
                 }),
             });
@@ -565,6 +575,7 @@ class DashScopeTtsProvider {
             // Clear inputs
             fileInput.value = '';
             nameInput.val('');
+            textInput.val('');
             if (nameLabel) {
                 nameLabel.textContent = 'No file selected';
             }
