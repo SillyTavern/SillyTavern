@@ -72,7 +72,9 @@ const CUSTOM_STOP_EVENT = 'sd_stop_generation';
 
 // Generation tracking for status indicator
 let activeGenerations = 0;
+/** @type {JQuery<HTMLElement>|null} */
 let generationToast = null;
+
 const sources = {
     extras: 'extras',
     horde: 'horde',
