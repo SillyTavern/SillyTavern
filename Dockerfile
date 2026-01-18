@@ -49,7 +49,7 @@ RUN \
 RUN git config --global --add safe.directory "*"
 
 # Set default heartbeat interval (30 seconds)
-ENV SILLYTAVERN_HEARTBEAT_INTERVAL="30"
+ENV SILLYTAVERN_HEARTBEATINTERVAL="30"
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \

@@ -2,13 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 // Default to 30 seconds if not set
-const intervalSeconds = parseInt(process.env.SILLYTAVERN_HEARTBEAT_INTERVAL || '30');
+const intervalSeconds = parseInt(process.env.SILLYTAVERN_HEARTBEATINTERVAL || '30');
 const intervalMs = intervalSeconds * 1000;
 
 // Allow a grace period (2 missed beats)
 const threshold = intervalMs * 2;
 
-const dataRoot = process.env.SILLYTAVERN_DATA_ROOT || path.join(__dirname, 'data');
+const dataRoot = process.env.SILLYTAVERN_DATAROOT || path.join(__dirname, 'data');
 const heartbeatFile = path.join(dataRoot, 'heartbeat.json');
 
 try {

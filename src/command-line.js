@@ -18,6 +18,7 @@ import { initConfig } from './config-init.js';
  * @property {boolean|string} enableIPv4 If enable IPv4 protocol ("auto" is also allowed)
  * @property {boolean|string} enableIPv6 If enable IPv6 protocol ("auto" is also allowed)
  * @property {boolean} dnsPreferIPv6 If prefer IPv6 for DNS
+ * @property {number} heartbeatInterval Interval in seconds to write a heartbeat file. 0 to disable.
  * @property {boolean} browserLaunchEnabled If automatically launch SillyTavern in the browser
  * @property {string} browserLaunchHostname Browser launch hostname
  * @property {number} browserLaunchPort Browser launch port override (-1 is use server port)
@@ -62,6 +63,7 @@ export class CommandLineParser {
             enableIPv4: true,
             enableIPv6: false,
             dnsPreferIPv6: false,
+            heartbeatInterval: 0,
             browserLaunchEnabled: false,
             browserLaunchHostname: 'auto',
             browserLaunchPort: -1,
@@ -294,7 +296,7 @@ export class CommandLineParser {
             enableIPv4: stringToBool(cliArguments.enableIPv4) ?? stringToBool(getConfigValue('protocol.ipv4', defaultConfig.enableIPv4)) ?? defaultConfig.enableIPv4,
             enableIPv6: stringToBool(cliArguments.enableIPv6) ?? stringToBool(getConfigValue('protocol.ipv6', defaultConfig.enableIPv6)) ?? defaultConfig.enableIPv6,
             dnsPreferIPv6: cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', defaultConfig.dnsPreferIPv6, 'boolean'),
-            heartbeatInterval: cliArguments.heartbeatInterval ?? (process.env.SILLYTAVERN_HEARTBEAT_INTERVAL ? Number(process.env.SILLYTAVERN_HEARTBEAT_INTERVAL) : getConfigValue('heartbeatInterval', 0, 'number')),
+            heartbeatInterval: cliArguments.heartbeatInterval ?? getConfigValue('heartbeatInterval', defaultConfig.heartbeatInterval, 'number'),
             browserLaunchEnabled: cliArguments.browserLaunchEnabled ?? cliArguments.autorun ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean'),
             browserLaunchHostname: cliArguments.browserLaunchHostname ?? cliArguments.autorunHostname ?? getConfigValue('browserLaunch.hostname', defaultConfig.browserLaunchHostname),
             browserLaunchPort: cliArguments.browserLaunchPort ?? cliArguments.autorunPortOverride ?? getConfigValue('browserLaunch.port', defaultConfig.browserLaunchPort, 'number'),
