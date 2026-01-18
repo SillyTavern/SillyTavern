@@ -272,14 +272,8 @@ class DashScopeTtsProvider {
             throw error;
         }
 
-        // Check if this is a Voice Design voice and get its description
-        let voiceDescription = null;
-        const customVoice = (this.settings.customVoices || []).find(v => v.voiceId === voiceId);
-        if (customVoice && customVoice.type === 'design' && customVoice.description) {
-            voiceDescription = customVoice.description;
-        }
-
         // Determine model based on voice_id or known custom voice type
+        const customVoice = (this.settings.customVoices || []).find(v => v.voiceId === voiceId);
         let selectedModel = this.settings.modelOfficialVoice || this.defaultSettings.modelOfficialVoice;
         const vcModel = this.settings.modelVcVoice || this.defaultSettings.modelVcVoice;
         const vdModel = this.settings.modelVdVoice || this.defaultSettings.modelVdVoice;
@@ -304,7 +298,6 @@ class DashScopeTtsProvider {
             model: selectedModel,
             format: this.settings.format || this.defaultSettings.format,
             languageType: languageType,
-            voiceDescription: voiceDescription, // Pass description for Voice Design voices
         };
 
         try {
