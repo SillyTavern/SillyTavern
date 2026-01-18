@@ -297,7 +297,7 @@ export function registerCoreMacros() {
             '{{roll::6}}',
             '{{roll::3d6+4}}',
         ],
-        handler: ({ unnamedArgs: [formula] }) => {
+        handler: ({ unnamedArgs: [formula], warn }) => {
             // If only digits were provided, treat it as `1dX`.
             if (/^\d+$/.test(formula)) {
                 formula = `1d${formula}`;
@@ -305,7 +305,7 @@ export function registerCoreMacros() {
 
             const isValid = droll.validate(formula);
             if (!isValid) {
-                console.debug(`Invalid roll formula: ${formula}`);
+                warn(`Invalid roll formula: ${formula}`);
                 return '';
             }
 

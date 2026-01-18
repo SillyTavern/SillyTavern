@@ -80,7 +80,7 @@ import {
     chatElement,
     ensureMessageMediaIsArray,
 } from '../script.js';
-import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -134,6 +134,7 @@ export const group_generation_mode = {
 export const DEFAULT_AUTO_MODE_DELAY = 5;
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
+export const groupMembersFilter = new FilterHelper(debounce(printGroupMembers, debounce_timeout.quick));
 let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
 /** @type {Map<string, number>} */
@@ -1449,6 +1450,10 @@ async function modifyGroupMember(groupId, groupMember, isDelete) {
     printGroupCandidates();
     printGroupMembers();
 
+    // Refresh the tag filters for both lists to reflect any new tags
+    printTagFilters(tag_filter_type.group_candidates_list);
+    printTagFilters(tag_filter_type.group_members_list);
+
     const groupHasMembers = getGroupCharacters({ doFilter: false, onlyMembers: true }).length > 0;
     $('#rm_group_submit').prop('disabled', !groupHasMembers);
 }
@@ -1557,31 +1562,63 @@ function isGroupMember(group, avatarId) {
  * @returns {Array<{item: Character, id: number, type: string}>} Array of group character objects
  */
 function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
-    function sortMembersFn(a, b) {
+    function applyFilterAndSort(results, filter, filterSelector) {
+        let filtered = results;
+        if (doFilter) {
+            filtered = filter.applyFilters(filtered);
+        }
+        const useFilterOrder = doFilter && !!$(filterSelector).val();
+        sortEntitiesList(filtered, useFilterOrder, filter);
+        filter.clearFuzzySearchCaches();
+        return filtered;
+    }
+
+    function handleMembers(results, thisGroup) {
         const membersArray = thisGroup?.members ?? newGroupMembers;
-        const aIndex = membersArray.indexOf(a.item.avatar);
-        const bIndex = membersArray.indexOf(b.item.avatar);
-        return aIndex - bIndex;
+
+        // Create index map for O(1) lookups in member sort function
+        // (separate from characterIndexMap which maps character objects to their array indices)
+        const memberIndexMap = new Map(membersArray.map((avatar, index) => [avatar, index]));
+
+        function sortMembersFn(a, b) {
+            const aIndex = memberIndexMap.get(a.item.avatar) ?? -1;
+            const bIndex = memberIndexMap.get(b.item.avatar) ?? -1;
+            return aIndex - bIndex;
+        }
+
+        // Apply manual member sort before filter and sort
+        let filtered = results;
+        if (doFilter) {
+            filtered = groupMembersFilter.applyFilters(filtered);
+        }
+        filtered.sort(sortMembersFn);
+
+        // Apply conditional filter-based sort and cleanup
+        const useFilterOrder = doFilter && !!$('#rm_group_members_filter').val();
+        if (useFilterOrder) {
+            sortEntitiesList(filtered, useFilterOrder, groupMembersFilter);
+        }
+        groupMembersFilter.clearFuzzySearchCaches();
+        return filtered;
     }
 
     const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
-    let candidates = characters
+
+    // Create index map for O(1) lookups when mapping characters to their array indices
+    // (separate from memberIndexMap used later for sorting members by their group order)
+    const characterIndexMap = new Map(characters.map((char, index) => [char, index]));
+
+    const results = characters
         .filter((x) => isGroupMember(thisGroup, x.avatar) == onlyMembers)
-        .map((x) => ({ item: x, id: characters.indexOf(x), type: 'character' }));
+        .map((x) => ({ item: x, id: characterIndexMap.get(x), type: 'character' }));
 
-    if (doFilter) {
-        candidates = groupCandidatesFilter.applyFilters(candidates);
+    // Early return for candidates (non-members)
+    if (!onlyMembers) {
+        return applyFilterAndSort(results, groupCandidatesFilter, '#rm_group_filter');
     }
 
-    if (onlyMembers) {
-        candidates.sort(sortMembersFn);
-    } else {
-        const useFilterOrder = doFilter && !!$('#rm_group_filter').val();
-        sortEntitiesList(candidates, useFilterOrder, groupCandidatesFilter);
-    }
-
-    groupCandidatesFilter.clearFuzzySearchCaches();
-    return candidates;
+    // Handle members with manual sort capability
+    return handleMembers(results, thisGroup);
 }
 
 function printGroupCandidates() {
@@ -1621,7 +1658,7 @@ function printGroupMembers() {
         const pageSize = Number(accountStorage.getItem(storageKey)) || 5;
         const sizeChangerOptions = [5, 10, 25, 50, 100, 200, 500, 1000];
         $(this).pagination({
-            dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
+            dataSource: getGroupCharacters({ doFilter: true, onlyMembers: true }),
             pageRange: 1,
             position: 'top',
             showPageNumbers: false,
@@ -1782,6 +1819,7 @@ function select_group_chats(groupId, skipAnimation) {
     $('#group_avatar_preview').empty().append(getGroupAvatar(group));
     $('#rm_group_restore_avatar').toggle(!!group && isValidImageUrl(group.avatar_url));
     $('#rm_group_filter').val('').trigger('input');
+    $('#rm_group_members_filter').val('').trigger('input');
     $('#rm_group_activation_strategy').val(replyStrategy);
     $(`#rm_group_activation_strategy option[value="${replyStrategy}"]`).prop('selected', true);
     $('#rm_group_generation_mode').val(generationMode);
@@ -2047,6 +2085,11 @@ async function openCharacterDefinition(characterSelect) {
 function filterGroupMembers() {
     const searchValue = String($(this).val()).toLowerCase();
     groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
+}
+
+function filterGroupMemberList() {
+    const searchValue = String($(this).val()).toLowerCase();
+    groupMembersFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 
 async function createGroup() {
@@ -2424,6 +2467,7 @@ jQuery(() => {
         openGroupById(groupId);
     });
     $('#rm_group_filter').on('input', filterGroupMembers);
+    $('#rm_group_members_filter').on('input', filterGroupMemberList);
     $('#rm_group_submit').on('click', createGroup);
     $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
