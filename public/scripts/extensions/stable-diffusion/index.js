@@ -2892,12 +2892,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator, abortController.signal);
     } catch (err) {
         // Check if this was an intentional abort by user
-        const isAborted = abortController.signal.aborted ||
-            err.message === 'Aborted by user' ||
-            err.name === 'AbortError' ||
-            err.type === 'aborted' ||
-            (err.message && err.message.includes('aborted'));
-        if (isAborted) {
+        if (abortController.signal.aborted) {
             console.log('SD: Image generation aborted by user');
             toastr.info('Image generation stopped.', 'Image Generation');
             return;
@@ -3236,11 +3231,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         }
     } catch (err) {
         // Check if this was an intentional abort by user
-        const isAborted = signal?.aborted ||
-            err.name === 'AbortError' ||
-            err.type === 'aborted' ||
-            (err.message && err.message.includes('aborted'));
-        if (isAborted) {
+        if (signal?.aborted) {
             console.log('SD: Image generation aborted by user');
             toastr.info('Image generation stopped.', 'Image Generation');
             return;
