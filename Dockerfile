@@ -34,7 +34,7 @@ RUN \
   echo "*** Run Webpack ***" && \
   node "./docker/build-lib.js"
 
-# Set the entrypoint script, and cleanup
+# Set the entrypoint script and cleanup
 RUN \
   echo "*** Cleanup ***" && \
   mv "./docker/docker-entrypoint.sh" "./" && \
