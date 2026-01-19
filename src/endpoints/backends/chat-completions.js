@@ -85,6 +85,7 @@ const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_ZENMUX = 'https://zenmux.ai/api/v1';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -1644,6 +1645,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZENMUX) {
+            apiUrl = API_ZENMUX;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ZENMUX);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
             apiUrl = 'https://openrouter.ai/api/v1';
             apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
@@ -2143,6 +2148,14 @@ router.post('/generate', async function (request, response) {
             if (isGemini) {
                 bodyParams['safety_settings'] = GEMINI_SAFETY;
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZENMUX) {
+            apiUrl = API_ZENMUX;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ZENMUX);
+            headers = { 'anthropic-version': '2023-06-01' };
+            bodyParams = {};
+            request.body.json_schema
+                ? setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema)
+                : addAssistantPrefix(request.body.messages, [], 'partial');
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             apiUrl = request.body.custom_url;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);

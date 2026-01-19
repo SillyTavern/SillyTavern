@@ -176,6 +176,7 @@ export const chat_completion_sources = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
     OPENROUTER: 'openrouter',
+    ZENMUX: 'zenmux',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
     VERTEXAI: 'vertexai',
@@ -290,6 +291,7 @@ export const settingsToUpdate = {
     openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
+    zenmux_model: ['#model_zenmux_select', 'zenmux_model', false, true],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
@@ -430,6 +432,7 @@ const default_settings = {
     custom_exclude_body: '',
     custom_include_headers: '',
     openrouter_model: openrouter_website_model,
+    zenmux_model: 'qwen/qwen3-max',
     openrouter_use_fallback: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
@@ -1610,6 +1613,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.vertexai_model;
         case chat_completion_sources.OPENROUTER:
             return settings.openrouter_model !== openrouter_website_model ? settings.openrouter_model : null;
+        case chat_completion_sources.ZENMUX:
+            return settings.zenmux_model;
         case chat_completion_sources.AI21:
             return settings.ai21_model;
         case chat_completion_sources.MISTRALAI:
@@ -1864,6 +1869,21 @@ function saveModelList(data) {
         }
 
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.ZENMUX) {
+        $('#model_zenmux_select').empty();
+
+        model_list.forEach((model) => {
+            $('#model_zenmux_select').append(new Option(model.display_name, model.id));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.zenmux_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.zenmux_model)) {
+            oai_settings.zenmux_model = model_list[0].id;
+        }
+
+        $('#model_zenmux_select').val(oai_settings.zenmux_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
@@ -5029,6 +5049,16 @@ async function onModelChange() {
         oai_settings.openrouter_model = value;
     }
 
+    if ($(this).is('#model_zenmux_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null ZenMux model selected. Ignoring.');
+            return;
+        }
+
+        console.log('ZenMux model changed to', value);
+        oai_settings.zenmux_model = value;
+    }
+
     if ($(this).is('#model_ai21_select')) {
         if (value === '' || value.startsWith('j2-')) {
             value = 'jamba-large';
@@ -5575,6 +5605,7 @@ async function onConnectButtonClick(e) {
     /** @type {Object.<string, {key: string, selector: string, proxy?: boolean, keyless?: boolean}>} */
     const apiSourceConfig = {
         [chat_completion_sources.OPENROUTER]: { key: SECRET_KEYS.OPENROUTER, selector: '#api_key_openrouter', proxy: false },
+        [chat_completion_sources.ZENMUX]: { key: SECRET_KEYS.ZENMUX, selector: '#api_key_zenmux', proxy: false },
         [chat_completion_sources.MAKERSUITE]: { key: SECRET_KEYS.MAKERSUITE, selector: '#api_key_makersuite', proxy: true },
         [chat_completion_sources.CLAUDE]: { key: SECRET_KEYS.CLAUDE, selector: '#api_key_claude', proxy: true },
         [chat_completion_sources.OPENAI]: { key: SECRET_KEYS.OPENAI, selector: '#api_key_openai', proxy: true },
@@ -5652,6 +5683,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.ZENMUX) {
+        $('#model_zenmux_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         $('#model_ai21_select').trigger('change');
@@ -6797,6 +6831,7 @@ export function initOpenAI() {
     $('#vertexai_validate_service_account').on('click', onVertexAIValidateServiceAccount);
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
     $('#model_openrouter_select').on('change', onModelChange);
+    $('#model_zenmux_select').on('change', onModelChange);
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#chutes_sort_models').on('change', onChutesModelSortChange);

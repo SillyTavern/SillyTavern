@@ -188,6 +188,7 @@ export const CHAT_COMPLETION_SOURCES = {
     OPENAI: 'openai',
     CLAUDE: 'claude',
     OPENROUTER: 'openrouter',
+    ZENMUX: 'zenmux',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
     VERTEXAI: 'vertexai',

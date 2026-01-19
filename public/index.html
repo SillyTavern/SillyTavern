@@ -2838,6 +2838,7 @@
                                 <option value="moonshot">Moonshot AI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
+                                <option value="zenmux">ZenMux</option>
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="siliconflow">SiliconFlow</option>
@@ -3161,6 +3162,26 @@
                                 <i class="fa-solid fa-lightbulb"></i>
                                 <span data-i18n="To use instruct formatting, switch to OpenRouter under Text Completion API.">To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
                             </small>
+                        </form>
+                        <form id="zenmux_form" data-source="zenmux" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="ZenMux API Key">ZenMux API Key</h4>
+                            <div>
+                                <small data-i18n="Get the key from">Get the key from </small>
+                                <a target="_blank" href="https://zenmux.ai/settings/credits">ZenMux</a>.
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_zenmux" name="api_key_zenmux" class="text_pole flex1 api_key_zenmux" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_zenmux"></div>
+                            </div>
+                            <div data-for="api_key_zenmux" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="ZenMux Model">ZenMux Model</h4>
+                                <select id="model_zenmux_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
                         </form>
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="AI21 API Key">AI21 API Key</h4>
