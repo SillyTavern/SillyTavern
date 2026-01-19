@@ -21,6 +21,7 @@ export const SECRET_KEYS = {
     LIBRE_URL: 'libre_url',
     LINGVA_URL: 'lingva_url',
     OPENROUTER: 'api_key_openrouter',
+    ZENMUX: 'api_key_zenmux',
     AI21: 'api_key_ai21',
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
