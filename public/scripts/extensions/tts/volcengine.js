@@ -41,7 +41,6 @@ class VolcengineTtsProvider {
         },
     ];
     settings;
-    voices = [];
     audioElement = document.createElement('audio');
     defaultSettings = {
         voiceMap: {},
@@ -53,7 +52,7 @@ class VolcengineTtsProvider {
     };
 
     processText(text) {
-        return text;
+        return text.split('...').join('');
     }
 
     constructor() {
@@ -152,7 +151,10 @@ class VolcengineTtsProvider {
         voiceSelect.empty();
 
         for (const customVoice of this.settings.customVoices) {
-            voiceSelect.append(`<option value="${customVoice}">${customVoice}</option>`);
+            const option = document.createElement('option');
+            option.value = customVoice;
+            option.textContent = customVoice;
+            voiceSelect.append(option);
         }
     }
 
@@ -188,7 +190,7 @@ class VolcengineTtsProvider {
             if (key in this.settings) {
                 this.settings[key] = settings[key];
             } else {
-                // throw `Invalid setting passed to TTS Provider: ${key}`;
+                throw `Invalid setting passed to TTS Provider: ${key}`;
             }
         }
 
@@ -196,6 +198,10 @@ class VolcengineTtsProvider {
         $('#volcengine-tts-resource-id').val(this.settings.resource_id).on('change', this.onSettingsChange.bind(this));
         $('#volcengine-tts-add-voice').on('click', this.createNewVoice.bind(this));
         $('#volcengine-tts-delete-voice').on('click', this.deleteSelectedVoice.bind(this));
+
+        // Ensure custom configuration arrays exist
+        if (!this.settings.customVoices) this.settings.customVoices = [];
+
 
         this.populateVoices();
 
@@ -287,7 +293,6 @@ class VolcengineTtsProvider {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 'provider_endpoint': this.settings.provider_endpoint,
-                'model': 'seed-tts-1.1',
                 'resource_id': this.settings.resource_id,
                 'text': text,
                 'voice_speaker': voice_speaker,

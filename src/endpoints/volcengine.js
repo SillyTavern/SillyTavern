@@ -14,12 +14,6 @@ router.post('/generate-voice', async (req, res) => {
             provider_endpoint = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';
         }
 
-        let model = req.body.model;
-        if (!model) {
-            console.warn('Volcengine generate-voice request missing required parameter model, use default model instead');
-            model = 'seed-tts-1.1';
-        }
-
         const appId = readSecret(req.user.directories, SECRET_KEYS.VOLCENGINE_APP_ID);
         const accessKey = readSecret(req.user.directories, SECRET_KEYS.VOLCENGINE_ACCESS_KEY);
 
@@ -28,10 +22,9 @@ router.post('/generate-voice', async (req, res) => {
             return res.sendStatus(403);
         }
 
-        const resourceId = req.body.resource_id || '';
-        let text = req.body.text || '';
-        text = text.split('...').join('');
-        const voice_speaker = req.body.voice_speaker || '';
+        const resourceId = req.body.resource_id;
+        const text = req.body.text;
+        const voice_speaker = req.body.voice_speaker;
 
         if (!resourceId || !text || !voice_speaker) {
             console.warn('Volcengine generate-voice request missing required parameters resourceId or text or voice_speaker');
@@ -49,7 +42,6 @@ router.post('/generate-voice', async (req, res) => {
             body: JSON.stringify({
                 'req_params': {
                     'text': text,
-                    'model': model,
                     'speaker': voice_speaker,
                     'audio_params': {
                         'format': 'mp3',
@@ -94,7 +86,11 @@ router.post('/generate-voice', async (req, res) => {
                     if (!line.trim()) continue;
 
                     try {
-                        const { data } = JSON.parse(line);
+                        const { data, code, message } = JSON.parse(line);
+                        if (code !== 0 && code !== 20000000) {
+                            reject(`Volcengine TTS stream line code ${code}, ${message}`);
+                            return;
+                        }
                         if (data) {
                             const audioData = Buffer.from(data, 'base64');
                             audioChunks_.push(audioData);
@@ -109,19 +105,9 @@ router.post('/generate-voice', async (req, res) => {
                 if (buffer.trim()) {
                     try {
                         const { code, data, message } = JSON.parse(buffer);
-                        switch(code) {
-                            case 40402003: {
-                                reject(`Volcengine TTS stream line code 40402003, ${message}`);
-                                break;
-                            }
-                            case 45000000: {
-                                reject(`Volcengine TTS stream line code 45000000, ${message}`);
-                                break;
-                            }
-                            case 55000000: {
-                                reject(`Volcengine TTS stream line code 55000000, ${message}`);
-                                break;
-                            }
+                        if (code !== 0 && code !== 20000000) {
+                            reject(`Volcengine TTS stream line code ${code}, ${message}`);
+                            return;
                         }
                         if (data) {
                             const audioData = Buffer.from(data, 'base64');
