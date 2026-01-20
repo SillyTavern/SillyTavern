@@ -15,7 +15,7 @@
 5. Create a git branch (recommended), review the [git book](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control) if you haven't. It's been translated into many languages including [es](https://git-scm.com/book/es), [ja](https://git-scm.com/book/ja/v2), [ko](https://git-scm.com/book/ko) and [zh](https://git-scm.com/book/zh).
 6. Make your changes and test them locally.
 7. Commit the changes and push the branch to the remote repo.
-8. Go to GitHub, and open a pull request, targeting the upstream (`staging`, **not** `release`) branch.
+8. Go to GitHub, and open a pull request, targeting the *appropriate* upstream branch. Which is normally `staging`, **not** the `release` branch.
 
 ## Contribution guidelines
 
@@ -32,13 +32,12 @@
 4. Project maintainers will test and can change your code before merging. To keep our workflow smooth, please ensure the following:
   - The "Allow edits from maintainers" option is checked.
   - Avoid force-pushing your branch once the PR is out of draft state.
-5. To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **200 lines of code** (both additions and deletions) per pull request. 
-  - If you have more to contribute, split it into multiple pull requests. We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first. For example:
-    - Leave the main larger PR as a draft it can be used to discuss the implementation.
-    - Split each group of functions or features into a ~200 line PR so it can be properly reviewed and merged to staging or a feature branch.
-    - If there are large co-dependant changes that cannot be split: Start with the most utilized dependencies and stub dependant functions. Leaving their parameters and JSDoc intact while leaving the inside of the function empty except for returns that send back an empty version of what's expected to the caller.
-    - Each will be reviewed and tested one by one, merging into the feature branch or as they're ready.
-    - Do not create all branches in advance as consequent changes made in previous commits as a result of test/review may create a lot of merge conflicts.
+5. To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **200 lines of code** (both additions and deletions) per pull request. If you have more to contribute, split it into multiple pull requests. We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first. For example:
+  - Leave the main larger PR as a draft it can be used to discuss the implementation.
+  - Split each group of functions or features into a ~200 line PR so it can be properly reviewed and merged to staging or a feature branch.
+  - If there are large codependent changes that cannot be split, Start with the most utilized dependencies and stub dependent functions.
+  - Each will be reviewed and tested one by one, merging into the feature branch as they're ready.
+  - Do not create all branches in advance as consequent changes made in previous commits as a result of test/review may create a lot of merge conflicts.
 6. Write at least somewhat meaningful PR descriptions and commit messages. There's no "right" way to do it, but the following may help with outlining a general structure:
   - What is the reason for a change?
   - What did you do to achieve this?
