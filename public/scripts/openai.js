@@ -2707,10 +2707,6 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    if (settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
-        delete generate_data.max_tokens;
-    }
-
     // https://docs.electronhub.ai/api-reference/chat/completions
     if (settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
         generate_data.top_k = Number(settings.top_k_openai);
@@ -5608,6 +5604,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
+        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5887,7 +5884,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.ELECTRONHUB:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
         case chat_completion_sources.POLLINATIONS:
-            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.COMETAPI:
             return true;
         case chat_completion_sources.MOONSHOT:

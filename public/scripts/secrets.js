@@ -73,6 +73,7 @@ export const SECRET_KEYS = {
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
     ELEVENLABS: 'api_key_elevenlabs',
+    POLLINATIONS: 'api_key_pollinations',
 };
 
 const FRIENDLY_NAMES = {
@@ -134,6 +135,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.ZAI]: 'Z.AI',
     [SECRET_KEYS.SILICONFLOW]: 'SiliconFlow',
     [SECRET_KEYS.ELEVENLABS]: 'ElevenLabs TTS',
+    [SECRET_KEYS.POLLINATIONS]: 'Pollinations',
 };
 
 const INPUT_MAP = {
@@ -177,6 +179,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.ZAI]: '#api_key_zai',
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
     [SECRET_KEYS.COMFY_RUNPOD]: '#api_key_comfy_runpod',
+    [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
 };
 
 const getLabel = () => moment().format('L LT');

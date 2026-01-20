@@ -507,6 +507,7 @@ jQuery(async function () {
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
+                        'pollinations': SECRET_KEYS.POLLINATIONS,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -530,7 +531,7 @@ jQuery(async function () {
                     }
 
                     // Custom API doesn't need additional checks
-                    if (api === 'custom' || api === 'pollinations') {
+                    if (api === 'custom') {
                         return true;
                     }
                 }

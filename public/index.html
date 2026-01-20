@@ -3772,19 +3772,22 @@
                             </select>
                         </div>
                         <div id="pollinations_form" data-source="pollinations">
+                            <h4>
+                                <a href="https://enter.pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Pollinations API Key">
+                                    Pollinations API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_pollinations" name="api_key_pollinations" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_pollinations"></div>
+                            </div>
+                            <div data-for="api_key_pollinations" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
                             <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
                             <select id="model_pollinations_select">
                                 <!-- Populated by JavaScript -->
                             </select>
-                            <div class="info-block hint">
-                                <a href="https://pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Provided free of charge by Pollinations.AI">
-                                    Provided free of charge by Pollinations.AI
-                                </a>
-                                <br>
-                                <span data-i18n="Avoid sending sensitive information. Provider's outputs may include ads.">
-                                    Avoid sending sensitive information. Provider's outputs may include ads.
-                                </span>
-                            </div>
                         </div>
                         <div id="moonshot_form" data-source="moonshot">
                             <h4>
