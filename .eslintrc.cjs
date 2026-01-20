@@ -98,6 +98,7 @@ module.exports = {
         'no-cond-assign': 'error',
         'no-unneeded-ternary': 'error',
         'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true }],
+        'dot-notation': ['error'],
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',
