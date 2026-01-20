@@ -1698,7 +1698,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 
         const chatMessage = messageId >= 0 ? chat[messageId] : null;
         const isHiddenMessage = chatMessage?.is_system === true;
-        
+
         // Always override the character name
         if(!isHiddenMessage){
             mes = getRegexedString(mes, regexPlacement, {
