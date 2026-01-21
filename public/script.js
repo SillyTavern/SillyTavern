@@ -6699,7 +6699,7 @@ export function ensureSwipes(message) {
  * If the swipe data is invalid in some way, this function will exit out without doing anything.
  * @param {number?} [messageId=null] - The ID of the message to sync with the swipe data. If no ID is given, the last message is used.
  * @param {boolean} [ensure=true] This should only be false when ensure has been previously called on the message.
-* @returns {boolean} Whether the message was successfully synced
+ * @returns {boolean} Whether the message was successfully synced
  */
 export function syncMesToSwipe(messageId = null, ensure = true) {
     if (!chat.length) {
