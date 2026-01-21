@@ -8,6 +8,7 @@ import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import readline from 'node:readline';
 
 import StreamChain from 'stream-chain';
 const { chain } = StreamChain;
@@ -1560,6 +1561,37 @@ export function tryDeleteFile(filePath) {
     }
 }
 
+/**
+ * Reads the first line of a file asynchronously.
+ * @param {string} filePath Path to the file
+ * @returns {Promise<string>} The first line of the file
+ */
+export function readFirstLine(filePath) {
+    const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input: stream });
+    return new Promise((resolve, reject) => {
+        let resolved = false;
+        rl.on('line', line => {
+            resolved = true;
+            rl.close();
+            stream.close();
+            resolve(line);
+        });
+
+        rl.on('error', error => {
+            resolved = true;
+            reject(error);
+        });
+
+        // Handle empty files
+        stream.on('end', () => {
+            if (!resolved) {
+                resolved = true;
+                resolve('');
+            }
+        });
+    });
+}
 /**
  * Reads a file until a 'stack' matches or the maxChunks limit or a newline.
  * This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
