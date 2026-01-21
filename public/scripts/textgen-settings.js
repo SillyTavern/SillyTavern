@@ -24,7 +24,7 @@ import { getActiveManualApiSamplers, loadApiSelectedSamplers, isSamplerManualPri
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadLlamaCppModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels } from './textgen-models.js';
-import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, tokenizers } from './tokenizers.js';
+import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, getTokenizerBestMatch, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual, isObject } from './utils.js';
 
@@ -74,6 +74,7 @@ const LLAMACPP_DEFAULT_ORDER = [
     'min_p',
     'xtc',
     'temperature',
+    'adaptive_p',
 ];
 const OOBA_DEFAULT_ORDER = [
     'repetition_penalty',
@@ -403,6 +404,11 @@ function convertPresets(presets) {
 }
 
 function getTokenizerForTokenIds() {
+    const bestMatchTokenizer = getTokenizerBestMatch('textgenerationwebui');
+    if (bestMatchTokenizer === tokenizers.API_TEXTGENERATIONWEBUI) {
+        return tokenizers.API_CURRENT;
+    }
+
     if (power_user.tokenizer === tokenizers.API_CURRENT && TEXTGEN_TOKENIZERS.includes(textgenerationwebui_settings.type)) {
         return tokenizers.API_CURRENT;
     }
@@ -657,6 +663,9 @@ async function getStatusTextgen() {
         setOnlineStatus('no_connection');
         return resultCheckStatus();
     }
+
+    // Clear logit bias cache
+    BIAS_CACHE.delete(BIAS_KEY);
 
     if ([textgen_types.GENERIC, textgen_types.OOBA].includes(textgenerationwebui_settings.type) && textgenerationwebui_settings.bypass_status_check) {
         setOnlineStatus(t`Status check bypassed`);

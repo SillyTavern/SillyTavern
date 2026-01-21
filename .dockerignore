@@ -1,21 +1,61 @@
+# --- Git & CI ---
 .git
 .github
-.vscode
-node_modules
-npm-debug.log
-readme*
-Start.bat
-/dist
-/backups
-cloudflared.exe
-access.log
-/data
-/cache
-.DS_Store
-/public/scripts/extensions/third-party
-/colab
-.gemini
+.gitignore
+
+# --- Docker ---
+/Dockerfile
+/.dockerignore
+/docker/docker-compose.yml
 /docker/config
 /docker/extensions
 /docker/data
 /docker/plugins
+/public/scripts/extensions/third-party
+
+# --- Plugins (keep only package files) ---
+/plugins/*
+!/plugins/package.json
+!/plugins/package-lock.json
+
+# --- The Folders ---
+/backups
+/cache
+/colab
+/data
+/dist
+/node_modules
+/tests
+
+# --- Sensitive Info ---
+**/.env*
+**/*.pem
+**/certs
+
+# --- Documentation ---
+readme*
+*.md
+Update-Instructions.txt
+
+# --- OS & System Junk ---
+**/.DS_Store
+*.bat
+*.cmd
+*.exe
+start.sh
+
+# --- Dev Config ---
+.editorconfig
+.eslintrc.cjs
+.eslintrc*
+.vscode
+**/jsconfig.json
+.npmignore
+.gemini
+replit.nix
+.replit
+.nomedia
+
+# -- Logs & Temp ---
+*.log
+**/tmp

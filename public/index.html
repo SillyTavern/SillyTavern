@@ -1400,7 +1400,7 @@
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
 
-                                    <div data-tg-type="koboldcpp" id="adaptive_p_block" class="wide100p">
+                                    <div data-tg-type="koboldcpp, llamacpp" id="adaptive_p_block" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Adaptive-P">Adaptive-P</label>
                                             <a href="https://github.com/MrJackSpade/adaptive-p-docs" target="_blank">
@@ -3834,6 +3834,8 @@
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
                                 <option value="glm-4.7">glm-4.7</option>
+                                <option value="glm-4.7-flash">glm-4.7-flash</option>
+                                <option value="glm-4.7-flashx">glm-4.7-flashx</option>
                                 <option value="glm-4.6">glm-4.6</option>
                                 <option value="glm-4.6v">glm-4.6v</option>
                                 <option value="glm-4.6v-flash">glm-4.6v-flash</option>
@@ -6130,6 +6132,12 @@
                             </div>
                             <div class="inline-drawer-content">
                                 <div id="currentGroupMembers" name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                    <div id="rm_group_members_header">
+                                        <input id="rm_group_members_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                                    </div>
+                                    <div class="rm_tag_controls">
+                                        <div class="tags rm_tag_filter"></div>
+                                    </div>
                                     <div id="rm_group_members_pagination" class="rm_group_members_pagination group_pagination"></div>
                                     <div id="rm_group_members" class="rm_group_members overflowYAuto flex-container" group_empty_text="Group is empty." data-i18n="[group_empty_text]Group is empty."></div>
                                 </div>
@@ -6141,7 +6149,7 @@
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             </div>
                             <div class="inline-drawer-content">
-                                <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                <div id="unaddedCharList" name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                     <div id="rm_group_add_members_header">
                                         <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                                     </div>
