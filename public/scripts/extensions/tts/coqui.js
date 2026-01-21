@@ -529,7 +529,8 @@ class CoquiTtsProvider {
         console.debug(DEBUG_PREFIX,'Check if model is already installed',model_id);
         let result = await CoquiTtsProvider.checkmodel_state(model_id);
         result = await result.json();
-        const model_state = result.model_state;
+        // eslint-disable-next-line dot-notation
+        const model_state = result['model_state'];
 
         console.debug(DEBUG_PREFIX, ' Model state:', model_state);
 
@@ -561,13 +562,15 @@ class CoquiTtsProvider {
 
                     console.debug(DEBUG_PREFIX, 'Response:', apiResult);
 
-                    if (apiResult.status == 'done') {
+                    // eslint-disable-next-line dot-notation
+                    if (apiResult['status'] == 'done') {
                         $('#coqui_api_model_install_status').text('Model installed and ready to use!');
                         $('#coqui_api_model_install_button').hide();
                         onModelNameChange_pointer();
                     }
 
-                    if (apiResult.status == 'downloading') {
+                    // eslint-disable-next-line dot-notation
+                    if (apiResult['status'] == 'downloading') {
                         toastr.error('Check extras console for progress', DEBUG_PREFIX + ' already downloading', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                         $('#coqui_api_model_install_status').text('Already downloading a model, check extras console!');
                         $('#coqui_api_model_install_button').show();
@@ -753,7 +756,8 @@ async function initLocalModels() {
         let result = await CoquiTtsProvider.getLocalModelList();
         result = await result.json();
 
-        coquiLocalModels = result.models_list;
+        // eslint-disable-next-line dot-notation
+        coquiLocalModels = result['models_list'];
 
         $('#coqui_local_model_name').show();
         $('#coqui_local_model_name')

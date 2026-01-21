@@ -402,7 +402,8 @@ router.post('/electronhub/models', async (request, response) => {
         }
 
         const data = await result.json();
-        const models = data && Array.isArray(data.data) ? data.data : [];
+        // eslint-disable-next-line dot-notation
+        const models = data && Array.isArray(data['data']) ? data['data'] : [];
         return response.json(models);
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);

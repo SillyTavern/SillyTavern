@@ -736,8 +736,10 @@ class PresetManager {
         }
 
         if (!this.isAdvancedFormatting() && this.apiId !== 'openai') {
-            settings.genamt = amount_gen;
-            settings.max_length = max_context;
+            // eslint-disable-next-line dot-notation
+            settings['genamt'] = amount_gen;
+            // eslint-disable-next-line dot-notation
+            settings['max_length'] = max_context;
         }
 
         return settings;

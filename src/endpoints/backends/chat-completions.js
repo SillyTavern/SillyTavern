@@ -1,3 +1,4 @@
+/* eslint-disable dot-notation */
 import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
@@ -186,7 +187,7 @@ function getOpenRouterPlugins(request) {
  * @param {object} jsonSchema JSON schema object
  */
 function setJsonObjectFormat(bodyParams, messages, jsonSchema) {
-    bodyParams.response_format = {
+    bodyParams['response_format'] = {
         type: 'json_object',
     };
     const message = {
@@ -646,11 +647,11 @@ async function sendMakerSuiteRequest(request, response) {
                 } else {
                     url = `https://${region}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${responseType}${stream ? '?alt=sse' : ''}`;
                 }
-                headers.Authorization = authHeader;
+                headers['Authorization'] = authHeader;
             } else {
                 // For proxy mode, use the original URL with Authorization header
                 url = `${apiUrl.toString().replace(/\/$/, '')}/v1/publishers/google/models/${model}:${responseType}${stream ? '?alt=sse' : ''}`;
-                headers.Authorization = authHeader;
+                headers['Authorization'] = authHeader;
             }
         } else {
             url = `${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
@@ -836,12 +837,12 @@ async function sendMistralAIRequest(request, response) {
         };
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            requestBody.tools = request.body.tools;
-            requestBody.tool_choice = request.body.tool_choice;
+            requestBody['tools'] = request.body.tools;
+            requestBody['tool_choice'] = request.body.tool_choice;
         }
 
         if (request.body.json_schema) {
-            requestBody.response_format = {
+            requestBody['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
                     name: request.body.json_schema.name,
@@ -1013,13 +1014,13 @@ async function sendDeepSeekRequest(request, response) {
         let bodyParams = {};
 
         if (request.body.logprobs > 0) {
-            bodyParams.top_logprobs = request.body.logprobs;
-            bodyParams.logprobs = true;
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams.tools = request.body.tools;
-            bodyParams.tool_choice = request.body.tool_choice;
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
 
             // DeepSeek doesn't permit empty required arrays
             bodyParams.tools.forEach(tool => {
@@ -1123,25 +1124,25 @@ async function sendXaiRequest(request, response) {
         let bodyParams = {};
 
         if (request.body.logprobs > 0) {
-            bodyParams.top_logprobs = request.body.logprobs;
-            bodyParams.logprobs = true;
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams.tools = request.body.tools;
-            bodyParams.tool_choice = request.body.tool_choice;
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
         if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
-            bodyParams.stop = request.body.stop;
+            bodyParams['stop'] = request.body.stop;
         }
 
         if (request.body.reasoning_effort) {
-            bodyParams.reasoning_effort = request.body.reasoning_effort === 'high' ? 'high' : 'low';
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
         if (request.body.enable_web_search) {
-            bodyParams.search_parameters = {
+            bodyParams['search_parameters'] = {
                 mode: 'on',
                 sources: [
                     { type: 'web', safe_search: false },
@@ -1152,7 +1153,7 @@ async function sendXaiRequest(request, response) {
         }
 
         if (request.body.json_schema) {
-            bodyParams.response_format = {
+            bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
                     name: request.body.json_schema.name,
@@ -1240,25 +1241,25 @@ async function sendAimlapiRequest(request, response) {
         let bodyParams = {};
 
         if (request.body.logprobs > 0) {
-            bodyParams.top_logprobs = request.body.logprobs;
-            bodyParams.logprobs = true;
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams.tools = request.body.tools;
-            bodyParams.tool_choice = request.body.tool_choice;
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
         if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
-            bodyParams.stop = request.body.stop;
+            bodyParams['stop'] = request.body.stop;
         }
 
         if (request.body.reasoning_effort) {
-            bodyParams.reasoning_effort = request.body.reasoning_effort;
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
         }
 
         if (request.body.json_schema) {
-            bodyParams.response_format = {
+            bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
                     name: request.body.json_schema.name,
@@ -1345,20 +1346,20 @@ async function sendElectronHubRequest(request, response) {
         let bodyParams = {};
 
         if (request.body.enable_web_search) {
-            bodyParams.web_search = true;
+            bodyParams['web_search'] = true;
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams.tools = request.body.tools;
-            bodyParams.tool_choice = request.body.tool_choice;
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
         if (request.body.reasoning_effort) {
-            bodyParams.reasoning_effort = request.body.reasoning_effort;
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
         }
 
         if (request.body.json_schema) {
-            bodyParams.response_format = {
+            bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
                     name: request.body.json_schema.name,
@@ -1458,17 +1459,17 @@ async function sendChutesRequest(request, response) {
         let bodyParams = {};
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams.tools = request.body.tools;
-            bodyParams.tool_choice = request.body.tool_choice;
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
         if (request.body.logprobs > 0) {
-            bodyParams.top_logprobs = request.body.logprobs;
-            bodyParams.logprobs = true;
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
         }
 
         if (request.body.json_schema) {
-            bodyParams.response_format = {
+            bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
                     name: request.body.json_schema.name,
@@ -1568,7 +1569,7 @@ async function sendAzureOpenAIRequest(request, response) {
 
     // Handle Structured Output (JSON Mode) by translating the custom `json_schema` object.
     if (request.body.json_schema) {
-        apiRequestBody.response_format = {
+        apiRequestBody['response_format'] = {
             type: 'json_schema',
             json_schema: {
                 name: request.body.json_schema.name,
@@ -1585,7 +1586,7 @@ async function sendAzureOpenAIRequest(request, response) {
     }
 
     // Do not send reasoning effort to models which do not support it
-    apiRequestBody.reasoning_effort = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)
+    apiRequestBody['reasoning_effort'] = OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)
         ? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort
         : undefined;
 
@@ -2062,7 +2063,7 @@ router.post('/generate', async function (request, response) {
             }
 
             if (getConfigValue('openai.randomizeUserId', false, 'boolean')) {
-                bodyParams.user = uuidv4();
+                bodyParams['user'] = uuidv4();
             }
 
             embedOpenRouterMedia(request.body.messages, { audio: true, video: false });
@@ -2078,38 +2079,38 @@ router.post('/generate', async function (request, response) {
             };
 
             if (request.body.min_p !== undefined) {
-                bodyParams.min_p = request.body.min_p;
+                bodyParams['min_p'] = request.body.min_p;
             }
 
             if (request.body.top_a !== undefined) {
-                bodyParams.top_a = request.body.top_a;
+                bodyParams['top_a'] = request.body.top_a;
             }
 
             if (request.body.repetition_penalty !== undefined) {
-                bodyParams.repetition_penalty = request.body.repetition_penalty;
+                bodyParams['repetition_penalty'] = request.body.repetition_penalty;
             }
 
             if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
-                bodyParams.provider = {
+                bodyParams['provider'] = {
                     allow_fallbacks: request.body.allow_fallbacks ?? true,
                     order: request.body.provider ?? [],
                 };
             }
 
             if (request.body.use_fallback) {
-                bodyParams.route = 'fallback';
+                bodyParams['route'] = 'fallback';
             }
 
             if (request.body.reasoning_effort) {
-                bodyParams.reasoning = { effort: request.body.reasoning_effort };
+                bodyParams['reasoning'] = { effort: request.body.reasoning_effort };
             }
 
             if (request.body.verbosity) {
-                bodyParams.verbosity = request.body.verbosity;
+                bodyParams['verbosity'] = request.body.verbosity;
             }
 
             if (request.body.json_schema) {
-                bodyParams.response_format = {
+                bodyParams['response_format'] = {
                     type: 'json_schema',
                     json_schema: {
                         name: request.body.json_schema.name,
@@ -2144,7 +2145,7 @@ router.post('/generate', async function (request, response) {
             }
 
             if (isGemini) {
-                bodyParams.safety_settings = GEMINI_SAFETY;
+                bodyParams['safety_settings'] = GEMINI_SAFETY;
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             apiUrl = request.body.custom_url;
@@ -2173,7 +2174,7 @@ router.post('/generate', async function (request, response) {
             };
             request.body.messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.STRICT, getPromptNames(request));
             if (request.body.json_schema) {
-                bodyParams.response_format = {
+                bodyParams['response_format'] = {
                     type: 'json_schema',
                     json_schema: {
                         schema: request.body.json_schema.value,
@@ -2186,7 +2187,7 @@ router.post('/generate', async function (request, response) {
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {
-                bodyParams.response_format = {
+                bodyParams['response_format'] = {
                     type: 'json_schema',
                     json_schema: {
                         name: request.body.json_schema.name,
@@ -2202,7 +2203,7 @@ router.post('/generate', async function (request, response) {
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {
-                bodyParams.response_format = {
+                bodyParams['response_format'] = {
                     type: 'json_schema',
                     json_schema: {
                         name: request.body.json_schema.name,
@@ -2221,22 +2222,22 @@ router.post('/generate', async function (request, response) {
                 request.body.model = `${request.body.model}:online`;
             }
             if (request.body.min_p !== undefined) {
-                bodyParams.min_p = request.body.min_p;
+                bodyParams['min_p'] = request.body.min_p;
             }
             if (request.body.top_a !== undefined) {
-                bodyParams.top_a = request.body.top_a;
+                bodyParams['top_a'] = request.body.top_a;
             }
             if (request.body.repetition_penalty !== undefined) {
-                bodyParams.repetition_penalty = request.body.repetition_penalty;
+                bodyParams['repetition_penalty'] = request.body.repetition_penalty;
             }
             if (request.body.reasoning_effort) {
                 const effort = NANOGPT_REASONING_EFFORT_MAP[request.body.reasoning_effort];
-                bodyParams.reasoning = { effort: effort };
+                bodyParams['reasoning'] = { effort: effort };
             }
 
             const isClaude = /^claude-/.test(request.body.model);
             if (enableSystemPromptCache && isClaude) {
-                bodyParams.cache_control = {
+                bodyParams['cache_control'] = {
                     'enabled': true,
                     'ttl': cacheTTL,
                 };
@@ -2303,13 +2304,13 @@ router.post('/generate', async function (request, response) {
         // A few of OpenAIs reasoning models support reasoning effort
         if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
             if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
-                bodyParams.reasoning_effort = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+                bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
             }
         }
 
         if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
             if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
-                bodyParams.verbosity = request.body.verbosity;
+                bodyParams['verbosity'] = request.body.verbosity;
             }
         }
 
@@ -2320,7 +2321,7 @@ router.post('/generate', async function (request, response) {
 
         // Add custom stop sequences
         if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
-            bodyParams.stop = request.body.stop;
+            bodyParams['stop'] = request.body.stop;
         }
 
         const textPrompt = isTextCompletion ? convertTextCompletionPrompt(request.body.messages) : '';
@@ -2335,12 +2336,12 @@ router.post('/generate', async function (request, response) {
         });
 
         if (!isTextCompletion && Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams.tools = request.body.tools;
-            bodyParams.tool_choice = request.body.tool_choice;
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
-        if (request.body.json_schema && !bodyParams.response_format) {
-            bodyParams.response_format = {
+        if (request.body.json_schema && !bodyParams['response_format']) {
+            bodyParams['response_format'] = {
                 type: 'json_schema',
                 json_schema: {
                     name: request.body.json_schema.name,
