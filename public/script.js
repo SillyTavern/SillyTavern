@@ -1645,6 +1645,8 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
     if (!mes) {
         return '';
     }
+    // Preserved the flag for regex application
+    const isHiddenMessage = isSystem;
 
     if (Number(messageId) === 0 && !isSystem && !isUser && !isReasoning) {
         const mesBeforeReplace = mes;
@@ -1695,9 +1697,6 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         const usableMessages = chat.map((x, index) => ({ message: x, index: index })).filter(x => !x.message.is_system);
         const indexOf = usableMessages.findIndex(x => x.index === Number(messageId));
         const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
-
-        const chatMessage = messageId >= 0 ? chat[messageId] : null;
-        const isHiddenMessage = chatMessage?.is_system === true;
 
         // Always override the character name
         if(!isHiddenMessage){
