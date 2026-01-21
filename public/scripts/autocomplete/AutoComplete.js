@@ -275,6 +275,7 @@ export class AutoComplete {
         //TODO check if isInput and isForced are both required
         this.text = this.textarea.value;
         this.isReplaceable = false;
+        this.isShowForced = isForced; // Store forced state for checkIfActivate to access
 
         if (document.activeElement != this.textarea) {
             // only show with textarea in focus
