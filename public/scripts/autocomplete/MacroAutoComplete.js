@@ -21,15 +21,31 @@ export const MACRO_AUTOCOMPLETE_ATTRIBUTE = 'data-macros';
 /** Attribute to control autocomplete visibility: 'always' (force show) or 'hide' (never show) */
 export const MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE = 'data-macros-autocomplete';
 
+/** Generic attribute to control autocomplete popup style/size (used by AutoComplete) */
+export const MACRO_AUTOCOMPLETE_STYLE_ATTRIBUTE = 'data-macros-autocomplete-style';
+
 /**
  * @readonly
  * @enum {string}
  */
 export const MACRO_AUTOCOMPLETE_MODE = {
+    /** Default behavior: respects global setting showInAllMacroFields */
+    DEFAULT: 'default',
     /** Always show autocomplete in this field (expanded editors, prompt manager) */
     ALWAYS: 'always',
     /** Never show autocomplete in this field */
     HIDE: 'hide',
+};
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const MACRO_AUTOCOMPLETE_STYLE = {
+    /** Small popup (33vw, max 700px) for inline fields */
+    SMALL: 'small',
+    /** Expanded popup (default chat width) for expanded editors */
+    EXPANDED: 'expanded',
 };
 
 /** @type {WeakSet<HTMLElement>} Track initialized elements to avoid double-init */
@@ -49,10 +65,10 @@ const elementAutoCompleteMap = new WeakMap();
  * @param {number} cursorPos - The cursor position.
  * @param {Object} [options={}] - Additional options.
  * @param {boolean} [options.isForced=false] - Whether this is a forced activation (e.g., Ctrl+Space).
- * @param {MACRO_AUTOCOMPLETE_MODE|null} [options.autocompleteMode=null] - The autocomplete mode from data-macros-autocomplete attribute.
+ * @param {MACRO_AUTOCOMPLETE_MODE} [options.autocompleteMode=MACRO_AUTOCOMPLETE_MODE.DEFAULT] - The autocomplete mode.
  * @returns {boolean}
  */
-function shouldActivateMacroAutocomplete(text, cursorPos, { isForced = false, autocompleteMode = null } = {}) {
+function shouldActivateMacroAutocomplete(text, cursorPos, { isForced = false, autocompleteMode = MACRO_AUTOCOMPLETE_MODE.DEFAULT } = {}) {
     // If mode is 'hide', never show autocomplete
     if (autocompleteMode === MACRO_AUTOCOMPLETE_MODE.HIDE) {
         return false;
@@ -64,6 +80,7 @@ function shouldActivateMacroAutocomplete(text, cursorPos, { isForced = false, au
     }
 
     // Determine if we should show normally based on mode and settings
+    // ALWAYS mode: always show, DEFAULT mode: respect global setting
     const alwaysShow = autocompleteMode === MACRO_AUTOCOMPLETE_MODE.ALWAYS;
     const shouldShowNormally = isForced || alwaysShow || power_user.stscript.autocomplete.showInAllMacroFields;
 
@@ -95,16 +112,21 @@ function shouldActivateMacroAutocomplete(text, cursorPos, { isForced = false, au
  *
  * @param {HTMLTextAreaElement|HTMLInputElement} textarea - The input element.
  * @param {Object} [options={}] - Options for the autocomplete.
- * @param {MACRO_AUTOCOMPLETE_MODE|null} [options.autocompleteMode=null] - The autocomplete mode ('always', 'hide', or null for default).
+ * @param {MACRO_AUTOCOMPLETE_MODE} [options.autocompleteMode=MACRO_AUTOCOMPLETE_MODE.DEFAULT] - The autocomplete mode.
+ * @param {MACRO_AUTOCOMPLETE_STYLE} [options.autocompleteStyle=MACRO_AUTOCOMPLETE_STYLE.SMALL] - The autocomplete style.
  * @returns {AutoComplete} The autocomplete instance.
  */
-export function setMacroAutoComplete(textarea, { autocompleteMode = null } = {}) {
+export function setMacroAutoComplete(textarea, { autocompleteMode = MACRO_AUTOCOMPLETE_MODE.DEFAULT, autocompleteStyle = MACRO_AUTOCOMPLETE_STYLE.SMALL } = {}) {
     const ac = new AutoComplete(
         textarea,
         () => shouldActivateMacroAutocomplete(ac.text, textarea.selectionStart, { isForced: ac.isShowForced, autocompleteMode }),
         (text, index) => getMacroAutoCompleteAt(text, index),
         true, // isFloating - always use floating mode for free text macro autocomplete
     );
+
+    // Set the style via data attribute for CSS targeting
+    ac.domWrap.dataset.macrosAutocompleteStyle = autocompleteStyle;
+    ac.detailsWrap.dataset.macrosAutocompleteStyle = autocompleteStyle;
 
     elementAutoCompleteMap.set(textarea, ac);
     return ac;
@@ -114,17 +136,34 @@ export function setMacroAutoComplete(textarea, { autocompleteMode = null } = {})
  * Gets the autocomplete mode from an element's data-macros-autocomplete attribute.
  *
  * @param {Element} element - The element to check.
- * @returns {string|null} The mode ('always', 'hide') or null if not set.
+ * @returns {MACRO_AUTOCOMPLETE_MODE} The mode ('default', 'always', 'hide').
  */
 function getAutocompleteMode(element) {
     if (!element.hasAttribute(MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE)) {
-        return null;
+        return MACRO_AUTOCOMPLETE_MODE.DEFAULT;
     }
     const value = element.getAttribute(MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE);
     if (value === MACRO_AUTOCOMPLETE_MODE.ALWAYS || value === MACRO_AUTOCOMPLETE_MODE.HIDE) {
         return value;
     }
-    return null;
+    return MACRO_AUTOCOMPLETE_MODE.DEFAULT;
+}
+
+/**
+ * Gets the autocomplete style from an element's data-autocomplete-style attribute.
+ *
+ * @param {Element} element - The element to check.
+ * @returns {MACRO_AUTOCOMPLETE_STYLE} The style ('expanded', 'small').
+ */
+function getAutocompleteStyle(element) {
+    if (!element.hasAttribute(MACRO_AUTOCOMPLETE_STYLE_ATTRIBUTE)) {
+        return MACRO_AUTOCOMPLETE_STYLE.SMALL; // Default for macro autocomplete is small
+    }
+    const value = element.getAttribute(MACRO_AUTOCOMPLETE_STYLE_ATTRIBUTE);
+    if (value === MACRO_AUTOCOMPLETE_STYLE.SMALL || value === MACRO_AUTOCOMPLETE_STYLE.EXPANDED) {
+        return value;
+    }
+    return MACRO_AUTOCOMPLETE_STYLE.EXPANDED;
 }
 
 /**
@@ -143,8 +182,9 @@ function initializeElement(element) {
     }
 
     const autocompleteMode = getAutocompleteMode(element);
+    const autocompleteStyle = getAutocompleteStyle(element);
     initializedElements.add(element);
-    return setMacroAutoComplete(element, { autocompleteMode });
+    return setMacroAutoComplete(element, { autocompleteMode, autocompleteStyle });
 }
 
 /**
@@ -203,7 +243,8 @@ const observer = new MutationObserver(mutations => {
         if (mutation.type === 'attributes') {
             const target = mutation.target;
             const isRelevantAttr = mutation.attributeName === MACRO_AUTOCOMPLETE_ATTRIBUTE ||
-                                   mutation.attributeName === MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE;
+                                   mutation.attributeName === MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE ||
+                                   mutation.attributeName === MACRO_AUTOCOMPLETE_STYLE_ATTRIBUTE;
             if (isRelevantAttr && target instanceof Element) {
                 handleNodeChange(target);
             }
@@ -238,7 +279,7 @@ export function initMacroAutoComplete() {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: [MACRO_AUTOCOMPLETE_ATTRIBUTE, MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE],
+        attributeFilter: [MACRO_AUTOCOMPLETE_ATTRIBUTE, MACRO_AUTOCOMPLETE_MODE_ATTRIBUTE, MACRO_AUTOCOMPLETE_STYLE_ATTRIBUTE],
     });
 
     return instances;
