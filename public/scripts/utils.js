@@ -2456,9 +2456,7 @@ export async function fetchFaFile(name) {
     const sheet = style.sheet;
     style.remove();
     return [...sheet.cssRules]
-        // eslint-disable-next-line dot-notation
-        .filter(rule => rule['style']?.content)
-        // eslint-disable-next-line dot-notation
+        .filter(rule => (rule instanceof CSSStyleRule && rule.style?.content))
         .map(rule => rule['selectorText'].split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
