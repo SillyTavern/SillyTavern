@@ -19,7 +19,8 @@ import {
     tryWriteFileSync,
     tryReadFileSync,
     tryDeleteFile,
-    readFirstLine,
+    ensureAccess,
+    pickFirstObjectFromJsonFile,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -318,11 +319,20 @@ async function checkChatIntegrity(filePath, integritySlug) {
     if (!fs.existsSync(filePath)) {
         return true;
     }
+    let chatIntegrity;
+    //This is needed for pickFirstObjectFromJsonFile.
+    ensureAccess(filePath);
 
-    // Parse the first line of the chat file as JSON
-    const firstLine = await readFirstLine(filePath);
-    const jsonData = tryParse(firstLine);
-    const chatIntegrity = jsonData?.chat_metadata?.integrity;
+    try {
+        // Parse the first part of the file to find it's integrity slug.
+        const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
+        chatIntegrity = data?.value;
+    } catch (err) {
+        if (err.message === 'Parser cannot parse input: unexpected characters') {
+            console.debug(`${filePath}'s first line is not valid json/jsonl.`);
+        }
+        console.log('The integrity slug could not be read, so the check will be skipped. Error:', err)
+    }
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {

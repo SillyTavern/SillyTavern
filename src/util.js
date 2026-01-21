@@ -1,14 +1,23 @@
 import path from 'node:path';
-import fs from 'node:fs';
+import fs, { accessSync, constants } from 'node:fs';
 import http2 from 'node:http2';
 import process from 'node:process';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import readline from 'node:readline';
+
+import StreamChain from 'stream-chain';
+const { chain } = StreamChain;
+import StreamJson from 'stream-json';
+const { parser } = StreamJson;
+import Pick from 'stream-json/filters/Pick.js';
+const { pick } = Pick;
+import StreamValues from 'stream-json/streamers/StreamValues.js';
+const { streamValues } = StreamValues;
 
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';
@@ -1476,17 +1485,47 @@ export function flattenSchema(schema, api) {
 }
 
 /**
+ * Ensures that the target filepath is readable and writable.
+ * If it's not, this will display a user-friendly error.
+ * https://nodejs.org/api/fs.html#fsstatpath-options-callback
+ * Using fs.stat() to check for the existence of a file before calling fs.open(), fs.readFile(), or fs.writeFile() is not recommended. Instead, user code should open/read/write the file directly and handle the error raised if the file is not available.
+ * @param {string} filePath Target filepath.
+ */
+export function ensureAccess(filePath) {
+    try {
+        accessSync(filePath, constants.F_OK | constants.R_OK | constants.W_OK);
+    } catch (err) {
+        console.log(err);
+        console.log(`The file at ${filePath} is not readable and writable, please check it's permissions.`);
+    }
+}
+
+/**
  * Writes to a file, creating it's parent directories if needed.
  * @param {string} filePath
  * @param {string} data
  */
 export function tryWriteFileSync(filePath, data) {
     const directory = path.dirname(filePath);
-    //Ensure the directory exists.
-    if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
+    try {
+        //Ensure the directory exists.
+        if (!fs.existsSync(directory)) {
+            fs.mkdirSync(directory, { recursive: true });
+        }
     }
-    writeFileAtomicSync(filePath, data, 'utf8');
+    catch (error) {
+        console.log(`The directory at ${directory} is not readable and writable, please check it's permissions.`);
+        throw new Error(error);
+    }
+
+    try {
+        writeFileAtomicSync(filePath, data, 'utf8');
+        return true;
+    }
+    catch (error) {
+        console.log(`The file at ${filePath} is not readable and writable, please check it's permissions.`);
+        throw new Error(error);
+    }
 }
 
 /**
@@ -1500,7 +1539,8 @@ export function tryReadFileSync(filePath) {
             return fs.readFileSync(filePath, 'utf8');
         }
     } catch (error) {
-        console.error(`Error reading ${filePath}: ${error.message}`);
+        console.error(`Error reading ${filePath}, please check it's permissions: ${error.message}`);
+        throw new Error(error);
     }
     return null;
 }
@@ -1549,6 +1589,120 @@ export function readFirstLine(filePath) {
                 resolved = true;
                 resolve('');
             }
+        });
+    });
+}
+/**
+ * Reads a file until a 'stack' matches or the maxChunks limit or a newline.
+ * This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
+ * This is only optimized to check the beginning the file.
+ * If the json files has newlines (jsonl), only the first line will be read.
+ * I cannot use the steam-json's jsonl parser because it reads the entire line.
+ * https://github.com/uhop/stream-json/blob/07f034a6/src/jsonl/parser.js#L63
+ * Thank you @God-damnit-all and @fathom0324!
+ * https://github.com/SillyTavern/SillyTavern/pull/4573#issuecomment-3695128316
+ * https://github.com/DeclineThyself/SillyTavern/pull/1/files
+ * @param {string} filePath - Path to the file to read
+ * @param {Array} match - Location of target object.
+ * @param {number} maxChunks - Maximum number of chunks to read (default: 4)
+ * @param {number} chunkSize - Size of each chunk in bytes (default: 16KB)
+ * @returns {Promise<Object|undefined>} - The object match or undefined
+ */
+export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4, chunkSize = 16 * 1024) {
+    return new Promise((resolve, reject) => {
+        let readStream;
+        try {
+            readStream = fs.createReadStream(filePath, { highWaterMark: chunkSize });
+        } catch (err) {
+            return reject(err);
+        }
+
+        let pipeline;
+        let chunksRead = 0;
+        let foundObject = undefined;
+        let finished = false;
+        let error = null;
+
+        const cleanup = () => {
+            if (finished) return;
+            finished = true;
+            if (pipeline) {
+                pipeline.unpipe();
+            }
+            if (readStream && !readStream.destroyed) {
+                readStream.destroy();
+                // Do not resolve here. Wait for 'close' event to ensure file lock is released.
+            }
+        };
+
+        readStream.on('close', () => {
+            if (error) {
+                reject(error);
+            } else {
+                // Safe to resolve now. The file is closed.
+                resolve(foundObject); // foundObject may be undefined.
+            }
+        });
+
+        readStream.on('error', (err) => {
+            if (finished) return;
+            error = err;
+            cleanup();
+        });
+
+        // Track chunksRead, cleanup if the limit is reached.
+        readStream.on('data', () => {
+            chunksRead++;
+            if (chunksRead >= maxChunks) {
+                cleanup();
+            }
+        });
+
+        // This cuts the chunk after \n and stops the stream after sending the rest down the pipeline.
+        const newlineTransform = new Transform({
+            transform(chunk, encoding, callback) {
+                if (finished) return callback();
+                if (chunk.includes('\n')) {
+                    // Find the position of the first newline
+                    const newlineIndex = chunk.indexOf('\n');
+                    // Cut the chunk at the newline position
+                    this.push(chunk.slice(0, newlineIndex));
+                    // Mark as resolved to stop processing
+                    cleanup();
+                } else {
+                    // No newline found, push the chunk as is
+                    this.push(chunk);
+                }
+                callback();
+            },
+        });
+
+        pipeline = chain([
+            readStream,
+            newlineTransform,
+            parser(),
+            // https://github.com/uhop/stream-json/wiki/Pick
+            pick({
+                // Filter for objects with a matching stack.
+                filter: (stack) => _.isEqual(stack, match),
+                once: true, // Stop after first match
+            }),
+            streamValues(),
+        ]);
+
+        pipeline.on('data', (data) => {
+            foundObject = data;
+            cleanup();
+        });
+
+        pipeline.on('end', () => {
+            cleanup();
+        });
+
+        pipeline.on('error', (err) => {
+            if (finished) return;
+            error = err;
+            cleanup();
         });
     });
 }
