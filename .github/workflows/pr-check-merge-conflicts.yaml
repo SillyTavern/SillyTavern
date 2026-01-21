@@ -1,0 +1,39 @@
+name: ⚔️ Check Merge Conflicts
+
+on:
+  # So that PRs touching the same files as the push are updated
+  push:
+  # So that the `dirtyLabel` is removed if conflicts are resolved
+  pull_request_target:
+    types: [synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-merge-conflicts:
+    name: ⚔️ Check Merge Conflicts
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Check Merge Conflicts
+        # Label Conflicting Pull Requests
+        # https://github.com/marketplace/actions/label-conflicting-pull-requests
+        uses: eps1lon/actions-label-merge-conflict@v3.0.3
+        with:
+          dirtyLabel: '🚫 Merge Conflicts'
+          repoToken: ${{ steps.app.outputs.token }}
+          commentOnDirty: >
+            ⚠️ This PR has conflicts that need to be resolved before it can be merged.

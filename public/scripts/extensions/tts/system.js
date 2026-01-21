@@ -1,8 +1,8 @@
 import { isMobile } from '../../RossAscends-mods.js';
 import { getPreviewString } from './index.js';
-import { talkingAnimation } from './index.js';
 import { saveTtsProviderSettings } from './index.js';
 export { SystemTtsProvider };
+import { t } from '../../i18n.js';
 
 /**
  * Chunkify
@@ -52,6 +52,8 @@ var speechUtteranceChunker = function (utt, settings, callback) {
         }
         newUtt.lang = utt.lang;
         newUtt.voice = utt.voice;
+        newUtt.rate = utt.rate;
+        newUtt.pitch = utt.pitch;
         newUtt.addEventListener('end', function () {
             if (speechUtteranceChunker.cancel) {
                 speechUtteranceChunker.cancel = false;
@@ -70,7 +72,6 @@ var speechUtteranceChunker = function (utt, settings, callback) {
     //placing the speak invocation inside a callback fixes ordering and onend issues.
     setTimeout(function () {
         speechSynthesis.speak(newUtt);
-        talkingAnimation(true);
     }, 0);
 };
 
@@ -78,6 +79,10 @@ class SystemTtsProvider {
     //########//
     // Config //
     //########//
+
+    // Static constants for the simulated default voice
+    static BROWSER_DEFAULT_VOICE_ID = '__browser_default__';
+    static BROWSER_DEFAULT_VOICE_NAME = 'System Default Voice';
 
     settings;
     ready = false;
@@ -92,13 +97,13 @@ class SystemTtsProvider {
 
     get settingsHtml() {
         if (!('speechSynthesis' in window)) {
-            return 'Your browser or operating system doesn\'t support speech synthesis';
+            return t`Your browser or operating system doesn't support speech synthesis`;
         }
 
-        return `<p>Uses the voices provided by your operating system</p>
-        <label for="system_tts_rate">Rate: <span id="system_tts_rate_output"></span></label>
+        return '<p>' + t`Uses the voices provided by your operating system` + `</p>
+        <label for="system_tts_rate">` + t`Rate:` + ` <span id="system_tts_rate_output"></span></label>
         <input id="system_tts_rate" type="range" value="${this.defaultSettings.rate}" min="0.1" max="2" step="0.01" />
-        <label for="system_tts_pitch">Pitch: <span id="system_tts_pitch_output"></span></label>
+        <label for="system_tts_pitch">` + t`Pitch:` + ` <span id="system_tts_pitch_output"></span></label>
         <input id="system_tts_pitch" type="range" value="${this.defaultSettings.pitch}" min="0" max="2" step="0.01" />`;
     }
 
@@ -168,51 +173,97 @@ class SystemTtsProvider {
     //#################//
     fetchTtsVoiceObjects() {
         if (!('speechSynthesis' in window)) {
-            return [];
+            return Promise.resolve([]);
         }
 
         return new Promise((resolve) => {
             setTimeout(() => {
-                const voices = speechSynthesis
-                    .getVoices()
-                    .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
-                    .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
+                let voices = speechSynthesis.getVoices();
 
-                resolve(voices);
-            }, 1);
+                if (voices.length === 0) {
+                    // Edge compat: Provide default when voices empty
+                    console.warn('SystemTTS: getVoices() returned empty list. Providing browser default option.');
+                    const defaultVoice = {
+                        name: SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME,
+                        voice_id: SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID,
+                        preview_url: false,
+                        lang: navigator.language || 'en-US',
+                    };
+                    resolve([defaultVoice]);
+                } else {
+                    const mappedVoices = voices
+                        .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
+                        .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
+                    resolve(mappedVoices);
+                }
+            }, 50);
         });
     }
 
     previewTtsVoice(voiceId) {
         if (!('speechSynthesis' in window)) {
-            throw 'Speech synthesis API is not supported';
+            throw new Error('Speech synthesis API is not supported');
         }
 
-        const voice = speechSynthesis.getVoices().find(x => x.voiceURI === voiceId);
+        let voice = null;
+        if (voiceId !== SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID) {
+            const voices = speechSynthesis.getVoices();
+            voice = voices.find(x => x.voiceURI === voiceId);
 
-        if (!voice) {
-            throw `TTS Voice id ${voiceId} not found`;
+            if (!voice && voices.length > 0) {
+                console.warn(`SystemTTS Preview: Voice ID "${voiceId}" not found among available voices. Using browser default.`);
+            } else if (!voice && voices.length === 0) {
+                console.warn('SystemTTS Preview: Voice list is empty. Using browser default.');
+            }
+        } else {
+            console.log('SystemTTS Preview: Using browser default voice as requested.');
         }
 
         speechSynthesis.cancel();
-        const text = getPreviewString(voice.lang);
+        const langForPreview = voice ? voice.lang : (navigator.language || 'en-US');
+        const text = getPreviewString(langForPreview);
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.voice = voice;
+
+        if (voice) {
+            utterance.voice = voice;
+        }
+
         utterance.rate = this.settings.rate || 1;
         utterance.pitch = this.settings.pitch || 1;
+
+        utterance.onerror = (event) => {
+            console.error(`SystemTTS Preview Error: ${event.error}`, event);
+        };
+
         speechSynthesis.speak(utterance);
     }
 
     async getVoice(voiceName) {
         if (!('speechSynthesis' in window)) {
-            return { voice_id: null };
+            return { voice_id: null, name: 'API Not Supported' };
+        }
+
+        if (voiceName === SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME) {
+            return {
+                voice_id: SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID,
+                name: SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME,
+            };
         }
 
         const voices = speechSynthesis.getVoices();
+
+        if (voices.length === 0) {
+            console.warn('SystemTTS: Empty voice list, using default fallback');
+            return {
+                voice_id: SystemTtsProvider.BROWSER_DEFAULT_VOICE_ID,
+                name: SystemTtsProvider.BROWSER_DEFAULT_VOICE_NAME,
+            };
+        }
+
         const match = voices.find(x => x.name == voiceName);
 
         if (!match) {
-            throw `TTS Voice name ${voiceName} not found`;
+            throw new Error(`SystemTTS getVoice: TTS Voice name "${voiceName}" not found`);
         }
 
         return { voice_id: match.voiceURI, name: match.name };
@@ -237,10 +288,8 @@ class SystemTtsProvider {
             speechUtteranceChunker(utterance, {
                 chunkLength: 200,
             }, function () {
-                //some code to execute when done
                 resolve(silence);
                 console.log('System TTS done');
-                talkingAnimation(false);
             });
         });
     }

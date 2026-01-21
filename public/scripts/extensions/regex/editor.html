@@ -2,7 +2,7 @@
     <div class="regex_editor">
         <h3 class="flex-container justifyCenter alignItemsBaseline">
             <strong data-i18n="Regex Editor">Regex Editor</strong>
-            <a href="https://regexr.com/" class="notes-link" target="_blank">
+            <a href="https://docs.sillytavern.app/extensions/regex/" class="notes-link" target="_blank" rel="noopener noreferrer">
                 <span class="note-link-span">?</span>
             </a>
             <div id="regex_test_mode_toggle" class="menu_button menu_button_icon">
@@ -15,6 +15,13 @@
             Regex is a tool to find/replace strings using regular expressions. If you want to learn more, click on the ? next to the title.
         </small>
         <hr />
+
+        <div id="regex_info_block_wrapper">
+            <div id="regex_info_block" class="info-block"></div>
+            <a id="regex_info_block_flags_hint" href="https://docs.sillytavern.app/extensions/regex/#flags" target="_blank" rel="noopener noreferrer">
+                <i class="fa-solid fa-circle-info" data-i18n="[title]ext_regex_flags_help" title="Click here to learn more about regex flags."></i>
+            </a>
+        </div>
 
         <div id="regex_test_mode" class="flex1 flex-container displayNone">
             <div class="flex1">
@@ -54,7 +61,7 @@
                     <small data-i18n="Replace With">Replace With</small>
                 </label>
                 <div>
-                    <textarea class="regex_replace_string text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_replace_string_placeholder" placeholder="Use {{match}} to include the matched text from the Find Regex or $1, $2, etc. for capture groups." rows="2"></textarea>
+                    <textarea class="regex_replace_string text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_replace_string_placeholder" placeholder="Use {{match}} to include the matched text from the Find Regex, $1, $2, etc. for numbered capture groups, or $&lt;name&gt; for named capture groups." rows="3"></textarea>
                 </div>
             </div>
             <div class="flex1">
@@ -70,44 +77,50 @@
         <div class="flex-container">
             <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
                 <small data-i18n="ext_regex_affects">Affects</small>
-                <div title="Messages sent by the user.">
+                <div data-i18n="[title]ext_regex_user_input_desc" title="Messages sent by the user.">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="1">
                         <span data-i18n="ext_regex_user_input">User Input</span>
                     </label>
                 </div>
-                <div title="Messages received from the Generation API.">
+                <div data-i18n="[title]ext_regex_ai_input_desc" title="Messages received from the Generation API.">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="2">
                         <span data-i18n="ext_regex_ai_output">AI Output</span>
                     </label>
                 </div>
-                <div title="Messages sent using STscript commands.">
+                <div data-i18n="[title]ext_regex_slash_desc" title="Messages sent using STscript commands.">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="3">
                         <span data-i18n="Slash Commands">Slash Commands</span>
                     </label>
                 </div>
-                <div title="Lorebook/World Info entry contents. Requires 'Only Format Prompt' to be checked!">
+                <div data-i18n="[title]ext_regex_wi_desc" title="Lorebook/World Info entry contents. Requires 'Only Format Prompt' to be checked!">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="5">
                         <span data-i18n="World Info">World Info</span>
                     </label>
                 </div>
+                <div data-i18n="[title]ext_regex_reasoning_desc" title="Reasoning block contents. When 'Only Format Prompt' is checked, it will also affect the reasoning contents added to the prompt.">
+                    <label class="checkbox flex-container">
+                        <input type="checkbox" name="replace_position" value="6">
+                        <span data-i18n="Reasoning">Reasoning</span>
+                    </label>
+                </div>
                 <div class="flex-container wide100p marginTop5">
                     <div class="flex1 flex-container flexNoGap">
-                        <small data-i18n="[title]ext_regex_min_depth_desc" title="When applied to prompts or display, only affect messages that are at least N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts WI entries @Depth and usable messages, i.e. not hidden or system.">
+                        <small data-i18n="[title]ext_regex_min_depth_desc" title="When applied to prompts or display, only affect messages that are at least N levels deep. 0 = last message, 1 = penultimate message, etc. System prompt and utility prompts are not affected. When blank / 'Unlimited' or -1, also affect message to continue on Continue.">
                             <span data-i18n="Min Depth">Min Depth</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
-                        <input name="min_depth" class="text_pole textarea_compact" type="number" min="0" max="999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
+                        <input name="min_depth" class="text_pole textarea_compact" type="number" min="-1" max="9999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
                     </div>
                     <div class="flex1 flex-container flexNoGap">
-                        <small data-i18n="[title]ext_regex_max_depth_desc" title="When applied to prompts or display, only affect messages no more than N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts WI entries @Depth and usable messages, i.e. not hidden or system.">
+                        <small data-i18n="[title]ext_regex_max_depth_desc" title="When applied to prompts or display, only affect messages no more than N levels deep. 0 = last message, 1 = penultimate message, etc. System prompt and utility prompts are not affected. Max must be greater than Min for regex to apply.">
                             <span data-i18n="Max Depth">Max Depth</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
-                        <input name="max_depth" class="text_pole textarea_compact" type="number" min="0" max="999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
+                        <input name="max_depth" class="text_pole textarea_compact" type="number" min="0" max="9999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
                     </div>
                 </div>
             </div>
@@ -117,22 +130,26 @@
                     <input type="checkbox" name="disabled" />
                     <span data-i18n="Disabled">Disabled</span>
                 </label>
-                <label class="checkbox flex-container">
+                <label class="checkbox flex-container" data-i18n="[title]ext_regex_run_on_edit_desc" title="Run the regex script when the message belonging a to specified role(s) is edited.">
                     <input type="checkbox" name="run_on_edit" />
                     <span data-i18n="Run On Edit">Run On Edit</span>
                 </label>
-                <label class="checkbox flex-container" data-i18n="[title]ext_regex_substitute_regex_desc" title="Substitute &lcub;&lcub;macros&rcub;&rcub; in Find Regex before running it">
-                    <input type="checkbox" name="substitute_regex" />
+                <label class="checkbox flex-container flexNoGap marginBot5" data-i18n="[title]ext_regex_substitute_regex_desc" title="Substitute &lcub;&lcub;macros&rcub;&rcub; in Find Regex before running it">
                     <span>
-                        <span data-i18n="Substitute Regex">Substitute Regex</span>
+                        <small data-i18n="Macro in Find Regex">Macros in Find Regex</small>
                         <span class="fa-solid fa-circle-question note-link-span"></span>
                     </span>
+                    <select name="substitute_regex" class="text_pole textarea_compact margin0">
+                        <option value="0" data-i18n="Don't substitute">Don't substitute</option>
+                        <option value="1" data-i18n="Substitute (raw)">Substitute (raw)</option>
+                        <option value="2" data-i18n="Substitute (escaped)">Substitute (escaped)</option>
+                    </select>
                 </label>
                 <span>
-                    <small data-i18n="ext_regex_other_options" data-i18n="Ephemerality">Ephemerality</small>
-                    <span class="fa-solid fa-circle-question note-link-span" title="By default, regex scripts alter the chat file directly and irreversibly.&#13;Enabling either (or both) of the options below will prevent chat file alteration, while still altering the specified item(s)."></span>
+                    <small data-i18n="Ephemerality">Ephemerality</small>
+                    <span class="fa-solid fa-circle-question note-link-span" data-i18n="[title]ext_regex_other_options_desc" title="By default, regex scripts alter the chat file directly and irreversibly.&#13;Enabling either (or both) of the options below will prevent chat file alteration, while still altering the specified item(s)."></span>
                 </span>
-                <label class="checkbox flex-container" title="Chat history file contents won't change, but regex will be applied to the messages displayed in the Chat UI.">
+                <label class="checkbox flex-container" data-i18n="[title]ext_regex_only_format_visual_desc" title="Chat history file contents won't change, but regex will be applied to the messages displayed in the Chat UI.">
                     <input type="checkbox" name="only_format_display" />
                     <span data-i18n="Only Format Display">Alter Chat Display</span>
                 </label>

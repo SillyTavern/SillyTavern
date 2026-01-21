@@ -19,23 +19,30 @@ import {
     modules,
     renderExtensionTemplateAsync,
     doExtrasFetch, getApiUrl,
+    openThirdPartyExtensionMenu,
 } from '../../extensions.js';
 import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
-import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
+import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
+import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
+import { WebLlmVectorProvider } from './webllm.js';
+import { removeReasoningFromString } from '../../reasoning.js';
+import { oai_settings } from '../../openai.js';
 
 /**
  * @typedef {object} HashedMessage
  * @property {string} text - The hashed message text
+ * @property {number} hash - The hash used as the vector key
+ * @property {number} index - The index of the message in the chat
  */
 
 const MODULE_NAME = 'vectors';
@@ -43,16 +50,26 @@ const MODULE_NAME = 'vectors';
 export const EXTENSION_PROMPT_TAG = '3_vectors';
 export const EXTENSION_PROMPT_TAG_DB = '4_vectors_data_bank';
 
+// Force solo chunks for sources that don't support batching.
+const getBatchSize = () => ['transformers', 'ollama'].includes(settings.source) ? 1 : 5;
+
 const settings = {
     // For both
     source: 'transformers',
+    alt_endpoint_url: '',
+    use_alt_endpoint: false,
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    electronhub_model: 'text-embedding-3-small',
+    openrouter_model: 'openai/text-embedding-3-large',
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
     vllm_model: '',
+    webllm_model: '',
+    google_model: 'text-embedding-005',
+    chutes_model: 'chutes-qwen-qwen3-embedding-8b',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -77,6 +94,7 @@ const settings = {
     chunk_size: 5000,
     chunk_count: 2,
     overlap_percent: 0,
+    only_custom_boundary: false,
 
     // For Data Bank
     size_threshold_db: 5,
@@ -95,6 +113,9 @@ const settings = {
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
+const webllmProvider = new WebLlmVectorProvider();
+const cachedSummaries = new Map();
+const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
 
 /**
  * Gets the Collection ID for a file embedded in the chat.
@@ -118,7 +139,11 @@ async function onVectorizeAllClick() {
             return;
         }
 
-        const batchSize = 5;
+        // Clear all cached summaries to ensure that new ones are created
+        // upon request of a full vectorise
+        cachedSummaries.clear();
+
+        const batchSize = getBatchSize();
         const elapsedLog = [];
         let finished = false;
         $('#vectorize_progress').show();
@@ -200,70 +225,64 @@ function splitByChunks(items) {
 
 /**
  * Summarizes messages using the Extras API method.
- * @param {HashedMessage[]} hashedMessages Array of hashed messages
- * @returns {Promise<HashedMessage[]>} Summarized messages
+ * @param {HashedMessage} element hashed message
+ * @returns {Promise<boolean>} Sucess
  */
-async function summarizeExtra(hashedMessages) {
-    for (const element of hashedMessages) {
-        try {
-            const url = new URL(getApiUrl());
-            url.pathname = '/api/summarize';
+async function summarizeExtra(element) {
+    try {
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/summarize';
 
-            const apiResult = await doExtrasFetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Bypass-Tunnel-Reminder': 'bypass',
-                },
-                body: JSON.stringify({
-                    text: element.text,
-                    params: {},
-                }),
-            });
+        const apiResult = await doExtrasFetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Bypass-Tunnel-Reminder': 'bypass',
+            },
+            body: JSON.stringify({
+                text: element.text,
+                params: {},
+            }),
+        });
 
-            if (apiResult.ok) {
-                const data = await apiResult.json();
-                element.text = data.summary;
-            }
-        }
-        catch (error) {
-            console.log(error);
+        if (apiResult.ok) {
+            const data = await apiResult.json();
+            element.text = data.summary;
         }
     }
+    catch (error) {
+        console.log(error);
+        return false;
+    }
 
-    return hashedMessages;
+    return true;
 }
 
 /**
  * Summarizes messages using the main API method.
- * @param {HashedMessage[]} hashedMessages Array of hashed messages
- * @returns {Promise<HashedMessage[]>} Summarized messages
+ * @param {HashedMessage} element hashed message
+ * @returns {Promise<boolean>} Success
  */
-async function summarizeMain(hashedMessages) {
-    for (const element of hashedMessages) {
-        element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
-    }
-
-    return hashedMessages;
+async function summarizeMain(element) {
+    element.text = removeReasoningFromString(await generateRaw({ prompt: element.text, systemPrompt: settings.summary_prompt }));
+    return true;
 }
 
 /**
  * Summarizes messages using WebLLM.
- * @param {HashedMessage[]} hashedMessages Array of hashed messages
- * @returns {Promise<HashedMessage[]>} Summarized messages
+ * @param {HashedMessage} element hashed message
+ * @returns {Promise<boolean>} Success
  */
-async function summarizeWebLLM(hashedMessages) {
+async function summarizeWebLLM(element) {
     if (!isWebLlmSupported()) {
         console.warn('Vectors: WebLLM is not supported');
-        return hashedMessages;
+        return false;
     }
 
-    for (const element of hashedMessages) {
-        const messages = [{ role:'system', content: settings.summary_prompt }, { role:'user', content: element.text }];
-        element.text = await generateWebLlmChatPrompt(messages);
-    }
+    const messages = [{ role: 'system', content: settings.summary_prompt }, { role: 'user', content: element.text }];
+    element.text = await generateWebLlmChatPrompt(messages);
 
-    return hashedMessages;
+    return true;
 }
 
 /**
@@ -273,16 +292,35 @@ async function summarizeWebLLM(hashedMessages) {
  * @returns {Promise<HashedMessage[]>} Summarized messages
  */
 async function summarize(hashedMessages, endpoint = 'main') {
-    switch (endpoint) {
-        case 'main':
-            return await summarizeMain(hashedMessages);
-        case 'extras':
-            return await summarizeExtra(hashedMessages);
-        case 'webllm':
-            return await summarizeWebLLM(hashedMessages);
-        default:
-            console.error('Unsupported endpoint', endpoint);
+    for (const element of hashedMessages) {
+        const cachedSummary = cachedSummaries.get(element.hash);
+        if (!cachedSummary) {
+            let success = true;
+            switch (endpoint) {
+                case 'main':
+                    success = await summarizeMain(element);
+                    break;
+                case 'extras':
+                    success = await summarizeExtra(element);
+                    break;
+                case 'webllm':
+                    success = await summarizeWebLLM(element);
+                    break;
+                default:
+                    console.error('Unsupported endpoint', endpoint);
+                    success = false;
+                    break;
+            }
+            if (success) {
+                cachedSummaries.set(element.hash, element.text);
+            } else {
+                break;
+            }
+        } else {
+            element.text = cachedSummary;
+        }
     }
+    return hashedMessages;
 }
 
 async function synchronizeChat(batchSize = 5) {
@@ -307,16 +345,15 @@ async function synchronizeChat(batchSize = 5) {
             return -1;
         }
 
-        let hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
+        const hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
         const hashesInCollection = await getSavedHashes(chatId);
 
-        if (settings.summarize) {
-            hashedMessages = await summarize(hashedMessages, settings.summary_source);
-        }
-
-        const newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
+        let newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
+        if (settings.summarize) {
+            newVectorItems = await summarize(newVectorItems, settings.summary_source);
+        }
 
         if (newVectorItems.length > 0) {
             const chunkedBatch = splitByChunks(newVectorItems.slice(0, batchSize));
@@ -347,6 +384,8 @@ async function synchronizeChat(batchSize = 5) {
                     return 'Vectorization Source Model is required, but not set.';
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
+                case 'webllm_not_supported':
+                    return 'WebLLM extension is not installed or the model is not set.';
                 default:
                     return 'Check server console for more details';
             }
@@ -389,7 +428,7 @@ function getStringHash(str) {
 
 /**
  * Retrieves files from the chat and inserts them into the vector index.
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
  * @returns {Promise<void>}
  */
 async function processFiles(chat) {
@@ -406,39 +445,49 @@ async function processFiles(chat) {
         }
 
         for (const message of chat) {
-            // Message has no file
-            if (!message?.extra?.file) {
+            // Message has no files
+            if (!Array.isArray(message?.extra?.files) || !message.extra.files.length) {
                 continue;
             }
 
             // Trim file inserted by the script
-            const fileText = String(message.mes)
-                .substring(0, message.extra.fileLength).trim();
+            const allFileText = String(message.mes || '').substring(0, message.extra.fileLength).trim();
 
             // Convert kilobytes to string length
             const thresholdLength = settings.size_threshold * 1024;
 
             // File is too small
-            if (fileText.length < thresholdLength) {
+            if (allFileText.length < thresholdLength) {
                 continue;
             }
 
             message.mes = message.mes.substring(message.extra.fileLength);
 
-            const fileName = message.extra.file.name;
-            const fileUrl = message.extra.file.url;
-            const collectionId = getFileCollectionId(fileUrl);
-            const hashesInCollection = await getSavedHashes(collectionId);
+            const allFileChunks = [];
+            const queryText = await getQueryText(chat, 'file');
 
-            // File is already in the collection
-            if (!hashesInCollection.length) {
-                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
+            for (const file of message.extra.files) {
+                const fileName = file.name;
+                const fileUrl = file.url;
+                const collectionId = getFileCollectionId(fileUrl);
+                const hashesInCollection = await getSavedHashes(collectionId);
+
+                // File is not vectorized yet
+                if (!hashesInCollection.length) {
+                    const fileText = file.text || (await getFileAttachment(fileUrl));
+                    if (!fileText) {
+                        continue;
+                    }
+                    await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
+                }
+
+                const fileChunks = await retrieveFileChunks(queryText, collectionId);
+                if (fileChunks) {
+                    allFileChunks.push(fileChunks);
+                }
             }
 
-            const queryText = await getQueryText(chat, 'file');
-            const fileChunks = await retrieveFileChunks(queryText, collectionId);
-
-            message.mes = `${fileChunks}\n\n${message.mes}`;
+            message.mes = `${allFileChunks.join('\n\n')}\n\n${message.mes}`;
         }
     } catch (error) {
         console.error('Vectors: Failed to retrieve files', error);
@@ -466,13 +515,13 @@ async function ingestDataBankAttachments(source) {
         }
 
         // Download and process the file
-        file.text = await getFileAttachment(file.url);
+        const fileText = await getFileAttachment(file.url);
         console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
         // Convert kilobytes to string length
         const thresholdLength = settings.size_threshold_db * 1024;
         // Use chunk size from settings if file is larger than threshold
         const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
-        await vectorizeFile(file.text, file.name, collectionId, chunkSize, settings.overlap_percent_db);
+        await vectorizeFile(fileText, file.name, collectionId, chunkSize, settings.overlap_percent_db);
     }
 
     return dataBankCollectionIds;
@@ -534,28 +583,41 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @returns {Promise<boolean>} True if successful, false if not
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overlapPercent) {
+    let toast = jQuery();
+
     try {
-        if (settings.translate_files && typeof window['translate'] === 'function') {
+        if (settings.translate_files && typeof globalThis.translate === 'function') {
             console.log(`Vectors: Translating file ${fileName} to English...`);
-            const translatedText = await window['translate'](fileText, 'en');
+            const translatedText = await globalThis.translate(fileText, 'en');
             fileText = translatedText;
         }
 
-        const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
+        const batchSize = getBatchSize();
+        const toastBody = $('<span>').text('This may take a while. Please wait...');
+        toast = toastr.info(toastBody, `Ingesting file ${escapeHtml(fileName)}`, { closeButton: false, escapeHtml: false, timeOut: 0, extendedTimeOut: 0 });
         const overlapSize = Math.round(chunkSize * overlapPercent / 100);
         const delimiters = getChunkDelimiters();
         // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
         chunkSize = overlapSize > 0 ? (chunkSize - overlapSize) : chunkSize;
-        const chunks = splitRecursive(fileText, chunkSize, delimiters).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
+        const applyOverlap = (x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x;
+        const chunks = settings.only_custom_boundary && settings.force_chunk_delimiter
+            ? fileText.split(settings.force_chunk_delimiter).map(applyOverlap)
+            : splitRecursive(fileText, chunkSize, delimiters).map(applyOverlap);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks with ${overlapPercent}% overlap`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
-        await insertVectorItems(collectionId, items);
+
+        for (let i = 0; i < items.length; i += batchSize) {
+            toastBody.text(`${i}/${items.length} (${Math.round((i / items.length) * 100)}%) chunks processed`);
+            const chunkedBatch = items.slice(i, i + batchSize);
+            await insertVectorItems(collectionId, chunkedBatch);
+        }
 
         toastr.clear(toast);
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
         return true;
     } catch (error) {
+        toastr.clear(toast);
         toastr.error(String(error), 'Failed to vectorize file', { preventDuplicates: true });
         console.error('Vectors: Failed to vectorize file', error);
         return false;
@@ -564,10 +626,18 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overla
 
 /**
  * Removes the most relevant messages from the chat and displays them in the extension prompt
- * @param {object[]} chat Array of chat messages
+ * @param {ChatMessage[]} chat Array of chat messages
+ * @param {number} _contextSize Context size (unused)
+ * @param {function} _abort Abort function (unused)
+ * @param {string} type Generation type
  */
-async function rearrangeChat(chat) {
+async function rearrangeChat(chat, _contextSize, _abort, type) {
     try {
+        if (type === 'quiet') {
+            console.debug('Vectors: Skipping quiet prompt');
+            return;
+        }
+
         // Clear the extension prompt
         setExtensionPrompt(EXTENSION_PROMPT_TAG, '', settings.position, settings.depth, settings.include_wi);
         setExtensionPrompt(EXTENSION_PROMPT_TAG_DB, '', settings.file_position_db, settings.file_depth_db, settings.include_wi, settings.file_depth_role_db);
@@ -682,32 +752,112 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_t
 
 /**
  * Gets the text to query from the chat
- * @param {object[]} chat Chat messages
+ * @param {ChatMessage[]} chat Chat messages
  * @param {'file'|'chat'|'world-info'} initiator Initiator of the query
  * @returns {Promise<string>} Text to query
  */
 async function getQueryText(chat, initiator) {
-    let queryText = '';
-    let i = 0;
+    const getTextWithoutAttachments = (x) => {
+        const fileLength = x?.extra?.fileLength || 0;
+        return String(x?.mes || '').substring(fileLength).trim();
+    };
 
-    let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)) }));
+    let hashedMessages = chat
+        .map(x => ({ text: substituteParams(getTextWithoutAttachments(x)), hash: getStringHash(substituteParams(getTextWithoutAttachments(x))), index: chat.indexOf(x) }))
+        .filter(x => x.text)
+        .reverse()
+        .slice(0, settings.query);
 
     if (initiator === 'chat' && settings.enabled_chats && settings.summarize && settings.summarize_sent) {
         hashedMessages = await summarize(hashedMessages, settings.summary_source);
     }
 
-    for (const message of hashedMessages.slice().reverse()) {
-        if (message.text) {
-            queryText += message.text + '\n';
-            i++;
-        }
+    const queryText = hashedMessages.map(x => x.text).join('\n');
 
-        if (i === settings.query) {
+    return collapseNewlines(queryText).trim();
+}
+
+/**
+ * Gets common body parameters for vector requests.
+ * @param {object} args Additional arguments
+ * @returns {object} Request body
+ */
+function getVectorsRequestBody(args = {}) {
+    const body = Object.assign({}, args);
+    switch (settings.source) {
+        case 'extras':
+            body.extrasUrl = extension_settings.apiUrl;
+            body.extrasKey = extension_settings.apiKey;
+            break;
+        case 'electronhub':
+            body.model = extension_settings.vectors.electronhub_model;
+            break;
+        case 'openrouter':
+            body.model = extension_settings.vectors.openrouter_model;
+            break;
+        case 'togetherai':
+            body.model = extension_settings.vectors.togetherai_model;
+            break;
+        case 'openai':
+            body.model = extension_settings.vectors.openai_model;
+            break;
+        case 'cohere':
+            body.model = extension_settings.vectors.cohere_model;
+            break;
+        case 'ollama':
+            body.model = extension_settings.vectors.ollama_model;
+            body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+            body.keep = !!extension_settings.vectors.ollama_keep;
+            break;
+        case 'llamacpp':
+            body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+            break;
+        case 'vllm':
+            body.apiUrl = settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.VLLM];
+            body.model = extension_settings.vectors.vllm_model;
+            break;
+        case 'webllm':
+            body.model = extension_settings.vectors.webllm_model;
+            break;
+        case 'palm':
+            body.model = extension_settings.vectors.google_model;
+            body.api = 'makersuite';
+            break;
+        case 'vertexai':
+            body.model = extension_settings.vectors.google_model;
+            body.api = 'vertexai';
+            body.vertexai_auth_mode = oai_settings.vertexai_auth_mode;
+            body.vertexai_region = oai_settings.vertexai_region;
+            body.vertexai_express_project_id = oai_settings.vertexai_express_project_id;
+            break;
+        case 'chutes':
+            body.model = extension_settings.vectors.chutes_model;
+            break;
+        default:
+            break;
+    }
+    return body;
+}
+
+/**
+ * Gets additional arguments for vector requests.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<object>} Additional arguments
+ */
+async function getAdditionalArgs(items) {
+    const args = {};
+    switch (settings.source) {
+        case 'webllm':
+            args.embeddings = await createWebLlmEmbeddings(items);
+            break;
+        case 'koboldcpp': {
+            const { embeddings, model } = await createKoboldCppEmbeddings(items);
+            args.embeddings = embeddings;
+            args.model = model;
             break;
         }
     }
-
-    return collapseNewlines(queryText).trim();
+    return args;
 }
 
 /**
@@ -716,10 +866,12 @@ async function getQueryText(chat, initiator) {
 * @returns {Promise<number[]>} Saved hashes
 */
 async function getSavedHashes(collectionId) {
+    const args = await getAdditionalArgs([]);
     const response = await fetch('/api/vector/list', {
         method: 'POST',
-        headers: getVectorHeaders(),
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             source: settings.source,
         }),
@@ -733,54 +885,6 @@ async function getSavedHashes(collectionId) {
     return hashes;
 }
 
-function getVectorHeaders() {
-    const headers = getRequestHeaders();
-    switch (settings.source) {
-        case 'extras':
-            Object.assign(headers, {
-                'X-Extras-Url': extension_settings.apiUrl,
-                'X-Extras-Key': extension_settings.apiKey,
-            });
-            break;
-        case 'togetherai':
-            Object.assign(headers, {
-                'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
-            });
-            break;
-        case 'openai':
-            Object.assign(headers, {
-                'X-OpenAI-Model': extension_settings.vectors.openai_model,
-            });
-            break;
-        case 'cohere':
-            Object.assign(headers, {
-                'X-Cohere-Model': extension_settings.vectors.cohere_model,
-            });
-            break;
-        case 'ollama':
-            Object.assign(headers, {
-                'X-Ollama-Model': extension_settings.vectors.ollama_model,
-                'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
-                'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
-            });
-            break;
-        case 'llamacpp':
-            Object.assign(headers, {
-                'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
-            });
-            break;
-        case 'vllm':
-            Object.assign(headers, {
-                'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
-                'X-Vllm-Model': extension_settings.vectors.vllm_model,
-            });
-            break;
-        default:
-            break;
-    }
-    return headers;
-}
-
 /**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
@@ -790,12 +894,12 @@ function getVectorHeaders() {
 async function insertVectorItems(collectionId, items) {
     throwIfSourceInvalid();
 
-    const headers = getVectorHeaders();
-
+    const args = await getAdditionalArgs(items.map(x => x.text));
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             items: items,
             source: settings.source,
@@ -812,7 +916,11 @@ async function insertVectorItems(collectionId, items) {
  */
 function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB] ||
+        settings.source === 'chutes' && !secret_state[SECRET_KEYS.CHUTES] ||
+        settings.source === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
+        settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
         settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
         settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
@@ -820,10 +928,18 @@ function throwIfSourceInvalid() {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
-    if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
-        settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
-        settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
-        throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
+    if (vectorApiRequiresUrl.includes(settings.source) && settings.use_alt_endpoint) {
+        if (!settings.alt_endpoint_url) {
+            throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
+        }
+    }
+    else {
+        if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
+            settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
+            settings.source === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP] ||
+            settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
+            throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
+        }
     }
 
     if (settings.source === 'ollama' && !settings.ollama_model || settings.source === 'vllm' && !settings.vllm_model) {
@@ -832,6 +948,10 @@ function throwIfSourceInvalid() {
 
     if (settings.source === 'extras' && !modules.includes('embeddings')) {
         throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
+    }
+
+    if (settings.source === 'webllm' && (!isWebLlmSupported() || !settings.webllm_model)) {
+        throw new Error('Vectors: WebLLM is not supported', { cause: 'webllm_not_supported' });
     }
 }
 
@@ -844,8 +964,9 @@ function throwIfSourceInvalid() {
 async function deleteVectorItems(collectionId, hashes) {
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
-        headers: getVectorHeaders(),
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(),
             collectionId: collectionId,
             hashes: hashes,
             source: settings.source,
@@ -864,12 +985,12 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
-    const headers = getVectorHeaders();
-
+    const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             searchText: searchText,
             topK: topK,
@@ -894,12 +1015,12 @@ async function queryCollection(collectionId, searchText, topK) {
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - Results mapped to collection IDs
  */
 async function queryMultipleCollections(collectionIds, searchText, topK, threshold) {
-    const headers = getVectorHeaders();
-
+    const args = await getAdditionalArgs([searchText]);
     const response = await fetch('/api/vector/query-multi', {
         method: 'POST',
-        headers: headers,
+        headers: getRequestHeaders(),
         body: JSON.stringify({
+            ...getVectorsRequestBody(args),
             collectionIds: collectionIds,
             searchText: searchText,
             topK: topK,
@@ -930,8 +1051,9 @@ async function purgeFileVectorIndex(fileUrl) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getVectorHeaders(),
+            headers: getRequestHeaders(),
             body: JSON.stringify({
+                ...getVectorsRequestBody(),
                 collectionId: collectionId,
             }),
         });
@@ -959,8 +1081,9 @@ async function purgeVectorIndex(collectionId) {
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
-            headers: getVectorHeaders(),
+            headers: getRequestHeaders(),
             body: JSON.stringify({
+                ...getVectorsRequestBody(),
                 collectionId: collectionId,
             }),
         });
@@ -984,7 +1107,10 @@ async function purgeAllVectorIndexes() {
     try {
         const response = await fetch('/api/vector/purge-all', {
             method: 'POST',
-            headers: getVectorHeaders(),
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                ...getVectorsRequestBody(),
+            }),
         });
 
         if (!response.ok) {
@@ -999,36 +1125,253 @@ async function purgeAllVectorIndexes() {
     }
 }
 
-async function isModelScopesEnabled() {
-    try {
-        const response = await fetch('/api/vector/scopes-enabled', {
-            method: 'GET',
-            headers: getVectorHeaders(),
-        });
-
-        if (!response.ok) {
-            return false;
-        }
-
-        const data = await response.json();
-        return data?.enabled ?? false;
-    } catch (error) {
-        console.error('Vectors: Failed to check model scopes', error);
-        return false;
-    }
-}
-
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
     $('#vectors_world_info_settings').toggle(!!settings.enabled_world_info);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
+    $('#chutes_vectorsModel').toggle(settings.source === 'chutes');
+    $('#openrouter_vectorsModel').toggle(settings.source === 'openrouter');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
     $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
+    $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
+    $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
+    $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
+    $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
+    switch (settings.source) {
+        case 'webllm':
+            loadWebLlmModels();
+            break;
+        case 'electronhub':
+            loadElectronHubModels();
+            break;
+        case 'openrouter':
+            loadOpenRouterModels();
+            break;
+        case 'chutes':
+            loadChutesModels();
+            break;
+    }
+}
+
+async function loadChutesModels() {
+    try {
+        const response = await fetch('/api/openai/chutes/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateChutesModelSelect(models);
+    } catch (err) {
+        console.warn('Chutes models fetch failed', err);
+        populateChutesModelSelect([]);
+    }
+}
+
+function populateChutesModelSelect(models) {
+    const select = $('#vectors_chutes_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.slug;
+        option.text = m.name;
+        select.append(option);
+    }
+    if (!settings.chutes_model && models.length) {
+        settings.chutes_model = models[0].slug;
+    }
+    $('#vectors_chutes_model').val(settings.chutes_model);
+}
+
+async function loadElectronHubModels() {
+    try {
+        const response = await fetch('/api/openai/electronhub/models', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        // filter by embeddings endpoint
+        const models = Array.isArray(data) ? data.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')) : [];
+        populateElectronHubModelSelect(models);
+    } catch (err) {
+        console.warn('Electron Hub models fetch failed', err);
+        populateElectronHubModelSelect([]);
+    }
+}
+
+/**
+ * Populates the Electron Hub model select element.
+ * @param {{ id: string, name: string }[]} models Electron Hub models
+ */
+function populateElectronHubModelSelect(models) {
+    const select = $('#vectors_electronhub_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
+    }
+    if (!settings.electronhub_model && models.length) {
+        settings.electronhub_model = models[0].id;
+    }
+    $('#vectors_electronhub_model').val(settings.electronhub_model);
+}
+
+async function loadOpenRouterModels() {
+    try {
+        const response = await fetch('/api/openrouter/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateOpenRouterModelSelect(models);
+    } catch (err) {
+        console.warn('OpenRouter models fetch failed', err);
+        populateOpenRouterModelSelect([]);
+    }
+}
+
+/**
+ * Populates the OpenRouter model select element.
+ * @param {{ id: string, name: string }[]} models OpenRouter models
+ */
+function populateOpenRouterModelSelect(models) {
+    const select = $('#vectors_openrouter_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
+    }
+    if (!settings.openrouter_model && models.length) {
+        settings.openrouter_model = models[0].id;
+    }
+    $('#vectors_openrouter_model').val(settings.openrouter_model);
+}
+
+/**
+ * Executes a function with WebLLM error handling.
+ * @param {function(): Promise<T>} func Function to execute
+ * @returns {Promise<T>}
+ * @template T
+ */
+async function executeWithWebLlmErrorHandling(func) {
+    try {
+        return await func();
+    } catch (error) {
+        console.log('Vectors: Failed to load WebLLM models', error);
+        if (!(error instanceof Error)) {
+            return;
+        }
+        switch (error.cause) {
+            case 'webllm-not-available':
+                toastr.warning('WebLLM is not available. Please install the extension.', 'WebLLM not installed');
+                break;
+            case 'webllm-not-updated':
+                toastr.warning('The installed extension version does not support embeddings.', 'WebLLM update required');
+                break;
+        }
+    }
+}
+
+/**
+ * Loads and displays WebLLM models in the settings.
+ * @returns {Promise<void>}
+ */
+function loadWebLlmModels() {
+    return executeWithWebLlmErrorHandling(() => {
+        const models = webllmProvider.getModels();
+        $('#vectors_webllm_model').empty();
+        for (const model of models) {
+            $('#vectors_webllm_model').append($('<option>', { value: model.id, text: model.toString() }));
+        }
+        if (!settings.webllm_model || !models.some(x => x.id === settings.webllm_model)) {
+            if (models.length) {
+                settings.webllm_model = models[0].id;
+            }
+        }
+        $('#vectors_webllm_model').val(settings.webllm_model);
+        return Promise.resolve();
+    });
+}
+
+/**
+ * Creates WebLLM embeddings for a list of items.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<Record<string, number[]>>} Calculated embeddings
+ */
+async function createWebLlmEmbeddings(items) {
+    if (items.length === 0) {
+        return /** @type {Record<string, number[]>} */ ({});
+    }
+    return executeWithWebLlmErrorHandling(async () => {
+        const embeddings = await webllmProvider.embedTexts(items, settings.webllm_model);
+        const result = /** @type {Record<string, number[]>} */ ({});
+        for (let i = 0; i < items.length; i++) {
+            result[items[i]] = embeddings[i];
+        }
+        return result;
+    });
+}
+
+/**
+ * Creates KoboldCpp embeddings for a list of items.
+ * @param {string[]} items Items to embed
+ * @returns {Promise<{embeddings: Record<string, number[]>, model: string}>} Calculated embeddings
+ */
+async function createKoboldCppEmbeddings(items) {
+    const response = await fetch('/api/backends/kobold/embed', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            items: items,
+            server: settings.use_alt_endpoint ? settings.alt_endpoint_url : textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP],
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to get KoboldCpp embeddings');
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data.embeddings) || !data.model || data.embeddings.length !== items.length) {
+        throw new Error('Invalid response from KoboldCpp embeddings');
+    }
+
+    const embeddings = /** @type {Record<string, number[]>} */ ({});
+    for (let i = 0; i < data.embeddings.length; i++) {
+        if (!Array.isArray(data.embeddings[i]) || data.embeddings[i].length === 0) {
+            throw new Error('KoboldCpp returned an empty embedding. Reduce the chunk size and/or size threshold and try again.');
+        }
+
+        embeddings[items[i]] = data.embeddings[i];
+    }
+
+    return {
+        embeddings: embeddings,
+        model: data.model,
+    };
 }
 
 async function onPurgeClick() {
@@ -1058,7 +1401,7 @@ async function onViewStatsClick() {
     toastr.info(`Total hashes: <b>${totalHashes}</b><br>
     Unique hashes: <b>${uniqueHashes}</b><br><br>
     I'll mark collected messages with a green circle.`,
-    `Stats for chat ${chatId}`,
+    `Stats for chat ${escapeHtml(chatId)}`,
     { timeOut: 10000, escapeHtml: false },
     );
 
@@ -1075,7 +1418,7 @@ async function onViewStatsClick() {
 async function onVectorizeAllFilesClick() {
     try {
         const dataBank = getDataBankAttachments();
-        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const chatAttachments = getContext().chat.filter(x => Array.isArray(x.extra?.files)).map(x => x.extra.files).flat();
         const allFiles = [...dataBank, ...chatAttachments];
 
         /**
@@ -1152,7 +1495,7 @@ async function onVectorizeAllFilesClick() {
 async function onPurgeFilesClick() {
     try {
         const dataBank = getDataBankAttachments();
-        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const chatAttachments = getContext().chat.filter(x => Array.isArray(x.extra?.files)).map(x => x.extra.files).flat();
         const allFiles = [...dataBank, ...chatAttachments];
 
         for (const file of allFiles) {
@@ -1282,7 +1625,6 @@ jQuery(async () => {
     }
 
     Object.assign(settings, extension_settings.vectors);
-    const scopesEnabled = await isModelScopesEnabled();
 
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
@@ -1294,7 +1636,6 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-    $('#vectors_modelWarning').hide();
     $('#vectors_enabled_files').prop('checked', settings.enabled_files).on('input', () => {
         settings.enabled_files = $('#vectors_enabled_files').prop('checked');
         Object.assign(extension_settings.vectors, settings);
@@ -1307,58 +1648,52 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-    $('#api_key_nomicai').on('click', async () => {
-        const popupText = 'NomicAI API Key:';
-        const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, '', {
-            customButtons: [{
-                text: 'Remove Key',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(SECRET_KEYS.NOMICAI, '');
-                    toastr.success('API Key removed');
-                    $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
-                    saveSettingsDebounced();
-                },
-            }],
-        });
-
-        if (!key) {
-            return;
-        }
-
-        await writeSecret(SECRET_KEYS.NOMICAI, String(key));
-        $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
-
-        toastr.success('API Key saved');
+    $('#vector_altEndpointUrl_enabled').prop('checked', settings.use_alt_endpoint).on('input', () => {
+        settings.use_alt_endpoint = $('#vector_altEndpointUrl_enabled').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vector_altEndpoint_address').val(settings.alt_endpoint_url).on('change', () => {
+        settings.alt_endpoint_url = String($('#vector_altEndpoint_address').val());
+        Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.openai_model = String($('#vectors_openai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+    $('#vectors_electronhub_model').val(settings.electronhub_model).on('change', () => {
+        settings.electronhub_model = String($('#vectors_electronhub_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_chutes_model').val(settings.chutes_model).on('change', () => {
+        settings.chutes_model = String($('#vectors_chutes_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_openrouter_model').val(settings.openrouter_model).on('change', () => {
+        settings.openrouter_model = String($('#vectors_openrouter_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
     $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.cohere_model = String($('#vectors_cohere_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.ollama_model = String($('#vectors_ollama_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
     $('#vectors_vllm_model').val(settings.vllm_model).on('input', () => {
-        !scopesEnabled && $('#vectors_modelWarning').show();
         settings.vllm_model = String($('#vectors_vllm_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
@@ -1545,8 +1880,14 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    $('#vectors_force_chunk_delimiter').prop('checked', settings.force_chunk_delimiter).on('input', () => {
+    $('#vectors_force_chunk_delimiter').val(settings.force_chunk_delimiter).on('input', () => {
         settings.force_chunk_delimiter = String($('#vectors_force_chunk_delimiter').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_only_custom_boundary').prop('checked', settings.only_custom_boundary).on('input', () => {
+        settings.only_custom_boundary = !!$('#vectors_only_custom_boundary').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
@@ -1558,7 +1899,43 @@ jQuery(async () => {
         $('#dialogue_popup_input').val(presetModel);
     });
 
+    $('#vectors_webllm_install').on('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (Object.hasOwn(SillyTavern, 'llm')) {
+            toastr.info('WebLLM is already installed');
+            return;
+        }
+
+        openThirdPartyExtensionMenu('https://github.com/SillyTavern/Extension-WebLLM');
+    });
+
+    $('#vectors_webllm_model').on('input', () => {
+        settings.webllm_model = String($('#vectors_webllm_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_webllm_load').on('click', async () => {
+        if (!settings.webllm_model) return;
+        await webllmProvider.loadModel(settings.webllm_model);
+        toastr.success('WebLLM model loaded');
+    });
+
+    $('#vectors_google_model').val(settings.google_model).on('input', () => {
+        settings.google_model = String($('#vectors_google_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
     $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+        eventSource.on(event, (/** @type {string} */ key) => {
+            if (key !== SECRET_KEYS.NOMICAI) return;
+            $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+        });
+    });
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
@@ -1569,6 +1946,11 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
+    eventSource.on(event_types.EXTENSION_SETTINGS_LOADED, async (manifest) => {
+        if (settings.source === 'webllm' && manifest?.display_name === 'WebLLM') {
+            await loadWebLlmModels();
+        }
+    });
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'db-ingest',
@@ -1600,25 +1982,53 @@ jQuery(async () => {
         callback: async (args, query) => {
             const clamp = (v) => Number.isNaN(v) ? null : Math.min(1, Math.max(0, v));
             const threshold = clamp(Number(args?.threshold ?? settings.score_threshold));
+            const validateCount = (v) => Number.isNaN(v) || !Number.isInteger(v) || v < 1 ? null : v;
+            const count = validateCount(Number(args?.count)) ?? settings.chunk_count_db;
             const source = String(args?.source ?? '');
             const attachments = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
             const collectionIds = await ingestDataBankAttachments(String(source));
-            const queryResults = await queryMultipleCollections(collectionIds, String(query), settings.chunk_count_db, threshold);
+            const queryResults = await queryMultipleCollections(collectionIds, String(query), count, threshold);
 
-            // Map collection IDs to file URLs
+            // Get URLs
             const urls = Object
                 .keys(queryResults)
                 .map(x => attachments.find(y => getFileCollectionId(y.url) === x))
                 .filter(x => x)
                 .map(x => x.url);
 
-            return JSON.stringify(urls);
+            // Gets the actual text content of chunks
+            const getChunksText = () => {
+                let textResult = '';
+                for (const collectionId in queryResults) {
+                    const metadata = queryResults[collectionId].metadata?.filter(x => x.text)?.sort((a, b) => a.index - b.index)?.map(x => x.text)?.filter(onlyUnique) || [];
+                    textResult += metadata.join('\n') + '\n\n';
+                }
+                return textResult;
+            };
+            if (args.return === 'chunks') {
+                return getChunksText();
+            }
+
+            // @ts-ignore
+            return slashCommandReturnHelper.doReturn(args.return ?? 'object', urls, { objectToStringFunc: list => list.join('\n') });
         },
         aliases: ['databank-search', 'data-bank-search'],
         helpString: 'Search the Data Bank for a specific query using vector similarity. Returns a list of file URLs with the most relevant content.',
         namedArgumentList: [
             new SlashCommandNamedArgument('threshold', 'Threshold for the similarity score in the [0, 1] range. Uses the global config value if not set.', ARGUMENT_TYPE.NUMBER, false, false, ''),
+            new SlashCommandNamedArgument('count', 'Maximum number of query results to return.', ARGUMENT_TYPE.NUMBER, false, false, ''),
             new SlashCommandNamedArgument('source', 'Optional filter for the attachments by source.', ARGUMENT_TYPE.STRING, false, false, '', ['global', 'character', 'chat']),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: 'How you want the return value to be provided',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'object',
+                enumList: [
+                    new SlashCommandEnumValue('chunks', 'Return the actual content chunks', enumTypes.enum, '{}'),
+                    ...slashCommandReturnHelper.enumList({ allowObject: true }),
+                ],
+                forceEnum: true,
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument('Query to search by.', ARGUMENT_TYPE.STRING, true, false),

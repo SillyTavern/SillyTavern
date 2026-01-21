@@ -1,0 +1,374 @@
+name: 🔀 Pull Request Manager
+
+on:
+  workflow_dispatch: # Allow to manually call this workflow
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, closed]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  run-eslint:
+    name: ✅ Check ESLint on PR
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    # Override permissions, linter likely needs write access to issues
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+        with:
+            ref: ${{ github.event.pull_request.head.sha }}
+            repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Node.js
+        # Setup Node.js environment
+        # https://github.com/marketplace/actions/setup-node-js-environment
+        uses: actions/setup-node@v4.3.0
+        with:
+          node-version: 20
+
+      - name: Run npm install
+        run: npm ci
+
+      - name: Run ESLint
+        # Action ESLint
+        # https://github.com/marketplace/actions/action-eslint
+        uses: sibiraj-s/action-eslint@v3.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}                # ESLint can run with the original permissions
+          eslint-args: '--ignore-path=.gitignore --quiet'
+          extensions: 'js'
+          annotations: true
+          ignore-patterns: |
+            dist/
+            lib/
+
+  run-tests:
+    name: ✅ Run Unit Tests on PR
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+        with:
+            ref: ${{ github.event.pull_request.head.sha }}
+            repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Node.js
+        # Setup Node.js environment
+        # https://github.com/marketplace/actions/setup-node-js-environment
+        uses: actions/setup-node@v4.3.0
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm ci --prefix tests
+
+      - name: Run unit tests
+        run: npm run test:unit --prefix tests
+
+  label-by-size:
+    name: 🏷️ Label PR by Size
+    # This job should run after all others, to prevent possible concurrency issues
+    needs: [label-by-branches, label-by-files, remove-stale-label, check-merge-blocking-labels, write-auto-comments]
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    # Override permissions, the labeler needs issues write access
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Label PR Size
+        # Pull Request Size Labeler
+        # https://github.com/marketplace/actions/pull-request-size-labeler
+        uses: codelytv/pr-size-labeler@v1.10.2
+        with:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+          xs_label: '🟩 ⬤○○○○'
+          xs_max_size: '20'
+          s_label: '🟩 ⬤⬤○○○'
+          s_max_size: '100'
+          m_label: '🟨 ⬤⬤⬤○○'
+          m_max_size: '500'
+          l_label: '🟧 ⬤⬤⬤⬤○'
+          l_max_size: '1000'
+          xl_label: '🟥 ⬤⬤⬤⬤⬤'
+          fail_if_xl: 'false'
+          files_to_ignore: |
+            "package-lock.json"
+            "public/lib/*"
+
+  label-by-branches:
+    name: 🏷️ Label PR by Branches
+    runs-on: ubuntu-latest
+    # Only label once when PR is created or when base branch is changed, to allow manual label removal
+    if: always() && (github.event.action == 'opened' || (github.event.action == 'synchronize' && github.event.changes.base))
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Apply Labels Based on Branch Name and Target Branch
+        # Pull Request Labeler
+        # https://github.com/marketplace/actions/labeler
+        uses: actions/labeler@v5.0.0
+        with:
+          configuration-path: .github/pr-auto-labels-by-branch.yml
+          repo-token: ${{ steps.app.outputs.token }}
+
+  label-by-files:
+    name: 🏷️ Label PR by Files
+    needs: [label-by-branches]
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Apply Labels Based on Changed Files
+        # Pull Request Labeler
+        # https://github.com/marketplace/actions/labeler
+        uses: actions/labeler@v5.0.0
+        env:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }} # labeler action needs some handholding
+        with:
+          configuration-path: .github/pr-auto-labels-by-files.yml
+          repo-token: ${{ steps.app.outputs.token }}
+
+  remove-stale-label:
+    name: 🗑️ Remove Stale Label on Comment
+    needs: [label-by-branches, label-by-files]
+    runs-on: ubuntu-latest
+    # Only runs on comments not done by the github actions bot
+    if: always() && (github.event_name == 'pull_request_review_comment' && github.event.sender.type != 'Bot')
+
+    # Override permissions, issue labeler needs issues write access
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Mint App Token
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        id: app
+        # Only run if the PR is from the same repository
+        # This action runs on comments, which will not receive the env vars for this
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Remove Stale Label
+        if: always()
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'remove-labels'
+          token: ${{ steps.app.outputs.token || github.token }} # Use fallback to GITHUB_TOKEN if app token is not available
+          issue-number: ${{ github.event.pull_request.number }}
+          labels: '⚰️ Stale'
+
+  check-merge-blocking-labels:
+    name: 🚫 Check Merge Blocking Labels
+    needs: [label-by-branches, label-by-files, remove-stale-label]
+    runs-on: ubuntu-latest
+    # Run, even if the previous jobs were skipped/failed
+    if: always()
+
+    # Override permissions, as this needs to write a check
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Check Merge Blocking
+        # GitHub Script
+        # https://github.com/marketplace/actions/github-script
+        id: label-check
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const prLabels = context.payload.pull_request.labels.map(label => label.name);
+            const blockingLabels = [
+              "⛔ Don't Merge",
+              "🔨 Needs Work",
+              "🔬 Needs Testing",
+              "⛔ Waiting For External/Upstream",
+              "❗ Against Release Branch",
+              "💥💣 Breaking Changes"
+            ];
+            const hasBlockingLabel = prLabels.some(label => blockingLabels.includes(label));
+
+            if (hasBlockingLabel) {
+              console.log("Blocking label detected. Setting warning status.");
+              await github.rest.checks.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: "PR Label Warning",
+                head_sha: context.payload.pull_request.head.sha,
+                status: "completed",
+                conclusion: "neutral",
+                output: {
+                  title: "Potential Merge Issue",
+                  summary: "This PR has a merge-blocking label. Proceed with caution."
+                }
+              });
+            } else {
+              console.log("No merge-blocking labels found.");
+            }
+
+  write-auto-comments:
+    name: 💬 Post PR Comments Based on Labels
+    needs: [label-by-branches, label-by-files, remove-stale-label, check-merge-blocking-labels]
+    runs-on: ubuntu-latest
+    # Run, even if the previous jobs were skipped/failed
+    if: always() && (github.event_name == 'pull_request_target')
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Post PR Comments Based on Labels
+        # Label Commenter for PRs
+        # https://github.com/marketplace/actions/label-commenter
+        uses: peaceiris/actions-label-commenter@v1.10.0
+        with:
+          config_file: .github/pr-auto-comments.yml
+          github_token: ${{ steps.app.outputs.token }}
+
+  # This runs on merged PRs to staging, reading the PR body and directly linked issues. Check `issues-updates-on-merge.yml`:`update-linked-issues` for commit-based updates.
+  update-linked-issues:
+    name: 🔗 Mark Linked Issues Done on Staging Merge
+    runs-on: ubuntu-latest
+    if: >
+      always() &&
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'staging'
+
+    # Override permissions, We need to be able to write to issues
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Extract Linked Issues From PR Description
+        id: extract_issues
+        run: |
+            ISSUES=$(jq -r '.pull_request.body' "$GITHUB_EVENT_PATH" | grep -oiE '(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) #([0-9]+)' | awk '{print $2}' | tr -d '#' | jq -R -s -c 'split("\n")[:-1]')
+            echo "issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Fetch Directly Linked Issues
+        id: fetch_linked_issues
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+          API_URL="https://api.github.com/repos/$REPO/pulls/$PR_NUMBER/issues"
+          ISSUES=$(curl -s -H "Authorization: token ${{ steps.app.outputs.token }}" "$API_URL" | jq -r '.[].number' | jq -R -s -c 'split("\n")[:-1]')
+          echo "linked_issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Merge Issue Lists
+        id: merge_issues
+        run: |
+          ISSUES=$(jq -c -n --argjson a "$issues" --argjson b "$linked_issues" '$a + $b | unique')
+          echo "final_issues=$ISSUES" >> $GITHUB_ENV
+
+      - name: Label Linked Issues
+        id: label_linked_issues
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          for ISSUE in $(echo $final_issues | jq -r '.[]'); do
+            gh issue edit $ISSUE -R ${{ github.repository }} --add-label "✅ Done (staging)" --remove-label "🧑‍💻 In Progress"
+            echo "Added label '✅ Done (staging)' (and removed '🧑‍💻 In Progress' if present) in issue #$ISSUE"
+          done

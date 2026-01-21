@@ -1,15 +1,19 @@
-const crypto = require('crypto');
-const storage = require('node-persist');
-const express = require('express');
-const { RateLimiterMemory, RateLimiterRes } = require('rate-limiter-flexible');
-const { jsonParser, getIpFromRequest } = require('../express-common');
-const { color, Cache, getConfigValue } = require('../util');
-const { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } = require('../users');
+import crypto from 'node:crypto';
 
-const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false);
+import storage from 'node-persist';
+import express from 'express';
+import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
+import { getIpFromRequest, getRealIpFromHeader } from '../express-common.js';
+import { color, Cache, getConfigValue } from '../util.js';
+import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } from '../users.js';
+
+const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false, 'boolean');
+const PREFER_REAL_IP_HEADER = getConfigValue('rateLimiting.preferRealIpHeader', false, 'boolean');
 const MFA_CACHE = new Cache(5 * 60 * 1000);
 
-const router = express.Router();
+const getIpAddress = (request) => PREFER_REAL_IP_HEADER ? getRealIpFromHeader(request) : getIpFromRequest(request);
+
+export const router = express.Router();
 const loginLimiter = new RateLimiterMemory({
     points: 5,
     duration: 60,
@@ -25,10 +29,10 @@ router.post('/list', async (_request, response) => {
             return response.sendStatus(204);
         }
 
-        /** @type {import('../users').User[]} */
+        /** @type {import('../users.js').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
 
-        /** @type {Promise<import('../users').UserViewModel>[]} */
+        /** @type {Promise<import('../users.js').UserViewModel>[]} */
         const viewModelPromises = users
             .filter(x => x.enabled)
             .map(user => new Promise(async (resolve) => {
@@ -52,31 +56,31 @@ router.post('/list', async (_request, response) => {
     }
 });
 
-router.post('/login', jsonParser, async (request, response) => {
+router.post('/login', async (request, response) => {
     try {
         if (!request.body.handle) {
-            console.log('Login failed: Missing required fields');
+            console.warn('Login failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        const ip = getIpFromRequest(request);
+        const ip = getIpAddress(request);
         await loginLimiter.consume(ip);
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
-            console.log('Login failed: User not found');
+            console.error('Login failed: User', request.body.handle, 'not found');
             return response.status(403).json({ error: 'Incorrect credentials' });
         }
 
         if (!user.enabled) {
-            console.log('Login failed: User is disabled');
+            console.warn('Login failed: User', user.handle, 'is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
         if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
-            console.log('Login failed: Incorrect password');
+            console.warn('Login failed: Incorrect password for', user.handle);
             return response.status(403).json({ error: 'Incorrect credentials' });
         }
 
@@ -87,11 +91,11 @@ router.post('/login', jsonParser, async (request, response) => {
 
         await loginLimiter.delete(ip);
         request.session.handle = user.handle;
-        console.log('Login successful:', user.handle, request.session);
+        console.info('Login successful:', user.handle, 'from', ip, 'at', new Date().toLocaleString());
         return response.json({ handle: user.handle });
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.log('Login failed: Rate limited from', getIpFromRequest(request));
+            console.error('Login failed: Rate limited from', getIpAddress(request));
             return response.status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
         }
 
@@ -100,26 +104,26 @@ router.post('/login', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/recover-step1', jsonParser, async (request, response) => {
+router.post('/recover-step1', async (request, response) => {
     try {
         if (!request.body.handle) {
-            console.log('Recover step 1 failed: Missing required fields');
+            console.warn('Recover step 1 failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        const ip = getIpFromRequest(request);
+        const ip = getIpAddress(request);
         await recoverLimiter.consume(ip);
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
 
         if (!user) {
-            console.log('Recover step 1 failed: User not found');
+            console.error('Recover step 1 failed: User', request.body.handle, 'not found');
             return response.status(404).json({ error: 'User not found' });
         }
 
         if (!user.enabled) {
-            console.log('Recover step 1 failed: User is disabled');
+            console.error('Recover step 1 failed: User', user.handle, 'is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
@@ -131,7 +135,7 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.log('Recover step 1 failed: Rate limited from', getIpFromRequest(request));
+            console.error('Recover step 1 failed: Rate limited from', getIpAddress(request));
             return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
@@ -140,24 +144,24 @@ router.post('/recover-step1', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/recover-step2', jsonParser, async (request, response) => {
+router.post('/recover-step2', async (request, response) => {
     try {
         if (!request.body.handle || !request.body.code) {
-            console.log('Recover step 2 failed: Missing required fields');
+            console.warn('Recover step 2 failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        /** @type {import('../users').User} */
+        /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
-        const ip = getIpFromRequest(request);
+        const ip = getIpAddress(request);
 
         if (!user) {
-            console.log('Recover step 2 failed: User not found');
+            console.error('Recover step 2 failed: User', request.body.handle, 'not found');
             return response.status(404).json({ error: 'User not found' });
         }
 
         if (!user.enabled) {
-            console.log('Recover step 2 failed: User is disabled');
+            console.warn('Recover step 2 failed: User', user.handle, 'is disabled');
             return response.status(403).json({ error: 'User is disabled' });
         }
 
@@ -165,7 +169,7 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
 
         if (request.body.code !== mfaCode) {
             await recoverLimiter.consume(ip);
-            console.log('Recover step 2 failed: Incorrect code');
+            console.warn('Recover step 2 failed: Incorrect code');
             return response.status(403).json({ error: 'Incorrect code' });
         }
 
@@ -185,7 +189,7 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.log('Recover step 2 failed: Rate limited from', getIpFromRequest(request));
+            console.error('Recover step 2 failed: Rate limited from', getIpAddress(request));
             return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
@@ -193,7 +197,3 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    router,
-};

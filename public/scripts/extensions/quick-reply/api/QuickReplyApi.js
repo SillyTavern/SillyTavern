@@ -1,21 +1,18 @@
-// eslint-disable-next-line no-unused-vars
 import { QuickReply } from '../src/QuickReply.js';
 import { QuickReplyContextLink } from '../src/QuickReplyContextLink.js';
 import { QuickReplySet } from '../src/QuickReplySet.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../src/QuickReplySettings.js';
-// eslint-disable-next-line no-unused-vars
 import { SettingsUi } from '../src/ui/SettingsUi.js';
 import { onlyUnique } from '../../../utils.js';
 
 export class QuickReplyApi {
-    /**@type {QuickReplySettings}*/ settings;
-    /**@type {SettingsUi}*/ settingsUi;
+    /** @type {QuickReplySettings} */ settings;
+    /** @type {SettingsUi} */ settingsUi;
 
 
 
 
-    constructor(/**@type {QuickReplySettings}*/settings, /**@type {SettingsUi}*/settingsUi) {
+    constructor(/** @type {QuickReplySettings} */settings, /** @type {SettingsUi} */settingsUi) {
         this.settings = settings;
         this.settingsUi = settingsUi;
     }
@@ -205,6 +202,7 @@ export class QuickReplyApi {
      * @param {boolean} [props.executeOnChatChange] whether to execute the quick reply when a new chat is loaded
      * @param {boolean} [props.executeOnGroupMemberDraft] whether to execute the quick reply when a group member is selected
      * @param {boolean} [props.executeOnNewChat] whether to execute the quick reply when a new chat is created
+     * @param {boolean} [props.executeBeforeGeneration] whether to execute the quick reply before message generation
      * @param {string} [props.automationId] when not empty, the quick reply will be executed when the WI with the given automation ID is activated
      * @returns {QuickReply} the new quick reply
      */
@@ -220,6 +218,7 @@ export class QuickReplyApi {
         executeOnChatChange,
         executeOnGroupMemberDraft,
         executeOnNewChat,
+        executeBeforeGeneration,
         automationId,
     } = {}) {
         const set = this.getSetByName(setName);
@@ -239,6 +238,7 @@ export class QuickReplyApi {
         qr.executeOnChatChange = executeOnChatChange ?? false;
         qr.executeOnGroupMemberDraft = executeOnGroupMemberDraft ?? false;
         qr.executeOnNewChat = executeOnNewChat ?? false;
+        qr.executeBeforeGeneration = executeBeforeGeneration ?? false;
         qr.automationId = automationId ?? '';
         qr.onUpdate();
         return qr;
@@ -262,6 +262,7 @@ export class QuickReplyApi {
      * @param {boolean} [props.executeOnChatChange] whether to execute the quick reply when a new chat is loaded
      * @param {boolean} [props.executeOnGroupMemberDraft] whether to execute the quick reply when a group member is selected
      * @param {boolean} [props.executeOnNewChat] whether to execute the quick reply when a new chat is created
+     * @param {boolean} [props.executeBeforeGeneration] whether to execute the quick reply before message generation
      * @param {string} [props.automationId] when not empty, the quick reply will be executed when the WI with the given automation ID is activated
      * @returns {QuickReply} the altered quick reply
      */
@@ -278,6 +279,7 @@ export class QuickReplyApi {
         executeOnChatChange,
         executeOnGroupMemberDraft,
         executeOnNewChat,
+        executeBeforeGeneration,
         automationId,
     } = {}) {
         const qr = this.getQrByLabel(setName, label);
@@ -296,6 +298,7 @@ export class QuickReplyApi {
         qr.executeOnChatChange = executeOnChatChange ?? qr.executeOnChatChange;
         qr.executeOnGroupMemberDraft = executeOnGroupMemberDraft ?? qr.executeOnGroupMemberDraft;
         qr.executeOnNewChat = executeOnNewChat ?? qr.executeOnNewChat;
+        qr.executeBeforeGeneration = executeBeforeGeneration ?? qr.executeBeforeGeneration;
         qr.automationId = automationId ?? qr.automationId;
         qr.onUpdate();
         return qr;

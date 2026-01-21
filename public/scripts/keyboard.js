@@ -11,7 +11,7 @@ const interactableSelectors = [
     '.avatar-container', // Persona list blocks
     '.tag .tag_remove', // Remove button in removable tags
     '.bg_example', // Background elements in the background menu
-    '.bg_example .bg_button', // The inline buttons on the backgrounds
+    '.bg_example .jg-button, .bg_example .mobile-only-menu-toggle', // The inline buttons on the backgrounds
     '#options a', // Option entries in the popup options menu
     '.mes_buttons .mes_button', // Small inline buttons on the chat messages
     '.extraMesButtons>div:not(.mes_button)', // The extra/extension buttons inline on the chat messages
@@ -19,6 +19,7 @@ const interactableSelectors = [
     '.stscript_btn', // STscript buttons in the chat bar
     '.select2_choice_clickable+span.select2-container .select2-selection__choice__display', // select2 control elements if they are meant to be clickable
     '.avatar_load_preview', // Char display avatar selection
+    '.bg_tabs_list .bg_tab_button', // Background tabs
 ];
 
 if (CSS.supports('selector(:has(*))')) {

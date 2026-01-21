@@ -107,7 +107,6 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: calc(var(--mainFontSize) + 14px);
 }
 
 .delete_entry_button {
@@ -122,6 +121,10 @@
 
 .world_entry .inline-drawer-header {
     cursor: initial;
+}
+
+.world_entry .inline-drawer-header-pointer {
+    cursor: pointer;
 }
 
 .world_entry .killSwitch {
@@ -168,17 +171,32 @@
 #world_editor_select {
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: 10em;
 }
 
+#world_editor_select,
+#world_editor_select~.select2-container,
+#world_info_sort_order,
 #world_info_search {
-    width: 10em;
-    min-width: 10em;
-    flex-grow: 1;
+    flex: 1;
 }
 
-#world_info_sort_order {
-    width: 7em;
+#world_info_sort_order,
+#world_info_search {
+    min-width: 6em;
+}
+
+#world_editor_select~.select2-container {
+    overflow: hidden;
+}
+
+#world_editor_select~.select2-container .select2-selection--single .select2-selection__rendered {
+    padding-right: 30px;
+}
+
+#world_editor_select~.select2-container .select2-selection .select2-selection__clear {
+    right: 20px;
+    display: flex;
+    align-items: center;
 }
 
 .world_entry .killSwitch.fa-toggle-on {
@@ -194,7 +212,11 @@
 }
 
 .world_entry {
-    transition: opacity 500ms;
+    transition: opacity var(--animation-duration-3x);
+}
+
+.world_entry_edit {
+    display: contents;
 }
 
 .disabledWIEntry {
@@ -213,6 +235,14 @@
 
 .WIEntryHeaderTitleMobile {
     display: none;
+}
+
+.world_entry .select2-selection--multiple,
+.world_entry textarea.keyprimarytextpole,
+.world_entry textarea.keysecondarytextpole {
+    max-height: 160px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 span.select2-container .select2-selection__choice__display:has(> .regex_item),
@@ -263,7 +293,7 @@ select.keyselect+span.select2-container .select2-selection--multiple {
 
     opacity: 0.5;
     color: var(--SmartThemeBodyColor);
-    transition: opacity 0.3s;
+    transition: opacity var(--animation-duration-2x);
 }
 
 .switch_input_type_icon:hover {
@@ -277,4 +307,22 @@ select.keyselect+span.select2-container .select2-selection--multiple {
 
 .world_entry:has(input[name="delay_until_recursion"]:not(:checked)) .world_entry_form_control:has(input[name="delayUntilRecursionLevel"]) {
     display: none;
+}
+
+.world_entry:not(:has(select[name="position"] option[value="7"]:checked)) .world_entry_form_control:has(input[name="outletName"]) {
+    display: none;
+}
+
+.world_entry label[for="__invisible"] {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+#WIMultiSelector .select2-container .select2-selection--multiple {
+    max-height: 25vh;
+    overflow-y: auto;
+    overflow-x: hidden;
 }

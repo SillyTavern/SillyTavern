@@ -9,6 +9,9 @@ import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './uti
 export let currentUser = null;
 export let accountsEnabled = false;
 
+// Extend the session every 10 minutes
+const SESSION_EXTEND_INTERVAL = 10 * 60 * 1000;
+
 /**
  * Enable or disable user account controls in the UI.
  * @param {boolean} isEnabled User account controls enabled
@@ -31,12 +34,24 @@ export async function setUserControls(isEnabled) {
  * Check if the current user is an admin.
  * @returns {boolean} True if the current user is an admin
  */
-function isAdmin() {
+export function isAdmin() {
+    if (!accountsEnabled) {
+        return true;
+    }
+
     if (!currentUser) {
         return false;
     }
 
     return Boolean(currentUser.admin);
+}
+
+/**
+ * Gets the handle string of the current user.
+ * @returns {string} User handle
+ */
+export function getCurrentUserHandle() {
+    return currentUser?.handle || 'default-user';
 }
 
 /**
@@ -68,7 +83,7 @@ async function getUsers() {
     try {
         const response = await fetch('/api/users/get', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {
@@ -520,7 +535,7 @@ async function getSnapshots() {
     try {
         const response = await fetch('/api/settings/get-snapshots', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {
@@ -546,7 +561,7 @@ async function makeSnapshot(callback) {
     try {
         const response = await fetch('/api/settings/make-snapshot', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!response.ok) {
@@ -605,7 +620,7 @@ async function resetEverything(callback) {
     try {
         const step1Response = await fetch('/api/users/reset-step1', {
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getRequestHeaders({ omitContentType: true }),
         });
 
         if (!step1Response.ok) {
@@ -845,10 +860,17 @@ async function openAdminPanel() {
 async function logout() {
     await fetch('/api/users/logout', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getRequestHeaders({ omitContentType: true }),
     });
 
-    window.location.reload();
+    // On an explicit logout stop auto login
+    // to allow user to change username even
+    // when auto auth (such as authelia or basic)
+    // would be valid
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('noauto', 'true');
+
+    window.location.search = urlParams.toString();
 }
 
 /**
@@ -875,6 +897,24 @@ async function slugify(text) {
     }
 }
 
+/**
+ * Pings the server to extend the user session.
+ */
+async function extendUserSession() {
+    try {
+        const response = await fetch('/api/ping?extend=1', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Ping did not succeed', { cause: response.status });
+        }
+    } catch (error) {
+        console.error('Failed to extend user session', error);
+    }
+}
+
 jQuery(() => {
     $('#logout_button').on('click', () => {
         logout();
@@ -885,4 +925,9 @@ jQuery(() => {
     $('#account_button').on('click', () => {
         openUserProfile();
     });
+    setInterval(async () => {
+        if (currentUser) {
+            await extendUserSession();
+        }
+    }, SESSION_EXTEND_INTERVAL);
 });

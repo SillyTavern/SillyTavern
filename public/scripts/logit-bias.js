@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from '../script.js';
 import { getTextTokens } from './tokenizers.js';
-import { uuidv4 } from './utils.js';
+import { getSortableDelay, uuidv4 } from './utils.js';
 
 export const BIAS_CACHE = new Map();
 
@@ -16,13 +16,35 @@ export function displayLogitBias(logitBias, containerSelector) {
         return;
     }
 
-    $(containerSelector).find('.logit_bias_list').empty();
+    const list = $(containerSelector).find('.logit_bias_list');
+    list.empty();
 
     for (const entry of logitBias) {
         if (entry) {
             createLogitBiasListItem(entry, logitBias, containerSelector);
         }
     }
+
+    // Check if a sortable instance exists
+    if (list.sortable('instance') !== undefined) {
+        // Destroy the instance
+        list.sortable('destroy');
+    }
+
+    // Make the list sortable
+    list.sortable({
+        delay: getSortableDelay(),
+        handle: '.drag-handle',
+        stop: function () {
+            const order = [];
+            list.children().each(function () {
+                order.unshift($(this).data('id'));
+            });
+            logitBias.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+            console.log('Logit bias reordered:', logitBias);
+            saveSettingsDebounced();
+        },
+    });
 
     BIAS_CACHE.delete(containerSelector);
 }

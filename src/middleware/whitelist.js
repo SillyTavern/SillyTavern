@@ -1,14 +1,19 @@
-const path = require('path');
-const fs = require('fs');
-const ipMatching = require('ip-matching');
+import path from 'node:path';
+import fs from 'node:fs';
+import process from 'node:process';
+import dns from 'node:dns';
+import Handlebars from 'handlebars';
+import ipMatching from 'ip-matching';
+import isDocker from 'is-docker';
 
-const { getIpFromRequest } = require('../express-common');
-const { color, getConfigValue } = require('../util');
+import { getIpFromRequest } from '../express-common.js';
+import { color, getConfigValue, safeReadFileSync } from '../util.js';
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
-const enableForwardedWhitelist = getConfigValue('enableForwardedWhitelist', false);
+const enableForwardedWhitelist = !!getConfigValue('enableForwardedWhitelist', false, 'boolean');
+const whitelistDockerHosts = !!getConfigValue('whitelistDockerHosts', true, 'boolean');
+/** @type {string[]} */
 let whitelist = getConfigValue('whitelist', []);
-let knownIPs = new Set();
 
 if (fs.existsSync(whitelistPath)) {
     try {
@@ -18,6 +23,29 @@ if (fs.existsSync(whitelistPath)) {
         // Ignore errors that may occur when reading the whitelist (e.g. permissions)
     }
 }
+
+/**
+ * Validates and filters the whitelist, removing any invalid entries.
+ * @param {string[]} entries - The whitelist entries to validate
+ * @returns {string[]} The filtered list of valid whitelist entries
+ */
+function validateWhitelist(entries) {
+    const validEntries = [];
+
+    for (const entry of entries) {
+        try {
+            // This will throw if the entry is not a valid IP or CIDR
+            ipMatching.getMatch(entry);
+            validEntries.push(entry);
+        } catch (e) {
+            console.warn(`Whitelist ${color.red('Warning')}: Ignoring invalid entry ${color.yellow(entry)} - ${e.message}`);
+        }
+    }
+
+    return validEntries;
+}
+
+whitelist = validateWhitelist(whitelist);
 
 /**
  * Get the client IP address from the request headers.
@@ -45,42 +73,76 @@ function getForwardedIp(req) {
 }
 
 /**
- * Returns a middleware function that checks if the client IP is in the whitelist.
- * @param {boolean} whitelistMode If whitelist mode is enabled via config or command line
- * @param {boolean} listen If listen mode is enabled via config or command line
- * @returns {import('express').RequestHandler} The middleware function
+ * Resolves the IP addresses of Docker hostnames and adds them to the whitelist.
+ * @returns {Promise<void>} Promise that resolves when the Docker hostnames are resolved
  */
-function whitelistMiddleware(whitelistMode, listen) {
+async function addDockerHostsToWhitelist() {
+    if (!whitelistDockerHosts || !isDocker()) {
+        return;
+    }
+
+    const whitelistHosts = ['host.docker.internal', 'gateway.docker.internal'];
+
+    for (const entry of whitelistHosts) {
+        try {
+            const result = await dns.promises.lookup(entry);
+            console.info(`Resolved whitelist hostname ${color.green(entry)} to IPv${result.family} address ${color.green(result.address)}`);
+            whitelist.push(result.address);
+        } catch (e) {
+            console.warn(`Failed to resolve whitelist hostname ${color.red(entry)}: ${e.message}`);
+        }
+    }
+}
+
+/**
+ * Returns a middleware function that checks if the client IP is in the whitelist.
+ * @returns {Promise<import('express').RequestHandler>} Promise that resolves to the middleware function
+ */
+export default async function getWhitelistMiddleware() {
+    const forbiddenWebpage = Handlebars.compile(
+        safeReadFileSync('./public/error/forbidden-by-whitelist.html') ?? '',
+    );
+
+    const noLogPaths = [
+        '/favicon.ico',
+    ];
+
+    await addDockerHostsToWhitelist();
+
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
         const forwardedIp = getForwardedIp(req);
+        const userAgent = req.headers['user-agent'];
 
-        if (listen && !knownIPs.has(clientIp)) {
-            const userAgent = req.headers['user-agent'];
-            console.log(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}\n`));
-            knownIPs.add(clientIp);
-
-            // Write access log
-            const timestamp = new Date().toISOString();
-            const log = `${timestamp} ${clientIp} ${userAgent}\n`;
-            fs.appendFile('access.log', log, (err) => {
-                if (err) {
-                    console.error('Failed to write access log:', err);
-                }
-            });
+        /**
+         * Checks if an IP address matches any entry in the whitelist.
+         * @param {string[]} whitelist - The list of whitelisted IPs/CIDRs
+         * @param {string} ip - The IP address to check
+         * @returns {boolean} True if the IP matches any whitelist entry
+         */
+        function isIPInWhitelist(whitelist, ip) {
+            return whitelist.some(x => ipMatching.matches(ip, ipMatching.getMatch(x)));
         }
 
         //clientIp = req.connection.remoteAddress.split(':').pop();
-        if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))
-            || forwardedIp && whitelistMode === true && !whitelist.some(x => ipMatching.matches(forwardedIp, ipMatching.getMatch(x)))
+        if (!isIPInWhitelist(whitelist, clientIp)
+            || forwardedIp && !isIPInWhitelist(whitelist, forwardedIp)
         ) {
             // Log the connection attempt with real IP address
-            const ipDetails = forwardedIp ? `${clientIp} (forwarded from ${forwardedIp})` : clientIp;
-            console.log(color.red('Forbidden: Connection attempt from ' + ipDetails + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.yaml in root of SillyTavern folder.\n'));
-            return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + ipDetails + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.yaml in root of SillyTavern folder.');
+            const ipDetails = forwardedIp
+                ? `${clientIp} (forwarded from ${forwardedIp})`
+                : clientIp;
+
+            if (!noLogPaths.includes(req.path)) {
+                console.warn(
+                    color.red(
+                        `Blocked connection from ${ipDetails}; User Agent: ${userAgent}\n\tTo allow this connection, add its IP address to the whitelist or disable whitelist mode by editing config.yaml in the root directory of your SillyTavern installation.\n`,
+                    ),
+                );
+            }
+
+            return res.status(403).send(forbiddenWebpage({ ipDetails }));
         }
         next();
     };
 }
-
-module.exports = whitelistMiddleware;

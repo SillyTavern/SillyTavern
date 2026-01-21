@@ -1,11 +1,10 @@
 import { animation_duration } from '../../../../../script.js';
 import { dragElement } from '../../../../RossAscends-mods.js';
 import { loadMovingUIState } from '../../../../power-user.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../QuickReplySettings.js';
 
 export class ButtonUi {
-    /**@type {QuickReplySettings}*/ settings;
+    /** @type {QuickReplySettings} */ settings;
 
     /**@type {HTMLElement}*/ dom;
     /**@type {HTMLElement}*/ popoutDom;
@@ -91,7 +90,7 @@ export class ButtonUi {
                         root.append(buttons);
                     }
                 }
-                [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
+                [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? []), ...(this.settings.charConfig?.setList ?? [])]
                     .filter(link=>link.isVisible)
                     .forEach(link=>buttonHolder.append(link.set.render()))
                 ;
@@ -151,7 +150,7 @@ export class ButtonUi {
                             body.append(buttons);
                         }
                     }
-                    [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
+                    [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? []), ...(this.settings.charConfig?.setList ?? [])]
                         .filter(link=>link.isVisible)
                         .forEach(link=>buttonHolder.append(link.set.render()))
                     ;

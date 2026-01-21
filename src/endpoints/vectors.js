@@ -1,10 +1,22 @@
-const vectra = require('vectra');
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const { jsonParser } = require('../express-common');
-const { getConfigValue, color } = require('../util');
+import path from 'node:path';
+import fs from 'node:fs';
+
+import vectra from 'vectra';
+import express from 'express';
+import sanitize from 'sanitize-filename';
+
+import { getConfigValue } from '../util.js';
+
+import { getNomicAIBatchVector, getNomicAIVector } from '../vectors/nomicai-vectors.js';
+import { getOpenAIVector, getOpenAIBatchVector } from '../vectors/openai-vectors.js';
+import { getTransformersVector, getTransformersBatchVector } from '../vectors/embedding.js';
+import { getExtrasVector, getExtrasBatchVector } from '../vectors/extras-vectors.js';
+import { getMakerSuiteVector, getMakerSuiteBatchVector } from '../vectors/google-vectors.js';
+import { getVertexVector, getVertexBatchVector } from '../vectors/google-vectors.js';
+import { getCohereVector, getCohereBatchVector } from '../vectors/cohere-vectors.js';
+import { getLlamaCppVector, getLlamaCppBatchVector } from '../vectors/llamacpp-vectors.js';
+import { getVllmVector, getVllmBatchVector } from '../vectors/vllm-vectors.js';
+import { getOllamaVector, getOllamaBatchVector } from '../vectors/ollama-vectors.js';
 
 // Don't forget to add new sources to the SOURCES array
 const SOURCES = [
@@ -19,6 +31,12 @@ const SOURCES = [
     'ollama',
     'llamacpp',
     'vllm',
+    'webllm',
+    'koboldcpp',
+    'vertexai',
+    'electronhub',
+    'openrouter',
+    'chutes',
 ];
 
 /**
@@ -27,31 +45,43 @@ const SOURCES = [
  * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string} text - The text to get the vector for
  * @param {boolean} isQuery - If the text is a query for embedding search
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
 async function getVector(source, sourceSettings, text, isQuery, directories) {
     switch (source) {
         case 'nomicai':
-            return require('../vectors/nomicai-vectors').getNomicAIVector(text, source, directories);
+            return getNomicAIVector(text, source, directories);
         case 'togetherai':
         case 'mistral':
         case 'openai':
-            return require('../vectors/openai-vectors').getOpenAIVector(text, source, directories, sourceSettings.model);
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'electronhub':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'openrouter':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'transformers':
-            return require('../vectors/embedding').getTransformersVector(text);
+            return getTransformersVector(text);
         case 'extras':
-            return require('../vectors/extras-vectors').getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
+            return getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
-            return require('../vectors/makersuite-vectors').getMakerSuiteVector(text, directories);
+            return getMakerSuiteVector(text, sourceSettings.model, sourceSettings.request);
+        case 'vertexai':
+            return getVertexVector(text, sourceSettings.model, sourceSettings.request);
         case 'cohere':
-            return require('../vectors/cohere-vectors').getCohereVector(text, isQuery, directories, sourceSettings.model);
+            return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
-            return require('../vectors/llamacpp-vectors').getLlamaCppVector(text, sourceSettings.apiUrl, directories);
+            return getLlamaCppVector(text, sourceSettings.apiUrl, directories);
         case 'vllm':
-            return require('../vectors/vllm-vectors').getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
+            return getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'ollama':
-            return require('../vectors/ollama-vectors').getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
+            return getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
+        case 'webllm':
+            return sourceSettings.embeddings[text];
+        case 'koboldcpp':
+            return sourceSettings.embeddings[text];
+        case 'chutes':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -63,7 +93,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
  * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string[]} texts - The array of texts to get the vector for
  * @param {boolean} isQuery - If the text is a query for embedding search
- * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 async function getBatchVector(source, sourceSettings, texts, isQuery, directories) {
@@ -74,33 +104,51 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
     for (let batch of batches) {
         switch (source) {
             case 'nomicai':
-                results.push(...await require('../vectors/nomicai-vectors').getNomicAIBatchVector(batch, source, directories));
+                results.push(...await getNomicAIBatchVector(batch, source, directories));
                 break;
             case 'togetherai':
             case 'mistral':
             case 'openai':
-                results.push(...await require('../vectors/openai-vectors').getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'electronhub':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'openrouter':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'transformers':
-                results.push(...await require('../vectors/embedding').getTransformersBatchVector(batch));
+                results.push(...await getTransformersBatchVector(batch));
                 break;
             case 'extras':
-                results.push(...await require('../vectors/extras-vectors').getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
+                results.push(...await getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
                 break;
             case 'palm':
-                results.push(...await require('../vectors/makersuite-vectors').getMakerSuiteBatchVector(batch, directories));
+                results.push(...await getMakerSuiteBatchVector(batch, sourceSettings.model, sourceSettings.request));
+                break;
+            case 'vertexai':
+                results.push(...await getVertexBatchVector(batch, sourceSettings.model, sourceSettings.request));
                 break;
             case 'cohere':
-                results.push(...await require('../vectors/cohere-vectors').getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
+                results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
                 break;
             case 'llamacpp':
-                results.push(...await require('../vectors/llamacpp-vectors').getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
+                results.push(...await getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
                 break;
             case 'vllm':
-                results.push(...await require('../vectors/vllm-vectors').getVllmBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
+                results.push(...await getVllmBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
                 break;
             case 'ollama':
-                results.push(...await require('../vectors/ollama-vectors').getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
+                results.push(...await getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
+                break;
+            case 'webllm':
+                results.push(...texts.map(x => sourceSettings.embeddings[x]));
+                break;
+            case 'koboldcpp':
+                results.push(...texts.map(x => sourceSettings.embeddings[x]));
+                break;
+            case 'chutes':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -120,44 +168,75 @@ function getSourceSettings(source, request) {
     switch (source) {
         case 'togetherai':
             return {
-                model: String(request.headers['x-togetherai-model']),
+                model: String(request.body.model),
             };
         case 'openai':
             return {
-                model: String(request.headers['x-openai-model']),
+                model: String(request.body.model),
+            };
+        case 'electronhub':
+            return {
+                model: String(request.body.model || 'text-embedding-3-small'),
+            };
+        case 'openrouter':
+            return {
+                model: String(request.body.model) || 'openai/text-embedding-3-large',
             };
         case 'cohere':
             return {
-                model: String(request.headers['x-cohere-model']),
+                model: String(request.body.model),
             };
         case 'llamacpp':
             return {
-                apiUrl: String(request.headers['x-llamacpp-url']),
+                apiUrl: String(request.body.apiUrl),
             };
         case 'vllm':
             return {
-                apiUrl: String(request.headers['x-vllm-url']),
-                model: String(request.headers['x-vllm-model']),
+                apiUrl: String(request.body.apiUrl),
+                model: String(request.body.model),
             };
         case 'ollama':
             return {
-                apiUrl: String(request.headers['x-ollama-url']),
-                model: String(request.headers['x-ollama-model']),
-                keep: Boolean(request.headers['x-ollama-keep']),
+                apiUrl: String(request.body.apiUrl),
+                model: String(request.body.model),
+                keep: Boolean(request.body.keep),
             };
         case 'extras':
             return {
-                extrasUrl: String(request.headers['x-extras-url']),
-                extrasKey: String(request.headers['x-extras-key']),
+                extrasUrl: String(request.body.extrasUrl),
+                extrasKey: String(request.body.extrasKey),
             };
-        case 'local':
+        case 'transformers':
             return {
-                model: getConfigValue('extras.embeddingModel', ''),
+                model: getConfigValue('extensions.models.embedding', ''),
             };
         case 'palm':
+        case 'vertexai':
             return {
-                // TODO: Add support for multiple models
-                model: 'text-embedding-004',
+                model: String(request.body.model || 'text-embedding-005'),
+                request: request, // Pass the request object to get API key and URL
+            };
+        case 'mistral':
+            return {
+                model: 'mistral-embed',
+            };
+        case 'nomicai':
+            return {
+                model: 'nomic-embed-text-v1.5',
+            };
+        case 'webllm':
+            return {
+                model: String(request.body.model),
+                embeddings: request.body.embeddings ?? {},
+            };
+        case 'koboldcpp':
+            return {
+                model: String(request.body.model),
+                embeddings: request.body.embeddings ?? {},
+            };
+        case 'chutes':
+            return {
+                model: String(request.body.model || 'chutes-qwen-qwen3-embedding-8b'),
             };
         default:
             return {};
@@ -170,24 +249,12 @@ function getSourceSettings(source, request) {
  * @returns {string} The model scope for the source
  */
 function getModelScope(sourceSettings) {
-    const scopesEnabled = getConfigValue('vectors.enableModelScopes', false);
-    const warningShown = global.process.env.VECTORS_MODEL_SCOPE_WARNING_SHOWN === 'true';
-
-    if (!scopesEnabled && !warningShown) {
-        console.log();
-        console.warn(color.red('[DEPRECATION NOTICE]'), 'Model scopes for Vectore Storage are disabled, but will soon be required.');
-        console.log(`To enable model scopes, set the ${color.cyan('vectors.enableModelScopes')} in config.yaml to ${color.green(true)}.`);
-        console.log('This message won\'t be shown again in the current session.');
-        console.log();
-        global.process.env.VECTORS_MODEL_SCOPE_WARNING_SHOWN = 'true';
-    }
-
-    return scopesEnabled ? (sourceSettings?.model || '') : '';
+    return (sourceSettings?.model || '');
 }
 
 /**
  * Gets the index for the vector collection
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {object} sourceSettings - The model for the source
@@ -207,7 +274,7 @@ async function getIndex(directories, collectionId, source, sourceSettings) {
 
 /**
  * Inserts items into the vector collection
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -231,7 +298,7 @@ async function insertVectorItems(directories, collectionId, source, sourceSettin
 
 /**
  * Gets the hashes of the items in the vector collection
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -248,7 +315,7 @@ async function getSavedHashes(directories, collectionId, source, sourceSettings)
 
 /**
  * Deletes items from the vector collection by hash
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -269,7 +336,7 @@ async function deleteVectorItems(directories, collectionId, source, sourceSettin
 
 /**
  * Gets the hashes of the items in the vector collection that match the search text
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -290,7 +357,7 @@ async function queryCollection(directories, collectionId, source, sourceSettings
 
 /**
  * Queries multiple collections for the given search queries. Returns the overall top K results.
- * @param {import('../users').UserDirectoryList} directories - User directories
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
  * @param {string[]} collectionIds - The collection IDs to query
  * @param {string} source - The source of the vector
  * @param {Object} sourceSettings - Settings for the source, if it needs any
@@ -352,7 +419,7 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
 
             if (exists) {
                 const path = index.folderPath;
-                console.error(`Corrupted index detected at ${path}, regenerating...`);
+                console.warn(`Corrupted index detected at ${path}, regenerating...`);
                 await index.deleteIndex();
                 return res.redirect(307, req.originalUrl + '?regenerated=true');
             }
@@ -363,14 +430,9 @@ async function regenerateCorruptedIndexErrorHandler(req, res, error) {
     return res.sendStatus(500);
 }
 
-const router = express.Router();
+export const router = express.Router();
 
-router.get('/scopes-enabled', (_req, res) => {
-    const scopesEnabled = getConfigValue('vectors.enableModelScopes', false);
-    return res.json({ enabled: scopesEnabled });
-});
-
-router.post('/query', jsonParser, async (req, res) => {
+router.post('/query', async (req, res) => {
     try {
         if (!req.body.collectionId || !req.body.searchText) {
             return res.sendStatus(400);
@@ -390,7 +452,7 @@ router.post('/query', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/query-multi', jsonParser, async (req, res) => {
+router.post('/query-multi', async (req, res) => {
     try {
         if (!Array.isArray(req.body.collectionIds) || !req.body.searchText) {
             return res.sendStatus(400);
@@ -410,7 +472,7 @@ router.post('/query-multi', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/insert', jsonParser, async (req, res) => {
+router.post('/insert', async (req, res) => {
     try {
         if (!Array.isArray(req.body.items) || !req.body.collectionId) {
             return res.sendStatus(400);
@@ -428,7 +490,7 @@ router.post('/insert', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/list', jsonParser, async (req, res) => {
+router.post('/list', async (req, res) => {
     try {
         if (!req.body.collectionId) {
             return res.sendStatus(400);
@@ -445,7 +507,7 @@ router.post('/list', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/delete', jsonParser, async (req, res) => {
+router.post('/delete', async (req, res) => {
     try {
         if (!Array.isArray(req.body.hashes) || !req.body.collectionId) {
             return res.sendStatus(400);
@@ -463,7 +525,7 @@ router.post('/delete', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/purge-all', jsonParser, async (req, res) => {
+router.post('/purge-all', async (req, res) => {
     try {
         for (const source of SOURCES) {
             const sourcePath = path.join(req.user.directories.vectors, sanitize(source));
@@ -471,7 +533,7 @@ router.post('/purge-all', jsonParser, async (req, res) => {
                 continue;
             }
             await fs.promises.rm(sourcePath, { recursive: true });
-            console.log(`Deleted vector source store at ${sourcePath}`);
+            console.info(`Deleted vector source store at ${sourcePath}`);
         }
 
         return res.sendStatus(200);
@@ -481,7 +543,7 @@ router.post('/purge-all', jsonParser, async (req, res) => {
     }
 });
 
-router.post('/purge', jsonParser, async (req, res) => {
+router.post('/purge', async (req, res) => {
     try {
         if (!req.body.collectionId) {
             return res.sendStatus(400);
@@ -495,7 +557,7 @@ router.post('/purge', jsonParser, async (req, res) => {
                 continue;
             }
             await fs.promises.rm(sourcePath, { recursive: true });
-            console.log(`Deleted vector index at ${sourcePath}`);
+            console.info(`Deleted vector index at ${sourcePath}`);
         }
 
         return res.sendStatus(200);
@@ -504,5 +566,3 @@ router.post('/purge', jsonParser, async (req, res) => {
         return res.sendStatus(500);
     }
 });
-
-module.exports = { router };

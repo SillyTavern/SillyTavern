@@ -1,0 +1,11 @@
+#openai-character-instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#openai-character-instructions .character-instructions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}

@@ -11,3 +11,6 @@ access.log
 .github
 .vscode
 .git
+/public/scripts/extensions/third-party
+/colab
+.gemini

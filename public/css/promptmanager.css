@@ -28,6 +28,11 @@
     color: var(--white50a);
 }
 
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid[data-role] {
+    vertical-align: unset;
+    margin-left: 3px;
+}
+
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_invisible {
     display: none;
 }
@@ -74,7 +79,7 @@
     justify-content: center;
     margin-left: 0.25em;
     cursor: pointer;
-    transition: 0.3s ease-in-out;
+    transition: var(--animation-duration-2x) ease-in-out;
     height: 20px;
     width: 20px;
     filter: drop-shadow(0px 0px 2px black);
@@ -105,6 +110,10 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+.completion_prompt_manager_popup_entry_form .select2-container {
+    margin: 5px 0;
 }
 
 #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt) {
@@ -234,7 +243,7 @@
     flex-direction: column;
     justify-content: center;
     margin-left: 0.25em;
-    transition: 0.3s ease-in-out;
+    transition: var(--animation-duration-2x) ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
 }
 
@@ -260,10 +269,28 @@
 }
 
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid.prompt-manager-overridden {
-    margin-left: 5px;
+    margin-left: 3px;
     color: var(--SmartThemeQuoteColor);
     cursor: pointer;
     opacity: 0.8;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .drag-handle:not(.ui-sortable-handle) {
+    display: none;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt:has(.drag-handle.ui-sortable-handle) {
+    position: relative;
+    padding-left: 20px;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .drag-handle {
+    position: absolute;
+    height: 100%;
+    top: 0;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
 }
 
 #completion_prompt_manager_footer_append_prompt {
@@ -333,13 +360,18 @@
 }
 
 .completion_prompt_manager_popup_entry_form_control:has(#completion_prompt_manager_popup_entry_form_prompt:disabled)>div:first-child::after {
-    content: 'The content of this prompt is pulled from elsewhere and cannot be edited here.';
+    content: attr(external_piece_text);
     display: block;
     width: 100%;
-    font-weight: 600;
+    font-weight: 500;
     text-align: center;
 }
 
 .completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_prompt:disabled {
     visibility: hidden;
+}
+
+#completion_prompt_manager_popup_entry_source_block {
+    display: flex;
+    justify-content: center;
 }

@@ -9,3 +9,11 @@ body.safari .popup .popup-body {
     max-height: 90vh;
     max-height: 90dvh;
 }
+
+body.safari #select_chat_div {
+    height: auto;
+}
+
+body.safari #select_chat_popup {
+    height: max-content;
+}

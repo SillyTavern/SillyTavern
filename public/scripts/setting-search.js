@@ -49,6 +49,6 @@ function removeHighlighting() {
     $('.highlighted').removeClass('highlighted');  // Remove CSS class from previously highlighted elements
 }
 
-jQuery(() => {
+export function initSettingsSearch() {
     $('#settingsSearch').on('input change', searchSettings);
-});
+}

@@ -2,20 +2,20 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 
 export class SlashCommandDebugController {
-    /**@type {SlashCommandClosure[]} */ stack = [];
-    /**@type {SlashCommandExecutor[]} */ cmdStack = [];
-    /**@type {boolean[]} */ stepStack = [];
-    /**@type {boolean} */ isStepping = false;
-    /**@type {boolean} */ isSteppingInto = false;
-    /**@type {boolean} */ isSteppingOut = false;
+    /** @type {SlashCommandClosure[]} */ stack = [];
+    /** @type {SlashCommandExecutor[]} */ cmdStack = [];
+    /** @type {boolean[]} */ stepStack = [];
+    /** @type {boolean} */ isStepping = false;
+    /** @type {boolean} */ isSteppingInto = false;
+    /** @type {boolean} */ isSteppingOut = false;
 
-    /**@type {object} */ namedArguments;
-    /**@type {string|SlashCommandClosure|(string|SlashCommandClosure)[]} */ unnamedArguments;
+    /** @type {object} */ namedArguments;
+    /** @type {string|SlashCommandClosure|(string|SlashCommandClosure)[]} */ unnamedArguments;
 
-    /**@type {Promise<boolean>} */ continuePromise;
-    /**@type {(boolean)=>void} */ continueResolver;
+    /** @type {Promise<boolean>} */ continuePromise;
+    /** @type {(boolean)=>void} */ continueResolver;
 
-    /**@type {(closure:SlashCommandClosure, executor:SlashCommandExecutor)=>Promise<boolean>} */ onBreakPoint;
+    /** @type {(closure:SlashCommandClosure, executor:SlashCommandExecutor)=>Promise<boolean>} */ onBreakPoint;
 
 
 

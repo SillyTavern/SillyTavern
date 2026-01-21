@@ -1,16 +1,90 @@
+import {
+    moment,
+    DOMPurify,
+    Readability,
+    isProbablyReaderable,
+    lodash,
+} from '../lib.js';
+
 import { getContext } from './extensions.js';
-import { getRequestHeaders } from '../script.js';
+import { characters, getRequestHeaders, processDroppedFiles, this_chid, user_avatar } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
-import { collapseNewlines } from './power-user.js';
+import { collapseNewlines, power_user } from './power-user.js';
 import { debounce_timeout } from './constants.js';
 import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { getTagsList } from './tags.js';
+import { groups, selected_group } from './group-chats.js';
+import { getCurrentLocale, t } from './i18n.js';
+import { importWorldInfo } from './world-info.js';
+
+export const shiftUpByOne = (e, i, a) => a[i] = e + 1;
+export const shiftDownByOne = (e, i, a) => a[i] = e - 1;
 
 /**
  * Pagination status string template.
  * @type {string}
  */
-export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= totalNumber %>';
+export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> .. <%= totalNumber %>';
+
+export const localizePagination = function (container) {
+    container.find('[title="Next page"]').attr('title', t`Next page`);
+    container.find('[title="Previous page"]').attr('title', t`Previous page`);
+    container.find('[title="First page"]').attr('title', t`First page`);
+    container.find('[title="Last page"]').attr('title', t`Last page`);
+};
+
+/**
+ * Checks if the current environment supports negative lookbehind in regular expressions.
+ * @returns {boolean} True if negative lookbehind is supported, false otherwise.
+ */
+export function canUseNegativeLookbehind() {
+    let result = canUseNegativeLookbehind['result'];
+    if (typeof result !== 'boolean') {
+        try {
+            new RegExp('(?<!_)');
+            result = true;
+        } catch (e) {
+            result = false;
+        }
+        canUseNegativeLookbehind['result'] = result;
+    }
+    return result;
+}
+
+/**
+ * Renders a dropdown for selecting page size in pagination.
+ * @param {number} pageSize Page size
+ * @param {number[]} sizeChangerOptions Array of page size options
+ * @returns {string} The rendered dropdown element as a string
+ */
+export const renderPaginationDropdown = function (pageSize, sizeChangerOptions) {
+    const sizeSelect = document.createElement('select');
+    sizeSelect.classList.add('J-paginationjs-size-select');
+
+    if (sizeChangerOptions.indexOf(pageSize) === -1) {
+        sizeChangerOptions.unshift(pageSize);
+        sizeChangerOptions.sort((a, b) => a - b);
+    }
+
+    for (let i = 0; i < sizeChangerOptions.length; i++) {
+        const option = document.createElement('option');
+        option.value = `${sizeChangerOptions[i]}`;
+        option.textContent = `${sizeChangerOptions[i]} ${t`/ page`}`;
+        if (sizeChangerOptions[i] === pageSize) {
+            option.setAttribute('selected', 'selected');
+        }
+        sizeSelect.appendChild(option);
+    }
+
+    return sizeSelect.outerHTML;
+};
+
+export const paginationDropdownChangeHandler = function (event, size) {
+    let dropdown = $(event?.originalEvent?.currentTarget || event.delegateTarget).find('select');
+    dropdown.find('[selected]').removeAttr('selected');
+    dropdown.find(`[value=${size}]`).attr('selected', '');
+};
 
 /**
  * Navigation options for pagination.
@@ -21,8 +95,73 @@ export const navigation_option = {
     previous: -1000,
 };
 
+/**
+ * Determines if a value is an object.
+ * @param {any} item The item to check.
+ * @returns {boolean} True if the item is an object, false otherwise.
+ */
+export function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+/**
+ * Merges properties of two objects. If the property is an object, it will be merged recursively.
+ * @param {object} target The target object
+ * @param {object} source The source object
+ * @returns {object} Merged object
+ */
+export function deepMerge(target, source) {
+    let output = Object.assign({}, target);
+    if (isObject(target) && isObject(source)) {
+        Object.keys(source).forEach(key => {
+            if (isObject(source[key])) {
+                if (!(key in target))
+                    Object.assign(output, { [key]: source[key] });
+                else
+                    output[key] = deepMerge(target[key], source[key]);
+            } else {
+                Object.assign(output, { [key]: source[key] });
+            }
+        });
+    }
+    return output;
+}
+
+/**
+ * Ensures that the provided object is a plain object.
+ * @param {object} obj Object to ensure is a plain object
+ * @return {object} A plain object, or an empty object if the input is not an object.
+ */
+export function ensurePlainObject(obj) {
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
+        return {};
+    }
+
+    return obj;
+}
+
+/**
+ * Escapes text for safe HTML rendering.
+ * @param {string?} str
+ * @returns {string}
+ */
 export function escapeHtml(str) {
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * Make string safe for use as a CSS selector.
+ * @param {string} str String to sanitize
+ * @param {string} replacement Replacement for invalid characters
+ * @returns {string} Sanitized string
+ */
+export function sanitizeSelector(str, replacement = '_') {
+    return String(str).replace(/[^a-z0-9_-]/ig, replacement);
 }
 
 export function isValidUrl(value) {
@@ -32,6 +171,17 @@ export function isValidUrl(value) {
     } catch (_) {
         return false;
     }
+}
+
+/**
+ * Checks if a string is a valid UUID (version 1-5).
+ * @param {string} value String to check
+ * @returns {boolean} True if the string is a valid UUID, false otherwise.
+ */
+export function isUuid(value) {
+    // Regular expression to match UUIDs
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value);
 }
 
 /**
@@ -145,6 +295,17 @@ export function onlyUnique(value, index, array) {
 }
 
 /**
+ * Determines if a value is unique in an array of objects.
+ * @param {any} value Current value.
+ * @param {number} index Current index.
+ * @param {any[]} array The array being processed.
+ * @returns {boolean} True if the value is unique, false otherwise.
+ */
+export function onlyUniqueJson(value, index, array) {
+    return array.map(v => JSON.stringify(v)).indexOf(JSON.stringify(value)) === index;
+}
+
+/**
  * Removes the first occurrence of a specified item from an array
  *
  * @param {*[]} array - The array from which to remove the item
@@ -156,6 +317,15 @@ export function removeFromArray(array, item) {
     if (index === -1) return false;
     array.splice(index, 1);
     return true;
+}
+
+/**
+ * Normalizes an array by removing duplicates, trimming strings, and filtering out empty values.
+ * @param {any[]} arr - The array to normalize.
+ * @returns {any[]} The normalized array.
+ */
+export function normalizeArray(arr) {
+    return [...new Set((arr ?? []).map(s => typeof s === 'string' ? s.trim() : s).filter(Boolean))];
 }
 
 /**
@@ -248,6 +418,16 @@ export async function urlContentToDataUri(url, params) {
 }
 
 /**
+ * Fuzzily compares two files for equality. Only checks attributes, not contents.
+ * @param {File} a First file
+ * @param {File} b Second file
+ * @returns {boolean} True if the files are probably the same, false otherwise.
+ */
+export function isSameFile(a, b) {
+    return a.lastModified === b.lastModified && a.name === b.name && a.size === b.size && a.type === b.type;
+}
+
+/**
  * Returns a promise that resolves to the file's text.
  * @param {Blob} file The file to read.
  * @returns {Promise<string>} A promise that resolves to the file's text.
@@ -316,6 +496,10 @@ export async function parseJsonFile(file) {
 
 /**
  * Calculates a hash code for a string.
+ * cyrb53 (c) 2018 bryc ({@link https://github.com/bryc/code/blob/master/jshash/experimental/cyrb53.js|github.com/bryc})
+ * License: Public domain (or MIT if needed). Attribution appreciated.
+ * A fast and simple 53-bit string hash function with decent collision resistance.
+ * Largely inspired by MurmurHash2/3, but with a focus on speed/simplicity.
  * @param {string} str The string to hash.
  * @param {number} [seed=0] The seed to use for the hash.
  * @returns {number} The hash code.
@@ -337,6 +521,26 @@ export function getStringHash(str, seed = 0) {
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
 
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+/**
+ * Copy text to clipboard. Use navigator.clipboard.writeText if available, otherwise use document.execCommand.
+ * @param {string} text - The text to copy to the clipboard.
+ * @returns {Promise<void>} A promise that resolves when the text has been copied to the clipboard.
+ */
+export function copyText(text) {
+    if (navigator.clipboard) {
+        return navigator.clipboard.writeText(text);
+    }
+
+    const parent = document.querySelector('dialog[open]:last-of-type') ?? document.body;
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    parent.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy');
+    parent.removeChild(textArea);
 }
 
 /**
@@ -362,6 +566,33 @@ export function debounce(func, timeout = debounce_timeout.standard) {
     };
 
     return fn;
+}
+
+/**
+ * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func The function to debounce.
+ * @param {Number} [timeout=300] The timeout in milliseconds.
+ * @returns {Function} The debounced function.
+ */
+export function debounceAsync(func, timeout = debounce_timeout.standard) {
+    let timer;
+    /**@type {Promise}*/
+    let debouncePromise;
+    /**@type {Function}*/
+    let debounceResolver;
+    return (...args) => {
+        clearTimeout(timer);
+        if (!debouncePromise) {
+            debouncePromise = new Promise(resolve => {
+                debounceResolver = resolve;
+            });
+        }
+        timer = setTimeout(() => {
+            debounceResolver(func.apply(this, args));
+            debouncePromise = null;
+        }, timeout);
+        return debouncePromise;
+    };
 }
 
 /**
@@ -443,7 +674,7 @@ export function isElementInViewport(el) {
 /**
  * Returns a name that is unique among the names that exist.
  * @param {string} name The name to check.
- * @param {{ (y: any): boolean; }} exists Function to check if name exists.
+ * @param {{ (name: string): boolean; }} exists Function to check if name exists.
  * @returns {string} A unique name.
  */
 export function getUniqueName(name, exists) {
@@ -605,6 +836,19 @@ export function sortByCssOrder(a, b) {
 }
 
 /**
+ * Trims leading and trailing whitespace from the input string based on a configuration setting.
+ * @param {string} input - The string to be trimmed
+ * @returns {string} The trimmed string if trimming is enabled; otherwise, returns the original string
+ */
+
+export function trimSpaces(input) {
+    if (!input || typeof input !== 'string') {
+        return input;
+    }
+    return power_user.trim_spaces ? input.trim() : input;
+}
+
+/**
  * Trims a string to the end of a nearest sentence.
  * @param {string} input The string to trim.
  * @returns {string} The trimmed string.
@@ -623,9 +867,10 @@ export function trimToEndSentence(input) {
     const characters = Array.from(input);
     for (let i = characters.length - 1; i >= 0; i--) {
         const char = characters[i];
+        const emoji = isEmoji(char);
 
-        if (punctuation.has(char) || isEmoji(char)) {
-            if (i > 0 && /[\s\n]/.test(characters[i - 1])) {
+        if (punctuation.has(char) || emoji) {
+            if (!emoji && i > 0 && /[\s\n]/.test(characters[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
@@ -695,6 +940,21 @@ export function humanFileSize(bytes, si = false, dp = 1) {
 
 
     return bytes.toFixed(dp) + ' ' + units[u];
+}
+
+/**
+ * Formats time in seconds to MM:SS format
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+export function formatTime(seconds) {
+    if (!isFinite(seconds) || isNaN(seconds)) {
+        return '0:00';
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -769,8 +1029,8 @@ export function isOdd(number) {
 
 /**
  * Compare two moment objects for sorting.
- * @param {moment.Moment} a The first moment object.
- * @param {moment.Moment} b The second moment object.
+ * @param {import('moment').Moment} a The first moment object.
+ * @param {import('moment').Moment} b The second moment object.
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortMoments(a, b) {
@@ -788,8 +1048,8 @@ const dateCache = new Map();
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {string|number} timestamp String or number representing a date.
- * @returns {moment.Moment} Moment object
+ * @param {MessageTimestamp} timestamp String or number representing a date.
+ * @returns {import('moment').Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
     if (dateCache.has(timestamp)) {
@@ -797,7 +1057,7 @@ export function timestampToMoment(timestamp) {
     }
 
     const iso8601 = parseTimestamp(timestamp);
-    const objMoment = iso8601 ? moment(iso8601) : moment.invalid();
+    const objMoment = iso8601 ? moment(iso8601).locale(getCurrentLocale()) : moment.invalid();
 
     dateCache.set(timestamp, objMoment);
     return objMoment;
@@ -805,11 +1065,16 @@ export function timestampToMoment(timestamp) {
 
 /**
  * Parses a timestamp and returns a moment object representing the parsed date and time.
- * @param {string|number} timestamp - The timestamp to parse. It can be a string or a number.
+ * @param {MessageTimestamp} timestamp - The timestamp to parse. It can be a string or a number.
  * @returns {string} - If the timestamp is valid, returns an ISO 8601 string.
  */
 function parseTimestamp(timestamp) {
     if (!timestamp) return;
+
+    // Date object
+    if (timestamp instanceof Date) {
+        return timestamp.toISOString();
+    }
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number' || /^\d+$/.test(timestamp)) {
@@ -817,6 +1082,11 @@ function parseTimestamp(timestamp) {
         const isValid = Number.isFinite(unixTime) && !Number.isNaN(unixTime) && unixTime >= 0;
         if (!isValid) return;
         return new Date(unixTime).toISOString();
+    }
+
+    // ISO 8601
+    if (moment(timestamp, moment.ISO_8601, true).isValid()) {
+        return timestamp;
     }
 
     let dtFmt = [];
@@ -835,6 +1105,8 @@ function parseTimestamp(timestamp) {
         ms = typeof ms !== 'undefined' ? `.${ms.padStart(3, '0')}` : '';
         return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${min.padStart(2, '0')}:${sec.padStart(2, '0')}${ms}Z`;
     };
+    // 2024-07-12@01h31m37s123ms
+    dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s(\d{1,3})ms/ });
     // 2024-7-12@01h31m37s
     dtFmt.push({ callback: convertFromHumanized, pattern: /(\d{4})-(\d{1,2})-(\d{1,2})@(\d{1,2})h(\d{1,2})m(\d{1,2})s/ });
     // 2024-6-5 @14h 56m 50s 682ms
@@ -845,6 +1117,7 @@ function parseTimestamp(timestamp) {
         if (!rgxMatch) continue;
         return x.callback(...rgxMatch);
     }
+
     return;
 }
 
@@ -900,7 +1173,7 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
  */
 export function isDataURL(str) {
     const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
-    return regex.test(str);
+    return typeof str === 'string' && regex.test(str);
 }
 
 /**
@@ -921,13 +1194,132 @@ export function getImageSizeFromDataURL(dataUrl) {
     });
 }
 
-export function getCharaFilename(chid) {
-    const context = getContext();
-    const fileName = context.characters[chid ?? context.characterId]?.avatar;
+/**
+ * Gets the duration of a video from a data URL.
+ * @param {string} dataUrl Video data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getVideoDurationFromDataURL(dataUrl) {
+    const video = document.createElement('video');
+    video.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadedmetadata = function () {
+            resolve(video.duration);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
 
-    if (fileName) {
-        return fileName.replace(/\.[^/.]+$/, '');
+/**
+ * Gets a thumbnail image from a video URL.
+ * @param {string} videoUrl URL of the video
+ * @param {number|null} [maxWidth=null] Maximum width of the thumbnail
+ * @param {number|null} [maxHeight=null] Maximum height of the thumbnail
+ * @param {string} [type='image/jpeg'] MIME type of the thumbnail
+ * @returns {Promise<string>} Promise that resolves to a data URL of the video thumbnail
+ */
+export function getVideoThumbnail(videoUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    return new Promise((resolve, reject) => {
+        video.onloadeddata = function () {
+            // Set the time to capture the thumbnail at the middle of the video
+            video.currentTime = video.duration / 2;
+        };
+        video.onseeked = function () {
+            // Create a canvas to draw the thumbnail
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(video.videoWidth, video.videoHeight, maxWidth, maxHeight);
+
+            canvas.width = thumbnailWidth;
+            canvas.height = thumbnailHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
+            ctx.drawImage(video, 0, 0, thumbnailWidth, thumbnailHeight);
+            // Get the data URL of the thumbnail
+            const dataUrl = canvas.toDataURL(type);
+            resolve(dataUrl);
+        };
+        video.onerror = function () {
+            reject(new Error('Failed to load video'));
+        };
+    });
+}
+
+/**
+ * Calculates the thumbnail size for a media element while maintaining aspect ratio.
+ * @param {number} width Media width
+ * @param {number} height Media height
+ * @param {number?} maxWidth Max width (null = no limit)
+ * @param {number?} maxHeight Max height (null = no limit)
+ * @returns {{ thumbnailWidth: number, thumbnailHeight: number }} Thumbnail size
+ */
+export function calculateThumbnailSize(width, height, maxWidth, maxHeight) {
+    // Calculate the thumbnail dimensions while maintaining the aspect ratio
+    const aspectRatio = width / height;
+    let thumbnailWidth = maxWidth;
+    let thumbnailHeight = maxHeight;
+
+    if (maxWidth === null) {
+        thumbnailWidth = width;
+        maxWidth = width;
     }
+
+    if (maxHeight === null) {
+        thumbnailHeight = height;
+        maxHeight = height;
+    }
+
+    // Do not upscale if image is already smaller than max dimensions
+    if (width <= maxWidth && height <= maxHeight) {
+        thumbnailWidth = width;
+        thumbnailHeight = height;
+    } else {
+        if (width > height) {
+            thumbnailHeight = maxWidth / aspectRatio;
+        } else {
+            thumbnailWidth = maxHeight * aspectRatio;
+        }
+    }
+
+    return { thumbnailWidth: Math.round(thumbnailWidth), thumbnailHeight: Math.round(thumbnailHeight) };
+}
+
+/**
+ * Gets the duration of an audio from a data URL.
+ * @param {string} dataUrl Audio data URL
+ * @returns {Promise<number>} Duration in seconds
+ */
+export function getAudioDurationFromDataURL(dataUrl) {
+    const audio = document.createElement('audio');
+    audio.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        audio.onloadedmetadata = function () {
+            resolve(audio.duration);
+        };
+        audio.onerror = function () {
+            reject(new Error('Failed to load audio'));
+        };
+    });
+}
+
+/**
+ * Gets the filename of the character avatar without extension
+ * @param {string|number?} [chid=null] - Character ID. If not provided, uses the current character ID
+ * @param {object} [options={}] - Options arguments
+ * @param {string?} [options.manualAvatarKey=null] - Manually take the following avatar key, instead of using the chid to determine the name
+ * @returns {string?} The filename of the character avatar without extension, or null if the character ID is invalid
+ */
+export function getCharaFilename(chid = null, { manualAvatarKey = null } = {}) {
+    const context = getContext();
+    const fileName = manualAvatarKey ?? context.characters[chid ?? context.characterId]?.avatar;
+
+    return fileName?.replace(/\.[^/.]+$/, '') ?? null;
 }
 
 /**
@@ -1225,32 +1617,27 @@ export async function getSanitizedFilename(fileName) {
  * Sends a base64 encoded image to the backend to be saved as a file.
  *
  * @param {string} base64Data - The base64 encoded image data.
- * @param {string} characterName - The character name to determine the sub-directory for saving.
- * @param {string} ext - The file extension for the image (e.g., 'jpg', 'png', 'webp').
+ * @param {string} subFolder - The character name to determine the sub-directory for saving.
+ * @param {string} fileName - The name of the file to save the image as (without extension).
+ * @param {string} extension - The file extension for the image (e.g., 'jpg', 'png', 'webp').
  *
  * @returns {Promise<string>} - Resolves to the saved image's path on the server.
  *                              Rejects with an error if the upload fails.
  */
-export async function saveBase64AsFile(base64Data, characterName, filename = '', ext) {
-    // Construct the full data URL
-    const format = ext; // Extract the file extension (jpg, png, webp)
-    const dataURL = `data:image/${format};base64,${base64Data}`;
-
+export async function saveBase64AsFile(base64Data, subFolder, fileName, extension) {
     // Prepare the request body
     const requestBody = {
-        image: dataURL,
-        ch_name: characterName,
-        filename: String(filename).replace(/\./g, '_'),
+        image: base64Data,
+        format: extension,
+        ch_name: subFolder,
+        filename: String(fileName).replace(/\./g, '_'),
     };
 
     // Send the data URL to your backend using fetch
     const response = await fetch('/api/images/upload', {
         method: 'POST',
+        headers: getRequestHeaders(),
         body: JSON.stringify(requestBody),
-        headers: {
-            ...getRequestHeaders(),
-            'Content-Type': 'application/json',
-        },
     });
 
     // If the response is successful, get the saved image path from the server's response
@@ -1261,6 +1648,40 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to upload the image to the server');
     }
+}
+
+/**
+ * Gets the file extension from a File object.
+ * @param {File} file The file to get the extension from
+ * @returns {string} The file extension of the given file
+ */
+export function getFileExtension(file) {
+    return file.name.substring((file.name.lastIndexOf('.') + file.name.length) % file.name.length + 1).toLowerCase().trim();
+}
+
+/**
+ * Converts UTF-8 string into Base64-encoded string.
+ *
+ * @param {string} text The UTF-8 string
+ * @returns {string} The Base64-encoded string
+ */
+export function convertTextToBase64(text) {
+    const encoder = new TextEncoder();
+    const utf8Bytes = encoder.encode(text);
+    /**
+     * return `true` if `Uint8Array.prototype.toBase64` function is supported.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/toBase64|MDN Reference}
+     */
+    if ('toBase64' in Uint8Array.prototype) {
+        return utf8Bytes.toBase64();
+    }
+    // Creates binary string, where each character's code point directly matches the byte value (0-255).
+    let binaryString = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < utf8Bytes.length; i += chunkSize) {
+        binaryString += String.fromCharCode(...utf8Bytes.subarray(i, i + chunkSize));
+    }
+    return window.btoa(binaryString);
 }
 
 /**
@@ -1308,6 +1729,8 @@ export async function ensureImageFormatSupported(file) {
         'image/tiff',
         'image/gif',
         'image/apng',
+        'image/webp',
+        'image/avif',
     ];
 
     if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {
@@ -1351,31 +1774,15 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-
-            // Calculate the thumbnail dimensions while maintaining the aspect ratio
-            const aspectRatio = img.width / img.height;
-            let thumbnailWidth = maxWidth;
-            let thumbnailHeight = maxHeight;
-
-            if (maxWidth === null) {
-                thumbnailWidth = img.width;
-                maxWidth = img.width;
-            }
-
-            if (maxHeight === null) {
-                thumbnailHeight = img.height;
-                maxHeight = img.height;
-            }
-
-            if (img.width > img.height) {
-                thumbnailHeight = maxWidth / aspectRatio;
-            } else {
-                thumbnailWidth = maxHeight * aspectRatio;
-            }
+            const { thumbnailWidth, thumbnailHeight } = calculateThumbnailSize(img.width, img.height, maxWidth, maxHeight);
 
             // Set the canvas dimensions and draw the resized image
             canvas.width = thumbnailWidth;
             canvas.height = thumbnailHeight;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, thumbnailWidth, thumbnailHeight);
             ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
 
             // Convert the canvas to a data URL and resolve the promise
@@ -1394,13 +1801,18 @@ export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type
  * @param {{ (): boolean; }} condition The condition to wait for.
  * @param {number} [timeout=1000] The timeout in milliseconds.
  * @param {number} [interval=100] The interval in milliseconds.
+ * @param {object} [options] Options object
+ * @param {boolean} [options.rejectOnTimeout=true] Whether to reject the promise on timeout or resolve it.
  * @returns {Promise<void>} A promise that resolves when the condition is true.
  */
-export async function waitUntilCondition(condition, timeout = 1000, interval = 100) {
+export async function waitUntilCondition(condition, timeout = 1000, interval = 100, options = {}) {
+    const { rejectOnTimeout = true } = options;
+
     return new Promise((resolve, reject) => {
         const timeoutId = setTimeout(() => {
             clearInterval(intervalId);
-            reject(new Error('Timed out waiting for condition to be true'));
+            const timeoutFn = rejectOnTimeout ? reject : resolve;
+            timeoutFn(new Error('Timed out waiting for condition to be true'));
         }, timeout);
 
         const intervalId = setInterval(() => {
@@ -1489,38 +1901,9 @@ export async function getReadableText(document, textSelector = 'body') {
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
 export async function extractTextFromPDF(blob) {
-    async function initPdfJs() {
-        const promises = [];
-
-        const workerPromise = new Promise((resolve, reject) => {
-            const workerScript = document.createElement('script');
-            workerScript.type = 'module';
-            workerScript.async = true;
-            workerScript.src = 'lib/pdf.worker.mjs';
-            workerScript.onload = resolve;
-            workerScript.onerror = reject;
-            document.head.appendChild(workerScript);
-        });
-
-        promises.push(workerPromise);
-
-        const pdfjsPromise = new Promise((resolve, reject) => {
-            const pdfjsScript = document.createElement('script');
-            pdfjsScript.type = 'module';
-            pdfjsScript.async = true;
-            pdfjsScript.src = 'lib/pdf.mjs';
-            pdfjsScript.onload = resolve;
-            pdfjsScript.onerror = reject;
-            document.head.appendChild(pdfjsScript);
-        });
-
-        promises.push(pdfjsPromise);
-
-        return Promise.all(promises);
-    }
-
     if (!('pdfjsLib' in window)) {
-        await initPdfJs();
+        await import('../lib/pdf.min.mjs');
+        await import('../lib/pdf.worker.min.mjs');
     }
 
     const buffer = await getFileBuffer(blob);
@@ -1559,30 +1942,9 @@ export async function extractTextFromMarkdown(blob) {
 }
 
 export async function extractTextFromEpub(blob) {
-    async function initEpubJs() {
-        const epubScript = new Promise((resolve, reject) => {
-            const epubScript = document.createElement('script');
-            epubScript.async = true;
-            epubScript.src = 'lib/epub.min.js';
-            epubScript.onload = resolve;
-            epubScript.onerror = reject;
-            document.head.appendChild(epubScript);
-        });
-
-        const jszipScript = new Promise((resolve, reject) => {
-            const jszipScript = document.createElement('script');
-            jszipScript.async = true;
-            jszipScript.src = 'lib/jszip.min.js';
-            jszipScript.onload = resolve;
-            jszipScript.onerror = reject;
-            document.head.appendChild(jszipScript);
-        });
-
-        return Promise.all([epubScript, jszipScript]);
-    }
-
     if (!('ePub' in window)) {
-        await initEpubJs();
+        await import('../lib/jszip.min.js');
+        await import('../lib/epub.min.js');
     }
 
     const book = ePub(blob);
@@ -1616,7 +1978,7 @@ export async function extractTextFromOffice(blob) {
         try {
             const result = await fetch('/api/plugins/office/probe', {
                 method: 'POST',
-                headers: getRequestHeaders(),
+                headers: getRequestHeaders({ omitContentType: true }),
             });
 
             return result.ok;
@@ -1710,17 +2072,17 @@ export function hasAnimation(control) {
 
 /**
  * Run an action once an animation on a control ends. If the control has no animation, the action will be executed immediately.
- *
+ * The action will be executed after the animation ends or after the timeout, whichever comes first.
  * @param {HTMLElement} control - The control element to listen for animation end event
  * @param {(control:*?) => void} callback - The callback function to be executed when the animation ends
+ * @param {number} [timeout=500] - The timeout in milliseconds to wait for the animation to end before executing the callback
  */
-export function runAfterAnimation(control, callback) {
+export function runAfterAnimation(control, callback, timeout = 500) {
     if (hasAnimation(control)) {
-        const onAnimationEnd = () => {
-            control.removeEventListener('animationend', onAnimationEnd);
-            callback(control);
-        };
-        control.addEventListener('animationend', onAnimationEnd);
+        Promise.race([
+            new Promise((r) => setTimeout(r, timeout)), // Fallback timeout
+            new Promise((r) => control.addEventListener('animationend', r, { once: true })),
+        ]).finally(() => callback(control));
     } else {
         callback(control);
     }
@@ -1731,8 +2093,9 @@ export function runAfterAnimation(control, callback) {
  *
  * @param {string} a - The first string to compare.
  * @param {string} b - The second string to compare.
- * @param {(a:string,b:string)=>boolean} comparisonFunction - The function to use for the comparison.
- * @returns {*} - The result of the comparison.
+ * @param {(a:string,b:string)=>T} comparisonFunction - The function to use for the comparison.
+ * @returns {T} - The result of the comparison.
+ * @template T
  */
 export function compareIgnoreCaseAndAccents(a, b, comparisonFunction) {
     if (!a || !b) return comparisonFunction(a, b); // Return the comparison result if either string is empty
@@ -1767,6 +2130,16 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
  */
 export function equalsIgnoreCaseAndAccents(a, b) {
     return compareIgnoreCaseAndAccents(a, b, (a, b) => a === b);
+}
+
+/**
+ * Performs a case-insensitive and accent-insensitive sort.
+ * @param {string} a - The first string to compare
+ * @param {string} b - The second string to compare
+ * @returns {number} -1 if a < b, 1 if a > b, 0 if a === b
+ */
+export function sortIgnoreCaseAndAccents(a, b) {
+    return compareIgnoreCaseAndAccents(a, b, (a, b) => a?.localeCompare(b));
 }
 
 /**
@@ -2016,23 +2389,47 @@ export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
  */
 export function toggleDrawer(drawer, expand = true) {
     /** @type {HTMLElement} */
-    const icon = drawer.querySelector('.inline-drawer-icon');
+    const icon = drawer.querySelector(':scope > .inline-drawer-header .inline-drawer-icon');
     /** @type {HTMLElement} */
-    const content = drawer.querySelector('.inline-drawer-content');
+    const content = drawer.querySelector(':scope > .inline-drawer-content');
+
+    if (!icon || !content) {
+        console.debug('toggleDrawer: No icon or content found in the drawer element.');
+        return;
+    }
 
     if (expand) {
-        icon.classList.remove('up', 'fa-circle-chevron-up');
-        icon.classList.add('down', 'fa-circle-chevron-down');
-        content.style.display = 'block';
-    } else {
         icon.classList.remove('down', 'fa-circle-chevron-down');
         icon.classList.add('up', 'fa-circle-chevron-up');
+        content.style.display = 'block';
+    } else {
+        icon.classList.remove('up', 'fa-circle-chevron-up');
+        icon.classList.add('down', 'fa-circle-chevron-down');
         content.style.display = 'none';
     }
+
+    drawer.dispatchEvent(new CustomEvent('inline-drawer-toggle', { bubbles: true }));
 
     // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
     if (!CSS.supports('field-sizing', 'content')) {
         content.querySelectorAll('textarea.autoSetHeight').forEach(resetScrollHeight);
+    }
+}
+
+/**
+ * Sets or removes a dataset property on an HTMLElement
+ *
+ * Utility function to make it easier to reset dataset properties on null, without them being "null" as value.
+ *
+ * @param {HTMLElement} element - The element to modify
+ * @param {string} name - The name of the dataset property
+ * @param {string|null} value - The value to set - If null, the dataset property will be removed
+ */
+export function setDatasetProperty(element, name, value) {
+    if (value === null) {
+        delete element.dataset[name];
+    } else {
+        element.dataset[name] = value;
     }
 }
 
@@ -2047,6 +2444,7 @@ export async function fetchFaFile(name) {
         .map(rule => rule.selectorText.split(/,\s*/).map(selector => selector.split('::').shift().slice(1)))
     ;
 }
+
 export async function fetchFa() {
     return [...new Set((await Promise.all([
         fetchFaFile('fontawesome.min.css'),
@@ -2109,4 +2507,392 @@ export async function showFontAwesomePicker(customList = null) {
         return value;
     }
     return null;
+}
+
+/**
+ * Finds a persona by name, with optional filtering and precedence for avatars
+ * @param {object} [options={}] - The options for the search
+ * @param {string?} [options.name=null] - The name to search for
+ * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
+ * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
+ * @param {boolean} [options.preferCurrentPersona=true] - Whether to prefer the current persona(s)
+ * @param {boolean} [options.quiet=false] - Whether to suppress warnings
+ * @returns {PersonaViewModel} The persona object
+ * @typedef {object} PersonaViewModel
+ * @property {string} avatar - The avatar of the persona
+ * @property {string} name - The name of the persona
+ */
+export function findPersona({ name = null, allowAvatar = true, insensitive = true, preferCurrentPersona = true, quiet = false } = {}) {
+    /** @type {PersonaViewModel[]} */
+    const personas = Object.entries(power_user.personas).map(([avatar, name]) => ({ avatar, name }));
+    const matches = (/** @type {PersonaViewModel} */ persona) => !name || (allowAvatar && persona.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(persona.name, name) : persona.name === name);
+
+    // If we have a current persona and prefer it, return that if it matches
+    const currentPersona = personas.find(a => a.avatar === user_avatar);
+    if (preferCurrentPersona && currentPersona && matches(currentPersona)) {
+        return currentPersona;
+    }
+
+    // If allowAvatar is true, search by avatar first
+    if (allowAvatar && name) {
+        const personaByAvatar = personas.find(a => a.avatar === name);
+        if (personaByAvatar && matches(personaByAvatar)) {
+            return personaByAvatar;
+        }
+    }
+
+    // Search for matching personas by name
+    const matchingPersonas = personas.filter(a => matches(a));
+    if (matchingPersonas.length > 1) {
+        if (!quiet) toastr.warning(t`Multiple personas found for given conditions.`);
+        else console.warn(t`Multiple personas found for given conditions. Returning the first match.`);
+    }
+
+    return matchingPersonas[0] || null;
+}
+
+/**
+ * Finds a character by name, with optional filtering and precedence for avatars
+ * @param {object} [options={}] - The options for the search
+ * @param {string?} [options.name=null] - The name to search for
+ * @param {boolean} [options.allowAvatar=true] - Whether to allow searching by avatar
+ * @param {boolean} [options.insensitive=true] - Whether the search should be case insensitive
+ * @param {string[]?} [options.filteredByTags=null] - Tags to filter characters by
+ * @param {boolean} [options.preferCurrentChar=true] - Whether to prefer the current character(s)
+ * @param {boolean} [options.quiet=false] - Whether to suppress warnings
+ * @returns {Character?} - The found character or null if not found
+ */
+export function findChar({ name = null, allowAvatar = true, insensitive = true, filteredByTags = null, preferCurrentChar = true, quiet = false } = {}) {
+    const matches = (char) => !name || (allowAvatar && char.avatar === name) || (insensitive ? equalsIgnoreCaseAndAccents(char.name, name) : char.name === name);
+
+    // Filter characters by tags if provided
+    let filteredCharacters = characters;
+    if (filteredByTags) {
+        filteredCharacters = characters.filter(char => {
+            const charTags = getTagsList(char.avatar, false);
+            return filteredByTags.every(tagName => charTags.some(x => x.name == tagName));
+        });
+    }
+
+    // Get the current character(s)
+    /** @type {any[]} */
+    const currentChars = selected_group ? groups.find(group => group.id === selected_group)?.members.map(member => filteredCharacters.find(char => char.avatar === member))
+        : filteredCharacters.filter(char => characters[this_chid]?.avatar === char.avatar);
+
+    // If we have a current char and prefer it, return that if it matches
+    if (preferCurrentChar) {
+        const preferredCharSearch = currentChars.filter(matches);
+        if (preferredCharSearch.length > 1) {
+            if (!quiet) toastr.warning(t`Multiple characters found for given conditions.`);
+            else console.warn(t`Multiple characters found for given conditions. Returning the first match.`);
+        }
+        if (preferredCharSearch.length) {
+            return preferredCharSearch[0];
+        }
+    }
+
+    // If allowAvatar is true, search by avatar first
+    if (allowAvatar && name) {
+        const characterByAvatar = filteredCharacters.find(char => char.avatar === name || (!name.endsWith('.png') && char.avatar === `${name}.png`));
+        if (characterByAvatar) {
+            return characterByAvatar;
+        }
+    }
+
+    // Search for matching characters by name
+    const matchingCharacters = name ? filteredCharacters.filter(matches) : filteredCharacters;
+    if (matchingCharacters.length > 1) {
+        if (!quiet) toastr.warning('Multiple characters found for given conditions.');
+        else console.warn('Multiple characters found for given conditions. Returning the first match.');
+    }
+
+    return matchingCharacters[0] || null;
+}
+
+/**
+ * Gets the index of a character based on the character object
+ * @param {object} char - The character object to find the index for
+ * @throws {Error} If the character is not found
+ * @returns {number} The index of the character in the characters array
+ */
+export function getCharIndex(char) {
+    if (!char) throw new Error('Character is undefined');
+    const index = characters.findIndex(c => c.avatar === char.avatar);
+    if (index === -1) throw new Error(`Character not found: ${char.avatar}`);
+    return index;
+}
+
+/**
+ * Compares two arrays for equality
+ * @param {any[]} a - The first array
+ * @param {any[]} b - The second array
+ * @returns {boolean} True if the arrays are equal, false otherwise
+ */
+export function arraysEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
+
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
+/**
+ * Updates the content and style of an information block
+ * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
+ * @param {string | HTMLElement?} content - The message to display inside the information block (supports HTML) or an HTML element
+ * @param {'hint' | 'info' | 'warning' | 'error'} [type='info'] - The type of message, which determines the styling of the information block
+ */
+export function setInfoBlock(target, content, type = 'info') {
+    if (!content) {
+        clearInfoBlock(target);
+        return;
+    }
+
+    const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
+    if (infoBlock) {
+        infoBlock.className = `info-block ${type}`;
+        if (typeof content === 'string') {
+            infoBlock.innerHTML = content;
+        } else {
+            infoBlock.innerHTML = '';
+            infoBlock.appendChild(content);
+        }
+    }
+}
+
+/**
+ * Clears the content and style of an information block.
+ * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
+ */
+export function clearInfoBlock(target) {
+    const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
+    if (infoBlock && infoBlock.classList.contains('info-block')) {
+        infoBlock.className = '';
+        infoBlock.innerHTML = '';
+    }
+}
+
+/**
+ * Provides a matcher function for select2 that matches both the text and value of options.
+ * @param {import('select2').SearchOptions} params
+ * @param {import('select2').OptGroupData|import('select2').OptionData} data
+ * @return {import('select2').OptGroupData|import('select2').OptionData|null}
+ */
+export function textValueMatcher(params, data) {
+    // Always return the object if there is nothing to compare
+    if (params.term == null || params.term.trim() === '') {
+        return data;
+    }
+
+    // Do a recursive check for options with children
+    if (data.children && data.children.length > 0) {
+        // Clone the data object if there are children
+        // This is required as we modify the object to remove any non-matches
+        const match = $.extend(true, {}, data);
+
+        // Check each child of the option
+        for (let c = data.children.length - 1; c >= 0; c--) {
+            const child = data.children[c];
+
+            const matches = textValueMatcher(params, child);
+
+            // If there wasn't a match, remove the object in the array
+            if (matches == null) {
+                match.children.splice(c, 1);
+            }
+        }
+
+        // If any children matched, return the new object
+        if (match.children.length > 0) {
+            return match;
+        }
+
+        // If there were no matching children, check just the plain object
+        return textValueMatcher(params, match);
+    }
+
+    const textMatch = compareIgnoreCaseAndAccents(data.text, params.term, (a, b) => a.indexOf(b) > -1);
+    const valueMatch = data.element instanceof HTMLOptionElement && compareIgnoreCaseAndAccents(data.element.value, params.term, (a, b) => a.indexOf(b) > -1);
+
+    if (textMatch || valueMatch) {
+        return data;
+    }
+
+    // If it doesn't contain the term, don't return anything
+    return null;
+}
+
+/**
+ * Compares two version numbers, returning true if srcVersion >= minVersion
+ * @param {string} srcVersion The current version.
+ * @param {string} minVersion The target version number to test against
+ * @returns {boolean} True if srcVersion >= minVersion, false if not
+ */
+export function versionCompare(srcVersion, minVersion) {
+    return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+}
+
+/**
+ * Sets up the scroll-to-top button functionality.
+ * @param {object} params Parameters object
+ * @param {string} params.scrollContainerId Scrollable container element ID
+ * @param {string} params.buttonId Button element ID
+ * @param {string} params.drawerId Drawer element ID
+ * @param {number} [params.visibilityThreshold] Scroll position (px) to show the button (default: 300)
+ * @returns {() => void} Cleanup function to remove event listeners
+ */
+export function setupScrollToTop({ scrollContainerId, buttonId, drawerId, visibilityThreshold = 300 }) {
+    const scrollContainer = document.getElementById(scrollContainerId);
+    const btn = document.getElementById(buttonId);
+    const drawer = document.getElementById(drawerId);
+
+    if (!btn || !drawer) {
+        // Not fatal; the drawer or button may not exist in some builds. Use debug level.
+        console.debug('Scroll-to-top: button or drawer not found during setup.');
+        return () => { /* noop cleanup */ };
+    }
+
+    if (!scrollContainer) {
+        console.debug('Scroll-to-top: scroll container not found during setup.');
+        return () => { /* noop cleanup */ };
+    }
+
+    const updateButtonVisibility = () => btn.classList.toggle('visible', scrollContainer.scrollTop > visibilityThreshold);
+    const updateButtonVisibilityThrottled = lodash.throttle(updateButtonVisibility, debounce_timeout.standard, { leading: true, trailing: true });
+    const onScroll = () => updateButtonVisibilityThrottled();
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+
+    // Scroll to top on click (button semantics provide keyboard activation natively)
+    const onActivate = (/** @type {MouseEvent} */ e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const userPrefersReduced = power_user.reduced_motion;
+        scrollContainer.scrollTo({ top: 0, behavior: userPrefersReduced ? 'auto' : 'smooth' });
+    };
+    btn.addEventListener('click', onActivate);
+
+    let frameHandle = null;
+    const resizeObserver = new ResizeObserver(() => {
+        if (frameHandle !== null) {
+            cancelAnimationFrame(frameHandle);
+        }
+        frameHandle = requestAnimationFrame(() => {
+            updateButtonVisibilityThrottled();
+        });
+    });
+    resizeObserver.observe(drawer);
+
+    // Initial state check
+    updateButtonVisibility();
+
+    // Return cleanup function for caller to hold and invoke when appropriate
+    return () => {
+        scrollContainer.removeEventListener('scroll', onScroll);
+        btn.removeEventListener('click', onActivate);
+        resizeObserver.disconnect();
+    };
+}
+
+/**
+ * Imports content from an external URL.
+ * @param {string} url URL or UUID of the content to import.
+ * @param {Object} [options={}] Options object.
+ * @param {string|null} [options.preserveFileName=null] Optional file name to use for the imported content.
+ * @returns {Promise<void>} A promise that resolves when the import is complete.
+ */
+export async function importFromExternalUrl(url, { preserveFileName = null } = {}) {
+    let request;
+
+    if (isValidUrl(url)) {
+        console.debug('Custom content import started for URL: ', url);
+        request = await fetch('/api/content/importURL', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+    } else {
+        console.debug('Custom content import started for Char UUID: ', url);
+        request = await fetch('/api/content/importUUID', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+    }
+
+    if (!request.ok) {
+        toastr.info(request.statusText, 'Custom content import failed');
+        console.error('Custom content import failed', request.status, request.statusText);
+        return;
+    }
+
+    const data = await request.blob();
+    const customContentType = request.headers.get('X-Custom-Content-Type');
+    let fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+    const file = new File([data], fileName, { type: data.type });
+
+    const extraData = new Map();
+    if (preserveFileName) {
+        fileName = preserveFileName;
+        extraData.set(file, preserveFileName);
+    }
+
+    switch (customContentType) {
+        case 'character':
+            await processDroppedFiles([file], extraData);
+            break;
+        case 'lorebook':
+            await importWorldInfo(file);
+            break;
+        default:
+            toastr.warning('Unknown content type');
+            console.error('Unknown content type', customContentType);
+            break;
+    }
+}
+
+/**
+ * If value is less than min, it's set to min.
+ * If value is greater than max, it's set to max.
+ * @param {number} value The target value.
+ * @param {number} min The minimum for value.
+ * @param {number} max The maximum for value.
+ * @returns {number} The clamped value.
+ */
+export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+/**
+ * Shakes the targetElement.
+ * @param {HTMLElement|JQuery<HTMLElement>} targetElement
+ * @param {number} distance Distance in pixels.
+ * @param {number} duration Duration in milliseconds.
+ * @param {string} easing CSS easing function.
+ */
+export function shakeElement(targetElement, distance = 10, duration = 100, easing = 'ease-in-out') {
+    // Don't call the JQuery animation.
+    // https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+    if (targetElement instanceof jQuery) targetElement = targetElement[0];
+
+    return targetElement.animate([
+        { transform: 'translateX(0)' },
+        { transform: `translateX(${distance}px)` },
+        { transform: 'translateX(0)' },
+    ], { duration, easing });
+}
+
+/**
+ * Creates a promise that rejects after a specified delay.
+ * Used for Promise.race fallbacks.
+ * @param {number} ms The delay in milliseconds.
+ * @param {string?} [errorMessage='']
+ * @returns {Promise<never>} A promise that rejects.
+ */
+export function createTimeout(ms, errorMessage = '') {
+    errorMessage ??= `Operation timed out after ${ms}ms.`;
+    return new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(errorMessage)), ms);
+    });
 }

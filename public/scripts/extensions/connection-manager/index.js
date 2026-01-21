@@ -1,6 +1,8 @@
-import { event_types, eventSource, main_api, saveSettingsDebounced } from '../../../script.js';
+import { DOMPurify, Fuse } from '../../../lib.js';
+
+import { event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
-import { callGenericPopup, Popup, POPUP_TYPE } from '../../popup.js';
+import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from '../../slash-commands/SlashCommandAbortController.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
@@ -9,15 +11,24 @@ import { SlashCommandDebugController } from '../../slash-commands/SlashCommandDe
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
-import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4 } from '../../utils.js';
+import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
+import { t } from '../../i18n.js';
+import { getSecretLabelById } from '../../secrets.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
+const EMPTY = '<Empty>';
 
 const DEFAULT_SETTINGS = {
     profiles: [],
     selectedProfile: null,
 };
+
+// Commands that can record an empty value into the profile
+const ALLOW_EMPTY = [
+    'stop-strings',
+    'start-reply-with',
+];
 
 const CC_COMMANDS = [
     'api',
@@ -27,6 +38,12 @@ const CC_COMMANDS = [
     'api-url',
     'model',
     'proxy',
+    'stop-strings',
+    'start-reply-with',
+    'reasoning-template',
+    'prompt-post-processing',
+    'secret-id',
+    'regex-preset',
 ];
 
 const TC_COMMANDS = [
@@ -40,6 +57,11 @@ const TC_COMMANDS = [
     'context',
     'instruct-state',
     'tokenizer',
+    'stop-strings',
+    'start-reply-with',
+    'reasoning-template',
+    'secret-id',
+    'regex-preset',
 ];
 
 const FANCY_NAMES = {
@@ -54,6 +76,12 @@ const FANCY_NAMES = {
     'instruct': 'Instruct Template',
     'context': 'Context Template',
     'tokenizer': 'Tokenizer',
+    'stop-strings': 'Custom Stopping Strings',
+    'start-reply-with': 'Start Reply With',
+    'reasoning-template': 'Reasoning Template',
+    'prompt-post-processing': 'Prompt Post-Processing',
+    'secret-id': 'Secret',
+    'regex-preset': 'Regex Preset',
 };
 
 /**
@@ -101,6 +129,7 @@ class ConnectionManagerSpinner {
 /**
  * Get named arguments for the command callback.
  * @param {object} [args] Additional named arguments
+ * @param {string} [args.force] Whether to force setting the value
  * @returns {object} Named arguments
  */
 function getNamedArguments(args = {}) {
@@ -135,6 +164,16 @@ const profilesProvider = () => [
  * @property {string} [context] Context Template
  * @property {string} [instruct-state] Instruct Mode
  * @property {string} [tokenizer] Tokenizer
+ * @property {string} [stop-strings] Custom Stopping Strings
+ * @property {string} [start-reply-with] Start Reply With
+ * @property {string} [reasoning-template] Reasoning Template
+ * @property {string} [prompt-post-processing] Prompt Post-Processing
+ * @property {string} [sysprompt] System Prompt Name
+ * @property {string} [sysprompt-state] Use System Prompt
+ * @property {string} [api-url] Server URL
+ * @property {string} [secret-id] Secret ID
+ * @property {string} [regex-preset] Regex Preset ID
+ * @property {string[]} [exclude] Commands to exclude
  */
 
 /**
@@ -171,11 +210,17 @@ function findProfileByName(value) {
 async function readProfileFromCommands(mode, profile, cleanUp = false) {
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
     const opposingCommands = mode === 'cc' ? TC_COMMANDS : CC_COMMANDS;
+    const excludeList = Array.isArray(profile.exclude) ? profile.exclude : [];
     for (const command of commands) {
         try {
+            if (excludeList.includes(command)) {
+                continue;
+            }
+
+            const allowEmpty = ALLOW_EMPTY.includes(command);
             const args = getNamedArguments();
             const result = await SlashCommandParser.commands[command].callback(args, '');
-            if (result) {
+            if (result || (allowEmpty && result === '')) {
                 profile[command] = result;
                 continue;
             }
@@ -208,20 +253,47 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
 async function createConnectionProfile(forceName = null) {
     const mode = main_api === 'openai' ? 'cc' : 'tc';
     const id = uuidv4();
+    /** @type {ConnectionProfile} */
     const profile = {
         id,
         mode,
+        exclude: [],
     };
 
     await readProfileFromCommands(mode, profile);
 
     const profileForDisplay = makeFancyProfile(profile);
-    const template = await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay });
+    const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'profile', { profile: profileForDisplay }));
+    template.find('input[name="exclude"]').on('input', function () {
+        const fancyName = String($(this).val());
+        const keyName = Object.entries(FANCY_NAMES).find(x => x[1] === fancyName)?.[0];
+        if (!keyName) {
+            console.warn('Key not found for fancy name:', fancyName);
+            return;
+        }
+
+        if (!Array.isArray(profile.exclude)) {
+            profile.exclude = [];
+        }
+
+        const excludeState = !$(this).prop('checked');
+        if (excludeState) {
+            profile.exclude.push(keyName);
+        } else {
+            const index = profile.exclude.indexOf(keyName);
+            index !== -1 && profile.exclude.splice(index, 1);
+        }
+    });
     const isNameTaken = (n) => extension_settings.connectionManager.profiles.some(p => p.name === n);
     const suggestedName = getUniqueName(collapseSpaces(`${profile.api ?? ''} ${profile.model ?? ''} - ${profile.preset ?? ''}`), isNameTaken);
-    const name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName, { rows: 2 });
-
+    let name = forceName ?? await callGenericPopup(template, POPUP_TYPE.INPUT, suggestedName);
+    // If it's cancelled, it will be false
     if (!name) {
+        return null;
+    }
+    name = DOMPurify.sanitize(String(name));
+    if (!name) {
+        toastr.error('Name cannot be empty.');
         return null;
     }
 
@@ -230,7 +302,13 @@ async function createConnectionProfile(forceName = null) {
         return null;
     }
 
-    profile.name = name;
+    if (Array.isArray(profile.exclude)) {
+        for (const command of profile.exclude) {
+            delete profile[command];
+        }
+    }
+
+    profile.name = String(name);
     return profile;
 }
 
@@ -249,8 +327,9 @@ async function deleteConnectionProfile() {
         return;
     }
 
-    const name = extension_settings.connectionManager.profiles[index].name;
-    const confirm = await Popup.show.confirm('Are you sure you want to delete the selected profile?', name);
+    const profile = extension_settings.connectionManager.profiles[index];
+    const name = profile.name;
+    const confirm = await Popup.show.confirm(t`Are you sure you want to delete the selected profile?`, name);
 
     if (!confirm) {
         return;
@@ -259,6 +338,8 @@ async function deleteConnectionProfile() {
     extension_settings.connectionManager.profiles.splice(index, 1);
     extension_settings.connectionManager.selectedProfile = null;
     saveSettingsDebounced();
+
+    await eventSource.emit(event_types.CONNECTION_PROFILE_DELETED, profile);
 }
 
 /**
@@ -268,7 +349,31 @@ async function deleteConnectionProfile() {
  */
 function makeFancyProfile(profile) {
     return Object.entries(FANCY_NAMES).reduce((acc, [key, value]) => {
-        if (!profile[key]) return acc;
+        const allowEmpty = ALLOW_EMPTY.includes(key);
+        if (!profile[key]) {
+            if (profile[key] === '' && allowEmpty) {
+                acc[value] = EMPTY;
+            }
+            return acc;
+        }
+
+        // UUID is not very useful in the UI, so we replace it with a label (if available)
+        if (key === 'secret-id') {
+            const label = getSecretLabelById(profile[key]);
+            if (label) {
+                acc[value] = label;
+                return acc;
+            }
+        }
+
+        if (key === 'regex-preset') {
+            const label = extension_settings.regex_presets?.find(p => p.id === profile[key])?.name;
+            if (label) {
+                acc[value] = label;
+                return acc;
+            }
+        }
+
         acc[value] = profile[key];
         return acc;
     }, {});
@@ -298,11 +403,12 @@ async function applyConnectionProfile(profile) {
         }
 
         const argument = profile[command];
-        if (!argument) {
+        const allowEmpty = ALLOW_EMPTY.includes(command);
+        if (!argument && !(allowEmpty && argument === '')) {
             continue;
         }
         try {
-            const args = getNamedArguments();
+            const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
             await SlashCommandParser.commands[command].callback(args, argument);
         } catch (error) {
             console.error(`Failed to execute command: ${command} ${argument}`, error);
@@ -357,10 +463,14 @@ async function renderDetailsContent(detailsContent) {
     const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
     if (profile) {
         const profileForDisplay = makeFancyProfile(profile);
-        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', { profile: profileForDisplay });
+        const templateParams = { profile: profileForDisplay };
+        if (Array.isArray(profile.exclude) && profile.exclude.length > 0) {
+            templateParams.omitted = profile.exclude.map(e => FANCY_NAMES[e]).join(', ');
+        }
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'view', templateParams);
         detailsContent.innerHTML = template;
     } else {
-        detailsContent.textContent = 'No profile selected';
+        detailsContent.textContent = t`No profile selected`;
     }
 }
 
@@ -446,6 +556,7 @@ async function renderDetailsContent(detailsContent) {
         saveSettingsDebounced();
         renderConnectionProfiles(profiles);
         await renderDetailsContent(detailsContent);
+        await eventSource.emit(event_types.CONNECTION_PROFILE_CREATED, profile);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
     });
 
@@ -457,9 +568,11 @@ async function renderDetailsContent(detailsContent) {
             console.log('No profile selected');
             return;
         }
+        const oldProfile = structuredClone(profile);
         await updateConnectionProfile(profile);
         await renderDetailsContent(detailsContent);
         saveSettingsDebounced();
+        await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
         toastr.success('Connection profile updated', '', { timeOut: 1500 });
     });
@@ -472,29 +585,79 @@ async function renderDetailsContent(detailsContent) {
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
     });
 
-    const renameButton = document.getElementById('rename_connection_profile');
-    renameButton.addEventListener('click', async () => {
+    const editButton = document.getElementById('edit_connection_profile');
+    editButton.addEventListener('click', async () => {
         const selectedProfile = extension_settings.connectionManager.selectedProfile;
         const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
         if (!profile) {
             console.log('No profile selected');
             return;
         }
+        if (!Array.isArray(profile.exclude)) {
+            profile.exclude = [];
+        }
 
-        const newName = await Popup.show.input('Enter a new name', null, profile.name, { rows: 2 });
+        let saveChanges = false;
+        const sortByViewOrder = (a, b) => Object.keys(FANCY_NAMES).indexOf(a) - Object.keys(FANCY_NAMES).indexOf(b);
+        const commands = profile.mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
+        const settings = commands.slice().sort(sortByViewOrder).reduce((acc, command) => {
+            const fancyName = FANCY_NAMES[command];
+            acc[fancyName] = !profile.exclude.includes(command);
+            return acc;
+        }, {});
+        const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'edit', { name: profile.name, settings }));
+        let newName = await callGenericPopup(template, POPUP_TYPE.INPUT, profile.name, {
+            customButtons: [{
+                text: t`Save and Update`,
+                classes: ['popup-button-ok'],
+                result: POPUP_RESULT.AFFIRMATIVE,
+                action: () => {
+                    saveChanges = true;
+                },
+            }],
+        });
+
+        // If it's cancelled, it will be false
         if (!newName) {
             return;
         }
+        newName = DOMPurify.sanitize(String(newName));
+        if (!newName) {
+            toastr.error('Name cannot be empty.');
+            return;
+        }
 
-        if (extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
+        if (profile.name !== newName && extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
             toastr.error('A profile with the same name already exists.');
             return;
         }
 
-        profile.name = newName;
+        const newExcludeList = template.find('input[name="exclude"]:not(:checked)').map(function () {
+            return Object.entries(FANCY_NAMES).find(x => x[1] === String($(this).val()))?.[0];
+        }).get();
+
+        const oldProfile = structuredClone(profile);
+        if (newExcludeList.length !== profile.exclude.length || !newExcludeList.every(e => profile.exclude.includes(e))) {
+            profile.exclude = newExcludeList;
+            for (const command of newExcludeList) {
+                delete profile[command];
+            }
+            if (saveChanges) {
+                await updateConnectionProfile(profile);
+            } else {
+                toastr.info('Press "Update" to record them into the profile.', 'Included settings list updated');
+            }
+        }
+
+        if (profile.name !== newName) {
+            toastr.success('Connection profile renamed.');
+            profile.name = newName;
+        }
+
         saveSettingsDebounced();
+        await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
         renderConnectionProfiles(profiles);
-        toastr.success('Connection profile renamed', '', { timeOut: 1500 });
+        await renderDetailsContent(detailsContent);
     });
 
     /** @type {HTMLElement} */
@@ -525,6 +688,13 @@ async function renderDetailsContent(detailsContent) {
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 defaultValue: 'true',
                 enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'timeout',
+                description: 'Maximum time to wait for the API connection to be established, in milliseconds. Set to 0 to disable. Only applies when await=true.',
+                isRequired: false,
+                typeList: [ARGUMENT_TYPE.NUMBER],
+                defaultValue: '2000',
             }),
         ],
         callback: async (args, value) => {
@@ -557,6 +727,13 @@ async function renderDetailsContent(detailsContent) {
 
             if (shouldAwait) {
                 await awaitPromise;
+
+                // We should also await the connection to be established
+                const parsedTimeout = parseInt(args?.timeout?.toString());
+                const timeout = !isNaN(parsedTimeout) ? Math.max(0, parsedTimeout) : 2000;
+                if (timeout > 0) {
+                    await waitUntilCondition(() => online_status !== 'no_connection', timeout, 100, { rejectOnTimeout: false });
+                }
             }
 
             return profile.name;
@@ -595,6 +772,7 @@ async function renderDetailsContent(detailsContent) {
             saveSettingsDebounced();
             renderConnectionProfiles(profiles);
             await renderDetailsContent(detailsContent);
+            await eventSource.emit(event_types.CONNECTION_PROFILE_CREATED, profile);
             return profile.name;
         },
     }));
@@ -609,9 +787,11 @@ async function renderDetailsContent(detailsContent) {
                 toastr.warning('No profile selected.');
                 return '';
             }
+            const oldProfile = structuredClone(profile);
             await updateConnectionProfile(profile);
             await renderDetailsContent(detailsContent);
             saveSettingsDebounced();
+            await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
             return profile.name;
         },
     }));

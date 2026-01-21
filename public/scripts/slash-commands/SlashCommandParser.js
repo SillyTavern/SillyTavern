@@ -1,5 +1,6 @@
+import { hljs } from '../../lib.js';
 import { power_user } from '../power-user.js';
-import { isTrueBoolean, uuidv4 } from '../utils.js';
+import { isFalseBoolean, isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './SlashCommandArgument.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
@@ -7,34 +8,35 @@ import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
 import { AutoCompleteNameResult } from '../autocomplete/AutoCompleteNameResult.js';
 import { SlashCommandQuickReplyAutoCompleteOption } from './SlashCommandQuickReplyAutoCompleteOption.js';
-// eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
 import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAutoCompleteOption.js';
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
-// eslint-disable-next-line no-unused-vars
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
+import { EnhancedMacroAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
+import { macros as macroSystem } from '../macros/macro-system.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
 
-/**@readonly*/
-/**@enum {Number}*/
+/**
+ * @enum {Number}
+ * @readonly
+ * @typedef {{[id:PARSER_FLAG]:boolean}} ParserFlags
+ */
 export const PARSER_FLAG = {
     'STRICT_ESCAPING': 1,
     'REPLACE_GETVAR': 2,
 };
 
 export class SlashCommandParser {
-    // @ts-ignore
-    /**@type {Object.<string, SlashCommand>}*/ static commands = {};
+    /** @type {Object.<string, SlashCommand>} */ static commands = {};
 
     /**
      * @deprecated Use SlashCommandParser.addCommandObject() instead.
@@ -98,26 +100,25 @@ export class SlashCommandParser {
     get commands() {
         return SlashCommandParser.commands;
     }
-    // @ts-ignore
-    /**@type {Object.<string, string>}*/ helpStrings = {};
-    /**@type {boolean}*/ verifyCommandNames = true;
-    /**@type {string}*/ text;
-    /**@type {number}*/ index;
-    /**@type {SlashCommandAbortController}*/ abortController;
-    /**@type {SlashCommandDebugController}*/ debugController;
-    /**@type {SlashCommandScope}*/ scope;
-    /**@type {SlashCommandClosure}*/ closure;
+    /** @type {Object.<string, string>} */ helpStrings = {};
+    /** @type {boolean} */ verifyCommandNames = true;
+    /** @type {string} */ text;
+    /** @type {number} */ index;
+    /** @type {SlashCommandAbortController} */ abortController;
+    /** @type {SlashCommandDebugController} */ debugController;
+    /** @type {SlashCommandScope} */ scope;
+    /** @type {SlashCommandClosure} */ closure;
 
-    /**@type {Object.<PARSER_FLAG,boolean>}*/ flags = {};
+    /** @type {Object.<PARSER_FLAG,boolean>} */ flags = {};
 
-    /**@type {boolean}*/ jumpedEscapeSequence = false;
+    /** @type {boolean} */ jumpedEscapeSequence = false;
 
-    /**@type {{start:number, end:number}[]}*/ closureIndex;
-    /**@type {{start:number, end:number, name:string}[]}*/ macroIndex;
-    /**@type {SlashCommandExecutor[]}*/ commandIndex;
-    /**@type {SlashCommandScope[]}*/ scopeIndex;
+    /** @type {{start:number, end:number}[]} */ closureIndex;
+    /** @type {{start:number, end:number, name:string}[]} */ macroIndex;
+    /** @type {SlashCommandExecutor[]} */ commandIndex;
+    /** @type {SlashCommandScope[]} */ scopeIndex;
 
-    /**@type {string}*/ parserContext;
+    /** @type {string} */ parserContext;
 
     get userIndex() { return this.index; }
 
@@ -224,7 +225,7 @@ export class SlashCommandParser {
 
         function getQuotedRunRegex() {
             try {
-                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)(\\||$|\\s)');
+                return new RegExp('(".+?(?<!\\\\)")|((?:[^\\s\\|"]|"[^"]*")*)(\\||$|\\s)');
             } catch {
                 // fallback for browsers that don't support lookbehind
                 return /(".+?")|(\S+?)(\||$|\s)/;
@@ -487,19 +488,21 @@ export class SlashCommandParser {
             if (childClosure !== null) return null;
             const macro = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
             if (macro) {
-                const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
-                const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
-                    li.querySelector('tt').textContent.slice(2, -2).replace(/^([^\s:]+[\s:]+).*$/, '$1'),
-                    li.querySelector('tt').textContent,
-                    (li.querySelector('tt').remove(),li.innerHTML),
-                ));
+                // Calculate cursor position within the macro for argument context
+                const cursorInMacro = index - macro.start - 2; // -2 for {{
+                const macroContent = text.slice(macro.start + 2, macro.end - (text.slice(macro.end - 2, macro.end) === '}}' ? 2 : 0));
+                const context = parseMacroContext(macroContent, cursorInMacro);
+
+                // Extract just the identifier (strip trailing colons/whitespace/closing braces from macro.name)
+                const identifier = macro.name.replace(/[\s:}]+$/, '').trim();
+
+                // Use enhanced macro autocomplete when experimental engine is enabled
+                const options = this.#buildEnhancedMacroOptions(context);
                 const result = new AutoCompleteNameResult(
-                    macro.name,
+                    identifier,
                     macro.start + 2,
                     options,
                     false,
-                    ()=>`No matching macros for "{{${result.name}}}"`,
-                    ()=>'No macros found.',
                 );
                 return result;
             }
@@ -510,12 +513,14 @@ export class SlashCommandParser {
                     ?? []
                 ;
                 try {
-                    const qrApi = (await import('../extensions/quick-reply/index.js')).quickReplyApi;
-                    options.push(...qrApi.listSets()
-                        .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
-                        .flat()
-                        .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
-                    );
+                    if ('quickReplyApi' in globalThis) {
+                        const qrApi = globalThis.quickReplyApi;
+                        options.push(...qrApi.listSets()
+                            .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
+                            .flat()
+                            .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
+                        );
+                    }
                 } catch { /* empty */ }
                 const result = new AutoCompleteNameResult(
                     executor.unnamedArgumentList[0]?.value.toString(),
@@ -531,6 +536,44 @@ export class SlashCommandParser {
             return result;
         }
         return null;
+    }
+
+    /**
+     * Builds enhanced macro autocomplete options from the MacroRegistry.
+     * When typing arguments (after ::), prioritizes the exact macro match.
+     * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+     * @returns {EnhancedMacroAutoCompleteOption[]}
+     */
+    #buildEnhancedMacroOptions(context) {
+        /** @type {EnhancedMacroAutoCompleteOption[]} */
+        const options = [];
+
+        // Get all macros from the registry (excluding hidden aliases)
+        const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
+
+        // If we're typing arguments (after ::), only show the context to the matching macro
+        const isTypingArgs = context.currentArgIndex >= 0;
+
+        for (const macro of allMacros) {
+            // Check if this macro matches the typed identifier
+            const isExactMatch = macro.name === context.identifier;
+            const isAliasMatch = macro.aliasOf === context.identifier;
+
+            // Only pass context to the macro that matches the identifier being typed
+            // This ensures argument hints only show for the relevant macro
+            const macroContext = (isExactMatch || isAliasMatch) ? context : null;
+
+            const option = new EnhancedMacroAutoCompleteOption(macro, macroContext);
+
+            // When typing arguments, prioritize exact matches by putting them first
+            if (isTypingArgs && (isExactMatch || isAliasMatch)) {
+                options.unshift(option);
+            } else {
+                options.push(option);
+            }
+        }
+
+        return options;
     }
 
     /**
@@ -629,6 +672,7 @@ export class SlashCommandParser {
     replaceGetvar(value) {
         return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
+            cmd = cmd.toLowerCase();
             const startIdx = this.index - value.length + idx;
             const endIdx = this.index - value.length + idx + match.length;
             // store pipe
@@ -969,7 +1013,9 @@ export class SlashCommandParser {
         cmd.startUnnamedArgs = this.index - (/\s(\s*)$/s.exec(this.behind)?.[1]?.length ?? 0);
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
-            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount);
+            const rawQuotesArg = cmd?.namedArgumentList?.find(a => a.name === 'raw');
+            const rawQuotes = cmd?.command?.rawQuotes && rawQuotesArg ? !isFalseBoolean(rawQuotesArg?.value?.toString()) : cmd?.command?.rawQuotes;
+            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument, cmd?.command?.splitUnnamedArgumentCount, rawQuotes);
             cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
@@ -1029,7 +1075,7 @@ export class SlashCommandParser {
     testUnnamedArgumentEnd() {
         return this.testCommandEnd();
     }
-    parseUnnamedArgument(split, splitCount = null) {
+    parseUnnamedArgument(split, splitCount = null, rawQuotes = false) {
         const wasSplit = split;
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
@@ -1039,7 +1085,7 @@ export class SlashCommandParser {
         /**@type {SlashCommandUnnamedArgumentAssignment}*/
         let assignment = new SlashCommandUnnamedArgumentAssignment();
         assignment.start = this.index;
-        if (!split && this.testQuotedValue()) {
+        if (!split && !rawQuotes && this.testQuotedValue()) {
             // if the next bit is a quoted value, take the whole value and gather contents as a list
             assignment.value = this.parseQuotedValue();
             assignment.end = this.index;

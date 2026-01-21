@@ -1,0 +1,20 @@
+🪟 Windows:
+    - '(🪟 Windows)'
+
+🍎 Mac:
+    - '(🍎 Mac)'
+
+🐋 Docker:
+    - '(🐋 Docker)'
+
+📱 Termux:
+    - '(📱 Termux)'
+
+🐧 Linux:
+    - '(🐧 Linux)'
+
+🦊 Firefox:
+    - '\b(firefox|mozilla)\b'
+
+📱 Mobile:
+    - '\b(iphone|ios|android|📱 Termux)\b'

@@ -1,0 +1,36 @@
+<div class="title_restorable alignItemsBaseline">
+        <h3 data-i18n="Tag Management">Tag Management</h3>
+        <div class="flex-container alignItemsBaseline">
+            <div class="menu_button menu_button_icon tag_view_prune" data-i18n="[title]Remove unused tags" title="Remove unused tags">
+                <i class="fa-solid fa-scissors"></i>
+                <span data-i18n="Prune">Prune</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_backup" data-i18n="[title]Save your tags to a file" title="Save your tags to a file">
+                <i class="fa-solid fa-file-export"></i>
+                <span data-i18n="Backup">Backup</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_restore" data-i18n="[title]Restore tags from a file" title="Restore tags from a file">
+                <i class="fa-solid fa-file-import"></i>
+                <span data-i18n="Restore">Restore</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_create" data-i18n="[title]Create a new tag" title="Create a new tag">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="Create">Create</span>
+            </div>
+            <input type="file" id="tag_view_restore_input" hidden accept=".json">
+        </div>
+    </div>
+    <div class="justifyLeft m-b-1">
+        <div class="flex-container alignItemsBaseline">
+            <span data-i18n="Sort mode">Sort mode:</span>
+            <select id="tag_sort_mode_select" class="flex1 text_pole">
+                <option value="manual" data-i18n="Manual (Drag & Drop)">Manual (Drag & Drop)</option>
+                <option value="alphabetical" data-i18n="Alphabetical (A-Z)">Alphabetical (A-Z)</option>
+                <option value="by_entries" data-i18n="Most Used (By Count)">Most Used (By Count)</option>
+            </select>
+        </div>
+        <small>
+            <span data-i18n="Drag handle to reorder. Click name to rename. Click color to change display.">Drag handle to reorder. Click name to rename. Click color to change display.</span><br>
+            {{#if bogus_folders}}<span data-i18n="Click on the folder icon to use this tag as a folder.">Click on the folder icon to use this tag as a folder.</span><br>{{/if}}
+        </small>
+    </div>

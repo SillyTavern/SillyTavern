@@ -1,16 +1,17 @@
-const fs = require('fs');
-const path = require('path');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { getDefaultPresetFile, getDefaultPresets } = require('./content-manager');
-const { jsonParser } = require('../express-common');
+import fs from 'node:fs';
+import path from 'node:path';
+
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+
+import { getDefaultPresetFile, getDefaultPresets } from './content-manager.js';
 
 /**
  * Gets the folder and extension for the preset settings based on the API source ID.
  * @param {string} apiId API source ID
- * @param {import('../users').UserDirectoryList} directories User directories
- * @returns {object} Object containing the folder and extension for the preset settings
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @returns {{folder: string?, extension: string?}} Object containing the folder and extension for the preset settings
  */
 function getPresetSettingsByAPI(apiId, directories) {
     switch (apiId) {
@@ -29,14 +30,16 @@ function getPresetSettingsByAPI(apiId, directories) {
             return { folder: directories.context, extension: '.json' };
         case 'sysprompt':
             return { folder: directories.sysprompt, extension: '.json' };
+        case 'reasoning':
+            return { folder: directories.reasoning, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }
 }
 
-const router = express.Router();
+export const router = express.Router();
 
-router.post('/save', jsonParser, function (request, response) {
+router.post('/save', function (request, response) {
     const name = sanitize(request.body.name);
     if (!request.body.preset || !name) {
         return response.sendStatus(400);
@@ -54,7 +57,7 @@ router.post('/save', jsonParser, function (request, response) {
     return response.send({ name });
 });
 
-router.post('/delete', jsonParser, function (request, response) {
+router.post('/delete', function (request, response) {
     const name = sanitize(request.body.name);
     if (!name) {
         return response.sendStatus(400);
@@ -77,7 +80,7 @@ router.post('/delete', jsonParser, function (request, response) {
     }
 });
 
-router.post('/restore', jsonParser, function (request, response) {
+router.post('/restore', function (request, response) {
     try {
         const settings = getPresetSettingsByAPI(request.body.apiId, request.user.directories);
         const name = sanitize(request.body.name);
@@ -94,38 +97,7 @@ router.post('/restore', jsonParser, function (request, response) {
 
         return response.send(result);
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return response.sendStatus(500);
     }
 });
-
-// TODO: Merge with /api/presets/save
-router.post('/save-openai', jsonParser, function (request, response) {
-    if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
-    const name = sanitize(request.query.name);
-    if (!name) return response.sendStatus(400);
-
-    const filename = `${name}.json`;
-    const fullpath = path.join(request.user.directories.openAI_Settings, filename);
-    writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
-    return response.send({ name });
-});
-
-// TODO: Merge with /api/presets/delete
-router.post('/delete-openai', jsonParser, function (request, response) {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const name = request.body.name;
-    const pathToFile = path.join(request.user.directories.openAI_Settings, `${name}.json`);
-
-    if (fs.existsSync(pathToFile)) {
-        fs.rmSync(pathToFile);
-        return response.send({ ok: true });
-    }
-
-    return response.send({ error: true });
-});
-
-module.exports = { router };

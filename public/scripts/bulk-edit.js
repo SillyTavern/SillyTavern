@@ -1,6 +1,6 @@
 import { characterGroupOverlay } from '../script.js';
-import { BulkEditOverlay, BulkEditOverlayState } from './BulkEditOverlay.js';
-
+import { BulkEditOverlay, BulkEditOverlayState, CharacterContextMenu } from './BulkEditOverlay.js';
+import { event_types, eventSource } from './events.js';
 
 let is_bulk_edit = false;
 
@@ -29,11 +29,6 @@ const toggleBulkEditMode = (isBulkEdit) => {
         enableBulkEdit();
     }
 };
-
-characterGroupOverlay.addStateChangeCallback((state) => {
-    if (state === BulkEditOverlayState.select) enableBulkEdit();
-    if (state === BulkEditOverlayState.browse) disableBulkEdit();
-});
 
 /**
  * Toggles bulk edit mode on/off when the edit button is clicked.
@@ -117,8 +112,17 @@ function disableBulkSelect() {
 /**
  * Entry point that runs on page load.
  */
-jQuery(() => {
+export function initBulkEdit() {
+    characterGroupOverlay.addStateChangeCallback((state) => {
+        if (state === BulkEditOverlayState.select) enableBulkEdit();
+        if (state === BulkEditOverlayState.browse) disableBulkEdit();
+    });
+
     $('#bulkEditButton').on('click', onEditButtonClick);
     $('#bulkSelectAllButton').on('click', onSelectAllButtonClick);
     $('#bulkDeleteButton').on('click', onDeleteButtonClick);
-});
+
+    const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
+    eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
+    console.debug('Character context menu initialized', characterContextMenu);
+}

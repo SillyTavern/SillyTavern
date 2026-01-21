@@ -1,6 +1,5 @@
-
 #rm_print_characters_block.group_overlay_mode_select .character_select {
-    transition: background-color 0.4s ease;
+    transition: background-color var(--animation-duration-3x) ease;
     background-color: rgba(170, 170, 170, 0.15);
 }
 
@@ -28,7 +27,10 @@
     height: 0 !important;
 }
 
-#character_context_menu.hidden { display: none; }
+#character_context_menu.hidden {
+    display: none;
+}
+
 #character_context_menu {
     position: absolute;
     padding: 3px;

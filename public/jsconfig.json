@@ -5,27 +5,25 @@
         "module": "ESNext",
         "moduleResolution": "node",
         "allowUmdGlobalAccess": true,
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "strictBindCallApply": true,
+        "baseUrl": ".",
+        "paths": {
+            "/*": [
+                "./*"
+            ]
+        }
     },
     "exclude": [
-        "node_modules"
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.git/**",
+        "lib/**",
+        "**/*.min.js",
+        "scripts/extensions/quick-reply/lib/**",
+        "scripts/extensions/tts/lib/**"
     ],
     "typeAcquisition": {
-        "include": [
-            "jquery",
-            "@popperjs/core",
-            "toastr",
-            "showdown",
-            "dompurify",
-            "moment",
-            "seedrandom",
-            "showdown-katex",
-            "droll",
-            "handlebars",
-            "highlight.js",
-            "localforage",
-            "pdfjs-dist",
-            "@mozilla/readability"
-        ]
+        "include": []
     }
 }

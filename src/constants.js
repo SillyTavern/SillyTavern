@@ -1,22 +1,24 @@
-const PUBLIC_DIRECTORIES = {
+export const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
     backups: 'backups/',
     sounds: 'public/sounds',
     extensions: 'public/scripts/extensions',
+    globalExtensions: 'public/scripts/extensions/third-party',
 };
 
-const SETTINGS_FILE = 'settings.json';
+export const SETTINGS_FILE = 'settings.json';
 
 /**
- * @type {import('./users').UserDirectoryList}
+ * @type {import('./users.js').UserDirectoryList}
  * @readonly
  * @enum {string}
  */
-const USER_DIRECTORY_TEMPLATE = Object.freeze({
+export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     root: '',
     thumbnails: 'thumbnails',
     thumbnailsBg: 'thumbnails/bg',
     thumbnailsAvatar: 'thumbnails/avatar',
+    thumbnailsPersona: 'thumbnails/persona',
     worlds: 'worlds',
     user: 'user',
     avatars: 'User Avatars',
@@ -42,13 +44,14 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     vectors: 'vectors',
     backups: 'backups',
     sysprompt: 'sysprompt',
+    reasoning: 'reasoning',
 });
 
 /**
- * @type {import('./users').User}
+ * @type {import('./users.js').User}
  * @readonly
  */
-const DEFAULT_USER = Object.freeze({
+export const DEFAULT_USER = Object.freeze({
     handle: 'default-user',
     name: 'User',
     created: Date.now(),
@@ -58,7 +61,7 @@ const DEFAULT_USER = Object.freeze({
     salt: '',
 });
 
-const UNSAFE_EXTENSIONS = [
+export const UNSAFE_EXTENSIONS = [
     '.php',
     '.exe',
     '.com',
@@ -135,80 +138,86 @@ const UNSAFE_EXTENSIONS = [
     '.ws',
 ];
 
-const GEMINI_SAFETY = [
+export const GEMINI_SAFETY = [
     {
         category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_NONE',
+        threshold: 'OFF',
     },
     {
         category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_NONE',
+        threshold: 'OFF',
     },
     {
         category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-        threshold: 'BLOCK_NONE',
+        threshold: 'OFF',
     },
     {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_NONE',
+        threshold: 'OFF',
     },
     {
         category: 'HARM_CATEGORY_CIVIC_INTEGRITY',
-        threshold: 'BLOCK_NONE',
+        threshold: 'OFF',
     },
 ];
 
-const BISON_SAFETY = [
+export const VERTEX_SAFETY = [
     {
-        category: 'HARM_CATEGORY_DEROGATORY',
-        threshold: 'BLOCK_NONE',
+        category: 'HARM_CATEGORY_IMAGE_HATE',
+        threshold: 'OFF',
     },
     {
-        category: 'HARM_CATEGORY_TOXICITY',
-        threshold: 'BLOCK_NONE',
+        category: 'HARM_CATEGORY_IMAGE_DANGEROUS_CONTENT',
+        threshold: 'OFF',
     },
     {
-        category: 'HARM_CATEGORY_VIOLENCE',
-        threshold: 'BLOCK_NONE',
+        category: 'HARM_CATEGORY_IMAGE_HARASSMENT',
+        threshold: 'OFF',
     },
     {
-        category: 'HARM_CATEGORY_SEXUAL',
-        threshold: 'BLOCK_NONE',
+        category: 'HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT',
+        threshold: 'OFF',
     },
     {
-        category: 'HARM_CATEGORY_MEDICAL',
-        threshold: 'BLOCK_NONE',
-    },
-    {
-        category: 'HARM_CATEGORY_DANGEROUS',
-        threshold: 'BLOCK_NONE',
+        category: 'HARM_CATEGORY_JAILBREAK',
+        threshold: 'OFF',
     },
 ];
 
-const CHAT_COMPLETION_SOURCES = {
+export const CHAT_COMPLETION_SOURCES = {
     OPENAI: 'openai',
-    WINDOWAI: 'windowai',
     CLAUDE: 'claude',
-    SCALE: 'scale',
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
+    VERTEXAI: 'vertexai',
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
     GROQ: 'groq',
-    ZEROONEAI: '01ai',
-    BLOCKENTROPY: 'blockentropy',
+    CHUTES: 'chutes',
+    ELECTRONHUB: 'electronhub',
+    NANOGPT: 'nanogpt',
+    DEEPSEEK: 'deepseek',
+    AIMLAPI: 'aimlapi',
+    XAI: 'xai',
+    POLLINATIONS: 'pollinations',
+    MOONSHOT: 'moonshot',
+    FIREWORKS: 'fireworks',
+    COMETAPI: 'cometapi',
+    AZURE_OPENAI: 'azure_openai',
+    ZAI: 'zai',
+    SILICONFLOW: 'siliconflow',
 };
 
 /**
  * Path to multer file uploads under the data root.
  */
-const UPLOADS_DIRECTORY = '_uploads';
+export const UPLOADS_DIRECTORY = '_uploads';
 
 // TODO: this is copied from the client code; there should be a way to de-duplicate it eventually
-const TEXTGEN_TYPES = {
+export const TEXTGEN_TYPES = {
     OOBA: 'ooba',
     MANCER: 'mancer',
     VLLM: 'vllm',
@@ -223,9 +232,10 @@ const TEXTGEN_TYPES = {
     OPENROUTER: 'openrouter',
     FEATHERLESS: 'featherless',
     HUGGINGFACE: 'huggingface',
+    GENERIC: 'generic',
 };
 
-const INFERMATICAI_KEYS = [
+export const INFERMATICAI_KEYS = [
     'model',
     'prompt',
     'max_tokens',
@@ -248,7 +258,7 @@ const INFERMATICAI_KEYS = [
     'logprobs',
 ];
 
-const FEATHERLESS_KEYS = [
+export const FEATHERLESS_KEYS = [
     'model',
     'prompt',
     'best_of',
@@ -290,26 +300,8 @@ const FEATHERLESS_KEYS = [
     'guided_whitespace_pattern',
 ];
 
-
-// https://dreamgen.com/docs/api#openai-text
-const DREAMGEN_KEYS = [
-    'model',
-    'prompt',
-    'max_tokens',
-    'temperature',
-    'top_p',
-    'top_k',
-    'min_p',
-    'repetition_penalty',
-    'frequency_penalty',
-    'presence_penalty',
-    'stop',
-    'stream',
-    'minimum_message_content_tokens',
-];
-
 // https://docs.together.ai/reference/completions
-const TOGETHERAI_KEYS = [
+export const TOGETHERAI_KEYS = [
     'model',
     'prompt',
     'max_tokens',
@@ -324,10 +316,11 @@ const TOGETHERAI_KEYS = [
     'stop',
 ];
 
-// https://github.com/jmorganca/ollama/blob/main/docs/api.md#request-with-options
-const OLLAMA_KEYS = [
+// https://github.com/ollama/ollama/blob/main/docs/api.md#request-8
+export const OLLAMA_KEYS = [
     'num_predict',
     'num_ctx',
+    'num_batch',
     'stop',
     'temperature',
     'repeat_penalty',
@@ -339,26 +332,47 @@ const OLLAMA_KEYS = [
     'typical_p',
     'seed',
     'repeat_last_n',
-    'mirostat',
-    'mirostat_tau',
-    'mirostat_eta',
     'min_p',
 ];
 
-const AVATAR_WIDTH = 512;
-const AVATAR_HEIGHT = 768;
+// https://platform.openai.com/docs/api-reference/completions
+export const OPENAI_KEYS = [
+    'model',
+    'prompt',
+    'stream',
+    'temperature',
+    'top_p',
+    'frequency_penalty',
+    'presence_penalty',
+    'stop',
+    'seed',
+    'logit_bias',
+    'logprobs',
+    'max_tokens',
+    'n',
+    'best_of',
+];
 
-const OPENROUTER_HEADERS = {
+export const AVATAR_WIDTH = 512;
+export const AVATAR_HEIGHT = 768;
+export const DEFAULT_AVATAR_PATH = './public/img/ai4.png';
+
+export const OPENROUTER_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
     'X-Title': 'SillyTavern',
 };
 
-const FEATHERLESS_HEADERS = {
+export const AIMLAPI_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
     'X-Title': 'SillyTavern',
 };
 
-const OPENROUTER_KEYS = [
+export const FEATHERLESS_HEADERS = {
+    'HTTP-Referer': 'https://sillytavern.app',
+    'X-Title': 'SillyTavern',
+};
+
+export const OPENROUTER_KEYS = [
     'max_tokens',
     'temperature',
     'top_k',
@@ -375,10 +389,11 @@ const OPENROUTER_KEYS = [
     'prompt',
     'stop',
     'provider',
+    'include_reasoning',
 ];
 
 // https://github.com/vllm-project/vllm/blob/0f8a91401c89ac0a8018def3756829611b57727f/vllm/entrypoints/openai/protocol.py#L220
-const VLLM_KEYS = [
+export const VLLM_KEYS = [
     'model',
     'prompt',
     'best_of',
@@ -420,26 +435,101 @@ const VLLM_KEYS = [
     'guided_whitespace_pattern',
 ];
 
-module.exports = {
-    DEFAULT_USER,
-    SETTINGS_FILE,
-    PUBLIC_DIRECTORIES,
-    USER_DIRECTORY_TEMPLATE,
-    UNSAFE_EXTENSIONS,
-    UPLOADS_DIRECTORY,
-    GEMINI_SAFETY,
-    BISON_SAFETY,
-    TEXTGEN_TYPES,
-    CHAT_COMPLETION_SOURCES,
-    AVATAR_WIDTH,
-    AVATAR_HEIGHT,
-    TOGETHERAI_KEYS,
-    OLLAMA_KEYS,
-    INFERMATICAI_KEYS,
-    DREAMGEN_KEYS,
-    OPENROUTER_HEADERS,
-    OPENROUTER_KEYS,
-    VLLM_KEYS,
-    FEATHERLESS_KEYS,
-    FEATHERLESS_HEADERS,
+export const AZURE_OPENAI_KEYS = [
+    'messages',
+    'temperature',
+    'frequency_penalty',
+    'presence_penalty',
+    'top_p',
+    'max_tokens',
+    'max_completion_tokens',
+    'stream',
+    'logit_bias',
+    'stop',
+    'n',
+    'logprobs',
+    'seed',
+    'tools',
+    'tool_choice',
+    'reasoning_effort',
+];
+
+export const OPENAI_VERBOSITY_MODELS = /^gpt-5/;
+
+export const OPENAI_REASONING_EFFORT_MODELS = [
+    'o1',
+    'o3-mini',
+    'o3-mini-2025-01-31',
+    'o4-mini',
+    'o4-mini-2025-04-16',
+    'o3',
+    'o3-2025-04-16',
+    'gpt-5',
+    'gpt-5-2025-08-07',
+    'gpt-5-mini',
+    'gpt-5-mini-2025-08-07',
+    'gpt-5-nano',
+    'gpt-5-nano-2025-08-07',
+    'gpt-5.1',
+    'gpt-5.1-2025-11-13',
+    'gpt-5.1-chat-latest',
+    'gpt-5.2',
+    'gpt-5.2-2025-12-11',
+    'gpt-5.2-chat-latest',
+];
+
+export const OPENAI_REASONING_EFFORT_MAP = {
+    min: 'minimal',
+};
+
+export const LOG_LEVELS = {
+    DEBUG: 0,
+    INFO: 1,
+    WARN: 2,
+    ERROR: 3,
+};
+
+/**
+ * An array of supported media file extensions.
+ * This is used to validate file uploads and ensure that only supported media types are processed.
+ */
+export const MEDIA_EXTENSIONS = [
+    'bmp',
+    'png',
+    'jpg',
+    'webp',
+    'jpeg',
+    'jfif',
+    'gif',
+    'mp4',
+    'avi',
+    'mov',
+    'wmv',
+    'flv',
+    'webm',
+    '3gp',
+    'mkv',
+    'mpg',
+    'mp3',
+    'wav',
+    'ogg',
+    'flac',
+    'aac',
+    'm4a',
+    'aiff',
+];
+
+/**
+ * Bitwise flag-style media request types.
+ */
+export const MEDIA_REQUEST_TYPE = {
+    IMAGE: 0b001,
+    VIDEO: 0b010,
+    AUDIO: 0b100,
+};
+
+
+export const ZAI_ENDPOINT = {
+    COMMON: 'common',
+    CODING: 'coding',
 };

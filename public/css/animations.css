@@ -55,11 +55,15 @@
 
 /* Flashing for highlighting animation */
 @keyframes flash {
-    0%, 50%, 100% {
+
+    0%,
+    50%,
+    100% {
         opacity: 1;
     }
 
-    25%, 75% {
+    25%,
+    75% {
         opacity: 0.2;
     }
 }
@@ -117,5 +121,34 @@
 
     50% {
         border-top-color: var(--progFlashColor);
+    }
+}
+
+/* Scroll delay animations */
+@keyframes hide-scroll {
+
+    from,
+    to {
+        overflow-y: hidden;
+    }
+}
+
+@keyframes slide {
+    0% {
+        transform: translateX(var(--slide-mes-x-start, 0px));
+    }
+
+    100% {
+        transform: translateX(var(--slide-mes-x-end, 0px));
+    }
+}
+
+@-webkit-keyframes slide {
+    0% {
+        transform: translateX(var(--slide-mes-x-start, 0px));
+    }
+
+    100% {
+        transform: translateX(var(--slide-mes-x-end, 0px));
     }
 }

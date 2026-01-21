@@ -1,3 +1,4 @@
+import { hljs, morphdom } from '../../../../lib.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from '../../../popup.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { SlashCommandAbortController } from '../../../slash-commands/SlashCommandAbortController.js';
@@ -9,9 +10,9 @@ import { SlashCommandExecutor } from '../../../slash-commands/SlashCommandExecut
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
+import { accountStorage } from '../../../util/AccountStorage.js';
 import { debounce, delay, getSortableDelay, showFontAwesomePicker } from '../../../utils.js';
 import { log, quickReplyApi, warn } from '../index.js';
-import morphdom from '../lib/morphdom-esm.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
 import { ContextMenu } from './ui/ctx/ContextMenu.js';
@@ -45,10 +46,11 @@ export class QuickReply {
     /**@type {boolean}*/ executeOnChatChange = false;
     /**@type {boolean}*/ executeOnGroupMemberDraft = false;
     /**@type {boolean}*/ executeOnNewChat = false;
+    /**@type {boolean}*/ executeBeforeGeneration = false;
     /**@type {string}*/ automationId = '';
 
     /**@type {function}*/ onExecute;
-    /**@type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>}*/ onDebug;
+    /** @type {(qr:QuickReply)=>AsyncGenerator<SlashCommandClosureResult|{closure:SlashCommandClosure, executor:SlashCommandExecutor|SlashCommandClosureResult}, SlashCommandClosureResult, boolean>} */ onDebug;
     /**@type {function}*/ onDelete;
     /**@type {function}*/ onUpdate;
     /**@type {function}*/ onInsertBefore;
@@ -433,6 +435,7 @@ export class QuickReply {
                 this.updateLabel(label.value);
             });
             let switcherList;
+            // @ts-ignore
             dom.querySelector('#qr--modal-switcher').addEventListener('click', (evt)=>{
                 if (switcherList) {
                     switcherList.remove();
@@ -544,9 +547,9 @@ export class QuickReply {
             this.editorSyntax = messageSyntaxInner;
             /**@type {HTMLInputElement}*/
             const wrap = dom.querySelector('#qr--modal-wrap');
-            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap') ?? 'false');
+            wrap.checked = JSON.parse(accountStorage.getItem('qr--wrap') ?? 'false');
             wrap.addEventListener('click', () => {
-                localStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
+                accountStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
                 updateWrap();
             });
             const updateWrap = () => {
@@ -594,30 +597,32 @@ export class QuickReply {
             };
             /**@type {HTMLInputElement}*/
             const tabSize = dom.querySelector('#qr--modal-tabSize');
-            tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
+            tabSize.value = JSON.parse(accountStorage.getItem('qr--tabSize') ?? '4');
             const updateTabSize = () => {
                 message.style.tabSize = tabSize.value;
                 messageSyntaxInner.style.tabSize = tabSize.value;
                 updateScrollDebounced();
             };
             tabSize.addEventListener('change', () => {
-                localStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
+                accountStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
                 updateTabSize();
             });
             /**@type {HTMLInputElement}*/
             const executeShortcut = dom.querySelector('#qr--modal-executeShortcut');
-            executeShortcut.checked = JSON.parse(localStorage.getItem('qr--executeShortcut') ?? 'true');
+            executeShortcut.checked = JSON.parse(accountStorage.getItem('qr--executeShortcut') ?? 'true');
             executeShortcut.addEventListener('click', () => {
-                localStorage.setItem('qr--executeShortcut', JSON.stringify(executeShortcut.checked));
+                accountStorage.setItem('qr--executeShortcut', JSON.stringify(executeShortcut.checked));
             });
             /**@type {HTMLInputElement}*/
             const syntax = dom.querySelector('#qr--modal-syntax');
-            syntax.checked = JSON.parse(localStorage.getItem('qr--syntax') ?? 'true');
+            syntax.checked = JSON.parse(accountStorage.getItem('qr--syntax') ?? 'true');
             syntax.addEventListener('click', () => {
-                localStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
+                accountStorage.setItem('qr--syntax', JSON.stringify(syntax.checked));
                 updateSyntaxEnabled();
             });
+            // @ts-ignore
             if (navigator.keyboard) {
+                // @ts-ignore
                 navigator.keyboard.getLayoutMap().then(it=>dom.querySelector('#qr--modal-commentKey').textContent = it.get('Backslash'));
             } else {
                 dom.querySelector('#qr--modal-commentKey').closest('small').remove();
@@ -634,7 +639,6 @@ export class QuickReply {
             }, { passive:true });
             const getLineStart = ()=>{
                 const start = message.selectionStart;
-                const end = message.selectionEnd;
                 let lineStart;
                 if (start == 0 || message.value[start - 1] == '\n') {
                     // cursor is already at beginning of line
@@ -700,7 +704,6 @@ export class QuickReply {
                 } else if (evt.key == 'Enter' && !evt.ctrlKey && !evt.shiftKey && !evt.altKey && !(ac.isReplaceable && ac.isActive)) {
                     // new line, keep indent
                     const start = message.selectionStart;
-                    const end = message.selectionEnd;
                     let lineStart = getLineStart();
                     const indent = /^([^\S\n]*)/.exec(message.value.slice(lineStart))[1] ?? '';
                     if (indent.length) {
@@ -782,6 +785,7 @@ export class QuickReply {
             message.addEventListener('wheel', (evt)=>{
                 updateScrollDebounced(evt);
             });
+            // @ts-ignore
             message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
             });
@@ -1062,6 +1066,13 @@ export class QuickReply {
                 this.updateContext();
             });
             /**@type {HTMLInputElement}*/
+            const executeBeforeGeneration = dom.querySelector('#qr--executeBeforeGeneration');
+            executeBeforeGeneration.checked = this.executeBeforeGeneration;
+            executeBeforeGeneration.addEventListener('click', ()=>{
+                this.executeBeforeGeneration = executeBeforeGeneration.checked;
+                this.updateContext();
+            });
+            /**@type {HTMLInputElement}*/
             const executeOnNewChat = dom.querySelector('#qr--executeOnNewChat');
             executeOnNewChat.checked = this.executeOnNewChat;
             executeOnNewChat.addEventListener('click', ()=>{
@@ -1118,6 +1129,7 @@ export class QuickReply {
             /**@type {HTMLTextAreaElement} */
             const inputOg = document.querySelector('#send_textarea');
             const inputMirror = dom.querySelector('#qr--modal-send_textarea');
+            // @ts-ignore
             inputMirror.value = inputOg.value;
             const inputOgMo = new MutationObserver(muts=>{
                 if (muts.find(it=>[...it.removedNodes].includes(inputMirror) || [...it.removedNodes].find(n=>n.contains(inputMirror)))) {
@@ -1126,10 +1138,12 @@ export class QuickReply {
             });
             inputOgMo.observe(document.body, { childList:true });
             const inputOgListener = ()=>{
+                // @ts-ignore
                 inputMirror.value = inputOg.value;
             };
             inputOg.addEventListener('input', inputOgListener);
             inputMirror.addEventListener('input', ()=>{
+                // @ts-ignore
                 inputOg.value = inputMirror.value;
             });
 
@@ -1173,15 +1187,19 @@ export class QuickReply {
                 isResizing = true;
                 evt.preventDefault();
                 resizeStart = evt.x;
+                // @ts-ignore
                 wStart = dom.querySelector('#qr--qrOptions').offsetWidth;
                 const dragListener = debounce((evt)=>{
                     const w = wStart + resizeStart - evt.x;
+                    // @ts-ignore
                     dom.querySelector('#qr--qrOptions').style.setProperty('--width', `${w}px`);
                 }, 5);
                 window.addEventListener('pointerup', ()=>{
+                    // @ts-ignore
                     window.removeEventListener('pointermove', dragListener);
                     isResizing = false;
                 }, { once:true });
+                // @ts-ignore
                 window.addEventListener('pointermove', dragListener);
             });
 
@@ -1283,6 +1301,7 @@ export class QuickReply {
         syntax.addEventListener('wheel', (evt)=>{
             updateScrollDebounced(evt);
         });
+        // @ts-ignore
         syntax.addEventListener('scroll', (evt)=>{
             updateScrollDebounced();
         });
@@ -1415,8 +1434,11 @@ export class QuickReply {
                                 let i = 0;
                                 let unnamed = this.debugController.unnamedArguments ?? [];
                                 if (!Array.isArray(unnamed)) unnamed = [unnamed];
+                                // @ts-ignore
                                 while (unnamed.length < executor.unnamedArgumentList?.length ?? 0) unnamed.push(undefined);
+                                // @ts-ignore
                                 unnamed = unnamed.map((it,idx)=>[executor.unnamedArgumentList?.[idx], it]);
+                                // @ts-ignore
                                 for (const arg of unnamed) {
                                     i++;
                                     const item = document.createElement('div'); {
@@ -1905,6 +1927,7 @@ export class QuickReply {
             executeOnChatChange: this.executeOnChatChange,
             executeOnGroupMemberDraft: this.executeOnGroupMemberDraft,
             executeOnNewChat: this.executeOnNewChat,
+            executeBeforeGeneration: this.executeBeforeGeneration,
             automationId: this.automationId,
         };
     }

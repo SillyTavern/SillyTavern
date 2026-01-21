@@ -2,21 +2,21 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { convertValueType } from '../utils.js';
 
 export class SlashCommandScope {
-    /**@type {string[]}*/ variableNames = [];
+    /** @type {string[]} */ variableNames = [];
     get allVariableNames() {
         const names = [...this.variableNames, ...(this.parent?.allVariableNames ?? [])];
         return names.filter((it,idx)=>idx == names.indexOf(it));
     }
     // @ts-ignore
-    /**@type {object.<string, string|SlashCommandClosure>}*/ variables = {};
+    /** @type {object.<string, string|SlashCommandClosure>} */ variables = {};
     // @ts-ignore
-    /**@type {object.<string, string|SlashCommandClosure>}*/ macros = {};
-    /**@type {{key:string, value:string|SlashCommandClosure}[]} */
+    /** @type {object.<string, string|SlashCommandClosure>} */ macros = {};
+    /** @type {{key:string, value:string|SlashCommandClosure}[]} */
     get macroList() {
         return [...Object.keys(this.macros).map(key=>({ key, value:this.macros[key] })), ...(this.parent?.macroList ?? [])];
     }
-    /**@type {SlashCommandScope}*/ parent;
-    /**@type {string}*/ #pipe;
+    /** @type {SlashCommandScope} */ parent;
+    /** @type {string} */ #pipe;
     get pipe() {
         return this.#pipe ?? this.parent?.pipe;
     }

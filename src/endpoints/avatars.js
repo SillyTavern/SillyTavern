@@ -1,23 +1,25 @@
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { jsonParser, urlencodedParser } = require('../express-common');
-const { AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
-const { getImages, tryParse } = require('../util');
+import path from 'node:path';
+import fs from 'node:fs';
 
-// image processing related library imports
-const jimp = require('jimp');
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { Jimp } from '../jimp.js';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
-const router = express.Router();
+import { getImages, tryParse } from '../util.js';
+import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { applyAvatarCropResize } from './characters.js';
+import { invalidateThumbnail } from './thumbnails.js';
+import cacheBuster from '../middleware/cacheBuster.js';
 
-router.post('/get', jsonParser, function (request, response) {
-    var images = getImages(request.user.directories.avatars);
-    response.send(JSON.stringify(images));
+export const router = express.Router();
+
+router.post('/get', function (request, response) {
+    const images = getImages(request.user.directories.avatars);
+    response.send(images);
 });
 
-router.post('/delete', jsonParser, function (request, response) {
+router.post('/delete', getFileNameValidationFunction('avatar'), function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.avatar !== sanitize(request.body.avatar)) {
@@ -28,35 +30,36 @@ router.post('/delete', jsonParser, function (request, response) {
     const fileName = path.join(request.user.directories.avatars, sanitize(request.body.avatar));
 
     if (fs.existsSync(fileName)) {
-        fs.rmSync(fileName);
+        fs.unlinkSync(fileName);
+        invalidateThumbnail(request.user.directories, 'persona', sanitize(request.body.avatar));
         return response.send({ result: 'ok' });
     }
 
     return response.sendStatus(404);
 });
 
-router.post('/upload', urlencodedParser, async (request, response) => {
+router.post('/upload', getFileNameValidationFunction('overwrite_name'), async (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     try {
         const pathToUpload = path.join(request.file.destination, request.file.filename);
         const crop = tryParse(request.query.crop);
-        let rawImg = await jimp.read(pathToUpload);
+        const rawImg = await Jimp.read(pathToUpload);
+        const image = await applyAvatarCropResize(rawImg, crop);
 
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
+        // Remove previous thumbnail and bust cache if overwriting
+        if (request.body.overwrite_name) {
+            invalidateThumbnail(request.user.directories, 'persona', sanitize(request.body.overwrite_name));
+            cacheBuster.bust(request, response);
         }
 
-        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
-
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
+        const filename = sanitize(request.body.overwrite_name || `${Date.now()}.png`);
         const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
-        fs.rmSync(pathToUpload);
+        fs.unlinkSync(pathToUpload);
         return response.send({ path: filename });
     } catch (err) {
+        console.error('Error uploading user avatar:', err);
         return response.status(400).send('Is not a valid image');
     }
 });
-
-module.exports = { router };

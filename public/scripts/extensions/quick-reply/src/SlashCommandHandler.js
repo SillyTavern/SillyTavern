@@ -8,18 +8,17 @@ import { SlashCommandEnumValue, enumTypes } from '../../../slash-commands/SlashC
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { isTrueBoolean } from '../../../utils.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
 import { QuickReply } from './QuickReply.js';
 import { QuickReplySet } from './QuickReplySet.js';
 
 export class SlashCommandHandler {
-    /**@type {QuickReplyApi}*/ api;
+    /** @type {QuickReplyApi} */ api;
 
 
 
 
-    constructor(/**@type {QuickReplyApi}*/api) {
+    constructor(/** @type {QuickReplyApi} */api) {
         this.api = api;
     }
 
@@ -27,7 +26,7 @@ export class SlashCommandHandler {
 
 
     init() {
-        function getExecutionIcons(/**@type {QuickReply} */ qr) {
+        function getExecutionIcons(/** @type {QuickReply} */ qr) {
             let icons = '';
             if (qr.preventAutoExecute) icons += '🚫';
             if (qr.isHidden) icons += '👁️';
@@ -37,6 +36,7 @@ export class SlashCommandHandler {
             if (qr.executeOnChatChange) icons += '💬';
             if (qr.executeOnNewChat) icons += '🆕';
             if (qr.executeOnGroupMemberDraft) icons += enumIcons.group;
+            if (qr.executeBeforeGeneration) icons += '✈️';
             return icons;
         }
 
@@ -268,6 +268,7 @@ export class SlashCommandHandler {
             new SlashCommandNamedArgument('load', 'auto execute on chat load, e.g., load=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('new', 'auto execute on new chat, e.g., new=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('group', 'auto execute on group member selection, e.g., group=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('generation', 'auto execute before message generation, e.g., generation=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
             new SlashCommandNamedArgument('title', 'title / tooltip to be shown on button, e.g., title="My Fancy Button"', [ARGUMENT_TYPE.STRING], false),
         ];
         const qrUpdateArgs = [
@@ -419,30 +420,35 @@ export class SlashCommandHandler {
             namedArgumentList: [
                 SlashCommandNamedArgument.fromProps({
                     name: 'set',
-                    description: 'QR set name',
+                    description: 'Name of QR set to add the context menu to',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                     enumProvider: localEnumProviders.qrSets,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'label',
-                    description: 'Quick Reply label',
+                    description: 'Label of Quick Reply to add the context menu to',
                     typeList: [ARGUMENT_TYPE.STRING],
                     enumProvider: localEnumProviders.qrEntries,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'id',
-                    description: 'numeric ID of the QR, e.g., id=42',
+                    description: 'Numeric ID of Quick Reply to add the context menu to, e.g. id=42',
                     typeList: [ARGUMENT_TYPE.NUMBER],
                     enumProvider: localEnumProviders.qrIds,
                 }),
                 new SlashCommandNamedArgument(
-                    'chain', 'boolean', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
+                    'chain',
+                    'If true, button QR is sent together with (before) the clicked QR from the context menu',
+                    [ARGUMENT_TYPE.BOOLEAN],
+                    false,
+                    false,
+                    'false',
                 ),
             ],
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({
-                    description: 'QR set name',
+                    description: 'Name of QR set to add as a context menu',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                     enumProvider: localEnumProviders.qrSets,
@@ -450,13 +456,16 @@ export class SlashCommandHandler {
             ],
             helpString: `
                 <div>
-                    Add context menu preset to a QR.
+                    Add a context menu preset to a QR.
+                </div>
+                <div>
+                    If <code>id</code> and <code>label</code> are both provided, <code>id</code> will be used.
                 </div>
                 <div>
                     <strong>Example:</strong>
                     <ul>
                         <li>
-                            <pre><code>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</code></pre>
+                            <pre><code>/qr-contextadd set=MyQRSetWithTheButton label=MyButton chain=true MyQRSetWithContextItems</code></pre>
                         </li>
                     </ul>
                 </div>
@@ -470,27 +479,27 @@ export class SlashCommandHandler {
             namedArgumentList: [
                 SlashCommandNamedArgument.fromProps({
                     name: 'set',
-                    description: 'QR set name',
+                    description: 'Name of QR set to remove the context menu from',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                     enumProvider: localEnumProviders.qrSets,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'label',
-                    description: 'Quick Reply label',
+                    description: 'Label of Quick Reply to remove the context menu from',
                     typeList: [ARGUMENT_TYPE.STRING],
                     enumProvider: localEnumProviders.qrEntries,
                 }),
                 SlashCommandNamedArgument.fromProps({
                     name: 'id',
-                    description: 'numeric ID of the QR, e.g., id=42',
+                    description: 'Numeric ID of Quick Reply to remove the context menu from, e.g. id=42',
                     typeList: [ARGUMENT_TYPE.NUMBER],
                     enumProvider: localEnumProviders.qrIds,
                 }),
             ],
             unnamedArgumentList: [
                 SlashCommandArgument.fromProps({
-                    description: 'QR set name',
+                    description: 'Name of QR set to remove',
                     typeList: [ARGUMENT_TYPE.STRING],
                     isRequired: true,
                     enumProvider: localEnumProviders.qrSets,
@@ -499,6 +508,9 @@ export class SlashCommandHandler {
             helpString: `
                 <div>
                     Remove context menu preset from a QR.
+                </div>
+                <div>
+                    If <code>id</code> and <code>label</code> are both provided, <code>id</code> will be used.
                 </div>
                 <div>
                     <strong>Example:</strong>
@@ -540,6 +552,9 @@ export class SlashCommandHandler {
             helpString: `
                 <div>
                     Remove all context menu presets from a QR.
+                </div>
+                <div>
+                    If <code>id</code> and a label are both provided, <code>id</code> will be used.
                 </div>
                 <div>
                     <strong>Example:</strong>
@@ -861,6 +876,7 @@ export class SlashCommandHandler {
                     executeOnChatChange: isTrueBoolean(args.load),
                     executeOnNewChat: isTrueBoolean(args.new),
                     executeOnGroupMemberDraft: isTrueBoolean(args.group),
+                    executeBeforeGeneration: isTrueBoolean(args.generation),
                     automationId: args.automationId ?? '',
                 },
             );
@@ -869,6 +885,10 @@ export class SlashCommandHandler {
         }
     }
     getQuickReply(args) {
+        if (!args.id && !args.label) {
+            toastr.error('Please provide a valid id or label.');
+            return '';
+        }
         try {
             return JSON.stringify(this.api.getQrByLabel(args.set, args.id !== undefined ? Number(args.id) : args.label));
         } catch (ex) {
@@ -893,6 +913,7 @@ export class SlashCommandHandler {
                     executeOnChatChange: args.load === undefined ? undefined : isTrueBoolean(args.load),
                     executeOnGroupMemberDraft: args.group === undefined ? undefined : isTrueBoolean(args.group),
                     executeOnNewChat: args.new === undefined ? undefined : isTrueBoolean(args.new),
+                    executeBeforeGeneration: args.generation === undefined ? undefined : isTrueBoolean(args.generation),
                     automationId: args.automationId ?? '',
                 },
             );
@@ -908,12 +929,11 @@ export class SlashCommandHandler {
         }
     }
 
-
     createContextItem(args, name) {
         try {
             this.api.createContextItem(
                 args.set,
-                args.label,
+                args.id !== undefined ? Number(args.id) : args.label,
                 name,
                 isTrueBoolean(args.chain),
             );
@@ -923,14 +943,14 @@ export class SlashCommandHandler {
     }
     deleteContextItem(args, name) {
         try {
-            this.api.deleteContextItem(args.set, args.label, name);
+            this.api.deleteContextItem(args.set, args.id !== undefined ? Number(args.id) : args.label, name);
         }  catch (ex) {
             toastr.error(ex.message);
         }
     }
     clearContextMenu(args, label) {
         try {
-            this.api.clearContextMenu(args.set, args.label ?? label);
+            this.api.clearContextMenu(args.set, args.id !== undefined ? Number(args.id) : args.label ?? label);
         } catch (ex) {
             toastr.error(ex.message);
         }

@@ -1,26 +1,25 @@
-const express = require('express');
-const { jsonParser } = require('../express-common');
+import express from 'express';
+import { getPipeline, getRawImage } from '../transformers.js';
+
+export const router = express.Router();
 
 const TASK = 'image-to-text';
 
-const router = express.Router();
-
-router.post('/', jsonParser, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { image } = req.body;
 
-        const module = await import('../transformers.mjs');
-        const rawImage = await module.default.getRawImage(image);
+        const rawImage = await getRawImage(image);
 
         if (!rawImage) {
-            console.log('Failed to parse captioned image');
+            console.warn('Failed to parse captioned image');
             return res.sendStatus(400);
         }
 
-        const pipe = await module.default.getPipeline(TASK);
+        const pipe = await getPipeline(TASK);
         const result = await pipe(rawImage);
         const text = result[0].generated_text;
-        console.log('Image caption:', text);
+        console.info('Image caption:', text);
 
         return res.json({ caption: text });
     } catch (error) {
@@ -28,5 +27,3 @@ router.post('/', jsonParser, async (req, res) => {
         return res.sendStatus(500);
     }
 });
-
-module.exports = { router };

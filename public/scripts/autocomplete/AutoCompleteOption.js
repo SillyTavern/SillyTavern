@@ -1,19 +1,18 @@
-import { SlashCommand } from '../slash-commands/SlashCommand.js';
 import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 
 
 
 export class AutoCompleteOption {
-    /**@type {string}*/ name;
-    /**@type {string}*/ typeIcon;
-    /**@type {string}*/ type;
-    /**@type {number}*/ nameOffset = 0;
-    /**@type {AutoCompleteFuzzyScore}*/ score;
-    /**@type {string}*/ replacer;
-    /**@type {HTMLElement}*/ dom;
-    /**@type {(input:string)=>boolean}*/ matchProvider;
-    /**@type {(input:string)=>string}*/ valueProvider;
-    /**@type {boolean}*/ makeSelectable = false;
+    /** @type {string} */ name;
+    /** @type {string} */ typeIcon;
+    /** @type {string} */ type;
+    /** @type {number} */ nameOffset = 0;
+    /** @type {AutoCompleteFuzzyScore} */ score;
+    /** @type {string} */ replacer;
+    /** @type {HTMLElement} */ dom;
+    /** @type {(input:string)=>boolean} */ matchProvider;
+    /** @type {(input:string)=>string} */ valueProvider;
+    /** @type {boolean} */ makeSelectable = false;
 
 
     /**

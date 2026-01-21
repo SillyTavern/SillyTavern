@@ -1,0 +1,46 @@
+####################################
+# Labels based on changed files    #
+####################################
+🏭 Backend Changes:
+- changed-files:
+  - any-glob-to-any-file:
+    - "src/**"
+    - "default/config.yaml"
+    - "server.js"
+    - "plugins.js"
+    - "recover.js"
+    - "webpack.config.js"
+    - "Start.bat"
+    - "start.sh"
+    - "UpdateAndStart.bat"
+    - "UpdateForkAndStart.bat"
+
+⚙️ config.yaml:
+- changed-files:
+  - any-glob-to-any-file:
+    - "default/config.yaml"
+
+🛠️ Build Changes:
+- changed-files:
+  - any-glob-to-any-file:
+    - ".github/workflows/**"
+    - "docker/**"
+    - ".dockerignore"
+    - "Dockerfile"
+    - "webpack.config.js"
+
+🌐 Language:
+- changed-files:
+  - any-glob-to-any-file:
+    - "public/locales/**"
+
+📥 Dependencies:
+- changed-files:
+  - any-glob-to-any-file:
+    - "public/lib/**" # Every frontend lib counts as a dependency as well
+    - "package.json"
+    - "package-lock.json"
+    - "tests/package.json"
+    - "tests/package-lock.json"
+    - "src/electron/package.json"
+    - "src/electron/package-lock.json"

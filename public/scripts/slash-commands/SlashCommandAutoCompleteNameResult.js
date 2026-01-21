@@ -1,9 +1,6 @@
 import { AutoCompleteNameResult } from '../autocomplete/AutoCompleteNameResult.js';
-import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 import { AutoCompleteSecondaryNameResult } from '../autocomplete/AutoCompleteSecondaryNameResult.js';
 import { SlashCommand } from './SlashCommand.js';
-import { SlashCommandNamedArgument } from './SlashCommandArgument.js';
-import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandCommandAutoCompleteOption } from './SlashCommandCommandAutoCompleteOption.js';
 import { SlashCommandEnumAutoCompleteOption } from './SlashCommandEnumAutoCompleteOption.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';

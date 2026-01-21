@@ -1,5 +1,4 @@
 import { QuickReply } from '../../QuickReply.js';
-// eslint-disable-next-line no-unused-vars
 import { QuickReplySet } from '../../QuickReplySet.js';
 import { MenuHeader } from './MenuHeader.js';
 import { MenuItem } from './MenuItem.js';
@@ -19,7 +18,7 @@ export class ContextMenu {
         this.itemList = this.build(qr).children;
         this.itemList.forEach(item => {
             item.onExpand = () => {
-                this.itemList.filter(it => it != item)
+                this.itemList.filter(it => it !== item)
                     .forEach(it => it.collapse());
             };
         });
@@ -36,6 +35,7 @@ export class ContextMenu {
             icon: qr.icon,
             showLabel: qr.showLabel,
             label: qr.label,
+            title: qr.title,
             message: (chainedMessage && qr.message ? `${chainedMessage} | ` : '') + qr.message,
             children: [],
         };
@@ -45,12 +45,29 @@ export class ContextMenu {
                 const nextHierarchy = [...hierarchy, cl.set];
                 const nextLabelHierarchy = [...labelHierarchy, tree.label];
                 tree.children.push(new MenuHeader(cl.set.name));
-                cl.set.qrList.forEach(subQr => {
+
+                // If the Quick Reply's own set is added as a context menu,
+                // show only the sub-QRs that are Invisible but have an icon
+                // intent: allow a QR set to be assigned to one of its own QR buttons for a "burger" menu
+                // with "UI" QRs either in the bar or in the menu, and "library function" QRs still hidden.
+                // - QRs already visible on the bar are filtered out,
+                // - hidden QRs without an icon are filtered out,
+                // - hidden QRs **with an icon** are shown in the menu
+                // so everybody is happy
+                const qrsOwnSetAddedAsContextMenu = cl.set.qrList.includes(qr);
+                const visible = (subQr) => {
+                    return qrsOwnSetAddedAsContextMenu
+                        ? subQr.isHidden && !!subQr.icon  // yes .isHidden gets inverted here
+                        : !subQr.isHidden;
+                };
+
+                cl.set.qrList.filter(visible).forEach(subQr => {
                     const subTree = this.build(subQr, cl.isChained ? tree.message : null, nextHierarchy, nextLabelHierarchy);
                     tree.children.push(new MenuItem(
                         subTree.icon,
                         subTree.showLabel,
                         subTree.label,
+                        subTree.title,
                         subTree.message,
                         (evt) => {
                             evt.stopPropagation();

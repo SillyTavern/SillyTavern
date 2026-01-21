@@ -1,3 +1,4 @@
+@import url('/lib/dialog-polyfill.css');
 @import url('./popup-safari-fix.css');
 
 dialog {
@@ -25,7 +26,6 @@ dialog {
 
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
-    transform: translateZ(0);
     -webkit-font-smoothing: subpixel-antialiased;
 
     /* Variables setup */
@@ -33,16 +33,24 @@ dialog {
 }
 
 /** Popup styles applied to the main popup */
-.popup--animation-fast { --popup-animation-speed: var(--animation-duration); }
-.popup--animation-slow { --popup-animation-speed: var(--animation-duration-slow); }
-.popup--animation-none { --popup-animation-speed: 0ms; }
+.popup--animation-fast {
+    --popup-animation-speed: var(--animation-duration);
+}
+
+.popup--animation-slow {
+    --popup-animation-speed: var(--animation-duration-slow);
+}
+
+.popup--animation-none {
+    --popup-animation-speed: 0ms;
+}
 
 /* Styling of main popup elements */
 .popup .popup-body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    width: 100%;
+    width: min(100%, 100vw);
     height: 100%;
     padding: 1px;
 }
@@ -71,6 +79,10 @@ dialog {
     overflow-x: auto;
 }
 
+.popup.left_aligned_dialogue_popup .popup-content {
+    text-align: start;
+}
+
 /* Opening animation */
 .popup[opening] {
     animation: pop-in var(--popup-animation-speed) ease-in-out;
@@ -78,6 +90,11 @@ dialog {
 
 .popup[opening]::backdrop {
     animation: fade-in var(--popup-animation-speed) ease-in-out;
+}
+
+/* Fix toast container snapping into the backdrop while the animation is running */
+.popup[opening] #toast-container {
+    visibility: hidden;
 }
 
 /* Open state of the dialog */
@@ -105,15 +122,28 @@ body.no-blur .popup[open]::backdrop {
     animation: fade-out var(--popup-animation-speed) ease-in-out;
 }
 
-.popup #toast-container {
-    /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
-    height: 100dvh;
-    top: calc(50% + var(--topBarBlockSize));
-    left: 50%;
-    transform: translate(-50%, -50%);
+/* Edge inset to match Toastr default spacing */
+:root {
+    --toast-edge: 12px;
+}
 
-    /* Fix text align, popups are centered by default. toasts should not. */
+.popup #toast-container {
+    /* Popups are centered by default; toasts should not be */
     text-align: left;
+}
+
+/* Per-position position adjustments caused by the top bar, inside the popup */
+.popup #toast-container.toast-top-left {
+    top: calc(var(--toast-edge) + var(--topBarBlockSize));
+}
+
+.popup #toast-container.toast-top-center {
+    /* toastr in core does not have a top offset on center, so we don't do that either in popups */
+    top: var(--topBarBlockSize);
+}
+
+.popup #toast-container.toast-top-right {
+    top: calc(var(--toast-edge) + var(--topBarBlockSize));
 }
 
 .popup-crop-wrap {
@@ -185,4 +215,3 @@ body.no-blur .popup[open]::backdrop {
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
 }
-

@@ -1,23 +1,34 @@
-const fs = require('fs');
-const fsPromises = require('fs').promises;
-const path = require('path');
-const mime = require('mime-types');
-const express = require('express');
-const sanitize = require('sanitize-filename');
-const jimp = require('jimp');
-const writeFileAtomicSync = require('write-file-atomic').sync;
-const { getAllUserHandles, getUserDirectories } = require('../users');
-const { getConfigValue } = require('../util');
-const { jsonParser } = require('../express-common');
+import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
+import path from 'node:path';
 
-const thumbnailsDisabled = getConfigValue('disableThumbnails', false);
-const quality = getConfigValue('thumbnailsQuality', 95);
-const pngFormat = getConfigValue('avatarThumbnailsPng', false);
+import mime from 'mime-types';
+import express from 'express';
+import sanitize from 'sanitize-filename';
+import { Jimp, JimpMime } from '../jimp.js';
+import { sync as writeFileAtomicSync } from 'write-file-atomic';
+
+import { getConfigValue, invalidateFirefoxCache } from '../util.js';
+
+const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
+const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
+const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
+
+/**
+ * @typedef {'bg' | 'avatar' | 'persona'} ThumbnailType
+ */
+
+/** @type {Record<string, number[]>} */
+export const dimensions = {
+    'bg': getConfigValue('thumbnails.dimensions.bg', [160, 90]),
+    'avatar': getConfigValue('thumbnails.dimensions.avatar', [96, 144]),
+    'persona': getConfigValue('thumbnails.dimensions.persona', [96, 144]),
+};
 
 /**
  * Gets a path to thumbnail folder based on the type.
- * @param {import('../users').UserDirectoryList} directories User directories
- * @param {'bg' | 'avatar'} type Thumbnail type
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
 function getThumbnailFolder(directories, type) {
@@ -30,6 +41,9 @@ function getThumbnailFolder(directories, type) {
         case 'avatar':
             thumbnailFolder = directories.thumbnailsAvatar;
             break;
+        case 'persona':
+            thumbnailFolder = directories.thumbnailsPersona;
+            break;
     }
 
     return thumbnailFolder;
@@ -37,8 +51,8 @@ function getThumbnailFolder(directories, type) {
 
 /**
  * Gets a path to the original images folder based on the type.
- * @param {import('../users').UserDirectoryList} directories User directories
- * @param {'bg' | 'avatar'} type Thumbnail type
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Thumbnail type
  * @returns {string} Path to the original images folder
  */
 function getOriginalFolder(directories, type) {
@@ -51,6 +65,9 @@ function getOriginalFolder(directories, type) {
         case 'avatar':
             originalFolder = directories.characters;
             break;
+        case 'persona':
+            originalFolder = directories.avatars;
+            break;
     }
 
     return originalFolder;
@@ -58,25 +75,25 @@ function getOriginalFolder(directories, type) {
 
 /**
  * Removes the generated thumbnail from the disk.
- * @param {import('../users').UserDirectoryList} directories User directories
- * @param {'bg' | 'avatar'} type Type of the thumbnail
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Type of the thumbnail
  * @param {string} file Name of the file
  */
-function invalidateThumbnail(directories, type, file) {
+export function invalidateThumbnail(directories, type, file) {
     const folder = getThumbnailFolder(directories, type);
     if (folder === undefined) throw new Error('Invalid thumbnail type');
 
-    const pathToThumbnail = path.join(folder, file);
+    const pathToThumbnail = path.join(folder, sanitize(file));
 
     if (fs.existsSync(pathToThumbnail)) {
-        fs.rmSync(pathToThumbnail);
+        fs.unlinkSync(pathToThumbnail);
     }
 }
 
 /**
  * Generates a thumbnail for the given file.
- * @param {import('../users').UserDirectoryList} directories User directories
- * @param {'bg' | 'avatar'} type Type of the thumbnail
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {ThumbnailType} type Type of the thumbnail
  * @param {string} file Name of the file
  * @returns
  */
@@ -84,7 +101,6 @@ async function generateThumbnail(directories, type, file) {
     let thumbnailFolder = getThumbnailFolder(directories, type);
     let originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
-
     const pathToCachedFile = path.join(thumbnailFolder, file);
     const pathToOriginalFile = path.join(originalFolder, file);
 
@@ -99,7 +115,7 @@ async function generateThumbnail(directories, type, file) {
         const cachedStat = fs.statSync(pathToCachedFile);
 
         if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            //console.log('Original file changed. Regenerating thumbnail...');
+            //console.warn('Original file changed. Regenerating thumbnail...');
             shouldRegenerate = true;
         }
     }
@@ -112,19 +128,21 @@ async function generateThumbnail(directories, type, file) {
         return null;
     }
 
-    const imageSizes = { 'bg': [160, 90], 'avatar': [96, 144] };
-    const mySize = imageSizes[type];
-
     try {
         let buffer;
 
         try {
-            const image = await jimp.read(pathToOriginalFile);
-            const imgType = type == 'avatar' && pngFormat ? 'image/png' : 'image/jpeg';
-            buffer = await image.cover(mySize[0], mySize[1]).quality(quality).getBufferAsync(imgType);
+            const size = dimensions[type];
+            const image = await Jimp.read(pathToOriginalFile);
+            const width = !isNaN(size?.[0]) && size?.[0] > 0 ? size[0] : image.bitmap.width;
+            const height = !isNaN(size?.[1]) && size?.[1] > 0 ? size[1] : image.bitmap.height;
+            image.cover({ w: width, h: height });
+            buffer = pngFormat
+                ? await image.getBuffer(JimpMime.png)
+                : await image.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
         }
         catch (inner) {
-            console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
+            console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`, inner);
             buffer = fs.readFileSync(pathToOriginalFile);
         }
 
@@ -139,20 +157,19 @@ async function generateThumbnail(directories, type, file) {
 
 /**
  * Ensures that the thumbnail cache for backgrounds is valid.
+ * @param {import('../users.js').UserDirectoryList[]} directoriesList User directories
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
-async function ensureThumbnailCache() {
-    const userHandles = await getAllUserHandles();
-    for (const handle of userHandles) {
-        const directories = getUserDirectories(handle);
+export async function ensureThumbnailCache(directoriesList) {
+    for (const directories of directoriesList) {
         const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
 
         // files exist, all ok
         if (cacheFiles.length) {
-            return;
+            continue;
         }
 
-        console.log('Generating thumbnails cache. Please wait...');
+        console.info('Generating thumbnails cache. Please wait...');
 
         const bgFiles = fs.readdirSync(directories.backgrounds);
         const tasks = [];
@@ -162,14 +179,14 @@ async function ensureThumbnailCache() {
         }
 
         await Promise.all(tasks);
-        console.log(`Done! Generated: ${bgFiles.length} preview images`);
+        console.info(`Done! Generated: ${bgFiles.length} preview images`);
     }
 }
 
-const router = express.Router();
+export const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
-router.get('/', jsonParser, async function (request, response) {
+router.get('/', async function (request, response) {
     try{
         if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
             return response.sendStatus(400);
@@ -182,7 +199,7 @@ router.get('/', jsonParser, async function (request, response) {
             return response.sendStatus(400);
         }
 
-        if (!(type == 'bg' || type == 'avatar')) {
+        if (!(type === 'bg' || type === 'avatar' || type === 'persona')) {
             return response.sendStatus(400);
         }
 
@@ -191,7 +208,7 @@ router.get('/', jsonParser, async function (request, response) {
             return response.sendStatus(403);
         }
 
-        if (thumbnailsDisabled) {
+        if (!thumbnailsEnabled) {
             const folder = getOriginalFolder(request.user.directories, type);
 
             if (folder === undefined) {
@@ -205,6 +222,9 @@ router.get('/', jsonParser, async function (request, response) {
             const contentType = mime.lookup(pathToOriginalFile) || 'image/png';
             const originalFile = await fsPromises.readFile(pathToOriginalFile);
             response.setHeader('Content-Type', contentType);
+
+            invalidateFirefoxCache(pathToOriginalFile, request, response);
+
             return response.send(originalFile);
         }
 
@@ -221,15 +241,12 @@ router.get('/', jsonParser, async function (request, response) {
         const contentType = mime.lookup(pathToCachedFile) || 'image/jpeg';
         const cachedFile = await fsPromises.readFile(pathToCachedFile);
         response.setHeader('Content-Type', contentType);
+
+        invalidateFirefoxCache(file, request, response);
+
         return response.send(cachedFile);
     } catch (error) {
         console.error('Failed getting thumbnail', error);
         return response.sendStatus(500);
     }
 });
-
-module.exports = {
-    invalidateThumbnail,
-    ensureThumbnailCache,
-    router,
-};

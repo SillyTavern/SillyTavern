@@ -33,6 +33,12 @@
  * @property {number} role - The specific function or purpose of the extension.
  * @property {boolean} vectorized - Indicates if the extension is optimized for vectorized processing.
  * @property {number} display_index - The order in which the extension should be displayed for user interfaces.
+ * @property {boolean} match_persona_description - Wether to match against the persona description.
+ * @property {boolean} match_character_description - Wether to match against the persona description.
+ * @property {boolean} match_character_personality - Wether to match against the character personality.
+ * @property {boolean} match_character_depth_prompt - Wether to match against the character depth prompt.
+ * @property {boolean} match_scenario - Wether to match against the character scenario.
+ * @property {boolean} match_creator_notes - Wether to match against the character creator notes.
  */
 
 /**
@@ -75,6 +81,7 @@
  * @property {string} [source_url] - The source URL associated with the character.
  * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
  * @property {{source: string[]}} [risuai] - The RisuAI-specific data associated with the character.
+ * @property {{positive: string, negative: string}} [sd_character_prompt] - SD-specific data associated with the character.
  */
 
 /**
@@ -89,7 +96,7 @@
 * @property {boolean} markdownOnly - Whether the script only applies to Markdown
 * @property {boolean} promptOnly - Whether the script only applies to prompts
 * @property {boolean} runOnEdit - Whether the script runs on edit
-* @property {boolean} substituteRegex - Whether the regex should be substituted
+* @property {number} substituteRegex - Whether the regex should be substituted
 * @property {number} minDepth - The minimum depth
 * @property {number} maxDepth - The maximum depth
 */
@@ -112,5 +119,6 @@
  * @property {string} chat - name of the current chat file chat
  * @property {string} avatar - file name of the avatar image (acts as a unique identifier)
  * @property {string} json_data - the full raw JSON data of the character
+ * @property {boolean?} shallow - if the data is shallow (lazy-loaded)
  */
 export default 0;// now this file is a module

@@ -1,5 +1,6 @@
+import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
-import { power_user } from './power-user.js';
+import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
@@ -23,12 +24,21 @@ export const POPUP_RESULT = {
     AFFIRMATIVE: 1,
     NEGATIVE: 0,
     CANCELLED: null,
+    CUSTOM1: 1001,
+    CUSTOM2: 1002,
+    CUSTOM3: 1003,
+    CUSTOM4: 1004,
+    CUSTOM5: 1005,
+    CUSTOM6: 1006,
+    CUSTOM7: 1007,
+    CUSTOM8: 1008,
+    CUSTOM9: 1009,
 };
 
 /**
  * @typedef {object} PopupOptions
- * @property {string|boolean?} [okButton=null] - Custom text for the OK button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
- * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
+ * @property {string|boolean?} [okButton=null] - Custom text for the OK button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
+ * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
  * @property {number?} [rows=1] - The number of rows for the input field
  * @property {boolean?} [wide=false] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
  * @property {boolean?} [wider=false] - Whether to display the popup in wider mode (just wider, no height scaling)
@@ -36,12 +46,14 @@ export const POPUP_RESULT = {
  * @property {boolean?} [transparent=false] - Whether to display the popup in transparent mode (no background, border, shadow or anything, only its content)
  * @property {boolean?} [allowHorizontalScrolling=false] - Whether to allow horizontal scrolling in the popup
  * @property {boolean?} [allowVerticalScrolling=false] - Whether to allow vertical scrolling in the popup
+ * @property {boolean?} [leftAlign=false] - Whether the popup content should be left-aligned by default
  * @property {'slow'|'fast'|'none'?} [animation='slow'] - Animation speed for the popup (opening, closing, ...)
  * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
  * @property {(popup: Popup) => Promise<boolean?>|boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => Promise<void?>|void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
+ * @property {(popup: Popup) => Promise<void?>|void?} [onOpen=null] - Handler called after the popup opens
  * @property {number?} [cropAspect=null] - Aspect ratio for the crop popup
  * @property {string?} [cropImage=null] - Image URL to display in the crop popup
  */
@@ -60,7 +72,8 @@ export const POPUP_RESULT = {
  * @property {string} id - The id for the html element
  * @property {string} label - The label text for the input
  * @property {string?} [tooltip=null] - Optional tooltip icon displayed behind the label
- * @property {boolean?} [defaultState=false] - The default state when opening the popup (false if not set)
+ * @property {boolean|string|undefined} [defaultState=false] - The default state when opening the popup (false if not set)
+ * @property {string?} [type='checkbox'] - The type of the input (default is checkbox)
  */
 
 /**
@@ -74,7 +87,7 @@ const showPopupHelper = {
      * Asynchronously displays an input popup with the given header and text, and returns the user's input.
      *
      * @param {string?} header - The header text for the popup.
-     * @param {string?} text - The main text for the popup.
+     * @param {string?} [text] - The main text for the popup.
      * @param {string} [defaultValue=''] - The default value for the input field.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
      * @return {Promise<string?>} A Promise that resolves with the user's input.
@@ -93,7 +106,7 @@ const showPopupHelper = {
      * Asynchronously displays a confirmation popup with the given header and text, returning the clicked result button value.
      *
      * @param {string?} header - The header text for the popup.
-     * @param {string?} text - The main text for the popup.
+     * @param {string?} [text] - The main text for the popup.
      * @param {PopupOptions} [popupOptions={}] - Options for the popup.
      * @return {Promise<POPUP_RESULT?>} A Promise that resolves with the result of the user's interaction.
      */
@@ -143,10 +156,11 @@ export class Popup {
 
     /** @type {(popup: Popup) => Promise<boolean?>|boolean?} */ onClosing;
     /** @type {(popup: Popup) => Promise<void?>|void?} */ onClose;
+    /** @type {(popup: Popup) => Promise<void?>|void?} */ onOpen;
 
     /** @type {POPUP_RESULT|number} */ result;
     /** @type {any} */ value;
-    /** @type {Map<string,boolean>?} */ inputResults;
+    /** @type {Map<string,string|boolean>?} */ inputResults;
     /** @type {any} */ cropData;
 
     /** @type {HTMLElement} */ lastFocus;
@@ -163,7 +177,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, onOpen = null, cropAspect = null, cropImage = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -173,11 +187,24 @@ export class Popup {
         // Utilize event handlers being passed in
         this.onClosing = onClosing;
         this.onClose = onClose;
+        this.onOpen = onOpen;
 
         /**@type {HTMLTemplateElement}*/
         const template = document.querySelector('#popup_template');
         // @ts-ignore
         this.dlg = template.content.cloneNode(true).querySelector('.popup');
+        if (!this.dlg.showModal) {
+            this.dlg.classList.add('poly_dialog');
+            dialogPolyfill.registerDialog(this.dlg);
+            // Force a vertical reposition after the content
+            // (like crop image) has been set
+            const resizeObserver = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    dialogPolyfill.reposition(entry.target);
+                }
+            });
+            resizeObserver.observe(this.dlg);
+        }
         this.body = this.dlg.querySelector('.popup-body');
         this.content = this.dlg.querySelector('.popup-content');
         this.mainInput = this.dlg.querySelector('.popup-input');
@@ -196,6 +223,7 @@ export class Popup {
         if (transparent) this.dlg.classList.add('transparent_dialogue_popup');
         if (allowHorizontalScrolling) this.dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) this.dlg.classList.add('vertical_scrolling_dialogue_popup');
+        if (leftAlign) this.dlg.classList.add('left_aligned_dialogue_popup');
         if (animation) this.dlg.classList.add('popup--animation-' + animation);
 
         // If custom button captions are provided, we set them beforehand
@@ -236,28 +264,53 @@ export class Popup {
                 return;
             }
 
-            const label = document.createElement('label');
-            label.classList.add('checkbox_label', 'justifyCenter');
-            label.setAttribute('for', input.id);
-            const inputElement = document.createElement('input');
-            inputElement.type = 'checkbox';
-            inputElement.id = input.id;
-            inputElement.checked = input.defaultState ?? false;
-            label.appendChild(inputElement);
-            const labelText = document.createElement('span');
-            labelText.innerText = input.label;
-            labelText.dataset.i18n = input.label;
-            label.appendChild(labelText);
+            if (!input.type || input.type === 'checkbox') {
+                const label = document.createElement('label');
+                label.classList.add('checkbox_label', 'justifyCenter');
+                label.setAttribute('for', input.id);
+                const inputElement = document.createElement('input');
+                inputElement.type = 'checkbox';
+                inputElement.id = input.id;
+                inputElement.checked = Boolean(input.defaultState ?? false);
+                label.appendChild(inputElement);
+                const labelText = document.createElement('span');
+                labelText.innerText = input.label;
+                labelText.dataset.i18n = input.label;
+                label.appendChild(labelText);
 
-            if (input.tooltip) {
-                const tooltip = document.createElement('div');
-                tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
-                tooltip.title = input.tooltip;
-                tooltip.dataset.i18n = '[title]' + input.tooltip;
-                label.appendChild(tooltip);
+                if (input.tooltip) {
+                    const tooltip = document.createElement('div');
+                    tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
+                    tooltip.title = input.tooltip;
+                    tooltip.dataset.i18n = '[title]' + input.tooltip;
+                    label.appendChild(tooltip);
+                }
+
+                this.inputControls.appendChild(label);
+            } else if (input.type === 'text') {
+                const label = document.createElement('label');
+                label.classList.add('text_label', 'justifyCenter');
+                label.setAttribute('for', input.id);
+
+                const inputElement = document.createElement('input');
+                inputElement.classList.add('text_pole', 'result-control');
+                inputElement.type = 'text';
+                inputElement.id = input.id;
+                inputElement.value = String(input.defaultState ?? '');
+                inputElement.placeholder = input.tooltip ?? '';
+
+                const labelText = document.createElement('span');
+                labelText.innerText = input.label;
+                labelText.dataset.i18n = input.label;
+
+                label.appendChild(labelText);
+                label.appendChild(inputElement);
+
+                this.inputControls.appendChild(label);
+            } else {
+                console.warn('Unknown custom input type. Only checkbox and text are supported.', input);
+                return;
             }
-
-            this.inputControls.appendChild(label);
         });
 
         // Set the default button class
@@ -265,7 +318,7 @@ export class Popup {
         if (defaultButton) defaultButton.classList.add('menu_button_default');
 
         // Styling differences depending on the popup type
-        // General styling for all types first, that might be overriden for specific types below
+        // General styling for all types first, that might be overridden for specific types below
         this.mainInput.style.display = 'none';
         this.inputControls.style.display = customInputs ? 'block' : 'none';
         this.closeButton.style.display = 'none';
@@ -273,21 +326,31 @@ export class Popup {
 
         switch (type) {
             case POPUP_TYPE.TEXT: {
+                //Text shows OK if not explicitly set to false, and CANCEL only if defined as true or with a caption
+                if (okButton === false) this.okButton.style.display = 'none';
                 if (!cancelButton) this.cancelButton.style.display = 'none';
                 break;
             }
             case POPUP_TYPE.CONFIRM: {
+                // Confirm shows OK if not explicitly set to false, and CANCEL if not explicitly set to false
+                if (okButton === false) this.okButton.style.display = 'none';
+                if (cancelButton === false) this.cancelButton.style.display = 'none';
+                // Override default captions for confirm on OK->Yes, CANCEL->No
                 if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-yes');
                 if (!cancelButton) this.cancelButton.textContent = template.getAttribute('popup-button-no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.mainInput.style.display = 'block';
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
+                // Input shows OK if not explicitly set to false, and CANCEL if not explicitly set to false
+                if (okButton === false) this.okButton.style.display = 'none';
                 if (cancelButton === false) this.cancelButton.style.display = 'none';
+                // Override default captions for input on OK->Save
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-save');
                 break;
             }
             case POPUP_TYPE.DISPLAY: {
+                // Display hides OK and CANCEL and all main button controls
                 this.buttonControls.style.display = 'none';
                 this.closeButton.style.display = 'block';
                 break;
@@ -295,7 +358,6 @@ export class Popup {
             case POPUP_TYPE.CROP: {
                 this.cropWrap.style.display = 'block';
                 this.cropImage.src = cropImage;
-                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-crop');
                 $(this.cropImage).cropper({
                     aspectRatio: cropAspect ?? 2 / 3,
                     autoCropArea: 1,
@@ -306,6 +368,11 @@ export class Popup {
                         this.cropData.want_resize = !power_user.never_resize_avatars;
                     },
                 });
+                // Crop shows OK if not explicitly set to false, and CANCEL if not explicitly set to false
+                if (okButton === false) this.okButton.style.display = 'none';
+                if (cancelButton === false) this.cancelButton.style.display = 'none';
+                // Override default captions for crop on OK->Crop
+                if (!okButton) this.okButton.textContent = template.getAttribute('popup-button-crop');
                 break;
             }
             default: {
@@ -394,6 +461,13 @@ export class Popup {
                     if (input instanceof HTMLInputElement && !shouldSendOnEnter())
                         return;
 
+                    // If this is a multiline input popup, we should still not simply send on enter, that'd be weird.
+                    // Let's still make it possible if CTRL is toggled though
+                    if ((textarea instanceof HTMLTextAreaElement || input instanceof HTMLInputElement)
+                        && !evt.ctrlKey && this.mainInput.rows > 1) {
+                        return;
+                    }
+
                     evt.preventDefault();
                     evt.stopPropagation();
                     const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
@@ -428,6 +502,11 @@ export class Popup {
 
         runAfterAnimation(this.dlg, () => {
             this.dlg.removeAttribute('opening');
+
+            // If we have an onOpen handler, we run it now
+            if (this.onOpen) {
+                this.onOpen(this);
+            }
         });
 
         this.#promise = new Promise((resolve) => {
@@ -505,7 +584,8 @@ export class Popup {
             this.inputResults = new Map(this.customInputs.map(input => {
                 /** @type {HTMLInputElement} */
                 const inputControl = this.dlg.querySelector(`#${input.id}`);
-                return [inputControl.id, inputControl.checked];
+                const value = input.type === 'text' ? inputControl.value : inputControl.checked;
+                return [inputControl.id, value];
             }));
         }
 
@@ -595,7 +675,7 @@ export class Popup {
         /** @readonly @type {Popup[]} Remember all popups */
         popups: [],
 
-        /** @type {{value: any, result: POPUP_RESULT|number?, inputResults: Map<string, boolean>?}?} Last popup result */
+        /** @type {{value: any, result: POPUP_RESULT|number?, inputResults: Map<string, string|boolean>?}?} Last popup result */
         lastResult: null,
 
         /** @returns {boolean} Checks if any modal popup dialog is open */
@@ -615,7 +695,7 @@ export class Popup {
     };
 }
 
-class PopupUtils {
+export class PopupUtils {
     /**
      * Builds popup content with header and text below
      *
@@ -667,7 +747,6 @@ export function getTopmostModalLayer() {
  */
 export function fixToastrForDialogs() {
     // Hacky way of getting toastr to actually display on top of the popup...
-
     const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
 
     let toastContainer = document.getElementById('toast-container');
@@ -694,7 +773,8 @@ export function fixToastrForDialogs() {
             toastContainer.remove();
         } else {
             document.body.appendChild(toastContainer);
-            toastContainer.classList.add('toast-top-center');
+            toastContainer.classList.remove(...toastPositionClasses);
+            toastContainer.classList.add(toastr.options.positionClass);
         }
     }
 }

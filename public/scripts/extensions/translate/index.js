@@ -10,10 +10,13 @@ import {
     updateMessageBlock,
 } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
-import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from '../../popup.js';
-import { findSecret, secret_state, writeSecret } from '../../secrets.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { updateReasoningUI } from '../../reasoning.js';
+import { secret_state } from '../../secrets.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
+import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
 
@@ -32,6 +35,7 @@ const defaultSettings = {
     internal_language: 'en',
     provider: 'google',
     auto_mode: autoModeOptions.NONE,
+    deepl_endpoint: 'free',
 };
 
 const languageCodes = {
@@ -106,7 +110,8 @@ const languageCodes = {
     'Pashto': 'ps',
     'Persian': 'fa',
     'Polish': 'pl',
-    'Portuguese (Portugal, Brazil)': 'pt',
+    'Portuguese (Portugal)': 'pt-PT',
+    'Portuguese (Brazil)': 'pt-BR',
     'Punjabi': 'pa',
     'Romanian': 'ro',
     'Russian': 'ru',
@@ -147,10 +152,11 @@ const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
     const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
-    $('#translate_key_button').toggle(providerRequiresKey);
+    $('#translate_key_button').toggle(providerRequiresKey).data('key', extension_settings.translate.provider);
     $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
-    $('#translate_url_button').toggle(providerOptionalUrl);
+    $('#translate_url_button').toggle(providerOptionalUrl).data('key', extension_settings.translate.provider + '_url');
     $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
+    $('#deepl_api_endpoint').toggle(extension_settings.translate.provider === 'deepl');
 }
 
 function loadSettings() {
@@ -160,35 +166,84 @@ function loadSettings() {
         }
     }
 
-    $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', true);
-    $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', true);
-    $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', true);
+    $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', 'true');
+    $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', 'true');
+    $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', 'true');
+    $('#deepl_api_endpoint').val(extension_settings.translate.deepl_endpoint).toggle(extension_settings.translate.provider === 'deepl');
     showKeysButton();
 }
 
-async function translateImpersonate(text) {
-    const translatedText = await translate(text, extension_settings.translate.target_language);
-    $('#send_textarea').val(translatedText);
+/**
+ * Check if the swipe is being generated for a message.
+ * @param {string|number} messageId Message ID
+ * @returns {boolean} Whether the swipe is being generated
+ */
+function isGeneratingSwipe(messageId) {
+    return $(`#chat .mes[mesid="${messageId}"] .mes_text`).text() === '...';
 }
 
+async function translateImpersonate() {
+    const sendTextArea = $('#send_textarea');
+    const text = sendTextArea.val().toString();
+    const translatedText = await translate(text, extension_settings.translate.target_language);
+    sendTextArea.val(translatedText);
+}
+
+/**
+ * Translates the contents of an incoming message.
+ * @param {string | number} messageId Message ID
+ * @returns {Promise<void>}
+ */
 async function translateIncomingMessage(messageId) {
     const context = getContext();
     const message = context.chat[messageId];
+
+    if (!message) {
+        return;
+    }
 
     if (typeof message.extra !== 'object') {
         message.extra = {};
     }
 
-    // New swipe is being generated. Don't translate that
-    if ($(`#chat .mes[mesid="${messageId}"] .mes_text`).text() == '...') {
+    if (isGeneratingSwipe(messageId)) {
         return;
     }
 
-    const textToTranslate = substituteParams(message.mes, context.name1, message.name);
+    const textToTranslate = substituteParams(message.mes, { name2Override: message.name });
     const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
-    updateMessageBlock(messageId, message);
+    updateMessageBlock(Number(messageId), message);
+}
+
+/**
+ * Translates the reasoning of an incoming message.
+ * @param {string | number} messageId
+ * @returns {Promise<boolean>} translated or not
+ */
+async function translateIncomingMessageReasoning(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (!message) {
+        return false;
+    }
+
+    if (typeof message.extra !== 'object') {
+        message.extra = {};
+    }
+
+    if (!message.extra.reasoning || isGeneratingSwipe(messageId)) {
+        return false;
+    }
+
+    const textToTranslate = substituteParams(message.extra.reasoning, { name2Override: message.name });
+    const translation = await translate(textToTranslate, extension_settings.translate.target_language);
+    message.extra.reasoning_display_text = translation;
+
+    updateReasoningUI(Number(messageId));
+    return true;
 }
 
 async function translateProviderOneRing(text, lang) {
@@ -284,10 +339,11 @@ async function translateProviderDeepl(text, lang) {
         throw new Error('No DeepL API key');
     }
 
+    const endpoint = extension_settings.translate.deepl_endpoint || 'free';
     const response = await fetch('/api/translate/deepl', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
+        body: JSON.stringify({ text: text, lang: lang, endpoint: endpoint }),
     });
 
     if (response.ok) {
@@ -394,9 +450,10 @@ async function chunkedTranslate(text, lang, translateFn, chunkSize = 5000) {
  * Translates text using the selected translation provider
  * @param {string} text Text to translate
  * @param {string} lang Target language code
+ * @param {string} provider Translation provider to use
  * @returns {Promise<string>} Translated text
  */
-async function translate(text, lang) {
+async function translate(text, lang, provider = null) {
     try {
         if (text == '') {
             return '';
@@ -406,30 +463,61 @@ async function translate(text, lang) {
             lang = extension_settings.translate.target_language;
         }
 
-        switch (extension_settings.translate.provider) {
-            case 'libre':
-                return await translateProviderLibre(text, lang);
-            case 'google':
-                return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
-            case 'lingva':
-                return await chunkedTranslate(text, lang, translateProviderLingva, 5000);
-            case 'deepl':
-                return await translateProviderDeepl(text, lang);
-            case 'deeplx':
-                return await chunkedTranslate(text, lang, translateProviderDeepLX, 1500);
-            case 'oneringtranslator':
-                return await translateProviderOneRing(text, lang);
-            case 'bing':
-                return await chunkedTranslate(text, lang, translateProviderBing, 1000);
-            case 'yandex':
-                return await translateProviderYandex(text, lang);
-            default:
-                console.error('Unknown translation provider', extension_settings.translate.provider);
-                return text;
+        if (!provider) {
+            provider = extension_settings.translate.provider;
         }
+
+        // split text by embedded images links
+        const chunks = text.split(/!\[.*?]\([^)]*\)/);
+        const links = [...text.matchAll(/!\[.*?]\([^)]*\)/g)];
+
+        let result = '';
+        for (let i = 0; i < chunks.length; i++) {
+            result += await translateInner(chunks[i], lang, provider);
+            if (i < links.length) result += links[i][0];
+        }
+
+        return result;
     } catch (error) {
         console.log(error);
         toastr.error(String(error), 'Failed to translate message');
+    }
+}
+
+/**
+ * Common translation function that handles the translation logic
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @param {string} provider Translation provider to use
+ * @returns {Promise<string>} Translated text
+ */
+async function translateInner(text, lang, provider) {
+    if (text == '') {
+        return '';
+    }
+    if (!provider) {
+        provider = extension_settings.translate.provider;
+    }
+    switch (provider) {
+        case 'libre':
+            return await translateProviderLibre(text, lang);
+        case 'google':
+            return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
+        case 'lingva':
+            return await chunkedTranslate(text, lang, translateProviderLingva, 5000);
+        case 'deepl':
+            return await translateProviderDeepl(text, lang);
+        case 'deeplx':
+            return await chunkedTranslate(text, lang, translateProviderDeepLX, 1500);
+        case 'oneringtranslator':
+            return await translateProviderOneRing(text, lang);
+        case 'bing':
+            return await chunkedTranslate(text, lang, translateProviderBing, 1000);
+        case 'yandex':
+            return await translateProviderYandex(text, lang);
+        default:
+            console.error('Unknown translation provider', provider);
+            return text;
     }
 }
 
@@ -496,6 +584,7 @@ async function onTranslateChatClick() {
         toastr.info(`${chat.length} message(s) queued for translation.`, 'Please wait...');
 
         for (let i = 0; i < chat.length; i++) {
+            await translateIncomingMessageReasoning(i);
             await translateIncomingMessage(i);
         }
 
@@ -522,6 +611,7 @@ async function onTranslationsClearClick() {
     for (const mes of chat) {
         if (mes.extra) {
             delete mes.extra.display_text;
+            delete mes.extra.reasoning_display_text;
         }
     }
 
@@ -534,12 +624,47 @@ async function translateMessageEdit(messageId) {
     const chat = context.chat;
     const message = chat[messageId];
 
-    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
-        return;
+    let anyChange = false;
+    if (message.is_system || (extension_settings.translate.auto_mode == autoModeOptions.NONE && message.extra?.display_text)) {
+        delete message.extra.display_text;
+        updateMessageBlock(messageId, message);
+        anyChange = true;
+    } else if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        await translateIncomingMessage(messageId);
+        anyChange = true;
     }
 
-    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
-        await translateIncomingMessage(messageId);
+    if (anyChange) {
+        await context.saveChat();
+    }
+}
+
+async function translateMessageReasoningEdit(messageId) {
+    const context = getContext();
+    const chat = context.chat;
+    const message = chat[messageId];
+
+    let anyChange = false;
+    if (message.is_system || (extension_settings.translate.auto_mode == autoModeOptions.NONE && message.extra?.reasoning_display_text)) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        anyChange = true;
+    } else if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
+        anyChange = await translateIncomingMessageReasoning(messageId);
+    }
+
+    if (anyChange) {
+        await context.saveChat();
+    }
+}
+
+async function removeReasoningDisplayText(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+    if (message.extra?.reasoning_display_text) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        await context.saveChat();
     }
 }
 
@@ -549,24 +674,38 @@ async function onMessageTranslateClick() {
     const message = context.chat[messageId];
 
     // If the message is already translated, revert it back to the original text
+    let alreadyTranslated = false;
     if (message?.extra?.display_text) {
         delete message.extra.display_text;
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(Number(messageId), message);
+        alreadyTranslated = true;
     }
+    if (message?.extra?.reasoning_display_text) {
+        delete message.extra.reasoning_display_text;
+        updateReasoningUI(Number(messageId));
+        alreadyTranslated = true;
+    }
+
     // If the message is not translated, translate it
-    else {
+    if (!alreadyTranslated) {
+        await translateIncomingMessageReasoning(messageId);
         await translateIncomingMessage(messageId);
     }
 
     await context.saveChat();
 }
 
-const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
+const handleIncomingMessage = createEventHandler(async (messageId) => {
+    await translateIncomingMessageReasoning(messageId);
+    await translateIncomingMessage(messageId);
+}, () => shouldTranslate(incomingTypes));
 const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
+const handleMessageReasoningEdit = createEventHandler(translateMessageReasoningEdit, () => true);
+const handleMessageReasoningDelete = createEventHandler(removeReasoningDisplayText, () => true);
 
-window['translate'] = translate;
+globalThis.translate = translate;
 
 jQuery(async () => {
     const html = await renderExtensionTemplateAsync('translate', 'index');
@@ -583,76 +722,45 @@ jQuery(async () => {
     }
 
     $('#translation_auto_mode').on('change', (event) => {
+        if (!(event.target instanceof HTMLSelectElement)) {
+            return;
+        }
         extension_settings.translate.auto_mode = event.target.value;
         saveSettingsDebounced();
     });
     $('#translation_provider').on('change', (event) => {
+        if (!(event.target instanceof HTMLSelectElement)) {
+            return;
+        }
         extension_settings.translate.provider = event.target.value;
         showKeysButton();
         saveSettingsDebounced();
     });
     $('#translation_target_language').on('change', (event) => {
+        if (!(event.target instanceof HTMLSelectElement)) {
+            return;
+        }
         extension_settings.translate.target_language = event.target.value;
         saveSettingsDebounced();
     });
-    $(document).on('click', '.mes_translate', onMessageTranslateClick);
-    $('#translate_key_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const key = await callGenericPopup(`<h3>${optionText} API Key</h3>`, POPUP_TYPE.INPUT, '', {
-            customButtons: [{
-                text: 'Remove Key',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(extension_settings.translate.provider, '');
-                    toastr.success('API Key removed');
-                    $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
-                },
-            }],
-        });
-
-        if (!key) {
+    $('#deepl_api_endpoint').on('change', (event) => {
+        if (!(event.target instanceof HTMLSelectElement)) {
             return;
         }
-
-        await writeSecret(extension_settings.translate.provider, key);
-        toastr.success('API Key saved');
-        $('#translate_key_button').addClass('success');
+        extension_settings.translate.deepl_endpoint = event.target.value;
+        saveSettingsDebounced();
     });
-    $('#translate_url_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const exampleURLs = {
-            'libre': 'http://127.0.0.1:5000/translate',
-            'lingva': 'https://lingva.ml/api/v1',
-            'oneringtranslator': 'http://127.0.0.1:4990/translate',
-            'deeplx': 'http://127.0.0.1:1188/translate',
-        };
-        const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
+    $(document).on('click', '.mes_translate', onMessageTranslateClick);
 
-        const secretKey = extension_settings.translate.provider + '_url';
-        const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
-
-        const url = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedUrl,{
-            customButtons: [{
-                text: 'Remove URL',
-                appendAtEnd: true,
-                result: POPUP_RESULT.NEGATIVE,
-                action: async () => {
-                    await writeSecret(secretKey, '');
-                    toastr.success('API URL removed');
-                    $('#translate_url_button').toggleClass('success', !!secret_state[secretKey]);
-                },
-            }],
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach((eventType) => {
+        eventSource.on(eventType, (/** @type {string} */ key) => {
+            if (key === extension_settings.translate.provider) {
+                $('#translate_key_button').toggleClass('success', !!secret_state[extension_settings.translate.provider]);
+            }
+            if (key === `${extension_settings.translate.provider}_url`) {
+                $('#translate_url_button').toggleClass('success', !!secret_state[`${extension_settings.translate.provider}_url`]);
+            }
         });
-
-        if (!url) {
-            return;
-        }
-
-        await writeSecret(secretKey, url);
-
-        toastr.success('API URL saved');
-        $('#translate_url_button').addClass('success');
     });
 
     loadSettings();
@@ -662,6 +770,8 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
     eventSource.on(event_types.MESSAGE_UPDATED, handleMessageEdit);
+    eventSource.on(event_types.MESSAGE_REASONING_EDITED, handleMessageReasoningEdit);
+    eventSource.on(event_types.MESSAGE_REASONING_DELETED, handleMessageReasoningDelete);
 
     document.body.classList.add('translate');
 
@@ -670,6 +780,14 @@ jQuery(async () => {
         helpString: 'Translate text to a target language. If target language is not provided, the value from the extension settings will be used.',
         namedArgumentList: [
             new SlashCommandNamedArgument('target', 'The target language code to translate to', ARGUMENT_TYPE.STRING, false, false, '', Object.values(languageCodes)),
+            SlashCommandNamedArgument.fromProps({
+                name: 'provider',
+                description: 'The translation provider to use. If not provided, the value from the extension settings will be used.',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                acceptsMultiple: false,
+                enumProvider: () => Array.from(document.getElementById('translation_provider').querySelectorAll('option')).map((option) => new SlashCommandEnumValue(option.value, option.text, enumTypes.name, enumIcons.server)),
+            }),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument('The text to translate', ARGUMENT_TYPE.STRING, true, false, ''),
@@ -678,7 +796,8 @@ jQuery(async () => {
             const target = args?.target && Object.values(languageCodes).includes(String(args.target))
                 ? String(args.target)
                 : extension_settings.translate.target_language;
-            return await translate(String(value), target);
+            const provider = args?.provider || extension_settings.translate.provider;
+            return await translate(String(value), target, provider);
         },
         returns: ARGUMENT_TYPE.STRING,
     }));

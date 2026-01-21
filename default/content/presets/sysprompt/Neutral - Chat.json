@@ -1,4 +1,5 @@
 {
     "name": "Neutral - Chat",
-    "content": "Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}."
+    "content": "Write {{char}}'s next reply in a fictional chat between {{char}} and {{user}}.",
+    "post_history": ""
 }

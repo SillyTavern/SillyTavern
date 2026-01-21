@@ -1,0 +1,13 @@
+These are master copies of the default content files and are managed by SillyTavern.
+
+Editing any of these files would not only have no effect, but will also cause merge conflicts during update pulls.
+
+You should edit their respective copies instead, for example:
+
+1. /default/config.yaml => /config.yaml
+2. /default/public/css/user.css => /public/css/user.css
+etc.
+
+Any questions? You're always welcome at our official documentation website:
+
+https://docs.sillytavern.app/

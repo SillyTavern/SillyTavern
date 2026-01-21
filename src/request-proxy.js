@@ -1,7 +1,8 @@
-const http = require('node:http');
-const https = require('node:https');
-
-const { isValidUrl, color } = require('./util.js');
+import process from 'node:process';
+import http from 'node:http';
+import https from 'node:https';
+import { ProxyAgent } from 'proxy-agent';
+import { isValidUrl, color } from './util.js';
 
 const LOG_HEADER = '[Request Proxy]';
 
@@ -13,10 +14,8 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
  */
-function initRequestProxy({ enabled, url, bypass }) {
+export default function initRequestProxy({ enabled, url, bypass }) {
     try {
-        const { ProxyAgent } = require('proxy-agent');
-
         // No proxy is enabled, so return
         if (!enabled) {
             return;
@@ -36,7 +35,6 @@ function initRequestProxy({ enabled, url, bypass }) {
         // Reference: https://github.com/Rob--W/proxy-from-env
         process.env.all_proxy = url;
 
-
         if (Array.isArray(bypass) && bypass.length > 0) {
             process.env.no_proxy = bypass.join(',');
         }
@@ -45,12 +43,10 @@ function initRequestProxy({ enabled, url, bypass }) {
         http.globalAgent = proxyAgent;
         https.globalAgent = proxyAgent;
 
-        console.log();
-        console.log(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(url));
-        console.log();
+        console.info();
+        console.info(color.green(LOG_HEADER), 'Proxy URL is used:', color.blue(url));
+        console.info();
     } catch (error) {
         console.error(color.red(LOG_HEADER), 'Failed to initialize request proxy:', error);
     }
 }
-
-module.exports = initRequestProxy;

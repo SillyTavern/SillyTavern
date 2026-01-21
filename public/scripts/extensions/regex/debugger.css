@@ -1,0 +1,263 @@
+/* Styles for the debugger UI */
+#regex_debugger_rules {
+    margin: 10px 0;
+}
+
+#regex_debugger_rules,
+#regex_debugger_rules .sortable-list {
+    padding-left: 0;
+}
+
+.regex-debugger-rules-list {
+    position: relative;
+}
+
+.regex-debugger-rule {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: var(--black30a);
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+#regex_debugger_run_test_header {
+    justify-content: space-between;
+    align-items: center;
+}
+
+#regex_debugger_expand_steps,
+#regex_debugger_expand_final,
+#regex_debugger_save_order {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 0;
+}
+
+.regex-debugger-rule:hover {
+    filter: brightness(1.1);
+}
+
+.regex-debugger-rule .handle {
+    cursor: grab;
+    margin-right: 5px;
+}
+
+.regex-debugger-rule .rule-details {
+    flex-grow: 1;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.regex-debugger-rule .rule-name {
+    font-weight: bold;
+}
+
+.regex-debugger-rule .rule-regex {
+    font-size: 0.8em;
+    opacity: 0.8;
+    font-family: var(--monoFontFamily);
+}
+
+.regex-debugger-rule .rule-scope {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    border-radius: 5px;
+    background-color: var(--black30a);
+    margin-left: auto;
+    margin-right: 10px;
+}
+
+.regex-debugger-rule .menu_button {
+    margin: 0;
+}
+
+#regex_debugger_raw_input {
+    min-height: 1.8em;
+}
+
+#regex_debugger_steps_output {
+    min-height: 2em;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 5px;
+    background-color: var(--black30a);
+    font-family: var(--monoFontFamily);
+    font-size: 0.9em;
+}
+
+#regex_debugger_final_output {
+    min-height: 2em;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 5px;
+    background-color: var(--black30a);
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-align: left;
+}
+
+.step-header {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.step-output {
+    white-space: pre-wrap;
+    word-break: break-all;
+    padding: 5px;
+    background-color: var(--black30a);
+    border-radius: 5px;
+    text-align: left;
+}
+
+/* Classes to replace inline styles */
+.regex-debugger-no-rules {
+    padding: 10px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.regex-debugger-list-header {
+    font-weight: bold;
+    padding: 10px;
+}
+
+/* Styles for statistics */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.step-metrics {
+    font-size: 0.8em;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
+.regex-debugger-summary {
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    background-color: var(--black30a);
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.regex-debugger-tester .results-header {
+    position: relative;
+    margin: 10px 0;
+}
+
+.regex-debugger-tester .radio_group {
+    text-align: left;
+}
+
+/* Styles for statistics and highlighting additions */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    /* Allow wrapping on small screens */
+}
+
+.step-metrics {
+    font-size: 0.8em;
+    opacity: 0.8;
+    font-weight: normal;
+    white-space: nowrap;
+    /* Prevent metrics from breaking line */
+    margin-left: 10px;
+}
+
+.regex-debugger-summary {
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    background-color: var(--black30a);
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+/* New highlight color for added text */
+mark.green_hl {
+    background-color: #28a745;
+    /* A standard green color */
+    color: white;
+}
+
+/* New highlight color for deleted text */
+mark.red_hl {
+    background-color: #dc3545;
+    /* A standard red color */
+    color: white;
+    text-decoration: line-through;
+}
+
+/* Styles for the expanded view with navigation */
+.expanded-regex-container {
+    display: flex;
+    height: 75vh;
+    /* Give the container a good height */
+    overflow: hidden;
+}
+
+.expanded-regex-nav {
+    flex: 0 0 200px;
+    /* Fixed width for the nav bar */
+    border-right: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
+    overflow-y: auto;
+    background-color: var(--black30a);
+}
+
+.expanded-regex-nav a {
+    display: block;
+    padding: 6px 8px;
+    text-decoration: none;
+    color: var(--SmartThemeMainColor);
+    border-radius: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.expanded-regex-nav a:hover {
+    background-color: var(--background_hover_color);
+}
+
+.expanded-regex-nav a.active {
+    background-color: var(--highlight_color);
+    color: var(--text_color_black);
+}
+
+.expanded-regex-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-left: 10px;
+}
+
+#regex_debugger_render_mode {
+    padding-right: 20px;
+    margin-top: 5px;
+}
+
+.regex-popup-content {
+    white-space: pre-wrap;
+    word-break: break-all;
+    text-align: left;
+}

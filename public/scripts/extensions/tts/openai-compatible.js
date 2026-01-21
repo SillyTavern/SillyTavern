@@ -1,6 +1,5 @@
-import { getRequestHeaders } from '../../../script.js';
-import { callGenericPopup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
-import { findSecret, SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
+import { event_types, eventSource, getRequestHeaders } from '../../../script.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 
 export { OpenAICompatibleTtsProvider };
@@ -25,20 +24,34 @@ class OpenAICompatibleTtsProvider {
         <label for="openai_compatible_tts_endpoint">Provider Endpoint:</label>
         <div class="flex-container alignItemsCenter">
             <div class="flex1">
-                <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
+                <input id="openai_compatible_tts_endpoint" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.provider_endpoint}"/>
             </div>
-            <div id="openai_compatible_tts_key" class="menu_button menu_button_icon">
+            <div id="openai_compatible_tts_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_custom_openai_tts">
                 <i class="fa-solid fa-key"></i>
                 <span>API Key</span>
             </div>
         </div>
         <label for="openai_compatible_model">Model:</label>
-        <input id="openai_compatible_model" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.model}"/>
+        <input id="openai_compatible_model" type="text" class="text_pole" maxlength="500" value="${this.defaultSettings.model}"/>
         <label for="openai_compatible_tts_voices">Available Voices (comma separated):</label>
-        <input id="openai_compatible_tts_voices" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.available_voices.join()}"/>
+        <input id="openai_compatible_tts_voices" type="text" class="text_pole" value="${this.defaultSettings.available_voices.join()}"/>
         <label for="openai_compatible_tts_speed">Speed: <span id="openai_compatible_tts_speed_output"></span></label>
         <input type="range" id="openai_compatible_tts_speed" value="1" min="0.25" max="4" step="0.05">`;
         return html;
+    }
+
+    constructor() {
+        this.handler = async function (/** @type {string} */ key) {
+            if (key !== SECRET_KEYS.CUSTOM_OPENAI_TTS) return;
+            $('#openai_compatible_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+            await this.onRefreshClick();
+        }.bind(this);
+    }
+
+    dispose() {
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.removeListener(event, this.handler);
+        });
     }
 
     async loadSettings(settings) {
@@ -74,34 +87,9 @@ class OpenAICompatibleTtsProvider {
 
         $('#openai_compatible_tts_speed_output').text(this.settings.speed);
 
-        $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
-        $('#openai_compatible_tts_key').on('click', async () => {
-            const popupText = 'OpenAI-compatible TTS API Key';
-            const savedKey = secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS] ? await findSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS) : '';
-
-            const key = await callGenericPopup(popupText, POPUP_TYPE.INPUT, savedKey, {
-                customButtons: [{
-                    text: 'Remove Key',
-                    appendAtEnd: true,
-                    result: POPUP_RESULT.NEGATIVE,
-                    action: async () => {
-                        await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, '');
-                        $('#openai_compatible_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
-                        toastr.success('API Key removed');
-                        await this.onRefreshClick();
-                    },
-                }],
-            });
-
-            if (!key) {
-                return;
-            }
-
-            await writeSecret(SECRET_KEYS.CUSTOM_OPENAI_TTS, String(key));
-
-            toastr.success('API Key saved');
-            $('#openai_compatible_tts_key').toggleClass('success', secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
-            await this.onRefreshClick();
+        $('#openai_compatible_tts_key').toggleClass('success', !!secret_state[SECRET_KEYS.CUSTOM_OPENAI_TTS]);
+        [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+            eventSource.on(event, this.handler);
         });
 
         await this.checkReady();
@@ -120,7 +108,7 @@ class OpenAICompatibleTtsProvider {
     }
 
     async checkReady() {
-        await this.fetchTtsVoiceObjects();
+        this.voices = await this.fetchTtsVoiceObjects();
     }
 
     async onRefreshClick() {

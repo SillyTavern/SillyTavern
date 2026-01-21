@@ -157,7 +157,9 @@
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-start;
-    margin: 5px;
+    margin-top: 5px;
+    max-height: 40dvh;
+    overflow-y: auto;
 }
 
 .rm_tag_filter .tag {
@@ -167,7 +169,7 @@
 }
 
 .rm_tag_filter .tag.actionable {
-    transition: opacity 200ms;
+    transition: opacity var(--animation-duration-2x);
 }
 
 .rm_tag_filter .tag:hover {
@@ -211,6 +213,7 @@
 
 .tag_as_folder.right_menu_button {
     filter: brightness(75%) saturate(0.6);
+    margin-right: 5px;
 }
 
 .tag_as_folder.right_menu_button:hover,
