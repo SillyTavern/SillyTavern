@@ -664,7 +664,8 @@ test.describe('MacroEngine', () => {
                         const chatIdHash = chat_metadata.chat_id_hash ?? 0;
                         const rawContentHash = env.contentHash;
                         const offset = globalOffset;
-                        const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
+                        const rerollSeed = chat_metadata.pick_reroll_seed ?? 0;
+                        const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}-${rerollSeed}`;
                         // Return both the seed and what would be picked for validation
                         const finalSeed = getStringHash(combinedSeedString);
                         const rng = seedrandom(String(finalSeed));
