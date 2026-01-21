@@ -208,14 +208,12 @@ export async function getGoogleApiConfig(request, model, endpoint = 'generateCon
                 ? 'https://aiplatform.googleapis.com/v1'
                 : `https://${region}-aiplatform.googleapis.com/v1`;
             url = `${baseUrl}/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${endpoint}`;
-            // eslint-disable-next-line dot-notation
             headers['Authorization'] = authHeader;
         } else {
             // Proxy mode: use Authorization header
             const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_VERTEX_AI);
             baseUrl = `${apiUrl}/v1`;
             url = `${baseUrl}/publishers/google/models/${model}:${endpoint}`;
-            // eslint-disable-next-line dot-notation
             headers['Authorization'] = authHeader;
         }
     } else {
