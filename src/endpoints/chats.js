@@ -330,7 +330,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
         chatIntegrity = data?.value;
     } catch (err) {
         if (err.message === 'Parser cannot parse input: unexpected characters') {
-            console.debug(`${filePath} Is not valid json.`);
+            console.debug(`${filePath}'s first line is not valid json/jsonl.`);
         }
         throw new Error(err);
     }
