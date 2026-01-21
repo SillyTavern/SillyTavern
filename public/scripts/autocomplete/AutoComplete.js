@@ -605,13 +605,16 @@ export class AutoComplete {
 
         // Check if the autocomplete list is constrained by the right edge of the viewport.
         // If so, adjust the details panel position to align with the actual list position.
-        const listRect = this.dom.getBoundingClientRect();
-        const listActualLeft = listRect.left - layerRect.left;
-        const isConstrainedRight = listActualLeft < left - 5; // 5px tolerance
+        // Only do this when the list is actually visible (isReplaceable).
+        if (this.isReplaceable) {
+            const listRect = this.dom.getBoundingClientRect();
+            const listActualLeft = listRect.left - layerRect.left;
+            const isConstrainedRight = listActualLeft < left - 5; // 5px tolerance
 
-        if (isConstrainedRight) {
-            // Use the actual list position instead of cursor position
-            left = listActualLeft;
+            if (isConstrainedRight) {
+                // Use the actual list position instead of cursor position
+                left = listActualLeft;
+            }
         }
 
         this.detailsWrap.style.setProperty('--targetOffset', `${left}`);
