@@ -452,26 +452,50 @@ export function buildIfConditionOptions(context, allMacros, macroInnerText) {
  * @returns {{ start: number, end: number, content: string } | null}
  */
 export function findMacroAtCursor(text, cursorPos) {
+    // Search backwards for opening {{ while tracking nesting depth for nested macros
     let openPos = -1;
+    let depth = 0;
     for (let i = cursorPos - 1; i >= 0; i--) {
-        if (text[i] === '{' && i > 0 && text[i - 1] === '{') {
-            openPos = i - 1;
-            break;
-        }
         if (text[i] === '}' && i > 0 && text[i - 1] === '}') {
+            // Found }}, going backwards means we're entering a nested macro
+            depth++;
+            i--; // Skip the other brace
+            continue;
+        }
+        if (text[i] === '{' && i > 0 && text[i - 1] === '{') {
+            if (depth > 0) {
+                // This {{ closes a nested macro we entered going backwards
+                depth--;
+                i--; // Skip the other brace
+                continue;
+            }
+            // Found our opening {{ at depth 0
+            openPos = i - 1;
             break;
         }
     }
 
     if (openPos === -1) return null;
 
+    // Search forwards for closing }} while tracking nesting depth
     let closePos = -1;
+    depth = 0;
     for (let i = cursorPos; i < text.length - 1; i++) {
-        if (text[i] === '}' && text[i + 1] === '}') {
-            closePos = i + 2;
-            break;
-        }
         if (text[i] === '{' && text[i + 1] === '{') {
+            // Found {{, entering a nested macro
+            depth++;
+            i++; // Skip the other brace
+            continue;
+        }
+        if (text[i] === '}' && text[i + 1] === '}') {
+            if (depth > 0) {
+                // This }} closes a nested macro
+                depth--;
+                i++; // Skip the other brace
+                continue;
+            }
+            // Found our closing }} at depth 0
+            closePos = i + 2;
             break;
         }
     }
