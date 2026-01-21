@@ -746,7 +746,7 @@ function activateLazyLoader() {
                         const video = clipper.querySelector('.bg-video-thumb');
                         if (video instanceof HTMLVideoElement) {
                             video.src = getBackgroundMediaUrl(bg, isCustom);
-                            video.play().catch(() => {});
+                            video.pause();
                         }
                         clipper.style.backgroundImage = 'none';
                     } else {
