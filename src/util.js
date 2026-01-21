@@ -1506,6 +1506,34 @@ export function tryReadFileSync(filePath) {
 }
 
 /**
+ * Async code that returns true if a file exists.
+ * https://stackoverflow.com/a/35008327
+ * @param {string} file
+ * @returns {Promise<boolean>}
+ */
+function checkFileExists(file) {
+    return fs.promises.access(file, fs.constants.F_OK)
+        .then(() => true)
+        .catch(() => false);
+}
+
+/**
+* Asynchronously Attempts to read a file as utf8.
+* @param {string} filePath
+* @returns {Promise<string|null>}
+*/
+export async function tryReadFileAsync(filePath) {
+    try {
+        if (await checkFileExists(filePath)) {
+            return await fs.promises.readFile(filePath, 'utf8');
+        }
+    } catch (error) {
+        console.error(`Error reading ${filePath}: ${error.message}`);
+    }
+    return null;
+}
+
+/**
 * Attempts to delete a file.
 * @param {string} filePath Target file.
 * @returns {boolean} Returns true if the file was found and deleted.

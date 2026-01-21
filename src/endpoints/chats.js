@@ -17,9 +17,9 @@ import {
     removeOldBackups,
     formatBytes,
     tryWriteFileSync,
-    tryReadFileSync,
     tryDeleteFile,
     readFirstLine,
+    tryReadFileAsync,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -474,12 +474,12 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 /**
  * Gets the chat as an object.
  * @param {string} chatFilePath The full chat file path.
- * @returns {Array}} If the chatFilePath cannot be read, this will return [].
+ * @returns {Promise<Array>}} If the chatFilePath cannot be read, this will return [].
  */
-export function getChatData(chatFilePath) {
+export async function getChatData(chatFilePath) {
     let chatData = [];
 
-    const chatJSON = tryReadFileSync(chatFilePath) ?? '';
+    const chatJSON = await tryReadFileAsync(chatFilePath) ?? '';
     if (chatJSON.length > 0) {
         const lines = chatJSON.split('\n');
         // Iterate through the array of strings and parse each line as JSON
@@ -491,7 +491,7 @@ export function getChatData(chatFilePath) {
     return chatData;
 }
 
-router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/get', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const directoryPath = path.join(request.user.directories.chats, dirName);
@@ -510,7 +510,7 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(directoryPath, sanitize(chatFileName));
 
-        return response.send(getChatData(chatFilePath));
+        return response.send(await getChatData(chatFilePath));
     } catch (error) {
         console.error(error);
         return response.send({});
@@ -754,7 +754,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
     }
 });
 
-router.post('/group/get', (request, response) => {
+router.post('/group/get', async (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -762,7 +762,7 @@ router.post('/group/get', (request, response) => {
     const id = request.body.id;
     const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
-    return response.send(getChatData(chatFilePath));
+    return response.send(await getChatData(chatFilePath));
 });
 
 router.post('/group/info', async (request, response) => {
@@ -832,7 +832,7 @@ router.post('/group/save', async function (request, response) {
     }
 });
 
-router.post('/search', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/search', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const { query, avatar_url, group_id } = request.body;
         let chatFiles = [];
@@ -862,18 +862,18 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
             // Find group chat files for given group ID
             const groupChatsDir = path.join(request.user.directories.groupChats);
-            chatFiles = targetGroup.chats
-                .map(chatId => {
+            chatFiles = [];
+            await Promise.allSettled(targetGroup.chats
+                .map(async chatId => {
                     const filePath = path.join(groupChatsDir, `${chatId}.jsonl`);
                     if (!fs.existsSync(filePath)) return null;
-                    const stats = fs.statSync(filePath);
-                    return {
+                    const stats = await fs.promises.stat(filePath);
+                    chatFiles.push({
                         file_name: chatId,
                         file_size: formatBytes(stats.size),
                         path: filePath,
-                    };
-                })
-                .filter(x => x);
+                    });
+                }));
         } else {
             // Regular character chat directory
             const character_name = avatar_url.replace('.png', '');
@@ -883,32 +883,33 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 return response.send([]);
             }
 
-            chatFiles = fs.readdirSync(directoryPath)
+            chatFiles = [];
+            await Promise.allSettled(fs.readdirSync(directoryPath)
                 .filter(file => file.endsWith('.jsonl'))
-                .map(fileName => {
+                .map(async fileName => {
                     const filePath = path.join(directoryPath, fileName);
-                    const stats = fs.statSync(filePath);
-                    return {
+                    const stats = await fs.promises.stat(filePath);
+                    chatFiles.push({
                         file_name: fileName,
                         file_size: formatBytes(stats.size),
                         path: filePath,
-                    };
-                });
+                    });
+                }));
         }
 
         const results = [];
 
         // Search logic
-        for (const chatFile of chatFiles) {
-            const data = getChatData(chatFile.path);
+        await Promise.allSettled(chatFiles.map(async chatFile => {
+            const data = await getChatData(chatFile.path);
             const messages = data.filter(x => x && typeof x.mes === 'string');
 
             if (query && messages.length === 0) {
-                continue;
+                return;
             }
 
             const lastMessage = messages[messages.length - 1];
-            const lastMesDate = lastMessage?.send_date || new Date(fs.statSync(chatFile.path).mtimeMs).toISOString();
+            const lastMesDate = lastMessage?.send_date || new Date(await fs.promises.stat(chatFile.path).mtimeMs).toISOString();
 
             // If no search query, just return metadata
             if (!query) {
@@ -919,7 +920,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                     last_mes: lastMesDate,
                     preview_message: getPreviewMessage(messages),
                 });
-                continue;
+                return;
             }
 
             // Search through title and messages of the chat
@@ -936,7 +937,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                     preview_message: getPreviewMessage(messages),
                 });
             }
-        }
+        }));
 
         // Sort by last message date descending
         results.sort((a, b) => new Date(b.last_mes).getTime() - new Date(a.last_mes).getTime());
