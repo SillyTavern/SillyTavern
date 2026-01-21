@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "buildCommand": "npm run build",
+    "env": {
+        "NODE_ENV": "production"
+    },
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/api/server"
+        }
+    ],
+    "functions": {
+        "api/server.js": {
+            "maxDuration": 60,
+            "memory": 3008
+        }
+    }
+}
