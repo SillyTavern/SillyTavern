@@ -527,10 +527,9 @@ class CoquiTtsProvider {
         // Check if already installed and propose to do it otherwise
         const model_id = modelDict[model_language][model_dataset][model_name].id;
         console.debug(DEBUG_PREFIX,'Check if model is already installed',model_id);
-        let result = await CoquiTtsProvider.checkmodel_state(model_id);
-        result = await result.json();
-        // eslint-disable-next-line dot-notation
-        const model_state = result['model_state'];
+        const result = await CoquiTtsProvider.checkmodel_state(model_id);
+        const resultJSON = await result.json();
+        const model_state = resultJSON.model_state;
 
         console.debug(DEBUG_PREFIX, ' Model state:', model_state);
 
@@ -753,11 +752,10 @@ async function initLocalModels() {
 
     // Initialized local model once
     if (!coquiLocalModelsReceived) {
-        let result = await CoquiTtsProvider.getLocalModelList();
-        result = await result.json();
+        const result = await CoquiTtsProvider.getLocalModelList();
+        const resultJSON = await result.json();
 
-        // eslint-disable-next-line dot-notation
-        coquiLocalModels = result['models_list'];
+        coquiLocalModels = resultJSON.models_list;
 
         $('#coqui_local_model_name').show();
         $('#coqui_local_model_name')
