@@ -601,7 +601,19 @@ export class AutoComplete {
         if (location.bottom < rect.top || location.top > rect.bottom || location.left < rect.left || location.left > rect.right) {
             return this.hide();
         }
-        const left = Math.max(rect.left, location.left) - layerRect.left;
+        let left = Math.max(rect.left, location.left) - layerRect.left;
+
+        // Check if the autocomplete list is constrained by the right edge of the viewport.
+        // If so, adjust the details panel position to align with the actual list position.
+        const listRect = this.dom.getBoundingClientRect();
+        const listActualLeft = listRect.left - layerRect.left;
+        const isConstrainedRight = listActualLeft < left - 5; // 5px tolerance
+
+        if (isConstrainedRight) {
+            // Use the actual list position instead of cursor position
+            left = listActualLeft;
+        }
+
         this.detailsWrap.style.setProperty('--targetOffset', `${left}`);
         if (this.isReplaceable) {
             this.detailsWrap.classList.remove('full');
