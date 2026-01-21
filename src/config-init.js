@@ -236,13 +236,9 @@ export function addMissingConfigValues(configPath) {
             console.log('Migrating config values in config.yaml:', migratedKeys);
         }
 
-        try {
-            fs.writeFileSync(configPath, yaml.stringify(config));
-        } catch (error) {
-            console.warn(color.yellow(`Warning: Failed to write config.yaml at ${configPath}.`));
-        }
+        fs.writeFileSync(configPath, yaml.stringify(config));
     } catch (error) {
-        console.error(color.red('FATAL: Could not add missing config values to config.yaml'), error);
+        console.warn(color.yellow('Could not add missing config values to config.yaml'), error);
     }
 }
 
