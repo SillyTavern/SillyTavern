@@ -20,7 +20,6 @@ import {
     tryReadFileSync,
     tryDeleteFile,
     pickFirstObjectFromJsonFile,
-    humanFileSize,
     ensureAccess,
 } from '../util.js';
 
@@ -398,7 +397,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                 if (jsonData && _.isObjectLike(jsonData.chat_metadata)) {
                     if (Object.hasOwn(jsonData, 'tree')) {
                         const tree = jsonData?.tree;
-                        chatData.treeSize = humanFileSize(JSON.stringify(tree).length);
+                        chatData.treeSize = formatBytes(JSON.stringify(tree).length);
                     }
 
                     if (withMetadata) chatData.chat_metadata = jsonData.chat_metadata;
@@ -928,7 +927,7 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             // Check if the chat file has a tree.
             if (Array.isArray(data) && data.length && Object.hasOwn(data[0], 'tree')) {
                 const tree = data[0]?.tree;
-                treeSize = humanFileSize(JSON.stringify(tree).length);
+                treeSize = formatBytes(JSON.stringify(tree).length);
             }
 
             const lastMessage = messages[messages.length - 1];
