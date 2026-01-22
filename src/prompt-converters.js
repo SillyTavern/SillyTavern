@@ -31,6 +31,8 @@ const GEMINI_MEDIA_RESOLUTION = {
     high: 'media_resolution_high',
 };
 
+const enableThoughtSignatures = !!getConfigValue('gemini.thoughtSignatures', true, 'boolean');
+
 /**
  * @typedef {object} PromptNames
  * @property {string} charName Character name
@@ -574,7 +576,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
             const textSignature = message.signature;
 
             parts.forEach((part) => {
-                if (textSignature && typeof part.text === 'string') {
+                if (enableThoughtSignatures && textSignature && typeof part.text === 'string') {
                     part.thoughtSignature = textSignature;
                 } else if (/gemini-3/.test(model)) {
                     // Gemini 3: Fall back to bypass magic for function calls (mandatory) and images

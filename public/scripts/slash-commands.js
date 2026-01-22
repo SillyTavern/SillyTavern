@@ -3103,6 +3103,48 @@ export function initDefaultSlashCommands() {
         },
     }));
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reroll-pick',
+        callback: (_, value) => {
+            const currentSeed = chat_metadata.pick_reroll_seed ?? 0;
+            const parsedValue = value ? parseInt(String(value), 10) : NaN;
+
+            if (!isNaN(parsedValue)) {
+                chat_metadata.pick_reroll_seed = parsedValue;
+            } else {
+                chat_metadata.pick_reroll_seed = currentSeed + 1;
+            }
+
+            saveMetadataDebounced();
+            return String(chat_metadata.pick_reroll_seed);
+        },
+        returns: t`The new reroll seed value.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`Optional seed value to set. If not provided, increments current seed by 1.`,
+                typeList: [ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        helpString: `
+            <div>
+                ${t`Rerolls all <code>{{pick}}</code> macro choices in the current chat.`}
+            </div>
+            <div>
+                ${t`The <code>{{pick}}</code> macro normally keeps stable choices per chat. This command changes the seed used for all picks, causing them to resolve to (possibly) different values.`}
+            </div>
+            <div>
+                ${t`If a number is provided, sets the seed to that value. Otherwise, increments the current seed by 1.`}
+            </div>
+            <div>
+                <strong>${t`Example:`}</strong>
+                <ul>
+                    <li><pre><code>/reroll-pick</code></pre> ${t`Increments the seed by 1.`}</li>
+                    <li><pre><code>/reroll-pick 5</code></pre> ${t`Sets the seed to 5.`}</li>
+                </ul>
+            </div>
+        `,
+    }));
+
     registerVariableCommands();
 }
 

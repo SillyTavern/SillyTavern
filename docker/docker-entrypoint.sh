@@ -8,7 +8,7 @@ start_sillytavern() {
     # Config Check
     if [ ! -e "config/config.yaml" ]; then
         echo "Resource not found, copying from defaults: config.yaml"
-        $PREFIX cp -r "default/config.yaml" "config/config.yaml"
+        $PREFIX cp "default/config.yaml" "config/config.yaml"
     fi
 
     # Execute postinstall to auto-populate config.yaml with missing values
@@ -20,7 +20,7 @@ start_sillytavern() {
 
 # Dirs that MUST be present at this point (e.g for volumeless docker runs).
 # Please update list, if in the future a related perm issue appear.
-CORE_DIRS="config data plugins public/scripts/extensions/third-party"
+CORE_DIRS="config data plugins public/scripts/extensions/third-party backups"
 
 # Mounted Volumes (External)
 # Parse mounts, handling files vs directories
@@ -35,11 +35,7 @@ for mount in $RAW_MOUNTS; do
 
         # Performance Safety: If the file is in the root of the app,
         # we do NOT add the parent (App Root), or we will recursively scan the whole app.
-        if [ "$PARENT_DIR" = "/home/node/app" ]; then
-            MOUNTED_DIRS="$MOUNTED_DIRS $mount"
-        else
-            MOUNTED_DIRS="$MOUNTED_DIRS $PARENT_DIR"
-        fi
+        [ "$PARENT_DIR" != "/home/node/app" ] && MOUNTED_DIRS="$MOUNTED_DIRS $PARENT_DIR" || MOUNTED_DIRS="$MOUNTED_DIRS $mount"
     else
         # It is a directory, add it directly
         MOUNTED_DIRS="$MOUNTED_DIRS $mount"
@@ -53,21 +49,19 @@ CHECK_DIRS=$(echo "$CORE_DIRS $MOUNTED_DIRS" | tr ' ' '\n' | sort -u)
 for dir in $CHECK_DIRS; do
     if [ ! -e "$dir" ]; then
         echo "Creating missing directory: $dir"
-        mkdir -p "$dir"
+        mkdir -p "$dir" 2>/dev/null || echo "Warning: Could not create $dir" >&2
     fi
 done
 
-# Change permissions only if started as Root(UID 0) and needed.
+# Mode Selection
 if [ "$(id -u)" = "0" ]; then
     # Check if PUID/PGID variables are provided
     if [ -n "$PUID" ] && [ -n "$PGID" ]; then
-        TARGET_UID=$PUID
-        TARGET_GID=$PGID
-        echo "Non-root mode requested (UID:$TARGET_UID GID:$TARGET_GID)."
+        echo "Mode: PUID/PGID (UID:$PUID GID:$PGID)"
 
         # Update the internal 'node' user to match requested IDs
-        groupmod -o -g "$TARGET_GID" node
-        usermod -o -u "$TARGET_UID" -g "$TARGET_GID" node
+        groupmod -o -g "$PGID" node
+        usermod -o -u "$PUID" -g "$PGID" node
 
         for dir in $CHECK_DIRS; do
             if [ -d "$dir" ]; then
@@ -75,11 +69,9 @@ if [ "$(id -u)" = "0" ]; then
                 DIR_UID=$(stat -c '%u' "$dir")
                 DIR_GID=$(stat -c '%g' "$dir")
 
-                if [ "$DIR_UID" != "$TARGET_UID" ] || [ "$DIR_GID" != "$TARGET_GID" ]; then
+                if [ "$DIR_UID" != "$PUID" ] || [ "$DIR_GID" != "$PGID" ]; then
                     echo "(Detected mismatch) Adjusting permissions for: $dir."
-                    if ! chown -R node:node "$dir"; then
-                        echo "Error: Failed to update permissions for '$dir'."
-                    fi
+                    chown -R node:node "$dir" || echo "Warning: Failed to update permissions for '$dir'." >&2
                 fi
             fi
         done
@@ -87,16 +79,17 @@ if [ "$(id -u)" = "0" ]; then
         # Fix config file specifically
         chown node:node "config/config.yaml" 2>/dev/null
 
+        # Set execution prefix to run as 'node' user
         EXEC_PREFIX="su-exec node:node"
     else
         # Default: Run as Root (original behavior)
-        echo "Running in default (root) mode."
+        echo "Mode: Default (Root)"
         EXEC_PREFIX=""
     fi
 
 else
     # Non-Root Mode (Docker CLI --user flag)
-    echo "Running as detected user (UID: $(id -u))."
+    echo "Mode: Strict Non-Root (UID: $(id -u))"
     # We CANNOT auto-fix permissions in this mode because we lack privileges.
     # Relying solely on the user configuring their host permissions correctly.
     EXEC_PREFIX=""

@@ -950,8 +950,11 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
 router.post('/recent', async function (request, response) {
     try {
-        /** @type {{pngFile?: string, groupId?: string, filePath: string, mtime: number}[]} */
+        /** @typedef {{pngFile?: string, groupId?: string, filePath: string, mtime: number}} ChatFile */
+        /** @type {ChatFile[]} */
         const allChatFiles = [];
+        /** @type {import('../../public/scripts/welcome-screen.js').PinnedChat[]} */
+        const pinnedChats = Array.isArray(request.body.pinned) ? request.body.pinned : [];
 
         const getCharacterChatFiles = async () => {
             const pngDirents = await fs.promises.readdir(request.user.directories.characters, { withFileTypes: true });
@@ -1017,8 +1020,17 @@ router.post('/recent', async function (request, response) {
 
         await Promise.allSettled([getCharacterChatFiles(), getGroupChatFiles(), getRootChatFiles()]);
 
-        const max = parseInt(request.body.max ?? Number.MAX_SAFE_INTEGER);
-        const recentChats = allChatFiles.sort((a, b) => b.mtime - a.mtime).slice(0, max);
+        const max = parseInt(request.body.max ?? Number.MAX_SAFE_INTEGER) + pinnedChats.length;
+        const isPinned = (/** @type {ChatFile} */ chatFile) => pinnedChats.some(p => p.file_name === path.basename(chatFile.filePath) && (p.avatar === chatFile.pngFile || p.group === chatFile.groupId));
+        const recentChats = allChatFiles.sort((a, b) => {
+            const isAPinned = isPinned(a);
+            const isBPinned = isPinned(b);
+
+            if (isAPinned && !isBPinned) return -1;
+            if (!isAPinned && isBPinned) return 1;
+
+            return b.mtime - a.mtime;
+        }).slice(0, max);
         const jsonFilesPromise = recentChats.map((file) => {
             const withMetadata = !!request.body.metadata;
             return file.groupId

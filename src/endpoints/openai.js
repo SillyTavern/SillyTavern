@@ -400,9 +400,9 @@ router.post('/electronhub/models', async (request, response) => {
             console.warn('ElectronHub models request failed', result.statusText, text);
             return response.status(500).send(text);
         }
-
+        /** @type {any} */
         const data = await result.json();
-        const models = data && Array.isArray(data['data']) ? data['data'] : [];
+        const models = data && Array.isArray(data.data) ? data.data : [];
         return response.json(models);
     } catch (error) {
         console.error('ElectronHub models fetch failed', error);

@@ -104,6 +104,9 @@
         },
         "node-fetch": {
             "whatwg-url": "^14.0.0"
+        },
+        "chevrotain": {
+            "lodash-es": "^4.17.23"
         }
     },
     "name": "sillytavern",

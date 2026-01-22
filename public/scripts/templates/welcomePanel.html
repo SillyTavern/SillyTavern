@@ -44,6 +44,11 @@
         {{#each chats}}
             {{#with this}}
             <div class="recentChat {{#if hidden}}hidden{{/if}} {{#if is_group}}group{{/if}}" data-file="{{chat_name}}" data-avatar="{{avatar}}" data-group="{{group}}">
+                {{#if pinned}}
+                    <div class="recentChatPinned">
+                        <i class="fa-solid fa-thumbtack fa-fw fa-xs" title="Pinned chat" data-i18n="[title]Pinned chat"></i>
+                    </div>
+                {{/if}}
                 <div class="avatar" title="[Character] {{char_name}}&#10;File: {{avatar}}">
                     <img src="{{char_thumbnail}}" alt="{{char_name}}">
                 </div>
@@ -56,6 +61,9 @@
                         </div>
                         <small class="chatDate" title="{{date_long}}">{{date_short}}</small>
                         <div class="chatActions">
+                            <button class="menu_button menu_button_icon pinChat {{#if pinned}}active{{/if}}" title="Pin chat" data-i18n="[title]Pin chat">
+                                <i class="fa-solid fa-thumbtack fa-fw"></i>
+                            </button>
                             <button class="menu_button menu_button_icon renameChat" title="Rename chat" data-i18n="[title]Rename chat">
                                 <i class="fa-solid fa-pen-to-square fa-fw"></i>
                             </button>

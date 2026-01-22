@@ -732,6 +732,7 @@ async function firstLoadInit() {
     initAccessibility();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
+    await eventSource.emit(event_types.APP_INITIALIZED);
     await hideLoader();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
@@ -955,7 +956,8 @@ export async function printCharacters(fullRefresh = false) {
 
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
     printTagFilters(tag_filter_type.character);
-    printTagFilters(tag_filter_type.group_member);
+    printTagFilters(tag_filter_type.group_members_list);
+    printTagFilters(tag_filter_type.group_candidates_list);
 
     // We are also always reprinting the lists on character/group edit window, as these ones doesn't get updated otherwise
     applyTagsOnCharacterSelect();
@@ -5170,7 +5172,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
             authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-            smartContextString: (extension_prompts['chromadb']?.value || ''),
+            smartContextString: (extension_prompts.chromadb?.value || ''),
             chatVectorsString: (extension_prompts['3_vectors']?.value || ''),
             dataBankVectorsString: (extension_prompts['4_vectors_data_bank']?.value || ''),
             worldInfoString: worldInfoString,
@@ -8159,9 +8161,6 @@ async function messageEditDone(div) {
     }
 
     let { mesBlock, text, mes, bias } = updateMessage(div);
-    if (this_edit_mes_id == 0) {
-        text = substituteParams(text);
-    }
 
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
     text = chat[this_edit_mes_id]?.mes ?? text;
@@ -9727,7 +9726,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         console.error(`Message #${mesId}'s DOM element is not valid.`);
         return;
     }
-    const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
+    const originalSwipeId = Number(chat[mesId]?.swipe_id ?? 0);
     let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
     /**

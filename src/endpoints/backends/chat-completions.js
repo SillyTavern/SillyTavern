@@ -1,3 +1,4 @@
+/* eslint-disable dot-notation */
 import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
