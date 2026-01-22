@@ -2698,6 +2698,102 @@ test.describe('MacroEngine', () => {
             expect(output).toBe('true');
         });
 
+        // {{.myvar > value}} - greater than comparison (numeric)
+        test('should return true when variable is greater than value with >', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar > 5}}', { local: { myvar: '10' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when variable is not greater than value with >', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar > 10}}', { local: { myvar: '5' } });
+            expect(output).toBe('false');
+        });
+
+        test('should return false when variable equals value with >', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar > 10}}', { local: { myvar: '10' } });
+            expect(output).toBe('false');
+        });
+
+        test('should return false for non-numeric values with >', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar > 5}}', { local: { myvar: 'abc' } });
+            expect(output).toBe('false');
+        });
+
+        // {{.myvar >= value}} - greater than or equal comparison (numeric)
+        test('should return true when variable is greater than value with >=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar >= 5}}', { local: { myvar: '10' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return true when variable equals value with >=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar >= 10}}', { local: { myvar: '10' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when variable is less than value with >=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar >= 10}}', { local: { myvar: '5' } });
+            expect(output).toBe('false');
+        });
+
+        // {{.myvar < value}} - less than comparison (numeric)
+        test('should return true when variable is less than value with <', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar < 10}}', { local: { myvar: '5' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when variable is not less than value with <', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar < 5}}', { local: { myvar: '10' } });
+            expect(output).toBe('false');
+        });
+
+        test('should return false when variable equals value with <', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar < 10}}', { local: { myvar: '10' } });
+            expect(output).toBe('false');
+        });
+
+        test('should return false for non-numeric values with <', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar < 5}}', { local: { myvar: 'abc' } });
+            expect(output).toBe('false');
+        });
+
+        // {{.myvar <= value}} - less than or equal comparison (numeric)
+        test('should return true when variable is less than value with <=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar <= 10}}', { local: { myvar: '5' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return true when variable equals value with <=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar <= 10}}', { local: { myvar: '10' } });
+            expect(output).toBe('true');
+        });
+
+        test('should return false when variable is greater than value with <=', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar <= 5}}', { local: { myvar: '10' } });
+            expect(output).toBe('false');
+        });
+
+        // Negative numbers with comparison operators
+        test('should handle negative numbers with > operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar > -5}}', { local: { myvar: '0' } });
+            expect(output).toBe('true');
+        });
+
+        test('should handle negative numbers with < operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar < 0}}', { local: { myvar: '-5' } });
+            expect(output).toBe('true');
+        });
+
+        // Decimal numbers with comparison operators
+        test('should handle decimal numbers with >= operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar >= 3.14}}', { local: { myvar: '3.14' } });
+            expect(output).toBe('true');
+        });
+
+        test('should handle decimal numbers with <= operator', async ({ page }) => {
+            const output = await evaluateWithEngineAndVariables(page, '{{.myvar <= 2.5}}', { local: { myvar: '2.49' } });
+            expect(output).toBe('true');
+        });
+
         // Global variable versions of new operators
         test('should use || with global variable', async ({ page }) => {
             const output = await evaluateWithEngineAndVariables(page, '{{$myvar || globaldefault}}', { global: { myvar: '' } });

@@ -499,13 +499,13 @@ export const VariableShorthandDefinitions = new Map([
         type: VariableShorthandType.LOCAL,
         name: 'Local Variable',
         description: 'Access or modify a local variable (scoped to current chat).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)', 'greater than (>)', 'greater than or equal (>=)', 'less than (<)', 'less than or equal (<=)'],
     }],
     [VariableShorthandType.GLOBAL, {
         type: VariableShorthandType.GLOBAL,
         name: 'Global Variable',
         description: 'Access or modify a global variable (shared across all chats).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)', 'greater than (>)', 'greater than or equal (>=)', 'less than (<)', 'less than or equal (<=)'],
     }],
 ]);
 
@@ -633,6 +633,10 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}myvar ??= value}} - Set if undefined, get value`,
             `{{${prefix}myvar == test}} - Compare (returns true/false)`,
             `{{${prefix}myvar != test}} - Compare not equal (returns true/false)`,
+            `{{${prefix}score > 10}} - Greater than (numeric, returns true/false)`,
+            `{{${prefix}score >= 10}} - Greater than or equal (numeric)`,
+            `{{${prefix}score < 10}} - Less than (numeric, returns true/false)`,
+            `{{${prefix}score <= 10}} - Less than or equal (numeric)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -810,6 +814,10 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}${this.#varName} ??= value}} - Set if undefined, get value`,
             `{{${prefix}${this.#varName} == test}} - Compare (returns true/false)`,
             `{{${prefix}${this.#varName} != test}} - Compare not equal (returns true/false)`,
+            `{{${prefix}${this.#varName} > 10}} - Greater than (numeric)`,
+            `{{${prefix}${this.#varName} >= 10}} - Greater than or equal (numeric)`,
+            `{{${prefix}${this.#varName} < 10}} - Less than (numeric)`,
+            `{{${prefix}${this.#varName} <= 10}} - Less than or equal (numeric)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -892,6 +900,30 @@ export const VariableOperatorDefinitions = new Map([
         symbol: '!=',
         name: 'Not Equals',
         description: 'Compare the variable value to another value. Returns "true" if not equal, "false" if equal.',
+        needsValue: true,
+    }],
+    ['>', {
+        symbol: '>',
+        name: 'Greater Than',
+        description: 'Numeric comparison. Returns "true" if variable is greater than value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['>=', {
+        symbol: '>=',
+        name: 'Greater Than or Equal',
+        description: 'Numeric comparison. Returns "true" if variable is greater than or equal to value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['<', {
+        symbol: '<',
+        name: 'Less Than',
+        description: 'Numeric comparison. Returns "true" if variable is less than value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['<=', {
+        symbol: '<=',
+        name: 'Less Than or Equal',
+        description: 'Numeric comparison. Returns "true" if variable is less than or equal to value, "false" otherwise.',
         needsValue: true,
     }],
 ]);
@@ -1224,10 +1256,22 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (operatorText.startsWith('!=')) {
             variableOperator = '!=';
             i += 2;
+        } else if (operatorText.startsWith('>=')) {
+            variableOperator = '>=';
+            i += 2;
+        } else if (operatorText.startsWith('>')) {
+            variableOperator = '>';
+            i += 1;
+        } else if (operatorText.startsWith('<=')) {
+            variableOperator = '<=';
+            i += 2;
+        } else if (operatorText.startsWith('<')) {
+            variableOperator = '<';
+            i += 1;
         } else if (operatorText.startsWith('=')) {
             variableOperator = '=';
             i += 1;
-        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!')) {
+        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!') || operatorText.startsWith('>') || operatorText.startsWith('<')) {
             // Partial operator prefix - user is typing an operator
             partialOperator = operatorText[0];
         } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
