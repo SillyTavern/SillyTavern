@@ -730,6 +730,7 @@ async function firstLoadInit() {
     initAccessibility();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
+    await eventSource.emit(event_types.APP_INIT);
     await hideLoader();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
