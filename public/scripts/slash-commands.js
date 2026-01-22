@@ -3122,7 +3122,7 @@ export function initDefaultSlashCommands() {
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: t`Optional seed value to set. If not provided, increments current seed by 1.`,
-                typeList: [ARGUMENT_TYPE.NUMBER]
+                typeList: [ARGUMENT_TYPE.NUMBER],
             }),
         ],
         helpString: `
