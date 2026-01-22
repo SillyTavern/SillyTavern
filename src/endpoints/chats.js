@@ -19,7 +19,7 @@ import {
     tryWriteFileSync,
     tryDeleteFile,
     readFirstLine,
-    tryReadFileAsync,
+    parseJSONL,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -477,15 +477,13 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
  * @returns {Promise<Array>}} If the chatFilePath cannot be read, this will return [].
  */
 export async function getChatData(chatFilePath) {
-    let chatData = [];
 
-    const chatJSON = await tryReadFileAsync(chatFilePath) ?? '';
-    if (chatJSON.length > 0) {
-        const lines = chatJSON.split('\n');
-        // Iterate through the array of strings and parse each line as JSON
-        chatData = lines.map(line => tryParse(line)).filter(x => x);
+    const chatData = await parseJSONL(chatFilePath) ?? '';
+    if (chatData.length > 0) {
+        // Remove empty.
+        return chatData.filter(x => x);
     } else {
-        console.warn(`File not found: ${chatFilePath}. The chat does not exist or is empty.`);
+        console.warn(`Data not found: ${chatFilePath}. The chat does not exist or is invalid/empty.`);
     }
 
     return chatData;
