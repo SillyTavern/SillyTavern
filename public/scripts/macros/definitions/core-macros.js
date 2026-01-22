@@ -377,7 +377,7 @@ export function registerCoreMacros() {
             // Reroll seed allows users to reset all picks in the chat via /reroll-pick command
             const rerollSeed = chat_metadata.pick_reroll_seed || null;
 
-            const combinedSeedString = [chatIdHash, rawContentHash, offset, rerollSeed].filter(it => it != null).join('-');
+            const combinedSeedString = [chatIdHash, rawContentHash, offset, rerollSeed].filter(it => it !== null).join('-');
             const finalSeed = getStringHash(combinedSeedString);
             const rng = seedrandom(String(finalSeed));
             const randomIndex = Math.floor(rng() * list.length);
