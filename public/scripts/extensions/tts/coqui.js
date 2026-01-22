@@ -556,20 +556,18 @@ class CoquiTtsProvider {
                     $('#coqui_api_model_install_status').text('Downloading model...');
                     $('#coqui_api_model_install_button').hide();
                     //toastr.info("For model "+model_id, DEBUG_PREFIX+" Started "+action, { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-                    let apiResult = await CoquiTtsProvider.installModel(model_id, action);
-                    apiResult = await apiResult.json();
+                    const apiResult = await CoquiTtsProvider.installModel(model_id, action);
+                    const apiResultJSON = await apiResult.json();
 
                     console.debug(DEBUG_PREFIX, 'Response:', apiResult);
 
-                    // eslint-disable-next-line dot-notation
-                    if (apiResult['status'] == 'done') {
+                    if (apiResultJSON.status == 'done') {
                         $('#coqui_api_model_install_status').text('Model installed and ready to use!');
                         $('#coqui_api_model_install_button').hide();
                         onModelNameChange_pointer();
                     }
 
-                    // eslint-disable-next-line dot-notation
-                    if (apiResult['status'] == 'downloading') {
+                    if (apiResultJSON.status == 'downloading') {
                         toastr.error('Check extras console for progress', DEBUG_PREFIX + ' already downloading', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                         $('#coqui_api_model_install_status').text('Already downloading a model, check extras console!');
                         $('#coqui_api_model_install_button').show();

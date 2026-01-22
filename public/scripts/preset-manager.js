@@ -727,6 +727,7 @@ class PresetManager {
             'show_hidden',
             'max_additions',
         ];
+        /** @type {Record<string, any>} */
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
         for (const key of filteredKeys) {
@@ -736,10 +737,8 @@ class PresetManager {
         }
 
         if (!this.isAdvancedFormatting() && this.apiId !== 'openai') {
-            // eslint-disable-next-line dot-notation
-            settings['genamt'] = amount_gen;
-            // eslint-disable-next-line dot-notation
-            settings['max_length'] = max_context;
+            settings.genamt = amount_gen;
+            settings.max_length = max_context;
         }
 
         return settings;
