@@ -39,7 +39,9 @@ import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnos
  * @property {boolean} isVariableShorthand - Whether this is a variable shorthand (starts with . or $).
  * @property {'.'|'$'|null} variablePrefix - The variable prefix (. for local, $ for global), or null.
  * @property {string} variableName - The variable name being typed (after the prefix).
+ * @property {number} variableNameEnd - The end of the variable name (for partial matches).
  * @property {string|null} variableOperator - The operator typed (=, ++, --, +=), or null.
+ * @property {number} variableOperatorEnd - The end of the variable operator (for partial matches).
  * @property {string} variableValue - The value after the operator (for = and +=).
  * @property {boolean} isTypingVariableName - Whether cursor is in the variable name area.
  * @property {boolean} isTypingOperator - Whether cursor is at/after variable name, ready for operator.
@@ -832,6 +834,18 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
 }
 
 /**
+ * Checks if an operator is a short one that could be a prefix of a longer operator.
+ * For example, '>' is a prefix of '>=', '<' is a prefix of '<='.
+ * @param {string} op - The operator to check.
+ * @returns {boolean} True if the operator could be a prefix of a longer operator.
+ */
+function isShortOperatorPrefix(op) {
+    // These operators could have longer variants typed after them
+    const shortPrefixes = ['>', '<', '=', '|', '?', '+', '-', '!'];
+    return shortPrefixes.includes(op);
+}
+
+/**
  * Variable shorthand operators with metadata.
  * @type {Map<string, { symbol: string, name: string, description: string, needsValue: boolean }>}
  */
@@ -1274,12 +1288,16 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!') || operatorText.startsWith('>') || operatorText.startsWith('<')) {
             // Partial operator prefix - user is typing an operator
             partialOperator = operatorText[0];
-        } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
+        } else if (operatorText.length > 0 && !/^\s/.test(operatorText) && !operatorText.startsWith('}')) {
             // There's non-whitespace after the variable name that isn't a valid operator
             // This is an invalid trailing character (e.g., $my$ or .var@test)
+            // Exception: } is the closing brace, not an invalid char
             hasInvalidTrailingChars = true;
             invalidTrailingChars = operatorText.trim();
         }
+
+        // Track where the operator ends (for cursor position checks)
+        const variableOperatorEnd = i;
 
         // Check if operator requires a value
         const operatorDef = variableOperator ? VariableOperatorDefinitions.get(variableOperator) : null;
@@ -1300,11 +1318,15 @@ export function parseMacroContext(macroText, cursorOffset) {
             // Cursor is before the prefix - still in flags area conceptually
             isTypingVariableName = false;
         } else if (cursorOffset <= variableNameEnd) {
-            // Cursor is in the variable name
+            // Cursor is in the variable name area (including at the end)
             isTypingVariableName = true;
-        } else if (!variableOperator && !hasInvalidTrailingChars) {
+        } else if (variableName.length > 0 && !variableOperator && !hasInvalidTrailingChars) {
             // Cursor is after variable name but no operator yet (and no invalid chars)
-            // This includes partial operator prefixes like '+', '-', '|', '?'
+            // This includes partial operator prefixes like '+', '-', '|', '?', '>', '<'
+            isTypingOperator = true;
+        } else if (variableName.length > 0 && variableOperator && isShortOperatorPrefix(variableOperator) && cursorOffset <= variableOperatorEnd) {
+            // Short operator that could be prefix of longer one (e.g., > could become >=)
+            // But ONLY if cursor is still in the operator area, not past it into value
             isTypingOperator = true;
         } else if (operatorNeedsValue) {
             // Operator that requires value - cursor is in value area
@@ -1336,7 +1358,9 @@ export function parseMacroContext(macroText, cursorOffset) {
             isVariableShorthand,
             variablePrefix,
             variableName,
+            variableNameEnd,
             variableOperator,
+            variableOperatorEnd,
             variableValue,
             isTypingVariableName,
             isTypingOperator,

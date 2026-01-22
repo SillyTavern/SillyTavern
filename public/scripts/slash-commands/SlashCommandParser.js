@@ -658,17 +658,13 @@ export class SlashCommandParser {
                             resultStart = macro.start + 2 + prefixIndex + 1; // +1 to skip the prefix
                         }
                     } else if (context.isTypingOperator) {
-                        // Typing operator: identifier = partial operator text (if any), start = after variable name
-                        // Using partial operator as identifier ensures cursor is within name range for filtering
-                        resultIdentifier = context.partialOperator || '';
-                        if (prefixIndex >= 0) {
-                            // Start after prefix + variable name length
-                            resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length;
-                            // If no partial operator (just whitespace after var name), set start to cursor
-                            // This ensures cursor is in the name range for filtering
-                            if (!context.partialOperator) {
-                                resultStart = index;
-                            }
+                        // Typing operator: identifier = partial operator or current operator, start = after variable name
+                        resultIdentifier = context.partialOperator || context.variableOperator || '';
+                        // Use actual variableNameEnd position from parsing (accounts for whitespace)
+                        resultStart = macro.start + 2 + context.variableNameEnd;
+                        // Skip whitespace between variable name and operator
+                        while (resultStart < index && /\s/.test(text[resultStart])) {
+                            resultStart++;
                         }
                     } else if (context.isOperatorComplete) {
                         // Operator complete (++ or --) - show context but no value input needed
@@ -677,23 +673,20 @@ export class SlashCommandParser {
                     } else if (context.hasInvalidTrailingChars) {
                         // Invalid chars after variable name: show the invalid chars for warning
                         resultIdentifier = context.invalidTrailingChars || '';
-                        if (prefixIndex >= 0) {
-                            resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length;
-                        }
+                        // Use actual variableNameEnd position from parsing
+                        resultStart = macro.start + 2 + context.variableNameEnd;
                     } else if (context.isTypingValue) {
                         // Typing value: identifier = value being typed, start = after operator
                         resultIdentifier = context.variableValue;
-                        if (prefixIndex >= 0) {
-                            const operatorLen = context.variableOperator?.length ?? 0;
-                            resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length + operatorLen;
-                            // Skip any whitespace between operator and value
-                            while (resultStart < index && /\s/.test(text[resultStart])) {
-                                resultStart++;
-                            }
-
-                            makeNoMatchText = () => `Type any value you want to ${context.variableOperator == '+=' ? `add to the variable '${context.variableName}'` : `set the variable '${context.variableName}' to`}.`;
-                            makeNoOptionsText = () => 'Enter a variable value';
+                        // Use actual operatorEnd position from parsing (accounts for whitespace)
+                        resultStart = macro.start + 2 + context.variableOperatorEnd;
+                        // Skip any whitespace between operator and value
+                        while (resultStart < index && /\s/.test(text[resultStart])) {
+                            resultStart++;
                         }
+
+                        makeNoMatchText = () => `Type any value you want to ${context.variableOperator == '+=' ? `add to the variable '${context.variableName}'` : `set the variable '${context.variableName}' to`}.`;
+                        makeNoOptionsText = () => 'Enter a variable value';
                     } else {
                         // Fallback: use variable name
                         resultIdentifier = context.variableName;
@@ -952,16 +945,20 @@ export class SlashCommandParser {
             prefixOption.valueProvider = () => ''; // Already typed, don't re-insert
             prefixOption.makeSelectable = false;
             prefixOption.sortPriority = 1; // Show at top
+            prefixOption.matchProvider = () => true; // Always show regardless of filtering
             options.push(prefixOption);
         }
 
         // If typing the variable name, suggest existing variables
-        if (context.isTypingVariableName) {
-            // Get existing variable names from the appropriate scope
-            // Filter to only include names that are valid for shorthand syntax
-            const existingVariables = this.#getVariableNames(scope)
-                .filter(name => isValidVariableShorthandName(name));
+        // Get existing variable names from the appropriate scope
+        // Filter to only include names that are valid for shorthand syntax
+        const existingVariables = this.#getVariableNames(scope)
+            .filter(name => isValidVariableShorthandName(name));
 
+        // Check if the typed variable name exactly matches an existing variable
+        const variableNameMatchesExisting = context.variableName.length > 0 && existingVariables.includes(context.variableName);
+
+        if (context.isTypingVariableName) {
             // Add existing variables that match the typed name
             for (const varName of existingVariables) {
                 const option = new VariableNameAutoCompleteOption(varName, scope, false);
@@ -995,6 +992,20 @@ export class SlashCommandParser {
                 }
                 options.push(newVarOption);
             }
+
+            // If the typed variable name exactly matches an existing variable, also show operators
+            // This allows users to see available operators without having to type a space first
+            if (variableNameMatchesExisting) {
+                for (const [, operatorDef] of VariableOperatorDefinitions) {
+                    const opOption = new VariableOperatorAutoCompleteOption(operatorDef);
+                    opOption.sortPriority = 6; // Lower priority than variable suggestions
+                    opOption.matchProvider = () => true; // Always show
+                    // IMPORTANT: Operators should INSERT after variable name, not replace it
+                    // Use replacementStartOffset to shift insertion point past the variable name
+                    opOption.replacementStartOffset = context.variableName.length;
+                    options.push(opOption);
+                }
+            }
         }
 
         // If there are invalid trailing characters after the variable name, show a warning
@@ -1026,14 +1037,23 @@ export class SlashCommandParser {
             options.push(varNameOption);
 
             // Then show available operators, filtered by partial prefix if any
+            // Also filter by current complete operator to show longer variants (e.g., > shows >=)
             const partialOp = context.partialOperator || '';
+            const currentOp = context.variableOperator || '';
+            const filterPrefix = partialOp || currentOp;
             for (const [, operatorDef] of VariableOperatorDefinitions) {
-                // Filter by partial operator prefix if user is typing one
-                if (partialOp && !operatorDef.symbol.startsWith(partialOp)) {
+                // Filter by operator prefix if user is typing one
+                // This allows typing ">" to show both ">" and ">="
+                if (filterPrefix && !operatorDef.symbol.startsWith(filterPrefix)) {
                     continue;
                 }
                 const opOption = new VariableOperatorAutoCompleteOption(operatorDef);
-                opOption.sortPriority = 5;
+                // Exact match gets higher priority
+                opOption.sortPriority = operatorDef.symbol === currentOp ? 4 : 5;
+                // Already-typed operator is non-selectable
+                if (operatorDef.symbol === currentOp) {
+                    opOption.valueProvider = () => '';
+                }
                 // Always match operators when showing operator suggestions
                 opOption.matchProvider = () => true;
                 options.push(opOption);
@@ -1041,21 +1061,23 @@ export class SlashCommandParser {
         }
 
         // If typing value (after = or +=), no autocomplete needed - freeform text
-        // But we can show the current context for reference
-        if (context.isTypingValue) {
-            // Show the current variable name as context
+        // But we show the current context for reference (greyed out, non-selectable)
+        if (context.isTypingValue && !context.isTypingOperator) {
+            // Show the current variable name as context (non-selectable)
             const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
             varNameOption.valueProvider = () => ''; // Context only
+            varNameOption.makeSelectable = false;
             varNameOption.sortPriority = 2;
             varNameOption.matchProvider = () => true; // Always show
             options.push(varNameOption);
 
-            // Show the operator that was used
+            // Show the operator that was used (non-selectable)
             if (context.variableOperator) {
                 const opDef = VariableOperatorDefinitions.get(context.variableOperator);
                 if (opDef) {
                     const opOption = new VariableOperatorAutoCompleteOption(opDef);
                     opOption.valueProvider = () => ''; // Already typed
+                    opOption.makeSelectable = false;
                     opOption.sortPriority = 3;
                     opOption.matchProvider = () => true; // Always show
                     options.push(opOption);
@@ -1063,21 +1085,23 @@ export class SlashCommandParser {
             }
         }
 
-        // If operator is complete (++ or --), show context without value input
-        if (context.isOperatorComplete) {
-            // Show the current variable name as context
+        // If operator is complete (++ or --), show context without value input (non-selectable)
+        if (context.isOperatorComplete && !context.isTypingOperator) {
+            // Show the current variable name as context (non-selectable)
             const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
             varNameOption.valueProvider = () => ''; // Context only
+            varNameOption.makeSelectable = false;
             varNameOption.sortPriority = 2;
             varNameOption.matchProvider = () => true; // Always show
             options.push(varNameOption);
 
-            // Show the operator that was used
+            // Show the operator that was used (non-selectable)
             if (context.variableOperator) {
                 const opDef = VariableOperatorDefinitions.get(context.variableOperator);
                 if (opDef) {
                     const opOption = new VariableOperatorAutoCompleteOption(opDef);
                     opOption.valueProvider = () => ''; // Already typed
+                    opOption.makeSelectable = false;
                     opOption.sortPriority = 3;
                     opOption.matchProvider = () => true; // Always show
                     options.push(opOption);
