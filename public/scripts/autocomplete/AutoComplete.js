@@ -443,7 +443,7 @@ export class AutoComplete {
         } else if (!this.isReplaceable && this.result.length > 1) {
             return this.hide();
         }
-        this.selectedItem = this.result[0];
+        this.selectedItem = this.selectDefaultItem(this.result);
         this.isActive = true;
         this.wasForced = isForced;
         this.renderDebounced();
@@ -725,6 +725,24 @@ export class AutoComplete {
         this.onSelect?.(this.selectedItem);
     }
 
+
+    /**
+     * Select the default item for the autocomplete list.
+     * Selects the first selectable item if any is present, or falls back to the last item.
+     * (To preserve context of where we are with multiple non-selectable options, if they are present for info)
+     * @param {AutoCompleteOption[]} result The list of autocomplete options.
+     * @returns {AutoCompleteOption} The item to select.
+     */
+    selectDefaultItem(result) {
+        if (result.length === 0) return null;
+
+        // Find first selectable item
+        const firstSelectable = result.find(it => it.isSelectable);
+        if (firstSelectable) return firstSelectable;
+
+        // Fall back to last item
+        return result[result.length - 1];
+    }
 
     /**
      * Mark the item at newIdx in the autocomplete list as selected.
