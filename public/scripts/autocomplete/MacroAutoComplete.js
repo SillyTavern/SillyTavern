@@ -28,25 +28,25 @@ export const MACRO_AUTOCOMPLETE_STYLE_ATTRIBUTE = 'data-macros-autocomplete-styl
  * @readonly
  * @enum {string}
  */
-export const MACRO_AUTOCOMPLETE_MODE = {
+export const MACRO_AUTOCOMPLETE_MODE = Object.freeze({
     /** Default behavior: respects global setting showInAllMacroFields */
     DEFAULT: 'default',
     /** Always show autocomplete in this field (expanded editors, prompt manager) */
     ALWAYS: 'always',
     /** Never show autocomplete in this field */
     HIDE: 'hide',
-};
+});
 
 /**
  * @readonly
  * @enum {string}
  */
-export const MACRO_AUTOCOMPLETE_STYLE = {
+export const MACRO_AUTOCOMPLETE_STYLE = Object.freeze({
     /** Small popup (33vw, max 700px) for inline fields */
     SMALL: 'small',
     /** Expanded popup (default chat width) for expanded editors */
     EXPANDED: 'expanded',
-};
+});
 
 /** @type {WeakSet<HTMLElement>} Track initialized elements to avoid double-init */
 const initializedElements = new WeakSet();
