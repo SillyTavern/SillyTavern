@@ -56,30 +56,38 @@ import { extension_settings } from '../extensions.js';
  */
 
 /**
- * Finds unclosed scoped macros in text using the macro parser.
+ * Finds unclosed scoped macros in the text up to cursor position.
+ * Uses the MacroParser and MacroCstWalker for accurate analysis.
  *
- * @param {string} textUpToCursor - Text from start to cursor position.
+ * @param {string} textUpToCursor - The document text up to the cursor position.
  * @returns {Array<{ name: string, startOffset: number, endOffset: number, paddingBefore: string, paddingAfter: string }>}
  */
 export function findUnclosedScopes(textUpToCursor) {
     if (!textUpToCursor) return [];
 
     try {
+        // Parse the document to get the CST
         const { cst } = MacroParser.parseDocument(textUpToCursor);
         if (!cst) return [];
+
+        // Use the CST walker to find unclosed scopes
         return MacroCstWalker.findUnclosedScopes({ text: textUpToCursor, cst });
     } catch {
+        // If parsing fails (incomplete input), fall back to simple regex approach
         return findUnclosedScopesRegex(textUpToCursor);
     }
 }
 
 /**
  * Fallback regex-based approach for finding unclosed scopes.
+ * Used when the parser fails on incomplete input.
  *
  * @param {string} text - The text to analyze.
  * @returns {Array<{ name: string, startOffset: number, endOffset: number, paddingBefore: string, paddingAfter: string }>}
  */
 export function findUnclosedScopesRegex(text) {
+    // Regex to find macro openings and closings, capturing whitespace padding
+    // Group 1: padding after {{, Group 2: optional /, Group 3: macro name
     const macroPattern = /\{\{(\s*)(\/?)([\w-]+)/g;
     const stack = [];
 
@@ -90,12 +98,15 @@ export function findUnclosedScopesRegex(text) {
         const name = match[3];
 
         if (isClosing) {
+            // Pop matching opener (case-insensitive)
             if (stack.length > 0 && stack[stack.length - 1].name.toLowerCase() === name.toLowerCase()) {
                 stack.pop();
             }
         } else {
+            // Check if macro can accept scoped content
             const macroDef = macroSystem.registry.getPrimaryMacro(name);
             if (macroDef && macroDef.maxArgs > 0) {
+                // Try to find closing }} to extract trailing whitespace
                 let paddingAfter = '';
                 const afterMatch = text.slice(match.index + match[0].length);
                 const closingMatch = afterMatch.match(/^[^}]*?(\s*)\}\}/);
@@ -118,120 +129,186 @@ export function findUnclosedScopesRegex(text) {
 }
 
 /**
- * Builds variable shorthand autocomplete options.
- *
- * @param {MacroAutoCompleteContext} context - The macro context.
- * @param {Object} [opts] - Options.
- * @param {boolean} [opts.forIfCondition=false] - If true, closes with }}.
- * @param {string} [opts.paddingAfter=''] - Whitespace before }}.
- * @returns {AutoCompleteOption[]}
+ * Builds autocomplete options for variable shorthand syntax (.varName or $varName).
+ * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+ * @param {Object} [opts] - Optional configuration.
+ * @param {boolean} [opts.forIfCondition=false] - If true, options are for {{if}} condition (closes with }}).
+ * @param {string} [opts.paddingAfter=''] - Whitespace to add before closing }}.
+ * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
  */
 export function buildVariableShorthandOptions(context, opts = {}) {
     const { forIfCondition = false, paddingAfter = '' } = opts;
-    /** @type {AutoCompleteOption[]} */
+    /** @type {(VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
     const options = [];
 
     const isLocal = context.variablePrefix === '.';
     const scope = isLocal ? 'local' : 'global';
 
+
+    // Always show the typed variable prefix as a non-completable option (like flags do)
+    // This allows the details panel to show information about the prefix
     const prefixDef = VariableShorthandDefinitions.get(context.variablePrefix);
     if (prefixDef) {
         const prefixOption = new VariableShorthandAutoCompleteOption(prefixDef);
-        prefixOption.valueProvider = () => '';
+        prefixOption.valueProvider = () => ''; // Already typed, don't re-insert
         prefixOption.makeSelectable = false;
-        prefixOption.sortPriority = 1;
+        prefixOption.sortPriority = 1; // Show at top
+        prefixOption.matchProvider = () => true; // Always show regardless of filtering
         options.push(prefixOption);
     }
 
-    if (context.isTypingVariableName) {
-        const existingVariables = getVariableNames(scope)
-            .filter(name => isValidVariableShorthandName(name));
+    // If typing the variable name, suggest existing variables
+    // Get existing variable names from the appropriate scope
+    // Filter to only include names that are valid for shorthand syntax
+    const existingVariables = getVariableNames(scope)
+        .filter(name => isValidVariableShorthandName(name));
 
+    // Check if the typed variable name exactly matches an existing variable
+    const variableNameMatchesExisting = context.variableName.length > 0 && existingVariables.includes(context.variableName);
+
+    if (context.isTypingVariableName) {
+        // Add existing variables that match the typed name
         for (const varName of existingVariables) {
             const option = new VariableNameAutoCompleteOption(varName, scope, false);
+            // For {{if}} condition, provide full value with closing braces
             if (forIfCondition) {
-                option.valueProvider = () => `${varName}${paddingAfter}}}`;
+                option.valueProvider = () => `${varName}${paddingAfter}}}`; // No variable prefix, as that has been written and committed already.
                 option.makeSelectable = true;
             }
+            // Variables matching the typed prefix get higher priority
             option.sortPriority = varName.startsWith(context.variableName) ? 3 : 10;
             options.push(option);
         }
 
+        // If typing a name that doesn't exist, offer to create a new variable
+        // But if the name is invalid for shorthand syntax, show a warning instead
         if (context.variableName.length > 0 && !existingVariables.includes(context.variableName)) {
             const isInvalid = !isValidVariableShorthandName(context.variableName);
             const newVarOption = new VariableNameAutoCompleteOption(context.variableName, scope, true, isInvalid);
-            newVarOption.sortPriority = isInvalid ? 2 : 4;
+            newVarOption.sortPriority = isInvalid ? 2 : 4; // Invalid names get higher priority to show warning
             if (isInvalid) {
+                // Make it non-selectable since it can't be used
                 newVarOption.valueProvider = () => '';
                 newVarOption.makeSelectable = false;
             } else if (forIfCondition) {
+                // For {{if}} condition, provide full value with closing braces
                 newVarOption.valueProvider = () => `${context.variablePrefix}${context.variableName}${paddingAfter}}}`;
             }
             options.push(newVarOption);
         }
-    }
 
-    if (context.hasInvalidTrailingChars) {
-        const fullInvalidName = context.variableName + (context.invalidTrailingChars || '');
-        const invalidOption = new VariableNameAutoCompleteOption(fullInvalidName, scope, false, true);
-        invalidOption.valueProvider = () => '';
-        invalidOption.makeSelectable = false;
-        invalidOption.sortPriority = 2;
-        invalidOption.matchProvider = () => true;
-        options.push(invalidOption);
-        return options;
-    }
-
-    if (context.isTypingOperator) {
-        const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
-        varNameOption.valueProvider = () => '';
-        varNameOption.sortPriority = 2;
-        varNameOption.matchProvider = () => true;
-        options.push(varNameOption);
-
-        const partialOp = context.partialOperator || '';
-        for (const [, operatorDef] of VariableOperatorDefinitions) {
-            if (partialOp && !operatorDef.symbol.startsWith(partialOp)) continue;
-            const opOption = new VariableOperatorAutoCompleteOption(operatorDef);
-            opOption.sortPriority = 5;
-            opOption.matchProvider = () => true;
-            options.push(opOption);
-        }
-    }
-
-    if (context.isTypingValue) {
-        const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
-        varNameOption.valueProvider = () => '';
-        varNameOption.sortPriority = 2;
-        varNameOption.matchProvider = () => true;
-        options.push(varNameOption);
-
-        if (context.variableOperator) {
-            const opDef = VariableOperatorDefinitions.get(context.variableOperator);
-            if (opDef) {
-                const opOption = new VariableOperatorAutoCompleteOption(opDef);
-                opOption.valueProvider = () => '';
-                opOption.sortPriority = 3;
-                opOption.matchProvider = () => true;
+        // If the typed variable name exactly matches an existing variable, also show operators
+        // This allows users to see available operators without having to type a space first
+        if (variableNameMatchesExisting) {
+            for (const [, operatorDef] of VariableOperatorDefinitions) {
+                const opOption = new VariableOperatorAutoCompleteOption(operatorDef);
+                opOption.sortPriority = 6; // Lower priority than variable suggestions
+                opOption.matchProvider = () => true; // Always show
+                // IMPORTANT: Operators should INSERT after variable name, not replace it
+                // Use replacementStartOffset to shift insertion point past the variable name
+                opOption.replacementStartOffset = context.variableName.length;
                 options.push(opOption);
             }
         }
     }
 
-    if (context.isOperatorComplete) {
+    // If there are invalid trailing characters after the variable name, show a warning
+    if (context.hasInvalidTrailingChars) {
+        // Show the full invalid name (variableName + invalidTrailingChars) with a warning
+        const fullInvalidName = context.variableName + (context.invalidTrailingChars || '');
+        const invalidOption = new VariableNameAutoCompleteOption(
+            fullInvalidName,
+            scope,
+            false,
+            true, // isInvalidName - triggers warning display
+        );
+        invalidOption.valueProvider = () => ''; // Don't insert anything
+        invalidOption.makeSelectable = false;
+        invalidOption.sortPriority = 2;
+        invalidOption.matchProvider = () => true; // Always show
+        options.push(invalidOption);
+        // Return early - don't show operators when syntax is invalid
+        return options;
+    }
+
+    // If ready for operator (after variable name), suggest operators
+    if (context.isTypingOperator) {
+        // Show the current variable name as context (already typed)
         const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
-        varNameOption.valueProvider = () => '';
+        varNameOption.valueProvider = () => ''; // Already typed, don't re-insert
+        varNameOption.makeSelectable = false;
         varNameOption.sortPriority = 2;
-        varNameOption.matchProvider = () => true;
+        varNameOption.matchProvider = () => true; // Always show
         options.push(varNameOption);
 
+        // Then show available operators, filtered by partial prefix if any
+        // Also filter by current complete operator to show longer variants (e.g., > shows >=)
+        const partialOp = context.partialOperator || '';
+        const currentOp = context.variableOperator || '';
+        const filterPrefix = partialOp || currentOp;
+        for (const [, operatorDef] of VariableOperatorDefinitions) {
+            // Filter by operator prefix if user is typing one
+            // This allows typing ">" to show both ">" and ">="
+            if (filterPrefix && !operatorDef.symbol.startsWith(filterPrefix)) {
+                continue;
+            }
+            const opOption = new VariableOperatorAutoCompleteOption(operatorDef);
+            // Exact match gets higher priority
+            opOption.sortPriority = operatorDef.symbol === currentOp ? 4 : 5;
+            // Already-typed operator is non-selectable
+            if (operatorDef.symbol === currentOp) {
+                opOption.valueProvider = () => '';
+            }
+            // Always match operators when showing operator suggestions
+            opOption.matchProvider = () => true;
+            options.push(opOption);
+        }
+    }
+
+    // If typing value (after = or +=), no autocomplete needed - freeform text
+    // But we show the current context for reference (greyed out, non-selectable)
+    if (context.isTypingValue && !context.isTypingOperator) {
+        // Show the current variable name as context (non-selectable)
+        const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+        varNameOption.valueProvider = () => ''; // Context only
+        varNameOption.makeSelectable = false;
+        varNameOption.sortPriority = 2;
+        varNameOption.matchProvider = () => true; // Always show
+        options.push(varNameOption);
+
+        // Show the operator that was used (non-selectable)
         if (context.variableOperator) {
             const opDef = VariableOperatorDefinitions.get(context.variableOperator);
             if (opDef) {
                 const opOption = new VariableOperatorAutoCompleteOption(opDef);
-                opOption.valueProvider = () => '';
+                opOption.valueProvider = () => ''; // Already typed
+                opOption.makeSelectable = false;
                 opOption.sortPriority = 3;
-                opOption.matchProvider = () => true;
+                opOption.matchProvider = () => true; // Always show
+                options.push(opOption);
+            }
+        }
+    }
+
+    // If operator is complete (++ or --), show context without value input (non-selectable)
+    if (context.isOperatorComplete && !context.isTypingOperator) {
+        // Show the current variable name as context (non-selectable)
+        const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+        varNameOption.valueProvider = () => ''; // Context only
+        varNameOption.makeSelectable = false;
+        varNameOption.sortPriority = 2;
+        varNameOption.matchProvider = () => true; // Always show
+        options.push(varNameOption);
+
+        // Show the operator that was used (non-selectable)
+        if (context.variableOperator) {
+            const opDef = VariableOperatorDefinitions.get(context.variableOperator);
+            if (opDef) {
+                const opOption = new VariableOperatorAutoCompleteOption(opDef);
+                opOption.valueProvider = () => ''; // Already typed
+                opOption.makeSelectable = false;
+                opOption.sortPriority = 3;
+                opOption.matchProvider = () => true; // Always show
                 options.push(opOption);
             }
         }
@@ -241,23 +318,28 @@ export function buildVariableShorthandOptions(context, opts = {}) {
 }
 
 /**
- * Builds enhanced macro autocomplete options.
- *
- * @param {MacroAutoCompleteContext} context - The parsed macro context.
- * @param {string} textUpToCursor - Full text up to cursor for scope detection.
- * @returns {AutoCompleteOption[]}
+ * Builds enhanced macro autocomplete options from the MacroRegistry.
+ * When in the flags area (before identifier), includes flag options.
+ * When typing arguments (after ::), prioritizes the exact macro match.
+ * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+ * @param {string} [textUpToCursor] - Full document text up to cursor, for unclosed scope detection.
+ * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
  */
 export function buildEnhancedMacroOptions(context, textUpToCursor) {
-    /** @type {AutoCompleteOption[]} */
+    /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
     const options = [];
 
     if (context.isVariableShorthand) {
         return buildVariableShorthandOptions(context);
     }
 
+    // Check for unclosed scoped macros and suggest closing tags first
     const unclosedScopes = findUnclosedScopes(textUpToCursor);
     if (unclosedScopes.length > 0) {
+        // Suggest closing the innermost (last) unclosed scope first
         const innermostScope = unclosedScopes[unclosedScopes.length - 1];
+        // Preserve whitespace padding from the opening tag
+        // Pass currentPadding so the closing tag can replace user-typed whitespace with the target padding
         const closingOption = new MacroClosingTagAutoCompleteOption(innermostScope.name, {
             paddingBefore: innermostScope.paddingBefore,
             paddingAfter: innermostScope.paddingAfter,
@@ -265,64 +347,86 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
         });
         options.push(closingOption);
 
+        // If inside a scoped {{if}}, also suggest {{else}}
         if (innermostScope.name === 'if') {
             const macroDef = macroSystem.registry.getPrimaryMacro('else');
-            if (macroDef) {
-                const elseOption = new EnhancedMacroAutoCompleteOption(macroDef);
-                elseOption.sortPriority = 2;
-                options.push(elseOption);
-            }
+            const elseOption = new EnhancedMacroAutoCompleteOption(macroDef);
+            elseOption.sortPriority = 2;
+            options.push(elseOption);
         }
     }
 
+    // If cursor is in the flags area (before identifier starts), include flag options
     if (context.isInFlagsArea) {
+        // Build flag options with priority-based sorting
+        // Last typed flag has highest priority (1), other flags have lower priority (10)
+        // Already-typed flags (except last) are hidden from the list
         const lastTypedFlag = context.flags.length > 0 ? context.flags[context.flags.length - 1] : null;
 
+        // Add last typed flag with high priority (so it appears at top)
         if (lastTypedFlag) {
             const lastFlagDef = MacroFlagDefinitions.get(lastTypedFlag);
             if (lastFlagDef) {
                 const lastFlagOption = new MacroFlagAutoCompleteOption(lastFlagDef);
+                // Mark as already typed - valueProvider returns empty so it doesn't re-insert
                 lastFlagOption.valueProvider = () => '';
+                // High priority to appear at top (after closing tags at 1)
                 lastFlagOption.sortPriority = 2;
                 options.push(lastFlagOption);
             }
         }
 
+        // Add flags that haven't been typed yet (skip already-typed ones except last)
         for (const [symbol, flagDef] of MacroFlagDefinitions) {
-            if (context.flags.includes(symbol)) continue;
-            const flagOption = new MacroFlagAutoCompleteOption(flagDef);
-            let isSelectable = flagDef.implemented;
-            if (flagDef.type === MacroFlagType.CLOSING_BLOCK && !unclosedScopes.length) {
-                isSelectable = false;
+            // Skip the last typed flag (already added above) and other already-typed flags
+            if (context.flags.includes(symbol)) {
+                continue;
             }
+            const flagOption = new MacroFlagAutoCompleteOption(flagDef);
+
+            // Define whether this flag is selectable (and at the top), based on being implemented, and closing actually being relevant
+            let isSelectable = flagDef.implemented;
+            if (flagDef.type === MacroFlagType.CLOSING_BLOCK && !unclosedScopes.length) isSelectable = false;
             if (!isSelectable) {
                 flagOption.valueProvider = () => '';
             }
+            // Normal flag priority
             flagOption.sortPriority = isSelectable ? 10 : 12;
             options.push(flagOption);
         }
 
+        // Add variable shorthand prefix options (. for local, $ for global)
+        // These allow users to type variable shorthands instead of macro names
         for (const [, varShorthandDef] of VariableShorthandDefinitions) {
             const varOption = new VariableShorthandAutoCompleteOption(varShorthandDef);
-            varOption.sortPriority = 8;
+            varOption.sortPriority = 8; // Between implemented flags (10) and unimplemented (12)
             options.push(varOption);
         }
     }
 
+    // Get all macros from the registry (excluding hidden aliases)
     const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
+
+    // If we're typing arguments (after ::), only show the context to the matching macro
     const isTypingArgs = context.currentArgIndex >= 0;
+
+    // Check if we're inside a scoped {{if}} for {{else}} selectability
     const isInsideScopedIf = unclosedScopes.some(scope => scope.name === 'if');
 
     for (const macro of allMacros) {
+        // Check if this macro matches the typed identifier
         const isExactMatch = macro.name === context.identifier;
         const isAliasMatch = macro.aliasOf === context.identifier;
 
+        // Only pass context to the macro that matches the identifier being typed
+        // This ensures argument hints only show for the relevant macro
         /** @type {MacroAutoCompleteContext|EnhancedMacroAutoCompleteOptions|null} */
         let macroContext = (isExactMatch || isAliasMatch) ? context : null;
 
+        // If no context, we pass some options for additional details though
         if (!macroContext) {
             macroContext = /** @type {EnhancedMacroAutoCompleteOptions} */ ({
-                paddingAfter: context.paddingBefore,
+                paddingAfter: context.paddingBefore, // Match whitespace before the macro - will only be used if the macro gets auto-closed
                 flags: context.flags,
                 currentFlag: context.currentFlag,
                 fullText: context.fullText,
@@ -331,11 +435,14 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
 
         const option = new EnhancedMacroAutoCompleteOption(macro, macroContext);
 
+        // {{else}} is only selectable inside a scoped {{if}} block
+        // Outside of {{if}}, it should appear in the list but not be tab-completable
         if (macro.name === 'else' && !isInsideScopedIf) {
             option.valueProvider = () => '';
             option.makeSelectable = false;
         }
 
+        // When typing arguments, prioritize exact matches by putting them first
         if (isTypingArgs && (isExactMatch || isAliasMatch)) {
             options.unshift(option);
         } else {
@@ -347,21 +454,25 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
 }
 
 /**
- * Builds autocomplete options for {{if}} condition.
- *
- * @param {MacroAutoCompleteContext} context - The macro context.
- * @param {import('../macros/engine/MacroRegistry.js').MacroDefinition[]} allMacros - All available macros.
- * @param {string} macroInnerText - The text inside the macro braces.
+ * Builds autocomplete options for {{if}} condition - shows zero-arg macros as shorthand.
+ * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+ * @param {import('../macros/engine/MacroRegistry.js').MacroDefinition[]} allMacros
+ * @param {string} macroInnerText - The text inside the macro braces (e.g., "  if  pers" from "{{  if  pers").
  * @returns {AutoCompleteOption[]}
  */
 export function buildIfConditionOptions(context, allMacros, macroInnerText) {
     /** @type {AutoCompleteOption[]} */
     const options = [];
 
+    // Calculate padding from the original macro text for matching whitespace on completion
+    // e.g., "  if pers" -> leading padding = "  " (whitespace before 'if', used before '}}')
     const leadingMatch = macroInnerText.match(/^(\s*)/);
     const paddingAfter = leadingMatch ? leadingMatch[1] : '';
 
+    // Get the condition text being typed (trimmed for detection)
     const conditionText = (context.args[0] || '').trim();
+
+    // Check for inversion prefix (!) - also trim whitespace after !
     const hasInversionPrefix = conditionText.startsWith('!');
     const conditionAfterInversion = hasInversionPrefix ? conditionText.slice(1).trimStart() : conditionText;
 
@@ -373,19 +484,23 @@ export function buildIfConditionOptions(context, allMacros, macroInnerText) {
         type: 'inverse',
     });
 
+    // Check if condition starts with a variable shorthand prefix (with or without !)
     const isTypingVariableShorthand = conditionAfterInversion.startsWith('.') || conditionAfterInversion.startsWith('$');
 
     if (isTypingVariableShorthand) {
+        // User is typing a variable shorthand - reuse #buildVariableShorthandOptions
         const prefix = /** @type {'.'|'$'} */ (conditionAfterInversion[0]);
-        const varNameTyped = conditionAfterInversion.slice(1);
+        const varNameTyped = conditionAfterInversion.slice(1); // Variable name after the prefix
 
+        // If inverted, show the ! as non-selectable context
         if (hasInversionPrefix) {
-            inversionOption.valueProvider = () => '';
+            inversionOption.valueProvider = () => ''; // Already typed
             inversionOption.makeSelectable = false;
             inversionOption.sortPriority = 0;
             options.push(inversionOption);
         }
 
+        // Create a synthetic context for #buildVariableShorthandOptions
         /** @type {MacroAutoCompleteContext} */
         const varContext = {
             ...context,
@@ -406,30 +521,41 @@ export function buildIfConditionOptions(context, allMacros, macroInnerText) {
         return options;
     }
 
+    // Not typing a variable shorthand - show macro options, variable shorthand prefixes, and inversion
+
+    // Show ! inversion option at the top when nothing typed, or keep it visible (non-selectable) if already typed
     if (conditionText.length === 0) {
+        // Nothing typed - offer ! as selectable option
         inversionOption.valueProvider = () => '!';
         inversionOption.makeSelectable = true;
-        inversionOption.sortPriority = -1;
+        inversionOption.sortPriority = -1; // Show at very top
         options.push(inversionOption);
     } else if (hasInversionPrefix && conditionAfterInversion.length === 0) {
-        inversionOption.valueProvider = () => '';
+        // Just ! typed - show it as non-selectable context, then show macro names and variable prefixes
+        inversionOption.valueProvider = () => ''; // Already typed
         inversionOption.makeSelectable = false;
         inversionOption.sortPriority = -1;
         options.push(inversionOption);
     }
 
+    // Add variable shorthand prefix options when no content typed yet (or just ! typed)
     if (conditionAfterInversion.length === 0) {
         for (const [, prefixDef] of VariableShorthandDefinitions) {
             const prefixOption = new VariableShorthandAutoCompleteOption(prefixDef);
+            // Complete with just the prefix symbol
             prefixOption.valueProvider = () => prefixDef.type;
             prefixOption.makeSelectable = true;
-            prefixOption.sortPriority = 0;
+            prefixOption.sortPriority = 0; // Show at top
             options.push(prefixOption);
         }
     }
 
+    // Add zero-arg macros as condition shorthand options
     for (const macro of allMacros) {
+        // Only include macros that require zero arguments (can be auto-resolved)
         if (macro.minArgs !== 0) continue;
+
+        // Skip internal/utility macros that don't make sense as conditions
         if (['else', 'noop', 'trim', '//'].includes(macro.name)) continue;
 
         const option = new EnhancedMacroAutoCompleteOption(macro, {
@@ -522,9 +648,13 @@ export function findMacroAtCursor(text, cursorPos) {
  */
 export function getVariableNames(scope) {
     try {
+        // Import chat_metadata and extension_settings dynamically to avoid circular deps
+        // These are the same sources used by commonEnumProviders.variables
         if (scope === 'local') {
+            // Local variables are in chat_metadata.variables
             return Object.keys(chat_metadata?.variables ?? {});
         } else {
+            // Global variables are in extension_settings.variables.global
             return Object.keys(extension_settings?.variables?.global ?? {});
         }
     } catch {
@@ -610,10 +740,12 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
     const isCursorAtClosing = macroEndsBrackets && cursorPos >= macro.end - 1;
 
     if (isCursorAtClosing) {
-        // Check if this is an unclosed scoped macro
+        // Cursor is at the closing }} - check if this is an unclosed scoped macro
         if (unclosedScopes.length > 0) {
             const scopedMacro = unclosedScopes[unclosedScopes.length - 1];
+            // Check if the current macro IS the unclosed scoped macro
             if (scopedMacro.startOffset === macro.start) {
+                // Show scoped context - cursor is right at the end of the opening tag
                 const scopedContext = {
                     ...context,
                     currentArgIndex: context.args.length,
@@ -635,16 +767,22 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
                 }
             }
         }
+        // Not a scoped macro, just clear arg highlighting
         context.currentArgIndex = -1;
     }
 
+    // Use the identifier from context (handles whitespace and flags)
+    // Start position must be where the identifier actually begins (after whitespace/flags)
+    // so that the autocomplete range calculation works correctly
     const identifier = context.identifier;
     const identifierStartInText = macro.start + 2 + context.identifierStart;
 
-    // Special case: {{if}} condition
+    // Special case for {{if}} condition: use the condition text for matching/replacement
     const isTypingIfCondition = context.identifier === 'if' && context.currentArgIndex === 0;
     if (isTypingIfCondition) {
+        // Get the typed condition text and calculate its start position
         const conditionText = context.args[0] || '';
+        // Find where the condition argument starts in the macro text
         const separatorMatch = macro.content.match(/^.*?if\s*(?:::?)\s*/);
         const spaceMatch = macro.content.match(/^.*?if\s+/);
         let conditionStartOffset;
@@ -657,26 +795,38 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
         }
         const conditionStartInText = macro.start + 2 + conditionStartOffset;
 
+        // Build if-condition options using macroContent for padding calculation
         const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
         const options = buildIfConditionOptions(context, allMacros, macro.content);
 
+        // For variable shorthand in {{if}} condition, adjust identifier and start position
+        // Same fix as for regular variable shorthands - identifier must be just the var name
+        // Also handle ! inversion prefix: !.var or !$var or !macroName
         const trimmedCondition = conditionText.trim();
         const hasInversion = trimmedCondition.startsWith('!');
+        // Trim whitespace after ! to handle "! $myvar" syntax
         const conditionAfterInversion = hasInversion ? trimmedCondition.slice(1).trimStart() : trimmedCondition;
         const isTypingVarShorthand = conditionAfterInversion.startsWith('.') || conditionAfterInversion.startsWith('$');
         let resultIdentifier = conditionText;
         let resultStart = conditionStartInText;
 
         if (isTypingVarShorthand) {
+            // Identifier = just the variable name part (without prefix and without !)
             resultIdentifier = conditionAfterInversion.slice(1);
+            // Start = after the ! (if any) and the prefix
             const prefixChar = conditionAfterInversion[0];
             const prefixPosInCondition = conditionText.indexOf(prefixChar, hasInversion ? 1 : 0);
             resultStart = conditionStartInText + prefixPosInCondition + 1;
         } else if (hasInversion && conditionAfterInversion.length === 0) {
+            // Just ! (possibly with whitespace) typed - identifier should be empty so other options can match
             resultIdentifier = '';
+            // Start at end of actual condition text (including any whitespace after !)
+            // This ensures cursor is within the name range for filtering
             resultStart = conditionStartInText + conditionText.length;
         } else if (hasInversion && conditionAfterInversion.length > 0) {
+            // Typing a macro name after ! (e.g., !descr) - identifier should be just the macro name
             resultIdentifier = conditionAfterInversion;
+            // Start = after the ! and any whitespace, at the beginning of the macro name
             const macroNameStart = trimmedCondition.indexOf(conditionAfterInversion);
             resultStart = conditionStartInText + macroNameStart;
         }
@@ -705,46 +855,52 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
 
     const options = buildEnhancedMacroOptions(context, textUpToCursor);
 
+    // For variable shorthands, calculate the correct identifier and start position
+    // based on what the user is currently typing (variable name, operator, or value)
     let resultIdentifier = identifier;
     let resultStart = identifierStartInText;
-
-    // Handle variable shorthand syntax
     if (context.isVariableShorthand && context.variablePrefix) {
+        // Find where the prefix is in the macro content
         const prefixIndex = macro.content.indexOf(context.variablePrefix);
 
         if (context.isTypingVariableName) {
+            // Typing variable name: identifier = variableName, start = after prefix
             resultIdentifier = context.variableName;
             if (prefixIndex >= 0) {
-                resultStart = macro.start + 2 + prefixIndex + 1;
+                resultStart = macro.start + 2 + prefixIndex + 1; // +1 to skip the prefix
             }
         } else if (context.isTypingOperator) {
-            resultIdentifier = context.partialOperator || '';
-            if (prefixIndex >= 0) {
-                resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length;
-                if (!context.partialOperator) {
-                    resultStart = cursorPos;
-                }
+            // Typing operator: identifier = partial operator or current operator, start = after variable name
+            resultIdentifier = context.partialOperator || context.variableOperator || '';
+            // Use actual variableNameEnd position from parsing (accounts for whitespace)
+            resultStart = macro.start + 2 + context.variableNameEnd;
+            // Skip whitespace between variable name and operator
+            while (resultStart < cursorPos && /\s/.test(text[resultStart])) {
+                resultStart++;
             }
         } else if (context.isOperatorComplete) {
+            // Operator complete (++ or --) - show context but no value input needed
             resultIdentifier = '';
-            resultStart = cursorPos;
+            resultStart = cursorPos; // Cursor at end
         } else if (context.hasInvalidTrailingChars) {
+            // Invalid chars after variable name: show the invalid chars for warning
             resultIdentifier = context.invalidTrailingChars || '';
-            if (prefixIndex >= 0) {
-                resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length;
-            }
+            // Use actual variableNameEnd position from parsing
+            resultStart = macro.start + 2 + context.variableNameEnd;
         } else if (context.isTypingValue) {
+            // Typing value: identifier = value being typed, start = after operator
             resultIdentifier = context.variableValue;
-            if (prefixIndex >= 0) {
-                const operatorLen = context.variableOperator?.length ?? 0;
-                resultStart = macro.start + 2 + prefixIndex + 1 + context.variableName.length + operatorLen;
-                while (resultStart < cursorPos && /\s/.test(text[resultStart])) {
-                    resultStart++;
-                }
-                makeNoMatchText = () => `Type any value you want to ${context.variableOperator == '+=' ? `add to the variable '${context.variableName}'` : `set the variable '${context.variableName}' to`}.`;
-                makeNoOptionsText = () => 'Enter a variable value';
+            // Use actual operatorEnd position from parsing (accounts for whitespace)
+            resultStart = macro.start + 2 + context.variableOperatorEnd;
+            // Skip any whitespace between operator and value
+            while (resultStart < cursorPos && /\s/.test(text[resultStart])) {
+                resultStart++;
             }
+
+            makeNoMatchText = () => `Type any value you want to ${context.variableOperator == '+=' ? `add to the variable '${context.variableName}'` : `set the variable '${context.variableName}' to`}.`;
+            makeNoOptionsText = () => 'Enter a variable value';
         } else {
+            // Fallback: use variable name
             resultIdentifier = context.variableName;
             if (prefixIndex >= 0) {
                 resultStart = macro.start + 2 + prefixIndex + 1;
