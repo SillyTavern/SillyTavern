@@ -65,6 +65,7 @@ import {
     getMediaIndex,
     scrollChatToBottom,
     scrollOnMediaLoad,
+    getOneCharacter,
 } from '../script.js';
 import {
     extension_settings,
@@ -214,6 +215,7 @@ export function getContext() {
         textCompletionSettings: textgenerationwebui_settings,
         powerUserSettings: power_user,
         getCharacters,
+        getOneCharacter,
         getCharacterCardFields,
         uuidv4,
         humanizedDateTime,
