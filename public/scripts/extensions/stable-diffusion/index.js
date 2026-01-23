@@ -1955,6 +1955,8 @@ async function loadXAIModels() {
 }
 
 async function loadPollinationsModels() {
+    $('#sd_pollinations_key').toggleClass('success', !!secret_state[SECRET_KEYS.POLLINATIONS]);
+
     const result = await fetch('/api/sd/pollinations/models', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),
@@ -3312,7 +3314,7 @@ async function generatePollinationsImage(prompt, negativePrompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'jpg', data: data?.image };
+        return { format: data?.format, data: data?.image };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -4757,7 +4759,7 @@ function isValidState() {
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
-            return true;
+            return secret_state[SECRET_KEYS.POLLINATIONS];
         case sources.stability:
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.huggingface:
@@ -5514,15 +5516,19 @@ jQuery(async () => {
 
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
         eventSource.on(event, async (/** @type {string} */ key) => {
-            switch (key) {
-                case SECRET_KEYS.BFL:
-                case SECRET_KEYS.FALAI:
-                case SECRET_KEYS.STABILITY:
-                case SECRET_KEYS.AIMLAPI:
-                case SECRET_KEYS.COMFY_RUNPOD:
-                    await loadSettingOptions();
-                    break;
+            const keySourceMap = {
+                [sources.bfl]: SECRET_KEYS.BFL,
+                [sources.falai]: SECRET_KEYS.FALAI,
+                [sources.stability]: SECRET_KEYS.STABILITY,
+                [sources.aimlapi]: SECRET_KEYS.AIMLAPI,
+                [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
+                [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
+            };
+            const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);
+            if (!shouldReloadOptions) {
+                return;
             }
+            await loadSettingOptions();
         });
     });
 
