@@ -171,6 +171,11 @@ export function buildVariableShorthandOptions(context, opts = {}) {
         // Add existing variables that match the typed name
         for (const varName of existingVariables) {
             const option = new VariableNameAutoCompleteOption(varName, scope, false);
+            // Not selectable if it matches the typed name
+            if (varName === context.variableName) {
+                option.valueProvider = () => '';
+                option.makeSelectable = false;
+            }
             // For {{if}} condition, provide full value with closing braces
             if (forIfCondition) {
                 option.valueProvider = () => `${varName}${paddingAfter}}}`; // No variable prefix, as that has been written and committed already.
