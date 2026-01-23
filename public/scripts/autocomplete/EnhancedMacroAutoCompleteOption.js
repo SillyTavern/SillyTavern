@@ -1046,7 +1046,7 @@ export class VariableValueContextAutoCompleteOption extends AutoCompleteOption {
      */
     renderItem() {
         const li = this.makeItem(
-            `<value>`,
+            '<value>',
             '📝',
             true, // noSlash
             [], // namedArguments
