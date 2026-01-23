@@ -31,6 +31,7 @@ import { extension_settings } from '../extensions.js';
 /** @typedef {import('./EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} MacroAutoCompleteContext */
 /** @typedef {import('./EnhancedMacroAutoCompleteOption.js').EnhancedMacroAutoCompleteOptions} EnhancedMacroAutoCompleteOptions */
 /** @typedef {import('./AutoCompleteOption.js').AutoCompleteOption} AutoCompleteOption */
+/*** @typedef {import('../macros/macro-system.js').MacroDefinition} MacroDefinition */
 
 /**
  * @typedef {Object} MacroInfo
@@ -130,7 +131,7 @@ export function findUnclosedScopesRegex(text) {
 
 /**
  * Builds autocomplete options for variable shorthand syntax (.varName or $varName).
- * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+ * @param {MacroAutoCompleteContext} context
  * @param {Object} [opts] - Optional configuration.
  * @param {boolean} [opts.forIfCondition=false] - If true, options are for {{if}} condition (closes with }}).
  * @param {string} [opts.paddingAfter=''] - Whitespace to add before closing }}.
@@ -323,7 +324,7 @@ export function buildVariableShorthandOptions(context, opts = {}) {
  * Builds enhanced macro autocomplete options from the MacroRegistry.
  * When in the flags area (before identifier), includes flag options.
  * When typing arguments (after ::), prioritizes the exact macro match.
- * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
+ * @param {MacroAutoCompleteContext} context
  * @param {string} [textUpToCursor] - Full document text up to cursor, for unclosed scope detection.
  * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
  */
@@ -459,8 +460,8 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
 
 /**
  * Builds autocomplete options for {{if}} condition - shows zero-arg macros as shorthand.
- * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
- * @param {import('../macros/engine/MacroRegistry.js').MacroDefinition[]} allMacros
+ * @param {MacroAutoCompleteContext} context
+ * @param {MacroDefinition[]} allMacros
  * @param {string} macroInnerText - The text inside the macro braces (e.g., "  if  pers" from "{{  if  pers").
  * @returns {AutoCompleteOption[]}
  */
