@@ -407,3 +407,56 @@ router.post('/bing', async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+router.post('/openai_compatible', async (request, response) => {
+    try {
+        const secretUrl = readSecret(request.user.directories, SECRET_KEYS.TRANSLATE_OPENAI_COMPATIBLE_URL);
+        const url = secretUrl + '/chat/completions';
+
+        if (!url) {
+            console.warn('OpenAI Compatible URL is not configured.');
+            return response.sendStatus(400);
+        }
+
+        const user_prompt = request.body.user_prompt;
+        const system_prompt = request.body.system_prompt;
+        const model = request.body.model;
+
+        if ((!user_prompt && !system_prompt) || !model) {
+            console.warn('No prompt or model selected.');
+            return response.sendStatus(400);
+        }
+
+        console.debug('Input text: ' + user_prompt);
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify({
+                model: model,
+                messages: [
+                    { role: 'system', content: system_prompt },
+                    { role: 'user', content: user_prompt },
+                ],
+            }),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            console.warn('OpenAI Compatible error: ', result.statusText, error);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const json = await result.json();
+        console.debug('Translated text: ' + json.choices[0].message.content);
+
+        return response.send(json.choices[0].message.content);
+    } catch (error) {
+        console.error('OpenAI Compatible translation error: ' + error.message);
+        return response.sendStatus(500);
+    }
+});
