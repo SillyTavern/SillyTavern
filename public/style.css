@@ -1654,6 +1654,13 @@ button {
             width: 50vw;
         }
 
+        /* Small style variant for macro autocomplete (33vw, max 700px) */
+        &[data-macros-autocomplete-style="small"] .autoComplete {
+            width: 33vw;
+            max-width: 700px;
+            min-width: 250px;
+        }
+
         &:after {
             content: "";
             flex: 1 1 0;
@@ -1704,6 +1711,38 @@ button {
         .autoComplete-details {
             max-height: unset;
             width: 25vw;
+        }
+
+        /* Small style variant for macro autocomplete (33vw, max 700px) */
+        &[data-macros-autocomplete-style="small"] .autoComplete-details {
+            width: 33vw;
+            max-width: 700px;
+            min-width: 250px;
+        }
+
+        &[data-macros-autocomplete-style="small"] {
+            &.left {
+                &:before {
+                    flex: 0 1 calc(var(--targetOffset) * 1px - 33vw);
+                }
+
+                &:after {
+                    flex: 1 0 auto;
+                    max-width: 33vw;
+                }
+            }
+
+            &.right {
+                &:before {
+                    flex: 0 0 calc(var(--targetOffset) * 1px + 33vw);
+                }
+            }
+
+            &.full {
+                .autoComplete-details {
+                    max-width: 33vw;
+                }
+            }
         }
 
         &.left {

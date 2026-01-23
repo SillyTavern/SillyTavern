@@ -132,6 +132,14 @@ const Tokens = Object.freeze({
             DoubleEquals: createToken({ name: 'Var.DoubleEquals', pattern: /==/ }),
             /** Not equals comparison operator (`!=`) - compares variable to value, returns inverted result */
             NotEquals: createToken({ name: 'Var.NotEquals', pattern: /!=/ }),
+            /** Greater than or equal comparison operator (`>=`) - must come before GreaterThan */
+            GreaterThanOrEqual: createToken({ name: 'Var.GreaterThanOrEqual', pattern: />=/ }),
+            /** Greater than comparison operator (`>`) */
+            GreaterThan: createToken({ name: 'Var.GreaterThan', pattern: />/ }),
+            /** Less than or equal comparison operator (`<=`) - must come before LessThan */
+            LessThanOrEqual: createToken({ name: 'Var.LessThanOrEqual', pattern: /<=/ }),
+            /** Less than comparison operator (`<`) */
+            LessThan: createToken({ name: 'Var.LessThan', pattern: /</ }),
             /** Add/append operator (`+=`) - must come before Equals to avoid conflict */
             PlusEquals: createToken({ name: 'Var.PlusEquals', pattern: /\+=/ }),
             /** Set operator (`=`) */
@@ -258,6 +266,10 @@ const Def = {
             enter(Tokens.Var.Operators.MinusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.DoubleEquals, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.NotEquals, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.GreaterThanOrEqual, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.GreaterThan, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.LessThanOrEqual, modes.var_value, { andExits: modes.var_after_identifier }),
+            enter(Tokens.Var.Operators.LessThan, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.PlusEquals, modes.var_value, { andExits: modes.var_after_identifier }),
             enter(Tokens.Var.Operators.Equals, modes.var_value, { andExits: modes.var_after_identifier }),
             // If we see the end, exit
