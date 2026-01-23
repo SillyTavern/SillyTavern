@@ -834,13 +834,12 @@ export async function selectCharacterById(id, { switchMenu = true } = {}) {
     if (selected_group || String(this_chid) !== String(id)) {
         //if clicked on a different character from what was currently selected
         if (!is_send_press) {
-            await clearChat();
+            await wipeChat();
             cancelTtsPlay();
             resetSelectedGroup();
             this_edit_mes_id = undefined;
             selected_button = 'character_edit';
             setCharacterId(id);
-            chat.length = 0;
             chat_metadata = {};
             await getChat();
         }
@@ -1348,8 +1347,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
 }
 
 export async function replaceCurrentChat() {
-    await clearChat();
-    chat.length = 0;
+    await wipeChat();
 
     const chatsResponse = await fetch('/api/characters/chats', {
         method: 'POST',
@@ -1620,14 +1618,21 @@ export const reloadChatMutex = new SimpleMutex(reloadCurrentChatUnsafe);
 export const reloadCurrentChat = reloadChatMutex.update.bind(reloadChatMutex);
 
 /**
+ * Erases the `chat` and removes the message elements.
+ */
+export async function wipeChat() {
+    await clearChat();
+    chat.length = 0;
+}
+
+/**
  * Reloads the current chat unsafely, without mutex protection.
  * Use `reloadCurrentChat` instead to ensure thread safety.
  * @returns {Promise<void>} A promise that resolves when the chat is reloaded.
  */
 export async function reloadCurrentChatUnsafe() {
     preserveNeutralChat();
-    await clearChat();
-    chat.length = 0;
+    await wipeChat();
 
     if (selected_group) {
         await getGroupChat(selected_group, true);
@@ -7509,9 +7514,8 @@ function getFirstMessage() {
 
 export async function openCharacterChat(file_name) {
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-    await clearChat();
+    await wipeChat();
     characters[this_chid].chat = file_name;
-    chat.length = 0;
     chat_metadata = {};
     await getChat();
     $('#selected_chat_pole').val(file_name);
@@ -10353,8 +10357,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
 
     //Fix it; New chat doesn't create while open create character menu
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-    await clearChat();
-    chat.length = 0;
+    await wipeChat();
 
     chat_file_for_del = getCurrentChatDetails()?.sessionName;
 
@@ -10473,8 +10476,7 @@ export async function renameChat(oldFileName, newName) {
 export async function closeCurrentChat() {
     if (is_send_press == false) {
         await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-        await clearChat();
-        chat.length = 0;
+        await wipeChat();
         resetSelectedGroup();
         setCharacterId(undefined);
         setCharacterName('');
