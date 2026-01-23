@@ -459,20 +459,31 @@ async function translateProviderOpenAICompatible(text, lang) {
 
     const context = getContext();
     const char = context.getCharacterCardFields().personality;
-    const user = power_user.persona_description;
-    const authorDescription = fromChar ? char : user;
+    const user = substituteParams(power_user.persona_description);
+    const authorPersonality = fromChar ? char : user;
 
-    let systemPrompt = extension_settings.translate.openai_compatible_system_prompt;
-    systemPrompt = systemPrompt.replaceAll('%author_description%', authorDescription);
-    systemPrompt = systemPrompt.replaceAll('%from_lang%', fromLang);
-    systemPrompt = systemPrompt.replaceAll('%to_lang%', toLang);
-    systemPrompt = systemPrompt.replaceAll('%message%', text);
-
-    let userPrompt = extension_settings.translate.openai_compatible_user_prompt;
-    userPrompt = userPrompt.replaceAll('%author_description%', authorDescription);
-    userPrompt = userPrompt.replaceAll('%from_lang%', fromLang);
-    userPrompt = userPrompt.replaceAll('%to_lang%', toLang);
-    userPrompt = userPrompt.replaceAll('%message%', text);
+    const systemPrompt = substituteParams(
+        extension_settings.translate.openai_compatible_system_prompt,
+        {
+            dynamicMacros: {
+                messageAuthorPersonality: authorPersonality,
+                translateFromLang: fromLang,
+                translateToLang: toLang,
+                messageToTranslate: text,
+            },
+        },
+    );
+    const userPrompt = substituteParams(
+        extension_settings.translate.openai_compatible_user_prompt,
+        {
+            dynamicMacros: {
+                messageAuthorPersonality: authorPersonality,
+                translateFromLang: fromLang,
+                translateToLang: toLang,
+                messageToTranslate: text,
+            },
+        },
+    );
 
     const response = await fetch('/api/translate/openai_compatible', {
         method: 'POST',
