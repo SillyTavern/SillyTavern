@@ -193,6 +193,7 @@ export function buildVariableShorthandOptions(context, opts = {}) {
             } else if (forIfCondition) {
                 // For {{if}} condition, provide full value with closing braces
                 newVarOption.valueProvider = () => `${context.variablePrefix}${context.variableName}${paddingAfter}}}`;
+                newVarOption.makeSelectable = true;
             }
             options.push(newVarOption);
         }
@@ -258,6 +259,7 @@ export function buildVariableShorthandOptions(context, opts = {}) {
             // Already-typed operator is non-selectable
             if (operatorDef.symbol === currentOp) {
                 opOption.valueProvider = () => '';
+                opOption.makeSelectable = false;
             }
             // Always match operators when showing operator suggestions
             opOption.matchProvider = () => true;
@@ -370,6 +372,7 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
                 const lastFlagOption = new MacroFlagAutoCompleteOption(lastFlagDef);
                 // Mark as already typed - valueProvider returns empty so it doesn't re-insert
                 lastFlagOption.valueProvider = () => '';
+                lastFlagOption.makeSelectable = false;
                 // High priority to appear at top (after closing tags at 1)
                 lastFlagOption.sortPriority = 2;
                 options.push(lastFlagOption);
@@ -389,6 +392,7 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
             if (flagDef.type === MacroFlagType.CLOSING_BLOCK && !unclosedScopes.length) isSelectable = false;
             if (!isSelectable) {
                 flagOption.valueProvider = () => '';
+                flagOption.makeSelectable = false;
             }
             // Normal flag priority
             flagOption.sortPriority = isSelectable ? 10 : 12;
@@ -718,6 +722,7 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
                 if (macroDef) {
                     const scopedOption = new EnhancedMacroAutoCompleteOption(macroDef, scopedContext);
                     scopedOption.valueProvider = () => '';
+                    scopedOption.makeSelectable = false;
 
                     return new AutoCompleteNameResult(
                         scopedMacro.name,
@@ -757,6 +762,7 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
                 if (macroDef) {
                     const scopedOption = new EnhancedMacroAutoCompleteOption(macroDef, scopedContext);
                     scopedOption.valueProvider = () => '';
+                    scopedOption.makeSelectable = false;
 
                     return new AutoCompleteNameResult(
                         scopedMacro.name,
