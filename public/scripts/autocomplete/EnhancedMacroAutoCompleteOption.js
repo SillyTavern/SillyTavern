@@ -1015,6 +1015,89 @@ export class VariableOperatorAutoCompleteOption extends AutoCompleteOption {
 }
 
 /**
+ * Non-selectable autocomplete option that shows context about the value being typed.
+ * Displays info about what value is expected based on the operator.
+ */
+export class VariableValueContextAutoCompleteOption extends AutoCompleteOption {
+    /** @type {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    #operatorDef;
+
+    /** @type {string} */
+    #currentValue;
+
+    /**
+     * @param {{ symbol: string, name: string, description: string, needsValue: boolean }} operatorDef - The operator definition.
+     * @param {string} [currentValue=''] - The value currently being typed.
+     */
+    constructor(operatorDef, currentValue = '') {
+        super('value', '📝');
+        this.#operatorDef = operatorDef;
+        this.#currentValue = currentValue;
+    }
+
+    /** @returns {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    get operatorDefinition() {
+        return this.#operatorDef;
+    }
+
+    /**
+     * Renders the autocomplete list item for this value context.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = this.makeItem(
+            `<value>`,
+            '📝',
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'any', // returnType
+            `${this.#operatorDef.name} (${this.#operatorDef.symbol}) expects a value`,
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable-value-context');
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this value context.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-variable-value-context-details');
+
+        // Header
+        const header = document.createElement('h3');
+        header.innerHTML = `Value for <code>${this.#operatorDef.symbol}</code> (${this.#operatorDef.name})`;
+        details.append(header);
+
+        // Description of what value is expected
+        const desc = document.createElement('p');
+        desc.textContent = this.#operatorDef.description;
+        details.append(desc);
+
+        // Current value being typed
+        if (this.#currentValue) {
+            const currentNote = document.createElement('p');
+            currentNote.innerHTML = `<em>Currently typing:</em> <code>${this.#currentValue}</code>`;
+            details.append(currentNote);
+        }
+
+        // Hint
+        const hint = document.createElement('p');
+        hint.classList.add('hint');
+        hint.innerHTML = '<em>Type your value and close with <code>}}</code> to complete the macro.</em>';
+        details.append(hint);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
  * Autocomplete option for closing a scoped macro.
  * Suggests {{/macroName}} to close an unclosed scoped macro.
  */

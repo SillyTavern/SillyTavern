@@ -15,6 +15,7 @@ import {
     VariableShorthandDefinitions,
     VariableNameAutoCompleteOption,
     VariableOperatorAutoCompleteOption,
+    VariableValueContextAutoCompleteOption,
     VariableOperatorDefinitions,
     isValidVariableShorthandName,
     parseMacroContext,
@@ -139,7 +140,7 @@ export function findUnclosedScopesRegex(text) {
  */
 export function buildVariableShorthandOptions(context, opts = {}) {
     const { forIfCondition = false, paddingAfter = '' } = opts;
-    /** @type {(VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
+    /** @type {(VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption|VariableValueContextAutoCompleteOption)[]} */
     const options = [];
 
     const isLocal = context.variablePrefix === '.';
@@ -294,6 +295,14 @@ export function buildVariableShorthandOptions(context, opts = {}) {
                 opOption.sortPriority = 3;
                 opOption.matchProvider = () => true; // Always show
                 options.push(opOption);
+
+                // Show value context info (non-selectable)
+                const valueOption = new VariableValueContextAutoCompleteOption(opDef, context.variableValue);
+                valueOption.valueProvider = () => ''; // Context only
+                valueOption.makeSelectable = false;
+                valueOption.sortPriority = 4;
+                valueOption.matchProvider = () => true; // Always show
+                options.push(valueOption);
             }
         }
     }
