@@ -127,7 +127,7 @@ router.post('/generate-voice', async (req, res) => {
 
         const finalAudioData = Buffer.concat(result);
 
-        res.set('Content-Type', 'audio/mp3');
+        res.set('Content-Type', 'audio/mpeg');
         res.status(200).send(finalAudioData);
     } catch (error) {
         console.error('Volcengine generate-voice fetch failed', error);
