@@ -331,7 +331,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
         if (err.message === 'Parser cannot parse input: unexpected characters') {
             console.debug(`${filePath}'s first line is not valid json/jsonl.`);
         }
-        console.log('The integrity slug could not be read, so the check will be skipped. Error:', err)
+        console.log('The integrity slug could not be read, so the check will be skipped. Error:', err);
     }
 
     // If the chat has no integrity metadata, assume it's intact

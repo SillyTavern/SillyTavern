@@ -1604,7 +1604,7 @@ export function readFirstLine(filePath) {
  * https://github.com/DeclineThyself/SillyTavern/pull/1/files
  * @param {string} filePath - Path to the file to read
  * @param {Array} match - Location of target object.
- * @param {number} maxChunks - Maximum number of chunks to read (default: 4)
+ * @param {number} maxChunks - Maximum number of chunks to read (default: 4). If maxChunks <= 0, the entire file will be read until the `\n` newline.
  * @param {number} chunkSize - Size of each chunk in bytes (default: 16KB)
  * @returns {Promise<Object|undefined>} - The object match or undefined
  */
@@ -1650,13 +1650,15 @@ export async function pickFirstObjectFromJsonFile(filePath, match, maxChunks = 4
             cleanup();
         });
 
-        // Track chunksRead, cleanup if the limit is reached.
-        readStream.on('data', () => {
-            chunksRead++;
-            if (chunksRead >= maxChunks) {
-                cleanup();
-            }
-        });
+        if (maxChunks > 0) {
+            // Track chunksRead, cleanup if the limit is reached.
+            readStream.on('data', () => {
+                chunksRead++;
+                if (chunksRead >= maxChunks) {
+                    cleanup();
+                }
+            });
+        }
 
         // This cuts the chunk after \n and stops the stream after sending the rest down the pipeline.
         const newlineTransform = new Transform({
