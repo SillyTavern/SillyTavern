@@ -1506,44 +1506,6 @@ export function tryReadFileSync(filePath) {
 }
 
 /**
- * Returns the valid objects from a JSONL file, invalid lines are skipped.
- * This was written by an LLM to avoid the bottleneck that appears when attempting to split a file by `\n`.
- * @param {string} jsonlFilePath The full JSONL file path.
- * @returns {Promise<Array>}} If the jsonlFilePath cannot be read, or all lines are not valid json, this will return [].
- */
-export async function parseJSONL(jsonlFilePath) {
-    try {
-        const buffer = await fs.promises.readFile(jsonlFilePath); // Keep as Buffer
-        const chatData = [];
-        let start = 0;
-        let index = 0;
-
-        // 10 is the ASCII byte code for '\n'
-        while ((index = buffer.indexOf(10, start)) !== -1) {
-            if (index > start) {
-                // Decode ONLY this slice to utf-8 string right before parsing
-                const line = buffer.toString('utf8', start, index);
-                const parsed = tryParse(line);
-                if (parsed) chatData.push(parsed);
-            }
-            start = index + 1;
-        }
-
-        // Handle tail
-        if (start < buffer.length) {
-            const line = buffer.toString('utf8', start);
-            const parsed = tryParse(line);
-            if (parsed) chatData.push(parsed);
-        }
-
-        return chatData;
-    } catch (error) {
-        console.error(`Error reading ${jsonlFilePath}: ${error.message}`);
-    }
-    return [];
-}
-
-/**
  * Async code that returns true if a file exists.
  * https://stackoverflow.com/a/35008327
  * @param {string} file
