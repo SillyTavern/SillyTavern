@@ -98,6 +98,8 @@ import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { timestampToMoment, uuidv4, importFromExternalUrl } from './utils.js';
 import { addGlobalVariable, addLocalVariable, decrementGlobalVariable, decrementLocalVariable, deleteGlobalVariable, deleteLocalVariable, getGlobalVariable, getLocalVariable, incrementGlobalVariable, incrementLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
+import { timestampToMoment, uuidv4 } from './utils.js';
+import { addGlobalVariable, addLocalVariable, decrementGlobalVariable, decrementLocalVariable, deleteGlobalVariable, deleteLocalVariable, existsGlobalVariable, existsLocalVariable, getGlobalVariable, getLocalVariable, incrementGlobalVariable, incrementLocalVariable, setGlobalVariable, setLocalVariable } from './variables.js';
 import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
 import { ConnectionManagerRequestService } from './extensions/shared.js';
@@ -249,6 +251,7 @@ export function getContext() {
                 add: addLocalVariable,
                 inc: incrementLocalVariable,
                 dec: decrementLocalVariable,
+                has: existsLocalVariable,
             },
             global: {
                 get: getGlobalVariable,
@@ -257,6 +260,7 @@ export function getContext() {
                 add: addGlobalVariable,
                 inc: incrementGlobalVariable,
                 dec: decrementGlobalVariable,
+                has: existsGlobalVariable,
             },
         },
         loadWorldInfo,

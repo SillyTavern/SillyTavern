@@ -567,34 +567,6 @@ test.describe('MacroLexer', () => {
 
             expect(tokens).toEqual(expectedTokens);
         });
-        // {{.variable}}
-        test('should support . flag', async ({ page }) => {
-            const input = '{{.variable}}';
-            const tokens = await runLexerGetTokens(page, input);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Flag', text: '.' },
-                { type: 'Macro.Identifier', text: 'variable' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
-        // {{$variable}}
-        test('should support alias $ flag', async ({ page }) => {
-            const input = '{{$variable}}';
-            const tokens = await runLexerGetTokens(page, input);
-
-            const expectedTokens = [
-                { type: 'Macro.Start', text: '{{' },
-                { type: 'Macro.Flag', text: '$' },
-                { type: 'Macro.Identifier', text: 'variable' },
-                { type: 'Macro.End', text: '}}' },
-            ];
-
-            expect(tokens).toEqual(expectedTokens);
-        });
         // {{#legacy}}
         test('should support legacy # flag', async ({ page }) => {
             const input = '{{#legacy}}';
@@ -640,14 +612,43 @@ test.describe('MacroLexer', () => {
         });
         // {{ ! .importantvariable }}
         test('should support multiple flags with whitespace', async ({ page }) => {
-            const input = '{{ !.importantvariable }}';
+            const input = '{{ !#importantvariable }}';
             const tokens = await runLexerGetTokens(page, input);
 
             const expectedTokens = [
                 { type: 'Macro.Start', text: '{{' },
                 { type: 'Macro.Flag', text: '!' },
-                { type: 'Macro.Flag', text: '.' },
+                { type: 'Macro.Flag', text: '#' },
                 { type: 'Macro.Identifier', text: 'importantvariable' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{>filtered}}
+        test('should support > filter flag as separate token', async ({ page }) => {
+            const input = '{{>filtered}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.FilterFlag', text: '>' },
+                { type: 'Macro.Identifier', text: 'filtered' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+        // {{ ! > user }}
+        test('should support filter flag combined with other flags', async ({ page }) => {
+            const input = '{{ ! > user }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Macro.FilterFlag', text: '>' },
+                { type: 'Macro.Identifier', text: 'user' },
                 { type: 'Macro.End', text: '}}' },
             ];
 
@@ -668,46 +669,265 @@ test.describe('MacroLexer', () => {
             expect(tokens).toEqual(expectedTokens);
         });
 
-        test.describe('Error Cases (Macro Execution Modifiers)', () => {
+        test.describe('"Error" Cases (Macro Execution Modifiers)', () => {
             // {{ @unknown }}
-            test('[Error] should not capture unknown special characters as flag', async ({ page }) => {
+            test('should not capture unknown special characters as flag', async ({ page }) => {
                 const input = '{{ @unknown }}';
                 const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-                const expectedErrors = [
-                    { message: 'unexpected character: ->@<- at offset: 3, skipped 1 characters.' },
-                ];
-
-                expect(errors).toMatchObject(expectedErrors);
+                // No errors expected, as lexer should not error out even on invalid macros
+                expect(errors).toMatchObject([]);
 
                 const expectedTokens = [
                     { type: 'Macro.Start', text: '{{' },
-                    // Do not capture '@' as anything, as it's a lexer error
-                    { type: 'Macro.Identifier', text: 'unknown' },
-                    { type: 'Macro.End', text: '}}' },
+                    // Because '@' is invalid in lexer, it'll "pop out" and be captured as plaintext
+                    { type: 'Plaintext', text: '@unknown }}' },
                 ];
 
                 expect(tokens).toEqual(expectedTokens);
             });
             // {{ 2 cents }}
-            test('[Error] should not capture numbers as flag - they are also invalid macro identifiers', async ({ page }) => {
+            test('should not capture numbers as flag - they are also invalid macro identifiers', async ({ page }) => {
                 const input = '{{ 2 cents }}';
                 const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-                const expectedErrors = [
-                    { message: 'unexpected character: ->2<- at offset: 3, skipped 1 characters.' },
-                ];
-                expect(errors).toMatchObject(expectedErrors);
+                // No errors expected, as lexer should not error out even on invalid macros
+                expect(errors).toMatchObject([]);
 
                 const expectedTokens = [
                     { type: 'Macro.Start', text: '{{' },
-                    // Do not capture '2' as anything, as it's a lexer error
-                    { type: 'Macro.Identifier', text: 'cents' },
-                    { type: 'Macro.End', text: '}}' },
+                    // Because '2' is invalid in lexer, it'll "pop out" and be captured as plaintext
+                    { type: 'Plaintext', text: '2 cents }}' },
                 ];
 
                 expect(tokens).toEqual(expectedTokens);
             });
+        });
+    });
+
+    test.describe('Variable Shorthand Syntax', () => {
+        // {{.variable}} - Local variable get
+        test('should tokenize local variable shorthand', async ({ page }) => {
+            const input = '{{.myvar}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{$variable}} - Global variable get
+        test('should tokenize global variable shorthand', async ({ page }) => {
+            const input = '{{$myvar}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.GlobalPrefix', text: '$' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.my-var}} - Variable with hyphen in name
+        test('should tokenize variable with hyphen in name', async ({ page }) => {
+            const input = '{{.my-var}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'my-var' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.counter++}} - Increment operator
+        test('should tokenize increment operator', async ({ page }) => {
+            const input = '{{.counter++}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'counter' },
+                { type: 'Var.Increment', text: '++' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{$counter--}} - Decrement operator
+        test('should tokenize decrement operator', async ({ page }) => {
+            const input = '{{$counter--}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.GlobalPrefix', text: '$' },
+                { type: 'Var.Identifier', text: 'counter' },
+                { type: 'Var.Decrement', text: '--' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.myvar = value}} - Set operator
+        test('should tokenize set operator with value', async ({ page }) => {
+            const input = '{{.myvar = hello}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Var.Equals', text: '=' },
+                { type: 'Identifier', text: 'hello' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.myvar += 5}} - Add operator
+        test('should tokenize add operator with value', async ({ page }) => {
+            const input = '{{.myvar += 5}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Var.PlusEquals', text: '+=' },
+                { type: 'Unknown', text: '5' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{ !.importantvariable }} - Variable prefix after flags
+        test('should tokenize variable prefix after flags', async ({ page }) => {
+            const input = '{{ !.importantvariable }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            // When . is encountered, it triggers variable mode regardless of previous flags
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Flag', text: '!' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'importantvariable' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.my-long-var-name}} - Variable with multiple hyphens
+        test('should tokenize variable with multiple hyphens', async ({ page }) => {
+            const input = '{{.my-long-var-name}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'my-long-var-name' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.myvar = Hello {{user}}}} - Nested macro in value
+        test('should tokenize nested macro in variable value', async ({ page }) => {
+            const input = '{{.myvar = Hello {{user}}}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Var.Equals', text: '=' },
+                { type: 'Identifier', text: 'Hello' },
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Macro.Identifier', text: 'user' },
+                { type: 'Macro.End', text: '}}' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{ .myvar }} - Whitespace around variable shorthand
+        test('should tokenize variable shorthand with surrounding whitespace', async ({ page }) => {
+            const input = '{{ .myvar }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'myvar' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{$myVar123}} - Variable with numbers
+        test('should tokenize variable with numbers in name', async ({ page }) => {
+            const input = '{{$myVar123}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.GlobalPrefix', text: '$' },
+                { type: 'Var.Identifier', text: 'myVar123' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.my_var}} - Variable with underscore
+        test('should tokenize variable with underscore in name', async ({ page }) => {
+            const input = '{{.my_var}}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'my_var' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
+        });
+
+        // {{.counter ++ }} - Increment with whitespace
+        test('should tokenize increment operator with surrounding whitespace', async ({ page }) => {
+            const input = '{{.counter ++ }}';
+            const tokens = await runLexerGetTokens(page, input);
+
+            const expectedTokens = [
+                { type: 'Macro.Start', text: '{{' },
+                { type: 'Var.LocalPrefix', text: '.' },
+                { type: 'Var.Identifier', text: 'counter' },
+                { type: 'Var.Increment', text: '++' },
+                { type: 'Macro.End', text: '}}' },
+            ];
+
+            expect(tokens).toEqual(expectedTokens);
         });
     });
 
@@ -868,20 +1088,16 @@ test.describe('MacroLexer', () => {
 
         test.describe('Error Cases (Macro Output Modifiers)', () => {
             // {{|macro}}
-            test('[Error] should not capture when starting the macro with a pipe', async ({ page }) => {
+            test('should not capture when starting the macro with a pipe', async ({ page }) => {
                 const input = '{{|macro}}';
                 const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-                const expectedErrors = [
-                    { message: 'unexpected character: ->|<- at offset: 2, skipped 1 characters.' },
-                ];
-
-                expect(errors).toMatchObject(expectedErrors);
+                // No errors expected, as lexer should not error out even on invalid macros
+                expect(errors).toMatchObject([]);
 
                 const expectedTokens = [
                     { type: 'Macro.Start', text: '{{' },
-                    { type: 'Macro.Identifier', text: 'macro' },
-                    { type: 'Macro.End', text: '}}' },
+                    { type: 'Plaintext', text: '|macro}}' },
                 ];
 
                 expect(tokens).toEqual(expectedTokens);
@@ -1052,18 +1268,14 @@ test.describe('MacroLexer', () => {
             const input = 'invalid {{ 000 }} followed by correct {{ macro }}';
             const { tokens, errors } = await runLexerGetTokensAndErrors(page, input);
 
-            const expectedErrors = [
-                { message: 'unexpected character: ->0<- at offset: 11, skipped 3 characters.' },
-            ];
-
-            expect(errors).toMatchObject(expectedErrors);
+            // No errors expected, as lexer should not error out even on invalid macros
+            expect(errors).toMatchObject([]);
 
             const expectedTokens = [
                 { type: 'Plaintext', text: 'invalid ' },
                 { type: 'Macro.Start', text: '{{' },
-                // Do not capture '000' as anything, as it's a lexer error
-                { type: 'Macro.End', text: '}}' },
-                { type: 'Plaintext', text: ' followed by correct ' },
+                // '000' is invalid vor the lexer, so it is captured as plaintext
+                { type: 'Plaintext', text: '000 }} followed by correct ' },
                 { type: 'Macro.Start', text: '{{' },
                 { type: 'Macro.Identifier', text: 'macro' },
                 { type: 'Macro.End', text: '}}' },

@@ -465,6 +465,67 @@
     color: #F89406;
 }
 
+/* Arity warning banner in details */
+.macro-ac-warning {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding: 0.5em 0.75em;
+    background: linear-gradient(90deg, rgba(248, 148, 6, 0.2), transparent);
+    border-left: 3px solid #F89406;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 0.5em;
+    font-size: 0.9em;
+    color: #F89406;
+}
+
+.macro-ac-warning i {
+    font-size: 0.9em;
+}
+
+/* Scoped content info banner in details */
+.macro-ac-scoped-info {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5em;
+    padding: 0.5em 0.75em;
+    background: linear-gradient(90deg, rgba(91, 192, 222, 0.2), transparent);
+    border-left: 3px solid #5BC0DE;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 0.5em;
+    font-size: 0.9em;
+    color: #5BC0DE;
+}
+
+.macro-ac-scoped-info i {
+    font-size: 0.9em;
+}
+
+.macro-ac-scoped-info code {
+    background: rgba(91, 192, 222, 0.15);
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+}
+
+/* Closing tag autocomplete option */
+.autoComplete > .item.macro-closing-tag-item > .type {
+    color: var(--ac-color-matchedText, var(--SmartThemeBorderColor));
+}
+
+.macro-closing-tag-details {
+    padding: 0.5em;
+}
+
+.macro-closing-tag-details h3 {
+    margin: 0 0 0.5em 0;
+    font-size: 1.1em;
+}
+
+.macro-closing-tag-details p {
+    margin: 0;
+    opacity: 0.9;
+}
+
 /* Current argument hint banner in details */
 .macro-ac-arg-hint {
     display: flex;

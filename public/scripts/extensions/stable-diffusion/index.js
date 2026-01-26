@@ -69,6 +69,12 @@ const MODULE_NAME = 'sd';
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const CUSTOM_STOP_EVENT = 'sd_stop_generation';
+
+// Generation tracking for status indicator
+let activeGenerations = 0;
+/** @type {JQuery<HTMLElement>|null} */
+let generationToast = null;
+
 const sources = {
     extras: 'extras',
     horde: 'horde',
@@ -320,6 +326,7 @@ const defaultSettings = {
     // OpenAI settings
     openai_style: 'vivid',
     openai_quality: 'standard',
+    openai_quality_gpt: 'auto',
     openai_duration: '8',
 
     style: 'Default',
@@ -425,7 +432,7 @@ function processTriggers(chat, _, abort, type) {
     }
 }
 
-window['SD_ProcessTriggers'] = processTriggers;
+globalThis.SD_ProcessTriggers = processTriggers;
 
 function getSdRequestBody() {
     switch (extension_settings.sd.source) {
@@ -528,6 +535,7 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_openai_quality_gpt').val(extension_settings.sd.openai_quality_gpt);
     $('#sd_openai_duration').val(extension_settings.sd.openai_duration);
     $('#sd_comfy_type').val(extension_settings.sd.comfy_type);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
@@ -977,6 +985,13 @@ const resolutionOptions = {
     sd_res_1024x1536: { width: 1024, height: 1536, name: '1024x1536 (2:3, ChatGPT)' },
     sd_res_1024x1792: { width: 1024, height: 1792, name: '1024x1792 (4:7, DALL-E)' },
     sd_res_1792x1024: { width: 1792, height: 1024, name: '1792x1024 (7:4, DALL-E)' },
+    sd_res_1280x1280: { width: 1280, height: 1280, name: '1280x1280 (1:1, Z.AI)' },
+    sd_res_1568x1056: { width: 1568, height: 1056, name: '1568x1056 (3:2, Z.AI)' },
+    sd_res_1056x1568: { width: 1056, height: 1568, name: '1056x1568 (2:3, Z.AI)' },
+    sd_res_1472x1088: { width: 1472, height: 1088, name: '1472x1088 (4:3, Z.AI)' },
+    sd_res_1088x1472: { width: 1088, height: 1472, name: '1088x1472 (3:4, Z.AI)' },
+    sd_res_1728x960: { width: 1728, height: 960, name: '1728x960 (16:9, Z.AI)' },
+    sd_res_960x1728: { width: 960, height: 1728, name: '960x1728 (9:16, Z.AI)' },
 };
 
 function onResolutionChange() {
@@ -1850,7 +1865,7 @@ function switchModelSpecificControls(modelId) {
 
     modelControls.each(function () {
         const models = String($(this).attr('data-sd-model') || '').split(',').map(m => m.trim());
-        $(this).toggle(models.includes(modelId));
+        $(this).toggle(models.some(m => modelId.includes(m)));
     });
 }
 
@@ -2169,6 +2184,7 @@ async function loadOpenAiModels() {
         { value: 'gpt-image-1.5', text: 'gpt-image-1.5' },
         { value: 'gpt-image-1-mini', text: 'gpt-image-1-mini' },
         { value: 'gpt-image-1', text: 'gpt-image-1' },
+        { value: 'chatgpt-image-latest', text: 'chatgpt-image-latest' },
         { value: 'dall-e-3', text: 'dall-e-3' },
         { value: 'dall-e-2', text: 'dall-e-2' },
         { value: 'sora-2', text: 'sora-2' },
@@ -2294,7 +2310,12 @@ async function loadGoogleModels() {
 }
 
 async function loadZaiModels() {
-    return ['cogview-4-250304'].map(name => ({ value: name, text: name }));
+    return [
+        { value: 'glm-image', text: 'GLM-Image' },
+        { value: 'cogview-4-250304', text: 'CogView-4' },
+        { value: 'cogvideox-3', text: 'CogVideoX-3' },
+        { value: 'viduq1-text', text: 'Viduq1-Text' },
+    ];
 }
 
 async function loadOpenRouterModels() {
@@ -2728,6 +2749,62 @@ function ensureSelectionExists(setting, selector) {
 }
 
 /**
+ * Updates the generation status indicator based on active generation count.
+ * Shows/hides various UI indicators to inform user of background image generation.
+ */
+function updateGenerationIndicator() {
+    if (activeGenerations > 0) {
+        const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
+        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating image`}${countText}...`;
+
+        // Show persistent toast if not already showing
+        if (!generationToast) {
+            generationToast = toastr.info(
+                toastText,
+                'Image Generation',
+                {
+                    timeOut: 0,
+                    extendedTimeOut: 0,
+                    tapToDismiss: true,
+                    escapeHtml: false,
+                    onHidden: () => {
+                        generationToast = null;
+                    },
+                },
+            );
+        } else if (activeGenerations > 1) {
+            // Update count in existing toast
+            const toastMessage = $(generationToast).find('.toast-message');
+            if (toastMessage.length) {
+                toastMessage.html(toastText);
+            }
+        }
+    } else {
+        // Hide toast when done
+        if (generationToast) {
+            toastr.clear(generationToast);
+            generationToast = null;
+        }
+    }
+}
+
+/**
+ * Increments the active generation counter and updates indicators.
+ */
+function startGenerationTracking() {
+    activeGenerations++;
+    updateGenerationIndicator();
+}
+
+/**
+ * Decrements the active generation counter and updates indicators.
+ */
+function endGenerationTracking() {
+    activeGenerations = Math.max(0, activeGenerations - 1);
+    updateGenerationIndicator();
+}
+
+/**
  * Generates an image based on the given trigger word.
  * @param {string} initiator The initiator of the image generation
  * @param {Record<string, object>} args Command arguments
@@ -2801,6 +2878,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
         prompt = eventData.prompt; // Allow extensions to modify the prompt
 
+        // Track this generation for status indicator
+        startGenerationTracking();
+        // Show stop button after prompt is ready (prompt generation uses separate abort mechanism)
         $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
 
@@ -2811,6 +2891,13 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         // generate the image
         imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator, abortController.signal);
     } catch (err) {
+        // Check if this was an intentional abort by user
+        if (abortController.signal.aborted) {
+            console.log('SD: Image generation aborted by user');
+            toastr.info('Image generation stopped.', 'Image Generation');
+            return;
+        }
+
         console.trace(err);
         // errors here are most likely due to text generation failure
         // sendGenerationRequest mostly deals with its own errors
@@ -2823,6 +2910,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
+        endGenerationTracking();
     }
 
     return imagePath;
@@ -3014,8 +3102,10 @@ function getUserAvatarUrl() {
  * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
  */
 async function generatePrompt(quietPrompt) {
+    const toast = toastr.info('Generating image prompt with an LLM...', 'Image Generation');
     const reply = await generateQuietPrompt({ quietPrompt });
     const processedReply = processReply(reply);
+    toastr.clear(toast);
 
     if (!processedReply) {
         toastr.error('Prompt generation produced no text. Make sure you\'re using a valid instruct template and try again', 'Image Generation');
@@ -3140,6 +3230,13 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             throw new Error('Endpoint did not return image data.');
         }
     } catch (err) {
+        // Check if this was an intentional abort by user
+        if (signal?.aborted) {
+            console.log('SD: Image generation aborted by user');
+            toastr.info('Image generation stopped.', 'Image Generation');
+            return;
+        }
+
         console.error('Image generation request error: ', err);
         toastr.error('Image generation failed. Please try again.' + '\n\n' + String(err), 'Image Generation');
         return;
@@ -3271,7 +3368,7 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
@@ -3296,6 +3393,12 @@ function getClosestAspectRatio(width, height, source) {
                     '9:16': 9 / 16,
                     '4:3': 4 / 3,
                     '3:4': 3 / 4,
+                };
+            case 'zai':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '9:16': 9 / 16,
                 };
             default:
                 console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
@@ -3325,22 +3428,41 @@ function getClosestAspectRatio(width, height, source) {
  * Get closest size for Electron Hub
  * @param {number} width - The width of the image
  * @param {number} height - The height of the image
+ * @param {string[]} sizes - Available sizes
  * @returns {Promise<string>} - The closest size
  */
-async function getClosestSize(width, height) {
-    const response = await fetch('/api/sd/electronhub/sizes', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            model: extension_settings.sd.model,
-        }),
-    });
-    if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text);
+async function getClosestSize(width, height, sizes = []) {
+    const sizesData = [];
+
+    if (Array.isArray(sizes) && sizes.length > 0) {
+        sizesData.push(...sizes);
+    } else if (extension_settings.sd.source === sources.electronhub) {
+        const response = await fetch('/api/sd/electronhub/sizes', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                model: extension_settings.sd.model,
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(text);
+        }
+        const result = await response.json();
+        sizesData.push(...result.sizes);
+    } else {
+        return null;
     }
-    const result = await response.json();
-    const sizesData = result.sizes;
+
+    const targetWidth = Number(width);
+    const targetHeight = Number(height);
+
+    if (isNaN(targetWidth) || isNaN(targetHeight)) {
+        return null;
+    }
+
+    const targetAspect = targetWidth / targetHeight;
+    const targetResolution = targetWidth * targetHeight;
 
     const closestSize = sizesData.reduce((closest, size) => {
         if (!size || typeof size !== 'string') {
@@ -3353,16 +3475,14 @@ async function getClosestSize(width, height) {
 
         const sizeWidth = Number(sizeParts[0]);
         const sizeHeight = Number(sizeParts[1]);
-        const targetWidth = Number(width);
-        const targetHeight = Number(height);
 
-        if (isNaN(sizeWidth) || isNaN(sizeHeight) || isNaN(targetWidth) || isNaN(targetHeight)) {
+        if (isNaN(sizeWidth) || isNaN(sizeHeight)) {
             return closest;
         }
 
-        const sizeArea = sizeWidth * sizeHeight;
-        const targetArea = targetWidth * targetHeight;
-        const diff = Math.abs(sizeArea - targetArea);
+        const aspectDiff = Math.abs((sizeWidth / sizeHeight) - targetAspect) / targetAspect;
+        const resolutionDiff = Math.abs(sizeWidth * sizeHeight - targetResolution) / targetResolution;
+        const diff = aspectDiff + resolutionDiff;
 
         return diff < closest.diff ? { size, diff } : closest;
     }, { size: null, diff: Infinity });
@@ -3697,7 +3817,7 @@ async function generateOpenAiImage(prompt, signal) {
 
     const isDalle2 = /dall-e-2/.test(extension_settings.sd.model);
     const isDalle3 = /dall-e-3/.test(extension_settings.sd.model);
-    const isGptImg = /gpt-image-1/.test(extension_settings.sd.model);
+    const isGptImg = /gpt-image-(1|latest)/.test(extension_settings.sd.model);
     const isSora2 = /sora-2/.test(extension_settings.sd.model);
 
     if (isDalle2 && prompt.length > dalle2PromptLimit) {
@@ -3770,7 +3890,7 @@ async function generateOpenAiImage(prompt, signal) {
             model: extension_settings.sd.model,
             size: `${width}x${height}`,
             n: 1,
-            quality: isDalle3 ? extension_settings.sd.openai_quality : undefined,
+            quality: isDalle3 ? extension_settings.sd.openai_quality : (isGptImg ? extension_settings.sd.openai_quality_gpt : undefined),
             style: isDalle3 ? extension_settings.sd.openai_style : undefined,
             response_format: isDalle2 || isDalle3 ? 'b64_json' : undefined,
             moderation: isGptImg ? 'low' : undefined,
@@ -4242,38 +4362,77 @@ async function generateGoogleImage(prompt, negativePrompt, signal) {
  * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
  */
 async function generateZaiImage(prompt, signal) {
-    // Round width and height to nearest multiple of 16, and clamp to 512-2048 range
-    let width = clamp(Math.round(extension_settings.sd.width / 16) * 16, 512, 2048);
-    let height = clamp(Math.round(extension_settings.sd.height / 16) * 16, 512, 2048);
-
-    // Make sure the pixel count does not exceed 2^21px
-    while ((width * height) > Math.pow(2, 21)) {
-        if (width >= height) {
-            width -= 16;
-        } else {
-            height -= 16;
+    // Video generation models (CogVideoX, Viduq1)
+    if (/(cogvideox|vidu)/.test(extension_settings.sd.model)) {
+        const videoParams = {};
+        if (/cogvideox/.test(extension_settings.sd.model)) {
+            const cogVideoSizes = ['1280x720', '720x1280', '1024x1024', '1080x1920', '2048x1080', '3840x2160'];
+            videoParams.quality = extension_settings.sd.openai_quality === 'hd' ? 'quality' : 'speed';
+            videoParams.size = await getClosestSize(extension_settings.sd.width, extension_settings.sd.height, cogVideoSizes);
         }
+        if (/vidu/.test(extension_settings.sd.model)) {
+            videoParams.aspect_ratio = getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'zai');
+        }
+
+        const videoResult = await fetch('/api/sd/zai/generate-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                ...videoParams,
+            }),
+        });
+
+        if (videoResult.ok) {
+            const data = await videoResult.json();
+            return { format: data.format, data: data.video };
+        }
+
+        const text = await videoResult.text();
+        throw new Error(text);
+    } else {
+        // Image generation models (GLM-Image, CogView)
+        // GLM-Image requires multiples of 32, CogView requires multiples of 16
+        const isGlmImage = /glm-image/.test(extension_settings.sd.model);
+        const multiple = isGlmImage ? 32 : 16;
+
+        // Round width and height to nearest multiple and clamp to 512-2048 range
+        let width = clamp(Math.round(extension_settings.sd.width / multiple) * multiple, 512, 2048);
+        let height = clamp(Math.round(extension_settings.sd.height / multiple) * multiple, 512, 2048);
+
+        // CogView has a 2^21px pixel count limit, GLM-Image does not
+        if (!isGlmImage) {
+            while ((width * height) > Math.pow(2, 21)) {
+                if (width >= height) {
+                    width -= multiple;
+                } else {
+                    height -= multiple;
+                }
+            }
+        }
+
+        const result = await fetch('/api/sd/zai/generate', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            signal: signal,
+            body: JSON.stringify({
+                prompt: prompt,
+                model: extension_settings.sd.model,
+                quality: extension_settings.sd.openai_quality,
+                size: `${width}x${height}`,
+            }),
+        });
+
+        if (result.ok) {
+            const data = await result.json();
+            return { format: data.format, data: data.image };
+        }
+
+        const text = await result.text();
+        throw new Error(text);
     }
-
-    const result = await fetch('/api/sd/zai/generate', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        signal: signal,
-        body: JSON.stringify({
-            prompt: prompt,
-            model: extension_settings.sd.model,
-            quality: extension_settings.sd.openai_quality,
-            size: `${width}x${height}`,
-        }),
-    });
-
-    if (result.ok) {
-        const data = await result.json();
-        return { format: data.format, data: data.image };
-    }
-
-    const text = await result.text();
-    throw new Error(text);
 }
 
 /**
@@ -4626,7 +4785,8 @@ function isValidState() {
     }
 }
 
-let buttonAbortController = null;
+/** @type {WeakMap<HTMLElement, AbortController>} */
+const buttonAbortControllers = new WeakMap();
 
 /**
  * "Paintbrush" button handler to generate a new image for a message.
@@ -4644,16 +4804,30 @@ async function sdMessageButton($icon, { animate } = {}) {
         $icon.toggleClass(classes.idle, !isBusy);
         $icon.toggleClass(classes.busy, isBusy);
         $media.toggleClass(classes.animation, isBusy);
+
+        // Update generation counter toast
+        const trackingFunction = isBusy ? startGenerationTracking : endGenerationTracking;
+        trackingFunction();
     }
 
     let $media = jQuery();
 
     const classes = { busy: 'fa-hourglass', idle: 'fa-paintbrush', animation: 'fa-fade' };
     const context = getContext();
+    const abortController = (() => {
+        const nativeElement = $icon.get(0);
+        if (buttonAbortControllers.has(nativeElement)) {
+            return buttonAbortControllers.get(nativeElement);
+        } else {
+            const controller = new AbortController();
+            buttonAbortControllers.set(nativeElement, controller);
+            return controller;
+        }
+    })();
 
     if ($icon.hasClass(classes.busy)) {
-        buttonAbortController?.abort('Aborted by user');
-        console.log('Previous image is still being generated...');
+        abortController.abort('Aborted by user');
+        console.log('SD: Image generation aborted by user');
         return;
     }
 
@@ -4690,13 +4864,12 @@ async function sdMessageButton($icon, { animate } = {}) {
         $media = messageElement.find(`.mes_media_container[data-index="${index}"]`).find('.mes_img, .mes_video');
     }
 
-    buttonAbortController = new AbortController();
     const newMediaAttachment = await generateMediaSwipe(
         selectedMedia,
         message,
         () => setBusyIcon(true),
         () => setBusyIcon(false),
-        buttonAbortController,
+        abortController,
     );
 
     if (!newMediaAttachment) {
@@ -5307,6 +5480,10 @@ jQuery(async () => {
     });
     $('#sd_electronhub_quality').on('change', function () {
         extension_settings.sd.electronhub_quality = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#sd_openai_quality_gpt').on('input', function () {
+        extension_settings.sd.openai_quality_gpt = String($(this).val());
         saveSettingsDebounced();
     });
 

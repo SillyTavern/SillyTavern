@@ -1,4 +1,5 @@
 // native node modules
+import fs from 'node:fs';
 import path from 'node:path';
 import util from 'node:util';
 import net from 'node:net';
@@ -347,6 +348,28 @@ async function postSetupTasks(result) {
         } catch (error) {
             console.error('Failed to launch the browser. Open the URL manually.', error);
         }
+    }
+
+    if (cliArgs.heartbeatInterval > 0) {
+        // Convert seconds to milliseconds for the timer
+        const intervalMs = cliArgs.heartbeatInterval * 1000;
+        const heartbeatPath = path.join(globalThis.DATA_ROOT, 'heartbeat.json');
+
+        console.log(`Heartbeat enabled. Updating ${color.green(heartbeatPath)} every ${cliArgs.heartbeatInterval} seconds`);
+
+        const writeHeartbeat = () => {
+            try {
+                fs.writeFileSync(heartbeatPath, JSON.stringify({ timestamp: Date.now() }));
+            } catch (err) {
+                console.error(`Failed to write heartbeat file at ${color.green(heartbeatPath)}:`, err.message);
+            }
+        };
+
+        // Write immediately
+        writeHeartbeat();
+
+        // Loop using the converted milliseconds
+        setInterval(writeHeartbeat, intervalMs).unref();
     }
 
     setWindowTitle('SillyTavern WebServer');

@@ -35,13 +35,120 @@ import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { sortMoments, timestampToMoment } from './utils.js';
+import { flashHighlight, sortMoments, timestampToMoment } from './utils.js';
 
 const assistantAvatarKey = 'assistant';
+const pinnedChatsKey = 'pinnedChats';
 const defaultAssistantAvatar = 'default_Assistant.png';
 
 const DEFAULT_DISPLAYED = 3;
 const MAX_DISPLAYED = 15;
+
+/**
+ * @typedef {Pick<RecentChat, 'group' | 'avatar' | 'file_name'>} PinnedChat
+ */
+
+/**
+ * Manages pinned chat storage and operations.
+ */
+class PinnedChatsManager {
+    /** @type {Record<string, PinnedChat> | null} */
+    static #cachedState = null;
+
+    /**
+     * Initializes the cached state from storage.
+     * Should be called once on app init.
+     */
+    static init() {
+        this.#cachedState = this.#loadFromStorage();
+    }
+
+    /**
+     * Loads state from storage.
+     * @returns {Record<string, PinnedChat>}
+     */
+    static #loadFromStorage() {
+        const pinnedState = /** @type {Record<string, PinnedChat>} */ ({});
+        const value = accountStorage.getItem(pinnedChatsKey);
+        if (value) {
+            try {
+                Object.assign(pinnedState, JSON.parse(value));
+            } catch (error) {
+                console.warn('Failed to parse pinned chats from storage.', error);
+            }
+        }
+        return pinnedState;
+    }
+
+    /**
+     * Generates a key for pinned chat storage.
+     * @param {RecentChat} recentChat Recent chat data
+     * @returns {string} Key for pinned chat storage
+     */
+    static getKey(recentChat) {
+        return `${recentChat.group ? 'group_' + recentChat.group : ''}${recentChat.avatar ? 'char_' + recentChat.avatar : ''}_${recentChat.file_name}`;
+    }
+
+    /**
+     * Gets the pinned chat state from cache.
+     * @returns {Record<string, PinnedChat>}
+     */
+    static getState() {
+        if (this.#cachedState === null) {
+            this.#cachedState = this.#loadFromStorage();
+        }
+        return this.#cachedState;
+    }
+
+    /**
+     * Saves the pinned chat state to storage and updates cache.
+     * @param {Record<string, PinnedChat>} state The state to save
+     */
+    static #saveState(state) {
+        this.#cachedState = state;
+        accountStorage.setItem(pinnedChatsKey, JSON.stringify(state));
+    }
+
+    /**
+     * Checks if a chat is pinned.
+     * @param {RecentChat} recentChat Recent chat data
+     * @returns {boolean} True if the chat is pinned, false otherwise
+     */
+    static isPinned(recentChat) {
+        const pinKey = this.getKey(recentChat);
+        const pinState = this.getState();
+        return pinKey in pinState;
+    }
+
+    /**
+     * Toggles the pinned state of a chat.
+     * @param {RecentChat} recentChat Recent chat data
+     * @param {boolean} pinned New pinned state
+     */
+    static toggle(recentChat, pinned) {
+        const pinKey = this.getKey(recentChat);
+        const pinState = { ...this.getState() };
+        if (pinned) {
+            pinState[pinKey] = {
+                group: recentChat.group,
+                avatar: recentChat.avatar,
+                file_name: recentChat.file_name,
+            };
+        } else {
+            delete pinState[pinKey];
+        }
+        this.#saveState(pinState);
+    }
+
+    /**
+     * Gets all pinned chats.
+     * @returns {PinnedChat[]}
+     */
+    static getAll() {
+        const pinState = this.getState();
+        return Object.values(pinState);
+    }
+}
 
 export function getPermanentAssistantAvatar() {
     const assistantAvatar = accountStorage.getItem(assistantAvatarKey);
@@ -273,6 +380,26 @@ async function sendWelcomePanel(chats, expand = false) {
                 }
             });
         });
+        fragment.querySelectorAll('.recentChat .pinChat').forEach((pinButton) => {
+            pinButton.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const chatItem = pinButton.closest('.recentChat');
+                if (!chatItem) {
+                    return;
+                }
+                const avatarId = chatItem.getAttribute('data-avatar');
+                const groupId = chatItem.getAttribute('data-group');
+                const fileName = chatItem.getAttribute('data-file');
+                const recentChat = chats.find(c => c.chat_name === fileName && ((c.is_group && c.group === groupId) || (!c.is_group && c.avatar === avatarId)));
+                if (!recentChat) {
+                    console.error('Recent chat not found for pinning.');
+                    return;
+                }
+                const currentlyPinned = PinnedChatsManager.isPinned(recentChat);
+                PinnedChatsManager.toggle(recentChat, !currentlyPinned);
+                await refreshWelcomeScreen({ flashChat: recentChat });
+            });
+        });
         chatElement.append(fragment.firstChild);
         if (expand) {
             chatElement.querySelectorAll('button.showMoreChats').forEach((button) => {
@@ -461,9 +588,11 @@ async function deleteRecentGroupChat(groupId, fileName) {
 
 /**
  * Reopens the welcome screen and restores the scroll position.
+ * @param {object} param Additional parameters
+ * @param {RecentChat} [param.flashChat] Recent chat to flash (if any)
  * @returns {Promise<void>}
  */
-async function refreshWelcomeScreen() {
+async function refreshWelcomeScreen({ flashChat = null } = {}) {
     const chatElement = document.getElementById('chat');
     if (!chatElement) {
         console.error('Chat element not found');
@@ -476,8 +605,24 @@ async function refreshWelcomeScreen() {
 
     await openWelcomeScreen({ force: true, expand });
 
-    // Restore scroll position
-    chatElement.scrollTop = scrollTop + (chatElement.scrollHeight - scrollHeight);
+    // Restore scroll position or flash specific chat
+    if (flashChat) {
+        const recentChats = Array.from(chatElement.querySelectorAll('.recentChat'));
+        const chatToFlash = recentChats.find(el => {
+            const file = el.getAttribute('data-file');
+            const group = el.getAttribute('data-group');
+            const avatar = el.getAttribute('data-avatar');
+            return file === flashChat.chat_name &&
+                ((flashChat.is_group && group === flashChat.group) || (!flashChat.is_group && avatar === flashChat.avatar));
+        });
+        if (chatToFlash instanceof HTMLElement) {
+            chatElement.scrollTop = chatToFlash.offsetTop - chatElement.offsetTop - (chatToFlash.clientHeight / 2);
+            flashHighlight($(chatToFlash), 1000);
+        }
+    } else {
+        // Restore scroll position
+        chatElement.scrollTop = scrollTop + (chatElement.scrollHeight - scrollHeight);
+    }
 }
 
 /**
@@ -499,12 +644,14 @@ async function refreshWelcomeScreen() {
  * @property {string} group Group ID (if applicable)
  * @property {boolean} is_group Indicates if the chat is a group chat
  * @property {boolean} hidden Chat will be hidden by default
+ * @property {boolean} pinned Indicates if the chat is pinned
  */
 async function getRecentChats() {
     const response = await fetch('/api/chats/recent', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ max: MAX_DISPLAYED }),
+        body: JSON.stringify({ max: MAX_DISPLAYED, pinned: PinnedChatsManager.getAll() }),
+        cache: 'no-cache',
     });
 
     if (!response.ok) {
@@ -520,9 +667,22 @@ async function getRecentChats() {
     }
 
     const dataWithEntities = data
-        .sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)))
         .map(chat => ({ chat, character: characters.find(x => x.avatar === chat.avatar), group: groups.find(x => x.id === chat.group) }))
-        .filter(t => t.character || t.group);
+        .filter(t => t.character || t.group)
+        .sort((a, b) => {
+            const isAPinned = PinnedChatsManager.isPinned(a.chat);
+            const isBPinned = PinnedChatsManager.isPinned(b.chat);
+            const momentComparison = sortMoments(timestampToMoment(a.chat.last_mes), timestampToMoment(b.chat.last_mes));
+
+            if (isAPinned && !isBPinned) {
+                return -1;
+            }
+            if (!isAPinned && isBPinned) {
+                return 1;
+            }
+
+            return momentComparison;
+        });
 
     dataWithEntities.forEach(({ chat, character, group }, index) => {
         const chatTimestamp = timestampToMoment(chat.last_mes);
@@ -535,6 +695,7 @@ async function getRecentChats() {
         chat.hidden = index >= DEFAULT_DISPLAYED;
         chat.avatar = chat.avatar || '';
         chat.group = chat.group || '';
+        chat.pinned = PinnedChatsManager.isPinned(chat);
     });
 
     return dataWithEntities.map(t => t.chat);
@@ -648,6 +809,8 @@ export function assignCharacterAsAssistant(characterId) {
 }
 
 export function initWelcomeScreen() {
+    PinnedChatsManager.init();
+
     const events = [event_types.CHAT_CHANGED, event_types.APP_READY];
     for (const event of events) {
         eventSource.makeFirst(event, openWelcomeScreen);

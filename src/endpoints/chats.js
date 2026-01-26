@@ -397,8 +397,8 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name || jsonData.chat_metadata)) {
                     chatData.chat_items = (itemCounter - 1);
-                    chatData.mes = jsonData['mes'] || '[The message is empty]';
-                    chatData.last_mes = jsonData['send_date'] || new Date(Math.round(stats.mtimeMs)).toISOString();
+                    chatData.mes = jsonData.mes || '[The message is empty]';
+                    chatData.last_mes = jsonData.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
 
                     res(chatData);
                 } else {
@@ -760,9 +760,26 @@ router.post('/group/get', (request, response) => {
     }
 
     const id = request.body.id;
-    const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+    const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
     return response.send(getChatData(chatFilePath));
+});
+
+router.post('/group/info', async (request, response) => {
+    try {
+        if (!request.body || !request.body.id) {
+            return response.sendStatus(400);
+        }
+
+        const id = request.body.id;
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
+
+        const chatInfo = await getChatInfo(chatFilePath);
+        return response.send(chatInfo);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
 });
 
 router.post('/group/delete', (request, response) => {
@@ -772,13 +789,13 @@ router.post('/group/delete', (request, response) => {
         }
 
         const id = request.body.id;
-        const chatFilePath = path.join(request.user.directories.groupChats, `${id}.jsonl`);
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
         //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
         } else {
-            console.error('The group chat file was not deleted.\'');
+            console.error('The group chat file was not deleted.');
             return response.sendStatus(400);
         }
     } catch (error) {
@@ -933,8 +950,11 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
 
 router.post('/recent', async function (request, response) {
     try {
-        /** @type {{pngFile?: string, groupId?: string, filePath: string, mtime: number}[]} */
+        /** @typedef {{pngFile?: string, groupId?: string, filePath: string, mtime: number}} ChatFile */
+        /** @type {ChatFile[]} */
         const allChatFiles = [];
+        /** @type {import('../../public/scripts/welcome-screen.js').PinnedChat[]} */
+        const pinnedChats = Array.isArray(request.body.pinned) ? request.body.pinned : [];
 
         const getCharacterChatFiles = async () => {
             const pngDirents = await fs.promises.readdir(request.user.directories.characters, { withFileTypes: true });
@@ -1000,8 +1020,17 @@ router.post('/recent', async function (request, response) {
 
         await Promise.allSettled([getCharacterChatFiles(), getGroupChatFiles(), getRootChatFiles()]);
 
-        const max = parseInt(request.body.max ?? Number.MAX_SAFE_INTEGER);
-        const recentChats = allChatFiles.sort((a, b) => b.mtime - a.mtime).slice(0, max);
+        const max = parseInt(request.body.max ?? Number.MAX_SAFE_INTEGER) + pinnedChats.length;
+        const isPinned = (/** @type {ChatFile} */ chatFile) => pinnedChats.some(p => p.file_name === path.basename(chatFile.filePath) && (p.avatar === chatFile.pngFile || p.group === chatFile.groupId));
+        const recentChats = allChatFiles.sort((a, b) => {
+            const isAPinned = isPinned(a);
+            const isBPinned = isPinned(b);
+
+            if (isAPinned && !isBPinned) return -1;
+            if (!isAPinned && isBPinned) return 1;
+
+            return b.mtime - a.mtime;
+        }).slice(0, max);
         const jsonFilesPromise = recentChats.map((file) => {
             const withMetadata = !!request.body.metadata;
             return file.groupId
