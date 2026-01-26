@@ -51,7 +51,7 @@ async function extractTranscript(videoPageBody, lang) {
         } catch (e) {
             return undefined;
         }
-    })()?.['playerCaptionsTracklistRenderer'];
+    })()?.playerCaptionsTracklistRenderer;
 
     if (!captions) {
         throw new Error('Transcript disabled');

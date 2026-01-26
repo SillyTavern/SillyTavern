@@ -58,7 +58,7 @@
                 <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
                 <option value="xai">xAI (Grok)</option>
-                <option value="zai">Z.AI (CogView)</option>
+                <option value="zai">Z.AI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -178,7 +178,16 @@
                             <option value="natural">Natural</option>
                         </select>
                     </div>
-                    <div data-sd-model="dall-e-3,cogview-4-250304" class="flex1">
+                    <div data-sd-model="gpt-image" class="flex1">
+                        <label for="sd_openai_quality_gpt" data-i18n="Image Quality">Image Quality</label>
+                        <select id="sd_openai_quality_gpt">
+                            <option value="auto" data-i18n="Auto">Auto</option>
+                            <option value="low" data-i18n="Low">Low</option>
+                            <option value="medium" data-i18n="Medium">Medium</option>
+                            <option value="high" data-i18n="High">High</option>
+                        </select>
+                    </div>
+                    <div data-sd-model="dall-e-3,cogview-4,glm-image,cogvideox" class="flex1">
                         <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
                         <select id="sd_openai_quality">
                             <option value="standard" data-i18n="Standard">Standard</option>
@@ -254,9 +263,14 @@
                 </div>
             </div>
             <div data-sd-source="pollinations">
-                <p>
-                    <a href="https://pollinations.ai">Pollinations.ai</a>
-                </p>
+                <a href="https://enter.pollinations.ai">Pollinations.ai</a>
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_pollinations_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_pollinations">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
                 <div class="flex-container">
                     <label class="flex1 checkbox_label" for="sd_pollinations_enhance" data-i18n="[title]Enables prompt enhancing (passes prompts through an LLM to add detail)." title="Enables prompt enhancing (passes prompts through an LLM to add detail).">
                         <input id="sd_pollinations_enhance" type="checkbox" />

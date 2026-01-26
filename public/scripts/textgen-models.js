@@ -880,8 +880,8 @@ async function downloadTabbyModel() {
         }
 
         // Params for the server side of ST
-        params['api_server'] = serverUrl;
-        params['api_type'] = textgen_settings.type;
+        params.api_server = serverUrl;
+        params.api_type = textgen_settings.type;
 
         toastr.info('Downloading. Check the Tabby console for progress reports.');
 

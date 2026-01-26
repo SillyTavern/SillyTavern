@@ -43,15 +43,93 @@ class MacroParser extends CstParser {
             });
         });
 
-        // Basic Macro Structure
+        // Basic Macro Structure - can be either a regular macro or a variable expression
         $.macro = $.RULE('macro', () => {
             $.CONSUME(Tokens.Macro.Start);
+
+            // Optional flags before the identifier (e.g., {{!user}}, {{?~macro}}, {{>filtered}})
+            // Both regular flags and filter flag are captured under the 'flags' label
+            $.MANY(() => {
+                $.OR1([
+                    { ALT: () => $.CONSUME(Tokens.Macro.Flags, { LABEL: 'flags' }) },
+                    { ALT: () => $.CONSUME(Tokens.Macro.FilterFlag, { LABEL: 'flags' }) },
+                ]);
+            });
+
+            // Branch: either a variable expression (starts with . or $) or a regular macro
             $.OR([
+                // Variable expression branch
+                { ALT: () => $.SUBRULE($.variableExpr) },
+                // Regular macro branch
+                { ALT: () => $.SUBRULE($.macroBody) },
+            ]);
+
+            $.CONSUME(Tokens.Macro.End);
+        });
+
+        // Regular macro body (flags + identifier + optional arguments)
+        $.macroBody = $.RULE('macroBody', () => {
+            // Macro identifier (name)
+            $.OR2([
                 { ALT: () => $.CONSUME(Tokens.Macro.DoubleSlash, { LABEL: 'Macro.identifier' }) },
                 { ALT: () => $.CONSUME(Tokens.Macro.Identifier, { LABEL: 'Macro.identifier' }) },
             ]);
             $.OPTION(() => $.SUBRULE($.arguments));
-            $.CONSUME(Tokens.Macro.End);
+        });
+
+        // Variable expression: .varName or $varName with optional operator
+        $.variableExpr = $.RULE('variableExpr', () => {
+            // Variable scope prefix
+            $.OR3([
+                { ALT: () => $.CONSUME(Tokens.Var.LocalPrefix, { LABEL: 'Var.scope' }) },
+                { ALT: () => $.CONSUME(Tokens.Var.GlobalPrefix, { LABEL: 'Var.scope' }) },
+            ]);
+
+            // Variable identifier (name)
+            $.CONSUME(Tokens.Var.Identifier, { LABEL: 'Var.identifier' });
+
+            // Optional operator (and expression, if operator requires one)
+            $.OPTION2(() => $.SUBRULE($.variableOperator));
+        });
+
+        // Variable operator: ++, --, = value, += value, -= value, ||, ??, ||=, ??=, ==, !=, >, >=, <, <=
+        $.variableOperator = $.RULE('variableOperator', () => {
+            $.OR4([
+                { ALT: () => $.CONSUME(Tokens.Var.Operators.Increment, { LABEL: 'Var.operator' }) },
+                { ALT: () => $.CONSUME(Tokens.Var.Operators.Decrement, { LABEL: 'Var.operator' }) },
+                {
+                    ALT: () => {
+                        $.OR5([
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.NullishCoalescingEquals, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.NullishCoalescing, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.LogicalOrEquals, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.LogicalOr, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.MinusEquals, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.DoubleEquals, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.NotEquals, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.GreaterThanOrEqual, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.GreaterThan, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.LessThanOrEqual, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.LessThan, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.PlusEquals, { LABEL: 'Var.operator' }) },
+                            { ALT: () => $.CONSUME(Tokens.Var.Operators.Equals, { LABEL: 'Var.operator' }) },
+                        ]);
+                        $.SUBRULE($.variableValue, { LABEL: 'Var.value' });
+                    },
+                },
+            ]);
+        });
+
+        // Variable value: everything after = or += until the end
+        // Can contain nested macros and any other tokens
+        $.variableValue = $.RULE('variableValue', () => {
+            $.MANY2(() => {
+                $.OR5([
+                    { ALT: () => $.SUBRULE($.macro) }, // Nested macros
+                    { ALT: () => $.CONSUME(Tokens.Identifier) },
+                    { ALT: () => $.CONSUME(Tokens.Unknown) },
+                ]);
+            });
         });
 
         // Arguments Parsing

@@ -408,7 +408,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
                     || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
-                    || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
+                    || (secret_state[SECRET_KEYS.POLLINATIONS] && oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
                 ) {
@@ -996,7 +996,7 @@ export function initRossMods() {
         }
 
         //Enter to send when send_textarea in focus
-        if (document.activeElement == hotkeyTargets['send_textarea']) {
+        if (document.activeElement == hotkeyTargets.send_textarea) {
             const sendOnEnter = shouldSendOnEnter();
             if (!event.isComposing && !event.shiftKey && !event.ctrlKey && !event.altKey && event.key == 'Enter' && sendOnEnter) {
                 event.preventDefault();
@@ -1004,7 +1004,7 @@ export function initRossMods() {
                 return;
             }
         }
-        if (document.activeElement == hotkeyTargets['dialogue_popup_input'] && !isMobile()) {
+        if (document.activeElement == hotkeyTargets.dialogue_popup_input && !isMobile()) {
             if (!event.shiftKey && !event.ctrlKey && event.key == 'Enter') {
                 event.preventDefault();
                 $('#dialogue_popup_ok').trigger('click');
@@ -1139,7 +1139,7 @@ export function initRossMods() {
 
         if (event.ctrlKey && event.key == 'ArrowUp') { //edits last USER message if chatbar is empty and focused
             if (
-                hotkeyTargets['send_textarea'].value === '' &&
+                hotkeyTargets.send_textarea.value === '' &&
                 chatbarInFocus === true &&
                 ($('.swipe_right:last').css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
                 $('#character_popup').css('display') === 'none' &&
@@ -1158,7 +1158,7 @@ export function initRossMods() {
         if (event.key == 'ArrowUp') { //edits last message if chatbar is empty and focused
             console.log('got uparrow input');
             if (
-                hotkeyTargets['send_textarea'].value === '' &&
+                hotkeyTargets.send_textarea.value === '' &&
                 chatbarInFocus === true &&
                 //$('.swipe_right:last').css('display') === 'flex' &&
                 $('.last_mes .mes_buttons').is(':visible') &&

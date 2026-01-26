@@ -24,7 +24,7 @@ import {
 import { collapseNewlines, registerDebugFunction } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence, escapeHtml, isTrueBoolean } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
@@ -32,6 +32,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
 import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
@@ -746,7 +747,7 @@ function overlapChunks(chunk, index, chunks, overlapSize) {
     return overlappedChunk;
 }
 
-window['vectors_rearrangeChat'] = rearrangeChat;
+globalThis.vectors_rearrangeChat = rearrangeChat;
 
 const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
 
@@ -1620,7 +1621,7 @@ jQuery(async () => {
     }
 
     // Migrate from old settings
-    if (settings['enabled']) {
+    if (settings.enabled) {
         settings.enabled_chats = true;
     }
 
@@ -2034,6 +2035,174 @@ jQuery(async () => {
             new SlashCommandArgument('Query to search by.', ARGUMENT_TYPE.STRING, true, false),
         ],
         returns: ARGUMENT_TYPE.LIST,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-threshold',
+        helpString: 'Set the vector score threshold or return the current threshold if no argument is provided.',
+        returns: 'score threshold value',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Score threshold (number).',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.score_threshold);
+            }
+
+            const parsed = Number(raw);
+            if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+                toastr.warning('Score threshold must be a number between 0 and 1.');
+                return '';
+            }
+
+            $('#vectors_score_threshold')
+                .val(parsed)
+                .trigger('input');
+
+            return String(settings.score_threshold);
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-query',
+        helpString: 'Set the vector query messages or returns the current query messages count if no argument is provided',
+        returns: 'the query messages value',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Query messages (number > 0).',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.query);
+            }
+
+            const parsed = Number(raw);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                toastr.warning('Query messages must be a number greater than 0.');
+                return '';
+            }
+
+            $('#vectors_query')
+                .val(parsed)
+                .trigger('input');
+
+            return String(settings.query);
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-max-entries',
+        helpString: 'Set the vector world info max entries or returns the current max entries if no argument is provided',
+        returns: 'world info max entries',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Max entries (number > 0).',
+                typeList: [ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.max_entries);
+            }
+
+            const parsed = Number(raw);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+                toastr.warning('Max entries must be a number greater than 0.');
+                return '';
+            }
+
+            $('#vectors_max_entries')
+                .val(parsed)
+                .trigger('input');
+
+            return String(settings.max_entries);
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-chats-state',
+        helpString: 'Set whether chat vectorization is enabled or return the current boolean if no argument is provided',
+        returns: 'boolean for if chat vectorization is enabled',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'boolean to set whether chat vectorization is enabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.enabled_chats);
+            }
+
+            const parsed = isTrueBoolean(raw);
+            $('#vectors_enabled_chats')
+                .prop('checked', parsed)
+                .trigger('input');
+
+            return String(settings.enabled_chats);
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-files-state',
+        helpString: 'Set whether file vectorization is enabled or return the current boolean if no argument is provided',
+        returns: 'boolean for if file vectorization is enabled',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'boolean to set whether file vectorization is enabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.enabled_files);
+            }
+
+            const parsed = isTrueBoolean(raw) ;
+            $('#vectors_enabled_files')
+                .prop('checked', parsed)
+                .trigger('input');
+
+            return String(settings.enabled_files);
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vector-worldinfo-state',
+        helpString: 'Set whether world info vectorization is enabled or return the current boolean if no argument is provided',
+        returns: 'boolean for if world info vectorization is enabled',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'boolean to set whether world info vectorization is enabled',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        callback: async (_args, value) => {
+            const raw = String(value ?? '').trim();
+            if (!raw) {
+                return String(settings.enabled_world_info);
+            }
+
+            const parsed = isTrueBoolean(raw);
+            $('#vectors_enabled_world_info')
+                .prop('checked', parsed)
+                .trigger('input');
+
+            return String(settings.enabled_world_info);
+        },
     }));
 
     registerDebugFunction('purge-everything', 'Purge all vector indices', 'Obliterate all stored vectors for all sources. No mercy.', async () => {

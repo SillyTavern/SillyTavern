@@ -103,10 +103,10 @@ async function downloadAssetsList(url) {
 
                 for (const i of json) {
                     //console.log(DEBUG_PREFIX,i)
-                    if (availableAssets[i['type']] === undefined)
-                        availableAssets[i['type']] = [];
+                    if (availableAssets[i.type] === undefined)
+                        availableAssets[i.type] = [];
 
-                    availableAssets[i['type']].push(i);
+                    availableAssets[i.type].push(i);
                 }
 
                 console.debug(DEBUG_PREFIX, 'Updated available assets to', availableAssets);
@@ -139,7 +139,7 @@ async function downloadAssetsList(url) {
                         assetTypeMenu.append(await renderExtensionTemplateAsync('assets', 'installation'));
                     }
 
-                    for (const asset of availableAssets[assetType].sort((a, b) => a?.name && b?.name && a['name'].localeCompare(b['name']))) {
+                    for (const asset of availableAssets[assetType].sort((a, b) => a?.name && b?.name && a.name.localeCompare(b.name))) {
                         const i = availableAssets[assetType].indexOf(asset);
                         const elemId = `assets_install_${assetType}_${i}`;
                         let element = $('<div />', { id: elemId, class: 'asset-download-button right_menu_button' });
@@ -149,13 +149,13 @@ async function downloadAssetsList(url) {
                         //if (DEBUG_TONY_SAMA_FORK_MODE)
                         //    asset["url"] = asset["url"].replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
 
-                        console.debug(DEBUG_PREFIX, 'Checking asset', asset['id'], asset['url']);
+                        console.debug(DEBUG_PREFIX, 'Checking asset', asset.id, asset.url);
 
                         const assetInstall = async function () {
                             element.off('click');
                             label.removeClass('fa-download');
                             this.classList.add('asset-download-button-loading');
-                            await installAsset(asset['url'], assetType, asset['id']);
+                            await installAsset(asset.url, assetType, asset.id);
                             label.addClass('fa-check');
                             this.classList.remove('asset-download-button-loading');
                             element.on('click', assetDelete);
@@ -173,11 +173,11 @@ async function downloadAssetsList(url) {
                         const assetDelete = async function () {
                             if (assetType === 'character') {
                                 toastr.error('Go to the characters menu to delete a character.', 'Character deletion not supported');
-                                await executeSlashCommandsWithOptions(`/go ${asset['id']}`);
+                                await executeSlashCommandsWithOptions(`/go ${asset.id}`);
                                 return;
                             }
                             element.off('click');
-                            await deleteAsset(assetType, asset['id']);
+                            await deleteAsset(assetType, asset.id);
                             label.removeClass('fa-check');
                             label.removeClass('redOverlayGlow');
                             label.removeClass('fa-trash');
@@ -186,7 +186,7 @@ async function downloadAssetsList(url) {
                             element.on('click', assetInstall);
                         };
 
-                        if (isAssetInstalled(assetType, asset['id'])) {
+                        if (isAssetInstalled(assetType, asset.id)) {
                             console.debug(DEBUG_PREFIX, 'installed, checked');
                             label.toggleClass('fa-download');
                             label.toggleClass('fa-check');
@@ -207,14 +207,14 @@ async function downloadAssetsList(url) {
                             element.on('click', assetInstall);
                         }
 
-                        console.debug(DEBUG_PREFIX, 'Created element for ', asset['id']);
+                        console.debug(DEBUG_PREFIX, 'Created element for ', asset.id);
 
-                        const displayName = DOMPurify.sanitize(asset['name'] || asset['id']);
-                        const description = DOMPurify.sanitize(asset['description'] || '');
-                        const url = isValidUrl(asset['url']) ? asset['url'] : '';
+                        const displayName = DOMPurify.sanitize(asset.name || asset.id);
+                        const description = DOMPurify.sanitize(asset.description || '');
+                        const url = isValidUrl(asset.url) ? asset.url : '';
                         const title = assetType === 'extension' ? t`Extension repo/guide:` + ` ${url}` : t`Preview in browser`;
                         const previewIcon = (assetType === 'extension' || assetType === 'character') ? 'fa-arrow-up-right-from-square' : 'fa-headphones-simple';
-                        const toolTag = assetType === 'extension' && asset['tool'];
+                        const toolTag = assetType === 'extension' && asset.tool;
                         const author = url && assetType === 'extension' ? getAuthorFromUrl(url) : EMPTY_AUTHOR;
 
                         const assetBlock = $('<i></i>')
@@ -246,7 +246,7 @@ async function downloadAssetsList(url) {
                             if (asset.highlight) {
                                 assetBlock.find('.asset-name').append('<i class="fa-solid fa-sm fa-trophy"></i>');
                             }
-                            assetBlock.find('.asset-name').prepend(`<div class="avatar"><img src="${asset['url']}" alt="${displayName}"></div>`);
+                            assetBlock.find('.asset-name').prepend(`<div class="avatar"><img src="${asset.url}" alt="${displayName}"></div>`);
                         }
 
                         assetBlock.addClass('asset-block');
