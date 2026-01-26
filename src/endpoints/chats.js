@@ -325,7 +325,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
 
     try {
         // Parse the first part of the file to find it's integrity slug.
-        const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
+        const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity'], 0);
         chatIntegrity = data?.value;
     } catch (err) {
         if (err.message === 'Parser cannot parse input: unexpected characters') {
