@@ -20,6 +20,7 @@ import {
     tryDeleteFile,
     readFirstLine,
     tryReadFileAsync,
+    readQueue,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -479,16 +480,18 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 export async function getChatData(chatFilePath) {
     let chatData = [];
 
-    const chatJSON = await tryReadFileAsync(chatFilePath) ?? '';
-    if (chatJSON.length > 0) {
-        const lines = chatJSON.split('\n');
-        // Iterate through the array of strings and parse each line as JSON
-        chatData = lines.map(line => tryParse(line)).filter(x => x);
-    } else {
-        console.warn(`File not found: ${chatFilePath}. The chat does not exist or is empty.`);
-    }
+    return readQueue.add(async () => {
+        const chatJSON = await tryReadFileAsync(chatFilePath) ?? '';
+        if (chatJSON.length > 0) {
+            const lines = chatJSON.split('\n');
+            // Iterate through the array of strings and parse each line as JSON
+            chatData = lines.map(line => tryParse(line)).filter(x => x);
+        } else {
+            console.warn(`File not found: ${chatFilePath}. The chat does not exist or is empty.`);
+        }
 
-    return chatData;
+        return chatData;
+    });
 }
 
 router.post('/get', validateAvatarUrlMiddleware, async function (request, response) {

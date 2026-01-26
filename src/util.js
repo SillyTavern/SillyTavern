@@ -22,6 +22,7 @@ import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './const
 import { serverDirectory } from './server-directory.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { isFirefox } from './express-common.js';
+import PQueue from 'p-queue';
 
 /**
  * Parsed config object.
@@ -1595,3 +1596,46 @@ export function invalidateFirefoxCache(file, request, response) {
         response.setHeader('Cache-Control', 'must-understand, no-store');
     }
 }
+
+// https://github.com/sindresorhus/p-queue
+
+
+class QueueClass {
+    constructor(warnItems = 20) {
+        this._queue = [];
+        this.warnItems = warnItems;
+    }
+
+    enqueue(run, options) {
+        this._queue.push(run);
+
+        if (this._queue.length > this.warnItems) {
+            console.warn(`Warning: There are ${this._queue.length} reads queued!`);
+        }
+    }
+
+    // https://github.com/sindresorhus/p-queue/blob/main/source/priority-queue.ts
+    setPriority(id, priority) {
+        const index = this._queue.findIndex((element) => element.id === id);
+        if (index === -1) {
+            throw new ReferenceError(`No promise function with the id "${id}" exists in the queue.`);
+        }
+
+        const [item] = this._queue.splice(index, 1);
+        this.enqueue(item.run, { priority, id });
+    }
+
+    dequeue() {
+        return this._queue.shift();
+    }
+
+    get size() {
+        return this._queue.length;
+    }
+
+    filter(options) {
+        return this._queue;
+    }
+}
+
+export const readQueue = new PQueue({ concurrency: 20, queueClass: QueueClass });
