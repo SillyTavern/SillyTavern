@@ -895,6 +895,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
                     chatFiles.push({
                         file_name: fileName,
                         file_size: formatBytes(stats.size),
+                        date_modified: new Date(stats.mtimeMs).toISOString(),
                         path: filePath,
                     });
                 }));
@@ -912,7 +913,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             }
 
             const lastMessage = messages[messages.length - 1];
-            const lastMesDate = lastMessage?.send_date || new Date(await fs.promises.stat(chatFile.path).mtimeMs).toISOString();
+            const lastMesDate = lastMessage?.send_date || chatFile.date_modified;
 
             // If no search query, just return metadata
             if (!query) {
