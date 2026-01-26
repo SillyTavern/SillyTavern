@@ -22,6 +22,7 @@ import {
     tryReadFileAsync,
     readQueue,
 } from '../util.js';
+import PQueue from 'p-queue';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
 const maxTotalChatBackups = Number(getConfigValue('backups.chat.maxTotalBackups', -1, 'number'));
@@ -901,46 +902,50 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
                 }));
         }
 
+        const dataQueue = new PQueue({ concurrency: 100 });
         const results = [];
 
         // Search logic
         await Promise.allSettled(chatFiles.map(async chatFile => {
-            const data = await getChatData(chatFile.path);
-            const messages = data.filter(x => x && typeof x.mes === 'string');
+            //Don't handle more than 100 files concurrently to prevent an OOM.
+            await dataQueue.add(async () => {
+                const data = await getChatData(chatFile.path);
+                const messages = data.filter(x => x && typeof x.mes === 'string');
 
-            if (query && messages.length === 0) {
-                return;
-            }
+                if (query && messages.length === 0) {
+                    return;
+                }
 
-            const lastMessage = messages[messages.length - 1];
-            const lastMesDate = lastMessage?.send_date || chatFile.date_modified;
+                const lastMessage = messages[messages.length - 1];
+                const lastMesDate = lastMessage?.send_date || chatFile.date_modified;
 
-            // If no search query, just return metadata
-            if (!query) {
-                results.push({
-                    file_name: chatFile.file_name,
-                    file_size: chatFile.file_size,
-                    message_count: messages.length,
-                    last_mes: lastMesDate,
-                    preview_message: getPreviewMessage(messages),
-                });
-                return;
-            }
+                // If no search query, just return metadata
+                if (!query) {
+                    results.push({
+                        file_name: chatFile.file_name,
+                        file_size: chatFile.file_size,
+                        message_count: messages.length,
+                        last_mes: lastMesDate,
+                        preview_message: getPreviewMessage(messages),
+                    });
+                    return;
+                }
 
-            // Search through title and messages of the chat
-            const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
-            const text = [path.parse(chatFile.path).name, ...messages.map(message => message?.mes)].join('\n').toLowerCase();
-            const hasMatch = fragments.every(fragment => text.includes(fragment));
+                // Search through title and messages of the chat
+                const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
+                const text = [path.parse(chatFile.path).name, ...messages.map(message => message?.mes)].join('\n').toLowerCase();
+                const hasMatch = fragments.every(fragment => text.includes(fragment));
 
-            if (hasMatch) {
-                results.push({
-                    file_name: chatFile.file_name,
-                    file_size: chatFile.file_size,
-                    message_count: messages.length,
-                    last_mes: lastMesDate,
-                    preview_message: getPreviewMessage(messages),
-                });
-            }
+                if (hasMatch) {
+                    results.push({
+                        file_name: chatFile.file_name,
+                        file_size: chatFile.file_size,
+                        message_count: messages.length,
+                        last_mes: lastMesDate,
+                        preview_message: getPreviewMessage(messages),
+                    });
+                }
+            });
         }));
 
         // Sort by last message date descending
