@@ -800,6 +800,71 @@ together.post('/generate', async (request, response) => {
     }
 });
 
+const sdcpp = express.Router();
+
+sdcpp.post('/ping', async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/v1/images/generations';
+
+        const result = await fetch(url, { method: 'OPTIONS' });
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+sdcpp.post('/generate', async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/txt2img';
+
+        const payload = {
+            prompt: request.body.prompt,
+            negative_prompt: request.body.negative_prompt,
+            width: request.body.width,
+            height: request.body.height,
+            steps: request.body.steps,
+            cfg_scale: request.body.cfg_scale,
+            seed: request.body.seed,
+            batch_size: request.body.batch_size,
+            sampler_name: request.body.sampler_name,
+            scheduler: request.body.scheduler,
+            clip_skip: request.body.clip_skip,
+        };
+
+        for (const [key, value] of Object.entries(payload)) {
+            if (value === undefined || value === null || value === '') {
+                delete payload[key];
+            }
+        }
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            throw new Error('stable-diffusion.cpp server returned an error.', { cause: text });
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 const drawthings = express.Router();
 
 drawthings.post('/ping', async (request, response) => {
@@ -1808,6 +1873,7 @@ zai.post('/generate', async (request, response) => {
 router.use('/comfy', comfy);
 router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
+router.use('/sdcpp', sdcpp);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);
