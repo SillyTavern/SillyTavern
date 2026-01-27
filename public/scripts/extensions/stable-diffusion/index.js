@@ -73,6 +73,7 @@ const sources = {
     extras: 'extras',
     horde: 'horde',
     auto: 'auto',
+    sdcpp: 'sdcpp',
     novel: 'novel',
     vlad: 'vlad',
     openai: 'openai',
@@ -283,6 +284,9 @@ const defaultSettings = {
     // AUTOMATIC1111 settings
     auto_url: 'http://localhost:7860',
     auto_auth: '',
+
+    // stable-diffusion.cpp settings
+    sdcpp_url: 'http://127.0.0.1:1234',
 
     vlad_url: 'http://localhost:7860',
     vlad_auth: '',
@@ -521,6 +525,7 @@ async function loadSettings() {
     $('#sd_multimodal_captioning').prop('checked', extension_settings.sd.multimodal_captioning);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
+    $('#sd_sdcpp_url').val(extension_settings.sd.sdcpp_url);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
     $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
@@ -1141,6 +1146,11 @@ function onAutoAuthInput() {
     saveSettingsDebounced();
 }
 
+function onSdcppUrlInput() {
+    extension_settings.sd.sdcpp_url = $('#sd_sdcpp_url').val();
+    saveSettingsDebounced();
+}
+
 function onVladUrlInput() {
     extension_settings.sd.vlad_url = $('#sd_vlad_url').val();
     saveSettingsDebounced();
@@ -1246,6 +1256,29 @@ async function validateAutoUrl() {
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
+    }
+}
+
+async function validateSdcppUrl() {
+    try {
+        if (!extension_settings.sd.sdcpp_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch('/api/sd/sdcpp/ping', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url }),
+        });
+
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        await loadSettingOptions();
+        toastr.success('stable-diffusion.cpp server connected.');
+    } catch (error) {
+        toastr.error(`Could not validate stable-diffusion.cpp server: ${error.message}`);
     }
 }
 
@@ -1542,6 +1575,9 @@ async function loadSamplers() {
         case sources.auto:
             samplers = await loadAutoSamplers();
             break;
+        case sources.sdcpp:
+            samplers = ['N/A'];
+            break;
         case sources.drawthings:
             samplers = await loadDrawthingsSamplers();
             break;
@@ -1755,6 +1791,9 @@ async function loadModels() {
             break;
         case sources.auto:
             models = await loadAutoModels();
+            break;
+        case sources.sdcpp:
+            models = [{ value: '', text: 'N/A' }];
             break;
         case sources.drawthings:
             models = await loadDrawthingsModels();
@@ -2356,6 +2395,9 @@ async function loadSchedulers() {
         case sources.auto:
             schedulers = await getAutoRemoteSchedulers();
             break;
+        case sources.sdcpp:
+            schedulers = ['N/A'];
+            break;
         case sources.novel:
             schedulers = loadNovelSchedulers();
             break;
@@ -2467,6 +2509,9 @@ async function loadVaes() {
             break;
         case sources.auto:
             vaes = await loadAutoVaes();
+            break;
+        case sources.sdcpp:
+            vaes = ['N/A'];
             break;
         case sources.novel:
             vaes = ['N/A'];
@@ -3074,6 +3119,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.auto:
                 result = await generateAutoImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.sdcpp:
+                result = await generateSdcppImage(prefixedPrompt, negativePrompt, signal);
+                break;
             case sources.novel:
                 result = await generateNovelImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -3525,6 +3573,55 @@ async function generateAutoImage(prompt, negativePrompt, signal) {
     if (result.ok) {
         const data = await result.json();
         return { format: 'png', data: data.images[0] };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image using stable-diffusion.cpp server API.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateSdcppImage(prompt, negativePrompt, signal) {
+    const payload = {
+        url: extension_settings.sd.sdcpp_url,
+        prompt: prompt,
+        negative_prompt: negativePrompt,
+        steps: extension_settings.sd.steps,
+        cfg_scale: extension_settings.sd.scale,
+        width: extension_settings.sd.width,
+        height: extension_settings.sd.height,
+        batch_size: 1,
+        seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+    };
+
+    if (extension_settings.sd.sampler && extension_settings.sd.sampler !== 'N/A') {
+        payload.sampler_name = extension_settings.sd.sampler;
+    }
+
+    if (extension_settings.sd.scheduler && extension_settings.sd.scheduler !== 'N/A') {
+        payload.scheduler = extension_settings.sd.scheduler;
+    }
+
+    if (Number.isFinite(extension_settings.sd.clip_skip)) {
+        payload.clip_skip = extension_settings.sd.clip_skip;
+    }
+
+    const result = await fetch('/api/sd/sdcpp/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify(payload),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'png', data: data.images?.[0] };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -4575,6 +4672,8 @@ function isValidState() {
             return true;
         case sources.auto:
             return !!extension_settings.sd.auto_url;
+        case sources.sdcpp:
+            return !!extension_settings.sd.sdcpp_url;
         case sources.drawthings:
             return !!extension_settings.sd.drawthings_url;
         case sources.vlad:
@@ -5243,6 +5342,8 @@ jQuery(async () => {
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
+    $('#sd_sdcpp_validate').on('click', validateSdcppUrl);
+    $('#sd_sdcpp_url').on('input', onSdcppUrlInput);
     $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
     $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
     $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
