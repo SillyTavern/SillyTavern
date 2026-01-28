@@ -1576,7 +1576,7 @@ async function loadSamplers() {
             samplers = await loadAutoSamplers();
             break;
         case sources.sdcpp:
-            samplers = ['N/A'];
+            samplers = await loadSdcppSamplers();
             break;
         case sources.drawthings:
             samplers = await loadDrawthingsSamplers();
@@ -1701,6 +1701,11 @@ async function loadAutoSamplers() {
     } catch (error) {
         return [];
     }
+}
+
+async function loadSdcppSamplers() {
+    // The sdcpp server does not provide an API for samplers, so we return the known list.
+    return ['euler', 'euler_a', 'heun', 'dpm2', 'dpm++2s_a', 'dpm++2m', 'dpm++2mv2', 'ipndm', 'ipndm_v', 'lcm', 'ddim_trailing', 'tcd'];
 }
 
 async function loadDrawthingsSamplers() {
@@ -2396,7 +2401,7 @@ async function loadSchedulers() {
             schedulers = await getAutoRemoteSchedulers();
             break;
         case sources.sdcpp:
-            schedulers = ['N/A'];
+            schedulers = await loadSdcppSchedulers();
             break;
         case sources.novel:
             schedulers = loadNovelSchedulers();
@@ -2494,6 +2499,11 @@ async function loadComfySchedulers() {
     } catch (error) {
         return [];
     }
+}
+
+async function loadSdcppSchedulers() {
+    // The sdcpp server does not provide an API for schedulers, so we return the known list.
+    return ['discrete', 'karras', 'exponential', 'ays', 'gits', 'smoothstep', 'sgm_uniform', 'simple', 'kl_optimal', 'lcm'];
 }
 
 async function loadVaes() {
