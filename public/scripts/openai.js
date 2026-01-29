@@ -288,6 +288,7 @@ export const settingsToUpdate = {
     openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
     openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false, true],
     openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false, true],
+    openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
@@ -434,6 +435,7 @@ const default_settings = {
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
     openrouter_providers: [],
+    openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
     reverse_proxy: '',
@@ -2628,6 +2630,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.top_a = Number(settings.top_a_openai);
         generate_data.use_fallback = settings.openrouter_use_fallback;
         generate_data.provider = settings.openrouter_providers;
+        generate_data.quantizations = settings.openrouter_quantizations;
         generate_data.allow_fallbacks = settings.openrouter_allow_fallbacks;
         generate_data.middleout = settings.openrouter_middleout;
     }
@@ -4048,6 +4051,7 @@ function loadOpenAISettings(data, settings) {
     setContinuePostfixControls();
 
     $('#openrouter_providers_chat').trigger('change');
+    $('#openrouter_quantizations_chat').trigger('change');
     $('#chat_completion_source').trigger('change');
 }
 
@@ -4676,6 +4680,7 @@ function onSettingsPresetChange() {
         if (oai_settings.bind_preset_to_connection) {
             $('#chat_completion_source').trigger('change');
             $('#openrouter_providers_chat').trigger('change');
+            $('#openrouter_quantizations_chat').trigger('change');
         }
 
         $('#openai_logit_bias_preset').trigger('change');
@@ -6801,6 +6806,19 @@ export function initOpenAI() {
         }
 
         oai_settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_quantizations_chat').on('change', function () {
+        const selectedQuantizations = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedQuantizations)) {
+            return;
+        }
+
+        oai_settings.openrouter_quantizations = selectedQuantizations;
 
         saveSettingsDebounced();
     });

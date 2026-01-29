@@ -2441,6 +2441,20 @@
                                         <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                     </label>
                                 </div>
+                                <div>
+                                    <h4 data-i18n="Model Quantizations">Model Quantizations</h4>
+                                    <select id="openrouter_quantizations_text" class="openrouter_quantizations" multiple>
+                                        <option data-i18n="Integer (4 bit)" value="int4">Integer (4 bit)</option>
+                                        <option data-i18n="Integer (8 bit)" value="int8">Integer (8 bit)</option>
+                                        <option data-i18n="Floating point (4 bit)" value="fp4">Floating point (4 bit)</option>
+                                        <option data-i18n="Floating point (6 bit)" value="fp6">Floating point (6 bit)</option>
+                                        <option data-i18n="Floating point (8 bit)" value="fp8">Floating point (8 bit)</option>
+                                        <option data-i18n="Floating point (16 bit)" value="fp16">Floating point (16 bit)</option>
+                                        <option data-i18n="Brain floating point (16 bit)" value="bf16">Brain floating point (16 bit)</option>
+                                        <option data-i18n="Floating point (32 bit)" value="fp32">Floating point (32 bit)</option>
+                                        <option data-i18n="Unknown" value="unknown">Unknown</option>
+                                    </select>
+                                </div>
                             </div>
                             <div data-tg-type="infermaticai" class="flex-container flexFlowColumn">
                                 <h4 data-i18n="InfermaticAI API Key">InfermaticAI API Key</h4>
@@ -3183,6 +3197,20 @@
                                 <i class="fa-solid fa-lightbulb"></i>
                                 <span data-i18n="To use instruct formatting, switch to OpenRouter under Text Completion API.">To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
                             </small>
+                            <div>
+                                <h4 data-i18n="Model Quantizations">Model Quantizations</h4>
+                                <select id="openrouter_quantizations_chat" class="openrouter_quantizations" multiple>
+                                    <option data-i18n="Integer (4 bit)" value="int4">Integer (4 bit)</option>
+                                    <option data-i18n="Integer (8 bit)" value="int8">Integer (8 bit)</option>
+                                    <option data-i18n="Floating point (4 bit)" value="fp4">Floating point (4 bit)</option>
+                                    <option data-i18n="Floating point (6 bit)" value="fp6">Floating point (6 bit)</option>
+                                    <option data-i18n="Floating point (8 bit)" value="fp8">Floating point (8 bit)</option>
+                                    <option data-i18n="Floating point (16 bit)" value="fp16">Floating point (16 bit)</option>
+                                    <option data-i18n="Brain floating point (16 bit)" value="bf16">Brain floating point (16 bit)</option>
+                                    <option data-i18n="Floating point (32 bit)" value="fp32">Floating point (32 bit)</option>
+                                    <option data-i18n="Unknown" value="unknown">Unknown</option>
+                                </select>
+                            </div>
                         </form>
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="AI21 API Key">AI21 API Key</h4>

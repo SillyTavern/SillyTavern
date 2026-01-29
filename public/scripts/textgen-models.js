@@ -1065,6 +1065,13 @@ export function initTextGenModels() {
             width: '100%',
             templateResult: getAphroditeModelTemplate,
         });
+        $('.openrouter_quantizations').select2({
+            closeOnSelect: false,
+            placeholder: t`Select quantizations. No selection = all quantizations.`,
+            searchInputCssClass: 'text_pole',
+            searchInputPlaceholder: t`Search quantizations...`,
+            width: '100%',
+        });
         providersSelect.select2({
             sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
             placeholder: t`Select providers. No selection = all providers.`,
