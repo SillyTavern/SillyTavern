@@ -872,7 +872,7 @@ jQuery(async () => {
         extension_settings.translate.openai_compatible_chunk_size = event.target.value;
         saveSettingsDebounced();
     });
-    
+
     $(document).on('click', '.mes_translate', onMessageTranslateClick);
 
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach((eventType) => {
