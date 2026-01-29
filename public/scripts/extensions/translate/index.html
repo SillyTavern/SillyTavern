@@ -58,6 +58,22 @@
                 <label data-i18n="ext_translate_openai_compatible_model" for="openai_compatible_model">Model</label>
                 <input id="openai_compatible_model_input" class="text_pole textarea_compact" placeholder="Model name">
             </div>
+            <div id="openai_compatible_block_size" class="range-block">
+                <div id="openai_compatible_block_size_title" class="range-block-title"
+                    data-i18n="ext_translate_openai_compatible_block_size">
+                    Translate block size (characters)
+                </div>
+                <div class="range-block-range-and-counter">
+                    <div class="range-block-range">
+                        <input id="openai_compatible_block_size_slider" type="range" name="volume" min="128"
+                            max="100000" step="1">
+                    </div>
+                    <div class="range-block-counter" data-randomization-disabled="true">
+                        <input id="openai_compatible_block_size_slider_counter" type="number" min="128" max="100000"
+                            step="1" data-for="openai_compatible_block_size_slider">
+                    </div>
+                </div>
+            </div>
             <div id="translation_clear" class="menu_button">
                 <i class="fa-solid fa-trash-can"></i>
                 <span data-i18n="ext_translate_clear">Clear Translations</span>
