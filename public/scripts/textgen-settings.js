@@ -592,7 +592,6 @@ export async function loadTextGenSettings(data, loadedSettings) {
     $('#textgen_type').val(textgenerationwebui_settings.type);
     $('#openrouter_providers_text').val(textgenerationwebui_settings.openrouter_providers).trigger('change');
     $('#openrouter_quantizations_text').val(textgenerationwebui_settings.openrouter_quantizations).trigger('change');
-    $('#openrouter_settings_text').val(textgenerationwebui_settings.openrouter_settings).trigger('change');
     showSamplerControls(textgenerationwebui_settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(textgenerationwebui_settings.logit_bias, BIAS_KEY);
