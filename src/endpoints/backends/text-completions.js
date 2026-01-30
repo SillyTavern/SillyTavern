@@ -369,10 +369,7 @@ router.post('/generate', async function (request, response) {
             }
 
             if (Array.isArray(request.body.quantizations) && request.body.quantizations.length > 0) {
-                if (request.body.provider === undefined) {
-                    request.body.provider = {};
-                }
-
+                request.body.provider ??= {};
                 request.body.provider.quantizations = request.body.quantizations;
             }
 

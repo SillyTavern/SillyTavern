@@ -2098,10 +2098,7 @@ router.post('/generate', async function (request, response) {
             }
 
             if (Array.isArray(request.body.quantizations) && request.body.quantizations.length > 0) {
-                if (bodyParams['provider'] === undefined) {
-                    bodyParams['provider'] = {};
-                }
-
+                bodyParams['provider'] ??= {};
                 bodyParams['provider']['quantizations'] = request.body.quantizations;
             }
 
