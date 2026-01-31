@@ -841,6 +841,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
         const { query, avatar_url, group_id } = request.body;
         let chatFiles = [];
 
+        let directoryPath = '';
         if (group_id) {
             // Find group's chat IDs first
             const groupDir = path.join(request.user.directories.groups);
@@ -865,41 +866,29 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             }
 
             // Find group chat files for given group ID
-            const groupChatsDir = path.join(request.user.directories.groupChats);
-            chatFiles = [];
-            await Promise.allSettled(targetGroup.chats
-                .map(async chatId => {
-                    const filePath = path.join(groupChatsDir, `${chatId}.jsonl`);
-                    if (!fs.existsSync(filePath)) return null;
-                    const stats = await fs.promises.stat(filePath);
-                    chatFiles.push({
-                        file_name: chatId,
-                        stats,
-                        path: filePath,
-                    });
-                }));
+            directoryPath = path.join(request.user.directories.groupChats);
         } else {
             // Regular character chat directory
             const character_name = avatar_url.replace('.png', '');
-            const directoryPath = path.join(request.user.directories.chats, character_name);
+            directoryPath = path.join(request.user.directories.chats, character_name);
 
-            if (!fs.existsSync(directoryPath)) {
-                return response.send([]);
-            }
-
-            chatFiles = [];
-            await Promise.allSettled(fs.readdirSync(directoryPath)
-                .filter(file => file.endsWith('.jsonl'))
-                .map(async fileName => {
-                    const filePath = path.join(directoryPath, fileName);
-                    const stats = await fs.promises.stat(filePath);
-                    chatFiles.push({
-                        file_name: fileName,
-                        stats,
-                        path: filePath,
-                    });
-                }));
         }
+        if (!fs.existsSync(directoryPath)) {
+            return response.send([]);
+        }
+
+        chatFiles = [];
+        await Promise.allSettled(fs.readdirSync(directoryPath)
+            .filter(file => file.endsWith('.jsonl'))
+            .map(async fileName => {
+                const filePath = path.join(directoryPath, fileName);
+                const stats = await fs.promises.stat(filePath);
+                chatFiles.push({
+                    file_name: fileName,
+                    stats,
+                    path: filePath,
+                });
+            }));
 
         const dataQueue = new PQueue({ concurrency: 100 });
         const results = [];
