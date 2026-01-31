@@ -476,7 +476,7 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 /**
  * Gets the chat as an object.
  * @param {string} chatFilePath The full chat file path.
- * @returns {Promise<Array>}} If the chatFilePath cannot be read, this will return [].
+ * @returns {Promise<Array>} If the chatFilePath cannot be read, this will return [].
  */
 export async function getChatData(chatFilePath) {
     let chatData = [];
@@ -874,7 +874,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
                     const stats = await fs.promises.stat(filePath);
                     chatFiles.push({
                         file_name: chatId,
-                        file_size: formatBytes(stats.size),
+                        stats,
                         path: filePath,
                     });
                 }));
@@ -895,8 +895,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
                     const stats = await fs.promises.stat(filePath);
                     chatFiles.push({
                         file_name: fileName,
-                        file_size: formatBytes(stats.size),
-                        date_modified: new Date(stats.mtimeMs).toISOString(),
+                        stats,
                         path: filePath,
                     });
                 }));
@@ -917,29 +916,22 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
                 }
 
                 const lastMessage = messages[messages.length - 1];
-                const lastMesDate = lastMessage?.send_date || chatFile.date_modified;
+                const lastMesDate = lastMessage?.send_date || new Date(chatFile.stats.mtimeMs).toISOString();
 
-                // If no search query, just return metadata
-                if (!query) {
-                    results.push({
-                        file_name: chatFile.file_name,
-                        file_size: chatFile.file_size,
-                        message_count: messages.length,
-                        last_mes: lastMesDate,
-                        preview_message: getPreviewMessage(messages),
-                    });
-                    return;
+                // If there's no search query, return all files.
+                let hasMatch = false;
+                if (query) {
+                    // Search through title and messages of the chat
+                    const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
+                    const text = [path.parse(chatFile.path).name, ...messages.map(message => message?.mes)].join('\n').toLowerCase();
+                    hasMatch = fragments.every(fragment => text.includes(fragment));
                 }
 
-                // Search through title and messages of the chat
-                const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
-                const text = [path.parse(chatFile.path).name, ...messages.map(message => message?.mes)].join('\n').toLowerCase();
-                const hasMatch = fragments.every(fragment => text.includes(fragment));
 
-                if (hasMatch) {
+                if (!query || hasMatch) {
                     results.push({
                         file_name: chatFile.file_name,
-                        file_size: chatFile.file_size,
+                        file_size: formatBytes(chatFile.stats.size),
                         message_count: messages.length,
                         last_mes: lastMesDate,
                         preview_message: getPreviewMessage(messages),
