@@ -10,6 +10,7 @@ import {
     AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
     GEMINI_SAFETY,
+    MINIMAX_ENDPOINT,
     NANOGPT_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
@@ -86,6 +87,8 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_MINIMAX_GLOBAL = 'https://api.minimax.io/v1';
+const API_MINIMAX_CHINA = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
 /**
@@ -1101,6 +1104,77 @@ async function sendDeepSeekRequest(request, response) {
 }
 
 /**
+ * Sends a request to MiniMax API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendMinimaxRequest(request, response) {
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+
+    if (!apiKey) {
+        console.warn('MiniMax API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        const isGlobal = request.body.minimax_endpoint === MINIMAX_ENDPOINT.GLOBAL;
+        const apiUrl = isGlobal ? API_MINIMAX_GLOBAL : API_MINIMAX_CHINA;
+        const apiPath = isGlobal ? '/chat/completions' : '/text/chatcompletion_v2';
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'top_p': request.body.top_p,
+            'stop': request.body.stop,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('MiniMax request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + apiPath, config);
+
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn(`MiniMax API returned error: ${generateResponse.status} ${generateResponse.statusText} ${errorText}`);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('MiniMax response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with MiniMax API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
  * Sends a request to XAI API.
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
@@ -1828,6 +1902,20 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_SILICONFLOW;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
+            // MiniMax doesn't have a standard /models endpoint, return static model list
+            const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+            if (!apiKey) {
+                console.warn('MiniMax API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+            const models = [
+                { id: 'MiniMax-M2.1' },
+                { id: 'MiniMax-M2.1-lightning' },
+                { id: 'MiniMax-M2' },
+                { id: 'M2-her' },
+            ];
+            return statusResponse.send({ data: models });
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2039,6 +2127,7 @@ router.post('/generate', async function (request, response) {
             case CHAT_COMPLETION_SOURCES.CHUTES: return await sendChutesRequest(request, response);
             case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return await sendElectronHubRequest(request, response);
             case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return await sendAzureOpenAIRequest(request, response);
+            case CHAT_COMPLETION_SOURCES.MINIMAX: return await sendMinimaxRequest(request, response);
         }
 
         let apiUrl;

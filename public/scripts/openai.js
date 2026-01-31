@@ -197,6 +197,7 @@ export const chat_completion_sources = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    MINIMAX: 'minimax',
 };
 
 const character_names_behavior = {
@@ -251,6 +252,11 @@ export const verbosity_levels = {
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
+};
+
+export const MINIMAX_ENDPOINT = {
+    GLOBAL: 'global',
+    CHINA: 'china',
 };
 
 const sensitiveFields = [
@@ -320,6 +326,8 @@ export const settingsToUpdate = {
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
+    minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
+    minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
@@ -421,6 +429,8 @@ const default_settings = {
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
+    minimax_model: 'M2-her',
+    minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -1650,6 +1660,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.azure_openai_model;
         case chat_completion_sources.ZAI:
             return settings.zai_model;
+        case chat_completion_sources.MINIMAX:
+            return settings.minimax_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -2729,6 +2741,11 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.zai_endpoint = settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
         delete generate_data.presence_penalty;
         delete generate_data.frequency_penalty;
+    }
+
+    // MiniMax API
+    if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
     }
 
     // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
@@ -5159,6 +5176,16 @@ async function onModelChange() {
         oai_settings.deepseek_model = value;
     }
 
+    if ($(this).is('#model_minimax_select')) {
+        if (!value) {
+            console.debug('Null MiniMax model selected. Ignoring.');
+            return;
+        }
+
+        console.log('MiniMax model changed to', value);
+        oai_settings.minimax_model = value;
+    }
+
     if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
@@ -5715,6 +5742,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
+        $('#model_minimax_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
         $('#model_aimlapi_select').trigger('change');
@@ -6847,6 +6877,10 @@ export function initOpenAI() {
         oai_settings.zai_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
+    $('#minimax_endpoint').on('input', function () {
+        oai_settings.minimax_endpoint = String($(this).val());
+        saveSettingsDebounced();
+    });
     $('#vertexai_service_account_json').on('input', onVertexAIServiceAccountJsonChange);
     $('#vertexai_validate_service_account').on('click', onVertexAIValidateServiceAccount);
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
@@ -6866,6 +6900,7 @@ export function initOpenAI() {
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
+    $('#model_minimax_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);

@@ -209,6 +209,7 @@ export const CHAT_COMPLETION_SOURCES = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    MINIMAX: 'minimax',
 };
 
 /**
@@ -540,4 +541,9 @@ export const MEDIA_REQUEST_TYPE = {
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
+};
+
+export const MINIMAX_ENDPOINT = {
+    GLOBAL: 'global',
+    CHINA: 'china',
 };

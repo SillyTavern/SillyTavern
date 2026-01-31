@@ -2870,6 +2870,7 @@
                                 <option value="groq">Groq</option>
                                 <option value="makersuite">Google AI Studio</option>
                                 <option value="vertexai">Google Vertex AI</option>
+                                <option value="minimax">MiniMax</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="moonshot">Moonshot AI</option>
                                 <option value="nanogpt">NanoGPT</option>
@@ -3627,6 +3628,30 @@
                                     <option value="deepseek-chat">deepseek-chat</option>
                                     <option value="deepseek-coder">deepseek-coder</option>
                                     <option value="deepseek-reasoner">deepseek-reasoner</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="minimax_form" data-source="minimax">
+                            <h4 data-i18n="MiniMax API Key">MiniMax API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_minimax" name="api_key_minimax" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_minimax"></div>
+                            </div>
+                            <div data-for="api_key_minimax" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="MiniMax Endpoint">MiniMax Endpoint</h4>
+                            <select id="minimax_endpoint">
+                                <option value="global" data-i18n="Global (api.minimax.io)">Global (api.minimax.io)</option>
+                                <option value="china" data-i18n="China (api.minimaxi.com)">China (api.minimaxi.com)</option>
+                            </select>
+                            <div>
+                                <h4 data-i18n="MiniMax Model">MiniMax Model</h4>
+                                <select id="model_minimax_select">
+                                    <option value="M2-her">M2-her</option>
+                                    <option value="MiniMax-M2.1">MiniMax-M2.1</option>
+                                    <option value="MiniMax-M2.1-lightning">MiniMax-M2.1-lightning</option>
+                                    <option value="MiniMax-M2">MiniMax-M2</option>
                                 </select>
                             </div>
                         </div>
