@@ -712,6 +712,7 @@ class PresetManager {
             'featherless_model',
             'max_tokens_second',
             'openrouter_providers',
+            'openrouter_quantizations',
             'openrouter_allow_fallbacks',
             'tabby_model',
             'derived',
@@ -727,6 +728,7 @@ class PresetManager {
             'show_hidden',
             'max_additions',
         ];
+        /** @type {Record<string, any>} */
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
         for (const key of filteredKeys) {
@@ -736,8 +738,8 @@ class PresetManager {
         }
 
         if (!this.isAdvancedFormatting() && this.apiId !== 'openai') {
-            settings['genamt'] = amount_gen;
-            settings['max_length'] = max_context;
+            settings.genamt = amount_gen;
+            settings.max_length = max_context;
         }
 
         return settings;

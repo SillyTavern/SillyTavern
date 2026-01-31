@@ -288,6 +288,7 @@ export const settingsToUpdate = {
     openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
     openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false, true],
     openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false, true],
+    openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
@@ -434,6 +435,7 @@ const default_settings = {
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
     openrouter_providers: [],
+    openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
     reverse_proxy: '',
@@ -1312,7 +1314,7 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
     });
 
     // Smart Context (ChromaDB)
-    const smartContext = extensionPrompts['chromadb'];
+    const smartContext = extensionPrompts.chromadb;
     if (smartContext && smartContext.value) systemPrompts.push({
         role: 'system',
         content: smartContext.value,
@@ -2628,6 +2630,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.top_a = Number(settings.top_a_openai);
         generate_data.use_fallback = settings.openrouter_use_fallback;
         generate_data.provider = settings.openrouter_providers;
+        generate_data.quantizations = settings.openrouter_quantizations;
         generate_data.allow_fallbacks = settings.openrouter_allow_fallbacks;
         generate_data.middleout = settings.openrouter_middleout;
     }
@@ -2707,10 +2710,6 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    if (settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
-        delete generate_data.max_tokens;
-    }
-
     // https://docs.electronhub.ai/api-reference/chat/completions
     if (settings.chat_completion_source === chat_completion_sources.ELECTRONHUB) {
         generate_data.top_k = Number(settings.top_k_openai);
@@ -2738,6 +2737,17 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.min_p = Number(settings.min_p_openai);
         generate_data.repetition_penalty = Number(settings.repetition_penalty_openai);
         generate_data.top_a = Number(settings.top_a_openai);
+    }
+
+    // https://platform.moonshot.ai/docs/api/chat#public-service-address
+    if (settings.chat_completion_source === chat_completion_sources.MOONSHOT) {
+        // >Kimi API is fully compatible with OpenAI's API format
+        if (/kimi-k2.5/.test(model)) {
+            delete generate_data.temperature;
+            delete generate_data.top_p;
+            delete generate_data.frequency_penalty;
+            delete generate_data.presence_penalty;
+        }
     }
 
     if (seedSupportedSources.includes(settings.chat_completion_source) && settings.seed >= 0) {
@@ -4041,6 +4051,7 @@ function loadOpenAISettings(data, settings) {
     setContinuePostfixControls();
 
     $('#openrouter_providers_chat').trigger('change');
+    $('#openrouter_quantizations_chat').trigger('change');
     $('#chat_completion_source').trigger('change');
 }
 
@@ -4669,6 +4680,7 @@ function onSettingsPresetChange() {
         if (oai_settings.bind_preset_to_connection) {
             $('#chat_completion_source').trigger('change');
             $('#openrouter_providers_chat').trigger('change');
+            $('#openrouter_quantizations_chat').trigger('change');
         }
 
         $('#openai_logit_bias_preset').trigger('change');
@@ -4913,8 +4925,13 @@ function getMoonshotMaxContext(model, isUnlocked) {
         'moonshot-v1-32k-vision-preview': max_32k,
         'moonshot-v1-128k-vision-preview': max_128k,
         'kimi-k2-0711-preview': max_32k,
-        'kimi-latest': max_32k,
+        'kimi-latest': max_256k,
         'kimi-thinking-preview': max_32k,
+        'kimi-k2.5': max_256k,
+        'kimi-k2-0905-preview': max_256k,
+        'kimi-k2-turbo-preview': max_256k,
+        'kimi-k2-thinking': max_256k,
+        'kimi-k2-thinking-turbo': max_256k,
     };
 
     // Return context size if model found, otherwise default to 32k
@@ -5608,6 +5625,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
+        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5840,6 +5858,8 @@ export function isImageInliningSupported() {
         'moonshot-v1-8k-vision-preview',
         'moonshot-v1-32k-vision-preview',
         'moonshot-v1-128k-vision-preview',
+        'kimi-k2.5',
+        'kimi-latest',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
@@ -5887,11 +5907,11 @@ export function isImageInliningSupported() {
         case chat_completion_sources.ELECTRONHUB:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
         case chat_completion_sources.POLLINATIONS:
-            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.vision);
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.COMETAPI:
             return true;
         case chat_completion_sources.MOONSHOT:
-            return visionSupportedModels.some(model => oai_settings.moonshot_model.includes(model));
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.moonshot_model)?.supports_image_in);
         case chat_completion_sources.NANOGPT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
         case chat_completion_sources.ZAI:
@@ -6786,6 +6806,19 @@ export function initOpenAI() {
         }
 
         oai_settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_quantizations_chat').on('change', function () {
+        const selectedQuantizations = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedQuantizations)) {
+            return;
+        }
+
+        oai_settings.openrouter_quantizations = selectedQuantizations;
 
         saveSettingsDebounced();
     });

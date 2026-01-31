@@ -189,6 +189,7 @@ import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, 
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, initSlashCommandAutoComplete, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
+import { initMacroAutoComplete } from './scripts/autocomplete/MacroAutoComplete.js';
 import {
     tag_map,
     tags,
@@ -711,6 +712,7 @@ async function firstLoadInit() {
     initAuthorsNote();
     await initPersonas();
     await initSlashCommandAutoComplete();
+    initMacroAutoComplete();
     initWorldInfo();
     initHorde();
     initRossMods();
@@ -730,6 +732,7 @@ async function firstLoadInit() {
     initAccessibility();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
+    await eventSource.emit(event_types.APP_INITIALIZED);
     await hideLoader();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
@@ -1190,7 +1193,7 @@ export async function getOneCharacter(avatarUrl) {
     }
 }
 
-function getCharacterSource(chId = this_chid) {
+export function getCharacterSource(chId = this_chid) {
     const character = characters[chId];
 
     if (!character) {
@@ -5169,7 +5172,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
             authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-            smartContextString: (extension_prompts['chromadb']?.value || ''),
+            smartContextString: (extension_prompts.chromadb?.value || ''),
             chatVectorsString: (extension_prompts['3_vectors']?.value || ''),
             dataBankVectorsString: (extension_prompts['4_vectors_data_bank']?.value || ''),
             worldInfoString: worldInfoString,
@@ -8027,6 +8030,7 @@ export async function messageEdit(editMessageId) {
     const editTextArea = document.createElement('textarea');
     editTextArea.id = 'curEditTextarea';
     editTextArea.className = 'edit_textarea mdHotkeys';
+    editTextArea.dataset.macros = '';
     messageText.append(editTextArea);
 
     const text = trimSpaces(editMessage.mes || '');
@@ -8157,9 +8161,6 @@ async function messageEditDone(div) {
     }
 
     let { mesBlock, text, mes, bias } = updateMessage(div);
-    if (this_edit_mes_id == 0) {
-        text = substituteParams(text);
-    }
 
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
     text = chat[this_edit_mes_id]?.mes ?? text;
@@ -9725,7 +9726,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         console.error(`Message #${mesId}'s DOM element is not valid.`);
         return;
     }
-    const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
+    const originalSwipeId = Number(chat[mesId]?.swipe_id ?? 0);
     let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
     /**

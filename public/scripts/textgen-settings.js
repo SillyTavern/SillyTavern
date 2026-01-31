@@ -211,6 +211,7 @@ export const textgenerationwebui_settings = {
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
     openrouter_providers: [],
+    openrouter_quantizations: [],
     vllm_model: '',
     aphrodite_model: '',
     dreamgen_model: 'lucid-v1-extra-large/text',
@@ -590,6 +591,7 @@ export async function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(textgenerationwebui_settings.type);
     $('#openrouter_providers_text').val(textgenerationwebui_settings.openrouter_providers).trigger('change');
+    $('#openrouter_quantizations_text').val(textgenerationwebui_settings.openrouter_quantizations).trigger('change');
     showSamplerControls(textgenerationwebui_settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(textgenerationwebui_settings.logit_bias, BIAS_KEY);
@@ -1069,6 +1071,19 @@ export function initTextGenSettings() {
         }
 
         textgenerationwebui_settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_quantizations_text').on('change', function () {
+        const selectedQuantizations = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedQuantizations)) {
+            return;
+        }
+
+        textgenerationwebui_settings.openrouter_quantizations = selectedQuantizations;
 
         saveSettingsDebounced();
     });
@@ -1735,6 +1750,7 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
 
     if (settings.type === OPENROUTER) {
         params.provider = settings.openrouter_providers;
+        params.quantizations = settings.openrouter_quantizations;
         params.allow_fallbacks = settings.openrouter_allow_fallbacks;
     }
 

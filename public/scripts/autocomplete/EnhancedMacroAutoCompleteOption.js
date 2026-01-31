@@ -39,7 +39,9 @@ import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnos
  * @property {boolean} isVariableShorthand - Whether this is a variable shorthand (starts with . or $).
  * @property {'.'|'$'|null} variablePrefix - The variable prefix (. for local, $ for global), or null.
  * @property {string} variableName - The variable name being typed (after the prefix).
+ * @property {number} variableNameEnd - The end of the variable name (for partial matches).
  * @property {string|null} variableOperator - The operator typed (=, ++, --, +=), or null.
+ * @property {number} variableOperatorEnd - The end of the variable operator (for partial matches).
  * @property {string} variableValue - The value after the operator (for = and +=).
  * @property {boolean} isTypingVariableName - Whether cursor is in the variable name area.
  * @property {boolean} isTypingOperator - Whether cursor is at/after variable name, ready for operator.
@@ -499,13 +501,13 @@ export const VariableShorthandDefinitions = new Map([
         type: VariableShorthandType.LOCAL,
         name: 'Local Variable',
         description: 'Access or modify a local variable (scoped to current chat).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)', 'greater than (>)', 'greater than or equal (>=)', 'less than (<)', 'less than or equal (<=)'],
     }],
     [VariableShorthandType.GLOBAL, {
         type: VariableShorthandType.GLOBAL,
         name: 'Global Variable',
         description: 'Access or modify a global variable (shared across all chats).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)', 'greater than (>)', 'greater than or equal (>=)', 'less than (<)', 'less than or equal (<=)'],
     }],
 ]);
 
@@ -633,6 +635,10 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}myvar ??= value}} - Set if undefined, get value`,
             `{{${prefix}myvar == test}} - Compare (returns true/false)`,
             `{{${prefix}myvar != test}} - Compare not equal (returns true/false)`,
+            `{{${prefix}score > 10}} - Greater than (numeric, returns true/false)`,
+            `{{${prefix}score >= 10}} - Greater than or equal (numeric)`,
+            `{{${prefix}score < 10}} - Less than (numeric, returns true/false)`,
+            `{{${prefix}score <= 10}} - Less than or equal (numeric)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -810,6 +816,10 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}${this.#varName} ??= value}} - Set if undefined, get value`,
             `{{${prefix}${this.#varName} == test}} - Compare (returns true/false)`,
             `{{${prefix}${this.#varName} != test}} - Compare not equal (returns true/false)`,
+            `{{${prefix}${this.#varName} > 10}} - Greater than (numeric)`,
+            `{{${prefix}${this.#varName} >= 10}} - Greater than or equal (numeric)`,
+            `{{${prefix}${this.#varName} < 10}} - Less than (numeric)`,
+            `{{${prefix}${this.#varName} <= 10}} - Less than or equal (numeric)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -821,6 +831,18 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
         frag.append(details);
         return frag;
     }
+}
+
+/**
+ * Checks if an operator is a short one that could be a prefix of a longer operator.
+ * For example, '>' is a prefix of '>=', '<' is a prefix of '<='.
+ * @param {string} op - The operator to check.
+ * @returns {boolean} True if the operator could be a prefix of a longer operator.
+ */
+function isShortOperatorPrefix(op) {
+    // These operators could have longer variants typed after them
+    const shortPrefixes = ['>', '<', '=', '|', '?', '+', '-', '!'];
+    return shortPrefixes.includes(op);
 }
 
 /**
@@ -894,6 +916,30 @@ export const VariableOperatorDefinitions = new Map([
         description: 'Compare the variable value to another value. Returns "true" if not equal, "false" if equal.',
         needsValue: true,
     }],
+    ['>', {
+        symbol: '>',
+        name: 'Greater Than',
+        description: 'Numeric comparison. Returns "true" if variable is greater than value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['>=', {
+        symbol: '>=',
+        name: 'Greater Than or Equal',
+        description: 'Numeric comparison. Returns "true" if variable is greater than or equal to value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['<', {
+        symbol: '<',
+        name: 'Less Than',
+        description: 'Numeric comparison. Returns "true" if variable is less than value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['<=', {
+        symbol: '<=',
+        name: 'Less Than or Equal',
+        description: 'Numeric comparison. Returns "true" if variable is less than or equal to value, "false" otherwise.',
+        needsValue: true,
+    }],
 ]);
 
 /**
@@ -962,6 +1008,89 @@ export class VariableOperatorAutoCompleteOption extends AutoCompleteOption {
             ? '<em>This operator requires a value after it.</em>'
             : '<em>This operator does not take a value.</em>';
         details.append(valueNote);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
+ * Non-selectable autocomplete option that shows context about the value being typed.
+ * Displays info about what value is expected based on the operator.
+ */
+export class VariableValueContextAutoCompleteOption extends AutoCompleteOption {
+    /** @type {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    #operatorDef;
+
+    /** @type {string} */
+    #currentValue;
+
+    /**
+     * @param {{ symbol: string, name: string, description: string, needsValue: boolean }} operatorDef - The operator definition.
+     * @param {string} [currentValue=''] - The value currently being typed.
+     */
+    constructor(operatorDef, currentValue = '') {
+        super('value', '📝');
+        this.#operatorDef = operatorDef;
+        this.#currentValue = currentValue;
+    }
+
+    /** @returns {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    get operatorDefinition() {
+        return this.#operatorDef;
+    }
+
+    /**
+     * Renders the autocomplete list item for this value context.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = this.makeItem(
+            '<value>',
+            '📝',
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'any', // returnType
+            `${this.#operatorDef.name} (${this.#operatorDef.symbol}) expects a value`,
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable-value-context');
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this value context.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-variable-value-context-details');
+
+        // Header
+        const header = document.createElement('h3');
+        header.innerHTML = `Value for <code>${this.#operatorDef.symbol}</code> (${this.#operatorDef.name})`;
+        details.append(header);
+
+        // Description of what value is expected
+        const desc = document.createElement('p');
+        desc.textContent = this.#operatorDef.description;
+        details.append(desc);
+
+        // Current value being typed
+        if (this.#currentValue) {
+            const currentNote = document.createElement('p');
+            currentNote.innerHTML = `<em>Currently typing:</em> <code>${this.#currentValue}</code>`;
+            details.append(currentNote);
+        }
+
+        // Hint
+        const hint = document.createElement('p');
+        hint.classList.add('hint');
+        hint.innerHTML = '<em>Type your value and close with <code>}}</code> to complete the macro.</em>';
+        details.append(hint);
 
         frag.append(details);
         return frag;
@@ -1224,18 +1353,34 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (operatorText.startsWith('!=')) {
             variableOperator = '!=';
             i += 2;
+        } else if (operatorText.startsWith('>=')) {
+            variableOperator = '>=';
+            i += 2;
+        } else if (operatorText.startsWith('>')) {
+            variableOperator = '>';
+            i += 1;
+        } else if (operatorText.startsWith('<=')) {
+            variableOperator = '<=';
+            i += 2;
+        } else if (operatorText.startsWith('<')) {
+            variableOperator = '<';
+            i += 1;
         } else if (operatorText.startsWith('=')) {
             variableOperator = '=';
             i += 1;
-        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!')) {
+        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!') || operatorText.startsWith('>') || operatorText.startsWith('<')) {
             // Partial operator prefix - user is typing an operator
             partialOperator = operatorText[0];
-        } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
+        } else if (operatorText.length > 0 && !/^\s/.test(operatorText) && !operatorText.startsWith('}')) {
             // There's non-whitespace after the variable name that isn't a valid operator
             // This is an invalid trailing character (e.g., $my$ or .var@test)
+            // Exception: } is the closing brace, not an invalid char
             hasInvalidTrailingChars = true;
             invalidTrailingChars = operatorText.trim();
         }
+
+        // Track where the operator ends (for cursor position checks)
+        const variableOperatorEnd = i;
 
         // Check if operator requires a value
         const operatorDef = variableOperator ? VariableOperatorDefinitions.get(variableOperator) : null;
@@ -1256,11 +1401,15 @@ export function parseMacroContext(macroText, cursorOffset) {
             // Cursor is before the prefix - still in flags area conceptually
             isTypingVariableName = false;
         } else if (cursorOffset <= variableNameEnd) {
-            // Cursor is in the variable name
+            // Cursor is in the variable name area (including at the end)
             isTypingVariableName = true;
-        } else if (!variableOperator && !hasInvalidTrailingChars) {
+        } else if (variableName.length > 0 && !variableOperator && !hasInvalidTrailingChars) {
             // Cursor is after variable name but no operator yet (and no invalid chars)
-            // This includes partial operator prefixes like '+', '-', '|', '?'
+            // This includes partial operator prefixes like '+', '-', '|', '?', '>', '<'
+            isTypingOperator = true;
+        } else if (variableName.length > 0 && variableOperator && isShortOperatorPrefix(variableOperator) && cursorOffset <= variableOperatorEnd) {
+            // Short operator that could be prefix of longer one (e.g., > could become >=)
+            // But ONLY if cursor is still in the operator area, not past it into value
             isTypingOperator = true;
         } else if (operatorNeedsValue) {
             // Operator that requires value - cursor is in value area
@@ -1292,7 +1441,9 @@ export function parseMacroContext(macroText, cursorOffset) {
             isVariableShorthand,
             variablePrefix,
             variableName,
+            variableNameEnd,
             variableOperator,
+            variableOperatorEnd,
             variableValue,
             isTypingVariableName,
             isTypingOperator,

@@ -223,7 +223,7 @@ function getAssistantGreeting(character) {
         return defaultGreeting;
     }
 
-    return getRegexedString(character.first_mes || '', regex_placement.AI_OUTPUT) || defaultGreeting;
+    return getRegexedString(character.first_mes || '', regex_placement.AI_OUTPUT, { depth: 0 }) || defaultGreeting;
 }
 
 function sendAssistantMessage() {

@@ -367,6 +367,12 @@ router.post('/generate', async function (request, response) {
             } else {
                 delete request.body.provider;
             }
+
+            if (Array.isArray(request.body.quantizations) && request.body.quantizations.length > 0) {
+                request.body.provider ??= {};
+                request.body.provider.quantizations = request.body.quantizations;
+            }
+
             request.body = _.pickBy(request.body, (_, key) => OPENROUTER_KEYS.includes(key));
             args.body = JSON.stringify(request.body);
         }

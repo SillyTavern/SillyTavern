@@ -2239,6 +2239,11 @@ export function initChatUtilities() {
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
         textarea.dataset.for = broId;
+        if (bro[0].dataset.macros !== undefined) {
+            textarea.dataset.macros = bro[0].dataset.macros;
+            textarea.dataset.macrosAutocomplete = 'always'; // Always show autocomplete in expanded editor
+            textarea.dataset.macrosAutocompleteStyle = 'expanded'; // Use expanded autocomplete style
+        }
         textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');
