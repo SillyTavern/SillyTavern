@@ -57,3 +57,8 @@ public/scripts/extensions/third-party
 yarn.lock
 *.code-workspace
 test-results/
+
+# Test artifacts
+tests/.test-data/
+tests/playwright-report/
+tests/.test-server.pid
