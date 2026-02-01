@@ -849,15 +849,6 @@ router.post('/group/save', async function (request, response) {
 router.post('/search', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const { query, avatar_url, group_id } = request.body;
-        /** @type {(text: string) => boolean} */
-        const hasTextMatch = (text) => {
-            if (!query) {
-                return true;
-            }
-            const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
-            const loweredText = String(text).toLowerCase();
-            return fragments.every(fragment => loweredText.includes(fragment));
-        };
 
         /** @type {string[]} */
         let chatFiles = [];
@@ -915,7 +906,16 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
          */
         const results = [];
 
-        // Search logic
+        /** @type {ChatMatchFunction} */
+        const hasTextMatch = (text) => {
+            if (!query) {
+                return true;
+            }
+            const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
+            const loweredText = String(text).toLowerCase();
+            return fragments.every(fragment => loweredText.includes(fragment));
+        };
+
         for (const chatFile of chatFiles) {
             const chatInfo = await getChatInfo(chatFile, {}, false, hasTextMatch);
 
