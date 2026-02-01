@@ -899,6 +899,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
          * @type {SearchChatResult[]}
          * @typedef {object} SearchChatResult
          * @property {string} [file_name] - The name of the chat file
+         * @property {string} [file_id] - The ID of the chat file (file name without extension)
          * @property {string} [file_size] - The size of the chat file in a human-readable format
          * @property {number} [message_count] - The number of messages in the chat
          * @property {number|string} [last_mes] - The timestamp of the last message
@@ -935,7 +936,8 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             // If no search query or a match was found, include the chat in results
             if (!query || hasMatch) {
                 results.push({
-                    file_name: chatInfo.file_id,
+                    file_id: chatInfo.file_id,
+                    file_name: chatInfo.file_name,
                     file_size: chatInfo.file_size,
                     message_count: chatInfo.chat_items,
                     last_mes: chatInfo.last_mes,
