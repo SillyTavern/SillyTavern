@@ -656,7 +656,7 @@ export function initBookmarks() {
 
         const fileName = $(this).hasClass('mes_bookmark')
             ? $(this).closest('.mes').attr('bookmark_link')
-            : $(this).attr('file_name').replace('.jsonl', '');
+            : $(this).attr('file_name');
 
         if (!fileName) {
             return;
