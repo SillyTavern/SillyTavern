@@ -935,7 +935,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             // If no search query or a match was found, include the chat in results
             if (!query || hasMatch) {
                 results.push({
-                    file_name: chatInfo.file_name,
+                    file_name: chatInfo.file_id,
                     file_size: chatInfo.file_size,
                     message_count: chatInfo.chat_items,
                     last_mes: chatInfo.last_mes,
