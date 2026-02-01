@@ -2522,6 +2522,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.MINIMAX,
         chat_completion_sources.CUSTOM,
     ];
 
@@ -2746,6 +2747,10 @@ export async function createGenerationParameters(settings, model, type, messages
     // MiniMax API
     if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
         generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
+        generate_data.min_p = Number(settings.min_p_openai);
+        generate_data.top_k = settings.top_k_openai > 0 ? Number(settings.top_k_openai) : undefined;
+        generate_data.repetition_penalty = Number(settings.repetition_penalty_openai);
+        generate_data.stop = getCustomStoppingStrings();
     }
 
     // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
@@ -5900,6 +5905,9 @@ export function isImageInliningSupported() {
         'Qwen/Qwen3-VL-235B-A22B-Instruct',
         'Qwen/Qwen3-VL-30B-A3B-Instruct',
         'zai-org/GLM-4.5V',
+        // MiniMax
+        'MiniMax-M2',
+        'M2-her',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -5948,6 +5956,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.MINIMAX:
+            return visionSupportedModels.some(model => oai_settings.minimax_model.includes(model));
         default:
             return false;
     }

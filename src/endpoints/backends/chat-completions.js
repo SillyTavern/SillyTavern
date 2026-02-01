@@ -1127,14 +1127,46 @@ async function sendMinimaxRequest(request, response) {
         const apiUrl = isGlobal ? API_MINIMAX_GLOBAL : API_MINIMAX_CHINA;
         const apiPath = isGlobal ? '/chat/completions' : '/text/chatcompletion_v2';
 
+        let bodyParams = {};
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (request.body.logprobs > 0) {
+            bodyParams['top_logprobs'] = request.body.logprobs;
+            bodyParams['logprobs'] = true;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
         const requestBody = {
             'messages': request.body.messages,
             'model': request.body.model,
             'temperature': request.body.temperature,
             'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'repetition_penalty': request.body.repetition_penalty,
+            'min_p': request.body.min_p,
             'top_p': request.body.top_p,
+            'top_k': request.body.top_k,
+            'seed': request.body.seed,
             'stop': request.body.stop,
+            'logit_bias': request.body.logit_bias,
+            ...bodyParams,
         };
 
         const config = {
