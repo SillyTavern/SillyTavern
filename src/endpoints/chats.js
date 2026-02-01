@@ -906,26 +906,29 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
          */
         const results = [];
 
+        /** @type {string[]} */
+        const fragments = query ? query.trim().toLowerCase().split(/\s+/).filter(x => x) : [];
+
         /** @type {ChatMatchFunction} */
         const hasTextMatch = (text) => {
-            if (!query) {
+            if (fragments.length === 0) {
                 return true;
             }
-            const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
             const loweredText = String(text).toLowerCase();
             return fragments.every(fragment => loweredText.includes(fragment));
         };
 
         for (const chatFile of chatFiles) {
             const chatInfo = await getChatInfo(chatFile, {}, false, hasTextMatch);
+            const hasMatch = hasTextMatch(chatInfo.file_id ?? '') || chatInfo.match;
 
-            // Empty chats are skipped when searching with a query
-            if (query && chatInfo.chat_items === 0) {
+            // Empty chats without a file name match are skipped when searching with a query
+            if (query && chatInfo.chat_items === 0 && !hasMatch) {
                 continue;
             }
 
             // If no search query or a match was found, include the chat in results
-            if (!query || chatInfo.match) {
+            if (!query || hasMatch) {
                 results.push({
                     file_name: chatInfo.file_name,
                     file_size: chatInfo.file_size,
