@@ -11004,7 +11004,7 @@ jQuery(async function () {
         if (group) {
             await deleteGroupChat(group, chatFile);
         } else {
-            await delChat(chatFile);
+            await delChat(`${chatFile}.jsonl`);
         }
 
         if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
@@ -11032,7 +11032,7 @@ jQuery(async function () {
 
         const result = await callGenericPopup('<h3>' + t`Delete the Chat File?` + '</h3>', POPUP_TYPE.CONFIRM);
         if (result === POPUP_RESULT.AFFIRMATIVE) {
-            await handleDeleteChat(deleteFileName + '.jsonl', selected_group, false);
+            await handleDeleteChat(deleteFileName, selected_group, false);
         }
     });
 
@@ -11066,8 +11066,7 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
-    $('#dialogue_popup_ok').on('click', async function (_e, customData) {
-        const fromSlashCommand = customData?.fromSlashCommand || false;
+    $('#dialogue_popup_ok').on('click', async function (_e) {
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
@@ -11080,10 +11079,6 @@ jQuery(async function () {
             $('#dialogue_popup').removeClass('large_dialogue_popup');
             $('#dialogue_popup').removeClass('wide_dialogue_popup');
         }, animation_duration);
-
-        if (popup_type == 'del_chat') {
-            await handleDeleteChat(chat_file_for_del, selected_group, fromSlashCommand);
-        }
 
         if (dialogueResolve) {
             if (popup_type == 'input') {
