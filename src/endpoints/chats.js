@@ -77,7 +77,7 @@ function getBackupFunction(handle) {
 }
 
 /**
- * Gets a preview message from an array of chat messages
+ * Gets a preview message from a chat message string.
  * @param {string} [lastMessage] - The message to truncate
  * @returns {string} A truncated preview of the last message or empty string if no messages
  */
@@ -921,6 +921,11 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
         for (const chatFile of chatFiles) {
             const chatInfo = await getChatInfo(chatFile, {}, false, hasTextMatch);
             const hasMatch = hasTextMatch(chatInfo.file_id ?? '') || chatInfo.match;
+
+            // Skip corrupted or invalid chat files
+            if (!chatInfo.file_name) {
+                continue;
+            }
 
             // Empty chats without a file name match are skipped when searching with a query
             if (query && chatInfo.chat_items === 0 && !hasMatch) {
