@@ -1465,8 +1465,24 @@ export function parseMacroContext(macroText, cursorOffset) {
     let partStart = i;
     let j = 0;
 
+    // Track nesting depth to skip :: inside nested macros
+    let nestedDepth = 0;
     while (j < remainingText.length) {
-        if (remainingText[j] === ':' && remainingText[j + 1] === ':') {
+        // Track nested macro braces
+        if (remainingText[j] === '{' && remainingText[j + 1] === '{') {
+            nestedDepth++;
+            currentPart += '{{';
+            j += 2;
+            continue;
+        }
+        if (remainingText[j] === '}' && remainingText[j + 1] === '}') {
+            nestedDepth = Math.max(0, nestedDepth - 1);
+            currentPart += '}}';
+            j += 2;
+            continue;
+        }
+        // Only count :: as separator when not inside nested macros
+        if (nestedDepth === 0 && remainingText[j] === ':' && remainingText[j + 1] === ':') {
             parts.push({ text: currentPart, start: partStart, end: i + j });
             separatorPositions.push({ start: i + j, end: i + j + 2 });
             currentPart = '';
