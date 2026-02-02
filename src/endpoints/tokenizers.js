@@ -229,6 +229,7 @@ class WebTokenizer {
         try {
             const pathToModel = await getPathToTokenizer(this.#model, this.#fallbackModel);
             const fileBuffer = await fs.promises.readFile(pathToModel);
+            console.info('Tokenizer Path', pathToModel);
             this.#instance = await Tokenizer.fromJSON(fileBuffer);
             console.info('Instantiated the tokenizer for', path.parse(pathToModel).name);
             return this.#instance;
@@ -253,6 +254,7 @@ const commandATokenizer = new WebTokenizer('https://github.com/SillyTavern/Silly
 const qwen2Tokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/qwen2.json.gz', 'src/tokenizers/llama3.json');
 const nemoTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/nemo.json.gz', 'src/tokenizers/llama3.json');
 const deepseekTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/deepseek.json.gz', 'src/tokenizers/llama3.json');
+const glm46Tokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/glm-4.6.json.gz', 'src/tokenizers/llama3.json');
 
 export const sentencepieceTokenizers = [
     'llama',
@@ -272,6 +274,7 @@ export const webTokenizers = [
     'qwen2',
     'nemo',
     'deepseek',
+    'glm',
 ];
 
 /**
@@ -343,6 +346,10 @@ export function getWebTokenizer(model) {
 
     if (model.includes('deepseek')) {
         return deepseekTokenizer;
+    }
+
+    if (model.includes('glm')) {
+        return glm46Tokenizer;
     }
 
     return null;
@@ -487,6 +494,10 @@ export function getTokenizerModel(requestModel) {
 
     if (requestModel.includes('deepseek')) {
         return 'deepseek';
+    }
+
+    if (requestModel.includes('glm-4.6') || requestModel.includes('glm-4.7')) {
+        return 'glm';
     }
 
     if (requestModel.includes('gemma') || requestModel.includes('gemini') || requestModel.includes('learnlm')) {
@@ -743,6 +754,7 @@ router.post('/command-r/encode', createWebTokenizerEncodingHandler(commandRToken
 router.post('/command-a/encode', createWebTokenizerEncodingHandler(commandATokenizer));
 router.post('/nemo/encode', createWebTokenizerEncodingHandler(nemoTokenizer));
 router.post('/deepseek/encode', createWebTokenizerEncodingHandler(deepseekTokenizer));
+router.post('/glm46/encode', createWebTokenizerEncodingHandler(glm46Tokenizer));
 router.post('/llama/decode', createSentencepieceDecodingHandler(spp_llama));
 router.post('/nerdstash/decode', createSentencepieceDecodingHandler(spp_nerd));
 router.post('/nerdstash_v2/decode', createSentencepieceDecodingHandler(spp_nerd_v2));
@@ -758,6 +770,7 @@ router.post('/command-r/decode', createWebTokenizerDecodingHandler(commandRToken
 router.post('/command-a/decode', createWebTokenizerDecodingHandler(commandATokenizer));
 router.post('/nemo/decode', createWebTokenizerDecodingHandler(nemoTokenizer));
 router.post('/deepseek/decode', createWebTokenizerDecodingHandler(deepseekTokenizer));
+router.post('/glm46/decode', createWebTokenizerDecodingHandler(glm46Tokenizer));
 
 router.post('/openai/encode', async function (req, res) {
     try {
@@ -820,6 +833,11 @@ router.post('/openai/encode', async function (req, res) {
 
         if (queryModel.includes('deepseek')) {
             const handler = createWebTokenizerEncodingHandler(deepseekTokenizer);
+            return handler(req, res);
+        }
+
+        if (queryModel.includes('glm')) {
+            const handler = createWebTokenizerEncodingHandler(glm46Tokenizer);
             return handler(req, res);
         }
 
@@ -893,6 +911,11 @@ router.post('/openai/decode', async function (req, res) {
 
         if (queryModel.includes('deepseek')) {
             const handler = createWebTokenizerDecodingHandler(deepseekTokenizer);
+            return handler(req, res);
+        }
+
+        if (queryModel.includes('glm')) {
+            const handler = createWebTokenizerDecodingHandler(glm46Tokenizer);
             return handler(req, res);
         }
 
@@ -983,6 +1006,13 @@ router.post('/openai/count', async function (req, res) {
         if (model === 'deepseek') {
             const instance = await deepseekTokenizer.get();
             if (!instance) throw new Error('Failed to load the DeepSeek tokenizer');
+            num_tokens = countWebTokenizerTokens(instance, req.body);
+            return res.send({ 'token_count': num_tokens });
+        }
+
+        if (model === 'glm-4.6' || model === 'glm-4.7') {
+            const instance = await glm46Tokenizer.get();
+            if (!instance) throw new Error('Failed to load the GLM tokenizer');
             num_tokens = countWebTokenizerTokens(instance, req.body);
             return res.send({ 'token_count': num_tokens });
         }

@@ -33,6 +33,7 @@ export const tokenizers = {
     NEMO: 17,
     DEEPSEEK: 18,
     COMMAND_A: 19,
+    GLM: 20,
     BEST_MATCH: 99,
 };
 
@@ -49,6 +50,7 @@ export const ENCODE_TOKENIZERS = [
     tokenizers.COMMAND_A,
     tokenizers.NEMO,
     tokenizers.DEEPSEEK,
+    tokenizers.GLM,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
@@ -145,6 +147,11 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/deepseek/encode',
         decode: '/api/tokenizers/deepseek/decode',
         count: '/api/tokenizers/deepseek/encode',
+    },
+    [tokenizers.GLM]: {
+        encode: '/api/tokenizers/glm46/encode',
+        decode: '/api/tokenizers/glm46/decode',
+        count: '/api/tokenizers/glm46/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -337,6 +344,9 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (model.includes('deepseek')) {
                 return tokenizers.DEEPSEEK;
+            }
+            if (model.includes('glm-4.6') || model.includes('glm-4.7')) {
+                return tokenizers.GLM;
             }
             if (model.includes('yi')) {
                 return tokenizers.YI;
