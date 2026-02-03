@@ -410,14 +410,15 @@ router.post('/bing', async (request, response) => {
 
 router.post('/openai_compatible', async (request, response) => {
     try {
-        const secretUrl = readSecret(request.user.directories, SECRET_KEYS.TRANSLATE_OPENAI_COMPATIBLE_URL);
-        const url = secretUrl + '/chat/completions';
+        const tokenOverride = readSecret(request.user.directories, SECRET_KEYS.TRANSLATE_OPENAI_COMPATIBLE);
+        const baseUrl = request.body.endpoint;
 
-        if (!url) {
+        if (!baseUrl) {
             console.warn('OpenAI Compatible URL is not configured.');
             return response.sendStatus(400);
         }
 
+        const endpoint = baseUrl + '/chat/completions';
         const user_prompt = request.body.user_prompt;
         const system_prompt = request.body.system_prompt;
         const model = request.body.model;
@@ -429,7 +430,14 @@ router.post('/openai_compatible', async (request, response) => {
 
         console.debug('Input text: ' + user_prompt);
 
-        const result = await fetch(url, {
+        const headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        };
+        if (tokenOverride) {
+            headers['Authorization'] = `Bearer ${tokenOverride}`;
+        }
+        const result = await fetch(endpoint, {
             method: 'POST',
             body: JSON.stringify({
                 model: model,
@@ -438,10 +446,7 @@ router.post('/openai_compatible', async (request, response) => {
                     { role: 'user', content: user_prompt },
                 ],
             }),
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
         });
 
         if (!result.ok) {

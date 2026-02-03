@@ -40,37 +40,47 @@
             </div>
             <label data-i18n="ext_translate_target_lang" for="translation_target_language">Target Language</label>
             <select id="translation_target_language" name="target_language"></select>
-            <div id="openai_compatible_system_prompt">
+            <div id="translate_openai_compatible_url">
+                <label data-i18n="ext_translate_openai_compatible_url"
+                    for="translate_openai_compatible_url_input">Custom Endpoint Override (Optional)</label>
+                <input id="translate_openai_compatible_url_input" class="text_pole textarea_compact"
+                    data-i18n="[placeholder]ext_translate_openai_compatible_url_placeholder"
+                    placeholder="The URL defined for chat completions will be used by default">
+            </div>
+            <div id="translate_openai_compatible_model">
+                <label data-i18n="ext_translate_openai_compatible_model" for="translate_openai_compatible_model">Model
+                    Override (Optional)</label>
+                <input id="translate_openai_compatible_model_input" class="text_pole textarea_compact"
+                    data-i18n="[placeholder]ext_translate_openai_compatible_model_placeholder"
+                    placeholder="The model defined for chat completions will be used by default">
+            </div>
+            <div id="translate_openai_compatible_system_prompt">
                 <label data-i18n="ext_translate_openai_compatible_system_prompt"
-                    for="openai_compatible_system_prompt_textarea">System Prompt</label>
-                <textarea id="openai_compatible_system_prompt_textarea" class="text_pole textarea_compact" rows="3"
-                    data-i18n="[placeholder]ext_translate_openai_compatible_system_prompt_placeholder"
+                    for="translate_openai_compatible_system_prompt_textarea">System Prompt</label>
+                <textarea id="translate_openai_compatible_system_prompt_textarea" class="text_pole textarea_compact"
+                    rows="3" data-i18n="[placeholder]ext_translate_openai_compatible_system_prompt_placeholder"
                     placeholder='You can use placeholders: {{messageAuthorPersonality}} to fill persona description, {{translateFromLang}} and {{translateToLang}} for selected language pair and {{messageToTranslate}} for message being translated'></textarea>
             </div>
-            <div id="openai_compatible_user_prompt">
+            <div id="translate_openai_compatible_user_prompt">
                 <label data-i18n="ext_translate_openai_compatible_user_prompt"
-                    for="openai_compatible_user_prompt_textarea">User Prompt</label>
-                <textarea id="openai_compatible_user_prompt_textarea" class="text_pole textarea_compact" rows="3"
-                    data-i18n="[placeholder]ext_translate_openai_compatible_user_prompt_placeholder"
+                    for="translate_openai_compatible_user_prompt_textarea">User Prompt</label>
+                <textarea id="translate_openai_compatible_user_prompt_textarea" class="text_pole textarea_compact"
+                    rows="3" data-i18n="[placeholder]ext_translate_openai_compatible_user_prompt_placeholder"
                     placeholder='You can use placeholders: {{messageAuthorPersonality}} to fill persona description, {{translateFromLang}} and {{translateToLang}} for selected language pair and {{messageToTranslate}} for message being translated'></textarea>
             </div>
-            <div id="openai_compatible_model">
-                <label data-i18n="ext_translate_openai_compatible_model" for="openai_compatible_model">Model</label>
-                <input id="openai_compatible_model_input" class="text_pole textarea_compact" placeholder="Model name">
-            </div>
-            <div id="openai_compatible_block_size" class="range-block">
-                <div id="openai_compatible_block_size_title" class="range-block-title"
+            <div id="translate_openai_compatible_block_size" class="range-block">
+                <div id="translate_openai_compatible_block_size_title" class="range-block-title"
                     data-i18n="ext_translate_openai_compatible_block_size">
                     Translate block size (characters)
                 </div>
                 <div class="range-block-range-and-counter">
                     <div class="range-block-range">
-                        <input id="openai_compatible_block_size_slider" type="range" name="volume" min="128"
+                        <input id="translate_openai_compatible_block_size_slider" type="range" name="volume" min="128"
                             max="100000" step="1">
                     </div>
                     <div class="range-block-counter" data-randomization-disabled="true">
-                        <input id="openai_compatible_block_size_slider_counter" type="number" min="128" max="100000"
-                            step="1" data-for="openai_compatible_block_size_slider">
+                        <input id="translate_openai_compatible_block_size_slider_counter" type="number" min="128"
+                            max="100000" step="1" data-for="translate_openai_compatible_block_size_slider">
                     </div>
                 </div>
             </div>

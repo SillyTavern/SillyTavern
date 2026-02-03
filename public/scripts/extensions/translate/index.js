@@ -6,6 +6,7 @@ import {
     getRequestHeaders,
     reloadCurrentChat,
     saveSettingsDebounced,
+    settings,
     substituteParams,
     updateMessageBlock,
 } from '../../../script.js';
@@ -39,8 +40,9 @@ const defaultSettings = {
     deepl_endpoint: 'free',
     openai_compatible_system_prompt: '',
     openai_compatible_user_prompt: '',
-    openai_compatible_model: '',
+    openai_compatible_model_override: '',
     openai_compatible_chunk_size: 2000,
+    openai_compatible_endpoint_override: '',
 };
 
 const languageCodes = {
@@ -151,8 +153,8 @@ const languageCodes = {
     'Zulu': 'zu',
 };
 
-const KEY_REQUIRED = ['deepl', 'libre'];
-const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva', 'translate_openai_compatible'];
+const KEY_REQUIRED = ['deepl', 'libre', 'translate_openai_compatible'];
+const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
@@ -162,13 +164,11 @@ function showKeysButton() {
     $('#translate_url_button').toggle(providerOptionalUrl).data('key', extension_settings.translate.provider + '_url');
     $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
     $('#deepl_api_endpoint').toggle(extension_settings.translate.provider === 'deepl');
-    $('#openai_compatible_system_prompt').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#openai_compatible_system_prompt_textarea').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#openai_compatible_user_prompt').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#openai_compatible_user_prompt_textarea').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#openai_compatible_model').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#openai_compatible_model_input').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#openai_compatible_block_size').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
+    $('#translate_openai_compatible_url').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
+    $('#translate_openai_compatible_model').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
+    $('#translate_openai_compatible_system_prompt').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
+    $('#translate_openai_compatible_user_prompt').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
+    $('#translate_openai_compatible_block_size').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
 }
 
 function loadSettings() {
@@ -182,11 +182,12 @@ function loadSettings() {
     $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', 'true');
     $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', 'true');
     $('#deepl_api_endpoint').val(extension_settings.translate.deepl_endpoint).toggle(extension_settings.translate.provider === 'deepl');
-    $('#openai_compatible_system_prompt_textarea').val(extension_settings.translate.openai_compatible_system_prompt);
-    $('#openai_compatible_user_prompt_textarea').val(extension_settings.translate.openai_compatible_user_prompt);
-    $('#openai_compatible_model_input').val(extension_settings.translate.openai_compatible_model);
-    $('#openai_compatible_block_size_slider').val(extension_settings.translate.openai_compatible_chunk_size);
-    $('#openai_compatible_block_size_slider_counter').val(extension_settings.translate.openai_compatible_chunk_size);
+    $('#translate_openai_compatible_url_input').val(extension_settings.translate.openai_compatible_endpoint_override);
+    $('#translate_openai_compatible_model_input').val(extension_settings.translate.openai_compatible_model_override);
+    $('#translate_openai_compatible_system_prompt_textarea').val(extension_settings.translate.openai_compatible_system_prompt);
+    $('#translate_openai_compatible_user_prompt_textarea').val(extension_settings.translate.openai_compatible_user_prompt);
+    $('#translate_openai_compatible_block_size_slider').val(extension_settings.translate.openai_compatible_chunk_size);
+    $('#translate_openai_compatible_block_size_slider_counter').val(extension_settings.translate.openai_compatible_chunk_size);
     showKeysButton();
 }
 
@@ -489,10 +490,13 @@ async function translateProviderOpenAICompatible(text, lang) {
         },
     );
 
+    const openAIUrl = extension_settings.translate.openai_compatible_endpoint_override || settings.oai_settings.custom_url;
+    const model = extension_settings.translate.openai_compatible_model_override || settings.oai_settings.custom_model;
+
     const response = await fetch('/api/translate/openai_compatible', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ model: extension_settings.translate.openai_compatible_model, system_prompt: systemPrompt, user_prompt: userPrompt }),
+        body: JSON.stringify({ endpoint: openAIUrl, model: model, system_prompt: systemPrompt, user_prompt: userPrompt }),
     });
 
     if (response.ok) {
@@ -831,41 +835,48 @@ jQuery(async () => {
         extension_settings.translate.deepl_endpoint = event.target.value;
         saveSettingsDebounced();
     });
-    $('#openai_compatible_system_prompt_textarea').on('change', (event) => {
+    $('#translate_openai_compatible_url_input').on('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_endpoint_override = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_model_input').on('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_model_override = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_system_prompt_textarea').on('change', (event) => {
         if (!(event.target instanceof HTMLTextAreaElement)) {
             return;
         }
         extension_settings.translate.openai_compatible_system_prompt = event.target.value;
         saveSettingsDebounced();
     });
-    $('#openai_compatible_user_prompt_textarea').on('change', (event) => {
+    $('#translate_openai_compatible_user_prompt_textarea').on('change', (event) => {
         if (!(event.target instanceof HTMLTextAreaElement)) {
             return;
         }
         extension_settings.translate.openai_compatible_user_prompt = event.target.value;
         saveSettingsDebounced();
     });
-    $('#openai_compatible_model_input').on('change', (event) => {
+    $('#translate_openai_compatible_block_size_slider').on('input', (event) => {
         if (!(event.target instanceof HTMLInputElement)) {
             return;
         }
-        extension_settings.translate.openai_compatible_model = event.target.value;
-        saveSettingsDebounced();
+        $('#translate_openai_compatible_block_size_slider_counter').val(event.target.value);
     });
-    $('#openai_compatible_block_size_slider').on('input', (event) => {
-        if (!(event.target instanceof HTMLInputElement)) {
-            return;
-        }
-        $('#openai_compatible_block_size_slider_counter').val(event.target.value);
-    });
-    $('#openai_compatible_block_size_slider').on('change', (event) => {
+    $('#translate_openai_compatible_block_size_slider').on('change', (event) => {
         if (!(event.target instanceof HTMLInputElement)) {
             return;
         }
         extension_settings.translate.openai_compatible_chunk_size = event.target.value;
         saveSettingsDebounced();
     });
-    $('#openai_compatible_block_size_slider_counter').on('change', (event) => {
+    $('#translate_openai_compatible_block_size_slider_counter').on('change', (event) => {
         if (!(event.target instanceof HTMLInputElement)) {
             return;
         }
