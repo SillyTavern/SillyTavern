@@ -278,7 +278,7 @@ export function buildVariableShorthandOptions(context, opts = {}) {
 
     // If typing value (after = or +=), no autocomplete needed - freeform text
     // But we show the current context for reference (greyed out, non-selectable)
-    if (context.isTypingValue && !context.isTypingOperator) {
+    if (context.isTypingValue && !context.isTypingOperator && !context.isTypingClosingBrace) {
         // Show the current variable name as context (non-selectable)
         const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
         varNameOption.valueProvider = () => ''; // Context only

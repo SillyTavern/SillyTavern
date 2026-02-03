@@ -1258,8 +1258,8 @@ export function parseMacroContext(macroText, cursorOffset) {
             flags.push(char);
             i++;
             flagEndPositions.push(i); // Position right after this flag
-            // Skip whitespace between flags
-            while (i < macroText.length && /\s/.test(macroText[i])) {
+            // Skip whitespace between flags (but NOT newlines - those stop macro parsing for autocomplete)
+            while (i < macroText.length && /[ \t]/.test(macroText[i])) {
                 i++;
             }
         } else {
