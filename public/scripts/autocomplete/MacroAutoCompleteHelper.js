@@ -600,7 +600,17 @@ export function findMacroAtCursor(text, cursorPos) {
     // Search backwards for opening {{ while tracking nesting depth for nested macros
     let openPos = -1;
     let depth = 0;
-    for (let i = cursorPos - 1; i >= 0; i--) {
+
+    // If cursor is right after }}, those are the closing braces of the macro we're looking for,
+    // not nested braces. Skip them by starting the search before them.
+    let searchStart = cursorPos - 1;
+    let cursorAfterClosingBraces = false;
+    if (cursorPos >= 2 && text[cursorPos - 1] === '}' && text[cursorPos - 2] === '}') {
+        searchStart = cursorPos - 3; // Start before the }}
+        cursorAfterClosingBraces = true;
+    }
+
+    for (let i = searchStart; i >= 0; i--) {
         if (text[i] === '}' && i > 0 && text[i - 1] === '}') {
             // Found }}, going backwards means we're entering a nested macro
             depth++;
@@ -624,29 +634,35 @@ export function findMacroAtCursor(text, cursorPos) {
 
     // Search forwards for closing }} while tracking nesting depth
     let closePos = -1;
-    depth = 0;
-    for (let i = cursorPos; i < text.length - 1; i++) {
-        if (text[i] === '{' && text[i + 1] === '{') {
-            // Found {{, entering a nested macro
-            depth++;
-            i++; // Skip the other brace
-            continue;
-        }
-        if (text[i] === '}' && text[i + 1] === '}') {
-            if (depth > 0) {
-                // This }} closes a nested macro
-                depth--;
+
+    // If cursor is right after }}, we already know where the closing braces are
+    if (cursorAfterClosingBraces) {
+        closePos = cursorPos;
+    } else {
+        depth = 0;
+        for (let i = cursorPos; i < text.length - 1; i++) {
+            if (text[i] === '{' && text[i + 1] === '{') {
+                // Found {{, entering a nested macro
+                depth++;
                 i++; // Skip the other brace
                 continue;
             }
-            // Found our closing }} at depth 0
-            closePos = i + 2;
-            break;
+            if (text[i] === '}' && text[i + 1] === '}') {
+                if (depth > 0) {
+                    // This }} closes a nested macro
+                    depth--;
+                    i++; // Skip the other brace
+                    continue;
+                }
+                // Found our closing }} at depth 0
+                closePos = i + 2;
+                break;
+            }
         }
-    }
 
-    if (closePos === -1) {
-        closePos = text.length;
+        if (closePos === -1) {
+            closePos = text.length;
+        }
     }
 
     const hasClosingBraces = closePos <= text.length && text.slice(closePos - 2, closePos) === '}}';

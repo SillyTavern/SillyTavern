@@ -1505,11 +1505,13 @@ export function parseMacroContext(macroText, cursorOffset) {
             j++;
         }
     }
-    // Push the last part - use correct end position if we broke early,
-    // but only if we are actually inside that part, otherwise we do not count this as if we are in the macro.
-    // This filters out things where linebreaks inside a macro should not extend what we consider as this macro while typing.
+    // Push the last part - use correct end position if we broke early.
+    // If we broke early (at a newline) AND cursor is past that point, don't push -
+    // this filters out text on the next line from being considered part of this macro.
+    // But if we didn't break early (cursor at end of closed macro), always push.
     const lastPartEnd = brokeEarly ? i + j : macroText.length;
-    if (cursorOffset <= lastPartEnd) {
+    const shouldPushLastPart = !brokeEarly || cursorOffset <= lastPartEnd;
+    if (shouldPushLastPart) {
         parts.push({ text: currentPart, start: partStart, end: lastPartEnd });
     }
 
