@@ -64,7 +64,7 @@
         <div id="a11y-header" tabindex="-1"></div>
         <input type="file" id="a11y-file-input" class="sr-only" tabIndex="-1">
         <div id="a11y-content"></div>
-        <div id="a11y-footer">Esc: Back | Tab: Navigate | Enter: Action | H: Jump Messages</div>
+        <div id="a11y-footer">Esc: Back | Tab: Navigate | Enter: Action</div>
     `;
     doc.body.appendChild(overlay);
 
@@ -268,7 +268,7 @@
             const routes = [
                 { t: "Character List", a: () => this.navigateTo('CHARS') },
                 { t: "API Connections", a: () => this.navigateTo('API') },
-                { t: "Generation Settings & Presets", a: () => this.navigateTo('PRESET') }
+                { t: "Presets", a: () => this.navigateTo('PRESET') }
             ];
 
             routes.forEach(i => {
@@ -293,6 +293,42 @@
         },
 
         renderApiMenu(/** @type {HTMLElement} */ container) {
+            // 1. Connection Profiles Section
+            const cpBlock = doc.getElementById('rm_api_block');
+            if (cpBlock) {
+                const cpSection = doc.createElement('div');
+                this.createSectionHeader(cpSection, "Connection Profiles");
+                
+                // Profile Select
+                const profSelect = /** @type {HTMLSelectElement} */ (doc.getElementById('connection_profiles'));
+                if (profSelect) {
+                    this.createA11yControl(cpSection, profSelect);
+                }
+
+                // Profile Actions
+                const actionDiv = doc.createElement('div');
+                actionDiv.className = 'a11y-grid';
+                const actions = [
+                    { id: 'create_connection_profile', label: "New Profile" },
+                    { id: 'update_connection_profile', label: "Update" },
+                    { id: 'edit_connection_profile', label: "Edit" },
+                    { id: 'delete_connection_profile', label: "Delete", danger: true }
+                ];
+                actions.forEach(a => {
+                    const btn = doc.getElementById(a.id);
+                    if (btn && w.getComputedStyle(btn).display !== 'none') {
+                        const b = doc.createElement('button');
+                        b.className = `a11y-btn ${a.danger ? 'a11y-btn-danger' : ''}`;
+                        b.innerText = a.label;
+                        b.onclick = () => btn.click();
+                        actionDiv.appendChild(b);
+                    }
+                });
+                cpSection.appendChild(actionDiv);
+                container.appendChild(cpSection);
+            }
+
+            // 2. Main API Selection
             const mainSelect = /** @type {HTMLSelectElement} */ (doc.getElementById('main_api'));
             if (!mainSelect) return;
 
@@ -306,9 +342,35 @@
                 const target = /** @type {HTMLSelectElement} */ (e.target);
                 if (w.$) w.$(mainSelect).val(target.value).trigger('change');
                 else { mainSelect.value = target.value; mainSelect.dispatchEvent(new Event('change')); }
-                setTimeout(() => this.navigateTo('API'), 500);
+                
+                // Re-render settings after slight delay to allow ST to update DOM
+                setTimeout(() => this.renderApiSettings(settingsContainer), 100);
             };
             container.appendChild(a11yMain);
+
+            // 3. API Settings Container
+            const settingsContainer = doc.createElement('div');
+            container.appendChild(settingsContainer);
+            this.renderApiSettings(settingsContainer);
+
+            // 4. Global Settings (Auto-connect, etc.)
+            const globalSection = doc.createElement('div');
+            globalSection.className = 'a11y-section';
+            this.createSectionHeader(globalSection, "Global API Settings");
+            
+            const autoConnect = /** @type {HTMLInputElement} */ (doc.getElementById('auto-connect-checkbox'));
+            if (autoConnect) {
+                this.createA11yControl(globalSection, autoConnect);
+            }
+            container.appendChild(globalSection);
+
+            this.addBackButton(container, 'MENU');
+        },
+
+        renderApiSettings(/** @type {HTMLElement} */ container) {
+            container.innerHTML = ''; // Clear previous settings
+            const mainSelect = /** @type {HTMLSelectElement} */ (doc.getElementById('main_api'));
+            if (!mainSelect) return;
 
             const apiMap = { 'kobold': 'kobold_api', 'koboldhorde': 'kobold_horde', 'novel': 'novel_api', 'textgenerationwebui': 'textgenerationwebui_api', 'openai': 'openai_api' };
             const targetId = apiMap[mainSelect.value];
@@ -316,30 +378,50 @@
 
             if (targetContainer) {
                 this.createA11yLabel(container, "API Parameters");
-                const inputs = /** @type {NodeListOf<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>} */ (targetContainer.querySelectorAll('select, input:not([type="hidden"]), textarea'));
-                inputs.forEach(el => {
-                    if (!this.isElementVisibleInOriginal(el, targetContainer)) return;
-                    if (el.classList.contains('manage-api-keys') || el.id === 'main_api' || el.type === 'file') return;
-                    this.createA11yControl(container, el);
-                });
+                
+                // We need to re-harvest inputs every time because inner sections (like custom endpoint block) show/hide
+                this.harvestInputs(targetContainer, container);
 
+                // Add Actions (Connect, etc.)
                 const actionDiv = doc.createElement('div');
                 actionDiv.className = 'a11y-grid';
-
-                // Connect/Save buttons
+                
                 targetContainer.querySelectorAll('.api_button, #test_api_button, .openrouter_authorize, #horde_api_key_button').forEach(btn => {
                     const htmlBtn = /** @type {HTMLElement} */ (btn);
-                    const text = htmlBtn.innerText.trim() || htmlBtn.getAttribute('title') || "Connect";
-                    if (htmlBtn.style.display === 'none') return;
+                    
+                    // Force visibility check: sometimes ST hides buttons using opacity or other means
+                    const style = w.getComputedStyle(htmlBtn);
+                    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return;
+
+                    const text = htmlBtn.innerText.trim() || htmlBtn.getAttribute('title') || "Action";
                     const b = doc.createElement('button');
                     b.className = 'a11y-btn a11y-btn-action';
                     b.innerText = text;
+                    b.title = htmlBtn.getAttribute('title') || '';
                     b.onclick = () => { if (w.$) w.$(htmlBtn).trigger('click'); else htmlBtn.click(); };
                     actionDiv.appendChild(b);
                 });
                 container.appendChild(actionDiv);
+
+                // SPECIAL HANDLING: DYNAMIC RE-RENDER LISTENERS
+                // If this API has a "Source" selector (like Chat Completion Source), listens to it
+                // We find the 'driver' select elements
+                const drivers = targetContainer.querySelectorAll('select#chat_completion_source, select#textgen_type');
+                drivers.forEach(d => {
+                    // Check if we already attached a listener? Hard to track. 
+                    // Instead, we attach a one-time listener that re-renders this entire block.
+                    // Actually, since `harvestInputs` creates NEW a11y controls, we need to find the CORRESPONDING a11y control 
+                    // and attach the 'renderSettings' trigger to IT, not the original (which is hidden).
+                    
+                    const a11yDriverId = 'a11y_ctrl_' + (d.id || '');
+                    const a11yDriver = container.querySelector('#' + a11yDriverId);
+                    if (a11yDriver) {
+                        a11yDriver.addEventListener('change', () => {
+                             setTimeout(() => this.renderApiSettings(container), 100);
+                        });
+                    }
+                });
             }
-            this.addBackButton(container, 'MENU');
         },
 
         renderPresetMenu(/** @type {HTMLElement} */ container) {
@@ -571,22 +653,61 @@
         },
 
         renderChatInterface(/** @type {HTMLElement} */ container) {
-            const history = doc.createElement('div');
+            // Live Region for Typing
+            const liveRegion = doc.createElement('div');
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            liveRegion.className = 'sr-only';
+            container.appendChild(liveRegion);
+
+            // Chat List Container (Semantic List)
+            const history = doc.createElement('ol');
             history.id = 'a11y-chat-log';
-            history.setAttribute('role', 'log');
+            history.setAttribute('role', 'list'); // Explicit semantics
             history.setAttribute('aria-label', 'Chat Messages');
             history.style.flex = '1';
             history.style.overflowY = 'auto';
             history.style.border = '1px solid #333';
             history.style.padding = '10px';
-            history.tabIndex = 0;
+            history.style.listStyle = 'none'; // Visual cleanup
+            history.style.margin = '0';
+            history.tabIndex = 0; // The container is focusable initially
             container.appendChild(history);
+
+            // Roving Tabindex Logic
+            let focusedIndex = -1;
+            
+            history.addEventListener('keydown', (e) => {
+                const items = history.querySelectorAll('li[role="listitem"]');
+                if (!items.length) return;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
+                    /** @type {HTMLElement} */(items[focusedIndex]).focus();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    focusedIndex = Math.max(focusedIndex - 1, 0);
+                    /** @type {HTMLElement} */(items[focusedIndex]).focus();
+                }
+            });
 
             const updateChat = () => {
                 const msgs = Array.from(doc.querySelectorAll('#chat .mes[mesid]:not(.displayNone)'))
                     .filter(m => !m.closest('.welcomePanel'));
-                history.innerHTML = '';
-                msgs.forEach(m => {
+                
+                history.innerHTML = ''; // Clear for full re-render (simplest approach for sync)
+                
+                // Typing Indicator Check
+                const isTyping = doc.querySelector('.typing_indicator') || doc.querySelector('#chat .fa-spinner');
+                if (isTyping) {
+                    liveRegion.innerText = "AI is typing...";
+                } else {
+                    liveRegion.innerText = "";
+                }
+
+                const total = msgs.length;
+                msgs.forEach((m, index) => {
                     const mesId = m.getAttribute('mesid');
                     const nameEl = m.querySelector('.name_text');
                     const name = nameEl ? nameEl.textContent : "System";
@@ -594,27 +715,47 @@
                     const textEl = /** @type {HTMLElement} */ (m.querySelector('.mes_text'));
                     const reasoningEl = m.querySelector('.mes_reasoning');
                     const reasoning = reasoningEl ? reasoningEl.textContent : "";
+                    
+                    // Timestamp Logic
+                    let timeText = "";
+                    const timestampAttr = m.getAttribute('timestamp');
+                    if (timestampAttr) {
+                        timeText = ` at ${new Date(Number(timestampAttr)).toLocaleTimeString()}`;
+                    } else {
+                        // Fallback: try to find date in DOM if rendered
+                        const dateEl = m.querySelector('.mes_date');
+                        if (dateEl) timeText = ` at ${dateEl.textContent}`;
+                    }
 
-                    const article = doc.createElement('article');
-                    article.className = 'a11y-msg-container';
-                    article.setAttribute('aria-labelledby', `msg-label-${mesId}`);
+                    // Semantic List Item
+                    const li = doc.createElement('li');
+                    li.className = 'a11y-msg-container';
+                    li.setAttribute('role', 'listitem');
+                    li.tabIndex = -1; // Not focusable by tab, only programmatic
+                    
+                    // Accessible Labeling
+                    const labelId = `msg-label-${mesId}`;
+                    li.setAttribute('aria-labelledby', labelId);
 
+                    // Hidden Label for Screen Readers (Floor, Sender, Time)
                     const h = doc.createElement('h3');
-                    h.id = `msg-label-${mesId}`;
+                    h.id = labelId;
                     h.className = 'sr-only';
-                    h.innerText = `${isUser ? 'You' : name} said:`;
-                    article.appendChild(h);
+                    // Format: "Message 5 of 20. You said at 10:30 PM:"
+                    h.innerText = `Message ${index + 1} of ${total}. ${isUser ? 'You' : name} said${timeText}:`;
+                    li.appendChild(h);
 
+                    // Visual Name (Hidden from SR as it is in the Label)
                     const nameDisplay = doc.createElement('span');
                     nameDisplay.className = 'a11y-msg-name';
-                    nameDisplay.setAttribute('aria-hidden', 'true');
+                    nameDisplay.setAttribute('aria-hidden', 'true'); 
                     nameDisplay.innerText = name || "Unknown";
-                    article.appendChild(nameDisplay);
+                    li.appendChild(nameDisplay);
 
                     if (reasoning && reasoning.trim()) {
                         const details = doc.createElement('details');
                         details.innerHTML = `<summary>View Thought Process</summary><div class="a11y-msg-reasoning">${reasoning}</div>`;
-                        article.appendChild(details);
+                        li.appendChild(details);
                     }
 
                     const body = doc.createElement('div');
@@ -624,7 +765,7 @@
                         clone.querySelectorAll('button, .qr--list, .mes_buttons, i').forEach(ui => ui.remove());
                         body.innerText = clone.innerText.trim();
                     }
-                    article.appendChild(body);
+                    li.appendChild(body);
 
                     // Swipes
                     const swipeLeft = /** @type {HTMLElement} */ (m.querySelector('.swipe_left'));
@@ -635,7 +776,6 @@
 
                         const nav = doc.createElement('nav');
                         nav.className = 'a11y-msg-nav';
-                        // Try to find counter in DOM
                         const counter = m.querySelector('.swipes-counter')?.textContent || "Swipes";
                         nav.innerHTML = `<span>${counter}</span>`;
 
@@ -651,18 +791,23 @@
 
                         nav.appendChild(bL);
                         nav.appendChild(bR);
-                        article.appendChild(nav);
+                        li.appendChild(nav);
                     }
 
-                    history.appendChild(article);
+                    history.appendChild(li);
                 });
+
+                // Auto-scroll or maintain focus position
                 history.scrollTop = history.scrollHeight;
+                
+                // Update focusable items list
+                focusedIndex = msgs.length - 1; // Default to last item
             };
 
             const realChat = doc.getElementById('chat');
             if (realChat) {
                 this.chatObserver = new MutationObserver(updateChat);
-                this.chatObserver.observe(realChat, { childList: true, subtree: true, attributes: true, attributeFilter: ['mesid'] });
+                this.chatObserver.observe(realChat, { childList: true, subtree: true, attributes: true, attributeFilter: ['mesid', 'class'] });
             }
             updateChat();
 
@@ -999,8 +1144,6 @@
             }
 
             // 3. Fallback: Check for immediate parent headers (Standard Logic)
-            // This is crucial for inputs without labels but inside a named block (e.g. Context Length)
-            // We do this BEFORE Generic Check to avoid skipping local headers for empty text
             if (!text) {
                 let p = el.parentElement;
                 for (let i = 0; i < 3; i++) {
@@ -1009,16 +1152,26 @@
                     // If this is a wrapper for a setting (often has span or b)
                     const labelCandidate = /** @type {HTMLElement} */ (p.querySelector('span[data-i18n], b[data-i18n], small[data-i18n]'));
                     if (labelCandidate && labelCandidate !== el && !labelCandidate.closest('.fa-circle-info')) {
+                        // Check if candidate is likely a warning or description
+                        const isWarning = labelCandidate.classList.contains('neutral_warning') || labelCandidate.closest('.neutral_warning') || labelCandidate.closest('.reverse_proxy_warning');
+                        const isDesc = labelCandidate.closest('.toggle-description');
+                        
+                        // Strict check: if the text is long and looks like a sentence, it's probably not a label (heuristic)
                         const candidateText = labelCandidate.innerText?.trim();
-                        if (candidateText) {
-                            text = candidateText;
-                            break;
+                        const isLong = candidateText && candidateText.length > 61; // "Doesn't work? Try adding /v1 at the end!" is ~40-50 chars, let's be safe
+                        const isHelpText = candidateText && (candidateText.includes('?') || candidateText.includes('Try adding'));
+
+                        if (!isWarning && !isDesc && !isLong && !isHelpText) {
+                            if (candidateText) {
+                                text = candidateText;
+                                break;
+                            }
                         }
                     }
 
                     // Look for headers (range-block-title) in immediate vicinity
                     const h = p.querySelector('h4, small, b, .range-block-title');
-                    if (h && !h.closest('.toggle-description')) {
+                    if (h && !h.closest('.toggle-description') && !h.closest('.neutral_warning')) {
                         const hText = /** @type {HTMLElement} */(h).innerText?.trim().split('\n')[0];
                         if (hText && hText.length > 1) {
                             text = hText;
