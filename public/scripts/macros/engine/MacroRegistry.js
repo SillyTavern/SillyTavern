@@ -200,11 +200,6 @@ class MacroRegistry {
         name = typeof name === 'string' ? name.trim() : String(name);
 
         try {
-            const nameKey = name.toLowerCase();
-            if (this.#macros.has(nameKey)) {
-                logMacroRegisterWarning({ macroName: name, message: `Macro "${name}" is already registered and will be overwritten.` });
-            }
-
             // Detect extension/third-party status from call stack
             const { isExtension, isThirdParty, source } = detectMacroSource();
 
@@ -213,22 +208,12 @@ class MacroRegistry {
                 source: { name: source, isExtension, isThirdParty },
             });
 
-            this.#macros.set(nameKey, definition);
+            // Register the primary macro
+            this.#registerMacroEntry(name, definition);
 
             // Register alias entries pointing to the same definition
             for (const { alias, visible } of definition.aliases) {
-                const aliasKey = alias.toLowerCase();
-                if (this.#macros.has(aliasKey)) {
-                    logMacroRegisterWarning({ macroName: name, message: `Alias "${alias}" for macro "${name}" overwrites an existing macro.` });
-                }
-                /** @type {MacroDefinition} */
-                const aliasEntry = {
-                    ...definition,
-                    name: alias, // The lookup name is the alias (preserves original casing for display)
-                    aliasOf: name,
-                    aliasVisible: visible,
-                };
-                this.#macros.set(aliasKey, aliasEntry);
+                this.#registerMacroEntry(alias, definition, { primaryMacroName: name, aliasVisible: visible });
             }
 
             return definition;
@@ -240,6 +225,97 @@ class MacroRegistry {
             });
             return null;
         }
+    }
+
+    /**
+     * Registers an alias for an existing macro.
+     * The alias will point to the same handler and metadata as the original macro.
+     * Errors during registration are caught and logged, the alias will not be registered, and the function returns false.
+     *
+     * @param {string} targetMacroName - The name of the existing macro to create an alias for.
+     * @param {string} aliasName - The alias name (identifier).
+     * @param {Object} [options] - Alias registration options.
+     * @param {boolean} [options.visible=true] - Whether this alias appears in documentation/autocomplete.
+     * @returns {boolean} True if the alias was registered successfully, false if registration failed.
+     */
+    registerMacroAlias(targetMacroName, aliasName, { visible = true } = {}) {
+        // Extract names early for error logging
+        targetMacroName = typeof targetMacroName === 'string' ? targetMacroName.trim() : String(targetMacroName);
+        aliasName = typeof aliasName === 'string' ? aliasName.trim() : String(aliasName);
+
+        try {
+            // Validate alias name
+            if (!isIdentifierValid(aliasName)) {
+                throw new Error(`Alias name "${aliasName}" is invalid. Must start with a letter, followed by alphanumeric characters or hyphens.`);
+            }
+
+            // Check that alias is not the same as target (case insensitive)
+            if (aliasName.toLowerCase() === targetMacroName.toLowerCase()) {
+                throw new Error(`Alias name "${aliasName}" cannot be the same as the target macro name (case insensitive).`);
+            }
+
+            // Check that target macro exists
+            const targetDefinition = this.getMacro(targetMacroName);
+            if (!targetDefinition) {
+                throw new Error(`Target macro "${targetMacroName}" is not registered.`);
+            }
+
+            // Get the primary definition (in case target is itself an alias)
+            const primaryDefinition = targetDefinition.aliasOf ? this.getMacro(targetDefinition.aliasOf) : targetDefinition;
+            if (!primaryDefinition) {
+                throw new Error(`Could not resolve primary definition for target macro "${targetMacroName}".`);
+            }
+
+            // Detect extension/third-party status from call stack
+            const { isExtension, isThirdParty, source } = detectMacroSource();
+
+            // Create alias definition with source detection
+            const aliasDefinition = {
+                ...primaryDefinition,
+                source: { name: source, isExtension, isThirdParty },
+            };
+
+            // Register the alias using the shared utility
+            this.#registerMacroEntry(aliasName, aliasDefinition, { primaryMacroName: primaryDefinition.name, aliasVisible: visible });
+
+            return true;
+        } catch (error) {
+            logMacroRegisterError({
+                message: `Failed to register alias "${aliasName}" for macro "${targetMacroName}". The alias will not be available.`,
+                macroName: aliasName,
+                error,
+            });
+            return false;
+        }
+    }
+
+    /**
+     * Shared utility for registering macro entries (primary or alias).
+     *
+     * @param {string} name - The registration name (primary macro or alias).
+     * @param {MacroDefinition} definition - The definition to register.
+     * @param {Object} [options={}] - Options for alias registration.
+     * @param {string} [options.primaryMacroName=null] - For aliases, the primary macro name.
+     * @param {boolean} [options.aliasVisible=null] - For aliases, visibility flag.
+     */
+    #registerMacroEntry(name, definition, { primaryMacroName = null, aliasVisible = null } = {}) {
+        const nameKey = name.toLowerCase();
+
+        if (this.#macros.has(nameKey)) {
+            const warningType = primaryMacroName ? `Alias "${name}" for macro "${primaryMacroName}"` : `Macro "${name}"`;
+            const warningMessage = primaryMacroName ? 'overwrites an existing macro.' : 'is already registered and will be overwritten.';
+            logMacroRegisterWarning({ macroName: primaryMacroName || name, message: `${warningType} ${warningMessage}` });
+        }
+
+        /** @type {MacroDefinition} */
+        const entry = primaryMacroName ? {
+            ...definition,
+            name: name, // The lookup name is the alias (preserves original casing for display)
+            aliasOf: primaryMacroName,
+            aliasVisible: aliasVisible,
+        } : definition;
+
+        this.#macros.set(nameKey, entry);
     }
 
     /**

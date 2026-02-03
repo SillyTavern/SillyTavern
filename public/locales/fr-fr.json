@@ -290,6 +290,8 @@
     "View Remaining Credits": "Afficher les crédits restants",
     "OpenRouter Model": "Modèle OpenRouter",
     "Model Providers": "Fournisseurs de modèles",
+    "Model Quantizations": "Quantifications du modèle",
+    "Select quantizations. No selection = all quantizations.": "Sélectionnez les quantifications. Aucune sélection = toutes les quantifications.",
     "InfermaticAI API Key": "Clé API InfermaticAI",
     "InfermaticAI Model": "Modèle InfermaticAI",
     "DreamGen API key": "Clé API DreamGen",

@@ -4,7 +4,8 @@ import path from 'node:path';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { dimensions, invalidateThumbnail } from './thumbnails.js';
+import { invalidateThumbnail } from './thumbnails.js';
+import { thumbnailDimensions } from './image-metadata.js';
 import { getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
@@ -12,7 +13,7 @@ export const router = express.Router();
 
 router.post('/all', function (request, response) {
     const images = getImages(request.user.directories.backgrounds);
-    const config = { width: dimensions.bg[0], height: dimensions.bg[1] };
+    const config = { width: thumbnailDimensions.bg[0], height: thumbnailDimensions.bg[1] };
     response.json({ images, config });
 });
 

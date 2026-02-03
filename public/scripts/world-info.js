@@ -2844,6 +2844,7 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
     const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
     const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
     input.data('uid', entry.uid);
+    input[0].dataset.macros = ''; // active
     input.on('click', function (event) {
         event.stopPropagation();
     });
@@ -3579,6 +3580,7 @@ export async function getWorldEntry(name, data, entry) {
         const contentInput = editTemplate.find('textarea[name="content"]');
         contentInput.data('uid', entry.uid);
         contentInput.attr('id', contentInputId);
+        contentInput[0].dataset.macros = ''; // active
         contentInput.on('input', async function (_, { skipCount, noSave } = {}) {
             const uid = $(this).data('uid');
             const value = $(this).val();

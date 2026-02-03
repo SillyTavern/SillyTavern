@@ -1,3 +1,4 @@
+/* eslint-disable dot-notation */
 import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
@@ -78,7 +79,7 @@ const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
 const API_AIMLAPI = 'https://api.aimlapi.com/v1';
-const API_POLLINATIONS = 'https://text.pollinations.ai/openai';
+const API_POLLINATIONS = 'https://gen.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
@@ -1689,8 +1690,8 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
             headers = { ...AIMLAPI_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
-            apiUrl = 'https://text.pollinations.ai';
-            apiKey = 'NONE';
+            apiUrl = 'https://gen.pollinations.ai/text';
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
@@ -2096,6 +2097,11 @@ router.post('/generate', async function (request, response) {
                 };
             }
 
+            if (Array.isArray(request.body.quantizations) && request.body.quantizations.length > 0) {
+                bodyParams['provider'] ??= {};
+                bodyParams['provider']['quantizations'] = request.body.quantizations;
+            }
+
             if (request.body.use_fallback) {
                 bodyParams['route'] = 'fallback';
             }
@@ -2243,24 +2249,29 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             apiUrl = API_POLLINATIONS;
-            apiKey = 'NONE';
-            headers = {
-                'Authorization': '',
-            };
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+            headers = {};
             bodyParams = {
                 reasoning_effort: request.body.reasoning_effort,
-                private: true,
-                referrer: 'sillytavern',
                 seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
             };
             if (request.body.json_schema) {
-                setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+                bodyParams['response_format'] = {
+                    type: 'json_schema',
+                    json_schema: {
+                        schema: request.body.json_schema.value,
+                    },
+                };
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
             headers = {};
-            bodyParams = {};
+            bodyParams = {
+                thinking: {
+                    type: request.body.include_reasoning ? 'enabled' : 'disabled',
+                },
+            };
             request.body.json_schema
                 ? setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema)
                 : addAssistantPrefix(request.body.messages, [], 'partial');
@@ -2433,7 +2444,7 @@ const multimodalModels = express.Router();
 
 multimodalModels.post('/pollinations', async (_req, res) => {
     try {
-        const response = await fetch('https://text.pollinations.ai/models');
+        const response = await fetch('https://gen.pollinations.ai/models');
 
         if (!response.ok) {
             return res.json([]);
@@ -2446,7 +2457,10 @@ multimodalModels.post('/pollinations', async (_req, res) => {
             return res.json([]);
         }
 
-        const multimodalModels = data.filter(m => m?.vision).map(m => m.name);
+        const multimodalModels = data
+            .filter(m => Array.isArray(m?.input_modalities))
+            .filter(m => m.input_modalities.includes('image'))
+            .map(m => m.name);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
@@ -2603,6 +2617,35 @@ multimodalModels.post('/xai', async (req, res) => {
             // The endpoint says it doesn't support images, but it does
             multimodalModels.push('grok-4-0709');
         }
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/moonshot', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.MOONSHOT);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://api.moonshot.ai/v1/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        const multimodalModels = data.data.filter(m => m.supports_image_in).map(m => m.id);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
