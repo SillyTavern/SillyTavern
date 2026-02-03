@@ -333,6 +333,49 @@ export function buildVariableShorthandOptions(context, opts = {}) {
         }
     }
 
+    // If typing closing brace on a variable shorthand (without operator), show the current state
+    // This handles cases like {{.Lila} or {{.Lila}}| where we want to show what was typed
+    if (context.isTypingClosingBrace && !context.isOperatorComplete && !context.isTypingOperator && !context.isTypingValue) {
+        // Show the current variable name as context (non-selectable)
+        const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+        varNameOption.valueProvider = () => ''; // Context only
+        varNameOption.makeSelectable = false;
+        varNameOption.sortPriority = 2;
+        varNameOption.matchProvider = () => true; // Always show
+        options.push(varNameOption);
+    }
+
+    // If typing closing brace after a value operator (like {{.Lila+=4}} or {{.Lila+=4}),
+    // show the full context (variable + operator + value)
+    if (context.isTypingClosingBrace && context.variableOperator && context.isTypingValue) {
+        // Show the current variable name as context (non-selectable)
+        const varNameOption = new VariableNameAutoCompleteOption(context.variableName, scope, false);
+        varNameOption.valueProvider = () => ''; // Context only
+        varNameOption.makeSelectable = false;
+        varNameOption.sortPriority = 2;
+        varNameOption.matchProvider = () => true; // Always show
+        options.push(varNameOption);
+
+        // Show the operator that was used (non-selectable)
+        const opDef = VariableOperatorDefinitions.get(context.variableOperator);
+        if (opDef) {
+            const opOption = new VariableOperatorAutoCompleteOption(opDef);
+            opOption.valueProvider = () => ''; // Already typed
+            opOption.makeSelectable = false;
+            opOption.sortPriority = 3;
+            opOption.matchProvider = () => true; // Always show
+            options.push(opOption);
+
+            // Show value context info (non-selectable)
+            const valueOption = new VariableValueContextAutoCompleteOption(opDef, context.variableValue);
+            valueOption.valueProvider = () => ''; // Context only
+            valueOption.makeSelectable = false;
+            valueOption.sortPriority = 4;
+            valueOption.matchProvider = () => true; // Always show
+            options.push(valueOption);
+        }
+    }
+
     return options;
 }
 
@@ -952,7 +995,7 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
             resultIdentifier = context.invalidTrailingChars || '';
             // Use actual variableNameEnd position from parsing
             resultStart = macro.start + 2 + context.variableNameEnd;
-        } else if (context.isTypingValue) {
+        } else if (context.isTypingValue && !context.isTypingClosingBrace) {
             // Typing value: identifier = value being typed, start = after operator
             resultIdentifier = context.variableValue;
             // Use actual operatorEnd position from parsing (accounts for whitespace)
@@ -964,6 +1007,10 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
 
             makeNoMatchText = () => `Type any value you want to ${context.variableOperator == '+=' ? `add to the variable '${context.variableName}'` : `set the variable '${context.variableName}' to`}.`;
             makeNoOptionsText = () => 'Enter a variable value';
+        } else if (context.isTypingClosingBrace) {
+            // Typing closing brace on variable shorthand - show context, no replacement needed
+            resultIdentifier = '';
+            resultStart = cursorPos;
         } else {
             // Fallback: use variable name
             resultIdentifier = context.variableName;

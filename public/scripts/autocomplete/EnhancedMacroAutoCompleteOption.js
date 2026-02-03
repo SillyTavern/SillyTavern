@@ -1388,15 +1388,49 @@ export function parseMacroContext(macroText, cursorOffset) {
         const operatorNeedsValue = operatorDef?.needsValue ?? false;
 
         // If operator requires a value, parse the value
+        // Do this BEFORE isTypingClosingBrace detection so we can check for } in value area
+        // let valueStartPos = i;
         if (operatorNeedsValue) {
             // Skip whitespace after operator
             while (i < macroText.length && /\s/.test(macroText[i])) {
                 i++;
             }
+            // valueStartPos = i;
             variableValue = macroText.slice(i).trimEnd();
         }
 
+        // Detect if typing first closing brace on a variable shorthand
+        // This happens when operatorText is just "}" or when cursor is beyond content (after }})
+        let isTypingClosingBrace = false;
+        if (operatorText.startsWith('}') && !variableOperator) {
+            // Typing first } on a standalone variable shorthand like {{.Lila}
+            isTypingClosingBrace = true;
+        } else if (cursorOffset > macroText.length && !variableOperator) {
+            // Cursor is after }} on a standalone variable shorthand like {{.Lila}}|
+            isTypingClosingBrace = true;
+        } else if (cursorOffset > macroText.length && variableOperator) {
+            // Cursor is after }} on any operator shorthand like {{.Lila++}}| or {{.Lila+=4}}|
+            isTypingClosingBrace = true;
+        } else if (cursorOffset >= macroText.length && variableOperator && !operatorNeedsValue) {
+            // Cursor at end of complete operator (++ or --) like {{.Lila++ or {{.Lila++  (with trailing space)
+            isTypingClosingBrace = true;
+        } else if (cursorOffset >= macroText.length && !variableOperator && variableName.length > 0) {
+            // Cursor at end of standalone variable (with or without trailing whitespace) like {{.Lila or {{ .Lila
+            isTypingClosingBrace = true;
+        } else if (operatorNeedsValue && variableValue.length > 0 && variableValue.endsWith('}')) {
+            // Typing first } after a value like {{.Lila+=4}
+            isTypingClosingBrace = true;
+            // Strip the } from the value
+            variableValue = variableValue.slice(0, -1);
+        } else if (operatorNeedsValue && cursorOffset >= macroText.length && variableValue.length > 0) {
+            // Cursor at end after typing a value (including trailing whitespace) like {{.Lila+=4
+            // This means the shorthand is "complete" and ready to close
+            isTypingClosingBrace = true;
+        }
+
         // Determine cursor position context for autocomplete
+        // Note: isTypingClosingBrace takes precedence - if we're typing a closing brace,
+        // we don't want to show operator suggestions, just the current state
         const prefixEnd = (macroText.indexOf(variablePrefix) ?? 0) + 1;
         if (cursorOffset < prefixEnd) {
             // Cursor is before the prefix - still in flags area conceptually
@@ -1404,9 +1438,10 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (cursorOffset <= variableNameEnd) {
             // Cursor is in the variable name area (including at the end)
             isTypingVariableName = true;
-        } else if (variableName.length > 0 && !variableOperator && !hasInvalidTrailingChars) {
+        } else if (variableName.length > 0 && !variableOperator && !hasInvalidTrailingChars && !isTypingClosingBrace) {
             // Cursor is after variable name but no operator yet (and no invalid chars)
             // This includes partial operator prefixes like '+', '-', '|', '?', '>', '<'
+            // But NOT when typing a closing brace - that takes precedence
             isTypingOperator = true;
         } else if (variableName.length > 0 && variableOperator && isShortOperatorPrefix(variableOperator) && cursorOffset <= variableOperatorEnd) {
             // Short operator that could be prefix of longer one (e.g., > could become >=)
@@ -1435,7 +1470,7 @@ export function parseMacroContext(macroText, cursorOffset) {
             args: [],
             currentArgIndex: -1,
             isTypingSeparator: false,
-            isTypingClosingBrace: false,
+            isTypingClosingBrace,
             hasSpaceAfterIdentifier: false,
             hasSpaceArgContent: false,
             separatorCount: 0,
