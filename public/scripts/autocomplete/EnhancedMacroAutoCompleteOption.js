@@ -1236,8 +1236,8 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
 export function parseMacroContext(macroText, cursorOffset) {
     let i = 0;
 
-    // Skip leading whitespace
-    while (i < macroText.length && /\s/.test(macroText[i])) {
+    // Skip leading whitespace (but NOT newlines - those stop macro parsing for autocomplete)
+    while (i < macroText.length && /[ \t]/.test(macroText[i])) {
         i++;
     }
 
@@ -1467,7 +1467,18 @@ export function parseMacroContext(macroText, cursorOffset) {
 
     // Track nesting depth to skip :: inside nested macros
     let nestedDepth = 0;
+    // Track if we've seen a :: separator - newlines before first :: should stop parsing
+    let hasSeenSeparator = false;
+    // Track if we broke early (e.g., at a newline)
+    let brokeEarly = false;
     while (j < remainingText.length) {
+        // Before the first :: separator, newlines should stop parsing
+        // This prevents text on the next line from being considered part of the identifier/space-arg
+        if (!hasSeenSeparator && nestedDepth === 0 && (remainingText[j] === '\n' || remainingText[j] === '\r')) {
+            // Stop parsing here - don't include the newline or anything after
+            brokeEarly = true;
+            break;
+        }
         // Track nested macro braces
         if (remainingText[j] === '{' && remainingText[j + 1] === '{') {
             nestedDepth++;
@@ -1488,13 +1499,19 @@ export function parseMacroContext(macroText, cursorOffset) {
             currentPart = '';
             j += 2;
             partStart = i + j;
+            hasSeenSeparator = true;
         } else {
             currentPart += remainingText[j];
             j++;
         }
     }
-    // Push the last part
-    parts.push({ text: currentPart, start: partStart, end: macroText.length });
+    // Push the last part - use correct end position if we broke early,
+    // but only if we are actually inside that part, otherwise we do not count this as if we are in the macro.
+    // This filters out things where linebreaks inside a macro should not extend what we consider as this macro while typing.
+    const lastPartEnd = brokeEarly ? i + j : macroText.length;
+    if (cursorOffset <= lastPartEnd) {
+        parts.push({ text: currentPart, start: partStart, end: lastPartEnd });
+    }
 
     // Determine if cursor is in the flags area (at or before identifier starts)
     const identifierStartPos = parts[0]?.start ?? i;
