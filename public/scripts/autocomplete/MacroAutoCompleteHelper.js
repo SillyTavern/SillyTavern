@@ -57,6 +57,8 @@ import { extension_settings } from '../extensions.js';
  * @property {UnclosedScope[]|null} [unclosedScopes=null] - Pre-computed unclosed scopes
  */
 
+/** @typedef {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption|VariableValueContextAutoCompleteOption|SimpleAutoCompleteOption)} AnyMacroAutoCompleteOption */
+
 /**
  * Finds unclosed scoped macros in the text up to cursor position.
  * Uses the MacroParser and MacroCstWalker for accurate analysis.
@@ -136,11 +138,11 @@ export function findUnclosedScopesRegex(text) {
  * @param {Object} [opts] - Optional configuration.
  * @param {boolean} [opts.forIfCondition=false] - If true, options are for {{if}} condition (closes with }}).
  * @param {string} [opts.paddingAfter=''] - Whitespace to add before closing }}.
- * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
+ * @returns {AnyMacroAutoCompleteOption[]}
  */
 export function buildVariableShorthandOptions(context, opts = {}) {
     const { forIfCondition = false, paddingAfter = '' } = opts;
-    /** @type {(VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption|VariableValueContextAutoCompleteOption)[]} */
+    /** @type {AnyMacroAutoCompleteOption[]} */
     const options = [];
 
     const isLocal = context.variablePrefix === '.';
@@ -340,10 +342,10 @@ export function buildVariableShorthandOptions(context, opts = {}) {
  * When typing arguments (after ::), prioritizes the exact macro match.
  * @param {MacroAutoCompleteContext} context
  * @param {string} [textUpToCursor] - Full document text up to cursor, for unclosed scope detection.
- * @returns {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]}
+ * @returns {AnyMacroAutoCompleteOption[]}
  */
 export function buildEnhancedMacroOptions(context, textUpToCursor) {
-    /** @type {(EnhancedMacroAutoCompleteOption|MacroFlagAutoCompleteOption|MacroClosingTagAutoCompleteOption|VariableShorthandAutoCompleteOption|VariableNameAutoCompleteOption|VariableOperatorAutoCompleteOption)[]} */
+    /** @type {AnyMacroAutoCompleteOption[]} */
     const options = [];
 
     if (context.isVariableShorthand) {
@@ -427,15 +429,25 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
     const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
 
     // If we're typing arguments (after ::), only show the context to the matching macro
+    // Also treat typing closing brace the same way - show details for matching macro
     const isTypingArgs = context.currentArgIndex >= 0;
+    const isTypingClosingBrace = context.isTypingClosingBrace ?? false;
+    const shouldShowMatchingMacroDetails = isTypingArgs || isTypingClosingBrace;
 
     // Check if we're inside a scoped {{if}} for {{else}} selectability
     const isInsideScopedIf = unclosedScopes.some(scope => scope.name === 'if');
+
+    // Track if any macro matches the identifier (for "no match" message)
+    let hasMatchingMacro = false;
 
     for (const macro of allMacros) {
         // Check if this macro matches the typed identifier
         const isExactMatch = macro.name === context.identifier;
         const isAliasMatch = macro.aliasOf === context.identifier;
+
+        if (isExactMatch || isAliasMatch) {
+            hasMatchingMacro = true;
+        }
 
         // Only pass context to the macro that matches the identifier being typed
         // This ensures argument hints only show for the relevant macro
@@ -461,12 +473,28 @@ export function buildEnhancedMacroOptions(context, textUpToCursor) {
             option.makeSelectable = false;
         }
 
-        // When typing arguments, prioritize exact matches by putting them first
-        if (isTypingArgs && (isExactMatch || isAliasMatch)) {
+        // When typing arguments or closing brace, prioritize exact matches by putting them first
+        if (shouldShowMatchingMacroDetails && (isExactMatch || isAliasMatch)) {
             options.unshift(option);
         } else {
             options.push(option);
         }
+    }
+
+    // If typing args/closing brace but no macro matches, add a "no match" indicator
+    if (shouldShowMatchingMacroDetails && !hasMatchingMacro && context.identifier.length > 0) {
+        const noMatchOption = new SimpleAutoCompleteOption({
+            name: context.identifier,
+            symbol: '❌',
+            description: `No macro found: "${context.identifier}"`,
+            detailedDescription: `The macro name <code>${context.identifier}</code> does not exist.<br><br>Check spelling or use a different macro name.`,
+            type: 'error',
+        });
+        noMatchOption.valueProvider = () => '';
+        noMatchOption.makeSelectable = false;
+        noMatchOption.matchProvider = () => true; // Always show
+        noMatchOption.sortPriority = 0; // Top priority
+        options.unshift(noMatchOption);
     }
 
     return options;

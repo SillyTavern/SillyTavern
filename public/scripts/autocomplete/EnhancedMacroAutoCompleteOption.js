@@ -31,6 +31,7 @@ import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnos
  * @property {string[]} args - Array of arguments typed so far.
  * @property {number} currentArgIndex - Index of the argument being typed (-1 if on identifier).
  * @property {boolean} isTypingSeparator - Whether cursor is on a partial separator (single ':').
+ * @property {boolean} isTypingClosingBrace - Whether cursor is typing the first closing brace on a standalone macro.
  * @property {boolean} hasSpaceAfterIdentifier - Whether there's a space after the identifier (for space-separated args).
  * @property {boolean} hasSpaceArgContent - Whether there's actual content after the space (not just whitespace).
  * @property {number} separatorCount - Number of '::' separators found.
@@ -1434,6 +1435,7 @@ export function parseMacroContext(macroText, cursorOffset) {
             args: [],
             currentArgIndex: -1,
             isTypingSeparator: false,
+            isTypingClosingBrace: false,
             hasSpaceAfterIdentifier: false,
             hasSpaceArgContent: false,
             separatorCount: 0,
@@ -1588,7 +1590,14 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     // Clean identifier: strip trailing colons (for partial :: typing)
+    // Also strip trailing single } (for partial }} typing) - but only if no separators/args
     let cleanIdentifier = identifierOnly.replace(/:+$/, '');
+    let isTypingClosingBrace = false;
+    if (separatorPositions.length === 0 && !hasSpaceAfterIdentifier && cleanIdentifier.endsWith('}')) {
+        // Typing first closing brace on a standalone macro like {{char}
+        cleanIdentifier = cleanIdentifier.slice(0, -1);
+        isTypingClosingBrace = true;
+    }
 
     // Build args array - include space-separated arg if present
     // Trim args like the macro engine does
@@ -1609,6 +1618,7 @@ export function parseMacroContext(macroText, cursorOffset) {
         args,
         currentArgIndex,
         isTypingSeparator,
+        isTypingClosingBrace,
         hasSpaceAfterIdentifier,
         hasSpaceArgContent: spaceArgText.length > 0,
         separatorCount: separatorPositions.length,
