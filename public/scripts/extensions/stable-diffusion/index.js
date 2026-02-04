@@ -284,6 +284,7 @@ const defaultSettings = {
     snap: false,
     free_extend: false,
     function_tool: false,
+    minimal_prompt_processing: false,
 
     prompts: promptTemplates,
 
@@ -547,6 +548,7 @@ async function loadSettings() {
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_comfy_runpod_url').val(extension_settings.sd.comfy_runpod_url);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
+    $('#sd_minimal_prompt_processing').prop('checked', extension_settings.sd.minimal_prompt_processing);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
@@ -666,6 +668,11 @@ function onMultimodalCaptioningInput() {
 
 function onSnapInput() {
     extension_settings.sd.snap = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onMinimalPromptProcessing() {
+    extension_settings.sd.minimal_prompt_processing = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2733,6 +2740,16 @@ function getQuietPrompt(mode, trigger) {
 function processReply(str) {
     if (!str) {
         return '';
+    }
+
+    if (extension_settings.sd.minimal_prompt_processing)
+    {
+        // Minimal prompt processing
+        // JSON and similar should be preserved
+        str = str.normalize('NFD');
+        str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
+        str = str.trim();
+        return str;
     }
 
     str = str.replaceAll('"', '');
@@ -5283,6 +5300,14 @@ jQuery(async () => {
                 acceptsMultiple: false,
             }),
             SlashCommandNamedArgument.fromProps({
+                name: 'minpromptproc',
+                description: 'minimal response prompt processing to preserve json returned by the LLM',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'seed',
                 description: 'random seed',
                 isRequired: false,
@@ -5565,6 +5590,7 @@ jQuery(async () => {
     $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
+    $('#sd_minimal_prompt_processing').on('input', onMinimalPromptProcessing);
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
