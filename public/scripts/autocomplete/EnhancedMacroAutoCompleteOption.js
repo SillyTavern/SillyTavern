@@ -1034,6 +1034,7 @@ export class VariableValueContextAutoCompleteOption extends AutoCompleteOption {
         super('value', '📝');
         this.#operatorDef = operatorDef;
         this.#currentValue = currentValue;
+        this.permanentMatch = true;
     }
 
     /** @returns {{ symbol: string, name: string, description: string, needsValue: boolean }} */

@@ -155,6 +155,10 @@ export class AutoComplete {
      */
     updateName(item) {
         const chars = Array.from(item.dom.querySelector('.name').children);
+        if (item.permanentMatch) {
+            chars.forEach(c => c.classList.toggle('matched', true));
+            return;
+        }
         switch (this.matchType) {
             case 'strict': {
                 chars.forEach((it, idx) => {
