@@ -307,13 +307,13 @@ function onEnableExtensionClick() {
  */
 function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
     const extensionNames = Object.keys(manifests);
-    const thirdPartyExtensions = extensionNames.filter(name => getExtensionType(name) === 'local' || getExtensionType(name) === 'global');
+    const thirdPartyExtensions = extensionNames.filter(name => ['local', 'global'].includes(getExtensionType(name)));
 
     const checkIfDisabled = (name) => {
-        const toggleIndex = extensionsToToggle.findIndex(ext => ext.name === name);
-
-        if (toggleIndex >= 0) return !extensionsToToggle[toggleIndex].enable;
-        else return extension_settings.disabledExtensions.includes(name);
+        const toggle = extensionsToToggle.find(ext => ext.name === name);
+        return toggle
+            ? !toggle.enable
+            : extension_settings.disabledExtensions.includes(name);
     };
 
     if (thirdPartyExtensions.length === 0) return [];
@@ -336,13 +336,14 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
         const doToggleExtension = enable ? isDisabled : !isDisabled;
 
         if (doToggleExtension) {
-            const toggleIndex = extensionsToToggle.findIndex(ext => ext.name === name);
+            const toggle = extensionsToToggle.find(ext => ext.name === name);
 
-            if (toggleIndex >= 0) {
-                extensionsToToggle[toggleIndex].toggleHandler = toggleHandler;
-                extensionsToToggle[toggleIndex].enable = enable;
+            if (toggle) {
+                toggle.toggleHandler = toggleHandler;
+                toggle.enable = enable;
+            } else {
+                extensionsToToggle.push({ name, toggleHandler, enable });
             }
-            else extensionsToToggle.push({ name, toggleHandler, enable });
 
             toggleContainer
                 .find(`.extension_block[data-name="${name.replace('third-party', '')}"] .extension_toggle input`)
