@@ -5319,7 +5319,7 @@ jQuery(async () => {
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'processing',
-                description: 'minimal response prompt processing to preserve json returned by the LLM',
+                description: 'level of response prompt processing returned by the LLM',
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumList: [
                     new SlashCommandEnumValue('standard', 'Standard prompt processing'),
