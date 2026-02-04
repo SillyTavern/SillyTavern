@@ -300,6 +300,67 @@ function onEnableExtensionClick() {
 }
 
 /**
+ * Handles toggling all extensions on or off.
+ * @param {Object[]} extensionsToToggle
+ * @param {JQuery<HTMLElement>} toggleContainer
+ * @returns {Object[]} Updated extensionsToToggle array
+ */
+function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
+    const extensionNames = Object.keys(manifests);
+    const thirdPartyExtensions = extensionNames.filter(name => getExtensionType(name) === 'local' || getExtensionType(name) === 'global');
+
+    const checkIfDisabled = (name) => {
+        const toggleIndex = extensionsToToggle.findIndex(ext => ext.name === name);
+
+        if (toggleIndex >= 0) return !extensionsToToggle[toggleIndex].enable;
+        else return extension_settings.disabledExtensions.includes(name);
+    };
+
+    if (thirdPartyExtensions.length === 0) return;
+
+    requiresReload = true;
+
+    let enable = true;
+
+    for (const name of thirdPartyExtensions) {
+        const isEnabled = !checkIfDisabled(name);
+
+        if (isEnabled) {
+            enable = false;
+            break;
+        }
+    }
+
+    const toggleHandler = enable ? enableExtension : disableExtension;
+
+    for (const name of thirdPartyExtensions) {
+        const isDisabled = checkIfDisabled(name);
+        const doToggleExtension = enable ? isDisabled : !isDisabled;
+
+        if (doToggleExtension) {
+            console.log(`${name}:`, enable);
+
+            const toggleIndex = extensionsToToggle.findIndex(ext => ext.name === name);
+
+            if (toggleIndex >= 0) {
+                extensionsToToggle[toggleIndex].toggleHandler = toggleHandler;
+                extensionsToToggle[toggleIndex].enable = enable;
+            }
+            else extensionsToToggle.push({ name, toggleHandler, enable });
+
+            toggleContainer
+                .find(`.extension_block[data-name="${name.replace('third-party', '')}"] .extension_toggle input`)
+                .prop('checked', enable)
+                .toggleClass('toggle_enable', !enable)
+                .toggleClass('toggle_disable', enable)
+                .toggleClass('checkbox_disabled', !enable);
+        }
+    }
+
+    return extensionsToToggle;
+}
+
+/**
  * Enables an extension by name.
  * @param {string} name Extension name
  * @param {boolean} [reload=true] If true, reload the page after enabling the extension
@@ -867,6 +928,7 @@ async function showExtensionsDetails() {
         const sortByName = accountStorage.getItem(sortOrderKey) === 'true';
         const sortFn = sortByName ? sortManifestsByName : sortManifestsByOrder;
         const extensions = Object.entries(manifests).sort((a, b) => sortFn(a[1], b[1])).map(getExtensionData);
+        let extensionsToToggle = [];
 
         extensions.forEach(value => {
             const { isExternal, extensionHtml } = value;
@@ -901,6 +963,24 @@ async function showExtensionsDetails() {
             updateEnabledOnlyButton.textContent = t`Update enabled`;
             updateEnabledOnlyButton.addEventListener('click', () => updateAction(false));
 
+            const toggleAllExtensionsButton = document.createElement('button');
+            toggleAllExtensionsButton.classList.add('menu_button', 'menu_button_icon');
+            toggleAllExtensionsButton.textContent = t`Toggle all extensions`;
+            toggleAllExtensionsButton.addEventListener('click', () => {
+                extensionsToToggle = onToggleAllExtensions(extensionsToToggle, htmlExternal);
+
+                for (const extension of extensionsToToggle) {
+                    const { name } = extension;
+
+                    htmlExternal
+                        .find(`.extension_block[data-name="${name.replace('third-party', '')}"] .extension_toggle input`)
+                        .off('click')
+                        .one('click', () => {
+                            extensionsToToggle = extensionsToToggle.filter(ext => ext.name !== name);
+                        });
+                }
+            });
+
             const flexExpander = document.createElement('div');
             flexExpander.classList.add('expander');
 
@@ -913,7 +993,7 @@ async function showExtensionsDetails() {
                 await showExtensionsDetails();
             });
 
-            toolbar.append(updateAllButton, updateEnabledOnlyButton, flexExpander, sortOrderButton);
+            toolbar.append(updateAllButton, updateEnabledOnlyButton, toggleAllExtensionsButton, flexExpander, sortOrderButton);
             html.prepend(toolbar);
         }
 
@@ -929,6 +1009,18 @@ async function showExtensionsDetails() {
                 if (waitingForSave) {
                     return false;
                 }
+
+                for (const extension of extensionsToToggle) {
+                    const { name, toggleHandler } = extension;
+
+                    try {
+                        await toggleHandler(name, false);
+                    } catch (error) {
+                        console.error(`Could not toggle extension ${name}:`, error);
+                        toastr.error(t`Could not toggle extension ${name}. See console for details.`);
+                    }
+                }
+
                 if (stateChanged) {
                     waitingForSave = true;
                     const toast = toastr.info(t`The page will be reloaded shortly...`, t`Extensions state changed`);
@@ -937,6 +1029,7 @@ async function showExtensionsDetails() {
                     waitingForSave = false;
                     requiresReload = true;
                 }
+
                 return true;
             },
         });
