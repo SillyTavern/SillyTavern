@@ -5170,7 +5170,7 @@ function applyCommandArguments(args) {
         'denoise': 'denoising_strength',
         '2ndpass': 'hr_second_pass_steps',
         'faces': 'restore_faces',
-		'minimal-prompt-processing':'minimal_prompt_processing',
+        'minimal-prompt-processing':'minimal_prompt_processing',
     };
 
     for (const [param, setting] of Object.entries(settingMap)) {
