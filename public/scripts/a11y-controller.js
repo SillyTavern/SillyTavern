@@ -3,7 +3,7 @@ import { Popup } from './popup.js';
 
 /** @typedef {HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement} AnyInput */
 
-// Constants
+// Constants for cleaner labeling
 const ID_MAP = {
     'main_api': 'Main API Type',
     'chat_completion_source': 'Chat Completion Source',
@@ -31,6 +31,8 @@ let trigger = null;
 let overlay = null;
 
 const A11yController = {
+    /** @type {any | null} */
+    trap: null,
     /** @type {string|null} */
     currentView: null,
     /** @type {MutationObserver|null} */
@@ -49,7 +51,6 @@ const A11yController = {
         trigger.textContent = 'Press Enter to enter Accessibility Mode';
         trigger.onclick = () => this.enterMode();
         document.body.prepend(trigger);
-
         // Create Overlay
         overlay = document.createElement('div');
         overlay.id = 'a11y-overlay';
@@ -65,7 +66,17 @@ const A11yController = {
         `;
         document.body.appendChild(overlay);
 
-        // Native Focus Trap & Navigation
+        const focusTrapLib = /** @type {any} */ (window).focusTrap;
+        if (focusTrapLib) {
+            this.trap = focusTrapLib.createFocusTrap('#a11y-overlay', {
+                initialFocus: '#a11y-header',
+                fallbackFocus: '#a11y-header',
+                allowOutsideClick: false,
+                escapeDeactivates: false,
+                returnFocusOnDeactivate: true,
+            });
+        }
+
         document.addEventListener('keydown', (e) => this.handleGlobalKeydown(e));
 
         /** @type {HTMLInputElement | null} */
@@ -90,37 +101,15 @@ const A11yController = {
             }
             return;
         }
-
-        if (e.key === 'Tab') {
-            /** @type {NodeListOf<HTMLElement>} */
-            const focusableElements = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
-
-            if (e.shiftKey) {
-                if (document.activeElement === firstElement) {
-                    lastElement.focus();
-                    e.preventDefault();
-                }
-            } else {
-                if (document.activeElement === lastElement) {
-                    firstElement.focus();
-                    e.preventDefault();
-                }
-            }
-        }
     },
 
     interceptPopups() {
         const self = this;
-        // Use type assertion to bypass TypeScript strict checks on object and function assignment
         const popupModule = /** @type {any} */ (Popup);
 
         if (popupModule && popupModule.show) {
-            // Save original reference
             this.originalPopupShow = popupModule.show;
 
-            // Redefine show
             popupModule.show = async function (title, content, type, options) {
                 if (overlay && overlay.style.display === 'flex') {
                     let textContent = '';
@@ -134,12 +123,8 @@ const A11yController = {
                     return await self.renderA11yConfirmation(title, textContent);
                 }
 
-                // Ensure originalPopupShow is called as a function
                 if (typeof self.originalPopupShow === 'function') {
                     return self.originalPopupShow.apply(this, arguments);
-                } else if (self.originalPopupShow && typeof self.originalPopupShow.confirm === 'function') {
-                    // If originalPopupShow is an object, fallback to its internal method (based on implementation in some ST versions)
-                    return self.originalPopupShow.confirm(title, content, options);
                 }
                 return null;
             };
@@ -217,6 +202,7 @@ const A11yController = {
         if (!overlay) return;
         overlay.style.display = 'flex';
         this.navigateTo('MENU');
+        if (this.trap) this.trap.activate();
         this.announce('Accessibility Mode activated');
     },
 
@@ -309,10 +295,9 @@ const A11yController = {
         exitBtn.className = 'a11y-btn';
         exitBtn.style.marginTop = '2rem';
         exitBtn.innerText = 'Exit Accessibility Mode';
-        exitBtn.tabIndex = -1;
-        exitBtn.setAttribute('aria-hidden', 'true');
         exitBtn.onclick = () => {
             if (overlay) overlay.style.display = 'none';
+            if (this.trap) this.trap.deactivate();
         };
         container.appendChild(exitBtn);
     },
@@ -674,22 +659,6 @@ const A11yController = {
         history.tabIndex = 0;
         container.appendChild(history);
 
-        let focusedIndex = -1;
-        history.addEventListener('keydown', (e) => {
-            /** @type {NodeListOf<HTMLElement>} */
-            const items = history.querySelectorAll('li[role="listitem"]');
-            if (!items.length) return;
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
-                items[focusedIndex].focus();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                focusedIndex = Math.max(focusedIndex - 1, 0);
-                items[focusedIndex].focus();
-            }
-        });
-
         const updateChat = () => {
             const msgs = Array.from(document.querySelectorAll('#chat .mes[mesid]:not(.displayNone)'))
                 .filter(m => !m.closest('.welcomePanel'));
@@ -789,7 +758,6 @@ const A11yController = {
             });
 
             history.scrollTop = history.scrollHeight;
-            focusedIndex = msgs.length - 1;
         };
 
         const realChat = document.getElementById('chat');
