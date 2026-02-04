@@ -287,7 +287,6 @@ import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 globalThis.SillyTavern = {
     libs,
     getContext,
-    sendTextareaMessage,
 };
 
 export {
