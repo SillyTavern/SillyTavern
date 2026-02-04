@@ -336,8 +336,6 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
         const doToggleExtension = enable ? isDisabled : !isDisabled;
 
         if (doToggleExtension) {
-            console.log(`${name}:`, enable);
-
             const toggleIndex = extensionsToToggle.findIndex(ext => ext.name === name);
 
             if (toggleIndex >= 0) {
