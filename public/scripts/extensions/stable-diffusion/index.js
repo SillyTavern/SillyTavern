@@ -5180,7 +5180,7 @@ function applyCommandArguments(args) {
                 return true;
             }
         },
-    }
+    };
 
     for (const [param, setting] of Object.entries(settingMap)) {
         if (args[param] === undefined || defaultSettings[setting] === undefined) {
