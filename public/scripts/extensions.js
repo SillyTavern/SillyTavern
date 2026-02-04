@@ -316,7 +316,7 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
         else return extension_settings.disabledExtensions.includes(name);
     };
 
-    if (thirdPartyExtensions.length === 0) return;
+    if (thirdPartyExtensions.length === 0) return [];
 
     let enable = true;
 
