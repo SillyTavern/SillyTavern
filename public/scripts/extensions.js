@@ -318,8 +318,6 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
 
     if (thirdPartyExtensions.length === 0) return;
 
-    requiresReload = true;
-
     let enable = true;
 
     for (const name of thirdPartyExtensions) {
@@ -1011,9 +1009,15 @@ async function showExtensionsDetails() {
                 }
 
                 for (const extension of extensionsToToggle) {
-                    const { name, toggleHandler } = extension;
+                    const { name, toggleHandler, enable } = extension;
+                    const isDisabled = extension_settings.disabledExtensions.includes(name);
 
                     try {
+                        if (isDisabled && !enable) continue;
+                        if (!isDisabled && enable) continue;
+
+                        requiresReload = true;
+
                         await toggleHandler(name, false);
                     } catch (error) {
                         console.error(`Could not toggle extension ${name}:`, error);
