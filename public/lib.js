@@ -23,6 +23,7 @@ import { toggle as slideToggle } from 'slidetoggle';
 import chalk from 'chalk';
 import yaml from 'yaml';
 import * as chevrotain from 'chevrotain';
+import AhoCorasick from 'modern-ahocorasick';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -102,6 +103,7 @@ export default {
     chalk,
     yaml,
     chevrotain,
+    AhoCorasick,
 };
 
 export {
@@ -127,4 +129,5 @@ export {
     chalk,
     yaml,
     chevrotain,
+    AhoCorasick,
 };
