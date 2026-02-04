@@ -98,6 +98,8 @@ const A11yController = {
             if (this.currentView !== 'MENU') {
                 if (this.currentView === 'CHAT') this.navigateTo('CHARS');
                 else this.navigateTo('MENU');
+            } else {
+                this.exitMode();
             }
             return;
         }
@@ -206,6 +208,12 @@ const A11yController = {
         this.announce('Accessibility Mode activated');
     },
 
+    exitMode() {
+        if (overlay) overlay.style.display = 'none';
+        if (this.trap) this.trap.deactivate();
+        this.announce('Accessibility Mode deactivated');
+    },
+
     /** @param {string} text */
     announce(text) {
         const el = document.getElementById('a11y-status');
@@ -295,10 +303,11 @@ const A11yController = {
         exitBtn.className = 'a11y-btn';
         exitBtn.style.marginTop = '2rem';
         exitBtn.innerText = 'Exit Accessibility Mode';
-        exitBtn.onclick = () => {
-            if (overlay) overlay.style.display = 'none';
-            if (this.trap) this.trap.deactivate();
-        };
+        
+        exitBtn.setAttribute('aria-hidden', 'true');
+        exitBtn.tabIndex = -1;
+        
+        exitBtn.onclick = () => this.exitMode();
         container.appendChild(exitBtn);
     },
 
