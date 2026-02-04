@@ -2742,8 +2742,7 @@ function processReply(str) {
         return '';
     }
 
-    if (extension_settings.sd.minimal_prompt_processing)
-    {
+    if (extension_settings.sd.minimal_prompt_processing) {
         // Minimal prompt processing
         // JSON and similar should be preserved
         str = str.normalize('NFD');
@@ -5170,8 +5169,18 @@ function applyCommandArguments(args) {
         'denoise': 'denoising_strength',
         '2ndpass': 'hr_second_pass_steps',
         'faces': 'restore_faces',
-        'minimal-prompt-processing':'minimal_prompt_processing',
+        'processing': 'minimal_prompt_processing',
     };
+    const enumHandlers = {
+        'processing': (value) => {
+            if (/standard/gi.test(String(value))) {
+                return false;
+            }
+            if (/minimal/gi.test(String(value))) {
+                return true;
+            }
+        },
+    }
 
     for (const [param, setting] of Object.entries(settingMap)) {
         if (args[param] === undefined || defaultSettings[setting] === undefined) {
@@ -5179,6 +5188,14 @@ function applyCommandArguments(args) {
         }
         currentSettings[setting] = extension_settings.sd[setting];
         const value = String(args[param]);
+        const enumHandler = enumHandlers[param];
+        if (typeof enumHandler === 'function') {
+            const enumValue = enumHandler(value);
+            if (enumValue !== undefined) {
+                overrideSettings[setting] = enumValue;
+            }
+            continue;
+        }
         const type = typeof defaultSettings[setting];
         switch (type) {
             case 'boolean':
@@ -5301,10 +5318,13 @@ jQuery(async () => {
                 acceptsMultiple: false,
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'minimal-prompt-processing',
+                name: 'processing',
                 description: 'minimal response prompt processing to preserve json returned by the LLM',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                enumProvider: commonEnumProviders.boolean('trueFalse'),
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('standard', 'Standard prompt processing'),
+                    new SlashCommandEnumValue('minimal', 'Minimal prompt processing'),
+                ],
                 isRequired: false,
                 acceptsMultiple: false,
             }),
