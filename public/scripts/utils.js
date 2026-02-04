@@ -2752,6 +2752,33 @@ export function versionCompare(srcVersion, minVersion) {
 }
 
 /**
+ * Logs a warning to the console for slash command executions.
+ * Strips internal arguments (starting with '_') from the args object for cleaner logging.
+ * @param {string} message - The warning message to log.
+ * @param {Object} args - The arguments object from the slash command, including named arguments and internal values.
+ * @param {{[unnamedArgName: string]: string}} [valueObj=null] - The user-built object containing context for the warning (e.g., { uid: uid }).
+ * @returns {void}
+ */
+export function logSlashCommandWarn(message, args, valueObj = null) {
+    if (valueObj !== null && valueObj !== undefined) {
+        console.warn(message, valueObj, stripInternalArgs(args));
+    } else {
+        console.warn(message, stripInternalArgs(args));
+    }
+    return;
+    function stripInternalArgs(args) {
+        // strip all args/properties that start with an underscore
+        const result = {};
+        for (const [key, value] of Object.entries(args)) {
+            if (!key.startsWith('_')) {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+}
+
+/**
  * Sets up the scroll-to-top button functionality.
  * @param {object} params Parameters object
  * @param {string} params.scrollContainerId Scrollable container element ID
