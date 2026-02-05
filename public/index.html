@@ -77,8 +77,8 @@
     </div>
     <div id="top-settings-holder">
         <!-- background selection menu -->
-        <div id="ai-config-button" class="drawer" role="button" tabindex="0" aria-label="AI Response Configuration" aria-expanded="false" aria-controls="left-nav-panel">
-            <div class="drawer-toggle drawer-header">
+        <div id="ai-config-button" class="drawer">
+            <div class="drawer-toggle drawer-header" role="button" tabindex="0" aria-label="AI Response Configuration" aria-expanded="false" aria-controls="left-nav-panel">
                 <div id="leftNavDrawerIcon" class="drawer-icon fa-solid fa-sliders fa-fw closedIcon" title="AI Response Configuration" data-i18n="[title]AI Response Configuration"></div>
             </div>
             <div id="left-nav-panel" class="drawer-content fillLeft closedDrawer">
@@ -266,11 +266,13 @@
                         </div>
                         <div id="common-gen-settings-block" class="width100p">
                             <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
-                                <div id="amount_gen_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                    <small data-i18n="response legth(tokens)">Response (tokens)</small>
-                                    <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="2048" step="1">
+                                <div id="amount_gen_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_amount_gen">
+                                    <small id="lbl_amount_gen" data-i18n="response legth(tokens)">Response (tokens)</small>
+                                    <!-- A11y: Slider hidden from focus -->
+                                    <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="2048" step="1" tabindex="-1" aria-hidden="true">
                                     <div data-randomization-disabled="true" class="wide100p">
-                                        <input class="neo-range-input" type="number" min="16" max="2048" step="1" data-for="amount_gen" id="amount_gen_counter">
+                                        <!-- A11y: Focus lands here -->
+                                        <input class="neo-range-input" type="number" min="16" max="2048" step="1" data-for="amount_gen" id="amount_gen_counter" aria-labelledby="lbl_amount_gen">
                                     </div>
                                     <div id="streaming_textgenerationwebui_block" class="flex-container alignitemscenter justifyCenter marginTop5">
                                         <label class="checkbox_label" for="streaming_textgenerationwebui">
@@ -297,11 +299,13 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div id="max_context_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                    <small data-i18n="context size(tokens)">Context (tokens)</small>
-                                    <input class="neo-range-slider" type="range" id="max_context" name="volume" min="512" max="8192" step="64">
+                                <div id="max_context_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_max_context">
+                                    <small id="lbl_max_context" data-i18n="context size(tokens)">Context (tokens)</small>
+                                    <!-- A11y: Slider hidden -->
+                                    <input class="neo-range-slider" type="range" id="max_context" name="volume" min="512" max="8192" step="64" tabindex="-1" aria-hidden="true">
                                     <div data-randomization-disabled="true" class="wide100p">
-                                        <input class="neo-range-input" type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter">
+                                        <!-- A11y: Focus visible -->
+                                        <input class="neo-range-input" type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter" aria-labelledby="lbl_max_context">
                                     </div>
                                     <div class="flex-container alignitemscenter justifyCenter marginTop5" id="max_context_unlocked_block">
                                         <label class="checkbox_label">
@@ -340,107 +344,107 @@
                             </div>
                             -->
                             <div id="range_block_novel">
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Temperature">
+                                <div class="range-block" role="group" aria-labelledby="lbl_temp_novel">
+                                    <div id="lbl_temp_novel" class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="temp_novel" name="volume" min="0.1" max="2.50" step="0.01">
+                                            <input type="range" id="temp_novel" name="volume" min="0.1" max="2.50" step="0.01" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0.1" max="2.50" step="0.01" data-for="temp_novel" id="temp_counter_novel">
+                                            <input type="number" min="0.1" max="2.50" step="0.01" data-for="temp_novel" id="temp_counter_novel" aria-labelledby="lbl_temp_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="rep.pen">
+                                <div class="range-block" role="group" aria-labelledby="lbl_rep_pen_novel">
+                                    <div id="lbl_rep_pen_novel" class="range-block-title" data-i18n="rep.pen">
                                         Repetition Penalty
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_novel" name="volume" min="1" max="8" step="0.025">
+                                            <input type="range" id="rep_pen_novel" name="volume" min="1" max="8" step="0.025" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="1" max="8" step="0.025" data-for="rep_pen_novel" id="rep_pen_counter_novel">
+                                            <input type="number" min="1" max="8" step="0.025" data-for="rep_pen_novel" id="rep_pen_counter_novel" aria-labelledby="lbl_rep_pen_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Rep. Pen. Range.">
+                                <div class="range-block" role="group" aria-labelledby="lbl_rep_pen_size_novel">
+                                    <div id="lbl_rep_pen_size_novel" class="range-block-title" data-i18n="Rep. Pen. Range.">
                                         Rep Pen Range
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="8192" step="1">
+                                            <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="8192" step="1" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="8192" step="1" data-for="rep_pen_size_novel" id="rep_pen_size_counter_novel">
+                                            <input type="number" min="0" max="8192" step="1" data-for="rep_pen_size_novel" id="rep_pen_size_counter_novel" aria-labelledby="lbl_rep_pen_size_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Rep. Pen. Slope">
+                                <div class="range-block" role="group" aria-labelledby="lbl_rep_pen_slope_novel">
+                                    <div id="lbl_rep_pen_slope_novel" class="range-block-title" data-i18n="Rep. Pen. Slope">
                                         Repetition Penalty Slope
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0" max="10" step="0.01">
+                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0" max="10" step="0.01" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel">
+                                            <input type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel" aria-labelledby="lbl_rep_pen_slope_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Rep. Pen. Freq.">
+                                <div class="range-block" role="group" aria-labelledby="lbl_rep_pen_freq_novel">
+                                    <div id="lbl_rep_pen_freq_novel" class="range-block-title" data-i18n="Rep. Pen. Freq.">
                                         Repetition Penalty Frequency
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.001">
+                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.001" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel" aria-labelledby="lbl_rep_pen_freq_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Rep. Pen. Presence">
+                                <div class="range-block" role="group" aria-labelledby="lbl_rep_pen_presence_novel">
+                                    <div id="lbl_rep_pen_presence_novel" class="range-block-title" data-i18n="Rep. Pen. Presence">
                                         Repetition Penalty Presence
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.001">
+                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.001" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel" aria-labelledby="lbl_rep_pen_presence_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Min P">
+                                <div class="range-block" role="group" aria-labelledby="lbl_min_p_novel">
+                                    <div id="lbl_min_p_novel" class="range-block-title" data-i18n="Min P">
                                         Min P
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="min_p_novel" name="volume" min="0" max="1" step="0.001">
+                                            <input type="range" id="min_p_novel" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.001" data-for="min_p_novel" id="min_p_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="min_p_novel" id="min_p_counter_novel" aria-labelledby="lbl_min_p_novel">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="TFS">
+                                <div class="range-block" role="group" aria-labelledby="lbl_tfs_novel">
+                                    <div id="lbl_tfs_novel" class="range-block-title" data-i18n="TFS">
                                         TFS
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="tail_free_sampling_novel" name="volume" min="0" max="1" step="0.001">
+                                            <input type="range" id="tail_free_sampling_novel" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.001" data-for="tail_free_sampling_novel" id="tail_free_sampling_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="tail_free_sampling_novel" id="tail_free_sampling_counter_novel" aria-labelledby="lbl_tfs_novel">
                                         </div>
                                     </div>
                                 </div>
@@ -643,16 +647,16 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Context Size (tokens)">
+                                <div class="range-block" role="group" aria-labelledby="lbl_openai_max_context">
+                                    <div id="lbl_openai_max_context" class="range-block-title" data-i18n="Context Size (tokens)">
                                         Context Size (tokens)
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1">
+                                            <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter" data-randomization-disabled="true">
-                                            <input type="number" min="512" max="4095" step="1" data-for="openai_max_context" id="openai_max_context_counter">
+                                            <input type="number" min="512" max="4095" step="1" data-for="openai_max_context" id="openai_max_context_counter" aria-labelledby="lbl_openai_max_context">
                                         </div>
                                     </div>
                                 </div>
@@ -709,42 +713,42 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
-                                    <div class="range-block-title" data-i18n="Temperature">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai" role="group" aria-labelledby="lbl_temp_openai">
+                                    <div id="lbl_temp_openai" class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
+                                            <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="2.0" step="0.01" data-for="temp_openai" id="temp_counter_openai">
+                                            <input type="number" min="0" max="2.0" step="0.01" data-for="temp_openai" id="temp_counter_openai" aria-labelledby="lbl_temp_openai">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes">
-                                    <div class="range-block-title" data-i18n="Frequency Penalty">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes" role="group" aria-labelledby="lbl_freq_pen_openai">
+                                    <div id="lbl_freq_pen_openai" class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                            <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="-2" max="2" step="0.01" data-for="freq_pen_openai" id="freq_pen_counter_openai">
+                                            <input type="number" min="-2" max="2" step="0.01" data-for="freq_pen_openai" id="freq_pen_counter_openai" aria-labelledby="lbl_freq_pen_openai">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes">
-                                    <div class="range-block-title" data-i18n="Presence Penalty">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes" role="group" aria-labelledby="lbl_pres_pen_openai">
+                                    <div id="lbl_pres_pen_openai" class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
+                                            <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01" tabindex="-1" aria-hidden="true">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="-2" max="2" step="0.01" data-for="pres_pen_openai" id="pres_pen_counter_openai">
+                                            <input type="number" min="-2" max="2" step="0.01" data-for="pres_pen_openai" id="pres_pen_counter_openai" aria-labelledby="lbl_pres_pen_openai">
                                         </div>
                                     </div>
                                 </div>
@@ -1014,109 +1018,111 @@
                         <div id="advanced-ai-config-block" class="width100p">
                             <div id="kobold_api-settings">
                                 <div class="flex-container gap10h5v justifyCenter">
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_temp_kobold">
                                         <small>
-                                            <span data-i18n="Temperature">Temperature</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Temperature controls the randomness in token selection" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+                                            <span id="lbl_temp_kobold" data-i18n="Temperature">Temperature</span>
+                                            <!-- Give description an ID -->
+                                            <div id="desc_temp_kobold" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Temperature controls the randomness in token selection" title="Temperature controls the randomness in token selection..." aria-hidden="true"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter">
+                                        <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <!-- Link input to label AND description -->
+                                        <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter" aria-labelledby="lbl_temp_kobold" aria-describedby="desc_temp_kobold">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_top_k">
                                         <small>
-                                            <span data-i18n="Top K">Top K</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable." data-i18n="[title]Top_K_desc"></div>
+                                            <span id="lbl_top_k" data-i18n="Top K">Top K</span>
+                                            <div id="desc_top_k" class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable." data-i18n="[title]Top_K_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_k" name="volume" min="0" max="100" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="top_k" id="top_k_counter">
+                                        <input class="neo-range-slider" type="range" id="top_k" name="volume" min="0" max="100" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="top_k" id="top_k_counter" aria-labelledby="lbl_top_k" aria-describedby="desc_top_k">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small>
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_top_p">
+                                        <small id="lbl_top_p">
                                             Top P
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable." data-i18n="[title]Top_P_desc"></div>
+                                            <div id="desc_top_p" class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable." data-i18n="[title]Top_P_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter">
+                                        <input class="neo-range-slider" type="range" id="top_p" name="volume" min="0" max="1" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter" aria-labelledby="lbl_top_p" aria-describedby="desc_top_p">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_typical_p">
                                         <small>
-                                            <span data-i18n="Typical P">Typical P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable." data-i18n="[title]Typical_P_desc"></div>
+                                            <span id="lbl_typical_p" data-i18n="Typical P">Typical P</span>
+                                            <div id="desc_typical_p" class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable." data-i18n="[title]Typical_P_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="typical_p" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical_p" id="typical_p_counter">
+                                        <input class="neo-range-slider" type="range" id="typical_p" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical_p" id="typical_p_counter" aria-labelledby="lbl_typical_p" aria-describedby="desc_typical_p">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_min_p">
                                         <small>
-                                            <span data-i18n="Min P">Min P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable." data-i18n="[title]Min_P_desc"></div>
+                                            <span id="lbl_min_p" data-i18n="Min P">Min P</span>
+                                            <div id="desc_min_p" class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable." data-i18n="[title]Min_P_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="min_p" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p" id="min_p_counter">
+                                        <input class="neo-range-slider" type="range" id="min_p" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p" id="min_p_counter" aria-labelledby="lbl_min_p" aria-describedby="desc_min_p">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_top_a">
                                         <small>
-                                            <span data-i18n="Top A">Top A</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable." data-i18n="[title]Top_A_desc"></div>
+                                            <span id="lbl_top_a" data-i18n="Top A">Top A</span>
+                                            <div id="desc_top_a" class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable." data-i18n="[title]Top_A_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_a" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="top_a" id="top_a_counter">
+                                        <input class="neo-range-slider" type="range" id="top_a" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="top_a" id="top_a_counter" aria-labelledby="lbl_top_a" aria-describedby="desc_top_a">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_tfs">
                                         <small>
-                                            <span data-i18n="TFS">TFS</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable." data-i18n="[title]Tail_Free_Sampling_desc"></div>
+                                            <span id="lbl_tfs" data-i18n="TFS">TFS</span>
+                                            <div id="desc_tfs" class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable." data-i18n="[title]Tail_Free_Sampling_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="tfs" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs" id="tfs_counter">
+                                        <input class="neo-range-slider" type="range" id="tfs" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs" id="tfs_counter" aria-labelledby="lbl_tfs" aria-describedby="desc_tfs">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen">
                                         <small>
-                                            <span data-i18n="rep.pen">Repetition Penalty</span>
+                                            <span id="lbl_rep_pen" data-i18n="rep.pen">Repetition Penalty</span>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen" name="volume" min="1" max="3" step="0.01">
-                                        <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen" id="rep_pen_counter">
+                                        <input class="neo-range-slider" type="range" id="rep_pen" name="volume" min="1" max="3" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen" id="rep_pen_counter" aria-labelledby="lbl_rep_pen">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen_range">
                                         <small>
-                                            <span data-i18n="rep.pen range">Rep Pen Range</span>
+                                            <span id="lbl_rep_pen_range" data-i18n="rep.pen range">Rep Pen Range</span>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_range" name="volume" min="0" max="4096" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range" id="rep_pen_range_counter">
+                                        <input class="neo-range-slider" type="range" id="rep_pen_range" name="volume" min="0" max="4096" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range" id="rep_pen_range_counter" aria-labelledby="lbl_rep_pen_range">
                                     </div>
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen_slope">
                                         <small>
-                                            <span data-i18n="Rep. Pen. Slope">Repetition Penalty Slope</span>
+                                            <span id="lbl_rep_pen_slope" data-i18n="Rep. Pen. Slope">Repetition Penalty Slope</span>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope" id="rep_pen_slope_counter">
+                                        <input class="neo-range-slider" type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope" id="rep_pen_slope_counter" aria-labelledby="lbl_rep_pen_slope">
                                     </div>
                                     <div name="miroStatBlock-kobold" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="Mirostat">Mirostat</h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_mirostat_mode_kobold">
                                                 <small>
-                                                    <span data-i18n="Mode">Mode</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p" title="A value of 0 disables Mirostat entirely. 1 is for Mirostat 1.0, and 2 is for Mirostat 2.0" data-i18n="[title]Mirostat_Mode_desc"></div>
+                                                    <span id="lbl_mirostat_mode_kobold" data-i18n="Mode">Mode</span>
+                                                    <div id="desc_mirostat_mode_kobold" class="fa-solid fa-circle-info opacity50p" title="A value of 0 disables Mirostat entirely. 1 is for Mirostat 1.0, and 2 is for Mirostat 2.0" data-i18n="[title]Mirostat_Mode_desc"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="mirostat_mode_kobold" name="volume" min="0" max="2" step="1" />
-                                                <input class="neo-range-input" type="number" min="0" max="2" step="1" data-for="mirostat_mode_kobold" id="mirostat_mode_counter_kobold">
+                                                <input class="neo-range-slider" type="range" id="mirostat_mode_kobold" name="volume" min="0" max="2" step="1" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="2" step="1" data-for="mirostat_mode_kobold" id="mirostat_mode_counter_kobold" aria-labelledby="lbl_mirostat_mode_kobold" aria-describedby="desc_mirostat_mode_kobold">
                                             </div>
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_mirostat_tau_kobold">
                                                 <small>
-                                                    <span data-i18n="Tau">Tau</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p" title="Controls variability of Mirostat outputs" data-i18n="[title]Mirostat_Tau_desc"></div>
+                                                    <span id="lbl_mirostat_tau_kobold" data-i18n="Tau">Tau</span>
+                                                    <div id="desc_mirostat_tau_kobold" class="fa-solid fa-circle-info opacity50p" title="Controls variability of Mirostat outputs" data-i18n="[title]Mirostat_Tau_desc"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="mirostat_tau_kobold" name="volume" min="0" max="20" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold">
+                                                <input class="neo-range-slider" type="range" id="mirostat_tau_kobold" name="volume" min="0" max="20" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold" aria-labelledby="lbl_mirostat_tau_kobold" aria-describedby="desc_mirostat_tau_kobold">
                                             </div>
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_mirostat_eta_kobold">
                                                 <small>
-                                                    <span data-i18n="Eta">Eta</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p" title="Controls learning rate of Mirostat" data-i18n="[title]Mirostat_Eta_desc"></div>
+                                                    <span id="lbl_mirostat_eta_kobold" data-i18n="Eta">Eta</span>
+                                                    <div id="desc_mirostat_eta_kobold" class="fa-solid fa-circle-info opacity50p" title="Controls learning rate of Mirostat" data-i18n="[title]Mirostat_Eta_desc"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="mirostat_eta_kobold" name="volume" min="0" max="1" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold">
+                                                <input class="neo-range-slider" type="range" id="mirostat_eta_kobold" name="volume" min="0" max="1" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold" aria-labelledby="lbl_mirostat_eta_kobold" aria-describedby="desc_mirostat_eta_kobold">
                                             </div>
                                         </div>
                                         <hr class="wide100p">
@@ -1267,149 +1273,149 @@
                                     <input type="number" id="n_textgenerationwebui" class="text_pole textAlignCenter" min="1" value="1" step="1" />
                                 </div>
                                 <div class="flex-container gap10h5v justifyCenter">
-                                    <div data-tg-samplers="temp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-samplers="temp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_temp_tg">
                                         <small>
-                                            <span data-i18n="Temperature">Temperature</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Temperature controls the randomness in token selection" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+                                            <span id="lbl_temp_tg" data-i18n="Temperature">Temperature</span>
+                                            <div id="desc_temp_tg" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Temperature controls the randomness in token selection" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="5.0" step="0.01" x-setting-id="temp">
-                                        <input class="neo-range-input" type="number" min="0.0" max="5.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="5.0" step="0.01" x-setting-id="temp" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0.0" max="5.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui" aria-labelledby="lbl_temp_tg" aria-describedby="desc_temp_tg">
                                     </div>
                                     <!-- Note: "except" mode = show for all BUT types in data-tg-type -->
-                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="top_k" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="top_k" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_top_k_tg">
                                         <small>
-                                            <span data-i18n="Top K">Top K</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 (or -1, depending on your backend) to disable." data-i18n="[title]Top_K_desc"></div>
+                                            <span id="lbl_top_k_tg" data-i18n="Top K">Top K</span>
+                                            <div id="desc_top_k_tg" class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 (or -1, depending on your backend) to disable." data-i18n="[title]Top_K_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="-1" max="200" step="1">
-                                        <input class="neo-range-input" type="number" min="-1" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="-1" max="200" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="-1" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui" aria-labelledby="lbl_top_k_tg" aria-describedby="desc_top_k_tg">
                                     </div>
-                                    <div data-tg-samplers="top_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-samplers="top_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_top_p_tg">
                                         <small>
-                                            <span data-i18n="Top P">Top P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable." data-i18n="[title]Top_P_desc"></div>
+                                            <span id="lbl_top_p_tg" data-i18n="Top P">Top P</span>
+                                            <div id="desc_top_p_tg" class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable." data-i18n="[title]Top_P_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui" aria-labelledby="lbl_top_p_tg" aria-describedby="desc_top_p_tg">
                                     </div>
-                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="typical_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="typical_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_typical_p_tg">
                                         <small>
-                                            <span data-i18n="Typical P">Typical P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable." data-i18n="[title]Typical_P_desc"></div>
+                                            <span id="lbl_typical_p_tg" data-i18n="Typical P">Typical P</span>
+                                            <div id="desc_typical_p_tg" class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable." data-i18n="[title]Typical_P_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui" aria-labelledby="lbl_typical_p_tg" aria-describedby="desc_typical_p_tg">
                                     </div>
-                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="min_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="min_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_min_p_tg">
                                         <small>
-                                            <span data-i18n="Min P">Min P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Min_P_desc" title="Min P sets a base minimum probability. This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+                                            <span id="lbl_min_p_tg" data-i18n="Min P">Min P</span>
+                                            <div id="desc_min_p_tg" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Min_P_desc" title="Min P sets a base minimum probability. This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui" aria-labelledby="lbl_min_p_tg" aria-describedby="desc_min_p_tg">
                                     </div>
-                                    <div data-tg-type-mode="except" data-tg-type="generic,llamacpp" data-tg-samplers="top_a" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type-mode="except" data-tg-type="generic,llamacpp" data-tg-samplers="top_a" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_top_a_tg">
                                         <small>
-                                            <span data-i18n="Top A">Top A</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable." data-i18n="[title]Top_A_desc"></div>
+                                            <span id="lbl_top_a_tg" data-i18n="Top A">Top A</span>
+                                            <div id="desc_top_a_tg" class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable." data-i18n="[title]Top_A_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui" aria-labelledby="lbl_top_a_tg" aria-describedby="desc_top_a_tg">
                                     </div>
-                                    <div data-tg-type-mode="except" data-tg-type="generic,llamacpp" data-tg-samplers="tfs" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type-mode="except" data-tg-type="generic,llamacpp" data-tg-samplers="tfs" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_tfs_tg">
                                         <small>
-                                            <span data-i18n="TFS">TFS</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Tail_Free_Sampling_desc" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
+                                            <span id="lbl_tfs_tg" data-i18n="TFS">TFS</span>
+                                            <div id="desc_tfs_tg" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Tail_Free_Sampling_desc" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.001" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui" aria-labelledby="lbl_tfs_tg" aria-describedby="desc_tfs_tg">
                                     </div>
-                                    <div data-tg-type="ooba,mancer,aphrodite" data-tg-samplers="epsilon_cutoff" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,mancer,aphrodite" data-tg-samplers="epsilon_cutoff" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_epsilon_cutoff_tg">
                                         <small>
-                                            <span data-i18n="Epsilon Cutoff">Epsilon Cutoff</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled" title="Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable."></div>
+                                            <span id="lbl_epsilon_cutoff_tg" data-i18n="Epsilon Cutoff">Epsilon Cutoff</span>
+                                            <div id="desc_epsilon_cutoff_tg" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled" title="Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui" aria-labelledby="lbl_epsilon_cutoff_tg" aria-describedby="desc_epsilon_cutoff_tg">
                                     </div>
-                                    <div data-tg-type="ooba,aphrodite,koboldcpp,llamacpp" data-tg-samplers="nsigma" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,aphrodite,koboldcpp,llamacpp" data-tg-samplers="nsigma" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_nsigma_tg">
                                         <small>
-                                            <span data-i18n="Top nsigma">Top nsigma</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
+                                            <span id="lbl_nsigma_tg" data-i18n="Top nsigma">Top nsigma</span>
+                                            <div id="desc_nsigma_tg" class="fa-solid fa-circle-info opacity50p" title="A sampling method that filters logits based on their statistical properties. It keeps tokens within n standard deviations of the maximum logit value, providing a simpler alternative to top-p/top-k sampling while maintaining sampling stability across different temperatures."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="nsigma_textgenerationwebui" name="volume" min="0" max="5" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="nsigma_textgenerationwebui" id="nsigma_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="nsigma_textgenerationwebui" name="volume" min="0" max="5" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="nsigma_textgenerationwebui" id="nsigma_counter_textgenerationwebui" aria-labelledby="lbl_nsigma_tg" aria-describedby="desc_nsigma_tg">
                                     </div>
-                                    <div data-tg-type="llamacpp" data-tg-samplers="min_keep" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="llamacpp" data-tg-samplers="min_keep" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_min_keep_tg">
                                         <small>
-                                            <span data-i18n="Min Keep">Min Keep</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="A sampling modifier that ensures that truncation samplers such as top-p, min-p, typical-p, and xtc return at least this many tokens. Set to 0 to disable."></div>
+                                            <span id="lbl_min_keep_tg" data-i18n="Min Keep">Min Keep</span>
+                                            <div id="desc_min_keep_tg" class="fa-solid fa-circle-info opacity50p" title="A sampling modifier that ensures that truncation samplers such as top-p, min-p, typical-p, and xtc return at least this many tokens. Set to 0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="min_keep_textgenerationwebui" name="volume" min="0" max="50" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="50" step="1" data-for="min_keep_textgenerationwebui" id="min_keep_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="min_keep_textgenerationwebui" name="volume" min="0" max="50" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="50" step="1" data-for="min_keep_textgenerationwebui" id="min_keep_counter_textgenerationwebui" aria-labelledby="lbl_min_keep_tg" aria-describedby="desc_min_keep_tg">
                                     </div>
-                                    <div data-tg-type="ooba,mancer,aphrodite" data-tg-samplers="eta_cutoff" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba,mancer,aphrodite" data-tg-samplers="eta_cutoff" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_eta_cutoff_tg">
                                         <small>
-                                            <span data-i18n="Eta Cutoff">Eta Cutoff</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Eta_Cutoff_desc" title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
+                                            <span id="lbl_eta_cutoff_tg" data-i18n="Eta Cutoff">Eta Cutoff</span>
+                                            <div id="desc_eta_cutoff_tg" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Eta_Cutoff_desc" title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui" aria-labelledby="lbl_eta_cutoff_tg" aria-describedby="desc_eta_cutoff_tg">
                                     </div>
-                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="rep_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen">Repetition Penalty</small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="3" step="0.01">
-                                        <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
+                                    <div data-tg-type-mode="except" data-tg-type="generic" data-tg-samplers="rep_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen_tg">
+                                        <small id="lbl_rep_pen_tg" data-i18n="rep.pen">Repetition Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="3" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui" aria-labelledby="lbl_rep_pen_tg">
                                     </div>
-                                    <div data-tg-type="ooba, koboldcpp, tabby, ollama, llamacpp" data-tg-samplers="rep_pen_range" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen range">Rep Pen Range</small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
-                                        <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
+                                    <div data-tg-type="ooba, koboldcpp, tabby, ollama, llamacpp" data-tg-samplers="rep_pen_range" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen_range_tg">
+                                        <small id="lbl_rep_pen_range_tg" data-i18n="rep.pen range">Rep Pen Range</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui" aria-labelledby="lbl_rep_pen_range_tg">
                                     </div>
-                                    <div data-tg-type="koboldcpp" data-tg-samplers="rep_pen_slope" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Rep. Pen. Slope">Rep Pen Slope</small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_slope_textgenerationwebui" name="volume" min="0" max="10" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_textgenerationwebui" id="rep_pen_slope_counter_textgenerationwebui">
+                                    <div data-tg-type="koboldcpp" data-tg-samplers="rep_pen_slope" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen_slope_tg">
+                                        <small id="lbl_rep_pen_slope_tg" data-i18n="Rep. Pen. Slope">Rep Pen Slope</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_slope_textgenerationwebui" name="volume" min="0" max="10" step="0.01" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_textgenerationwebui" id="rep_pen_slope_counter_textgenerationwebui" aria-labelledby="lbl_rep_pen_slope_tg">
                                     </div>
-                                    <div data-tg-type="tabby" data-tg-samplers="rep_pen_decay" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen decay">Rep Pen Decay</small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_decay_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
-                                        <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_decay_textgenerationwebui" id="rep_pen_decay_counter_textgenerationwebui">
+                                    <div data-tg-type="tabby" data-tg-samplers="rep_pen_decay" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_rep_pen_decay_tg">
+                                        <small id="lbl_rep_pen_decay_tg" data-i18n="rep.pen decay">Rep Pen Decay</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_decay_textgenerationwebui" name="volume" min="-1" max="8192" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_decay_textgenerationwebui" id="rep_pen_decay_counter_textgenerationwebui" aria-labelledby="lbl_rep_pen_decay_tg">
                                     </div>
-                                    <div data-tg-type="ooba" data-tg-samplers="encoder_rep_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Encoder Rep. Pen.">Encoder Penalty</small>
-                                        <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
+                                    <div data-tg-type="ooba" data-tg-samplers="encoder_rep_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_encoder_rep_pen_tg">
+                                        <small id="lbl_encoder_rep_pen_tg" data-i18n="Encoder Rep. Pen.">Encoder Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" tabindex="-1" aria-hidden="true" />
+                                        <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui" aria-labelledby="lbl_encoder_rep_pen_tg">
                                     </div>
-                                    <div data-tg-samplers="freq_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Frequency Penalty">Frequency Penalty</small>
-                                        <input class="neo-range-slider" type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
-                                        <input class="neo-range-input" type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui">
+                                    <div data-tg-samplers="freq_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_freq_pen_tg">
+                                        <small id="lbl_freq_pen_tg" data-i18n="Frequency Penalty">Frequency Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" tabindex="-1" aria-hidden="true" />
+                                        <input class="neo-range-input" type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui" aria-labelledby="lbl_freq_pen_tg">
                                     </div>
-                                    <div data-tg-samplers="presence_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Presence Penalty">Presence Penalty</small>
-                                        <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
+                                    <div data-tg-samplers="presence_pen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_presence_pen_tg">
+                                        <small id="lbl_presence_pen_tg" data-i18n="Presence Penalty">Presence Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" tabindex="-1" aria-hidden="true" />
+                                        <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui" aria-labelledby="lbl_presence_pen_tg">
                                     </div>
-                                    <div data-tg-type="aphrodite, ooba" data-tg-samplers="no_repeat_ngram_size" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="No Repeat Ngram Size">No Repeat Ngram Size</small>
-                                        <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
+                                    <div data-tg-type="aphrodite, ooba" data-tg-samplers="no_repeat_ngram_size" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_no_repeat_ngram_size_tg">
+                                        <small id="lbl_no_repeat_ngram_size_tg" data-i18n="No Repeat Ngram Size">No Repeat Ngram Size</small>
+                                        <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1" tabindex="-1" aria-hidden="true">
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui" aria-labelledby="lbl_no_repeat_ngram_size_tg">
                                     </div>
-                                    <div data-tg-type="tabby, aphrodite" data-tg-samplers="skew" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Skew">Skew</small>
-                                        <input class="neo-range-slider" type="range" id="skew_textgenerationwebui" name="volume" min="-5" max="5" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="-5" max="5" step="0.01" data-for="skew_textgenerationwebui" id="skew_counter_textgenerationwebui">
+                                    <div data-tg-type="tabby, aphrodite" data-tg-samplers="skew" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_skew_tg">
+                                        <small id="lbl_skew_tg" data-i18n="Skew">Skew</small>
+                                        <input class="neo-range-slider" type="range" id="skew_textgenerationwebui" name="volume" min="-5" max="5" step="0.01" tabindex="-1" aria-hidden="true" />
+                                        <input class="neo-range-input" type="number" min="-5" max="5" step="0.01" data-for="skew_textgenerationwebui" id="skew_counter_textgenerationwebui" aria-labelledby="lbl_skew_tg">
                                     </div>
-                                    <div data-tg-type="mancer, ooba, tabby, dreamgen, infermaticai, aphrodite" data-tg-samplers="min_length" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Min Length">Min Length</small>
-                                        <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
-                                        <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
+                                    <div data-tg-type="mancer, ooba, tabby, dreamgen, infermaticai, aphrodite" data-tg-samplers="min_length" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_min_length_tg">
+                                        <small id="lbl_min_length_tg" data-i18n="Min Length">Min Length</small>
+                                        <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" tabindex="-1" aria-hidden="true" />
+                                        <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui" aria-labelledby="lbl_min_length_tg">
                                     </div>
-                                    <div data-tg-type="ooba" data-tg-samplers="max_tokens_second" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
-                                        <small data-i18n="Max Tokens Second">Maximum tokens/second</small>
-                                        <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
-                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
+                                    <div data-tg-type="ooba" data-tg-samplers="max_tokens_second" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_max_tokens_second_tg">
+                                        <small id="lbl_max_tokens_second_tg" data-i18n="Max Tokens Second">Maximum tokens/second</small>
+                                        <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" tabindex="-1" aria-hidden="true" />
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui" aria-labelledby="lbl_max_tokens_second_tg">
                                     </div>
 
                                     <div data-tg-type="koboldcpp, llamacpp, tabby" id="adaptive_p_block" class="wide100p">
@@ -1420,15 +1426,15 @@
                                             </a>
                                         </h4>
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
-                                            <div data-tg-samplers="adaptive_target" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Target">Target</small>
-                                                <input class="neo-range-slider" type="range" id="adaptive_target_textgenerationwebui" min="-0.01" max="1" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="-0.01" max="1" step="0.01" data-for="adaptive_target_textgenerationwebui" id="adaptive_target_counter_textgenerationwebui">
+                                            <div data-tg-samplers="adaptive_target" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_adaptive_target_tg">
+                                                <small id="lbl_adaptive_target_tg" data-i18n="Target">Target</small>
+                                                <input class="neo-range-slider" type="range" id="adaptive_target_textgenerationwebui" min="-0.01" max="1" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="-0.01" max="1" step="0.01" data-for="adaptive_target_textgenerationwebui" id="adaptive_target_counter_textgenerationwebui" aria-labelledby="lbl_adaptive_target_tg">
                                             </div>
-                                            <div data-tg-samplers="adaptive_decay" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Decay">Decay</small>
-                                                <input class="neo-range-slider" type="range" id="adaptive_decay_textgenerationwebui" min="0" max="0.99" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0" max="0.99" step="0.01" data-for="adaptive_decay_textgenerationwebui" id="adaptive_decay_counter_textgenerationwebui">
+                                            <div data-tg-samplers="adaptive_decay" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_adaptive_decay_tg">
+                                                <small id="lbl_adaptive_decay_tg" data-i18n="Decay">Decay</small>
+                                                <input class="neo-range-slider" type="range" id="adaptive_decay_textgenerationwebui" min="0" max="0.99" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="0.99" step="0.01" data-for="adaptive_decay_textgenerationwebui" id="adaptive_decay_counter_textgenerationwebui" aria-labelledby="lbl_adaptive_decay_tg">
                                             </div>
                                         </div>
                                     </div>
@@ -1439,15 +1445,15 @@
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth_Sampling_desc" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
                                         </h4>
                                         <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" class="flex-container flexFlowRow gap10px flexShrink">
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                                <small data-i18n="Smoothing Factor">Smoothing Factor</small>
-                                                <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_smoothing_factor_tg">
+                                                <small id="lbl_smoothing_factor_tg" data-i18n="Smoothing Factor">Smoothing Factor</small>
+                                                <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui" aria-labelledby="lbl_smoothing_factor_tg">
                                             </div>
-                                            <div data-tg-type="mancer, ooba, koboldcpp, aphrodite" data-tg-samplers="smoothing_curve" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                                <small data-i18n="Smoothing Curve">Smoothing Curve</small>
-                                                <input class="neo-range-slider" type="range" id="smoothing_curve_textgenerationwebui" name="volume" min="1" max="10" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui">
+                                            <div data-tg-type="mancer, ooba, koboldcpp, aphrodite" data-tg-samplers="smoothing_curve" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_smoothing_curve_tg">
+                                                <small id="lbl_smoothing_curve_tg" data-i18n="Smoothing Curve">Smoothing Curve</small>
+                                                <input class="neo-range-slider" type="range" id="smoothing_curve_textgenerationwebui" name="volume" min="1" max="10" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui" aria-labelledby="lbl_smoothing_curve_tg">
                                             </div>
                                         </div>
                                     </div>
@@ -1460,15 +1466,15 @@
                                             </a>
                                         </h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
-                                            <div data-tg-samplers="xtc_threshold" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                                <small data-i18n="Threshold">Threshold</small>
-                                                <input class="neo-range-slider" type="range" id="xtc_threshold_textgenerationwebui" name="volume" min="0" max="0.5" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0" max="0.5" step="0.01" data-for="xtc_threshold_textgenerationwebui" id="xtc_threshold_counter_textgenerationwebui">
+                                            <div data-tg-samplers="xtc_threshold" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_xtc_threshold_tg">
+                                                <small id="lbl_xtc_threshold_tg" data-i18n="Threshold">Threshold</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_threshold_textgenerationwebui" name="volume" min="0" max="0.5" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="0.5" step="0.01" data-for="xtc_threshold_textgenerationwebui" id="xtc_threshold_counter_textgenerationwebui" aria-labelledby="lbl_xtc_threshold_tg">
                                             </div>
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                                <small data-i18n="Probability">Probability</small>
-                                                <input class="neo-range-slider" type="range" id="xtc_probability_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
-                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_probability_textgenerationwebui" id="xtc_probability_counter_textgenerationwebui">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_xtc_probability_tg">
+                                                <small id="lbl_xtc_probability_tg" data-i18n="Probability">Probability</small>
+                                                <input class="neo-range-slider" type="range" id="xtc_probability_textgenerationwebui" name="volume" min="0" max="1" step="0.01" tabindex="-1" aria-hidden="true" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="xtc_probability_textgenerationwebui" id="xtc_probability_counter_textgenerationwebui" aria-labelledby="lbl_xtc_probability_tg">
                                             </div>
                                         </div>
                                     </div>
@@ -2237,8 +2243,8 @@
                 </div>
             </div>
         </div>
-        <div id="sys-settings-button" class="drawer" role="button" tabindex="0" aria-label="API Connections" aria-expanded="false" aria-controls="rm_api_block">
-            <div class="drawer-toggle drawer-header">
+        <div id="sys-settings-button" class="drawer">
+            <div class="drawer-toggle drawer-header" role="button" tabindex="0" aria-label="API Connections" aria-expanded="false" aria-controls="rm_api_block">
                 <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation fa-fw closedIcon" title="API Connections" data-i18n="[title]API Connections;[no_connection_text]api_no_connection" no_connection_text="No connection..."></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
@@ -3983,8 +3989,8 @@
                 </div>
             </div>
         </div>
-        <div id="advanced-formatting-button" class="drawer" role="button" tabindex="0" aria-label="Advanced Formatting" aria-expanded="false" aria-controls="AdvancedFormatting">
-            <div class="drawer-toggle">
+        <div id="advanced-formatting-button" class="drawer">
+            <div class="drawer-toggle" role="button" tabindex="0" aria-label="Advanced Formatting" aria-expanded="false" aria-controls="AdvancedFormatting">
                 <div class="drawer-icon fa-solid fa-font fa-fw closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
             </div>
             <div id="AdvancedFormatting" class="drawer-content closedDrawer">
@@ -4563,8 +4569,8 @@
                 </div>
             </div>
         </div>
-        <div id="WI-SP-button" class="drawer" role="button" tabindex="0" aria-label="World Info" aria-expanded="false" aria-controls="WorldInfo">
-            <div class="drawer-toggle drawer-header">
+        <div id="WI-SP-button" class="drawer">
+            <div class="drawer-toggle drawer-header" role="button" tabindex="0" aria-label="World Info" aria-expanded="false" aria-controls="WorldInfo">
                 <div id="WIDrawerIcon" class="drawer-icon fa-solid fa-book-atlas fa-fw closedIcon " title="World Info" data-i18n="[title]World Info"></div>
             </div>
             <div id="WorldInfo" class="drawer-content closedDrawer">
@@ -4614,55 +4620,55 @@
                                 <div class="inline-drawer-content">
                                     <div id="wiActivationSettings" class="flex-container">
                                         <div id="wiSliders" class="flex2 flex-container">
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" role="group" aria-labelledby="lbl_wi_scan_depth">
                                                 <small>
-                                                    <span data-i18n="Scan Depth">Scan Depth</span>
+                                                    <span id="lbl_wi_scan_depth" data-i18n="Scan Depth">Scan Depth</span>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="1000" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="1000" step="1" data-for="world_info_depth" id="world_info_depth_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="1000" step="1" tabindex="-1" aria-hidden="true">
+                                                <input class="neo-range-input" type="number" min="0" max="1000" step="1" data-for="world_info_depth" id="world_info_depth_counter" aria-labelledby="lbl_wi_scan_depth">
                                             </div>
 
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" role="group" aria-labelledby="lbl_wi_context_pct">
                                                 <small>
-                                                    <span data-i18n="Context %">Context %</span>
+                                                    <span id="lbl_wi_context_pct" data-i18n="Context %">Context %</span>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_budget" name="world_info_budget" min="1" max="100" step="1">
-                                                <input class="neo-range-input" type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_budget" name="world_info_budget" min="1" max="100" step="1" tabindex="-1" aria-hidden="true">
+                                                <input class="neo-range-input" type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter" aria-labelledby="lbl_wi_context_pct">
                                             </div>
 
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" role="group" aria-labelledby="lbl_wi_budget_cap">
                                                 <small>
-                                                    <span data-i18n="Budget Cap">Budget Cap</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title](0 = disabled)" title="(0 = disabled)"></div>
+                                                    <span id="lbl_wi_budget_cap" data-i18n="Budget Cap">Budget Cap</span>
+                                                    <div id="desc_wi_budget_cap" class="fa-solid fa-circle-info opacity50p" data-i18n="[title](0 = disabled)" title="(0 = disabled)"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_budget_cap" name="world_info_budget_cap" min="0" max="65536" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="65536" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_budget_cap" name="world_info_budget_cap" min="0" max="65536" step="1" tabindex="-1" aria-hidden="true">
+                                                <input class="neo-range-input" type="number" min="0" max="65536" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter" aria-labelledby="lbl_wi_budget_cap" aria-describedby="desc_wi_budget_cap">
                                             </div>
 
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" role="group" aria-labelledby="lbl_wi_min_activations" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
                                                 <small>
-                                                    <span data-i18n="Min Activations">Min Activations</span>
-                                                    <div class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title](disabled when max recursion steps are used)" title="(disabled when max recursion steps are used)"></div>
+                                                    <span id="lbl_wi_min_activations" data-i18n="Min Activations">Min Activations</span>
+                                                    <div id="desc_wi_min_activations" class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title](disabled when max recursion steps are used)" title="(disabled when max recursion steps are used)"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_min_activations" name="world_info_min_activations" min="0" max="100" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations" id="world_info_min_activations_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_min_activations" name="world_info_min_activations" min="0" max="100" step="1" tabindex="-1" aria-hidden="true">
+                                                <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations" id="world_info_min_activations_counter" aria-labelledby="lbl_wi_min_activations" aria-describedby="desc_wi_min_activations">
                                             </div>
 
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" role="group" aria-labelledby="lbl_wi_max_depth" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
                                                 <small>
-                                                    <span data-i18n="Max Depth">Max Depth</span>
-                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title](0 = unlimited, use budget)" title="(0 = unlimited, use budget)"></div>
+                                                    <span id="lbl_wi_max_depth" data-i18n="Max Depth">Max Depth</span>
+                                                    <div id="desc_wi_max_depth" class="fa-solid fa-circle-info opacity50p" data-i18n="[title](0 = unlimited, use budget)" title="(0 = unlimited, use budget)"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1" tabindex="-1" aria-hidden="true">
+                                                <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter" aria-labelledby="lbl_wi_max_depth" aria-describedby="desc_wi_max_depth">
                                             </div>
-                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Cap the number of entry activation recursions" data-i18n="[title]Cap the number of entry activation recursions">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" role="group" aria-labelledby="lbl_wi_max_recursion" title="Cap the number of entry activation recursions" data-i18n="[title]Cap the number of entry activation recursions">
                                                 <small>
-                                                    <span data-i18n="Max Recursion Steps">Max Recursion Steps</span>
-                                                    <div class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title]0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc" title="0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc&#10;(disabled when min activations are used)"></div>
+                                                    <span id="lbl_wi_max_recursion" data-i18n="Max Recursion Steps">Max Recursion Steps</span>
+                                                    <div id="desc_wi_max_recursion" class="fa-solid fa-triangle-exclamation opacity50p" data-i18n="[title]0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc" title="0 = unlimited, 1 = scans once and doesn't recurse, 2 = scans once and recurses once, etc&#10;(disabled when min activations are used)"></div>
                                                 </small>
-                                                <input class="neo-range-slider" type="range" id="world_info_max_recursion_steps" name="world_info_max_recursion_steps" min="0" max="10" step="1">
-                                                <input class="neo-range-input" type="number" min="0" max="10" step="1" data-for="world_info_max_recursion_steps" id="world_info_max_recursion_steps_counter">
+                                                <input class="neo-range-slider" type="range" id="world_info_max_recursion_steps" name="world_info_max_recursion_steps" min="0" max="10" step="1" tabindex="-1" aria-hidden="true">
+                                                <input class="neo-range-input" type="number" min="0" max="10" step="1" data-for="world_info_max_recursion_steps" id="world_info_max_recursion_steps_counter" aria-labelledby="lbl_wi_max_recursion" aria-describedby="desc_wi_max_recursion">
                                             </div>
 
                                             <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink flexBasis48p">
@@ -4770,8 +4776,8 @@
                 </div>
             </div>
         </div>
-        <div id="user-settings-button" class="drawer" role="button" tabindex="0" aria-label="User Settings" aria-expanded="false" aria-controls="user-settings-block">
-            <div class="drawer-toggle">
+        <div id="user-settings-button" class="drawer">
+            <div class="drawer-toggle" role="button" tabindex="0" aria-label="User Settings" aria-expanded="false" aria-controls="user-settings-block">
                 <div class="drawer-icon fa-solid fa-user-cog fa-fw closedIcon" title="User Settings" data-i18n="[title]User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
@@ -4936,43 +4942,43 @@
                             <hr>
                             <div name="FontBlurChatWidthBlock" class="flex-container">
 
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_chat_width">
                                     <small>
-                                        <span>
+                                        <span id="lbl_chat_width">
                                             <span data-i18n="Chat Width">Chat Width</span>
                                             <i class="fa-solid fa-desktop"></i>
                                         </span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Width of the main chat window in % of screen width" title="Width of the main chat window in % of screen width"></div>
+                                        <div id="desc_chat_width" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Width of the main chat window in % of screen width" title="Width of the main chat window in % of screen width"></div>
                                     </small>
-                                    <input class="neo-range-slider" type="range" id="chat_width_slider" name="chat_width_slider" min="25" max="100" step="1">
-                                    <input class="neo-range-input" type="number" min="25" max="100" step="1" data-for="chat_width_slider" id="chat_width_slider_counter">
+                                    <input class="neo-range-slider" type="range" id="chat_width_slider" name="chat_width_slider" min="25" max="100" step="1" tabindex="-1" aria-hidden="true">
+                                    <input class="neo-range-input" type="number" min="25" max="100" step="1" data-for="chat_width_slider" id="chat_width_slider_counter" aria-labelledby="lbl_chat_width" aria-describedby="desc_chat_width">
                                 </div>
 
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_font_scale">
                                     <small>
-                                        <span data-i18n="Font Scale">Font Scale</span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font size" title="Font size"></div>
+                                        <span id="lbl_font_scale" data-i18n="Font Scale">Font Scale</span>
+                                        <div id="desc_font_scale" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font size" title="Font size"></div>
                                     </small>
-                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.5" max="1.5" step="0.01">
-                                    <input class="neo-range-input" type="number" min="0.5" max="1.5" step="0.01" data-for="font_scale" id="font_scale_counter">
+                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.5" max="1.5" step="0.01" tabindex="-1" aria-hidden="true">
+                                    <input class="neo-range-input" type="number" min="0.5" max="1.5" step="0.01" data-for="font_scale" id="font_scale_counter" aria-labelledby="lbl_font_scale" aria-describedby="desc_font_scale">
                                 </div>
 
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_blur_strength">
                                     <small>
-                                        <span data-i18n="Blur Strength">Blur Strength</span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Blur strength on UI panels." title="Blur strength on UI panels."></div>
+                                        <span id="lbl_blur_strength" data-i18n="Blur Strength">Blur Strength</span>
+                                        <div id="desc_blur_strength" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Blur strength on UI panels." title="Blur strength on UI panels."></div>
                                     </small>
-                                    <input class="neo-range-slider" type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
-                                    <input class="neo-range-input" type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
+                                    <input class="neo-range-slider" type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1" tabindex="-1" aria-hidden="true">
+                                    <input class="neo-range-input" type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter" aria-labelledby="lbl_blur_strength" aria-describedby="desc_blur_strength">
                                 </div>
 
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_shadow_width">
                                     <small>
-                                        <span data-i18n="Text Shadow Width">Shadow Width</span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Strength of the text shadows" title="Strength of the text shadows"></div>
+                                        <span id="lbl_shadow_width" data-i18n="Text Shadow Width">Shadow Width</span>
+                                        <div id="desc_shadow_width" class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Strength of the text shadows" title="Strength of the text shadows"></div>
                                     </small>
-                                    <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
-                                    <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
+                                    <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1" tabindex="-1" aria-hidden="true">
+                                    <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter" aria-labelledby="lbl_shadow_width" aria-describedby="desc_shadow_width">
                                 </div>
                             </div>
                             <hr>
@@ -5545,8 +5551,8 @@
                 </div>
             </div>
         </div>
-        <div id="backgrounds-button" class="drawer" role="button" tabindex="0" aria-label="Backgrounds" aria-expanded="false" aria-controls="Backgrounds">
-            <div id="backgrounds-drawer-toggle" class="drawer-toggle drawer-header" title="Change Background Image" data-i18n="[title]Change Background Image">
+        <div id="backgrounds-button" class="drawer">
+            <div id="backgrounds-drawer-toggle" class="drawer-toggle drawer-header" role="button" tabindex="0" aria-label="Backgrounds" aria-expanded="false" aria-controls="Backgrounds" title="Change Background Image" data-i18n="[title]Change Background Image">
                 <div class="drawer-icon fa-solid fa-panorama fa-fw closedIcon"></div>
             </div>
             <div id="Backgrounds" class="drawer-content closedDrawer bg-drawer-layout">
@@ -5611,8 +5617,8 @@
                 </button>
             </div>
         </div>
-        <div id="extensions-settings-button" class="drawer" role="button" tabindex="0" aria-label="Extensions" aria-expanded="false" aria-controls="rm_extensions_block">
-            <div class="drawer-toggle">
+        <div id="extensions-settings-button" class="drawer">
+            <div class="drawer-toggle" role="button" tabindex="0" aria-label="Extensions" aria-expanded="false" aria-controls="rm_extensions_block">
                 <div class="drawer-icon fa-solid fa-cubes fa-fw closedIcon" title="Extensions" data-i18n="[title]Extensions"></div>
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
@@ -5694,8 +5700,8 @@
                 </div>
             </div>
         </div>
-        <div id="persona-management-button" class="drawer" role="button" tabindex="0" aria-label="Persona Management" aria-expanded="false" aria-controls="PersonaManagement">
-            <div class="drawer-toggle">
+        <div id="persona-management-button" class="drawer">
+            <div class="drawer-toggle" role="button" tabindex="0" aria-label="Persona Management" aria-expanded="false" aria-controls="PersonaManagement">
                 <div class="drawer-icon fa-solid fa-face-smile fa-fw closedIcon" title="Persona Management" data-i18n="[title]Persona Management"></div>
             </div>
             <div id="PersonaManagement" class="drawer-content closedDrawer">
@@ -5856,8 +5862,8 @@
                 </div>
             </div>
         </div>
-        <div id="rightNavHolder" class="drawer" role="button" tabindex="0" aria-label="Characters List" aria-expanded="false" aria-controls="right-nav-panel">
-            <div id="unimportantYes" class="drawer-toggle drawer-header">
+        <div id="rightNavHolder" class="drawer">
+            <div id="unimportantYes" class="drawer-toggle drawer-header" role="button" tabindex="0" aria-label="Characters List" aria-expanded="false" aria-controls="right-nav-panel">
                 <div id="rightNavDrawerIcon" class="drawer-icon fa-solid fa-address-card fa-fw closedIcon" title="Character Management" data-i18n="[title]Character Management">
                 </div>
             </div>

@@ -377,104 +377,6 @@ export function announceA11y(text) {
     }
 }
 
-// Initialize native accessibility enhancement features
-export function initNativeAccessibility() {
-    console.log('Initializing Native A11y Optimizations...');
-
-    // Force remove tabindex from inner elements, keeping only the outer container as the focusable button
-    $('#top-settings-holder .drawer').each(function() {
-        $(this).find('.drawer-toggle, .drawer-icon').attr('tabindex', '-1').attr('aria-hidden', 'true');
-    });
-
-    // When Tab is pressed on the last button, loop back to the first; on the first button with Shift+Tab, jump to the last
-    const navButtons = $('#top-settings-holder .drawer[role="button"]');
-    if (navButtons.length > 0) {
-        $('#top-settings-holder').on('keydown', function(e) {
-            if (e.key === 'Tab') {
-                const first = navButtons.first()[0];
-                const last = navButtons.last()[0];
-                
-                // Only execute loop if no panel is currently open. 
-                // If a panel is open, focus should naturally move into the panel via focus-trap.
-                const isAnyPanelOpen = $('.drawer-content.openDrawer').length > 0;
-                
-                if (!isAnyPanelOpen) {
-                    if (e.shiftKey && document.activeElement === first) {
-                        e.preventDefault();
-                        last.focus();
-                    } else if (!e.shiftKey && document.activeElement === last) {
-                        e.preventDefault();
-                        first.focus();
-                    }
-                }
-            }
-        });
-    }
-
-    // If a range slider has a corresponding numeric input (Spinbox), disable focus on the slider to avoid redundant navigation
-    $('input[type="range"]').each(function() {
-        const container = $(this).closest('.range-block, .flex-container, div');
-        const numberInput = container.find('input[type="number"]');
-        
-        if (numberInput.length) {
-            // Hide slider from tab order, directing users to use the more accessible numeric input
-            $(this).attr('tabindex', '-1').attr('aria-hidden', 'true');
-            
-            // Ensure the numeric input has a clear label
-            const label = container.find('small, h4, .range-block-title').first().text();
-            if (label && !numberInput.attr('aria-label')) {
-                numberInput.attr('aria-label', label.trim());
-            }
-        } else {
-            // If only the slider exists without a numeric input, ensure it has the correct role
-            $(this).attr('role', 'slider');
-        }
-    });
-
-    // Scans setting blocks and automatically links help text/tooltips to their respective inputs
-    $('.range-block, .flex-container').each(function() {
-        const container = $(this);
-        
-        // Find title and description elements
-        const titleEl = container.find('.range-block-title, h4, small').first();
-        const descEl = container.find('.toggle-description, .fa-circle-info').first();
-        const inputs = container.find('input, select, textarea').not('[type="hidden"]');
-
-        // If the area contains multiple controls, mark the container as a group
-        if (inputs.length > 1) {
-            container.attr('role', 'group');
-            if (titleEl.length) {
-                // Generate ID for title and associate it with the group
-                const titleId = titleEl.attr('id') || `lbl_${Math.random().toString(36).substr(2, 9)}`;
-                titleEl.attr('id', titleId);
-                container.attr('aria-labelledby', titleId);
-            }
-        }
-
-        // Link description text to inputs
-        if (descEl.length && inputs.length) {
-            // Generate ID for the description element
-            const descId = descEl.attr('id') || `desc_${Math.random().toString(36).substr(2, 9)}`;
-            descEl.attr('id', descId);
-            
-            // If it's an information icon (tooltip), move the title content to aria-label for screen readers
-            if (descEl.hasClass('fa-circle-info') && descEl.attr('title')) {
-                descEl.attr('role', 'note');
-                descEl.attr('aria-label', descEl.attr('title'));
-                descEl.removeAttr('title'); // Remove native title to prevent redundant reading
-            }
-
-            // Associate the description ID with all relevant inputs in the block
-            inputs.each(function() {
-                // Only associate if the input is not explicitly hidden from tab navigation
-                if ($(this).attr('tabindex') !== '-1') {
-                    $(this).attr('aria-describedby', descId);
-                }
-            });
-        }
-    });
-}
-
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 /** @type {import('showdown').Converter} */
@@ -12030,17 +11932,41 @@ jQuery(async function () {
 
     $('.drawer-toggle').on('click', doNavbarIconClick);
 
-    // A11y: Allow Enter key on div-based buttons in top bar
-    $('.drawer[role="button"]').on('keydown', function(e) {
+    // Navbar Focus Management
+    const $navButtons = $('#top-settings-holder .drawer-toggle');
+    
+    $navButtons.on('keydown', function(e) {
+        // 1. Activate on Enter/Space
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            // Find the toggle inside and click it
-            $(this).find('.drawer-toggle').trigger('click');
+            // Since we are focused on the toggle itself, just click it
+            $(this).trigger('click');
+            return;
+        }
+
+        // 2. Focus Looping (Only when panels are closed)
+        const isAnyPanelOpen = $('.drawer-content.openDrawer').length > 0;
+        
+        if (e.key === 'Tab' && !isAnyPanelOpen) {
+            const firstBtn = $navButtons.first()[0];
+            const lastBtn = $navButtons.last()[0];
+            const currentBtn = this;
+
+            if (e.shiftKey) {
+                // Shift+Tab on first button -> go to last
+                if (currentBtn === firstBtn) {
+                    e.preventDefault();
+                    lastBtn.focus();
+                }
+            } else {
+                // Tab on last button -> go to first
+                if (currentBtn === lastBtn) {
+                    e.preventDefault();
+                    firstBtn.focus();
+                }
+            }
         }
     });
-
-    // A11y: Initialize global optimizations
-    setTimeout(initNativeAccessibility, 1000);
 
     $('html').on('touchstart mousedown', async function (e) {
         const clickTarget = $(e.target);
