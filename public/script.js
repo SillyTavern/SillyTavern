@@ -6708,7 +6708,10 @@ export function syncMesToSwipe(messageId = null) {
         return false;
     }
 
-    targetMessage.swipes[targetMessage.swipe_id] = targetMessage.mes;
+    // Only sync swipes if the chat is not pristine, so that macros in the greeting can resolve again on swipe
+    if (chat_metadata.tainted || chat.length > 1) {
+        targetMessage.swipes[targetMessage.swipe_id] = targetMessage.mes;
+    }
 
     targetSwipeInfo.send_date = targetMessage.send_date;
     targetSwipeInfo.gen_started = targetMessage.gen_started;
