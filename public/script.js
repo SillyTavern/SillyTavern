@@ -366,6 +366,17 @@ toastr.options = {
 
 export const characterGroupOverlay = new BulkEditOverlay();
 
+// A11y Helpers
+let currentFocusTrap = null;
+const a11yAnnouncer = document.getElementById('a11y-announcer');
+
+export function announceA11y(text) {
+    if (a11yAnnouncer) {
+        a11yAnnouncer.textContent = ''; // Clear first to force re-announce if same text
+        setTimeout(() => { a11yAnnouncer.textContent = text; }, 50);
+    }
+}
+
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 /** @type {import('showdown').Converter} */
@@ -3613,6 +3624,8 @@ class StreamingProcessor {
 
     async onFinishStreaming(messageId, text) {
         await this.onProgressStreaming(messageId, text, true);
+        // A11y: Announce full response
+        announceA11y(`AI response complete: ${text}`);
         const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
         const message = chat[messageId];
         addCopyToCodeBlocks(messageElement);
@@ -4254,8 +4267,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
+    // A11y: Announce generation start and focus stop button
     if (!dryRun) {
-        deactivateSendButtons();
+        announceA11y("AI is generating...");
+        setTimeout(() => {
+            const stopBtn = document.getElementById('mes_stop');
+            if (stopBtn && stopBtn.offsetParent !== null) {
+                stopBtn.focus();
+            }
+        }, 100);
     }
 
     let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
@@ -10675,9 +10695,45 @@ function doDrawerOpenClick() {
  */
 export async function doNavbarIconClick() {
     const icon = $(this).find('.drawer-icon');
-    const drawer = $(this).parent().find('.drawer-content');
-    const drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
-    const targetDrawerID = $(this).parent().find('.drawer-content').attr('id');
+    const drawerContainer = $(this).parent(); // The top-level div with the id (e.g., #ai-config-button)
+    const drawer = drawerContainer.find('.drawer-content');
+    const drawerWasOpenAlready = drawerContainer.find('.drawer-content').hasClass('openDrawer');
+    const targetDrawerID = drawerContainer.find('.drawer-content').attr('id');
+    const drawerElement = document.getElementById(targetDrawerID);
+
+    // A11y: Handle Focus Trap and ARIA
+    if (!drawerWasOpenAlready) {
+        // Update aria-expanded on the trigger button
+        drawerContainer.attr('aria-expanded', 'true');
+        
+        // Deactivate existing trap if any
+        if (currentFocusTrap) {
+            try { currentFocusTrap.deactivate(); } catch (e) { console.warn('Focus trap error', e); }
+        }
+
+        // Initialize new trap
+        if (window.focusTrap && drawerElement) {
+            currentFocusTrap = window.focusTrap.createFocusTrap(drawerElement, {
+                initialFocus: false,
+                fallbackFocus: drawerElement,
+                escapeDeactivates: false,
+                clickOutsideDeactivates: true,
+                returnFocusOnDeactivate: false // We handle return focus manually below
+            });
+            setTimeout(() => {
+                try { currentFocusTrap.activate(); } catch (e) { console.warn('Trap activate failed', e); }
+            }, 100); // Small delay for animation
+        }
+    } else {
+        // Closing
+        drawerContainer.attr('aria-expanded', 'false');
+        if (currentFocusTrap) {
+            try { currentFocusTrap.deactivate(); } catch (e) {}
+            currentFocusTrap = null;
+        }
+        // Return focus to the trigger button
+        drawerContainer.focus();
+    }
 
     if (!drawerWasOpenAlready) {
         const $openDrawers = $('.openDrawer:not(.pinnedOpen)');
@@ -11875,6 +11931,15 @@ jQuery(async function () {
     $(document).on('click', '.drawer-opener', doDrawerOpenClick);
 
     $('.drawer-toggle').on('click', doNavbarIconClick);
+
+    // A11y: Allow Enter key on div-based buttons in top bar
+    $('.drawer[role="button"]').on('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            // Find the toggle inside and click it
+            $(this).find('.drawer-toggle').trigger('click');
+        }
+    });
 
     $('html').on('touchstart mousedown', async function (e) {
         const clickTarget = $(e.target);
