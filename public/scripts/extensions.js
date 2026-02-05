@@ -968,6 +968,11 @@ async function showExtensionsDetails() {
                 <span>${t`Toggle extensions`}</span>
                 <div class="fa-solid fa-circle-info opacity50p"></div>
             `;
+
+            const restoreBulkToggledExtensionsButton = document.createElement('div');
+            restoreBulkToggledExtensionsButton.classList.add('menu_button', 'menu_button_icon', 'fa-solid', 'fa-arrow-right-rotate', 'displayNone');
+            restoreBulkToggledExtensionsButton.title = t`Restore toggled extensions.\n\nIt does not restore extensions toggled individually.`;
+
             toggleAllExtensionsButton.addEventListener('click', () => {
                 extensionsToToggle = onToggleAllExtensions(extensionsToToggle, htmlExternal);
 
@@ -981,6 +986,27 @@ async function showExtensionsDetails() {
                             extensionsToToggle = extensionsToToggle.filter(ext => ext.name !== name);
                         });
                 }
+
+                const restoreButtonHandler = extensionsToToggle.length > 0 ? 'remove' : 'add';
+
+                restoreBulkToggledExtensionsButton.classList[restoreButtonHandler]('displayNone');
+            });
+
+            restoreBulkToggledExtensionsButton.addEventListener('click', () => {
+                for (const extension of extensionsToToggle) {
+                    const { name } = extension;
+                    const isDisabled = extension_settings.disabledExtensions.includes(name);
+
+                    htmlExternal
+                        .find(`.extension_block[data-name="${name.replace('third-party', '')}"] .extension_toggle input`)
+                        .prop('checked', !isDisabled)
+                        .toggleClass('toggle_enable', isDisabled)
+                        .toggleClass('toggle_disable', !isDisabled)
+                        .toggleClass('checkbox_disabled', isDisabled);
+                }
+
+                extensionsToToggle = [];
+                restoreBulkToggledExtensionsButton.classList.add('displayNone');
             });
 
             const flexExpander = document.createElement('div');
@@ -995,7 +1021,7 @@ async function showExtensionsDetails() {
                 await showExtensionsDetails();
             });
 
-            toolbar.append(updateAllButton, updateEnabledOnlyButton, toggleAllExtensionsButton, flexExpander, sortOrderButton);
+            toolbar.append(updateAllButton, updateEnabledOnlyButton, toggleAllExtensionsButton, restoreBulkToggledExtensionsButton, flexExpander, sortOrderButton);
             html.prepend(toolbar);
         }
 
