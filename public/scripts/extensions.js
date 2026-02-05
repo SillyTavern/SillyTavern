@@ -912,11 +912,11 @@ async function showExtensionsDetails() {
             await oldPopup.completeCancelled();
         }
         const htmlErrors = getExtensionLoadErrorsHtml();
-        const htmlDefault = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Built-in Extensions:` + '</h3></div>');
+        const htmlDefault = $('<div class="marginBot10"><h3>' + t`Built-in Extensions:` + '</h3></div>');
 
         const htmlExternal = $(`<div class="marginBot10">
             <div class="flex-container alignitemscenter spaceBetween flexnowrap marginBot10">
-                <h3 class="textAlignCenter margin0">${t`Installed Extensions:`}</h3>
+                <h3 class="margin0">${t`Installed Extensions:`}</h3>
                 <div class="flex-container third_party_toolbar"></div>
             </div>
         </div>`);
