@@ -305,8 +305,7 @@ async function sendClaudeRequest(request, response) {
         }
 
         const reasoningEffort = request.body.reasoning_effort;
-        const isAdaptiveThinkingEnabled = Boolean(request.body.adaptive_thinking);
-        const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, reasoningEffort, requestBody.stream, request.body.model, isAdaptiveThinkingEnabled);
+        const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, reasoningEffort, requestBody.stream, request.body.model);
 
         // Adaptive thinking: returns a string effort level (like Gemini 3)
         if (useThinking && typeof budgetTokens === 'string') {
@@ -314,9 +313,6 @@ async function sendClaudeRequest(request, response) {
             requestBody.thinking = { type: 'adaptive' };
             requestBody.output_config ??= {};
             requestBody.output_config.effort = budgetTokens;
-            delete requestBody.temperature;
-            delete requestBody.top_p;
-            delete requestBody.top_k;
         } else if (useThinking && Number.isInteger(budgetTokens)) {
             // Traditional thinking: returns a numeric budget
             fixThinkingPrefill = true;

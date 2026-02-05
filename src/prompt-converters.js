@@ -1114,14 +1114,13 @@ export function cachingSystemPromptForOpenRouter(messages, ttl = undefined) {
  * @param {string} reasoningEffort Reasoning effort
  * @param {boolean} stream If streaming is enabled
  * @param {string} model Model name
- * @param {boolean} adaptiveThinking Whether adaptive thinking is enabled
  * @returns {number|string|null} Budget tokens, effort string, or null
  */
-export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, model = '', adaptiveThinking = false) {
+export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, model = '') {
     const isAdaptiveModel = /^claude-(opus-4-6)/.test(model);
 
     // Adaptive thinking for Opus 4.6+: return effort string (like Gemini 3)
-    if (isAdaptiveModel && adaptiveThinking) {
+    if (isAdaptiveModel) {
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;
