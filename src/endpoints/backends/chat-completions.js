@@ -328,11 +328,7 @@ async function sendClaudeRequest(request, response) {
             delete requestBody.top_k;
         }
 
-        if (noPrefillModel) {
-            fixThinkingPrefill = true;
-        }
-
-        if (fixThinkingPrefill && convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
+        if ((fixThinkingPrefill || noPrefillModel) && convertedPrompt.messages.length && convertedPrompt.messages[convertedPrompt.messages.length - 1].role === 'assistant') {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
         }
 
