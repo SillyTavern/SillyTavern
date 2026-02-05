@@ -354,6 +354,7 @@ export const settingsToUpdate = {
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true, false],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false, false],
+    adaptive_thinking: ['#openai_adaptive_thinking', 'adaptive_thinking', true, false],
     verbosity: ['#openai_verbosity', 'verbosity', false, false],
     enable_web_search: ['#openai_enable_web_search', 'enable_web_search', true, false],
     seed: ['#seed_openai', 'seed', false, false],
@@ -460,6 +461,7 @@ const default_settings = {
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     show_thoughts: true,
     reasoning_effort: reasoning_effort_types.auto,
+    adaptive_thinking: false,
     verbosity: verbosity_levels.auto,
     enable_web_search: false,
     request_images: false,
@@ -2561,6 +2563,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'group_names': getGroupNames(),
         'include_reasoning': Boolean(settings.show_thoughts),
         'reasoning_effort': getReasoningEffort(settings, model),
+        'adaptive_thinking': Boolean(settings.adaptive_thinking),
         'enable_web_search': Boolean(settings.enable_web_search),
         'request_images': Boolean(settings.request_images),
         'request_image_resolution': String(settings.request_image_resolution),
@@ -6715,6 +6718,11 @@ export function initOpenAI() {
 
     $('#openai_reasoning_effort').on('input', function () {
         oai_settings.reasoning_effort = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openai_adaptive_thinking').on('input', function () {
+        oai_settings.adaptive_thinking = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

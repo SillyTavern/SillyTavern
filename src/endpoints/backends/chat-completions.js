@@ -224,6 +224,7 @@ async function sendClaudeRequest(request, response) {
         const useSystemPrompt = Boolean(request.body.use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6)/.test(request.body.model);
+        const useAdaptiveThinking = /^claude-(opus-4-6)/.test(request.body.model);
         const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6)/.test(request.body.model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6)/.test(request.body.model);
         const useVerbosity = /^claude-(opus-4-5|opus-4-6)/.test(request.body.model);
@@ -304,10 +305,43 @@ async function sendClaudeRequest(request, response) {
             }
         }
 
-        const reasoningEffort = request.body.reasoning_effort;
+        let reasoningEffort = request.body.reasoning_effort;
+        const isAdaptiveThinkingEnabled = Boolean(request.body.adaptive_thinking);
+
+        // 'max' effort is only supported on Claude Opus 4.6+, fall back to 'high' for other models
+        if (reasoningEffort === 'max' && !useAdaptiveThinking) {
+            reasoningEffort = 'high';
+            console.info(color.blue('Max reasoning effort is only supported on Claude Opus 4.6+. Falling back to high.'));
+        }
+
         const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, reasoningEffort, requestBody.stream);
 
-        if (useThinking && Number.isInteger(budgetTokens)) {
+        // Handle adaptive thinking for Claude Opus 4.6+
+        // Adaptive thinking uses thinking: { type: "adaptive" } with output_config: { effort: "..." }
+        if (useThinking && useAdaptiveThinking && isAdaptiveThinkingEnabled && reasoningEffort !== 'auto') {
+            // No prefill when thinking
+            fixThinkingPrefill = true;
+            requestBody.thinking = {
+                type: 'adaptive',
+            };
+
+            // Map reasoning effort to effort levels for output_config
+            const effortMap = {
+                'min': 'low',
+                'low': 'low',
+                'medium': 'medium',
+                'high': 'high',
+                'max': 'max',
+            };
+            const effort = effortMap[reasoningEffort] || 'high';
+            requestBody.output_config ??= {};
+            requestBody.output_config.effort = effort;
+
+            // NO I CAN'T SILENTLY IGNORE THE TEMPERATURE.
+            delete requestBody.temperature;
+            delete requestBody.top_p;
+            delete requestBody.top_k;
+        } else if (useThinking && Number.isInteger(budgetTokens)) {
             // No prefill when thinking
             fixThinkingPrefill = true;
             const minThinkTokens = 1024;
@@ -332,8 +366,8 @@ async function sendClaudeRequest(request, response) {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
         }
 
-        // Verbosity = 'effort' (same values as OpenAI)
-        if (useVerbosity && request.body.verbosity) {
+        // Verbosity = 'effort' (same values as OpenAI) - only if not already set by adaptive thinking
+        if (useVerbosity && request.body.verbosity && !requestBody.output_config?.effort) {
             betaHeaders.push('effort-2025-11-24');
             requestBody.output_config ??= {};
             requestBody.output_config.effort = request.body.verbosity;
