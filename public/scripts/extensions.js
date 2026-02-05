@@ -913,7 +913,14 @@ async function showExtensionsDetails() {
         }
         const htmlErrors = getExtensionLoadErrorsHtml();
         const htmlDefault = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Built-in Extensions:` + '</h3></div>');
-        const htmlExternal = $('<div class="marginBot10"><h3 class="textAlignCenter">' + t`Installed Extensions:` + '</h3></div>');
+
+        const htmlExternal = $(`<div class="marginBot10">
+            <div class="flex-container alignitemscenter spaceBetween flexnowrap marginBot10">
+                <h3 class="textAlignCenter margin0">${t`Installed Extensions:`}</h3>
+                <div class="flex-container third_party_toolbar"></div>
+            </div>
+        </div>`);
+
         const htmlLoading = $(`<div class="flex-container alignItemsCenter justifyCenter marginTop10 marginBot5">
             <i class="fa-solid fa-spinner fa-spin"></i>
             <span>` + t`Loading third-party extensions... Please wait...` + `</span>
@@ -963,7 +970,6 @@ async function showExtensionsDetails() {
             const toggleAllExtensionsButton = document.createElement('div');
             toggleAllExtensionsButton.classList.add('menu_button', 'menu_button_icon');
             toggleAllExtensionsButton.title = t`Bulk toggle third-party extensions.`;
-
             toggleAllExtensionsButton.innerHTML = `
                 <span>${t`Toggle extensions`}</span>
                 <div class="fa-solid fa-circle-info opacity50p"></div>
@@ -1021,7 +1027,8 @@ async function showExtensionsDetails() {
                 await showExtensionsDetails();
             });
 
-            toolbar.append(updateAllButton, updateEnabledOnlyButton, toggleAllExtensionsButton, restoreBulkToggledExtensionsButton, flexExpander, sortOrderButton);
+            toolbar.append(updateAllButton, updateEnabledOnlyButton, flexExpander, sortOrderButton);
+            htmlExternal.find('.third_party_toolbar').append(restoreBulkToggledExtensionsButton, toggleAllExtensionsButton);
             html.prepend(toolbar);
         }
 
