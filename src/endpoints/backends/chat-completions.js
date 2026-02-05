@@ -313,6 +313,8 @@ async function sendClaudeRequest(request, response) {
             requestBody.thinking = { type: 'adaptive' };
             requestBody.output_config ??= {};
             requestBody.output_config.effort = budgetTokens;
+            // top_k is not allowed in adaptive mode
+            delete requestBody.top_k;
         } else if (useThinking && Number.isInteger(budgetTokens)) {
             // Traditional thinking: returns a numeric budget
             fixThinkingPrefill = true;
