@@ -1166,6 +1166,10 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
         this.makeSelectable = true;
 
+        // nameOffset = 2 to skip the {{ prefix in the display for fuzzy highlighting
+        // The name is /macroName but display shows {{/macroName}}
+        this.nameOffset = 2;
+
         // Highest priority - closing tags should always appear at the very top
         this.sortPriority = 1;
     }

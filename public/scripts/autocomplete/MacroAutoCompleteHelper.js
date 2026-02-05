@@ -621,20 +621,48 @@ export function buildEnhancedMacroOptions(context, textUpToCursor, { isForced = 
         }
     }
 
-    // If typing args/closing brace but no macro matches, add a "no match" indicator
+    // If typing args/closing brace but no macro matches, check for closing macro context
     if (shouldShowMatchingMacroDetails && !hasMatchingMacro && context.identifier.length > 0) {
-        const noMatchOption = new SimpleAutoCompleteOption({
-            name: context.identifier,
-            symbol: '❌',
-            description: `No macro found: "${context.identifier}"`,
-            detailedDescription: `The macro name <code>${context.identifier}</code> does not exist.<br><br>Check spelling or use a different macro name.`,
-            type: 'error',
-        });
-        noMatchOption.valueProvider = () => '';
-        noMatchOption.makeSelectable = false;
-        noMatchOption.matchProvider = () => true; // Always show
-        noMatchOption.sortPriority = 0; // Top priority
-        options.unshift(noMatchOption);
+        // Check if this is a closing macro (starts with /) - show original macro's details
+        // Note: We look up the macro directly, not from unclosedScopes, because the closing tag
+        // itself may have already closed the scope by this point in the text
+        const isClosingMacro = context.identifier.startsWith('/');
+        const closingMacroName = isClosingMacro ? context.identifier.slice(1) : null;
+        const macroDef = closingMacroName ? macroSystem.registry.getPrimaryMacro(closingMacroName) : null;
+
+        if (macroDef) {
+            // Show the original macro's details for the closing tag
+            // Create a context that shows we're closing the scope (no argument highlight)
+            const closingContext = /** @type {MacroAutoCompleteContext} */ ({
+                ...context,
+                identifier: macroDef.name,
+                currentArgIndex: -1, // No argument highlight
+                isClosingTag: true,
+            });
+            const closingOption = new EnhancedMacroAutoCompleteOption(macroDef, closingContext);
+            closingOption.valueProvider = () => '';
+            closingOption.makeSelectable = false;
+            closingOption.matchProvider = () => true;
+            closingOption.sortPriority = 0;
+            options.unshift(closingOption);
+            hasMatchingMacro = true; // Prevent "no match" message
+        }
+
+        // Only show "no match" if we didn't find a matching closing scope
+        if (!hasMatchingMacro) {
+            const noMatchOption = new SimpleAutoCompleteOption({
+                name: context.identifier,
+                symbol: '❌',
+                description: `No macro found: "${context.identifier}"`,
+                detailedDescription: `The macro name <code>${context.identifier}</code> does not exist.<br><br>Check spelling or use a different macro name.`,
+                type: 'error',
+            });
+            noMatchOption.valueProvider = () => '';
+            noMatchOption.makeSelectable = false;
+            noMatchOption.matchProvider = () => true; // Always show
+            noMatchOption.sortPriority = 0; // Top priority
+            options.unshift(noMatchOption);
+        }
     }
 
     return options;
@@ -985,6 +1013,33 @@ export async function buildMacroAutoCompleteResult(text, cursorPos, {
                 }
             }
         }
+
+        // Check if this is a closing tag ({{/macroName}}) - show original macro's details
+        // Note: We look up the macro directly, not from unclosedScopes, because the closing tag
+        // itself has already closed the scope by this point in the text
+        if (context.identifier.startsWith('/')) {
+            const closingMacroName = context.identifier.slice(1);
+            const macroDef = macroSystem.registry.getPrimaryMacro(closingMacroName);
+            if (macroDef) {
+                const closingContext = /** @type {MacroAutoCompleteContext} */ ({
+                    ...context,
+                    identifier: macroDef.name,
+                    currentArgIndex: -1, // No argument highlight
+                    isClosingTag: true,
+                });
+                const closingOption = new EnhancedMacroAutoCompleteOption(macroDef, closingContext);
+                closingOption.valueProvider = () => '';
+                closingOption.makeSelectable = false;
+
+                return new AutoCompleteNameResult(
+                    macroDef.name,
+                    macro.start + 2,
+                    [closingOption],
+                    false,
+                );
+            }
+        }
+
         // Not a scoped macro, just clear arg highlighting
         context.currentArgIndex = -1;
     }
