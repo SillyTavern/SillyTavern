@@ -960,9 +960,14 @@ async function showExtensionsDetails() {
             updateEnabledOnlyButton.textContent = t`Update enabled`;
             updateEnabledOnlyButton.addEventListener('click', () => updateAction(false));
 
-            const toggleAllExtensionsButton = document.createElement('button');
+            const toggleAllExtensionsButton = document.createElement('div');
             toggleAllExtensionsButton.classList.add('menu_button', 'menu_button_icon');
-            toggleAllExtensionsButton.textContent = t`Toggle all extensions`;
+            toggleAllExtensionsButton.title = t`Bulk toggle third-party extensions.`;
+
+            toggleAllExtensionsButton.innerHTML = `
+                <span>${t`Toggle extensions`}</span>
+                <div class="fa-solid fa-circle-info opacity50p"></div>
+            `;
             toggleAllExtensionsButton.addEventListener('click', () => {
                 extensionsToToggle = onToggleAllExtensions(extensionsToToggle, htmlExternal);
 
