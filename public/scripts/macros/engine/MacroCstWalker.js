@@ -231,9 +231,12 @@ class MacroCstWalker {
             if (!info) continue;
 
             if (info.isClosing) {
-                // Closing tag - pop matching opener from stack (case-insensitive match)
-                if (unclosedStack.length > 0 && unclosedStack[unclosedStack.length - 1].name.toLowerCase() === info.name.toLowerCase()) {
-                    unclosedStack.pop();
+                // Find matching opener in stack (case-insensitive)
+                // When closing an outer scope, all inner unclosed scopes are implicitly closed
+                const matchIndex = unclosedStack.findLastIndex(s => s.name.toLowerCase() === info.name.toLowerCase());
+                if (matchIndex !== -1) {
+                    // Pop everything from matchIndex to end (inclusive) - closes the matched scope and all nested ones
+                    unclosedStack.splice(matchIndex);
                 }
                 // If no matching opener, ignore (orphan closing tag)
             } else {

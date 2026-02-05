@@ -120,7 +120,7 @@ export function setMacroAutoComplete(textarea, { autocompleteMode = MACRO_AUTOCO
     const ac = new AutoComplete(
         textarea,
         () => shouldActivateMacroAutocomplete(ac.text, textarea.selectionStart, { isForced: ac.isShowForced, autocompleteMode }),
-        (text, index) => getMacroAutoCompleteAt(text, index),
+        (text, index) => getMacroAutoCompleteAt(text, index, { isForced: ac.isShowForced }),
         true, // isFloating - always use floating mode for free text macro autocomplete
     );
 

@@ -507,6 +507,28 @@
     border-radius: 3px;
 }
 
+/* OPTIONAL badge for optional scoped content */
+.macro-ac-optional-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f0ad4e, #ec971f);
+    color: #000;
+    font-weight: bold;
+    font-size: 0.75em;
+    padding: 0.15em 0.5em;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Smaller variant for use in autocomplete list items */
+.macro-ac-optional-badge-small {
+    font-size: 0.65em;
+    padding: 0.1em 0.35em;
+    vertical-align: middle;
+    color: #f0ad4e;
+}
+
 /* Closing tag autocomplete option */
 .autoComplete > .item.macro-closing-tag-item > .type {
     color: var(--ac-color-matchedText, var(--SmartThemeBorderColor));
