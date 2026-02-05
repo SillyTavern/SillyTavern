@@ -2110,6 +2110,15 @@
                                             </strong>
                                         </div>
                                     </div>
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="claude">
+                                        <label for="openai_adaptive_thinking" class="checkbox_label" title="Enable adaptive thinking for Claude Opus 4.6+. Uses dynamic thinking depth controlled by reasoning effort." data-i18n="[title]Enable adaptive thinking for Claude Opus 4.6+. Uses dynamic thinking depth controlled by reasoning effort.">
+                                            <input id="openai_adaptive_thinking" type="checkbox" />
+                                            <span data-i18n="Adaptive Thinking">Adaptive Thinking</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5 wide100p" data-i18n="Enables adaptive thinking mode for Claude Opus 4.6+. Uses effort-based thinking depth instead of token budget.">
+                                            Enables adaptive thinking mode for Claude Opus 4.6+. Uses effort-based thinking depth instead of token budget.
+                                        </div>
+                                    </div>
                                     <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes,nanogpt">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
@@ -3104,6 +3113,8 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-opus-4-6">claude-opus-4-6</option>
+                                        <option value="claude-opus-4-6-20260130">claude-opus-4-6-20260130</option>
                                         <option value="claude-opus-4-5">claude-opus-4-5</option>
                                         <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                                         <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
