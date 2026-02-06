@@ -12408,162 +12408,293 @@ jQuery(async function () {
     await firstLoadInit();
 
     /**
-     * Enhanced Accessibility Logic for SillyTavern
-     * Focus: Prompt Manager List, Focus Trapping, and UI Consistency
+     * SillyTavern Accessibility & Focus Management System
+     * Modules: Global UI, Chat History, Prompt Manager, Char Editor, World Info
      */
 
-    // 1. Globally hide range sliders
-    $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
+    // --- 1. Global Static Optimizations ---
+    // Remove sliders and send button from Tab sequence to reduce navigation noise
+    $('input[type="range"], #send_but').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
 
     let promptManagerTrap = null;
-    let lastFocusedElement = null; // To restore focus when popup closes
+    let charPopupTrap = null;
+    let worldInfoTrap = null;
+    let lastFocusedBeforeTrap = null;
+    let lastActivePromptId = null;
+    let lastActivePromptAction = null;
+    let lastActiveWIUid = null;
+    let isAiGenerating = false;
 
+    // --- 2. Core Accessibility Enhancement Function ---
     const enhanceA11y = () => {
-        // --- A. Process Prompt Manager List Items (The "Prompts" List) ---
-        // This ensures you can Tab through the list entries
-        $('.completion_prompt_manager_prompt').each(function() {
-            const $li = $(this);
-            const promptId = $li.attr('data-pm-identifier');
-            const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
-            
-            $li.find('.drag-handle').attr('aria-hidden', 'true'); // Hide drag handle
+        // A. Chat Message Refactoring (Semantic Articles)
+        $('#chat .mes').each(function() {
+            const $mes = $(this);
+            if ($mes.hasClass('a11y-refactored')) return;
+            const charName = $mes.find('.name_text').text() || 'System';
+            const isUser = $mes.attr('is_user') === 'true';
+            const textContent = $mes.find('.mes_text').text().trim();
+            const mesId = $mes.attr('mesid');
 
-            // Name/Inspect Link
-            const $nameAction = $li.find('.prompt-manager-inspect-action');
-            if ($nameAction.length && !$nameAction.attr('role')) {
-                $nameAction.attr({
-                    'role': 'button',
-                    'tabindex': '0',
-                    'aria-label': itemName + ( $li.hasClass('completion_prompt_manager_prompt_disabled') ? ' (Disabled)' : '' )
-                });
-            }
+            // Treat the whole message as a single focusable article
+            $mes.attr({
+                'role': 'article',
+                'aria-label': `${isUser ? 'You' : charName}: ${textContent}`,
+                'tabindex': '0'
+            }).addClass('a11y-refactored');
 
-            // Action Icons (Toggle, Edit, Remove)
-            $li.find('.prompt_manager_prompt_controls span').each(function() {
-                const $btn = $(this);
-                const isToggle = $btn.hasClass('prompt-manager-toggle-action');
-                const isEdit = $btn.hasClass('prompt-manager-edit-action');
-                const isDetach = $btn.hasClass('prompt-manager-detach-action');
-
-                if (isToggle || isEdit || isDetach) {
-                    const actionTitle = $btn.attr('title') || 'Action';
-                    $btn.attr({
-                        'role': 'button',
-                        'tabindex': '0',
-                        'aria-label': actionTitle + ': ' + itemName
-                    });
-
-                    if (isToggle) {
-                        const isActive = $btn.hasClass('fa-toggle-on');
-                        $btn.attr('aria-pressed', isActive ? 'true' : 'false');
-                    }
-                } else {
-                    // Ignore empty spaces or decorative spans
-                    $btn.attr('tabindex', '-1').attr('aria-hidden', 'true');
-                }
-            });
+            // Hide decorative/technical noise from linear screen reader navigation
+            $mes.find('.mesIDDisplay, .extraMesButtons, .drag-handle, .swipes-counter, .mes_timer, .timestamp').attr('aria-hidden', 'true');
         });
 
-        // --- B. Standard Form Elements (Inside and Outside Popup) ---
+        // B. Standard Input Labeling (Auto-association)
         $('input:not([type="range"]), textarea, select').each(function() {
             const $el = $(this);
             if ($el.is('[type="hidden"]')) return;
-
             let id = $el.attr('id') || 'st-a11y-' + Math.random().toString(36).substr(2, 5);
             if (!$el.attr('id')) $el.attr('id', id);
 
             const $container = $el.closest('.range-block, .flex-container, .completion_prompt_manager_popup_entry_form_control, .world_entry_form_control');
             if (!$container.length) return;
 
-            // Labeling
-            let $title = $container.find('label, .range-block-title, b').first();
+            // Label Association (aria-labelledby)
+            let $title = $container.find('label, h4, .range-block-title, b').first();
             if ($el.parent('label').length) $title = $el.parent('label').find('span').first();
-
             if ($title.length) {
                 const titleId = $title.attr('id') || 'label-' + id;
-                if (!$title.attr('id')) $title.attr('id', titleId);
+                $title.attr('id', titleId);
                 $el.attr('aria-labelledby', titleId);
             }
 
-            // Description
-            const $desc = $container.find('.text_muted, .toggle-description').first();
+            // Description Association (aria-describedby)
+            const $desc = $container.find('.text_muted, .toggle-description, small.flexBasis100p').first();
             if ($desc.length) {
                 const descId = $desc.attr('id') || 'desc-' + id;
-                if (!$desc.attr('id')) $desc.attr('id', descId);
+                $desc.attr('id', descId);
                 $el.attr('aria-describedby', descId);
+            }
+
+            // Number Input Role
+            if ($el.is('[type="number"]')) {
+                $el.attr('role', 'spinbutton');
+                const min = $el.attr('min'), max = $el.attr('max');
+                if (min !== undefined) $el.attr('aria-valuemin', min);
+                if (max !== undefined) $el.attr('aria-valuemax', max);
             }
         });
 
-        // --- C. Handle All Menu/Popup Buttons ---
-        $('.menu_button, .interactable[role="button"]').each(function() {
-            const $btn = $(this);
-            if (!$btn.attr('tabindex')) $btn.attr('tabindex', '0');
-            if (!$btn.attr('role')) $btn.attr('role', 'button');
+        // C. Prompt Manager List (Focus Restoration & Naming)
+        $('.completion_prompt_manager_prompt').each(function() {
+            const $li = $(this);
+            const promptId = $li.attr('data-pm-identifier');
+            const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
+            $li.find('.drag-handle').attr('aria-hidden', 'true');
+            $li.find('.prompt-manager-inspect-action').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Inspect: ' + itemName });
+            
+            $li.find('.prompt_manager_prompt_controls span').each(function() {
+                const $btn = $(this);
+                const actionClass = ['.prompt-manager-toggle-action', '.prompt-manager-edit-action', '.prompt-manager-detach-action'].find(cls => $btn.is(cls));
+                if (actionClass) {
+                    const actionTitle = $btn.attr('title') || 'Action';
+                    $btn.attr({ 'role': 'button', 'tabindex': '0', 'aria-label': `${actionTitle}: ${itemName}` });
+                    if ($btn.hasClass('prompt-manager-toggle-action')) {
+                        $btn.attr('aria-pressed', $btn.hasClass('fa-toggle-on') ? 'true' : 'false');
+                    }
+                    // Focus Restoration Logic
+                    if (lastActivePromptId === promptId && lastActivePromptAction === actionClass) {
+                        setTimeout(() => { $btn.focus(); lastActivePromptId = null; lastActivePromptAction = null; }, 100);
+                    }
+                } else {
+                    $btn.attr('tabindex', '-1').attr('aria-hidden', 'true');
+                }
+            });
         });
+
+        // D. World Info Entries (Focus Locking & Logic)
+        $('.world_entry').each(function() {
+            const $entry = $(this);
+            const uid = $entry.attr('uid');
+            const title = $entry.find('textarea[name="comment"]').val() || 'Untitled Entry';
+
+            // 1. Kill Switch / Toggle
+            const $killSwitch = $entry.find('.killSwitch');
+            $killSwitch.attr({
+                'role': 'button',
+                'tabindex': '0',
+                'aria-label': `Enable/Disable: ${title}`,
+                'aria-pressed': $killSwitch.hasClass('fa-toggle-on') ? 'true' : 'false'
+            });
+
+            // Restore focus if this entry was just toggled
+            if (lastActiveWIUid === uid && document.activeElement !== $killSwitch[0]) {
+                setTimeout(() => { $killSwitch.focus(); lastActiveWIUid = null; }, 50);
+            }
+
+            // 2. Expand/Collapse Icon
+            const $drawerIcon = $entry.find('.inline-drawer-toggle');
+            const isExpanded = $entry.find('.inline-drawer-content').is(':visible');
+            $drawerIcon.attr({
+                'role': 'button',
+                'tabindex': '0',
+                'aria-label': `${isExpanded ? 'Collapse' : 'Expand'}: ${title}`,
+                'aria-expanded': isExpanded ? 'true' : 'false'
+            });
+
+            // 3. Action Buttons
+            $entry.find('.menu_button').attr({ 'role': 'button', 'tabindex': '0' });
+        });
+
+        // E. General Interface Buttons
+        $('#character_popup .editor_maximize').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Expand Full Editor' });
+        $('#character_cross').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close' });
     };
 
-    /**
-     * Precision Focus Trap for the Prompt Editor
-     */
-    const managePromptManagerTrap = () => {
-        const $popup = $('#completion_prompt_manager_popup');
-        const $editView = $('#completion_prompt_manager_popup_edit');
-        const $inspectView = $('#completion_prompt_manager_popup_inspect');
-
-        // Only activate trap if the popup is visible AND either Edit or Inspect mode is active
-        const isActuallyActive = $popup.is(':visible') && 
-                                ($editView.is(':visible') || $inspectView.is(':visible'));
-
+    // --- 3. Focus Trap Management ---
+    const managePopupTraps = () => {
         const trapLib = window['focusTrap'];
+        if (!trapLib) return;
 
-        if (isActuallyActive) {
-            if (!promptManagerTrap && trapLib) {
-                lastFocusedElement = document.activeElement; // Remember where we were in the list
+        // A. Character Advanced Definitions Popup
+        const $charPopup = $('#character_popup');
+        if ($charPopup.is(':visible') && $charPopup.hasClass('open')) {
+            if (!charPopupTrap) {
+                lastFocusedBeforeTrap = document.activeElement;
+                charPopupTrap = trapLib.createFocusTrap('#character_popup', {
+                    allowOutsideClick: true,
+                    fallbackFocus: '#character_popup_ok',
+                    onDeactivate: () => { if (lastFocusedBeforeTrap) lastFocusedBeforeTrap.focus(); }
+                });
+                try { charPopupTrap.activate(); } catch (e) {}
+            }
+        } else if (charPopupTrap) {
+            try { charPopupTrap.deactivate(); } catch (e) {}
+            charPopupTrap = null;
+        }
+
+        // B. Prompt Manager Edit/Inspect Popup
+        const $promptPopup = $('#completion_prompt_manager_popup');
+        const isPromptActive = $promptPopup.is(':visible') && ($('#completion_prompt_manager_popup_edit').is(':visible') || $('#completion_prompt_manager_popup_inspect').is(':visible'));
+        if (isPromptActive) {
+            if (!promptManagerTrap) {
+                lastFocusedBeforeTrap = document.activeElement;
                 promptManagerTrap = trapLib.createFocusTrap('#completion_prompt_manager_popup', {
                     allowOutsideClick: true,
                     initialFocus: '#completion_prompt_manager_popup_close_button',
-                    fallbackFocus: '#completion_prompt_manager_popup_close_button',
-                    onDeactivate: () => {
-                        if (lastFocusedElement) lastFocusedElement.focus();
-                    }
+                    onDeactivate: () => { if (lastFocusedBeforeTrap) lastFocusedBeforeTrap.focus(); }
                 });
                 try { promptManagerTrap.activate(); } catch (e) {}
             }
-        } else {
-            if (promptManagerTrap) {
-                try { promptManagerTrap.deactivate(); } catch (e) {}
-                promptManagerTrap = null;
+        } else if (promptManagerTrap) {
+            try { promptManagerTrap.deactivate(); } catch (e) {}
+            promptManagerTrap = null;
+        }
+
+        // C. World Info Entry Detail Trap (Locks focus inside expanded entry)
+        const $expandedWI = $('#world_popup_entries_list .world_entry .inline-drawer-content:visible').closest('.world_entry');
+        if ($expandedWI.length === 1) {
+            const currentUid = $expandedWI.attr('uid');
+            if (!worldInfoTrap || worldInfoTrap._uid !== currentUid) {
+                if (worldInfoTrap) try { worldInfoTrap.deactivate(); } catch(e){}
+                worldInfoTrap = trapLib.createFocusTrap($expandedWI.find('.world_entry_form')[0], {
+                    allowOutsideClick: true,
+                    clickOutsideDeactivates: false,
+                    initialFocus: false,
+                    escapeDeactivates: false 
+                });
+                worldInfoTrap._uid = currentUid;
+                try { worldInfoTrap.activate(); } catch(e){}
             }
+        } else if (worldInfoTrap) {
+            try { worldInfoTrap.deactivate(); } catch (e) {}
+            worldInfoTrap = null;
         }
     };
 
-    // Global Keyboard Handler for Custom Buttons
-    $(document).on('keydown', '[role="button"][tabindex="0"]', function(e) {
+    // --- 4. Chat Context & Focus Trap Logic ---
+    const trapFocusInChat = (e) => {
+        if (e.key !== 'Tab') return;
+        // Let popup traps take precedence if visible
+        if ($('.openDrawer, .popup, #character_popup.open').is(':visible')) return;
+
+        const selectors = ['#chat .mes', '#options_button', '#extensionsMenuButton', '#send_textarea', '#mes_stop'].join(', ');
+        const $items = $(selectors).filter(':visible');
+        if (!$items.length) return;
+
+        const first = $items.first()[0];
+        const last = $items.last()[0];
+
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault(); first.focus();
+        }
+    };
+
+    // --- 5. Global Event Bindings ---
+
+    // Handle ARIA button clicks with keyboard
+    $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
+            
+            // Track states for focus restoration
+            const $li = $(this).closest('.completion_prompt_manager_prompt');
+            if ($li.length) {
+                lastActivePromptId = $li.attr('data-pm-identifier');
+                lastActivePromptAction = ['.prompt-manager-toggle-action', '.prompt-manager-edit-action'].find(cls => $(this).is(cls));
+            }
+            if ($(this).hasClass('killSwitch')) {
+                lastActiveWIUid = $(this).closest('.world_entry').attr('uid');
+            }
+
             $(this).click();
         }
     });
 
-    // Run initially
-    enhanceA11y();
-
-    // Use MutationObserver for dynamic list items and popup toggles
-    const debouncedA11y = debounce(() => {
-        enhanceA11y();
-        managePromptManagerTrap();
-        $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
-    }, 300);
-
-    const observer = new MutationObserver((mutations) => {
-        const significant = mutations.some(m => 
-            m.addedNodes.length > 0 || 
-            (m.type === 'attributes' && (m.attributeName === 'style' || m.attributeName === 'class'))
-        );
-        if (significant) debouncedA11y();
+    // Generation State Announcements
+    eventSource.on(event_types.GENERATION_STARTED, (type) => {
+        if (type === 'quiet') return;
+        isAiGenerating = true;
+        announceA11y("AI is generating response...");
+        setTimeout(() => { document.getElementById('mes_stop')?.focus(); }, 50);
     });
 
-    observer.observe(document.body, { 
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mid) => {
+        isAiGenerating = false;
+        const msg = chat[mid];
+        if (msg) announceA11y(`AI has replied: ${msg.mes}`);
+        $('#send_textarea').focus();
+    });
+
+    eventSource.on(event_types.GENERATION_STOPPED, () => {
+        isAiGenerating = false;
+        announceA11y("AI generation stopped.");
+        $('#send_textarea').focus();
+    });
+
+    const sheldEl = document.getElementById('sheld');
+    if (sheldEl) sheldEl.addEventListener('keydown', trapFocusInChat);
+
+    // --- 6. Observer & Execution ---
+    enhanceA11y();
+
+    const mainObserver = new MutationObserver(debounce(() => {
+        enhanceA11y();
+        managePopupTraps();
+        
+        // Ensure noise elements stay hidden
+        $('input[type="range"], #send_but').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
+        
+        // Force focus back to Stop button if AI generates while navigating
+        if (isAiGenerating) {
+            const stopBtn = document.getElementById('mes_stop');
+            if (stopBtn && document.activeElement !== stopBtn && stopBtn.offsetParent !== null) {
+                stopBtn.focus();
+            }
+        }
+    }, 250));
+
+    mainObserver.observe(document.body, { 
         childList: true, 
         subtree: true, 
         attributes: true, 
