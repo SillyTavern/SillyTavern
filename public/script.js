@@ -12678,7 +12678,8 @@ jQuery(async function () {
     // --- 6. Observer & Execution ---
     enhanceA11y();
 
-    const mainObserver = new MutationObserver(debounce(() => {
+    // Create the debounced worker function
+    const processA11yUpdates = debounce(() => {
         enhanceA11y();
         managePopupTraps();
         
@@ -12692,7 +12693,12 @@ jQuery(async function () {
                 stopBtn.focus();
             }
         }
-    }, 250));
+    }, 250);
+
+    // Wrap the debounced function to match MutationCallback signature
+    const mainObserver = new MutationObserver((_mutations, _observer) => {
+        processA11yUpdates();
+    });
 
     mainObserver.observe(document.body, { 
         childList: true, 
