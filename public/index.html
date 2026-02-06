@@ -274,31 +274,33 @@
                                         <!-- A11y: Focus lands here -->
                                         <input class="neo-range-input" type="number" min="16" max="2048" step="1" data-for="amount_gen" id="amount_gen_counter" aria-labelledby="lbl_amount_gen">
                                     </div>
-                                    <div id="streaming_textgenerationwebui_block" class="flex-container alignitemscenter justifyCenter marginTop5">
-                                        <label class="checkbox_label" for="streaming_textgenerationwebui">
-                                            <input type="checkbox" id="streaming_textgenerationwebui" />
-                                            <small><span data-i18n="Streaming">Streaming</span>
-                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
-                                            </small>
-                                        </label>
-                                    </div>
-                                    <div id="streaming_kobold_block" class="flex-container alignitemscenter justifyCenter marginTop5">
-                                        <label class="checkbox_label" for="streaming_kobold">
-                                            <input type="checkbox" id="streaming_kobold" />
-                                            <small><span data-i18n="Streaming">Streaming</span>
-                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
-                                            </small>
-                                        </label>
-                                    </div>
-                                    <div id="streaming_novel_block" class="flex-container alignitemscenter justifyCenter marginTop5">
-                                        <label class="checkbox_label" for="streaming_novel">
-                                            <input type="checkbox" id="streaming_novel" />
-                                            <small><span data-i18n="Streaming">Streaming</span>
-                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
-                                            </small>
-                                        </label>
-                                    </div>
                                 </div>
+
+                                <div id="streaming_textgenerationwebui_block" class="flex-container alignitemscenter justifyCenter marginTop5">
+                                    <label class="checkbox_label" for="streaming_textgenerationwebui">
+                                        <input type="checkbox" id="streaming_textgenerationwebui" />
+                                        <small><span data-i18n="Streaming">Streaming</span>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                        </small>
+                                    </label>
+                                </div>
+                                <div id="streaming_kobold_block" class="flex-container alignitemscenter justifyCenter marginTop5">
+                                    <label class="checkbox_label" for="streaming_kobold">
+                                        <input type="checkbox" id="streaming_kobold" />
+                                        <small><span data-i18n="Streaming">Streaming</span>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                        </small>
+                                    </label>
+                                </div>
+                                <div id="streaming_novel_block" class="flex-container alignitemscenter justifyCenter marginTop5">
+                                    <label class="checkbox_label" for="streaming_novel">
+                                        <input type="checkbox" id="streaming_novel" />
+                                        <small><span data-i18n="Streaming">Streaming</span>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Streaming_desc" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                        </small>
+                                    </label>
+                                </div>
+
                                 <div id="max_context_block" class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" role="group" aria-labelledby="lbl_max_context">
                                     <small id="lbl_max_context" data-i18n="context size(tokens)">Context (tokens)</small>
                                     <!-- A11y: Slider hidden -->
@@ -307,15 +309,17 @@
                                         <!-- A11y: Focus visible -->
                                         <input class="neo-range-input" type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter" aria-labelledby="lbl_max_context">
                                     </div>
-                                    <div class="flex-container alignitemscenter justifyCenter marginTop5" id="max_context_unlocked_block">
-                                        <label class="checkbox_label">
-                                            <input id="max_context_unlocked" type="checkbox" />
-                                            <small><span data-i18n="unlocked">Unlocked</span>
-                                                <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Only enable this if your model supports context sizes greater than 8192 tokens" title="Only enable this if your model supports context sizes greater than 8192 tokens.&#13;Increase only if you know what you're doing."></div>
-                                            </small>
-                                        </label>
-                                    </div>
                                 </div>
+
+                                <div class="flex-container alignitemscenter justifyCenter marginTop5" id="max_context_unlocked_block">
+                                    <label class="checkbox_label">
+                                        <input id="max_context_unlocked" type="checkbox" />
+                                        <small><span data-i18n="unlocked">Unlocked</span>
+                                            <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Only enable this if your model supports context sizes greater than 8192 tokens" title="Only enable this if your model supports context sizes greater than 8192 tokens.&#13;Increase only if you know what you're doing."></div>
+                                        </small>
+                                    </label>
+                                </div>
+
                                 <small id="prompt_cost_block" data-tg-type="openrouter">
                                     <span data-i18n="Max prompt cost:">Max prompt cost:</span> <span id="or_prompt_cost">&ndash;</span>
                                 </small>
