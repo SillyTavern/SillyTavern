@@ -12408,36 +12408,76 @@ jQuery(async function () {
     await firstLoadInit();
 
     /**
-     * Accessibility Enhancement Script
-     * Targets: Range sliders, input labeling, and descriptive text association.
+     * Enhanced Accessibility Logic for SillyTavern
+     * Focus: Prompt Manager List, Focus Trapping, and UI Consistency
      */
 
-    // 1. Hide all range sliders from screen readers and Tab navigation
+    // 1. Globally hide range sliders
     $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
 
-    const enhanceA11y = () => {
-        // --- A. Process Input Controls (Checkboxes, Textareas, Selects, Numbers) ---
-        $('input, textarea, select').each(function() {
-            const $el = $(this);
-            
-            // Skip hidden inputs or sliders already handled
-            if ($el.is('[type="hidden"], [type="range"]')) return;
+    let promptManagerTrap = null;
+    let lastFocusedElement = null; // To restore focus when popup closes
 
-            // Ensure a unique ID for ARIA mapping
+    const enhanceA11y = () => {
+        // --- A. Process Prompt Manager List Items (The "Prompts" List) ---
+        // This ensures you can Tab through the list entries
+        $('.completion_prompt_manager_prompt').each(function() {
+            const $li = $(this);
+            const promptId = $li.attr('data-pm-identifier');
+            const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
+            
+            $li.find('.drag-handle').attr('aria-hidden', 'true'); // Hide drag handle
+
+            // Name/Inspect Link
+            const $nameAction = $li.find('.prompt-manager-inspect-action');
+            if ($nameAction.length && !$nameAction.attr('role')) {
+                $nameAction.attr({
+                    'role': 'button',
+                    'tabindex': '0',
+                    'aria-label': itemName + ( $li.hasClass('completion_prompt_manager_prompt_disabled') ? ' (Disabled)' : '' )
+                });
+            }
+
+            // Action Icons (Toggle, Edit, Remove)
+            $li.find('.prompt_manager_prompt_controls span').each(function() {
+                const $btn = $(this);
+                const isToggle = $btn.hasClass('prompt-manager-toggle-action');
+                const isEdit = $btn.hasClass('prompt-manager-edit-action');
+                const isDetach = $btn.hasClass('prompt-manager-detach-action');
+
+                if (isToggle || isEdit || isDetach) {
+                    const actionTitle = $btn.attr('title') || 'Action';
+                    $btn.attr({
+                        'role': 'button',
+                        'tabindex': '0',
+                        'aria-label': actionTitle + ': ' + itemName
+                    });
+
+                    if (isToggle) {
+                        const isActive = $btn.hasClass('fa-toggle-on');
+                        $btn.attr('aria-pressed', isActive ? 'true' : 'false');
+                    }
+                } else {
+                    // Ignore empty spaces or decorative spans
+                    $btn.attr('tabindex', '-1').attr('aria-hidden', 'true');
+                }
+            });
+        });
+
+        // --- B. Standard Form Elements (Inside and Outside Popup) ---
+        $('input:not([type="range"]), textarea, select').each(function() {
+            const $el = $(this);
+            if ($el.is('[type="hidden"]')) return;
+
             let id = $el.attr('id') || 'st-a11y-' + Math.random().toString(36).substr(2, 5);
             if (!$el.attr('id')) $el.attr('id', id);
 
-            const $container = $el.closest('.range-block, .flex-container, .world_entry_form_control, .world_entry_thin_controls');
+            const $container = $el.closest('.range-block, .flex-container, .completion_prompt_manager_popup_entry_form_control, .world_entry_form_control');
             if (!$container.length) return;
 
-            // --- 1. Identify and Link Title (aria-labelledby) ---
-            let $title = $container.find('.range-block-title, .justifyLeft, b').first();
-            
-            // Handle cases like "Unlocked Context Size" or "Streaming" where text is a span inside the label
-            if ($el.parent('label').length) {
-                const $labelSpan = $el.parent('label').find('span').first();
-                if ($labelSpan.length) $title = $labelSpan;
-            }
+            // Labeling
+            let $title = $container.find('label, .range-block-title, b').first();
+            if ($el.parent('label').length) $title = $el.parent('label').find('span').first();
 
             if ($title.length) {
                 const titleId = $title.attr('id') || 'label-' + id;
@@ -12445,67 +12485,90 @@ jQuery(async function () {
                 $el.attr('aria-labelledby', titleId);
             }
 
-            // --- 2. Identify and Link Description (aria-describedby) ---
-            // Links the help text (e.g., "Display the response bit by bit...") to the input
-            const $desc = $container.find('.toggle-description, .text_muted, small.flexBasis100p').first();
+            // Description
+            const $desc = $container.find('.text_muted, .toggle-description').first();
             if ($desc.length) {
                 const descId = $desc.attr('id') || 'desc-' + id;
                 if (!$desc.attr('id')) $desc.attr('id', descId);
                 $el.attr('aria-describedby', descId);
             }
-
-            // --- 3. Number Input Role Enhancement ---
-            if ($el.is('[type="number"]')) {
-                $el.attr('role', 'spinbutton');
-                const min = $el.attr('min'), max = $el.attr('max');
-                if (min !== undefined) $el.attr('aria-valuemin', min);
-                if (max !== undefined) $el.attr('aria-valuemax', max);
-            }
         });
 
-        // --- B. Handle Collapsible Drawer Toggles ---
-        $('.inline-drawer').each(function() {
-            const $drawer = $(this);
-            const $header = $drawer.find('.inline-drawer-toggle');
-            const $icon = $header.find('.inline-drawer-icon');
-            const $content = $drawer.find('.inline-drawer-content');
-            
-            // Use the bold text or primary span in the header as the button's name
-            const $nameSource = $header.find('b, span').first();
-
-            if ($icon.length && $nameSource.length) {
-                const btnNameId = $nameSource.attr('id') || 'btn-name-' + Math.random().toString(36).substr(2, 5);
-                if (!$nameSource.attr('id')) $nameSource.attr('id', btnNameId);
-
-                $icon.attr({
-                    'role': 'button',
-                    'aria-labelledby': btnNameId,
-                    'tabindex': '0'
-                });
-
-                // Update expanded state based on visual class or visibility
-                const isExpanded = $content.is(':visible') && !$icon.hasClass('down');
-                $icon.attr('aria-expanded', isExpanded ? 'true' : 'false');
-            }
+        // --- C. Handle All Menu/Popup Buttons ---
+        $('.menu_button, .interactable[role="button"]').each(function() {
+            const $btn = $(this);
+            if (!$btn.attr('tabindex')) $btn.attr('tabindex', '0');
+            if (!$btn.attr('role')) $btn.attr('role', 'button');
         });
     };
 
-    // Initial execution
-    enhanceA11y();
+    /**
+     * Precision Focus Trap for the Prompt Editor
+     */
+    const managePromptManagerTrap = () => {
+        const $popup = $('#completion_prompt_manager_popup');
+        const $editView = $('#completion_prompt_manager_popup_edit');
+        const $inspectView = $('#completion_prompt_manager_popup_inspect');
 
-    // Use MutationObserver to handle dynamically added elements (Drawers, Extensions, etc.)
-    const debouncedA11y = debounce(() => {
-        enhanceA11y();
-        $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
-    }, 500);
+        // Only activate trap if the popup is visible AND either Edit or Inspect mode is active
+        const isActuallyActive = $popup.is(':visible') && 
+                                ($editView.is(':visible') || $inspectView.is(':visible'));
 
-    const observer = new MutationObserver((mutations) => {
-        // Only trigger if nodes were added to avoid infinite loops on attribute changes
-        const hasNewNodes = mutations.some(m => m.addedNodes.length > 0);
-        if (hasNewNodes) debouncedA11y();
+        const trapLib = window['focusTrap'];
+
+        if (isActuallyActive) {
+            if (!promptManagerTrap && trapLib) {
+                lastFocusedElement = document.activeElement; // Remember where we were in the list
+                promptManagerTrap = trapLib.createFocusTrap('#completion_prompt_manager_popup', {
+                    allowOutsideClick: true,
+                    initialFocus: '#completion_prompt_manager_popup_close_button',
+                    fallbackFocus: '#completion_prompt_manager_popup_close_button',
+                    onDeactivate: () => {
+                        if (lastFocusedElement) lastFocusedElement.focus();
+                    }
+                });
+                try { promptManagerTrap.activate(); } catch (e) {}
+            }
+        } else {
+            if (promptManagerTrap) {
+                try { promptManagerTrap.deactivate(); } catch (e) {}
+                promptManagerTrap = null;
+            }
+        }
+    };
+
+    // Global Keyboard Handler for Custom Buttons
+    $(document).on('keydown', '[role="button"][tabindex="0"]', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            $(this).click();
+        }
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Run initially
+    enhanceA11y();
+
+    // Use MutationObserver for dynamic list items and popup toggles
+    const debouncedA11y = debounce(() => {
+        enhanceA11y();
+        managePromptManagerTrap();
+        $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
+    }, 300);
+
+    const observer = new MutationObserver((mutations) => {
+        const significant = mutations.some(m => 
+            m.addedNodes.length > 0 || 
+            (m.type === 'attributes' && (m.attributeName === 'style' || m.attributeName === 'class'))
+        );
+        if (significant) debouncedA11y();
+    });
+
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true, 
+        attributes: true, 
+        attributeFilter: ['style', 'class'] 
+    });
 
     window.addEventListener('beforeunload', (e) => {
         if (isChatSaving || this_edit_mes_id >= 0) {
