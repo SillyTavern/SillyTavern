@@ -11933,13 +11933,13 @@ jQuery(async function () {
     $('.drawer-toggle').on('click', doNavbarIconClick);
 
     // Navbar Focus Management
-    const $navButtons = $('#top-settings-holder .drawer-toggle');
-    
+    const $navButtons = $('#top-settings-holder .drawer-icon');
+
     $navButtons.on('keydown', function(e) {
         // 1. Activate on Enter/Space
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            // Since we are focused on the toggle itself, just click it
+            // Since we are focused on the icon, click it
             $(this).trigger('click');
             return;
         }
@@ -12406,6 +12406,106 @@ jQuery(async function () {
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
     await firstLoadInit();
+
+    /**
+     * Accessibility Enhancement Script
+     * Targets: Range sliders, input labeling, and descriptive text association.
+     */
+
+    // 1. Hide all range sliders from screen readers and Tab navigation
+    $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
+
+    const enhanceA11y = () => {
+        // --- A. Process Input Controls (Checkboxes, Textareas, Selects, Numbers) ---
+        $('input, textarea, select').each(function() {
+            const $el = $(this);
+            
+            // Skip hidden inputs or sliders already handled
+            if ($el.is('[type="hidden"], [type="range"]')) return;
+
+            // Ensure a unique ID for ARIA mapping
+            let id = $el.attr('id') || 'st-a11y-' + Math.random().toString(36).substr(2, 5);
+            if (!$el.attr('id')) $el.attr('id', id);
+
+            const $container = $el.closest('.range-block, .flex-container, .world_entry_form_control, .world_entry_thin_controls');
+            if (!$container.length) return;
+
+            // --- 1. Identify and Link Title (aria-labelledby) ---
+            let $title = $container.find('.range-block-title, .justifyLeft, b').first();
+            
+            // Handle cases like "Unlocked Context Size" or "Streaming" where text is a span inside the label
+            if ($el.parent('label').length) {
+                const $labelSpan = $el.parent('label').find('span').first();
+                if ($labelSpan.length) $title = $labelSpan;
+            }
+
+            if ($title.length) {
+                const titleId = $title.attr('id') || 'label-' + id;
+                if (!$title.attr('id')) $title.attr('id', titleId);
+                $el.attr('aria-labelledby', titleId);
+            }
+
+            // --- 2. Identify and Link Description (aria-describedby) ---
+            // Links the help text (e.g., "Display the response bit by bit...") to the input
+            const $desc = $container.find('.toggle-description, .text_muted, small.flexBasis100p').first();
+            if ($desc.length) {
+                const descId = $desc.attr('id') || 'desc-' + id;
+                if (!$desc.attr('id')) $desc.attr('id', descId);
+                $el.attr('aria-describedby', descId);
+            }
+
+            // --- 3. Number Input Role Enhancement ---
+            if ($el.is('[type="number"]')) {
+                $el.attr('role', 'spinbutton');
+                const min = $el.attr('min'), max = $el.attr('max');
+                if (min !== undefined) $el.attr('aria-valuemin', min);
+                if (max !== undefined) $el.attr('aria-valuemax', max);
+            }
+        });
+
+        // --- B. Handle Collapsible Drawer Toggles ---
+        $('.inline-drawer').each(function() {
+            const $drawer = $(this);
+            const $header = $drawer.find('.inline-drawer-toggle');
+            const $icon = $header.find('.inline-drawer-icon');
+            const $content = $drawer.find('.inline-drawer-content');
+            
+            // Use the bold text or primary span in the header as the button's name
+            const $nameSource = $header.find('b, span').first();
+
+            if ($icon.length && $nameSource.length) {
+                const btnNameId = $nameSource.attr('id') || 'btn-name-' + Math.random().toString(36).substr(2, 5);
+                if (!$nameSource.attr('id')) $nameSource.attr('id', btnNameId);
+
+                $icon.attr({
+                    'role': 'button',
+                    'aria-labelledby': btnNameId,
+                    'tabindex': '0'
+                });
+
+                // Update expanded state based on visual class or visibility
+                const isExpanded = $content.is(':visible') && !$icon.hasClass('down');
+                $icon.attr('aria-expanded', isExpanded ? 'true' : 'false');
+            }
+        });
+    };
+
+    // Initial execution
+    enhanceA11y();
+
+    // Use MutationObserver to handle dynamically added elements (Drawers, Extensions, etc.)
+    const debouncedA11y = debounce(() => {
+        enhanceA11y();
+        $('input[type="range"]').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
+    }, 500);
+
+    const observer = new MutationObserver((mutations) => {
+        // Only trigger if nodes were added to avoid infinite loops on attribute changes
+        const hasNewNodes = mutations.some(m => m.addedNodes.length > 0);
+        if (hasNewNodes) debouncedA11y();
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 
     window.addEventListener('beforeunload', (e) => {
         if (isChatSaving || this_edit_mes_id >= 0) {
