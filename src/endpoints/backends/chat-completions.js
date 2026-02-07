@@ -2389,7 +2389,8 @@ router.post('/generate', async function (request, response) {
 
         // Apply Claude Opus 4.6+ adaptive thinking for OpenAI-compatible endpoints
         const isClaudeOpus46 = /claude-opus-4[.-]6/.test(request.body.model);
-        if (isClaudeOpus46) {
+        const isOpenRouterEndpoint = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER;
+        if (isClaudeOpus46 && isOpenRouterEndpoint) {
             const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, request.body.reasoning_effort, requestBody.stream, request.body.model);
             if (typeof budgetTokens === 'string') {
                 requestBody.thinking = { type: 'adaptive' };
