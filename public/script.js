@@ -4276,6 +4276,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     // A11y: Announce generation start and focus stop button
     if (!dryRun) {
+        deactivateSendButtons();
         announceA11y("AI is generating...");
         setTimeout(() => {
             const stopBtn = document.getElementById('mes_stop');
