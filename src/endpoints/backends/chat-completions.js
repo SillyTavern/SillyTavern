@@ -2387,6 +2387,29 @@ router.post('/generate', async function (request, response) {
             ...bodyParams,
         };
 
+        // Apply Claude Opus 4.6+ adaptive thinking for OpenAI-compatible endpoints
+        const isClaudeOpus46 = /claude-opus-4[.-]6/.test(request.body.model);
+        if (isClaudeOpus46) {
+            const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, request.body.reasoning_effort, requestBody.stream, request.body.model);
+            if (typeof budgetTokens === 'string') {
+                requestBody.thinking = { type: 'adaptive' };
+                requestBody.output_config ??= {};
+                requestBody.output_config.effort = budgetTokens;
+                // Remove OpenRouter-style reasoning param to avoid conflicts
+                delete requestBody.reasoning;
+            }
+            delete requestBody.top_k;
+        }
+
+        // Claude 4+ models cannot have both temperature and top_p
+        if (/claude-(opus-4[.-]1|sonnet-4[.-]5|haiku-4[.-]5|opus-4[.-]5|opus-4[.-]6)/.test(request.body.model)) {
+            if (requestBody.top_p < 1) {
+                delete requestBody.temperature;
+            } else {
+                delete requestBody.top_p;
+            }
+        }
+
         if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
         }

@@ -2398,7 +2398,10 @@ function getReasoningEffort(settings = null, model = null) {
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
-                return reasoning_effort_types.high;
+                // 'max' is supported on Claude Opus 4.6+ and GPT-5+
+                return /claude-opus-4[.-]6/.test(model) || /^gpt-5/.test(model)
+                    ? reasoning_effort_types.max
+                    : reasoning_effort_types.high;
             default:
                 return settings.reasoning_effort;
         }
