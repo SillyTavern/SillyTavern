@@ -4277,7 +4277,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // A11y: Announce generation start and focus stop button
     if (!dryRun) {
         deactivateSendButtons();
-        announceA11y("AI is generating...");
+        announceA11y('AI is generating...');
         setTimeout(() => {
             const stopBtn = document.getElementById('mes_stop');
             if (stopBtn && stopBtn.offsetParent !== null) {
@@ -10710,7 +10710,7 @@ export async function doNavbarIconClick() {
     if (!drawerWasOpenAlready) {
         // Update aria-expanded on the trigger button
         drawerContainer.attr('aria-expanded', 'true');
-        
+
         // Deactivate existing trap if any
         if (currentFocusTrap) {
             try { currentFocusTrap.deactivate(); } catch (e) { console.warn('Focus trap error', e); }
@@ -10723,7 +10723,7 @@ export async function doNavbarIconClick() {
                 fallbackFocus: drawerElement,
                 escapeDeactivates: false,
                 clickOutsideDeactivates: true,
-                returnFocusOnDeactivate: false // We handle return focus manually below
+                returnFocusOnDeactivate: false, // We handle return focus manually below
             });
             setTimeout(() => {
                 try { currentFocusTrap.activate(); } catch (e) { console.warn('Trap activate failed', e); }
@@ -11951,7 +11951,7 @@ jQuery(async function () {
 
         // 2. Focus Looping (Only when panels are closed)
         const isAnyPanelOpen = $('.drawer-content.openDrawer').length > 0;
-        
+
         if (e.key === 'Tab' && !isAnyPanelOpen) {
             const firstBtn = $navButtons.first()[0];
             const lastBtn = $navButtons.last()[0];
@@ -12445,7 +12445,7 @@ jQuery(async function () {
             $mes.attr({
                 'role': 'article',
                 'aria-label': `${isUser ? 'You' : charName}: ${textContent}`,
-                'tabindex': '0'
+                'tabindex': '0',
             }).addClass('a11y-refactored');
 
             // Hide decorative/technical noise from linear screen reader navigation
@@ -12495,7 +12495,7 @@ jQuery(async function () {
             const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
             $li.find('.drag-handle').attr('aria-hidden', 'true');
             $li.find('.prompt-manager-inspect-action').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Inspect: ' + itemName });
-            
+
             $li.find('.prompt_manager_prompt_controls span').each(function() {
                 const $btn = $(this);
                 const actionClass = ['.prompt-manager-toggle-action', '.prompt-manager-edit-action', '.prompt-manager-detach-action'].find(cls => $btn.is(cls));
@@ -12527,7 +12527,7 @@ jQuery(async function () {
                 'role': 'button',
                 'tabindex': '0',
                 'aria-label': `Enable/Disable: ${title}`,
-                'aria-pressed': $killSwitch.hasClass('fa-toggle-on') ? 'true' : 'false'
+                'aria-pressed': $killSwitch.hasClass('fa-toggle-on') ? 'true' : 'false',
             });
 
             // Restore focus if this entry was just toggled
@@ -12542,7 +12542,7 @@ jQuery(async function () {
                 'role': 'button',
                 'tabindex': '0',
                 'aria-label': `${isExpanded ? 'Collapse' : 'Expand'}: ${title}`,
-                'aria-expanded': isExpanded ? 'true' : 'false'
+                'aria-expanded': isExpanded ? 'true' : 'false',
             });
 
             // 3. Action Buttons
@@ -12567,7 +12567,7 @@ jQuery(async function () {
                 charPopupTrap = trapLib.createFocusTrap('#character_popup', {
                     allowOutsideClick: true,
                     fallbackFocus: '#character_popup_ok',
-                    onDeactivate: () => { if (lastFocusedBeforeTrap) lastFocusedBeforeTrap.focus(); }
+                    onDeactivate: () => { if (lastFocusedBeforeTrap) lastFocusedBeforeTrap.focus(); },
                 });
                 try { charPopupTrap.activate(); } catch (e) {}
             }
@@ -12585,7 +12585,7 @@ jQuery(async function () {
                 promptManagerTrap = trapLib.createFocusTrap('#completion_prompt_manager_popup', {
                     allowOutsideClick: true,
                     initialFocus: '#completion_prompt_manager_popup_close_button',
-                    onDeactivate: () => { if (lastFocusedBeforeTrap) lastFocusedBeforeTrap.focus(); }
+                    onDeactivate: () => { if (lastFocusedBeforeTrap) lastFocusedBeforeTrap.focus(); },
                 });
                 try { promptManagerTrap.activate(); } catch (e) {}
             }
@@ -12604,7 +12604,7 @@ jQuery(async function () {
                     allowOutsideClick: true,
                     clickOutsideDeactivates: false,
                     initialFocus: false,
-                    escapeDeactivates: false 
+                    escapeDeactivates: false,
                 });
                 worldInfoTrap._uid = currentUid;
                 try { worldInfoTrap.activate(); } catch(e){}
@@ -12641,7 +12641,7 @@ jQuery(async function () {
     $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            
+
             // Track states for focus restoration
             const $li = $(this).closest('.completion_prompt_manager_prompt');
             if ($li.length) {
@@ -12660,7 +12660,7 @@ jQuery(async function () {
     eventSource.on(event_types.GENERATION_STARTED, (type) => {
         if (type === 'quiet') return;
         isAiGenerating = true;
-        announceA11y("AI is generating response...");
+        announceA11y('AI is generating response...');
         setTimeout(() => { document.getElementById('mes_stop')?.focus(); }, 50);
     });
 
@@ -12673,7 +12673,7 @@ jQuery(async function () {
 
     eventSource.on(event_types.GENERATION_STOPPED, () => {
         isAiGenerating = false;
-        announceA11y("AI generation stopped.");
+        announceA11y('AI generation stopped.');
         $('#send_textarea').focus();
     });
 
@@ -12687,10 +12687,10 @@ jQuery(async function () {
     const processA11yUpdates = debounce(() => {
         enhanceA11y();
         managePopupTraps();
-        
+
         // Ensure noise elements stay hidden
         $('input[type="range"], #send_but').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
-        
+
         // Force focus back to Stop button if AI generates while navigating
         if (isAiGenerating) {
             const stopBtn = document.getElementById('mes_stop');
@@ -12705,11 +12705,11 @@ jQuery(async function () {
         processA11yUpdates();
     });
 
-    mainObserver.observe(document.body, { 
-        childList: true, 
-        subtree: true, 
-        attributes: true, 
-        attributeFilter: ['style', 'class'] 
+    mainObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class'],
     });
 
     window.addEventListener('beforeunload', (e) => {
