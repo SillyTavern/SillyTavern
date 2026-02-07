@@ -23,6 +23,7 @@ import { toggle as slideToggle } from 'slidetoggle';
 import chalk from 'chalk';
 import yaml from 'yaml';
 import * as chevrotain from 'chevrotain';
+import * as focusTrap from 'focus-trap';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -77,6 +78,10 @@ export function initLibraryShims() {
         // @ts-ignore
         window.droll = droll;
     }
+    if (!('focusTrap' in window)) {
+        // @ts-ignore
+        window.focusTrap = focusTrap;
+    }
 }
 
 export default {
@@ -102,6 +107,7 @@ export default {
     chalk,
     yaml,
     chevrotain,
+    focusTrap,
 };
 
 export {
@@ -127,4 +133,5 @@ export {
     chalk,
     yaml,
     chevrotain,
+    focusTrap,
 };

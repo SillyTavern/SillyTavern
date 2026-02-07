@@ -9,6 +9,7 @@ import {
     initLibraryShims,
     default as libs,
     lodash,
+    focusTrap,
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
@@ -12554,7 +12555,7 @@ jQuery(async function () {
 
     // --- 3. Focus Trap Management ---
     const managePopupTraps = () => {
-        const trapLib = window['focusTrap'];
+        const trapLib = focusTrap;
         if (!trapLib) return;
 
         // A. Character Advanced Definitions Popup
@@ -12592,7 +12593,7 @@ jQuery(async function () {
             promptManagerTrap = null;
         }
 
-        // C. World Info Entry Detail Trap (Locks focus inside expanded entry)
+        // C. World Info Entry Detail Trap
         const $expandedWI = $('#world_popup_entries_list .world_entry .inline-drawer-content:visible').closest('.world_entry');
         if ($expandedWI.length === 1) {
             const currentUid = $expandedWI.attr('uid');
