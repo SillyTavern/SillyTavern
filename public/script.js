@@ -1831,6 +1831,13 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
             mes = mes.replace(/\ufffe/g, '"');
         }
 
+        // Intercept image links and route to local cache
+        mes = mes.replace(/!\[(.*?)\]\((.*?)\)/g, (match, alt, url) => {
+            // Encode the original URL to safely pass it as a query parameter
+            const encodedUrl = encodeURIComponent(url);
+            return `![${alt}](api/files/cached?url=${encodedUrl})`;
+        });
+
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);

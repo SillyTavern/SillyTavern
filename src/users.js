@@ -78,6 +78,7 @@ const STORAGE_KEYS = {
  * @property {string} user - The directory where the user's public data is stored
  * @property {string} avatars - The directory where the avatars are stored
  * @property {string} userImages - The directory where the images are stored
+ * @property {string} userCache - The directory where media is cached
  * @property {string} groups - The directory where the groups are stored
  * @property {string} groupChats - The directory where the group chats are stored
  * @property {string} chats - The directory where the chats are stored
@@ -1078,5 +1079,6 @@ router.use('/characters/*', createRouteHandler(req => req.user.directories.chara
 router.use('/User%20Avatars/*', createRouteHandler(req => req.user.directories.avatars));
 router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
 router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
+router.use('/user/cache/*', createRouteHandler(req => req.user.directories.userCache));
 router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
 router.use('/scripts/extensions/third-party/*', createExtensionsRouteHandler(req => req.user.directories.extensions));

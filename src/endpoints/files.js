@@ -99,3 +99,56 @@ router.post('/verify', async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+router.get('/cached', async (request, response) => {
+    try {
+        const url = String(request.query.url);
+        if (!url) {
+            return response.status(400).send('No URL specified');
+        }
+
+        // Generates a unique cache file path based on the URL.
+        const cachePath = getCachePath(url, request.user.directories.userCache);
+
+        // Check if file is already cached
+        try {
+            await fs.promises.access(cachePath);
+        } catch {
+            // File not found: Fetch, Save, then proceed
+            const fetchResponse = await fetch(url);
+            if (!fetchResponse.ok) {
+                return response.status(fetchResponse.status).send('Failed to fetch remote resource');
+            }
+
+            const buffer = new Uint8Array(await fetchResponse.arrayBuffer());
+
+            // Ensure directory exists and save
+            await fs.promises.mkdir(path.dirname(cachePath), { recursive: true });
+            await fs.promises.writeFile(cachePath, buffer);
+
+            console.info(`Cached new media: ${cachePath} from ${request.user.profile.handle}`);
+        }
+
+        return response.sendFile(cachePath);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+/**
+ * Generates a unique cache file path based on the URL.
+ * Preserves the original file extension for correct MIME type handling.
+ */
+function getCachePath(url, cacheDir) {
+    const parsedUrl = new URL(url);
+
+    // Limit the maximum name length to 255 characters: https://en.wikipedia.org/wiki/Long_filename
+    const overflowLength = Math.max(parsedUrl.hostname.length - 255, 0);
+
+    // Remove protocol and join domain + truncated path.
+    const safeDir = sanitize(parsedUrl.hostname);
+    const safeName = sanitize(parsedUrl.pathname.slice(overflowLength));
+
+    return path.resolve(cacheDir, safeDir, safeName);
+}

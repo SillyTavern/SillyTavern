@@ -23,6 +23,7 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     user: 'user',
     avatars: 'User Avatars',
     userImages: 'user/images',
+    userCache: 'user/cache',
     groups: 'groups',
     groupChats: 'group chats',
     chats: 'chats',
