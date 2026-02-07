@@ -2039,14 +2039,14 @@ export async function openGroupById(groupId) {
 
         if (selected_group !== groupId) {
             groupChatQueueOrder = new Map();
-            await clearChat();
-            cancelTtsPlay();
-            selected_group = groupId;
             setCharacterId(undefined);
             setCharacterName('');
+            resetSelectedGroup();
+            await clearChat({ clearData: true });
+            cancelTtsPlay();
+            selected_group = groupId;
             setEditedMessageId(undefined);
             updateChatMetadata({}, true);
-            chat.length = 0;
             await getGroupChat(groupId);
             return true;
         }
@@ -2152,8 +2152,7 @@ export async function createNewGroupChat(groupId) {
         return;
     }
 
-    await clearChat();
-    chat.length = 0;
+    await clearChat({ clearData: true });
     const newChatName = humanizedDateTime();
     group.chats.push(newChatName);
     group.chat_id = newChatName;
@@ -2209,8 +2208,7 @@ export async function openGroupChat(groupId, chatId) {
         return;
     }
 
-    await clearChat();
-    chat.length = 0;
+    await clearChat({ clearData: true });
     group.chat_id = chatId;
     group.date_last_chat = Date.now();
     updateChatMetadata({}, true);

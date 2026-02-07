@@ -42,6 +42,12 @@ const THUMBNAIL_CONFIG = {
 };
 
 /**
+ * Cache for image metadata.
+ * @type {Map<string, import('../../src/endpoints/image-metadata.js').ImageMetadata>}
+ */
+const METADATA_CACHE = new Map();
+
+/**
  * Background source types.
  * @readonly
  * @enum {number}
@@ -88,6 +94,18 @@ function createThumbnailElement(imageData) {
     const clipper = document.createElement('div');
     clipper.className = 'thumbnail-clipper lazy-load-background';
     clipper.style.backgroundImage = PLACEHOLDER_IMAGE;
+
+    // Apply dominant color and aspect ratio as placeholder if available
+    const metadataKey = isCustom ? bg : `backgrounds/${bg}`;
+    const metadata = METADATA_CACHE.get(metadataKey);
+    if (metadata) {
+        if (metadata.dominantColor) {
+            clipper.style.backgroundColor = metadata.dominantColor;
+        }
+        if (metadata.aspectRatio) {
+            thumbnail.css('aspect-ratio', metadata.aspectRatio);
+        }
+    }
 
     const titleElement = thumbnail.find('.BGSampleTitle');
     clipper.appendChild(titleElement.get(0));
@@ -548,6 +566,8 @@ function renderChatBackgrounds(backgrounds) {
 }
 
 export async function getBackgrounds() {
+    const metadataPromise = preloadImageMetadata();
+
     const response = await fetch('/api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -557,8 +577,35 @@ export async function getBackgrounds() {
         const { images, config } = await response.json();
         Object.assign(THUMBNAIL_CONFIG, config);
 
+        await metadataPromise;
+
         renderSystemBackgrounds(images);
         highlightSelectedBackground();
+    }
+}
+
+/**
+ * Preloads all image metadata to use dominant colors as placeholders.
+ * @return {Promise<void>}
+ */
+async function preloadImageMetadata() {
+    try {
+        const response = await fetch('/api/image-metadata/all', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ prefix: 'backgrounds/' }),
+        });
+        if (response.ok) {
+            const data = await response.json();
+            if (data?.images) {
+                METADATA_CACHE.clear();
+                for (const [path, metadata] of Object.entries(data.images)) {
+                    METADATA_CACHE.set(path, metadata);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('[ImageMetadata] Failed to preload metadata:', error);
     }
 }
 
