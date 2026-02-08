@@ -1975,8 +1975,18 @@ export function addDOMPurifyHooks() {
         }
 
         const isMediaAllowed = isExternalMediaAllowed();
-        if (isMediaAllowed) {
-            return;
+
+        function handleURL(node, src, type = 'src') {
+            if (isMediaAllowed) {
+                // Intercept image links and route to local cache
+                const encodedUrl = encodeURIComponent(src);
+                // Encode the original URL to safely pass it as a query parameter
+                node.setAttribute(type, `api/files/cached?url=${encodedUrl}`);
+                return;
+            }
+            console.warn('External media blocked', src);
+            mediaBlocked = true;
+            node.remove();
         }
 
         if (!(node instanceof Element)) {
@@ -2005,6 +2015,7 @@ export function addDOMPurifyHooks() {
                         const [url] = srcsetUrl.trim().split(' ');
 
                         if (isExternalUrl(url)) {
+                            //TODO
                             console.warn('External media blocked', url);
                             node.remove();
                             mediaBlocked = true;
@@ -2014,15 +2025,11 @@ export function addDOMPurifyHooks() {
                 }
 
                 if (src && isExternalUrl(src)) {
-                    console.warn('External media blocked', src);
-                    mediaBlocked = true;
-                    node.remove();
+                    handleURL(node, src, 'src');
                 }
 
                 if (data && isExternalUrl(data)) {
-                    console.warn('External media blocked', data);
-                    mediaBlocked = true;
-                    node.remove();
+                    handleURL(node, data, 'data');
                 }
 
                 if (mediaBlocked && (node instanceof HTMLMediaElement)) {
