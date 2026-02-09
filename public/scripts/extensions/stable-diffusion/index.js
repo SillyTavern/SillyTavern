@@ -79,6 +79,7 @@ const sources = {
     extras: 'extras',
     horde: 'horde',
     auto: 'auto',
+    sdcpp: 'sdcpp',
     novel: 'novel',
     vlad: 'vlad',
     openai: 'openai',
@@ -283,12 +284,16 @@ const defaultSettings = {
     snap: false,
     free_extend: false,
     function_tool: false,
+    minimal_prompt_processing: false,
 
     prompts: promptTemplates,
 
     // AUTOMATIC1111 settings
     auto_url: 'http://localhost:7860',
     auto_auth: '',
+
+    // stable-diffusion.cpp settings
+    sdcpp_url: 'http://127.0.0.1:1234',
 
     vlad_url: 'http://localhost:7860',
     vlad_auth: '',
@@ -528,6 +533,7 @@ async function loadSettings() {
     $('#sd_multimodal_captioning').prop('checked', extension_settings.sd.multimodal_captioning);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
+    $('#sd_sdcpp_url').val(extension_settings.sd.sdcpp_url);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
     $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
@@ -542,6 +548,7 @@ async function loadSettings() {
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_comfy_runpod_url').val(extension_settings.sd.comfy_runpod_url);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
+    $('#sd_minimal_prompt_processing').prop('checked', extension_settings.sd.minimal_prompt_processing);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
@@ -661,6 +668,11 @@ function onMultimodalCaptioningInput() {
 
 function onSnapInput() {
     extension_settings.sd.snap = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onMinimalPromptProcessing() {
+    extension_settings.sd.minimal_prompt_processing = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1156,6 +1168,11 @@ function onAutoAuthInput() {
     saveSettingsDebounced();
 }
 
+function onSdcppUrlInput() {
+    extension_settings.sd.sdcpp_url = $('#sd_sdcpp_url').val();
+    saveSettingsDebounced();
+}
+
 function onVladUrlInput() {
     extension_settings.sd.vlad_url = $('#sd_vlad_url').val();
     saveSettingsDebounced();
@@ -1261,6 +1278,29 @@ async function validateAutoUrl() {
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
+    }
+}
+
+async function validateSdcppUrl() {
+    try {
+        if (!extension_settings.sd.sdcpp_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch('/api/sd/sdcpp/ping', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url }),
+        });
+
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        await loadSettingOptions();
+        toastr.success('stable-diffusion.cpp server connected.');
+    } catch (error) {
+        toastr.error(`Could not validate stable-diffusion.cpp server: ${error.message}`);
     }
 }
 
@@ -1557,6 +1597,9 @@ async function loadSamplers() {
         case sources.auto:
             samplers = await loadAutoSamplers();
             break;
+        case sources.sdcpp:
+            samplers = await loadSdcppSamplers();
+            break;
         case sources.drawthings:
             samplers = await loadDrawthingsSamplers();
             break;
@@ -1682,6 +1725,11 @@ async function loadAutoSamplers() {
     }
 }
 
+async function loadSdcppSamplers() {
+    // The sdcpp server does not provide an API for samplers, so we return the known list.
+    return ['euler', 'euler_a', 'heun', 'dpm2', 'dpm++2s_a', 'dpm++2m', 'dpm++2mv2', 'ipndm', 'ipndm_v', 'lcm', 'ddim_trailing', 'tcd'];
+}
+
 async function loadDrawthingsSamplers() {
     // The app developer doesn't provide an API to get these yet
     return [
@@ -1770,6 +1818,9 @@ async function loadModels() {
             break;
         case sources.auto:
             models = await loadAutoModels();
+            break;
+        case sources.sdcpp:
+            models = [{ value: '', text: 'N/A' }];
             break;
         case sources.drawthings:
             models = await loadDrawthingsModels();
@@ -1955,6 +2006,8 @@ async function loadXAIModels() {
 }
 
 async function loadPollinationsModels() {
+    $('#sd_pollinations_key').toggleClass('success', !!secret_state[SECRET_KEYS.POLLINATIONS]);
+
     const result = await fetch('/api/sd/pollinations/models', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),
@@ -2377,6 +2430,9 @@ async function loadSchedulers() {
         case sources.auto:
             schedulers = await getAutoRemoteSchedulers();
             break;
+        case sources.sdcpp:
+            schedulers = await loadSdcppSchedulers();
+            break;
         case sources.novel:
             schedulers = loadNovelSchedulers();
             break;
@@ -2475,6 +2531,11 @@ async function loadComfySchedulers() {
     }
 }
 
+async function loadSdcppSchedulers() {
+    // The sdcpp server does not provide an API for schedulers, so we return the known list.
+    return ['discrete', 'karras', 'exponential', 'ays', 'gits', 'smoothstep', 'sgm_uniform', 'simple', 'kl_optimal', 'lcm'];
+}
+
 async function loadVaes() {
     $('#sd_vae').empty();
     let vaes = [];
@@ -2488,6 +2549,9 @@ async function loadVaes() {
             break;
         case sources.auto:
             vaes = await loadAutoVaes();
+            break;
+        case sources.sdcpp:
+            vaes = ['N/A'];
             break;
         case sources.novel:
             vaes = ['N/A'];
@@ -2676,6 +2740,15 @@ function getQuietPrompt(mode, trigger) {
 function processReply(str) {
     if (!str) {
         return '';
+    }
+
+    if (extension_settings.sd.minimal_prompt_processing) {
+        // Minimal prompt processing
+        // JSON and similar should be preserved
+        str = str.normalize('NFD');
+        str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
+        str = str.trim();
+        return str;
     }
 
     str = str.replaceAll('"', '');
@@ -3164,6 +3237,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.auto:
                 result = await generateAutoImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.sdcpp:
+                result = await generateSdcppImage(prefixedPrompt, negativePrompt, signal);
+                break;
             case sources.novel:
                 result = await generateNovelImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -3312,7 +3388,7 @@ async function generatePollinationsImage(prompt, negativePrompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'jpg', data: data?.image };
+        return { format: data?.format, data: data?.image };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -3645,6 +3721,55 @@ async function generateAutoImage(prompt, negativePrompt, signal) {
     if (result.ok) {
         const data = await result.json();
         return { format: 'png', data: data.images[0] };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image using stable-diffusion.cpp server API.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateSdcppImage(prompt, negativePrompt, signal) {
+    const payload = {
+        url: extension_settings.sd.sdcpp_url,
+        prompt: prompt,
+        negative_prompt: negativePrompt,
+        steps: extension_settings.sd.steps,
+        cfg_scale: extension_settings.sd.scale,
+        width: extension_settings.sd.width,
+        height: extension_settings.sd.height,
+        batch_size: 1,
+        seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+    };
+
+    if (extension_settings.sd.sampler && extension_settings.sd.sampler !== 'N/A') {
+        payload.sampler_name = extension_settings.sd.sampler;
+    }
+
+    if (extension_settings.sd.scheduler && extension_settings.sd.scheduler !== 'N/A') {
+        payload.scheduler = extension_settings.sd.scheduler;
+    }
+
+    if (Number.isFinite(extension_settings.sd.clip_skip)) {
+        payload.clip_skip = extension_settings.sd.clip_skip;
+    }
+
+    const result = await fetch('/api/sd/sdcpp/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify(payload),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'png', data: data.images?.[0] };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -4734,6 +4859,8 @@ function isValidState() {
             return true;
         case sources.auto:
             return !!extension_settings.sd.auto_url;
+        case sources.sdcpp:
+            return !!extension_settings.sd.sdcpp_url;
         case sources.drawthings:
             return !!extension_settings.sd.drawthings_url;
         case sources.vlad:
@@ -4757,7 +4884,7 @@ function isValidState() {
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
-            return true;
+            return secret_state[SECRET_KEYS.POLLINATIONS];
         case sources.stability:
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.huggingface:
@@ -5042,6 +5169,17 @@ function applyCommandArguments(args) {
         'denoise': 'denoising_strength',
         '2ndpass': 'hr_second_pass_steps',
         'faces': 'restore_faces',
+        'processing': 'minimal_prompt_processing',
+    };
+    const enumHandlers = {
+        'processing': (value) => {
+            if (/standard/gi.test(String(value))) {
+                return false;
+            }
+            if (/minimal/gi.test(String(value))) {
+                return true;
+            }
+        },
     };
 
     for (const [param, setting] of Object.entries(settingMap)) {
@@ -5050,6 +5188,14 @@ function applyCommandArguments(args) {
         }
         currentSettings[setting] = extension_settings.sd[setting];
         const value = String(args[param]);
+        const enumHandler = enumHandlers[param];
+        if (typeof enumHandler === 'function') {
+            const enumValue = enumHandler(value);
+            if (enumValue !== undefined) {
+                overrideSettings[setting] = enumValue;
+            }
+            continue;
+        }
         const type = typeof defaultSettings[setting];
         switch (type) {
             case 'boolean':
@@ -5168,6 +5314,17 @@ jQuery(async () => {
                 description: 'snap auto-adjusted dimensions to the nearest known resolution (portraits and backgrounds only)',
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumProvider: commonEnumProviders.boolean('trueFalse'),
+                isRequired: false,
+                acceptsMultiple: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'processing',
+                description: 'level of response prompt processing returned by the LLM',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('standard', 'Standard prompt processing'),
+                    new SlashCommandEnumValue('minimal', 'Minimal prompt processing'),
+                ],
                 isRequired: false,
                 acceptsMultiple: false,
             }),
@@ -5416,6 +5573,8 @@ jQuery(async () => {
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
+    $('#sd_sdcpp_validate').on('click', validateSdcppUrl);
+    $('#sd_sdcpp_url').on('input', onSdcppUrlInput);
     $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
     $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
     $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
@@ -5452,6 +5611,7 @@ jQuery(async () => {
     $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
+    $('#sd_minimal_prompt_processing').on('input', onMinimalPromptProcessing);
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
@@ -5514,15 +5674,19 @@ jQuery(async () => {
 
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
         eventSource.on(event, async (/** @type {string} */ key) => {
-            switch (key) {
-                case SECRET_KEYS.BFL:
-                case SECRET_KEYS.FALAI:
-                case SECRET_KEYS.STABILITY:
-                case SECRET_KEYS.AIMLAPI:
-                case SECRET_KEYS.COMFY_RUNPOD:
-                    await loadSettingOptions();
-                    break;
+            const keySourceMap = {
+                [sources.bfl]: SECRET_KEYS.BFL,
+                [sources.falai]: SECRET_KEYS.FALAI,
+                [sources.stability]: SECRET_KEYS.STABILITY,
+                [sources.aimlapi]: SECRET_KEYS.AIMLAPI,
+                [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
+                [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
+            };
+            const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);
+            if (!shouldReloadOptions) {
+                return;
             }
+            await loadSettingOptions();
         });
     });
 

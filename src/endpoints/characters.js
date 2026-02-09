@@ -626,9 +626,6 @@ function charaFormatData(data, directories) {
     _.set(char, 'data.extensions.depth_prompt.depth', depth_value);
     _.set(char, 'data.extensions.depth_prompt.role', role_value);
 
-    // V3 fields
-    _.set(char, 'data.group_only_greetings', data.group_only_greetings ?? []);
-
     if (data.world) {
         try {
             const file = readWorldInfoFile(directories, data.world, false);

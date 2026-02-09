@@ -79,7 +79,6 @@ import {
     unshallowCharacter,
     chatElement,
     ensureMessageMediaIsArray,
-    wipeChat,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -2080,11 +2079,12 @@ export async function openGroupById(groupId) {
 
         if (selected_group !== groupId) {
             groupChatQueueOrder = new Map();
-            await wipeChat();
-            cancelTtsPlay();
-            selected_group = groupId;
             setCharacterId(undefined);
             setCharacterName('');
+            resetSelectedGroup();
+            await clearChat({ clearData: true });
+            cancelTtsPlay();
+            selected_group = groupId;
             setEditedMessageId(undefined);
             updateChatMetadata({}, true);
             await getGroupChat(groupId);
@@ -2192,7 +2192,7 @@ export async function createNewGroupChat(groupId) {
         return;
     }
 
-    await wipeChat();
+    await clearChat({ clearData: true });
     const newChatName = humanizedDateTime();
     group.chats.push(newChatName);
     group.chat_id = newChatName;
@@ -2248,7 +2248,7 @@ export async function openGroupChat(groupId, chatId) {
         return;
     }
 
-    await wipeChat();
+    await clearChat({ clearData: true });
     group.chat_id = chatId;
     group.date_last_chat = Date.now();
     updateChatMetadata({}, true);

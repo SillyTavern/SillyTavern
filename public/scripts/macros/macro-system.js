@@ -55,6 +55,7 @@ export const macros = {
 
     // shorthand functions
     register: MacroRegistry.registerMacro.bind(MacroRegistry),
+    registerAlias: MacroRegistry.registerMacroAlias.bind(MacroRegistry),
 };
 
 /**

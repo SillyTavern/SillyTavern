@@ -279,6 +279,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'zai' && !secret_state[SECRET_KEYS.ZAI]) {
         throw new Error('Z.AI API key is not set.');
     }
+
+    if (multimodalApi === 'pollinations' && !secret_state[SECRET_KEYS.POLLINATIONS]) {
+        throw new Error('Pollinations API key is not set.');
+    }
 }
 
 /**

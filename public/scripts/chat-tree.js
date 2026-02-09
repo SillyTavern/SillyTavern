@@ -133,10 +133,11 @@ export class Tree {
         this.saveChatToTree(chat);
         const nodes = [];
 
-        if (typeof this.chatTree?.['branch_id'] === 'number') {
+        if (typeof this.chatTree?.branch_id === 'number') {
             const startTime = performance.now();
             let count = 0; // Used for the Id.
 
+            // @ts-ignore
             function migrateBranch(branch, parent, parentId) {
                 if (branch?.length > 0 ) {
                     branch.forEach((m) => {
@@ -156,13 +157,13 @@ export class Tree {
                             parent.children.push(message);
                         }
 
-                        migrateBranch(m['branch'], message, mId);
+                        migrateBranch(m.branch, message, mId);
                     });
                 }
             }
 
             //Recursively migrate the chatTree.
-            migrateBranch(this.chatTree['branch']);
+            migrateBranch(this.chatTree.branch);
             const endTime = performance.now();
             if (count) {
                 console.log(`Migrated ${count} of chatTree's messages within ${(endTime - startTime) / 1000} seconds`);
@@ -212,15 +213,18 @@ export class Tree {
 
         const siblings = this.siblings(node);
 
-        message['swipes'] = siblings.map((n) => n.mes);
-        message['swipe_id'] = node.branch_id;
-        message['swipe_info'] = siblings.map((n) =>
+        // @ts-ignore
+        message.swipes = siblings.map((n) => n.mes);
+        // @ts-ignore
+        message.swipe_id = node.branch_id;
+        // @ts-ignore
+        message.swipe_info = siblings.map((n) =>
         {
             return {
-                'send_date': n['send_date'],
-                'gen_started': n['gen_started'],
-                'gen_finished': n['gen_finished'],
-                'extra': n['extra'],
+                'send_date': n.send_date,
+                'gen_started': n.gen_started,
+                'gen_finished': n.gen_finished,
+                'extra': n.extra,
             };
         });
         return message;
@@ -348,8 +352,8 @@ export class Tree {
 
         function addMessage(branch, branch_id, message)
         {
-            branch['branch'][branch_id] ??= {};
-            Object.assign(branch['branch'][branch_id], message);
+            branch.branch[branch_id] ??= {};
+            Object.assign(branch.branch[branch_id], message);
         }
 
         const startTime = performance.now();
@@ -359,11 +363,11 @@ export class Tree {
             console.assert(typeof branch !== 'undefined', 'The branch must exist.');
 
             //Default to the first swipe.
-            let branch_id = Number(chatMessage['swipe_id'] ?? 0);
+            let branch_id = Number(chatMessage.swipe_id ?? 0);
             console.assert(typeof branch_id !== 'undefined', 'The branch_id must exist.');
-            branch['branch_id'] = branch_id;
+            branch.branch_id = branch_id;
 
-            branch['branch'] ??= [];
+            branch.branch ??= [];
 
             //Save only the messages between start and end.
             if (start <= chat.indexOf(chatMessage)) {
@@ -372,13 +376,13 @@ export class Tree {
                 const { swipes:_s, swipe_info:_si, swipe_id:_sid, ...swipelessMessage } = { ...chatMessage };
 
                 //There must be at least as many messages as branch_id
-                console.assert(branch_id <= (chatMessage['swipes']?.length ?? 0), 'There must be at least as many messages as branch_id');
+                console.assert(branch_id <= (chatMessage.swipes?.length ?? 0), 'There must be at least as many messages as branch_id');
 
                 //For each swipe, update a branch. This may run zero times.
-                chatMessage?.['swipes']?.forEach((swipe, i) => {
+                chatMessage?.swipes?.forEach((swipe, i) => {
 
                     // There must be at least a message for every swipe_info.
-                    console.assert((chatMessage['swipe_info']?.length ?? 0) <= (chatMessage['swipes']?.length ?? 0), 'There must be at least a message for every swipe_info.');
+                    console.assert((chatMessage.swipe_info?.length ?? 0) <= (chatMessage.swipes?.length ?? 0), 'There must be at least a message for every swipe_info.');
 
                     //branch = Full Message < swipe_info < Swipe message.
                     addMessage(branch, i, { ...swipelessMessage, ...chatMessage?.swipe_info?.[i], mes: swipe });
@@ -389,14 +393,14 @@ export class Tree {
             }
 
             //Follow the branch.
-            branch = branch['branch'][branch_id];
+            branch = branch.branch[branch_id];
         }
 
         //Prune deleted branch, A branch cannot be empty.
-        if (typeof(branch['branch_id']) == 'number') {
+        if (typeof(branch.branch_id) == 'number') {
             console.log('Pruning deleted branch.', branch);
-            delete branch['branch_id'];
-            delete branch['branch'];
+            delete branch.branch_id;
+            delete branch.branch;
         }
 
         const endTime = performance.now();
@@ -420,32 +424,35 @@ export class Tree {
         // Traverse the tree following the chat's path.
 
         let i = 0;
-        while (branch['branch']?.length  >= 1) {
+        while (branch.branch?.length  >= 1) {
 
             //Follow messages's swipe_id before index, then the branch's branch_id, then the first swipe.
             let branch_id;
-            branch_id = Number(((i <= index) ? chat[i]?.['swipe_id'] : branch?.['branch_id']) ?? 0);
+            branch_id = Number(((i <= index) ? chat[i]?.swipe_id : branch?.branch_id) ?? 0);
 
             //If the branch exists.
-            if (branch['branch']?.[branch_id]) {
+            if (branch.branch?.[branch_id]) {
 
                 //Add all messages after index to chatBranch.
                 if (i >= index) {
 
                     //Push the message without its branches.
                     // eslint-disable-next-line no-unused-vars
-                    let { branch: _b, branch_id: _bi, ...message } = branch['branch'][branch_id];
+                    let { branch: _b, branch_id: _bi, ...message } = branch.branch[branch_id];
 
                     //Decompress swipe.
-                    message['swipes'] = branch['branch'].map((m) => m.mes);
-                    message['swipe_id'] = branch_id;
-                    message['swipe_info'] = branch['branch'].map((m) =>
+                    // @ts-ignore
+                    message.swipes = branch.branch.map((m) => m.mes);
+                    // @ts-ignore
+                    message.swipe_id = branch_id;
+                    // @ts-ignore
+                    message.swipe_info = branch.branch.map((m) =>
                     {
                         return {
-                            'send_date': m['send_date'],
-                            'gen_started': m['gen_started'],
-                            'gen_finished': m['gen_finished'],
-                            'extra': m['extra'],
+                            'send_date': m.send_date,
+                            'gen_started': m.gen_started,
+                            'gen_finished': m.gen_finished,
+                            'extra': m.extra,
                         };
                     });
 
@@ -453,7 +460,7 @@ export class Tree {
                 }
 
                 //Follow the branch.
-                branch = branch['branch'][branch_id];
+                branch = branch.branch[branch_id];
                 i++;
             }
             else {
@@ -472,7 +479,7 @@ export class Tree {
      */
     async updateMessages(updateFunction, attr = 'value'){
 
-        if (typeof this.chatTree?.['branch_id'] === 'number') {
+        if (typeof this.chatTree?.branch_id === 'number') {
             const startTime = performance.now();
             let count = 0;
 
@@ -480,13 +487,13 @@ export class Tree {
                 if (branch?.length > 0 ) {
                     branch.forEach((m) => {
                         if (updateFunction(m)) { count++; }
-                        updateBranch(m['branch']);
+                        updateBranch(m.branch);
                     });
                 }
             }
 
             //Recursively update the chatTree.
-            updateBranch(this.chatTree['branch']);
+            updateBranch(this.chatTree.branch);
             const endTime = performance.now();
             if (count) {
                 console.log(`Updated ${attr} in ${count} of chatTree's messages within ${(endTime - startTime) / 1000} seconds`);
@@ -507,25 +514,25 @@ export class Tree {
         let branch = this.chatTree;
 
         let i = 0;
-        while (branch['branch']?.length  >= 1) {
+        while (branch.branch?.length  >= 1) {
 
             //Follow messages's swipe_id, then the first swipe.
-            let branch_id = Number(chat[i]?.['swipe_id'] ?? 0);
+            let branch_id = Number(chat[i]?.swipe_id ?? 0);
 
             //If the branch exists.
-            if (branch['branch']?.[branch_id]) {
+            if (branch.branch?.[branch_id]) {
 
                 //Add all messages after index to chatBranch.
                 if (i == mesId) {
 
-                    console.log(`Deleting branch #${swipeId} at depth ${i}`, branch['branch'][swipeId]);
-                    branch['branch'].splice(swipeId, 1);
-                    branch['branch_id'] = newSwipeId;
+                    console.log(`Deleting branch #${swipeId} at depth ${i}`, branch.branch[swipeId]);
+                    branch.branch.splice(swipeId, 1);
+                    branch.branch_id = newSwipeId;
                     break;
                 }
 
                 //Follow the branch.
-                branch = branch['branch'][branch_id];
+                branch = branch.branch[branch_id];
                 i++;
             }
             else {

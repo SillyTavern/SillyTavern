@@ -13,6 +13,7 @@ export class AutoCompleteOption {
     /** @type {(input:string)=>boolean} */ matchProvider;
     /** @type {(input:string)=>string} */ valueProvider;
     /** @type {boolean} */ makeSelectable = false;
+    /** @type {boolean} */ forceFullNameMatch = false;
 
     /**
      * Offset to adjust the replacement start position.

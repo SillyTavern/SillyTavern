@@ -8,6 +8,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import FormData from 'form-data';
 import urlJoin from 'url-join';
 import _ from 'lodash';
+import mime from 'mime-types';
 
 import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
@@ -800,6 +801,73 @@ together.post('/generate', async (request, response) => {
     }
 });
 
+const sdcpp = express.Router();
+
+sdcpp.post('/ping', async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/v1/images/generations';
+
+        const result = await fetch(url, { method: 'OPTIONS' });
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+sdcpp.post('/generate', async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/txt2img';
+
+        const payload = {
+            prompt: request.body.prompt,
+            negative_prompt: request.body.negative_prompt,
+            width: request.body.width,
+            height: request.body.height,
+            steps: request.body.steps,
+            cfg_scale: request.body.cfg_scale,
+            seed: request.body.seed,
+            batch_size: request.body.batch_size,
+            sampler_name: request.body.sampler_name,
+            scheduler: request.body.scheduler,
+            clip_skip: request.body.clip_skip,
+        };
+
+        for (const [key, value] of Object.entries(payload)) {
+            if (value === undefined || value === null || value === '') {
+                delete payload[key];
+            }
+        }
+
+        console.debug('stable-diffusion.cpp request:', payload);
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            throw new Error('stable-diffusion.cpp server returned an error.', { cause: text });
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 const drawthings = express.Router();
 
 drawthings.post('/ping', async (request, response) => {
@@ -898,7 +966,7 @@ const pollinations = express.Router();
 
 pollinations.post('/models', async (_request, response) => {
     try {
-        const modelsUrl = new URL('https://image.pollinations.ai/models');
+        const modelsUrl = new URL('https://gen.pollinations.ai/image/models');
         const result = await fetch(modelsUrl);
 
         if (!result.ok) {
@@ -913,7 +981,7 @@ pollinations.post('/models', async (_request, response) => {
             throw new Error('Pollinations request failed.');
         }
 
-        const models = data.map(x => ({ value: x, text: x }));
+        const models = data.map(x => ({ value: x.name, text: x.name }));
         return response.send(models);
     } catch (error) {
         console.error(error);
@@ -923,17 +991,19 @@ pollinations.post('/models', async (_request, response) => {
 
 pollinations.post('/generate', async (request, response) => {
     try {
-        const promptUrl = new URL(`https://image.pollinations.ai/prompt/${encodeURIComponent(request.body.prompt)}`);
+        const key = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+        if (!key) {
+            console.warn('Pollinations API key not found.');
+            return response.sendStatus(400);
+        }
+
+        const promptUrl = new URL(`https://gen.pollinations.ai/image/${encodeURIComponent(request.body.prompt)}`);
         const params = new URLSearchParams({
             model: String(request.body.model),
             negative_prompt: String(request.body.negative_prompt),
             seed: String(request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 10_000_000)),
             width: String(request.body.width ?? 1024),
             height: String(request.body.height ?? 1024),
-            nologo: String(true),
-            nofeed: String(true),
-            private: String(true),
-            referrer: 'sillytavern',
         });
         if (request.body.enhance) {
             params.set('enhance', String(true));
@@ -942,7 +1012,12 @@ pollinations.post('/generate', async (request, response) => {
 
         console.info('Pollinations request URL:', promptUrl.toString());
 
-        const result = await fetch(promptUrl);
+        const result = await fetch(promptUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
 
         if (!result.ok) {
             const text = await result.text();
@@ -950,10 +1025,9 @@ pollinations.post('/generate', async (request, response) => {
             throw new Error('Pollinations request failed.');
         }
 
+        const format = result.headers.get('Content-Type')?.toString() || 'image/jpeg';
         const buffer = await result.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-
-        return response.send({ image: base64 });
+        return response.send({ image: Buffer.from(buffer).toString('base64'), format: mime.extension(format) || 'jpg' });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -1910,6 +1984,7 @@ zai.post('/generate-video', async (request, response) => {
 router.use('/comfy', comfy);
 router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
+router.use('/sdcpp', sdcpp);
 router.use('/drawthings', drawthings);
 router.use('/pollinations', pollinations);
 router.use('/stability', stability);

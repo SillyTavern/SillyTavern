@@ -39,7 +39,7 @@ label[for="extensions_autoconnect"] {
     text-align: left;
 }
 
-.extensions_info h3 {
+.extensions_info h3:not(.margin0) {
     margin-bottom: 0.5em;
 }
 
@@ -110,6 +110,10 @@ label[for="extensions_autoconnect"] {
 
 .extensions_info .extension_name.update_available {
     color: limegreen;
+}
+
+.extensions_info .third_party_toolbar {
+    user-select: none;
 }
 
 input.extension_missing[type="checkbox"] {

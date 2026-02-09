@@ -190,6 +190,7 @@ import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, 
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, initSlashCommandAutoComplete, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
+import { initMacroAutoComplete } from './scripts/autocomplete/MacroAutoComplete.js';
 import {
     tag_map,
     tags,
@@ -713,6 +714,7 @@ async function firstLoadInit() {
     initAuthorsNote();
     await initPersonas();
     await initSlashCommandAutoComplete();
+    initMacroAutoComplete();
     initWorldInfo();
     initHorde();
     initRossMods();
@@ -732,6 +734,7 @@ async function firstLoadInit() {
     initAccessibility();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
+    await eventSource.emit(event_types.APP_INITIALIZED);
     await hideLoader();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
@@ -836,9 +839,11 @@ export async function selectCharacterById(id, { switchMenu = true } = {}) {
     if (selected_group || String(this_chid) !== String(id)) {
         //if clicked on a different character from what was currently selected
         if (!is_send_press) {
-            await wipeChat();
-            cancelTtsPlay();
+            setCharacterId(undefined);
+            setCharacterName('');
             resetSelectedGroup();
+            await clearChat({ clearData: true });
+            cancelTtsPlay();
             this_edit_mes_id = undefined;
             selected_button = 'character_edit';
             setCharacterId(id);
@@ -1191,7 +1196,7 @@ export async function getOneCharacter(avatarUrl) {
     }
 }
 
-function getCharacterSource(chId = this_chid) {
+export function getCharacterSource(chId = this_chid) {
     const character = characters[chId];
 
     if (!character) {
@@ -1349,7 +1354,7 @@ export async function deleteCharacterChatByName(characterId, fileName) {
 }
 
 export async function replaceCurrentChat() {
-    await wipeChat();
+    await clearChat({ clearData: true });
 
     const chatsResponse = await fetch('/api/characters/chats', {
         method: 'POST',
@@ -1527,7 +1532,12 @@ export function cancelDebouncedChatSave() {
     }
 }
 
-export async function clearChat() {
+/**
+ * Visually removes all chat message elements.
+ * @param {object} [options] Options
+ * @param {boolean} [options.clearData=false] Optionally clear the chat array's contents.
+ */
+export async function clearChat({ clearData = false } = {}) {
     cancelDebouncedChatSave();
     cancelDebouncedMetadataSave();
     closeMessageEditor();
@@ -1544,6 +1554,11 @@ export async function clearChat() {
 
     await saveItemizedPrompts(getCurrentChatId());
     itemizedPrompts.length = 0;
+
+    if (clearData) {
+        chat.length = 0;
+        tree.setChatTree({});
+    }
 }
 
 export async function deleteLastMessage() {
@@ -1625,7 +1640,7 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
 export async function deleteMessages(fromMesId, toMesId = chat.length) {
     chat.splice(fromMesId, 1 + (toMesId - fromMesId));
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
 
     await redisplayChat({ startIndex: fromMesId });
@@ -1639,22 +1654,13 @@ export const reloadChatMutex = new SimpleMutex(reloadCurrentChatUnsafe);
 export const reloadCurrentChat = reloadChatMutex.update.bind(reloadChatMutex);
 
 /**
- * Erases the `chat` and removes the message elements.
- */
-export async function wipeChat() {
-    await clearChat();
-    chat.length = 0;
-    tree.setChatTree({});
-}
-
-/**
  * Reloads the current chat unsafely, without mutex protection.
  * Use `reloadCurrentChat` instead to ensure thread safety.
  * @returns {Promise<void>} A promise that resolves when the chat is reloaded.
  */
 export async function reloadCurrentChatUnsafe() {
     preserveNeutralChat();
-    await wipeChat();
+    await clearChat({ clearData: true });
 
     if (selected_group) {
         await getGroupChat(selected_group, true);
@@ -5196,7 +5202,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
             authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-            smartContextString: (extension_prompts['chromadb']?.value || ''),
+            smartContextString: (extension_prompts.chromadb?.value || ''),
             chatVectorsString: (extension_prompts['3_vectors']?.value || ''),
             dataBankVectorsString: (extension_prompts['4_vectors_data_bank']?.value || ''),
             worldInfoString: worldInfoString,
@@ -7146,7 +7152,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                     rename(message);
                 }
 
-                let tree = currentChat[0]?.['tree'];
+                let tree = currentChat[0]?.tree;
                 if (tree) {
                     const temporaryTree = new Tree(tree, false);
 
@@ -7575,7 +7581,7 @@ function getFirstMessage() {
 
 export async function openCharacterChat(file_name) {
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-    await wipeChat();
+    await clearChat({ clearData: true });
     characters[this_chid].chat = file_name;
     chat_metadata = {};
     await getChat();
@@ -8092,6 +8098,7 @@ export async function messageEdit(editMessageId) {
     const editTextArea = document.createElement('textarea');
     editTextArea.id = 'curEditTextarea';
     editTextArea.className = 'edit_textarea mdHotkeys';
+    editTextArea.dataset.macros = '';
     messageText.append(editTextArea);
 
     const text = trimSpaces(editMessage.mes || '');
@@ -8137,7 +8144,7 @@ async function branchChat() {
     //Assume swipes exist.
     await tree.saveChatToTree(chat);
 
-    mes['swipe_id'] = mes['swipes']?.length;
+    mes.swipe_id = mes.swipes?.length;
     //Delete chat after mesId
     await spliceStickToChat([], chat, mesId + 1);
     await redisplayChat({ startIndex: mesId + 1 });
@@ -8262,9 +8269,6 @@ async function messageEditDone(div) {
     }
 
     let { mesBlock, text, mes, bias } = updateMessage(div);
-    if (this_edit_mes_id == 0) {
-        text = substituteParams(text);
-    }
 
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
     text = chat[this_edit_mes_id]?.mes ?? text;
@@ -8449,8 +8453,6 @@ export async function displayPastChats(hightlightNames = []) {
 
 async function displayChats(searchQuery, currentChat, displayName, avatarImg, selected_group, highlightNames) {
     try {
-        const trimExtension = (fileName) => String(fileName).replace('.jsonl', '');
-
         const response = await fetch('/api/chats/search', {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -8471,7 +8473,7 @@ async function displayChats(searchQuery, currentChat, displayName, avatarImg, se
         filteredData.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
 
         for (const chat of filteredData) {
-            const isSelected = trimExtension(currentChat) === trimExtension(chat.file_name);
+            const isSelected = currentChat === chat.file_name;
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             template.find('.select_chat_block').attr('file_name', chat.file_name);
             template.find('.avatar img').attr('src', avatarImg);
@@ -9869,7 +9871,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         console.error(`Message #${mesId}'s DOM element is not valid.`);
         return;
     }
-    const originalSwipeId = Number(chat[mesId]?.['swipe_id'] ?? 0);
+    const originalSwipeId = Number(chat[mesId]?.swipe_id ?? 0);
     let newSwipeId = Number(forceSwipeId ?? originalSwipeId);
 
     /**
@@ -10023,7 +10025,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
             //Only generate on user messages.
             //This disables automatic generation when overswiping the greeting on pristine chats.
-            if (chat[mesId]?.['is_user'] == true) {
+            if (chat[mesId]?.is_user == true) {
                 generation = Generate('normal');
             }
         }
@@ -10031,7 +10033,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
         else {
             //Swipe back.
             await animateSwipeTransition(mesId + 1, { xStart: `${swipeRange + 10}px`, xEnd: `${0}px`, duration: swipeDuration, classes:counterClass });
-            chat[mesId]['swipe_id'] = originalSwipeId;
+            chat[mesId].swipe_id = originalSwipeId;
             //endSwipe will update the counter to show 2/2 because the edit has been canceled.
         }
     }
@@ -10610,7 +10612,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
 
     //Fix it; New chat doesn't create while open create character menu
     await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-    await wipeChat();
+    await clearChat({ clearData: true });
 
     chat_file_for_del = getCurrentChatDetails()?.sessionName;
 
@@ -10729,7 +10731,7 @@ export async function renameChat(oldFileName, newName) {
 export async function closeCurrentChat() {
     if (is_send_press == false) {
         await waitUntilCondition(() => !isChatSaving, debounce_timeout.extended, 10);
-        await wipeChat();
+        await clearChat({ clearData: true });
         resetSelectedGroup();
         setCharacterId(undefined);
         setCharacterName('');
@@ -11259,7 +11261,7 @@ jQuery(async function () {
         if (group) {
             await deleteGroupChat(group, chatFile);
         } else {
-            await delChat(chatFile);
+            await delChat(`${chatFile}.jsonl`);
         }
 
         if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
@@ -11276,18 +11278,18 @@ jQuery(async function () {
 
     $(document).on('click', '.PastChat_cross', async function (e, { fromSlashCommand = false } = {}) {
         e.stopPropagation();
-        chat_file_for_del = $(this).attr('file_name');
-        console.debug('detected cross click for' + chat_file_for_del);
+        const deleteFileName = $(this).attr('file_name');
+        console.debug('detected cross click for' + deleteFileName);
 
         // Skip confirmation if called from a slash command.
         if (fromSlashCommand) {
-            await handleDeleteChat(chat_file_for_del, selected_group, true);
+            await handleDeleteChat(deleteFileName, selected_group, true);
             return;
         }
 
         const result = await callGenericPopup('<h3>' + t`Delete the Chat File?` + '</h3>', POPUP_TYPE.CONFIRM);
         if (result === POPUP_RESULT.AFFIRMATIVE) {
-            await handleDeleteChat(chat_file_for_del, selected_group, false);
+            await handleDeleteChat(deleteFileName, selected_group, false);
         }
     });
 
@@ -11321,8 +11323,7 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
-    $('#dialogue_popup_ok').on('click', async function (_e, customData) {
-        const fromSlashCommand = customData?.fromSlashCommand || false;
+    $('#dialogue_popup_ok').on('click', async function (_e) {
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
@@ -11335,10 +11336,6 @@ jQuery(async function () {
             $('#dialogue_popup').removeClass('large_dialogue_popup');
             $('#dialogue_popup').removeClass('wide_dialogue_popup');
         }, animation_duration);
-
-        if (popup_type == 'del_chat') {
-            await handleDeleteChat(chat_file_for_del, selected_group, fromSlashCommand);
-        }
 
         if (dialogueResolve) {
             if (popup_type == 'input') {
@@ -11452,8 +11449,7 @@ jQuery(async function () {
 
     $(document).on('click', '.renameChatButton', async function (e) {
         e.stopPropagation();
-        const oldFileNameFull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-        const oldFileName = oldFileNameFull.replace('.jsonl', '');
+        const oldFileName = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
 
         const popupText = await renderTemplateAsync('chatRename');
         const newName = await callGenericPopup(popupText, POPUP_TYPE.INPUT, oldFileName);
@@ -11474,10 +11470,9 @@ jQuery(async function () {
         e.stopPropagation();
         const format = $(this).data('format') || 'txt';
         await saveChatConditional();
-        const filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-        console.log(`exporting ${filenamefull} in ${format} format`);
+        const filename = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        console.log(`exporting ${filename} in ${format} format`);
 
-        const filename = filenamefull.replace('.jsonl', '');
         const body = {
             is_group: !!selected_group,
             avatar_url: characters[this_chid]?.avatar,

@@ -527,9 +527,9 @@ class CoquiTtsProvider {
         // Check if already installed and propose to do it otherwise
         const model_id = modelDict[model_language][model_dataset][model_name].id;
         console.debug(DEBUG_PREFIX,'Check if model is already installed',model_id);
-        let result = await CoquiTtsProvider.checkmodel_state(model_id);
-        result = await result.json();
-        const model_state = result['model_state'];
+        const result = await CoquiTtsProvider.checkmodel_state(model_id);
+        const resultJSON = await result.json();
+        const model_state = resultJSON.model_state;
 
         console.debug(DEBUG_PREFIX, ' Model state:', model_state);
 
@@ -556,18 +556,18 @@ class CoquiTtsProvider {
                     $('#coqui_api_model_install_status').text('Downloading model...');
                     $('#coqui_api_model_install_button').hide();
                     //toastr.info("For model "+model_id, DEBUG_PREFIX+" Started "+action, { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-                    let apiResult = await CoquiTtsProvider.installModel(model_id, action);
-                    apiResult = await apiResult.json();
+                    const apiResult = await CoquiTtsProvider.installModel(model_id, action);
+                    const apiResultJSON = await apiResult.json();
 
                     console.debug(DEBUG_PREFIX, 'Response:', apiResult);
 
-                    if (apiResult['status'] == 'done') {
+                    if (apiResultJSON.status == 'done') {
                         $('#coqui_api_model_install_status').text('Model installed and ready to use!');
                         $('#coqui_api_model_install_button').hide();
                         onModelNameChange_pointer();
                     }
 
-                    if (apiResult['status'] == 'downloading') {
+                    if (apiResultJSON.status == 'downloading') {
                         toastr.error('Check extras console for progress', DEBUG_PREFIX + ' already downloading', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                         $('#coqui_api_model_install_status').text('Already downloading a model, check extras console!');
                         $('#coqui_api_model_install_button').show();
@@ -750,10 +750,10 @@ async function initLocalModels() {
 
     // Initialized local model once
     if (!coquiLocalModelsReceived) {
-        let result = await CoquiTtsProvider.getLocalModelList();
-        result = await result.json();
+        const result = await CoquiTtsProvider.getLocalModelList();
+        const resultJSON = await result.json();
 
-        coquiLocalModels = result['models_list'];
+        coquiLocalModels = resultJSON.models_list;
 
         $('#coqui_local_model_name').show();
         $('#coqui_local_model_name')
