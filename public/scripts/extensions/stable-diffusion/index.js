@@ -4793,7 +4793,9 @@ async function onComfyRenameWorkflowClick() {
         return;
     }
 
-    const existingWorkflow = Array.from(document.querySelectorAll('#sd_comfy_workflow option')).find(opt => opt.value === newName);
+    const existingWorkflow = Array
+        .from(document.querySelectorAll('#sd_comfy_workflow option'))
+        .find(opt => opt instanceof HTMLOptionElement && opt.value === newName);
 
     if (existingWorkflow) {
         toastr.warning(t`A workflow with that name already exists`);
