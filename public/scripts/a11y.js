@@ -156,7 +156,7 @@ function applyGenericA11yRules(rootElement) {
 // ============================================================================
 
 /**
- * Opens the sort menu.
+ * Opens the sort menu using popup buttons.
  * @param {HTMLElement} triggerElement The button that triggered the menu.
  */
 async function handlePromptSortMenu(triggerElement) {
@@ -167,94 +167,52 @@ async function handlePromptSortMenu(triggerElement) {
     const total = $allPrompts.length;
     const currentIndex = $allPrompts.index($li);
     const displayIndex = currentIndex + 1;
+    const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
 
-    logDebug('handlePromptSortMenu', `Opening sort menu for item: ${displayIndex}/${total}`);
-    announceA11y(`Current position: ${displayIndex} of ${total}. Choose an action.`);
+    logDebug('handlePromptSortMenu', `Opening sort buttons for item: ${displayIndex}/${total}`);
+    announceA11y(`Sorting ${itemName}. Current position: ${displayIndex} of ${total}.`);
 
-    // 1. Create menu container (using jQuery object to bind events)
-    // We add a specific class to identify this popup later in trap logic
-    const $menu = $('<div class="list-group a11y-sort-menu" role="menu"></div>');
-
-    // 2. Define menu items
-    const actions = [
-        { id: 'up', icon: 'fa-arrow-up', text: 'Move Up' },
-        { id: 'down', icon: 'fa-arrow-down', text: 'Move Down' },
-        { id: 'top', icon: 'fa-angles-up', text: 'Move to Top' },
-        { id: 'bottom', icon: 'fa-angles-down', text: 'Move to Bottom' },
-        { id: 'jump', icon: 'fa-arrow-right-to-bracket', text: 'Move to Position...' }
-    ];
-
-    // 3. Build menu items and bind events directly
-    actions.forEach((act, index) => {
-        const $item = $(`
-            <div class="list-group-item flex-container alignitemscenter interactable" role="menuitem" tabindex="0" data-action="${act.id}">
-                <i class="fa-solid ${act.icon} fa-fw"></i> <span>${act.text}</span>
-            </div>
-        `);
-
-        // Add autofocus tag to the first item for popup.js recognition
-        if (index === 0) $item.attr('autofocus', 'true');
-
-        // Bind click and enter key events
-        $item.on('click keydown', async function(e) {
-            if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
-            e.preventDefault();
-            e.stopPropagation();
-
-            const action = $(this).data('action');
-            logDebug('SortMenu', `Action triggered: ${action}`);
-
-            // Close current popup.
-            const $popupDlg = $(this).closest('.popup');
-            const popupId = $popupDlg.data('id');
-            const popupInstance = Popup.util.popups.find(p => p.id === popupId);
-            
-            if (popupInstance) {
-                logDebug('SortMenu', `Closing popup ID: ${popupId}`);
-                await popupInstance.complete(POPUP_RESULT.AFFIRMATIVE);
-            }
-
-            // Execute actual action (delayed slightly to ensure smooth popup closing animation)
-            setTimeout(() => {
-                if (action === 'jump') {
-                    handleJumpAction($li);
-                } else {
-                    performSortAction($li, action);
-                }
-            }, 50);
-        });
-
-        $menu.append($item);
-    });
-
-    // 4. Show popup.
-    logDebug('SortMenu', 'Calling generic popup...');
-    
-    // Attempt to temporarily pause Prompt Manager trap if it exists
     if (promptManagerTrap) {
-        logDebug('SortMenu', 'Pausing PromptManager trap before opening sort menu.');
         try { promptManagerTrap.pause(); } catch (e) { console.warn(e); }
     }
 
-    await callGenericPopup($menu, POPUP_TYPE.TEXT, '', { 
-        okButton: 'Close',
-        wide: false,
-        allowVerticalScrolling: true,
-        onOpen: (popup) => {
-            logDebug('SortMenu', 'Popup opened (callback). Forcing focus to first item.');
-            // Force focus on the first menu item to fix focus locking issues.
-            const firstItem = $(popup.content).find('.list-group-item').first();
-            if (firstItem.length) {
-                firstItem.trigger('focus');
-            } else {
-                logDebug('SortMenu', 'Could not find first item to focus.');
-            }
-        },
-        onClose: () => {
-             logDebug('SortMenu', 'Popup closed.');
-             // Note: Re-activation of prompt manager trap is handled by the Observer
+    await callGenericPopup(
+        `<h3>Sort Prompt</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`, 
+        POPUP_TYPE.TEXT, 
+        '', 
+        { 
+            okButton: false,
+            cancelButton: 'Close',
+            wide: true,
+            customButtons: [
+                {
+                    text: "Move Up",
+                    result: POPUP_RESULT.CUSTOM1,
+                    action: () => performSortAction($li, 'up')
+                },
+                {
+                    text: "Move Down",
+                    result: POPUP_RESULT.CUSTOM2,
+                    action: () => performSortAction($li, 'down')
+                },
+                {
+                    text: "To Top",
+                    result: POPUP_RESULT.CUSTOM3,
+                    action: () => performSortAction($li, 'top')
+                },
+                {
+                    text: "To Bottom",
+                    result: POPUP_RESULT.CUSTOM4,
+                    action: () => performSortAction($li, 'bottom')
+                },
+                {
+                    text: "Jump to...",
+                    result: POPUP_RESULT.CUSTOM5,
+                    action: () => setTimeout(() => handleJumpAction($li), 150)
+                }
+            ]
         }
-    });
+    );
 }
 
 /**
@@ -790,9 +748,13 @@ export function initAccessibility() {
     // Debug listener for global focus changes
     if (DEBUG_FOCUS) {
         document.addEventListener('focusin', (e) => {
-            const id = e.target.id || 'no-id';
-            const cls = e.target.className || 'no-class';
-            logDebug('GlobalFocus', `Focus moved to: <${e.target.tagName} id="${id}" class="${cls}">`);
+            if (e.target instanceof HTMLElement) {
+                const id = e.target.id || 'no-id';
+                const cls = e.target.className || 'no-class';
+                logDebug('GlobalFocus', `Focus moved to: <${e.target.tagName} id="${id}" class="${cls}">`);
+            } else {
+                logDebug('GlobalFocus', 'Focus moved to non-element target');
+            }
         });
     }
 
