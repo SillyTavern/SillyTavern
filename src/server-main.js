@@ -120,7 +120,7 @@ if (corsEnabled) {
     if (Array.isArray(corsAllowedHeaders) ? corsAllowedHeaders.length > 0 : true) {
         corsOptions.allowedHeaders = corsAllowedHeaders;
     }
-    if (corsExposedHeaders && (Array.isArray(corsExposedHeaders) ? corsExposedHeaders.length > 0 : true)) {
+    if (Array.isArray(corsExposedHeaders) ? corsExposedHeaders.length > 0 : true) {
         corsOptions.exposedHeaders = corsExposedHeaders;
     }
     if (corsMaxAge !== null) {
