@@ -516,10 +516,20 @@ function switchMessageActions() {
 }
 
 function switchReducedMotion() {
+    const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (osReduced) {
+        power_user.reduced_motion = true;
+    }
     jQuery.fx.off = power_user.reduced_motion;
     const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
     setAnimationDuration(overrideDuration);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
+    $('#reduced_motion').prop('disabled', osReduced);
+    $('#reduced_motion').closest('label').attr('title',
+        osReduced
+            ? 'Controlled by your operating system\'s reduced motion setting'
+            : 'Disable animations and transitions',
+    );
     $('body').toggleClass('reduced-motion', power_user.reduced_motion);
 }
 

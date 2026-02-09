@@ -6299,3 +6299,42 @@ body:not(.movingUI) .drawer-content.maximized {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
 }
+
+/* Reduced motion overrides for hardcoded animations (not using --animation-duration) */
+body.reduced-motion .mes_text .text_segment,
+body.reduced-motion .mes_reasoning_details[data-state="thinking"] .mes_reasoning .text_segment {
+    animation-duration: 0ms;
+}
+
+body.reduced-motion .dragover {
+    animation: none;
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --interactable-outline-color: CanvasText;
+        --interactable-outline-color-faint: CanvasText;
+    }
+
+    .interactable:focus-visible {
+        outline-width: 2px;
+    }
+
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+        outline-width: 2px;
+    }
+
+    .mes {
+        border: 2px solid var(--SmartThemeBorderColor);
+    }
+
+    .menu_button {
+        border-width: 2px;
+    }
+
+    .popup {
+        border-width: 2px;
+    }
+}
