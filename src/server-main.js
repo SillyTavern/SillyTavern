@@ -103,12 +103,31 @@ app.use(bodyParser.json({ limit: '500mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '500mb' }));
 
 // CORS Settings //
-const CORS = cors({
-    origin: 'null',
-    methods: ['OPTIONS'],
-});
+const corsEnabled = getConfigValue('cors.enabled', true, 'boolean');
+if (corsEnabled) {
+    const corsOrigin = getConfigValue('cors.origin', 'null');
+    const corsMethods = getConfigValue('cors.methods', ['OPTIONS']);
+    const corsAllowedHeaders = getConfigValue('cors.allowedHeaders', null);
+    const corsExposedHeaders = getConfigValue('cors.exposedHeaders', null);
+    const corsCredentials = getConfigValue('cors.credentials', false, 'boolean');
+    const corsMaxAge = getConfigValue('cors.maxAge', null, 'number');
 
-app.use(CORS);
+    const corsOptions = {
+        origin: corsOrigin,
+        methods: corsMethods,
+        credentials: corsCredentials,
+    };
+    if (corsAllowedHeaders && (Array.isArray(corsAllowedHeaders) ? corsAllowedHeaders.length > 0 : true)) {
+        corsOptions.allowedHeaders = corsAllowedHeaders;
+    }
+    if (corsExposedHeaders && (Array.isArray(corsExposedHeaders) ? corsExposedHeaders.length > 0 : true)) {
+        corsOptions.exposedHeaders = corsExposedHeaders;
+    }
+    if (corsMaxAge !== null) {
+        corsOptions.maxAge = corsMaxAge;
+    }
+    app.use(cors(corsOptions));
+}
 
 if (cliArgs.listen && cliArgs.basicAuthMode) {
     app.use(basicAuthMiddleware);
