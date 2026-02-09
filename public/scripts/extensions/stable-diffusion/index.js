@@ -766,7 +766,7 @@ async function onSaveStyleClick() {
 }
 
 async function onRenameStyleClick() {
-    const selectedStyle = String($('#sd_style').find(':selected').val());
+    const selectedStyle = extension_settings.sd.style;
     const styleObject = extension_settings.sd.styles.find(x => x.name === selectedStyle);
 
     if (!styleObject) {
@@ -793,9 +793,17 @@ async function onRenameStyleClick() {
     }
 
     styleObject.name = name;
-    $('#sd_style').find(`option[value="${selectedStyle}"]`).val(name).text(name);
-    $('#sd_style').val(name);
     extension_settings.sd.style = name;
+
+    $('#sd_style').empty();
+    for (const style of extension_settings.sd.styles) {
+        const option = document.createElement('option');
+        option.value = style.name;
+        option.text = style.name;
+        option.selected = style.name === extension_settings.sd.style;
+        $('#sd_style').append(option);
+    }
+
     saveSettingsDebounced();
 }
 
@@ -4782,6 +4790,13 @@ async function onComfyRenameWorkflowClick() {
     }
 
     if (newName === oldName) {
+        return;
+    }
+
+    const existingWorkflow = Array.from(document.querySelectorAll('#sd_comfy_workflow option')).find(opt => opt.value === newName);
+
+    if (existingWorkflow) {
+        toastr.warning(t`A workflow with that name already exists`);
         return;
     }
 

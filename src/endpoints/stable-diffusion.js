@@ -12,6 +12,7 @@ import mime from 'mime-types';
 
 import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 import { AIMLAPI_HEADERS } from '../constants.js';
 
 /**
@@ -532,10 +533,15 @@ comfy.post('/delete-workflow', async (request, response) => {
     }
 });
 
-comfy.post('/rename-workflow', async (request, response) => {
+comfy.post('/rename-workflow', getFileNameValidationFunction('old_name'), getFileNameValidationFunction('new_name'), async (request, response) => {
     try {
         const oldName = sanitize(String(request.body.old_name));
         const newName = sanitize(String(request.body.new_name));
+
+        if (path.extname(oldName).toLowerCase() !== '.json' || path.extname(newName).toLowerCase() !== '.json') {
+            return response.status(400).send('Only JSON workflow files are allowed');
+        }
+
         const oldPath = path.join(request.user.directories.comfyWorkflows, oldName);
         const newPath = path.join(request.user.directories.comfyWorkflows, newName);
 
@@ -548,9 +554,9 @@ comfy.post('/rename-workflow', async (request, response) => {
         }
 
         fs.renameSync(oldPath, newPath);
-        return response.sendStatus(200);
+        return response.sendStatus(204);
     } catch (error) {
-        console.error(error);
+        console.error('ComfyUI workflow rename failed', error);
         return response.sendStatus(500);
     }
 });
