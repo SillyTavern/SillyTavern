@@ -17,6 +17,27 @@ import {
 import { callGenericPopup, POPUP_TYPE, POPUP_RESULT, Popup } from './popup.js';
 
 // ============================================================================
+// DEBUGGING UTILITIES
+// ============================================================================
+const DEBUG_FOCUS = true;
+
+/**
+ * Logs a message with a timestamp and prefix for filtering.
+ * @param {string} location - Function or area where log originated
+ * @param {string} message - The message
+ * @param {any} [data] - Optional data object
+ */
+function logDebug(location, message, data = null) {
+    if (!DEBUG_FOCUS) return;
+    const time = new Date().toISOString().split('T')[1].slice(0, -1);
+    if (data) {
+        console.log(`%c[A11y][${time}][${location}] ${message}`, 'color: #00bcd4; font-weight: bold;', data);
+    } else {
+        console.log(`%c[A11y][${time}][${location}] ${message}`, 'color: #00bcd4; font-weight: bold;');
+    }
+}
+
+// ============================================================================
 // PART 1: LEGACY A11Y LOGIC (PRESERVED & EXPANDED)
 // Defines generic roles for lists, buttons, tabs, etc.
 // ============================================================================
@@ -131,7 +152,7 @@ function applyGenericA11yRules(rootElement) {
 }
 
 // ============================================================================
-// PART 2: PROMPT SORTING LOGIC (FIXED)
+// PART 2: PROMPT SORTING LOGIC (FIXED & LOGGED)
 // ============================================================================
 
 /**
@@ -147,11 +168,12 @@ async function handlePromptSortMenu(triggerElement) {
     const currentIndex = $allPrompts.index($li);
     const displayIndex = currentIndex + 1;
 
-    console.log('[A11y] Opening sort menu for item:', displayIndex, 'of', total);
+    logDebug('handlePromptSortMenu', `Opening sort menu for item: ${displayIndex}/${total}`);
     announceA11y(`Current position: ${displayIndex} of ${total}. Choose an action.`);
 
     // 1. Create menu container (using jQuery object to bind events)
-    const $menu = $('<div class="list-group" role="menu"></div>');
+    // We add a specific class to identify this popup later in trap logic
+    const $menu = $('<div class="list-group a11y-sort-menu" role="menu"></div>');
 
     // 2. Define menu items
     const actions = [
@@ -180,17 +202,15 @@ async function handlePromptSortMenu(triggerElement) {
             e.stopPropagation();
 
             const action = $(this).data('action');
-            console.log('[A11y] Menu action triggered:', action);
+            logDebug('SortMenu', `Action triggered: ${action}`);
 
             // Close current popup.
-            // We find the nearest popup element and the corresponding Popup instance to close it.
             const $popupDlg = $(this).closest('.popup');
             const popupId = $popupDlg.data('id');
             const popupInstance = Popup.util.popups.find(p => p.id === popupId);
             
             if (popupInstance) {
-                // Use the complete method to close the popup so the Promise resolves.
-                // We pass AFFIRMATIVE to let it close normally.
+                logDebug('SortMenu', `Closing popup ID: ${popupId}`);
                 await popupInstance.complete(POPUP_RESULT.AFFIRMATIVE);
             }
 
@@ -208,17 +228,31 @@ async function handlePromptSortMenu(triggerElement) {
     });
 
     // 4. Show popup.
-    // Use onOpen to ensure focus is set correctly.
+    logDebug('SortMenu', 'Calling generic popup...');
+    
+    // Attempt to temporarily pause Prompt Manager trap if it exists
+    if (promptManagerTrap) {
+        logDebug('SortMenu', 'Pausing PromptManager trap before opening sort menu.');
+        try { promptManagerTrap.pause(); } catch (e) { console.warn(e); }
+    }
+
     await callGenericPopup($menu, POPUP_TYPE.TEXT, '', { 
         okButton: 'Close',
         wide: false,
         allowVerticalScrolling: true,
         onOpen: (popup) => {
+            logDebug('SortMenu', 'Popup opened (callback). Forcing focus to first item.');
             // Force focus on the first menu item to fix focus locking issues.
             const firstItem = $(popup.content).find('.list-group-item').first();
             if (firstItem.length) {
                 firstItem.trigger('focus');
+            } else {
+                logDebug('SortMenu', 'Could not find first item to focus.');
             }
+        },
+        onClose: () => {
+             logDebug('SortMenu', 'Popup closed.');
+             // Note: Re-activation of prompt manager trap is handled by the Observer
         }
     });
 }
@@ -231,6 +265,8 @@ async function handleJumpAction($item) {
     const $container = $('#completion_prompt_manager_list');
     const max = $container.find('.completion_prompt_manager_prompt').length;
     
+    logDebug('JumpAction', `Requesting input 1-${max}`);
+
     const input = await callGenericPopup(
         `Enter new position (1-${max}):`, 
         POPUP_TYPE.INPUT, 
@@ -241,12 +277,14 @@ async function handleJumpAction($item) {
     if (input) {
         const targetPos = parseInt(String(input));
         if (!isNaN(targetPos) && targetPos >= 1 && targetPos <= max) {
-            performSortAction($item, 'jump', targetPos - 1); // User input starts at 1, internal index starts at 0
+            logDebug('JumpAction', `Jumping to ${targetPos}`);
+            performSortAction($item, 'jump', targetPos - 1); 
         } else {
             announceA11y("Invalid position number.");
             $item.find('.prompt-manager-a11y-sort').trigger('focus');
         }
     } else {
+        logDebug('JumpAction', 'Cancelled or empty input. Returning focus.');
         $item.find('.prompt-manager-a11y-sort').trigger('focus');
     }
 }
@@ -264,7 +302,7 @@ function performSortAction($item, action, targetIndex = null) {
     let newIndex = currentIndex;
     let changed = false;
 
-    console.log(`[A11y] Performing sort. Action: ${action}, Current: ${currentIndex}`);
+    logDebug('SortAction', `Performing sort. Action: ${action}, Current: ${currentIndex}`);
 
     // 1. Move DOM
     if (action === 'up') {
@@ -313,12 +351,11 @@ function performSortAction($item, action, targetIndex = null) {
     }
 
     if (changed) {
-        console.log('[A11y] DOM moved. Refreshing sortable and triggering save...');
+        logDebug('SortAction', 'DOM moved. Triggering sortable update.');
+        
         // 2. Critical Step: Sync jQuery UI Sortable state and trigger save
-        // Must refresh first, otherwise sortable internal cache keeps old order
         if ($container.data('ui-sortable')) {
             /** @type {any} */ ($container).sortable('refresh');
-            // PromptManager listens for the sortupdate event
             $container.trigger('sortupdate'); 
         } else {
             console.warn('[A11y] Warning: sortable instance not found on list container.');
@@ -330,8 +367,12 @@ function performSortAction($item, action, targetIndex = null) {
     }
 
     // 3. Refocus
-    const $triggerBtn = $item.find('.prompt-manager-a11y-sort');
-    $triggerBtn.trigger('focus');
+    // Small timeout to ensure DOM is settled and other observers have run
+    setTimeout(() => {
+        const $triggerBtn = $item.find('.prompt-manager-a11y-sort');
+        logDebug('SortAction', 'Restoring focus to sort button', $triggerBtn[0]);
+        $triggerBtn.trigger('focus');
+    }, 100);
 }
 
 
@@ -527,7 +568,7 @@ const enhanceSpecificA11y = () => {
             // Prepend to controls
             $controls.prepend($sortBtn);
             
-            // Bind event to new button (using dynamic delegation to prevent invalidation, though direct binding is used here, unified management is safer)
+            // Bind event to new button
             $sortBtn.on('click keydown', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
@@ -559,14 +600,6 @@ const enhanceSpecificA11y = () => {
                 });
                 if ($btn.hasClass('prompt-manager-toggle-action')) {
                     $btn.attr('aria-pressed', $btn.hasClass('fa-toggle-on') ? 'true' : 'false');
-                }
-                // Restore focus logic (if re-rendering causes focus loss)
-                if (lastActivePromptId === promptId && lastActivePromptAction === actionClass) {
-                    setTimeout(() => {
-                        $btn.trigger('focus');
-                        lastActivePromptId = null;
-                        lastActivePromptAction = null;
-                    }, 100);
                 }
             } else {
                 $btn.attr('tabindex', '-1').attr('aria-hidden', 'true');
@@ -633,6 +666,7 @@ const managePopupTraps = () => {
     const $charPopup = $('#character_popup');
     if ($charPopup.is(':visible') && $charPopup.hasClass('open')) {
         if (!charPopupTrap) {
+            logDebug('TrapManager', 'Creating Character Popup Trap');
             lastFocusedBeforeTrap = document.activeElement;
             charPopupTrap = focusTrap.createFocusTrap('#character_popup', {
                 allowOutsideClick: true,
@@ -644,26 +678,51 @@ const managePopupTraps = () => {
             try { charPopupTrap.activate(); } catch (e) {}
         }
     } else if (charPopupTrap) {
+        logDebug('TrapManager', 'Deactivating Character Popup Trap');
         try { charPopupTrap.deactivate(); } catch (e) {}
         charPopupTrap = null;
     }
 
     // B. Prompt Manager
     const $promptPopup = $('#completion_prompt_manager_popup');
+    // Check if main Prompt Manager UI is active
     const isPromptActive = $promptPopup.is(':visible') && ($('#completion_prompt_manager_popup_edit').is(':visible') || $('#completion_prompt_manager_popup_inspect').is(':visible'));
+    
+    // CRITICAL: Check if a Generic Popup (like Sort Menu) is currently overriding it
+    // The sort menu is usually a .list-group with role="menu" inside a .popup
+    const isSortMenuOpen = $('.list-group[role="menu"]').is(':visible');
+
     if (isPromptActive) {
-        if (!promptManagerTrap) {
-            lastFocusedBeforeTrap = document.activeElement;
-            promptManagerTrap = focusTrap.createFocusTrap('#completion_prompt_manager_popup', {
-                allowOutsideClick: true,
-                initialFocus: '#completion_prompt_manager_popup_close_button',
-                onDeactivate: () => {
-                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
-                },
-            });
-            try { promptManagerTrap.activate(); } catch (e) {}
+        if (isSortMenuOpen) {
+            // If sort menu is open, we MUST pause or prevent the prompt trap
+            logDebug('TrapManager', 'Conflict detected: Prompt Manager active BUT Sort Menu is Open. Skipping trap enforcement.');
+            if (promptManagerTrap) {
+                try { 
+                    logDebug('TrapManager', 'Pausing existing Prompt Manager Trap');
+                    promptManagerTrap.pause(); 
+                } catch (e) {}
+            }
+        } else {
+            // Normal Prompt Manager behavior
+            if (!promptManagerTrap) {
+                logDebug('TrapManager', 'Creating Prompt Manager Trap');
+                lastFocusedBeforeTrap = document.activeElement;
+                promptManagerTrap = focusTrap.createFocusTrap('#completion_prompt_manager_popup', {
+                    allowOutsideClick: true,
+                    initialFocus: '#completion_prompt_manager_popup_close_button',
+                    onDeactivate: () => {
+                        logDebug('TrapManager', 'Prompt Manager Trap Deactivated');
+                        if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                    },
+                });
+                try { promptManagerTrap.activate(); } catch (e) {}
+            } else {
+                // Ensure it is unpaused if menu closed
+                try { promptManagerTrap.unpause(); } catch (e) {}
+            }
         }
     } else if (promptManagerTrap) {
+        logDebug('TrapManager', 'Deactivating Prompt Manager Trap (UI hidden)');
         try { promptManagerTrap.deactivate(); } catch (e) {}
         promptManagerTrap = null;
     }
@@ -674,6 +733,7 @@ const managePopupTraps = () => {
         const currentUid = $expandedWI.attr('uid');
         if (!worldInfoTrap || worldInfoTrapUid !== currentUid) {
             if (worldInfoTrap) try { worldInfoTrap.deactivate(); } catch (e) {}
+            logDebug('TrapManager', 'Creating WI Trap');
             worldInfoTrap = focusTrap.createFocusTrap($expandedWI.find('.world_entry_form')[0], {
                 allowOutsideClick: true,
                 clickOutsideDeactivates: false,
@@ -727,6 +787,15 @@ export function initAccessibility() {
         }
     });
 
+    // Debug listener for global focus changes
+    if (DEBUG_FOCUS) {
+        document.addEventListener('focusin', (e) => {
+            const id = e.target.id || 'no-id';
+            const cls = e.target.className || 'no-class';
+            logDebug('GlobalFocus', `Focus moved to: <${e.target.tagName} id="${id}" class="${cls}">`);
+        });
+    }
+
     eventSource.on(event_types.GENERATION_STARTED, (type) => {
         if (type === 'quiet') return;
         isAiGenerating = true;
@@ -765,6 +834,7 @@ export function initAccessibility() {
 
     // 4. Mutation Observer
     const processA11yUpdates = debounce(() => {
+        logDebug('Observer', 'Processing Updates (Debounced)');
         applyGenericA11yRules(document.body);
         enhanceSpecificA11y();
         managePopupTraps();
@@ -779,7 +849,9 @@ export function initAccessibility() {
         }
     }, 250);
 
-    const mainObserver = new MutationObserver((_mutations, _observer) => {
+    const mainObserver = new MutationObserver((mutations) => {
+        // Optional: filter mutations to reduce log spam
+        // logDebug('Observer', `Mutation detected: ${mutations.length} changes`);
         processA11yUpdates();
     });
 
