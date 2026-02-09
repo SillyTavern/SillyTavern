@@ -112,18 +112,19 @@ if (corsEnabled) {
     const corsCredentials = getConfigValue('cors.credentials', false, 'boolean');
     const corsMaxAge = getConfigValue('cors.maxAge', 0, 'number');
 
+    /** @type {cors.CorsOptions} */
     const corsOptions = {
         origin: corsOrigin,
         methods: corsMethods,
         credentials: corsCredentials,
     };
-    if (Array.isArray(corsAllowedHeaders) ? corsAllowedHeaders.length > 0 : true) {
+    if (Array.isArray(corsAllowedHeaders) && corsAllowedHeaders.length > 0) {
         corsOptions.allowedHeaders = corsAllowedHeaders;
     }
-    if (Array.isArray(corsExposedHeaders) ? corsExposedHeaders.length > 0 : true) {
+    if (Array.isArray(corsExposedHeaders) && corsExposedHeaders.length > 0) {
         corsOptions.exposedHeaders = corsExposedHeaders;
     }
-    if (corsMaxAge !== null) {
+    if (corsMaxAge !== null && Number.isInteger(corsMaxAge)) {
         corsOptions.maxAge = corsMaxAge;
     }
     app.use(cors(corsOptions));
