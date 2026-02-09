@@ -532,6 +532,29 @@ comfy.post('/delete-workflow', async (request, response) => {
     }
 });
 
+comfy.post('/rename-workflow', async (request, response) => {
+    try {
+        const oldName = sanitize(String(request.body.old_name));
+        const newName = sanitize(String(request.body.new_name));
+        const oldPath = path.join(request.user.directories.comfyWorkflows, oldName);
+        const newPath = path.join(request.user.directories.comfyWorkflows, newName);
+
+        if (!fs.existsSync(oldPath)) {
+            return response.status(404).send('Workflow not found');
+        }
+
+        if (fs.existsSync(newPath)) {
+            return response.status(409).send('A workflow with that name already exists');
+        }
+
+        fs.renameSync(oldPath, newPath);
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 comfy.post('/generate', async (request, response) => {
     try {
         let item;
