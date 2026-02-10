@@ -387,7 +387,7 @@ export function registerCoreMacros() {
 
     /** @param {string} listString @return {string[]} */
     function readSingleArgsRandomList(listString) {
-        // If it contains double colons, those will have precedence over comma-seperated lists.
+        // If it contains double colons, those will have precedence over comma-separated lists.
         // This can only happen if the macro only had a single colon to introduce the list...
         // like, {{random:a::b::c}}
         if (listString.includes('::')) {
