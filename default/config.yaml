@@ -89,7 +89,7 @@ cors:
   # Allow credentials (cookies, authorization headers)
   credentials: false
   # Preflight cache max age in seconds (optional)
-  maxAge: 0
+  maxAge: null
 # -- REQUEST PROXY CONFIGURATION --
 requestProxy:
   # If a proxy is enabled, all outgoing HTTP/HTTPS requests will be routed through it.

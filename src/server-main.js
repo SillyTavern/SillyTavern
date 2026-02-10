@@ -110,7 +110,7 @@ if (corsEnabled) {
     const corsAllowedHeaders = getConfigValue('cors.allowedHeaders', null);
     const corsExposedHeaders = getConfigValue('cors.exposedHeaders', null);
     const corsCredentials = getConfigValue('cors.credentials', false, 'boolean');
-    const corsMaxAge = getConfigValue('cors.maxAge', 0, 'number');
+    const corsMaxAge = getConfigValue('cors.maxAge', null, 'number');
 
     /** @type {cors.CorsOptions} */
     const corsOptions = {
