@@ -7760,7 +7760,7 @@ export async function getSettings() {
         applyPowerUserSettings();
 
         if (power_user.accessibility_mode === undefined) {
-            power_user.accessibility_mode = true; 
+            power_user.accessibility_mode = true;
         }
         $('#accessibility_mode').prop('checked', power_user.accessibility_mode);
         setAccessibilityEnabled(power_user.accessibility_mode);
@@ -10707,7 +10707,7 @@ export async function doNavbarIconClick() {
     const drawerElement = document.getElementById(targetDrawerID);
 
     // A11y: Handle Focus Trap and ARIA
-    handleDrawerFocus(drawerContainer, drawerElement, !drawerWasOpenAlready); 
+    handleDrawerFocus(drawerContainer, drawerElement, !drawerWasOpenAlready);
 
     if (!drawerWasOpenAlready) {
         const $openDrawers = $('.openDrawer:not(.pinnedOpen)');

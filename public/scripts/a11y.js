@@ -1,17 +1,17 @@
 import {
     chat,
     isChatSaving,
-    this_edit_mes_id
+    this_edit_mes_id,
 } from '../script.js';
 import {
-    debounce
+    debounce,
 } from './utils.js';
 import {
     eventSource,
-    event_types
+    event_types,
 } from './events.js';
 import {
-    focusTrap
+    focusTrap,
 } from '../lib.js';
 // Import Popup System
 import { callGenericPopup, POPUP_TYPE, POPUP_RESULT, Popup } from './popup.js';
@@ -59,7 +59,7 @@ const buttonSelectors = [
     '.paginationjs-pages li a',
     '.inline-drawer-toggle',
     '.qr--action',
-    '.prompt-manager-a11y-sort' // Added sort button
+    '.prompt-manager-a11y-sort', // Added sort button
 ].join(', ');
 
 const listSelectors = [
@@ -77,7 +77,7 @@ const listSelectors = [
     '.bg_list',
     '.qr--setList',
     '.qr--set-qrListContents',
-    '#completion_prompt_manager_list' // Added Prompt list
+    '#completion_prompt_manager_list', // Added Prompt list
 ].join(', ');
 
 const listItemSelectors = [
@@ -93,7 +93,7 @@ const listItemSelectors = [
     '#userList .userSelect',
     '.bg_list .bg_example',
     '.qr--set-item',
-    '.completion_prompt_manager_prompt' // Added Prompt item
+    '.completion_prompt_manager_prompt', // Added Prompt item
 ].join(', ');
 
 const toolbarSelectors = [
@@ -140,7 +140,7 @@ export const a11yProcessors = {
     },
 };
 
-/** 
+/**
  * Registry mapping selector strings to processor functions.
  * @type {Map<string, (element: Element) => void>}
  */
@@ -158,7 +158,7 @@ a11yRegistry.set('#toast-container .toast', a11yProcessors.status);
 /**
  * Registers a new accessibility rule for a CSS selector.
  * If accessibility is currently enabled, the rule is applied immediately to existing elements.
- * 
+ *
  * @param {string} selector - CSS selector to match elements.
  * @param {((element: Element) => void) | string} processor - Callback function (element) => void, or a string key of a default processor ('button', 'list', etc.).
  */
@@ -221,7 +221,7 @@ async function handlePromptSortMenu(triggerElement) {
     const $li = $(triggerElement).closest('li');
     const $container = $('#completion_prompt_manager_list');
     const $allPrompts = $container.find('.completion_prompt_manager_prompt');
-    
+
     const total = $allPrompts.length;
     const currentIndex = $allPrompts.index($li);
     const displayIndex = currentIndex + 1;
@@ -235,68 +235,68 @@ async function handlePromptSortMenu(triggerElement) {
     }
 
     await callGenericPopup(
-        `<h3>Sort Prompt</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`, 
-        POPUP_TYPE.TEXT, 
-        '', 
-        { 
+        `<h3>Sort Prompt</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`,
+        POPUP_TYPE.TEXT,
+        '',
+        {
             okButton: false,
             cancelButton: 'Close',
             wide: true,
             customButtons: [
                 {
-                    text: "Move Up",
+                    text: 'Move Up',
                     result: POPUP_RESULT.CUSTOM1,
-                    action: () => performSortAction($li, 'up')
+                    action: () => performSortAction($li, 'up'),
                 },
                 {
-                    text: "Move Down",
+                    text: 'Move Down',
                     result: POPUP_RESULT.CUSTOM2,
-                    action: () => performSortAction($li, 'down')
+                    action: () => performSortAction($li, 'down'),
                 },
                 {
-                    text: "To Top",
+                    text: 'To Top',
                     result: POPUP_RESULT.CUSTOM3,
-                    action: () => performSortAction($li, 'top')
+                    action: () => performSortAction($li, 'top'),
                 },
                 {
-                    text: "To Bottom",
+                    text: 'To Bottom',
                     result: POPUP_RESULT.CUSTOM4,
-                    action: () => performSortAction($li, 'bottom')
+                    action: () => performSortAction($li, 'bottom'),
                 },
                 {
-                    text: "Jump to...",
+                    text: 'Jump to...',
                     result: POPUP_RESULT.CUSTOM5,
-                    action: () => setTimeout(() => handleJumpAction($li), 150)
-                }
-            ]
-        }
+                    action: () => setTimeout(() => handleJumpAction($li), 150),
+                },
+            ],
+        },
     );
 }
 
 /**
  * Handles jumping to a specific position.
- * @param {JQuery<HTMLElement>} $item 
+ * @param {JQuery<HTMLElement>} $item
  */
 async function handleJumpAction($item) {
     const $container = $('#completion_prompt_manager_list');
     const max = $container.find('.completion_prompt_manager_prompt').length;
-    
+
     logDebug('JumpAction', `Requesting input 1-${max}`);
 
     const input = await callGenericPopup(
-        `Enter new position (1-${max}):`, 
-        POPUP_TYPE.INPUT, 
+        `Enter new position (1-${max}):`,
+        POPUP_TYPE.INPUT,
         '',
-        { okButton: 'Move' }
+        { okButton: 'Move' },
     );
-    
+
     if (input) {
         const targetPos = parseInt(String(input));
         if (!isNaN(targetPos) && targetPos >= 1 && targetPos <= max) {
             logDebug('JumpAction', `Jumping to ${targetPos}`);
-            performSortAction($item, 'jump', targetPos - 1); 
+            performSortAction($item, 'jump', targetPos - 1);
         } else {
-            announceA11y("Invalid position number.");
+            announceA11y('Invalid position number.');
             $item.find('.prompt-manager-a11y-sort').trigger('focus');
         }
     } else {
@@ -307,9 +307,9 @@ async function handleJumpAction($item) {
 
 /**
  * Performs the move and saves.
- * @param {JQuery<HTMLElement>} $item 
- * @param {string} action 
- * @param {number|null} targetIndex 
+ * @param {JQuery<HTMLElement>} $item
+ * @param {string} action
+ * @param {number|null} targetIndex
  */
 function performSortAction($item, action, targetIndex = null) {
     const $container = $('#completion_prompt_manager_list');
@@ -368,11 +368,11 @@ function performSortAction($item, action, targetIndex = null) {
 
     if (changed) {
         logDebug('SortAction', 'DOM moved. Triggering sortable update.');
-        
+
         // 2. Critical Step: Sync jQuery UI Sortable state and trigger save
         if ($container.data('ui-sortable')) {
             /** @type {any} */ ($container).sortable('refresh');
-            $container.trigger('sortupdate'); 
+            $container.trigger('sortupdate');
         } else {
             console.warn('[A11y] Warning: sortable instance not found on list container.');
         }
@@ -475,7 +475,7 @@ const enhanceSpecificA11y = () => {
     $('input:not([type="range"]), textarea, select').each(function () {
         const $el = $(this);
         if ($el.is('[type="hidden"]')) return;
-        
+
         let id = $el.attr('id');
         if (!id) {
             id = 'st-a11y-' + Math.random().toString(36).substr(2, 5);
@@ -487,7 +487,7 @@ const enhanceSpecificA11y = () => {
 
         let $title = $container.find('label, h4, .range-block-title, b, .justifyLeft').first();
         if ($el.parent('label').length) $title = $el.parent('label').find('span').first();
-        
+
         if ($title.length && !$el.attr('aria-labelledby')) {
             const titleId = $title.attr('id') || 'label-' + id;
             $title.attr('id', titleId);
@@ -530,12 +530,12 @@ const enhanceSpecificA11y = () => {
             'role': 'button',
             'tabindex': '0',
             'aria-expanded': isExpanded ? 'true' : 'false',
-            'aria-controls': contentId
+            'aria-controls': contentId,
         });
 
         $icon.attr({
             'aria-hidden': 'true',
-            'tabindex': '-1'
+            'tabindex': '-1',
         }).removeAttr('role');
 
         const $title = $header.find('b, strong, span').first();
@@ -549,9 +549,9 @@ const enhanceSpecificA11y = () => {
     // D. Range Sliders
     $('input[type="range"]').each(function() {
         const $el = $(this);
-        const hasSiblingNumber = $el.siblings('input[type="number"]').length > 0 || 
+        const hasSiblingNumber = $el.siblings('input[type="number"]').length > 0 ||
                                  $el.closest('.range-block-range-and-counter').find('input[type="number"]').length > 0;
-        
+
         if (hasSiblingNumber) {
             $el.attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
         } else {
@@ -564,14 +564,14 @@ const enhanceSpecificA11y = () => {
         const $li = $(this);
         const promptId = $li.attr('data-pm-identifier');
         const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
-        
+
         // Hide original drag handle
         $li.find('.drag-handle').attr('aria-hidden', 'true');
-        
+
         $li.find('.prompt-manager-inspect-action').attr({
             'role': 'button',
             'tabindex': '0',
-            'aria-label': 'Inspect: ' + itemName
+            'aria-label': 'Inspect: ' + itemName,
         });
 
         // 1. Dynamically inject sort button (if it doesn't exist)
@@ -582,11 +582,11 @@ const enhanceSpecificA11y = () => {
                 class: 'prompt-manager-a11y-sort fa-solid fa-sort fa-xs',
                 role: 'button',
                 tabindex: '0',
-                title: 'Sort / Move'
+                title: 'Sort / Move',
             });
             // Prepend to controls
             $controls.prepend($sortBtn);
-            
+
             // Bind event to new button
             $sortBtn.on('click keydown', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
@@ -615,7 +615,7 @@ const enhanceSpecificA11y = () => {
                 $btn.attr({
                     'role': 'button',
                     'tabindex': '0',
-                    'aria-label': `${actionTitle}: ${itemName}`
+                    'aria-label': `${actionTitle}: ${itemName}`,
                 });
                 if ($btn.hasClass('prompt-manager-toggle-action')) {
                     $btn.attr('aria-pressed', $btn.hasClass('fa-toggle-on') ? 'true' : 'false');
@@ -658,7 +658,7 @@ const enhanceSpecificA11y = () => {
 
         $entry.find('.menu_button').attr({
             'role': 'button',
-            'tabindex': '0'
+            'tabindex': '0',
         });
     });
 
@@ -666,12 +666,12 @@ const enhanceSpecificA11y = () => {
     $('#character_popup .editor_maximize').attr({
         'role': 'button',
         'tabindex': '0',
-        'aria-label': 'Expand Full Editor'
+        'aria-label': 'Expand Full Editor',
     });
     $('#character_cross').attr({
         'role': 'button',
         'tabindex': '0',
-        'aria-label': 'Close'
+        'aria-label': 'Close',
     });
 };
 
@@ -716,7 +716,7 @@ const managePopupTraps = () => {
     const $promptPopup = $('#completion_prompt_manager_popup');
     // Check if main Prompt Manager UI is active
     const isPromptActive = $promptPopup.is(':visible') && ($('#completion_prompt_manager_popup_edit').is(':visible') || $('#completion_prompt_manager_popup_inspect').is(':visible'));
-    
+
     // CRITICAL: Check if a Generic Popup (like Sort Menu) is currently overriding it
     // The sort menu is usually a .list-group with role="menu" inside a .popup
     const isSortMenuOpen = $('.list-group[role="menu"]').is(':visible');
@@ -726,9 +726,9 @@ const managePopupTraps = () => {
             // If sort menu is open, we MUST pause or prevent the prompt trap
             logDebug('TrapManager', 'Conflict detected: Prompt Manager active BUT Sort Menu is Open. Skipping trap enforcement.');
             if (promptManagerTrap) {
-                try { 
+                try {
                     logDebug('TrapManager', 'Pausing existing Prompt Manager Trap');
-                    promptManagerTrap.pause(); 
+                    promptManagerTrap.pause();
                 } catch (e) {}
             }
         } else {
@@ -812,16 +812,16 @@ function cleanupA11y() {
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
-    
+
     $('.prompt-manager-a11y-sort').remove();
     $('.a11y-refactored').removeClass('a11y-refactored');
 }
 
 export function setAccessibilityEnabled(enabled) {
     if (isA11yEnabled === enabled && mainObserver) return;
-    
+
     isA11yEnabled = enabled;
-    
+
     if (!enabled) {
         cleanupA11y();
         return;
@@ -829,7 +829,7 @@ export function setAccessibilityEnabled(enabled) {
 
     applyGenericA11yRules(document.body);
     enhanceSpecificA11y();
-    
+
     const processA11yUpdates = debounce(() => {
         if (!isA11yEnabled) return;
         applyGenericA11yRules(document.body);
@@ -862,7 +862,7 @@ export function initAccessibility() {
     // 1. Initial Static Cleanups
     $('#send_but').attr({
         'tabindex': '-1',
-        'aria-hidden': 'true'
+        'aria-hidden': 'true',
     });
 
     // 2. Global Event Bindings
