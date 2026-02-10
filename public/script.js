@@ -277,7 +277,7 @@ import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
-import { initAccessibility, announceA11y, handleDrawerFocus } from './scripts/a11y.js';
+import { initAccessibility, announceA11y, handleDrawerFocus, setAccessibilityEnabled } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
@@ -7754,6 +7754,12 @@ export async function getSettings() {
         // Apply theme toggles from power user settings
         applyPowerUserSettings();
 
+        if (power_user.accessibility_mode === undefined) {
+            power_user.accessibility_mode = true; 
+        }
+        $('#accessibility_mode').prop('checked', power_user.accessibility_mode);
+        setAccessibilityEnabled(power_user.accessibility_mode);
+
         // Load character tags
         loadTagsSettings(settings);
 
@@ -10887,6 +10893,12 @@ jQuery(async function () {
     //limit swiping to only last message clicks
     $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
     $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
+
+    $('#accessibility_mode').on('change', function () {
+        power_user.accessibility_mode = !!$(this).prop('checked');
+        setAccessibilityEnabled(power_user.accessibility_mode);
+        saveSettingsDebounced();
+    });
 
     initCharacterSearch();
 

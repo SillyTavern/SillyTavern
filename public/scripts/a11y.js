@@ -16,6 +16,9 @@ import {
 // Import Popup System
 import { callGenericPopup, POPUP_TYPE, POPUP_RESULT, Popup } from './popup.js';
 
+let isA11yEnabled = true;
+let mainObserver = null;
+
 // ============================================================================
 // DEBUGGING UTILITIES
 // ============================================================================
@@ -362,6 +365,7 @@ export function announceA11y(text) {
 }
 
 export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
+    if (!isA11yEnabled) return;
     if (isOpening) {
         triggerButton.attr('aria-expanded', 'true');
         if (currentFocusTrap) {
@@ -393,6 +397,8 @@ export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
  * Core function to enhance specific complex DOM elements (Chat, Inputs, Drawers).
  */
 const enhanceSpecificA11y = () => {
+    if (!isA11yEnabled) return;
+
     // A. Chat Message Refactoring
     $('#chat .mes').each(function () {
         const $mes = $(this);
@@ -618,7 +624,17 @@ const enhanceSpecificA11y = () => {
  * Manages focus traps for various popups.
  */
 const managePopupTraps = () => {
-    if (!focusTrap) return;
+    if (!focusTrap || !isA11yEnabled) {
+        if (currentFocusTrap) {
+            try { currentFocusTrap.deactivate(); } catch (e) {}
+            currentFocusTrap = null;
+        }
+        if (promptManagerTrap) {
+            try { promptManagerTrap.deactivate(); } catch (e) {}
+            promptManagerTrap = null;
+        }
+        return;
+    }
 
     // A. Character Advanced Definitions Popup
     const $charPopup = $('#character_popup');
@@ -728,6 +744,65 @@ const trapFocusInChat = (e) => {
     }
 };
 
+function cleanupA11y() {
+    if (mainObserver) {
+        mainObserver.disconnect();
+        mainObserver = null;
+    }
+
+    if (currentFocusTrap) { try { currentFocusTrap.deactivate(); } catch (e) {} currentFocusTrap = null; }
+    if (promptManagerTrap) { try { promptManagerTrap.deactivate(); } catch (e) {} promptManagerTrap = null; }
+    if (charPopupTrap) { try { charPopupTrap.deactivate(); } catch (e) {} charPopupTrap = null; }
+    if (worldInfoTrap) { try { worldInfoTrap.deactivate(); } catch (e) {} worldInfoTrap = null; }
+
+    $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
+        .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
+    
+    $('.prompt-manager-a11y-sort').remove();
+    $('.a11y-refactored').removeClass('a11y-refactored');
+}
+
+export function setAccessibilityEnabled(enabled) {
+    if (isA11yEnabled === enabled && mainObserver) return;
+    
+    isA11yEnabled = enabled;
+    
+    if (!enabled) {
+        cleanupA11y();
+        return;
+    }
+
+    applyGenericA11yRules(document.body);
+    enhanceSpecificA11y();
+    
+    const processA11yUpdates = debounce(() => {
+        if (!isA11yEnabled) return;
+        applyGenericA11yRules(document.body);
+        enhanceSpecificA11y();
+        managePopupTraps();
+
+        $('#send_but').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
+
+        if (isAiGenerating) {
+            const stopBtn = document.getElementById('mes_stop');
+            if (stopBtn && document.activeElement !== stopBtn && stopBtn.offsetParent !== null) {
+                stopBtn.focus();
+            }
+        }
+    }, 250);
+
+    mainObserver = new MutationObserver((mutations) => {
+        processA11yUpdates();
+    });
+
+    mainObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class', 'hidden'],
+    });
+}
+
 export function initAccessibility() {
     // 1. Initial Static Cleanups
     $('#send_but').attr({
@@ -737,6 +812,7 @@ export function initAccessibility() {
 
     // 2. Global Event Bindings
     $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle', function (e) {
+        if (!isA11yEnabled) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             if (this.tagName !== 'BUTTON') {
@@ -759,7 +835,7 @@ export function initAccessibility() {
     }
 
     eventSource.on(event_types.GENERATION_STARTED, (type) => {
-        if (type === 'quiet') return;
+        if (!isA11yEnabled || type === 'quiet') return;
         isAiGenerating = true;
         announceA11y('AI is generating response...');
         setTimeout(() => {
@@ -781,7 +857,10 @@ export function initAccessibility() {
     });
 
     const sheldEl = document.getElementById('sheld');
-    if (sheldEl) sheldEl.addEventListener('keydown', trapFocusInChat);
+    if (sheldEl) sheldEl.addEventListener('keydown', (e) => {
+        if (!isA11yEnabled) return;
+        trapFocusInChat(e);
+    });
 
     window.addEventListener('beforeunload', (e) => {
         if (isChatSaving || (typeof this_edit_mes_id === 'number' && this_edit_mes_id >= 0)) {
@@ -793,34 +872,4 @@ export function initAccessibility() {
     // 3. Initial Execution
     applyGenericA11yRules(document.body);
     enhanceSpecificA11y();
-
-    // 4. Mutation Observer
-    const processA11yUpdates = debounce(() => {
-        logDebug('Observer', 'Processing Updates (Debounced)');
-        applyGenericA11yRules(document.body);
-        enhanceSpecificA11y();
-        managePopupTraps();
-
-        $('#send_but').attr({ 'tabindex': '-1', 'aria-hidden': 'true' });
-
-        if (isAiGenerating) {
-            const stopBtn = document.getElementById('mes_stop');
-            if (stopBtn && document.activeElement !== stopBtn && stopBtn.offsetParent !== null) {
-                stopBtn.focus();
-            }
-        }
-    }, 250);
-
-    const mainObserver = new MutationObserver((mutations) => {
-        // Optional: filter mutations to reduce log spam
-        // logDebug('Observer', `Mutation detected: ${mutations.length} changes`);
-        processA11yUpdates();
-    });
-
-    mainObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['style', 'class', 'hidden'],
-    });
 }
