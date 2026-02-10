@@ -277,7 +277,7 @@ import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
-import { initAccessibility, announceA11y, handleDrawerFocus, setAccessibilityEnabled } from './scripts/a11y.js';
+import { initAccessibility, announceA11y, handleDrawerFocus, setAccessibilityEnabled, registerA11ySelector, a11yProcessors } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
@@ -291,6 +291,11 @@ import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/Macro
 globalThis.SillyTavern = {
     libs,
     getContext,
+    a11y: {
+        registerSelector: registerA11ySelector,
+        processors: a11yProcessors,
+        announce: announceA11y,
+    },
 };
 
 export {

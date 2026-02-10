@@ -109,41 +109,96 @@ const tabItemSelectors = [
     '#bg_tabs .bg_tabs_list .bg_tab_button',
 ].join(', ');
 
-/** @type {Record<string, (element: Element) => void>} */
-const a11yRules = {
-    [buttonSelectors]: (element) => {
+/**
+ * Standard processors for common accessibility roles.
+ * Can be used by extensions via registerA11ySelector.
+ */
+export const a11yProcessors = {
+    button: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'button');
         if (!element.hasAttribute('tabindex') && element.tagName !== 'BUTTON' && element.tagName !== 'A') {
             element.setAttribute('tabindex', '0');
         }
     },
-    [listSelectors]: (element) => {
+    list: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'list');
     },
-    [listItemSelectors]: (element) => {
+    listItem: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'listitem');
     },
-    [toolbarSelectors]: (element) => {
+    toolbar: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'toolbar');
     },
-    [tabListSelectors]: (element) => {
+    tabList: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'tablist');
     },
-    [tabItemSelectors]: (element) => {
+    tab: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'tab');
     },
-    '#toast-container .toast': (element) => {
+    status: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'status');
     },
 };
 
+/** 
+ * Registry mapping selector strings to processor functions.
+ * @type {Map<string, (element: Element) => void>}
+ */
+const a11yRegistry = new Map();
+
+// Initialize registry with default rules
+a11yRegistry.set(buttonSelectors, a11yProcessors.button);
+a11yRegistry.set(listSelectors, a11yProcessors.list);
+a11yRegistry.set(listItemSelectors, a11yProcessors.listItem);
+a11yRegistry.set(toolbarSelectors, a11yProcessors.toolbar);
+a11yRegistry.set(tabListSelectors, a11yProcessors.tabList);
+a11yRegistry.set(tabItemSelectors, a11yProcessors.tab);
+a11yRegistry.set('#toast-container .toast', a11yProcessors.status);
+
 /**
- * Apply generic accessibility rules to an element based on selectors.
+ * Registers a new accessibility rule for a CSS selector.
+ * If accessibility is currently enabled, the rule is applied immediately to existing elements.
+ * 
+ * @param {string} selector - CSS selector to match elements.
+ * @param {((element: Element) => void) | string} processor - Callback function (element) => void, or a string key of a default processor ('button', 'list', etc.).
+ */
+export function registerA11ySelector(selector, processor) {
+    /** @type {(element: Element) => void} */
+    let finalProcessor;
+
+    if (typeof processor === 'string') {
+        if (a11yProcessors[processor]) {
+            finalProcessor = a11yProcessors[processor];
+        } else {
+            console.warn(`[A11y] Unknown processor type: ${processor}. Defaulting to no-op.`);
+            return;
+        }
+    } else if (typeof processor === 'function') {
+        finalProcessor = processor;
+    } else {
+        console.warn('[A11y] Processor must be a function or a valid processor key.');
+        return;
+    }
+
+    a11yRegistry.set(selector, finalProcessor);
+
+    // If enabled, apply immediately
+    if (isA11yEnabled) {
+        try {
+            document.querySelectorAll(selector).forEach((el) => finalProcessor(el));
+        } catch (e) {
+            console.warn(`[A11y] Failed to apply new rule for selector "${selector}":`, e);
+        }
+    }
+}
+
+/**
+ * Apply generic accessibility rules to an element based on registered selectors.
  * @param {Element} rootElement Element to process.
  */
 function applyGenericA11yRules(rootElement) {
     try {
-        for (const [selector, rule] of Object.entries(a11yRules)) {
+        for (const [selector, rule] of a11yRegistry.entries()) {
             rootElement.querySelectorAll(selector).forEach(rule);
             if (rootElement.matches && rootElement.matches(selector)) {
                 rule(rootElement);
