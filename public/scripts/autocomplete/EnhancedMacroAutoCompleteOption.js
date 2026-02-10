@@ -36,6 +36,7 @@ import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnos
  * @property {boolean} hasSpaceArgContent - Whether there's actual content after the space (not just whitespace).
  * @property {number} separatorCount - Number of '::' separators found.
  * @property {boolean} [isInScopedContent] - Whether cursor is in scoped content (after }} but before closing tag).
+ * @property {boolean} [isScopedContentOptional] - Whether the scoped content is optional (for display purposes).
  * @property {string} [scopedMacroName] - Name of the scoped macro if in scoped content.
  * @property {boolean} isVariableShorthand - Whether this is a variable shorthand (starts with . or $).
  * @property {'.'|'$'|null} variablePrefix - The variable prefix (. for local, $ for global), or null.
@@ -307,12 +308,23 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         const info = document.createElement('div');
         info.classList.add('macro-ac-scoped-info');
 
+        // If the scoped content is optional, show a prominent OPTIONAL badge
+        if (this.#context.isScopedContentOptional) {
+            const optionalBadge = document.createElement('span');
+            optionalBadge.classList.add('macro-ac-optional-badge');
+            optionalBadge.textContent = 'OPTIONAL';
+            info.append(optionalBadge);
+        }
+
         const icon = document.createElement('i');
         icon.classList.add('fa-solid', 'fa-layer-group');
         info.append(icon);
 
         const text = document.createElement('span');
-        text.innerHTML = `Typing <strong>scoped content</strong> for <code>{{${this.#context.scopedMacroName}}}</code>. Close with <code>{{/${this.#context.scopedMacroName}}}</code>`;
+        const closingHint = this.#context.isScopedContentOptional
+            ? `Can optionally close with <code>{{/${this.#context.scopedMacroName}}}</code>`
+            : `Close with <code>{{/${this.#context.scopedMacroName}}}</code>`;
+        text.innerHTML = `Typing <strong>scoped content</strong> for <code>{{${this.#context.scopedMacroName}}}</code>. ${closingHint}`;
         info.append(text);
 
         return info;
@@ -1113,12 +1125,20 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
     /** @type {string} */
     #paddingAfter;
 
+    /** @type {boolean} */
+    #isOptional;
+
+    /** @type {number} */
+    #nestingLevel;
+
     /**
      * @param {string} macroName - The name of the macro to close.
      * @param {Object} [options] - Optional configuration.
      * @param {string} [options.paddingBefore=''] - Whitespace after {{ in opening tag (target padding).
      * @param {string} [options.paddingAfter=''] - Whitespace before }} in opening tag (target padding).
      * @param {string} [options.currentPadding=''] - Whitespace the user has already typed after {{.
+     * @param {boolean} [options.isOptional=false] - Whether this closing tag is for an optional scope.
+     * @param {number} [options.nestingLevel=0] - Nesting level (0 = innermost).
      */
     constructor(macroName, options = {}) {
         // The closing tag is what we're suggesting - use /macroName as the name for matching
@@ -1127,6 +1147,8 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         this.#macroName = macroName;
         this.#paddingBefore = options.paddingBefore ?? '';
         this.#paddingAfter = options.paddingAfter ?? '';
+        this.#isOptional = options.isOptional ?? false;
+        this.#nestingLevel = options.nestingLevel ?? 0;
 
         // Calculate the replacement offset to replace any existing whitespace the user typed
         // This allows us to normalize the whitespace to match the opening tag's style
@@ -1143,6 +1165,10 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
 
         // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
         this.makeSelectable = true;
+
+        // nameOffset = 2 to skip the {{ prefix in the display for fuzzy highlighting
+        // The name is /macroName but display shows {{/macroName}}
+        this.nameOffset = 2;
 
         // Highest priority - closing tags should always appear at the very top
         this.sortPriority = 1;
@@ -1195,7 +1221,21 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         help.classList.add('help');
         const content = document.createElement('span');
         content.classList.add('helpContent');
-        content.textContent = `Close the {{${this.#macroName}}} scoped macro.`;
+
+        // Build description based on optional status and nesting
+        if (this.#isOptional) {
+            const optionalBadge = document.createElement('span');
+            optionalBadge.classList.add('macro-ac-optional-badge', 'macro-ac-optional-badge-small');
+            optionalBadge.textContent = 'OPTIONAL';
+            content.append(optionalBadge);
+            content.append(' ');
+
+            const nestingInfo = this.#nestingLevel > 0 ? ` (nested ${this.#nestingLevel} level${this.#nestingLevel > 1 ? 's' : ''} deep)` : '';
+            content.append(document.createTextNode(`Optionally close {{${this.#macroName}}}${nestingInfo}`));
+        } else {
+            content.textContent = `Close the {{${this.#macroName}}} scoped macro.`;
+        }
+
         help.append(content);
         li.append(help);
 
@@ -1212,6 +1252,14 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         const details = document.createElement('div');
         details.classList.add('macro-closing-tag-details');
 
+        // If optional, show badge at the top
+        if (this.#isOptional) {
+            const optionalBadge = document.createElement('span');
+            optionalBadge.classList.add('macro-ac-optional-badge');
+            optionalBadge.textContent = 'OPTIONAL';
+            details.append(optionalBadge);
+        }
+
         // Header
         const header = document.createElement('h3');
         header.innerHTML = `Close <code>{{${this.#macroName}}}</code>`;
@@ -1219,7 +1267,12 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
 
         // Description
         const desc = document.createElement('p');
-        desc.textContent = `Inserts the closing tag {{/${this.#macroName}}} to complete the scoped macro. The content between the opening and closing tags will be passed as the last argument.`;
+        if (this.#isOptional) {
+            const nestingInfo = this.#nestingLevel > 0 ? ` This scope is nested ${this.#nestingLevel} level${this.#nestingLevel > 1 ? 's' : ''} deep.` : '';
+            desc.textContent = `Optionally inserts the closing tag {{/${this.#macroName}}}. The scoped content for this macro is optional - you can close it or leave it open.${nestingInfo}`;
+        } else {
+            desc.textContent = `Inserts the closing tag {{/${this.#macroName}}} to complete the scoped macro. The content between the opening and closing tags will be passed as the last argument.`;
+        }
         details.append(desc);
 
         frag.append(details);

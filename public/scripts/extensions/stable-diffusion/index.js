@@ -728,7 +728,8 @@ async function onDeleteStyleClick() {
 }
 
 async function onSaveStyleClick() {
-    const userInput = await callGenericPopup('Enter style name:', POPUP_TYPE.INPUT);
+    const selectedStyle = extension_settings.sd.style || '';
+    const userInput = await callGenericPopup(t`Enter style name:`, POPUP_TYPE.INPUT, selectedStyle);
 
     if (!userInput) {
         return;
@@ -761,6 +762,48 @@ async function onSaveStyleClick() {
     option.selected = true;
     $('#sd_style').append(option);
     $('#sd_style').val(styleObject.name);
+    saveSettingsDebounced();
+}
+
+async function onRenameStyleClick() {
+    const selectedStyle = extension_settings.sd.style;
+    const styleObject = extension_settings.sd.styles.find(x => x.name === selectedStyle);
+
+    if (!styleObject) {
+        return;
+    }
+
+    const newName = await callGenericPopup(t`Enter new style name:`, POPUP_TYPE.INPUT, selectedStyle);
+
+    if (!newName) {
+        return;
+    }
+
+    const name = String(newName).trim();
+
+    if (name === selectedStyle) {
+        return;
+    }
+
+    const existingStyle = extension_settings.sd.styles.find(x => x.name === name);
+
+    if (existingStyle) {
+        toastr.error(t`A style with that name already exists`);
+        return;
+    }
+
+    styleObject.name = name;
+    extension_settings.sd.style = name;
+
+    $('#sd_style').empty();
+    for (const style of extension_settings.sd.styles) {
+        const option = document.createElement('option');
+        option.value = style.name;
+        option.text = style.name;
+        option.selected = style.name === extension_settings.sd.style;
+        $('#sd_style').append(option);
+    }
+
     saveSettingsDebounced();
 }
 
@@ -4727,6 +4770,58 @@ async function onComfyDeleteWorkflowClick() {
     onComfyWorkflowChange();
 }
 
+async function onComfyRenameWorkflowClick() {
+    const oldName = extension_settings.sd.comfy_workflow;
+
+    if (!oldName) {
+        return;
+    }
+
+    let newName = await callGenericPopup(t`Enter new workflow name:`, POPUP_TYPE.INPUT, oldName);
+
+    if (!newName) {
+        return;
+    }
+
+    newName = String(newName).trim();
+
+    if (!newName.toLowerCase().endsWith('.json')) {
+        newName += '.json';
+    }
+
+    if (newName === oldName) {
+        return;
+    }
+
+    const existingWorkflow = Array
+        .from(document.querySelectorAll('#sd_comfy_workflow option'))
+        .find(opt => opt instanceof HTMLOptionElement && opt.value === newName);
+
+    if (existingWorkflow) {
+        toastr.warning(t`A workflow with that name already exists`);
+        return;
+    }
+
+    const response = await fetch('/api/sd/comfy/rename-workflow', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            old_name: oldName,
+            new_name: newName,
+        }),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        toastr.error(t`Failed to rename workflow.\n\n${text}`);
+        return;
+    }
+
+    extension_settings.sd.comfy_workflow = newName;
+    saveSettingsDebounced();
+    await loadComfyWorkflows();
+}
+
 /**
  * Sends a chat message with the generated image.
  * @param {string} prompt Prompt used for the image generation
@@ -5600,9 +5695,11 @@ jQuery(async () => {
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
     $('#sd_comfy_open_workflow_editor').on('click', onComfyOpenWorkflowEditorClick);
     $('#sd_comfy_new_workflow').on('click', onComfyNewWorkflowClick);
+    $('#sd_comfy_rename_workflow').on('click', onComfyRenameWorkflowClick);
     $('#sd_comfy_delete_workflow').on('click', onComfyDeleteWorkflowClick);
     $('#sd_style').on('change', onStyleSelect);
     $('#sd_save_style').on('click', onSaveStyleClick);
+    $('#sd_rename_style').on('click', onRenameStyleClick);
     $('#sd_delete_style').on('click', onDeleteStyleClick);
     $('#sd_character_prompt_block').hide();
     $('#sd_interactive_mode').on('input', onInteractiveModeInput);
