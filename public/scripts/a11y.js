@@ -22,7 +22,7 @@ let mainObserver = null;
 // ============================================================================
 // DEBUGGING UTILITIES
 // ============================================================================
-const DEBUG_FOCUS = true;
+const DEBUG_FOCUS = false;
 
 /**
  * Logs a message with a timestamp and prefix for filtering.
@@ -59,7 +59,8 @@ const buttonSelectors = [
     '.paginationjs-pages li a',
     '.inline-drawer-toggle',
     '.qr--action',
-    '.prompt-manager-a11y-sort', // Added sort button
+    '.a11y-sort-button', // Generalized sort button
+    '.extensions_toolbar button',
 ].join(', ');
 
 const listSelectors = [
@@ -77,7 +78,9 @@ const listSelectors = [
     '.bg_list',
     '.qr--setList',
     '.qr--set-qrListContents',
-    '#completion_prompt_manager_list', // Added Prompt list
+    '#completion_prompt_manager_list',
+    '.regex-debugger-rules-list ul', // Regex Debugger Lists
+    '.regex-script-container', // Regex Manager Lists
 ].join(', ');
 
 const listItemSelectors = [
@@ -92,13 +95,19 @@ const listItemSelectors = [
     '.dataMaidCategoryContent .dataMaidItem',
     '#userList .userSelect',
     '.bg_list .bg_example',
+    '.qr--item',
     '.qr--set-item',
-    '.completion_prompt_manager_prompt', // Added Prompt item
+    '.completion_prompt_manager_prompt',
+    '.regex-debugger-rule',
+    '.regex-script-label',
+    '.extension_block',
 ].join(', ');
 
 const toolbarSelectors = [
     '.jg-menu',
     '.qr--head',
+    '.regex_bulk_operations',
+    '.extensions_toolbar',
 ].join(', ');
 
 const tabListSelectors = [
@@ -210,32 +219,43 @@ function applyGenericA11yRules(rootElement) {
 }
 
 // ============================================================================
-// PART 2: PROMPT SORTING LOGIC (FIXED & LOGGED)
+// PART 2: GENERALIZED SORTING LOGIC
 // ============================================================================
 
 /**
- * Opens the sort menu using popup buttons.
+ * Opens the sort menu using generic popup.
  * @param {HTMLElement} triggerElement The button that triggered the menu.
+ * @param {string} itemSelector CSS selector for the item being sorted (e.g. '.qr--item')
+ * @param {string} containerSelector CSS selector for the container (e.g. '#qr--global-setList')
  */
-async function handlePromptSortMenu(triggerElement) {
-    const $li = $(triggerElement).closest('li');
-    const $container = $('#completion_prompt_manager_list');
-    const $allPrompts = $container.find('.completion_prompt_manager_prompt');
+async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
+    const $li = $(triggerElement).closest(itemSelector);
+    const $container = $li.closest(containerSelector);
+    const $allItems = $container.children(itemSelector); // Only direct children
 
-    const total = $allPrompts.length;
-    const currentIndex = $allPrompts.index($li);
+    if ($allItems.length === 0) return;
+
+    const total = $allItems.length;
+    const currentIndex = $allItems.index($li);
     const displayIndex = currentIndex + 1;
-    const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
+    
+    // Try to find a meaningful name
+    let itemName = $li.find('.completion_prompt_manager_prompt_name, .qr--set option:selected, .qr--set-itemLabel, .regex_script_name').first().val() || 
+                   $li.find('.completion_prompt_manager_prompt_name, .qr--set option:selected, .qr--set-itemLabel, .regex_script_name').first().text() || 
+                   'Item';
+    
+    itemName = String(itemName).trim();
 
-    logDebug('handlePromptSortMenu', `Opening sort buttons for item: ${displayIndex}/${total}`);
+    logDebug('handleSortMenu', `Opening sort buttons for item: ${displayIndex}/${total}`);
     announceA11y(`Sorting ${itemName}. Current position: ${displayIndex} of ${total}.`);
 
-    if (promptManagerTrap) {
-        try { promptManagerTrap.pause(); } catch (e) { console.warn(e); }
-    }
+    // Pause any active trap
+    if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) {}
+    if (qrEditorTrap) try { qrEditorTrap.pause(); } catch (e) {}
+    if (regexEditorTrap) try { regexEditorTrap.pause(); } catch (e) {}
 
     await callGenericPopup(
-        `<h3>Sort Prompt</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`,
+        `<h3>Sort Item</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`,
         POPUP_TYPE.TEXT,
         '',
         {
@@ -246,27 +266,27 @@ async function handlePromptSortMenu(triggerElement) {
                 {
                     text: 'Move Up',
                     result: POPUP_RESULT.CUSTOM1,
-                    action: () => performSortAction($li, 'up'),
+                    action: () => performGenericSortAction($li, $container, itemSelector, 'up'),
                 },
                 {
                     text: 'Move Down',
                     result: POPUP_RESULT.CUSTOM2,
-                    action: () => performSortAction($li, 'down'),
+                    action: () => performGenericSortAction($li, $container, itemSelector, 'down'),
                 },
                 {
                     text: 'To Top',
                     result: POPUP_RESULT.CUSTOM3,
-                    action: () => performSortAction($li, 'top'),
+                    action: () => performGenericSortAction($li, $container, itemSelector, 'top'),
                 },
                 {
                     text: 'To Bottom',
                     result: POPUP_RESULT.CUSTOM4,
-                    action: () => performSortAction($li, 'bottom'),
+                    action: () => performGenericSortAction($li, $container, itemSelector, 'bottom'),
                 },
                 {
                     text: 'Jump to...',
                     result: POPUP_RESULT.CUSTOM5,
-                    action: () => setTimeout(() => handleJumpAction($li), 150),
+                    action: () => setTimeout(() => handleGenericJumpAction($li, $container, itemSelector), 150),
                 },
             ],
         },
@@ -274,12 +294,10 @@ async function handlePromptSortMenu(triggerElement) {
 }
 
 /**
- * Handles jumping to a specific position.
- * @param {JQuery<HTMLElement>} $item
+ * Handles jumping to a specific position (Generic).
  */
-async function handleJumpAction($item) {
-    const $container = $('#completion_prompt_manager_list');
-    const max = $container.find('.completion_prompt_manager_prompt').length;
+async function handleGenericJumpAction($item, $container, itemSelector) {
+    const max = $container.children(itemSelector).length;
 
     logDebug('JumpAction', `Requesting input 1-${max}`);
 
@@ -294,67 +312,62 @@ async function handleJumpAction($item) {
         const targetPos = parseInt(String(input));
         if (!isNaN(targetPos) && targetPos >= 1 && targetPos <= max) {
             logDebug('JumpAction', `Jumping to ${targetPos}`);
-            performSortAction($item, 'jump', targetPos - 1);
+            performGenericSortAction($item, $container, itemSelector, 'jump', targetPos - 1);
         } else {
             announceA11y('Invalid position number.');
-            $item.find('.prompt-manager-a11y-sort').trigger('focus');
+            $item.find('.a11y-sort-button').trigger('focus');
         }
     } else {
-        logDebug('JumpAction', 'Cancelled or empty input. Returning focus.');
-        $item.find('.prompt-manager-a11y-sort').trigger('focus');
+        logDebug('JumpAction', 'Cancelled. Returning focus.');
+        $item.find('.a11y-sort-button').trigger('focus');
     }
 }
 
 /**
- * Performs the move and saves.
- * @param {JQuery<HTMLElement>} $item
- * @param {string} action
- * @param {number|null} targetIndex
+ * Performs the move and triggers save/events.
  */
-function performSortAction($item, action, targetIndex = null) {
-    const $container = $('#completion_prompt_manager_list');
-    const $allPrompts = $container.find('.completion_prompt_manager_prompt');
-    const currentIndex = $allPrompts.index($item);
+function performGenericSortAction($item, $container, itemSelector, action, targetIndex = null) {
+    const $allItems = $container.children(itemSelector);
+    const currentIndex = $allItems.index($item);
     let newIndex = currentIndex;
     let changed = false;
 
     logDebug('SortAction', `Performing sort. Action: ${action}, Current: ${currentIndex}`);
 
-    // 1. Move DOM
     if (action === 'up') {
         if (currentIndex > 0) {
-            $item.insertBefore($allPrompts.eq(currentIndex - 1));
+            $item.insertBefore($allItems.eq(currentIndex - 1));
             newIndex = currentIndex - 1;
             changed = true;
         }
     } else if (action === 'down') {
-        if (currentIndex < $allPrompts.length - 1) {
-            $item.insertAfter($allPrompts.eq(currentIndex + 1));
+        if (currentIndex < $allItems.length - 1) {
+            $item.insertAfter($allItems.eq(currentIndex + 1));
             newIndex = currentIndex + 1;
             changed = true;
         }
     } else if (action === 'top') {
         if (currentIndex > 0) {
-            $item.insertBefore($allPrompts.first());
+            $item.prependTo($container);
             newIndex = 0;
             changed = true;
         }
     } else if (action === 'bottom') {
-        if (currentIndex < $allPrompts.length - 1) {
-            $item.insertAfter($allPrompts.last());
-            newIndex = $allPrompts.length - 1;
+        if (currentIndex < $allItems.length - 1) {
+            $item.appendTo($container);
+            newIndex = $allItems.length - 1;
             changed = true;
         }
     } else if (action === 'jump' && targetIndex !== null) {
         if (targetIndex !== currentIndex) {
             if (targetIndex <= 0) {
-                $item.insertBefore($allPrompts.first());
+                $item.prependTo($container);
                 newIndex = 0;
-            } else if (targetIndex >= $allPrompts.length - 1) {
-                $item.insertAfter($allPrompts.last());
-                newIndex = $allPrompts.length - 1;
+            } else if (targetIndex >= $allItems.length - 1) {
+                $item.appendTo($container);
+                newIndex = $allItems.length - 1;
             } else {
-                const $target = $allPrompts.eq(targetIndex);
+                const $target = $allItems.eq(targetIndex);
                 if (targetIndex > currentIndex) {
                     $item.insertAfter($target);
                 } else {
@@ -369,12 +382,13 @@ function performSortAction($item, action, targetIndex = null) {
     if (changed) {
         logDebug('SortAction', 'DOM moved. Triggering sortable update.');
 
-        // 2. Critical Step: Sync jQuery UI Sortable state and trigger save
+        // Trigger sortable update if jQuery UI sortable is used
         if ($container.data('ui-sortable')) {
             /** @type {any} */ ($container).sortable('refresh');
             $container.trigger('sortupdate');
         } else {
-            console.warn('[A11y] Warning: sortable instance not found on list container.');
+            // Fallback for custom lists not using standard sortupdate listeners (e.g. Quick Replies)
+             $container.trigger('sortupdate');
         }
 
         announceA11y(`Moved. New position: ${newIndex + 1}.`);
@@ -382,18 +396,16 @@ function performSortAction($item, action, targetIndex = null) {
         announceA11y('Position not changed.');
     }
 
-    // 3. Refocus
-    // Small timeout to ensure DOM is settled and other observers have run
+    // Restore Focus
     setTimeout(() => {
-        const $triggerBtn = $item.find('.prompt-manager-a11y-sort');
-        logDebug('SortAction', 'Restoring focus to sort button', $triggerBtn[0]);
+        const $triggerBtn = $item.find('.a11y-sort-button');
+        logDebug('SortAction', 'Restoring focus to sort button');
         $triggerBtn.trigger('focus');
     }, 100);
 }
 
-
 // ============================================================================
-// PART 3: ADVANCED INTERACTIVE LOGIC (NEW)
+// PART 3: ADVANCED INTERACTIVE LOGIC
 // Handles focus management, focus traps, chat semantics, and keyboard events.
 // ============================================================================
 
@@ -403,10 +415,9 @@ let charPopupTrap = null;
 let worldInfoTrap = null;
 let worldInfoTrapUid = null;
 let qrEditorTrap = null;
+let regexEditorTrap = null; // New Regex Trap
 
 let lastFocusedBeforeTrap = null;
-let lastActivePromptId = null;
-let lastActivePromptAction = null;
 let lastActiveWIUid = null;
 let isAiGenerating = false;
 
@@ -450,12 +461,12 @@ export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
 }
 
 /**
- * Core function to enhance specific complex DOM elements (Chat, Inputs, Drawers).
+ * Core function to enhance specific complex DOM elements.
  */
 const enhanceSpecificA11y = () => {
     if (!isA11yEnabled) return;
 
-    // A. Chat Message Refactoring
+    // --- 1. Chat Message Refactoring ---
     $('#chat .mes').each(function () {
         const $mes = $(this);
         if ($mes.hasClass('a11y-refactored')) return;
@@ -472,7 +483,10 @@ const enhanceSpecificA11y = () => {
         $mes.find('.mesIDDisplay, .extraMesButtons, .drag-handle, .swipes-counter, .mes_timer, .timestamp').attr('aria-hidden', 'true');
     });
 
-    // B. Standard Input Labeling
+    // --- 2. Standard Input Labeling ---
+    // Removed .inline-drawer-content from the selector string to prevent massive mis-labeling in drawers
+    // This fixes issues where buttons in TTS/Summary extensions were wrongly bound to the first label in the drawer.
+    const containerSelector = '.range-block, .flex-container, .completion_prompt_manager_popup_entry_form_control, .world_entry_form_control'; 
     $('input:not([type="range"]), textarea, select').each(function () {
         const $el = $(this);
         if ($el.is('[type="hidden"]')) return;
@@ -483,11 +497,15 @@ const enhanceSpecificA11y = () => {
             $el.attr('id', id);
         }
 
-        const $container = $el.closest('.range-block, .flex-container, .completion_prompt_manager_popup_entry_form_control, .world_entry_form_control, .inline-drawer-content');
+        const $container = $el.closest(containerSelector);
         if (!$container.length) return;
 
-        let $title = $container.find('label, h4, h3, .range-block-title, b, .justifyLeft, small').first();
-        if ($el.parent('label').length) $title = $el.parent('label').find('span').first();
+        // Try to find a label or header within the container
+        let $title = $container.find('label, h4, h3, .range-block-title, b, .justifyLeft, small, strong').first();
+        // If element is wrapped in label
+        if ($el.parent('label').length) {
+            $title = $el.parent('label').find('span, strong, small').first();
+        }
 
         if ($title.length && !$el.attr('aria-labelledby')) {
             const titleId = $title.attr('id') || 'label-' + id;
@@ -510,7 +528,7 @@ const enhanceSpecificA11y = () => {
         }
     });
 
-    // C. Inline Drawers
+    // --- 3. Inline Drawers ---
     $('.inline-drawer').each(function () {
         const $drawer = $(this);
         const $header = $drawer.children('.inline-drawer-toggle');
@@ -527,6 +545,7 @@ const enhanceSpecificA11y = () => {
 
         const isExpanded = $content.is(':visible');
 
+        // Added aria-expanded to drawer toggles to communicate state
         $header.attr({
             'role': 'button',
             'tabindex': '0',
@@ -547,7 +566,7 @@ const enhanceSpecificA11y = () => {
         }
     });
 
-    // D. Range Sliders
+    // --- 4. Range Sliders ---
     $('input[type="range"]').each(function() {
         const $el = $(this);
         const hasSiblingNumber = $el.siblings('input[type="number"]').length > 0 ||
@@ -560,264 +579,308 @@ const enhanceSpecificA11y = () => {
         }
     });
 
-    // E. Prompt Manager List (Dynamic Injection of Sort Button)
+    // --- 5. Character Expressions Fixes ---
+    $('#expression_api, #expression_fallback').each(function() {
+        const id = this.id;
+        const $label = $(`label[for="${id}"]`);
+        if ($label.length) {
+            const labelId = $label.attr('id') || `a11y-label-${id}`;
+            $label.attr('id', labelId);
+            $(this).attr('aria-labelledby', labelId);
+        }
+    });
+
+    // --- 6. Image Generation Fixes ---
+    const imgGenFixes = ['sd_refine_mode', 'sd_function_tool', 'sd_interactive_mode', 'sd_multimodal_captioning', 'sd_free_extend', 'sd_snap', 'sd_minimal_prompt_processing', 'sd_novel_anlas_guard'];
+    imgGenFixes.forEach(id => {
+        const $el = $('#' + id);
+        if ($el.length) {
+            const title = $el.parent().attr('title');
+            if (title && !$el.attr('aria-label')) {
+                $el.attr('aria-label', title);
+            }
+        }
+    });
+    
+    // Explicit binding for SD fields that generic logic misses or misidentifies
+    const sdIds = [
+        'sd_source', 'sd_seed', 'sd_style',
+        'sd_prompt_prefix', 'sd_negative_prompt',
+        'sd_character_prompt', 'sd_character_negative_prompt',
+        'sd_model', 'sd_vae', 'sd_sampler', 'sd_scheduler', 
+        'sd_resolution', 'sd_hr_upscaler'
+    ];
+    
+    sdIds.forEach(id => {
+        const $el = $('#' + id);
+        if (!$el.length) return;
+        
+        let $label = $(`label[for="${id}"]`);
+        
+        // Specific fallback for sd_style which often lives under a header
+        if (!$label.length && id === 'sd_style') {
+            $label = $el.closest('.flex-container').prev('h4');
+        }
+
+        if ($label.length) {
+            const labelId = $label.attr('id') || `a11y-lbl-${id}`;
+            $label.attr('id', labelId);
+            $el.attr('aria-labelledby', labelId);
+            $el.removeAttr('aria-describedby'); 
+        }
+    });
+
+    // Chat Message Visibility Checkboxes
+    const $visHeader = $('h4[data-i18n="Chat Message Visibility (by source)"]');
+    const $visDesc = $visHeader.next('small');
+    if ($visHeader.length && $visDesc.length) {
+        $visDesc.attr('id', 'sd-vis-desc');
+        $('#sd_wand_visible, #sd_command_visible, #sd_interactive_visible, #sd_tool_visible').each(function() {
+            const existingLabelledBy = $(this).attr('aria-labelledby') || '';
+            if (!existingLabelledBy.includes('sd-vis-desc')) {
+                $(this).attr('aria-describedby', 'sd-vis-desc');
+            }
+        });
+    }
+
+    // --- 7. Image Prompt Templates Fixes ---
+    $('#sd_prompt_templates textarea').each(function() {
+        const id = this.id;
+        const $labelWrapper = $(this).prev('.title_restorable');
+        if ($labelWrapper.length) {
+            const $label = $labelWrapper.find(`label[for="${id}"]`);
+            const $resetBtn = $labelWrapper.find('.menu_button.fa-undo');
+
+            if ($label.length) {
+                const labelId = $label.attr('id') || `a11y-lbl-${id}`;
+                $label.attr('id', labelId);
+                $(this).attr('aria-labelledby', labelId);
+
+                if ($resetBtn.length) {
+                    $resetBtn.attr({
+                        'role': 'button',
+                        'tabindex': '0',
+                        'aria-label': 'Restore default: ' + $label.text()
+                    });
+                }
+            }
+        }
+    });
+
+    // --- 8. TTS Fixes ---
+    $('#tts_refresh').attr('aria-labelledby', 'st-a11y-tts-provider-title');
+
+    $('#tts_provider_settings select, #tts_provider_settings input').each(function() {
+        const id = this.id;
+        const $label = $(`label[for="${id}"]`);
+        if ($label.length) {
+            const labelId = $label.attr('id') || `a11y-lbl-${id}`;
+            $label.attr('id', labelId);
+            $(this).attr('aria-labelledby', labelId);
+        }
+    });
+
+    // --- 9. Caption Fixes ---
+    $('#caption_template, #caption_prompt').each(function() {
+         const id = this.id;
+         const $label = $(`label[for="${id}"]`);
+         if ($label.length) {
+             const labelId = $label.attr('id') || `a11y-lbl-${id}`;
+             $label.attr('id', labelId);
+             $(this).attr('aria-labelledby', labelId);
+         }
+    });
+
+    // --- 10. Summary Fixes ---
+    $('#summarySettingsBlock input, #summarySettingsBlock textarea, #summarySettingsBlock select').each(function() {
+        const id = this.id;
+        if (!id) return;
+        if (id === 'memory_depth' || id === 'memory_role') {
+            const $groupLabel = $('#label-st-a11y-0cwm1');
+            if ($groupLabel.length) {
+                $(this).attr('aria-labelledby', $groupLabel.attr('id'));
+            }
+            return; 
+        }
+        const $label = $(`label[for="${id}"]`);
+        if ($label.length) {
+             const labelId = $label.attr('id') || `a11y-lbl-${id}`;
+             $label.attr('id', labelId);
+             $(this).attr('aria-labelledby', labelId);
+        }
+    });
+
+    // --- 11. Translation Extension Fixes ---
+    const transIds = ['translation_target_language', 'translation_provider', 'translation_auto_mode'];
+    transIds.forEach(id => {
+        const $el = $('#' + id);
+        if (!$el.length) return;
+        const $label = $(`label[for="${id}"]`);
+        if ($label.length) {
+             const labelId = $label.attr('id') || `a11y-lbl-${id}`;
+             $label.attr('id', labelId);
+             $el.attr('aria-labelledby', labelId);
+        }
+    });
+    
+    // --- 11b. Extensions: Assets URL Binding ---
+    // Specifically binds the Assets URL input to both its label and the hint text
+    const $assetsField = $('#assets-json-url-field');
+    if ($assetsField.length) {
+        const $mainLabel = $(`label[for="assets-json-url-field"]`);
+        const $hintSpan = $assetsField.closest('.assets-url-block').find('small span[data-i18n="Load an asset list"]');
+        
+        if ($mainLabel.length && $hintSpan.length) {
+            const labelId = $mainLabel.attr('id') || 'label-assets-url';
+            $mainLabel.attr('id', labelId);
+            
+            const hintId = $hintSpan.attr('id') || 'label-assets-hint';
+            $hintSpan.attr('id', hintId);
+            
+            $assetsField.attr('aria-labelledby', `${labelId} ${hintId}`);
+        }
+    }
+
+    // --- 12. Quick Replies & Prompt Manager Sorting ---
+    // Inject sort button into Prompt Manager items if missing
     $('.completion_prompt_manager_prompt').each(function () {
         const $li = $(this);
-        const promptId = $li.attr('data-pm-identifier');
-        const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
-
-        // Hide original drag handle
-        $li.find('.drag-handle').attr('aria-hidden', 'true');
-
-        $li.find('.prompt-manager-inspect-action').attr({
-            'role': 'button',
-            'tabindex': '0',
-            'aria-label': 'Inspect: ' + itemName,
-        });
-
-        // 1. Dynamically inject sort button (if it doesn't exist)
         const $controls = $li.find('.prompt_manager_prompt_controls');
-        if ($controls.length && $controls.find('.prompt-manager-a11y-sort').length === 0) {
-            // Create button
-            const $sortBtn = $('<span>', {
-                class: 'prompt-manager-a11y-sort fa-solid fa-sort fa-xs',
+        if ($controls.length && $controls.find('.a11y-sort-button').length === 0) {
+             const $sortBtn = $('<span>', {
+                class: 'a11y-sort-button fa-solid fa-sort fa-xs',
                 role: 'button',
                 tabindex: '0',
-                title: 'Sort / Move',
+                title: 'Sort',
+                'aria-label': 'Sort Prompt'
             });
-            // Prepend to controls
             $controls.prepend($sortBtn);
-
-            // Bind event to new button
+            
             $sortBtn.on('click keydown', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
                 e.stopPropagation();
-                handlePromptSortMenu(this);
+                handleSortMenu(this, '.completion_prompt_manager_prompt', '#completion_prompt_manager_list');
             });
         }
+    });
 
-        // 2. Update sort button position information
-        const $sortBtn = $li.find('.prompt-manager-a11y-sort');
-        if ($sortBtn.length) {
-            const $container = $('#completion_prompt_manager_list');
-            const $allPrompts = $container.find('.completion_prompt_manager_prompt');
-            const index = $allPrompts.index($li) + 1;
-            const total = $allPrompts.length;
-            $sortBtn.attr('aria-label', `Sort ${itemName}. Current position ${index} of ${total}`);
-        }
+    // Inject sort button into Quick Reply items
+    $('.qr--item, .qr--set-item').each(function() {
+        const $li = $(this);
+        const isEditor = $li.hasClass('qr--set-item');
+        let $targetContainer = isEditor ? $li.find('.qr--set-itemLabelContainer') : $li;
 
-        // Handle other control buttons
-        $li.find('.prompt_manager_prompt_controls span').not('.prompt-manager-a11y-sort').each(function () {
-            const $btn = $(this);
-            const actionClass = ['.prompt-manager-toggle-action', '.prompt-manager-edit-action', '.prompt-manager-detach-action'].find(cls => $btn.is(cls));
-            if (actionClass) {
-                const actionTitle = $btn.attr('title') || 'Action';
-                $btn.attr({
-                    'role': 'button',
-                    'tabindex': '0',
-                    'aria-label': `${actionTitle}: ${itemName}`,
-                });
-                if ($btn.hasClass('prompt-manager-toggle-action')) {
-                    $btn.attr('aria-pressed', $btn.hasClass('fa-toggle-on') ? 'true' : 'false');
-                }
+        if ($targetContainer.length && $li.find('.a11y-sort-button').length === 0) {
+            const $sortBtn = $('<div>', {
+                class: 'a11y-sort-button menu_button menu_button_icon fa-solid fa-sort interactable',
+                role: 'button',
+                tabindex: '0',
+                title: 'Sort',
+                'aria-label': 'Sort Quick Reply'
+            });
+            
+            if (isEditor) {
+                $targetContainer.append($sortBtn);
             } else {
-                $btn.attr('tabindex', '-1').attr('aria-hidden', 'true');
+                const $delBtn = $li.find('.qr--del');
+                if ($delBtn.length) {
+                    $sortBtn.insertBefore($delBtn);
+                } else {
+                    $li.append($sortBtn);
+                }
             }
-        });
-    });
 
-    // F. World Info Entries
-    $('.world_entry').each(function () {
-        const $entry = $(this);
-        const uid = $entry.attr('uid');
-        const title = $entry.find('textarea[name="comment"]').val() || 'Untitled Entry';
-
-        const $killSwitch = $entry.find('.killSwitch');
-        $killSwitch.attr({
-            'role': 'button',
-            'tabindex': '0',
-            'aria-label': `Enable/Disable: ${title}`,
-            'aria-pressed': $killSwitch.hasClass('fa-toggle-on') ? 'true' : 'false',
-        });
-
-        if (lastActiveWIUid === uid && document.activeElement !== $killSwitch[0]) {
-            setTimeout(() => {
-                $killSwitch.trigger('focus');
-                lastActiveWIUid = null;
-            }, 50);
-        }
-
-        const $drawerIcon = $entry.find('.inline-drawer-toggle');
-        const isExpanded = $entry.find('.inline-drawer-content').is(':visible');
-        $drawerIcon.attr({
-            'role': 'button',
-            'tabindex': '0',
-            'aria-label': `${isExpanded ? 'Collapse' : 'Expand'}: ${title}`,
-            'aria-expanded': isExpanded ? 'true' : 'false',
-        });
-
-        $entry.find('.menu_button').attr({
-            'role': 'button',
-            'tabindex': '0',
-        });
-    });
-
-    // G. General Interface Buttons
-    $('#character_popup .editor_maximize').attr({
-        'role': 'button',
-        'tabindex': '0',
-        'aria-label': 'Expand Full Editor',
-    });
-
-    $('#character_cross').attr({
-        'role': 'button',
-        'tabindex': '0',
-        'aria-label': 'Close',
-    });
-
-    $('#sd_seed, #sd_prompt_prefix, #sd_negative_prompt, #sd_character_prompt, #sd_character_negative_prompt').each(function() {
-        const id = this.id;
-        const $realLabel = $(`label[for="${id}"]`);
-        if ($realLabel.length) {
-            const lid = 'st-lbl-' + id;
-            $realLabel.attr('id', lid);
-            $(this).attr('aria-labelledby', lid).removeAttr('aria-describedby');
-        }
-    });
-
-    $('#sd_style').each(function() {
-        const $header = $(this).closest('.flex-container').prev('h4');
-        if ($header.length) {
-            const tid = 'st-sd-style-title';
-            $header.attr('id', tid);
-            $(this).attr('aria-labelledby', tid);
-        }
-    });
-
-    $('.neo-range-input').each(function() {
-        const $input = $(this);
-        const $container = $input.closest('.flex-container');
-        const $smallTitle = $container.find('small').first();
-        if ($smallTitle.length) {
-            const tid = 'st-range-title-' + ($input.attr('id') || Math.random().toString(36).substr(2, 5));
-            $smallTitle.attr('id', tid);
-            $input.attr('aria-labelledby', tid);
-        }
-    });
-
-    $('#tts_provider').each(function() {
-        const $titleSpan = $(this).closest('.tts_block').prevAll('span[data-i18n="Select TTS Provider"]').first();
-        if ($titleSpan.length) {
-            const tid = 'st-a11y-tts-provider-title';
-            $titleSpan.attr('id', tid);
-            $(this).attr('aria-labelledby', tid);
-        }
-    });
-
-    $('#sd_source').each(function() {
-        const $realLabel = $(this).prev('label[for="sd_source"]');
-        if ($realLabel.length) {
-            const tid = 'st-a11y-sd-source-title';
-            $realLabel.attr('id', tid);
-            $(this).attr('aria-labelledby', tid);
-        }
-    });
-
-    $('#rm_extensions_block h3[data-i18n="Extensions"]').attr('id', 'title_extensions');
-
-    $('#extensions_notify_updates').attr('aria-labelledby', 'label-extensions_notify_updates');
-
-    $('#main_api, #chat_completion_source').each(function() {
-        $(this).attr('aria-labelledby', 'title_api');
-        $(this).removeAttr('aria-describedby');
-    });
-
-    $('#chat_completion_source').each(function () {
-        $(this).removeAttr('aria-describedby');
-
-        const $header = $(this).prev('h4');
-        if ($header.length) {
-            const headerId = 'header_chat_completion_source';
-            $header.attr('id', headerId);
-            $(this).attr('aria-labelledby', headerId);
-        } else {
-            $(this).attr('aria-labelledby', 'title_api');
-        }
-    });
-
-    $('#translation_target_language, #translation_provider').each(function() {
-        const id = this.id;
-        const $realLabel = $(`label[for="${id}"]`);
-        if ($realLabel.length) {
-            const lid = 'st-lbl-' + id;
-            $realLabel.attr('id', lid);
-            $(this).attr('aria-labelledby', lid);
+            $sortBtn.on('click keydown', function(e) {
+                if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                e.stopPropagation();
+                const itemSelector = isEditor ? '.qr--set-item' : '.qr--item';
+                const containerSelector = isEditor ? '.qr--set-qrListContents' : '.qr--setList';
+                handleSortMenu(this, itemSelector, containerSelector);
+            });
         }
     });
     
-    $('#qr--global-setListAdd').attr('aria-label', 'Add Global Quick Reply Set');
-    $('#qr--chat-setListAdd').attr('aria-label', 'Add Chat Quick Reply Set');
-    $('#qr--character-setListAdd').attr('aria-label', 'Add Character Quick Reply Set');
-
-    $('#qr--set').each(function() {
-        const $title = $(this).closest('.qr--head').find('.qr--title');
-        if ($title.length) {
-            const tid = 'st-a11y-qr-editor-title';
-            $title.attr('id', tid);
-            $(this).attr('aria-labelledby', tid).removeAttr('aria-describedby');
-        }
-    });
-
-    $('.qr--set-item').each(function() {
-        const $item = $(this);
-        const $labelInput = $item.find('.qr--set-itemLabel');
-        const $msgInput = $item.find('.qr--set-itemMessage');
-        const currentLabel = $labelInput.val() || 'Unnamed';
-
-        $labelInput.attr('aria-label', `Quick Reply Label: ${currentLabel}`).removeAttr('aria-labelledby');
-        $msgInput.attr('aria-label', `Quick Reply Message for: ${currentLabel}`).removeAttr('aria-labelledby');
-    });
-
-    $('#qr--set-importFile').attr('aria-label', 'Import Quick Reply Set JSON');
-
-    $('#qr--modal-label, #qr--modal-title, #qr--modal-tabSize').each(function() {
-        const $input = $(this);
-        const $container = $input.closest('label, .label, .qr--modal-editorSettings');
-        const $labelSpan = $container.find('.qr--labelText, span[data-i18n^="Tab size"]').first();
+    // --- 13. Regex Sorting & Fixes ---
+    $('.regex-script-label').each(function() {
+        const $row = $(this);
+        const $btnContainer = $row.find('.regex_script_buttons');
         
-        if ($labelSpan.length) {
-            const tid = 'st-qr-modal-' + $input.attr('id');
-            $labelSpan.attr('id', tid);
-            $input.attr('aria-labelledby', tid);
-        }
-    });
-    
-    $('#qr--automationId').each(function() {
-        const $label = $(this).prev('small');
-        if ($label.length) {
-            const tid = 'st-qr-auto-id';
-            $label.attr('id', tid);
-            $(this).attr('aria-labelledby', tid);
+        if ($btnContainer.length && $row.find('.a11y-sort-button').length === 0) {
+             const $sortBtn = $('<div>', {
+                class: 'a11y-sort-button menu_button interactable', 
+                role: 'button',
+                tabindex: '0',
+                title: 'Sort',
+                'aria-label': 'Sort Script'
+            }).append('<i class="fa-solid fa-sort"></i>');
+            
+            $btnContainer.prepend($sortBtn);
+            
+            $sortBtn.on('click keydown', function(e) {
+                if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+                e.preventDefault();
+                e.stopPropagation();
+                handleSortMenu(this, '.regex-script-label', '.regex-script-container');
+            });
         }
     });
 
-    $('#qr--autoExec input[type="checkbox"]').each(function() {
-        const $span = $(this).next('span');
-        const text = $span.text().trim(); 
-        if (text) {
-            $(this).attr('aria-label', text).removeAttr('aria-labelledby');
+    $('.regex-script-container label.checkbox').each(function() {
+        const $lbl = $(this);
+        if (!$lbl.attr('tabindex')) {
+            $lbl.attr({
+                'role': 'checkbox',
+                'tabindex': '0',
+                'aria-label': $lbl.find('input').hasClass('disable_regex') ? 'Enable/Disable Script' : 'Toggle'
+            });
+            const $inp = $lbl.find('input');
+            const isChecked = $inp.prop('checked');
+            $lbl.attr('aria-checked', isChecked ? 'true' : 'false');
+            $inp.on('change', function() {
+                 $lbl.attr('aria-checked', $(this).prop('checked') ? 'true' : 'false');
+            });
+        }
+    });
+
+    // --- 14. Extension Popups & Manager ---
+    // Install Popup
+    const $installPopup = $('.popup:visible').filter(function() {
+        return $(this).find('h3[data-i18n="Enter the Git URL of the extension to install"]').length > 0;
+    });
+    if ($installPopup.length) {
+        const $h3 = $installPopup.find('h3');
+        const h3Id = $h3.attr('id') || 'a11y-install-ext-title';
+        $h3.attr('id', h3Id);
+        $installPopup.find('.popup-input').attr('aria-labelledby', h3Id);
+    }
+
+    // Manager
+    $('.extension_block').each(function() {
+        const $block = $(this);
+        const name = $block.find('.extension_name').text().trim();
+        $block.find('.extension_toggle input').attr('aria-label', `Enable ${name}`);
+        $block.find('.extension_actions button').each(function() {
+            const title = $(this).attr('title') || 'Action';
+            $(this).attr('aria-label', `${title} for ${name}`);
+        });
+    });
+
+    // --- 15. General Fixes ---
+    $('#rm_extensions_block h3[data-i18n="Extensions"]').attr('id', 'title_extensions');
+    $('#extensions_notify_updates').attr('aria-labelledby', 'label-extensions_notify_updates');
+    $('#main_api, #chat_completion_source').each(function() {
+        if (!$(this).attr('aria-labelledby')) {
+             $(this).attr('aria-labelledby', 'title_api');
         }
     });
 
     $('.select2-selection__choice__remove').each(function() {
         const $btn = $(this);
-        
         $btn.attr('tabindex', '0'); 
-        
         const $item = $btn.closest('.select2-selection__choice');
         const title = $item.attr('title') || $item.find('.select2-selection__choice__display').text();
-        
         if (title) {
             $btn.attr('aria-label', `Remove ${title}`); 
         }
@@ -829,14 +892,12 @@ const enhanceSpecificA11y = () => {
  */
 const managePopupTraps = () => {
     if (!focusTrap || !isA11yEnabled) {
-        if (currentFocusTrap) {
-            try { currentFocusTrap.deactivate(); } catch (e) {}
-            currentFocusTrap = null;
-        }
-        if (promptManagerTrap) {
-            try { promptManagerTrap.deactivate(); } catch (e) {}
-            promptManagerTrap = null;
-        }
+        if (currentFocusTrap) { try { currentFocusTrap.deactivate(); } catch (e) {} currentFocusTrap = null; }
+        if (promptManagerTrap) { try { promptManagerTrap.deactivate(); } catch (e) {} promptManagerTrap = null; }
+        if (charPopupTrap) { try { charPopupTrap.deactivate(); } catch (e) {} charPopupTrap = null; }
+        if (worldInfoTrap) { try { worldInfoTrap.deactivate(); } catch (e) {} worldInfoTrap = null; }
+        if (qrEditorTrap) { try { qrEditorTrap.deactivate(); } catch (e) {} qrEditorTrap = null; }
+        if (regexEditorTrap) { try { regexEditorTrap.deactivate(); } catch (e) {} regexEditorTrap = null; }
         return;
     }
 
@@ -844,7 +905,6 @@ const managePopupTraps = () => {
     const $charPopup = $('#character_popup');
     if ($charPopup.is(':visible') && $charPopup.hasClass('open')) {
         if (!charPopupTrap) {
-            logDebug('TrapManager', 'Creating Character Popup Trap');
             lastFocusedBeforeTrap = document.activeElement;
             charPopupTrap = focusTrap.createFocusTrap('#character_popup', {
                 allowOutsideClick: true,
@@ -856,51 +916,34 @@ const managePopupTraps = () => {
             try { charPopupTrap.activate(); } catch (e) {}
         }
     } else if (charPopupTrap) {
-        logDebug('TrapManager', 'Deactivating Character Popup Trap');
         try { charPopupTrap.deactivate(); } catch (e) {}
         charPopupTrap = null;
     }
 
     // B. Prompt Manager
     const $promptPopup = $('#completion_prompt_manager_popup');
-    // Check if main Prompt Manager UI is active
     const isPromptActive = $promptPopup.is(':visible') && ($('#completion_prompt_manager_popup_edit').is(':visible') || $('#completion_prompt_manager_popup_inspect').is(':visible'));
-
-    // CRITICAL: Check if a Generic Popup (like Sort Menu) is currently overriding it
-    // The sort menu is usually a .list-group with role="menu" inside a .popup
     const isSortMenuOpen = $('.list-group[role="menu"]').is(':visible');
 
     if (isPromptActive) {
         if (isSortMenuOpen) {
-            // If sort menu is open, we MUST pause or prevent the prompt trap
-            logDebug('TrapManager', 'Conflict detected: Prompt Manager active BUT Sort Menu is Open. Skipping trap enforcement.');
-            if (promptManagerTrap) {
-                try {
-                    logDebug('TrapManager', 'Pausing existing Prompt Manager Trap');
-                    promptManagerTrap.pause();
-                } catch (e) {}
-            }
+            if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) {}
         } else {
-            // Normal Prompt Manager behavior
             if (!promptManagerTrap) {
-                logDebug('TrapManager', 'Creating Prompt Manager Trap');
                 lastFocusedBeforeTrap = document.activeElement;
                 promptManagerTrap = focusTrap.createFocusTrap('#completion_prompt_manager_popup', {
                     allowOutsideClick: true,
                     initialFocus: '#completion_prompt_manager_popup_close_button',
                     onDeactivate: () => {
-                        logDebug('TrapManager', 'Prompt Manager Trap Deactivated');
                         if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                     },
                 });
                 try { promptManagerTrap.activate(); } catch (e) {}
             } else {
-                // Ensure it is unpaused if menu closed
                 try { promptManagerTrap.unpause(); } catch (e) {}
             }
         }
     } else if (promptManagerTrap) {
-        logDebug('TrapManager', 'Deactivating Prompt Manager Trap (UI hidden)');
         try { promptManagerTrap.deactivate(); } catch (e) {}
         promptManagerTrap = null;
     }
@@ -911,7 +954,6 @@ const managePopupTraps = () => {
         const currentUid = $expandedWI.attr('uid');
         if (!worldInfoTrap || worldInfoTrapUid !== currentUid) {
             if (worldInfoTrap) try { worldInfoTrap.deactivate(); } catch (e) {}
-            logDebug('TrapManager', 'Creating WI Trap');
             worldInfoTrap = focusTrap.createFocusTrap($expandedWI.find('.world_entry_form')[0], {
                 allowOutsideClick: true,
                 clickOutsideDeactivates: false,
@@ -927,14 +969,12 @@ const managePopupTraps = () => {
         worldInfoTrapUid = null;
     }
 
+    // D. QR Editor
     const $qrEditor = $('#qr--modalEditor');
     if ($qrEditor.is(':visible')) {
         if (!qrEditorTrap) {
-            logDebug('TrapManager', 'Creating QR Editor Trap');
             lastFocusedBeforeTrap = document.activeElement;
-            
             const $trapContainer = $qrEditor.closest('.popup-body');
-
             if ($trapContainer.length) {
                 qrEditorTrap = focusTrap.createFocusTrap($trapContainer[0], {
                     allowOutsideClick: true,
@@ -942,17 +982,35 @@ const managePopupTraps = () => {
                     fallbackFocus: '.popup-button-ok',
                     escapeDeactivates: false,
                     onDeactivate: () => {
-                        logDebug('TrapManager', 'QR Editor Trap Deactivated');
                         if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                     },
                 });
-                try { qrEditorTrap.activate(); } catch (e) { console.warn(e); }
+                try { qrEditorTrap.activate(); } catch (e) {}
             }
         }
     } else if (qrEditorTrap) {
-        logDebug('TrapManager', 'Deactivating QR Editor Trap');
         try { qrEditorTrap.deactivate(); } catch (e) {}
         qrEditorTrap = null;
+    }
+    
+    // E. Regex Editor / Debugger Popups
+    const $regexDialog = $('dialog.popup[open]').has('.regex_editor, .regex-debugger-container');
+    if ($regexDialog.length) {
+        if (!regexEditorTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            regexEditorTrap = focusTrap.createFocusTrap($regexDialog[0], {
+                 allowOutsideClick: true,
+                 initialFocus: '.regex_script_name, .regex-debugger-container button',
+                 escapeDeactivates: false,
+                 onDeactivate: () => {
+                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                 }
+            });
+            try { regexEditorTrap.activate(); } catch (e) {}
+        }
+    } else if (regexEditorTrap) {
+        try { regexEditorTrap.deactivate(); } catch (e) {}
+        regexEditorTrap = null;
     }
 };
 
@@ -987,11 +1045,12 @@ function cleanupA11y() {
     if (charPopupTrap) { try { charPopupTrap.deactivate(); } catch (e) {} charPopupTrap = null; }
     if (worldInfoTrap) { try { worldInfoTrap.deactivate(); } catch (e) {} worldInfoTrap = null; }
     if (qrEditorTrap) { try { qrEditorTrap.deactivate(); } catch (e) {} qrEditorTrap = null; }
+    if (regexEditorTrap) { try { regexEditorTrap.deactivate(); } catch (e) {} regexEditorTrap = null; }
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
 
-    $('.prompt-manager-a11y-sort').remove();
+    $('.a11y-sort-button').remove();
     $('.a11y-refactored').removeClass('a11y-refactored');
 }
 
@@ -1032,7 +1091,7 @@ export function setAccessibilityEnabled(enabled) {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['style', 'class', 'hidden'],
+        attributeFilter: ['style', 'class', 'hidden', 'open'],
     });
 }
 
@@ -1051,6 +1110,16 @@ export function initAccessibility() {
             if (this.tagName !== 'BUTTON') {
                 $(this).trigger('click');
             }
+        }
+    });
+    
+    // Label checkbox activation support
+    $(document).on('keydown', 'label[role="checkbox"][tabindex="0"]', function(e) {
+        if (!isA11yEnabled) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const $input = $(this).find('input[type="checkbox"]');
+            $input.prop('checked', !$input.prop('checked')).trigger('change');
         }
     });
 
