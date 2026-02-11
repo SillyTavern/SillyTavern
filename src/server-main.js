@@ -127,7 +127,6 @@ if (corsEnabled) {
     if (corsMaxAge !== null && Number.isInteger(corsMaxAge)) {
         corsOptions.maxAge = corsMaxAge;
     }
-    console.log('CORS enabled with the following settings:', corsOptions);
     app.use(cors(corsOptions));
 }
 
