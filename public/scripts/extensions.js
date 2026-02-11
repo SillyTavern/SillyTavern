@@ -440,14 +440,40 @@ async function getManifests(names) {
  * Tries to activate all available extensions that are not already active.
  * @returns {Promise<void>}
  */
+/**
+ * Tries to activate all available extensions that are not already active.
+ * @returns {Promise<void>}
+ */
 async function activateExtensions() {
     extensionLoadErrors.clear();
     const clientVersion = CLIENT_VERSION.split(':')[1];
     const extensions = Object.entries(manifests).sort((a, b) => sortManifestsByOrder(a[1], b[1]));
     const extensionNames = extensions.map(x => x[0]);
-    const promises = [];
+
+    // Group extensions by dependency level
+    // 0: No dependencies or only disabled dependencies
+    // 1+: Has dependencies that need to be loaded first
+    // This is a naive implementation, but sufficient for 1-level deep dependencies
+    const independentExtensions = [];
+    const dependentExtensions = [];
 
     for (let entry of extensions) {
+        const name = entry[0];
+        const manifest = entry[1];
+        const extensionDependencies = manifest.dependencies;
+
+        if (activeExtensions.has(name)) {
+            continue;
+        }
+
+        if (extensionDependencies && Array.isArray(extensionDependencies) && extensionDependencies.length > 0) {
+            dependentExtensions.push(entry);
+        } else {
+            independentExtensions.push(entry);
+        }
+    }
+
+    const loadExtension = async (entry) => {
         const name = entry[0];
         const manifest = entry[1];
         const extrasRequirements = manifest.requires;
@@ -455,9 +481,6 @@ async function activateExtensions() {
         const minClientVersion = manifest.minimum_client_version;
         const displayName = manifest.display_name || name;
 
-        if (activeExtensions.has(name)) {
-            continue;
-        }
         // Client version requirement: pass if 'minimum_client_version' is undefined or null.
         let meetsClientMinimumVersion = true;
         if (minClientVersion !== undefined) {
@@ -503,18 +526,15 @@ async function activateExtensions() {
         if (meetsModuleRequirements && meetsExtensionDeps && meetsClientMinimumVersion && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
-                const promise = addExtensionLocale(name, manifest).finally(() =>
-                    Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
-                );
-                await promise
-                    .then(() => activeExtensions.add(name))
-                    .catch(err => {
-                        console.log('Could not activate extension', name, err);
-                        extensionLoadErrors.add(t`Extension "${displayName}" failed to load: ${err}`);
-                    });
-                promises.push(promise);
+                const localePromise = addExtensionLocale(name, manifest);
+                const scriptPromise = addExtensionScript(name, manifest);
+                const stylePromise = addExtensionStyle(name, manifest);
+
+                await Promise.all([localePromise, scriptPromise, stylePromise]);
+                activeExtensions.add(name);
             } catch (error) {
                 console.error('Could not activate extension', name, error);
+                extensionLoadErrors.add(t`Extension "${displayName}" failed to load: ${error}`);
             }
         } else if (!meetsModuleRequirements && !isDisabled) {
             console.warn(t`Extension "${name}" did not load. Missing required Extras module(s): "${missingModules.join(', ')}"`);
@@ -531,9 +551,17 @@ async function activateExtensions() {
             console.warn(t`Extension "${name}" did not load. Requires ST client version ${minClientVersion}, but current version is ${clientVersion}.`);
             extensionLoadErrors.add(t`Extension "${displayName}" did not load. Requires ST client version ${minClientVersion}, but current version is ${clientVersion}.`);
         }
+    };
+
+    // Load independent extensions in parallel
+    await Promise.allSettled(independentExtensions.map(loadExtension));
+
+    // Load dependent extensions sequentially to respect potential order (or could be parallelized if we resolve dependency graph)
+    // For now, sequential safe approach for dependents
+    for (const entry of dependentExtensions) {
+        await loadExtension(entry);
     }
 
-    await Promise.allSettled(promises);
     $('#extensions_details').toggleClass('warning', extensionLoadErrors.size > 0);
 }
 

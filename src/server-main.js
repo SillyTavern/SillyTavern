@@ -96,7 +96,7 @@ const app = express();
 app.use(helmet({
     contentSecurityPolicy: false,
 }));
-app.use(compression());
+app.use(compression({ level: 6, threshold: 1024 }));
 app.use(responseTime());
 
 app.use(bodyParser.json({ limit: '500mb' }));
