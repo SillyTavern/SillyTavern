@@ -67,35 +67,6 @@ SillyTavern is a self-hosted AI chat interface (LLM frontend) built with Node.js
 - Use named exports/imports where possible. Default exports are used for middleware and some configuration.
 - Client-side: prefer **absolute imports** for new files and new code (e.g., `import { ... } from '/script.js'`). The `/` path is aliased to `public/`. Use relative imports only in existing modules that already use relative paths.
 
-## Server-Side Patterns
-
-- Each route module in `src/endpoints/` should export `const router = express.Router()` and register routes on it.
-- Use `request.user.directories` to access user-scoped file paths.
-- Read secrets with `readSecret(request.user.directories, SECRET_KEYS.*)`.
-- Read config values with `getConfigValue(key, defaultValue)` from `src/util.js`.
-- Use `sanitize-filename` for any user-provided file names.
-- Use `write-file-atomic` for safe file writes.
-
-## Client-Side Patterns
-
-- Import app context values directly from their source modules (e.g., `import { chat, characters } from '/script.js'`). The `SillyTavern.getContext()` API is intended for third-party extensions, not core contributions.
-- Import shared npm libraries from `/lib.js` (e.g., `import { lodash, DOMPurify, moment } from '/lib.js'`). The `SillyTavern.libs` object is for bundled extensions, not core code.
-- Prefer **vanilla JS** for all new code. Use jQuery only when fixing legacy code that already uses it. Do not rewrite existing jQuery to vanilla unless explicitly instructed.
-- Use the `event_types` enum and the `eventSource` (EventEmitter) in `public/scripts/events.js` to subscribe to and emit application events.
-- Debounce user input handlers using the `debounce_timeout` enum values from `public/scripts/constants.js`.
-- Use `getRequestHeaders()` from `public/script.js` for authenticated API calls to the server.
-
-## Extensions
-
-- UI extensions live in `public/scripts/extensions/` with a `manifest.json` and a JS entry point.
-- Server plugins live in `plugins/` and export `init(router)`, `exit()`, and an `info` object with `id`, `name`, `description`.
-- Extensions store persistent settings via `extensionSettings[MODULE_NAME]` and call `saveSettingsDebounced()`.
-- Use `data-i18n` HTML attributes and the `t` tagged template for translatable strings.
-
-## Linting & Testing
-
-- **Lint**: `npm run lint` (ESLint). Fix with `npm run lint:fix`. Must pass before submitting changes.
-- **Tests**: Jest for unit tests (`tests/`), Playwright for E2E tests. Run with the test infrastructure in the `tests/` directory.
 Example of correctly formatted code:
 
 ```js
@@ -131,3 +102,33 @@ router.post('/something', async (request, response) => {
     }
 });
 ```
+
+## Server-Side Patterns
+
+- Each route module in `src/endpoints/` should export `const router = express.Router()` and register routes on it.
+- Use `request.user.directories` to access user-scoped file paths.
+- Read secrets with `readSecret(request.user.directories, SECRET_KEYS.*)`.
+- Read config values with `getConfigValue(key, defaultValue)` from `src/util.js`.
+- Use `sanitize-filename` for any user-provided file names.
+- Use `write-file-atomic` for safe file writes.
+
+## Client-Side Patterns
+
+- Import app context values directly from their source modules (e.g., `import { chat, characters } from '/script.js'`). The `SillyTavern.getContext()` API is intended for third-party extensions, not core contributions.
+- Import shared npm libraries from `/lib.js` (e.g., `import { lodash, DOMPurify, moment } from '/lib.js'`). The `SillyTavern.libs` object is for bundled extensions, not core code.
+- Prefer **vanilla JS** for all new code. Use jQuery only when fixing legacy code that already uses it. Do not rewrite existing jQuery to vanilla unless explicitly instructed.
+- Use the `event_types` enum and the `eventSource` (EventEmitter) in `public/scripts/events.js` to subscribe to and emit application events.
+- Debounce user input handlers using the `debounce_timeout` enum values from `public/scripts/constants.js`.
+- Use `getRequestHeaders()` from `public/script.js` for authenticated API calls to the server.
+
+## Extensions
+
+- UI extensions live in `public/scripts/extensions/` with a `manifest.json` and a JS entry point.
+- Server plugins live in `plugins/` and export `init(router)`, `exit()`, and an `info` object with `id`, `name`, `description`.
+- Extensions store persistent settings via `extensionSettings[MODULE_NAME]` and call `saveSettingsDebounced()`.
+- Use `data-i18n` HTML attributes and the `t` tagged template for translatable strings.
+
+## Linting & Testing
+
+- **Lint**: `npm run lint` (ESLint). Fix with `npm run lint:fix`. Must pass before submitting changes.
+- **Tests**: Jest for unit tests (`tests/`), Playwright for E2E tests. Run with the test infrastructure in the `tests/` directory.
