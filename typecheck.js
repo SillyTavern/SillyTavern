@@ -4,8 +4,8 @@
  * Type-checking helper script.
  *
  * Usage:
- *   node typecheck.js <jsconfig>              – check the whole project described by <jsconfig>
- *   node typecheck.js <jsconfig> [files...]    – check only the listed files, inheriting compiler options from <jsconfig>
+ *   node typecheck.js <jsconfig> - check the whole project described by <jsconfig>
+ *   node typecheck.js <jsconfig> [files...] - check only the listed files, inheriting compiler options from <jsconfig>
  */
 
 import { execFileSync } from 'node:child_process';
