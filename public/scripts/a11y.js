@@ -809,6 +809,19 @@ const enhanceSpecificA11y = () => {
             $(this).attr('aria-label', text).removeAttr('aria-labelledby');
         }
     });
+
+    $('.select2-selection__choice__remove').each(function() {
+        const $btn = $(this);
+        
+        $btn.attr('tabindex', '0'); 
+        
+        const $item = $btn.closest('.select2-selection__choice');
+        const title = $item.attr('title') || $item.find('.select2-selection__choice__display').text();
+        
+        if (title) {
+            $btn.attr('aria-label', `Remove ${title}`); 
+        }
+    });
 };
 
 /**
