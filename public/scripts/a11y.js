@@ -416,6 +416,7 @@ let worldInfoTrap = null;
 let worldInfoTrapUid = null;
 let qrEditorTrap = null;
 let regexEditorTrap = null; // New Regex Trap
+let extensionTrap = null;
 
 let lastFocusedBeforeTrap = null;
 let lastActiveWIUid = null;
@@ -1142,6 +1143,7 @@ function cleanupA11y() {
     if (worldInfoTrap) { try { worldInfoTrap.deactivate(); } catch (e) {} worldInfoTrap = null; }
     if (qrEditorTrap) { try { qrEditorTrap.deactivate(); } catch (e) {} qrEditorTrap = null; }
     if (regexEditorTrap) { try { regexEditorTrap.deactivate(); } catch (e) {} regexEditorTrap = null; }
+    if (extensionTrap) { try { extensionTrap.deactivate(); } catch (e) {} extensionTrap = null; }
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
@@ -1208,14 +1210,58 @@ export function initAccessibility() {
             }
         }
     });
+
+    // Dynamic Focus Trap for Extensions
+    $(document).on('click', '.extension_container .inline-drawer-toggle', function () {
+        if (!isA11yEnabled) return;
+        const $drawer = $(this).closest('.inline-drawer');
+        const $content = $drawer.find('.inline-drawer-content');
+
+        setTimeout(() => {
+            if ($content.is(':visible')) {
+                if (extensionTrap) try { extensionTrap.deactivate(); } catch (e) {}
+                
+                extensionTrap = focusTrap.createFocusTrap($drawer[0], {
+                    allowOutsideClick: true,
+                    clickOutsideDeactivates: true,
+                    initialFocus: false,
+                    fallbackFocus: $(this)[0],
+                    escapeDeactivates: false,
+                });
+                try { extensionTrap.activate(); } catch (e) {}
+            } else {
+                if (extensionTrap) {
+                    try { extensionTrap.deactivate(); } catch (e) {}
+                    extensionTrap = null;
+                }
+            }
+        }, 450);
+    });
     
     // Label checkbox activation support
-    $(document).on('keydown', 'label[role="checkbox"][tabindex="0"]', function(e) {
+    // --- Escape Key Handler for Extension Drawers ---
+    $(document).on('keydown', '.extension_container .inline-drawer', function (e) {
         if (!isA11yEnabled) return;
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            const $input = $(this).find('input[type="checkbox"]');
-            $input.prop('checked', !$input.prop('checked')).trigger('change');
+        if (e.key === 'Escape') {
+            const $drawer = $(this);
+            const $content = $drawer.find('.inline-drawer-content');
+            
+            if ($content.is(':visible')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const $header = $drawer.find('.inline-drawer-toggle');
+                
+                $header.trigger('click');
+                $header.trigger('focus');
+                
+                if (typeof extensionTrap !== 'undefined' && extensionTrap) {
+                    try { extensionTrap.deactivate(); } catch (e) {}
+                    extensionTrap = null;
+                }
+                
+                announceA11y('Extension menu closed.');
+            }
         }
     });
 
