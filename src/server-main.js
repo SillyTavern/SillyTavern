@@ -107,8 +107,8 @@ const corsEnabled = getConfigValue('cors.enabled', true, 'boolean');
 if (corsEnabled) {
     const corsOrigin = getConfigValue('cors.origin', 'null');
     const corsMethods = getConfigValue('cors.methods', ['OPTIONS']);
-    const corsAllowedHeaders = getConfigValue('cors.allowedHeaders', null);
-    const corsExposedHeaders = getConfigValue('cors.exposedHeaders', null);
+    const corsAllowedHeaders = getConfigValue('cors.allowedHeaders', []);
+    const corsExposedHeaders = getConfigValue('cors.exposedHeaders', []);
     const corsCredentials = getConfigValue('cors.credentials', false, 'boolean');
     const corsMaxAge = getConfigValue('cors.maxAge', null, 'number');
 
@@ -127,6 +127,7 @@ if (corsEnabled) {
     if (corsMaxAge !== null && Number.isInteger(corsMaxAge)) {
         corsOptions.maxAge = corsMaxAge;
     }
+    console.log('CORS enabled with the following settings:', corsOptions);
     app.use(cors(corsOptions));
 }
 
