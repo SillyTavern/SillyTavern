@@ -123,6 +123,9 @@
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
+        "typecheck": "npm run typecheck:server && npm run typecheck:client",
+        "typecheck:server": "node typecheck.js jsconfig.json",
+        "typecheck:client": "node typecheck.js public/jsconfig.json",
         "plugins:update": "node plugins update",
         "plugins:install": "node plugins install"
     },
@@ -165,6 +168,7 @@
         "eslint": "^8.57.1",
         "eslint-plugin-jest": "^27.9.0",
         "eslint-plugin-jsdoc": "^48.10.0",
-        "eslint-plugin-playwright": "^2.3.0"
+        "eslint-plugin-playwright": "^2.3.0",
+        "typescript": "^5.9.3"
     }
 }
