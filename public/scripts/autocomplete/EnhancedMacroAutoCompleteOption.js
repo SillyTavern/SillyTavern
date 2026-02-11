@@ -223,15 +223,20 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // Determine current argument index for highlighting
         const currentArgIndex = this.#context?.currentArgIndex ?? -1;
 
-        // Render argument hint banner if we're typing an argument (and no warning)
-        if (!warning && currentArgIndex >= 0) {
+        // For most warnings, we can still highlight which argument we are currently at.
+        // This even goes for "too many arguments" when navigating the cursor back to
+        // a valid argument.
+        // Extend this in the future, if *some* warnings don't make sense to still highlight args.
+        const hightlightArgsHint = currentArgIndex >= 0;
+
+        // Render argument hint banner if we're typing an argument
+        if (hightlightArgsHint && currentArgIndex >= 0) {
             const hint = this.#renderArgumentHint();
             if (hint) frag.append(hint);
         }
 
         // Reuse MacroBrowser's renderMacroDetails with options
-        // Don't highlight args if there's a warning
-        const details = renderMacroDetails(this.#macro, { currentArgIndex: warning ? -1 : currentArgIndex });
+        const details = renderMacroDetails(this.#macro, { currentArgIndex: hightlightArgsHint ? currentArgIndex : -1 });
 
         // Add class for autocomplete-specific styling overrides
         details.classList.add('macro-ac-details');
@@ -273,6 +278,22 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // List-arg macros can accept args even if maxArgs === 0
         if (this.#context.separatorCount > 0 && maxArgs === 0 && !hasList) {
             return 'This macro does not accept any arguments.';
+        }
+
+        // Check list bounds (min/max) if the macro has a list with constraints
+        if (hasList && typeof this.#macro.list === 'object') {
+            const listItemCount = Math.max(0, argCount - maxArgs);
+            const listMin = this.#macro.list.min ?? 0;
+            const listMax = this.#macro.list.max ?? null;
+
+            if (listItemCount < listMin) {
+                const needed = listMin - listItemCount;
+                return `Not enough list items yet: this macro requires at least ${listMin} item${listMin === 1 ? '' : 's'}, but only ${listItemCount} provided. Add ${needed} more.`;
+            }
+
+            if (listMax !== null && listItemCount > listMax) {
+                return `Too many list items: this macro accepts at most ${listMax} item${listMax === 1 ? '' : 's'}, but ${listItemCount} provided.`;
+            }
         }
 
         return null;
