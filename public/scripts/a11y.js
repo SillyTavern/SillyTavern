@@ -415,10 +415,16 @@ let charPopupTrap = null;
 let worldInfoTrap = null;
 let worldInfoTrapUid = null;
 let qrEditorTrap = null;
-let regexEditorTrap = null; // New Regex Trap
+let regexEditorTrap = null;
 let extensionTrap = null;
 let extensionsMenuTrap = null;
 let optionsMenuTrap = null;
+let selectChatTrap = null;
+let floatingPromptTrap = null;
+let cfgConfigTrap = null;
+let logprobsTrap = null;
+let dataBankTrap = null;
+let tokenCounterTrap = null;
 
 let lastFocusedBeforeTrap = null;
 let lastActiveWIUid = null;
@@ -1131,6 +1137,54 @@ const enhanceSpecificA11y = () => {
         });
     }
 
+    // --- 20.b Floating Panels & Popups ---
+    // Floating Prompt (Author's Note)
+    const $anPanel = $('#floatingPrompt');
+    if ($anPanel.length) {
+        $anPanel.attr({ 'role': 'dialog', 'aria-label': 'Author\'s Note Configuration' });
+        $('#ANClose').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close Author\'s Note' });
+        $('#floatingPromptMaximize').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Maximize Author\'s Note' });
+        $('#floatingPromptheader').attr('aria-hidden', 'true'); // Drag handle
+    }
+
+    // CFG Config
+    const $cfgPanel = $('#cfgConfig');
+    if ($cfgPanel.length) {
+        $cfgPanel.attr({ 'role': 'dialog', 'aria-label': 'CFG Configuration' });
+        $('#CFGClose').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close CFG Config' });
+        $('#cfgConfigMaximize').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Maximize CFG Config' });
+    }
+
+    // Logprobs Viewer
+    const $logprobsPanel = $('#logprobsViewer');
+    if ($logprobsPanel.length) {
+        $logprobsPanel.attr({ 'role': 'dialog', 'aria-label': 'Token Probabilities' });
+        $('#logprobsViewerClose').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close Logprobs' });
+        $('#logprobsMaximizeToggle').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Maximize Logprobs' });
+        $('#logprovsViewerBlockToggle').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Toggle Logprobs View' });
+        $('#logprobsReroll').attr({ 'role': 'button', 'tabindex': '0' });
+    }
+
+    // Select Chat Popup
+    const $selectChat = $('#select_chat_popup');
+    if ($selectChat.length) {
+        $selectChat.attr({ 'role': 'dialog', 'aria-label': 'Chat History' });
+        $('#select_chat_cross').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close Chat History' });
+        $('#newChatFromManageScreenButton, #chat_import_button').attr({ 'role': 'button', 'tabindex': '0' });
+        // Ensure chat blocks are accessible
+        $selectChat.find('.select_chat_block').attr({ 'role': 'listitem', 'tabindex': '0' });
+        $selectChat.find('.chatBackupsList').attr('role', 'list');
+    }
+
+    // Data Bank (Attachments)
+    const $dataBank = $('.dataBankAttachments');
+    if ($dataBank.length) {
+        $dataBank.closest('dialog').attr('aria-label', 'Data Bank');
+        $('.attachmentSort').attr('aria-label', 'Sort attachments');
+        $('.bulkActionSelectAll, .bulkActionSelectNone, .bulkActionDisable, .bulkActionEnable, .bulkActionDelete, .openActionModalButton')
+            .attr({ 'role': 'button', 'tabindex': '0' });
+    }
+
     // --- 21. Left Menu (#options) & Magic Wand Popup (#extensionsMenu) ---
     const $optionsBtn = $('#options_button');
     const $optionsMenu = $('#options');
@@ -1333,9 +1387,6 @@ const managePopupTraps = () => {
 
     // G. Options Menu (Left Side)
     const $optionsMenu = $('#options');
-    // Check if truly visible (opacity/visibility might be used for animation, but :visible handles standard display:none)
-    // The options menu is tricky because it might animate. Usually checking .options-content visibility or the container.
-    // Based on user HTML, #options contains .options-content.
     if ($optionsMenu.is(':visible') && $optionsMenu.find('.options-content').is(':visible')) {
         if (!optionsMenuTrap) {
             lastFocusedBeforeTrap = document.activeElement;
@@ -1353,6 +1404,101 @@ const managePopupTraps = () => {
     } else if (optionsMenuTrap) {
         try { optionsMenuTrap.deactivate(); } catch (e) {}
         optionsMenuTrap = null;
+    }
+
+    // H. Select Chat Popup
+    const $selectChat = $('#select_chat_popup');
+    if ($selectChat.is(':visible') && $selectChat.css('display') !== 'none') {
+        if (!selectChatTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            selectChatTrap = focusTrap.createFocusTrap('#select_chat_popup', {
+                allowOutsideClick: true,
+                clickOutsideDeactivates: false,
+                initialFocus: '#select_chat_search',
+                fallbackFocus: '#select_chat_popup',
+                escapeDeactivates: false, // Handled via keydown listener
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { selectChatTrap.activate(); } catch (e) {}
+        }
+    } else if (selectChatTrap) {
+        try { selectChatTrap.deactivate(); } catch (e) {}
+        selectChatTrap = null;
+    }
+
+    // I. Floating Panels (Author's Note, CFG, Logprobs)
+    // Helper for floating panels
+    const handleFloatingTrap = (id, trapVar, setTrapVar) => {
+        const $el = $(id);
+        // Check opacity because these panels often animate fade-out but stay display:flex for a moment
+        if ($el.is(':visible') && $el.css('opacity') !== '0' && $el.css('display') !== 'none') {
+            if (!trapVar) {
+                if (!document.activeElement.closest('.drawer-content')) {
+                    lastFocusedBeforeTrap = document.activeElement;
+                }
+                const newTrap = focusTrap.createFocusTrap(id, {
+                    allowOutsideClick: true, // User might click between panels
+                    clickOutsideDeactivates: false,
+                    initialFocus: false,
+                    fallbackFocus: id,
+                    escapeDeactivates: false,
+                    onDeactivate: () => {
+                         if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                    },
+                });
+                setTrapVar(newTrap);
+                try { newTrap.activate(); } catch (e) {}
+            }
+        } else if (trapVar) {
+            try { trapVar.deactivate(); } catch (e) {}
+            setTrapVar(null);
+        }
+    };
+
+    handleFloatingTrap('#floatingPrompt', floatingPromptTrap, (t) => floatingPromptTrap = t);
+    handleFloatingTrap('#cfgConfig', cfgConfigTrap, (t) => cfgConfigTrap = t);
+    handleFloatingTrap('#logprobsViewer', logprobsTrap, (t) => logprobsTrap = t);
+
+    // J. Data Bank / Attachments
+    const $dataBank = $('dialog[open] .dataBankAttachments').closest('dialog');
+    if ($dataBank.length && $dataBank.is(':visible')) {
+        if (!dataBankTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            dataBankTrap = focusTrap.createFocusTrap($dataBank[0], {
+                allowOutsideClick: true,
+                initialFocus: '#attachmentSearch',
+                escapeDeactivates: false,
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { dataBankTrap.activate(); } catch (e) {}
+        }
+    } else if (dataBankTrap) {
+        try { dataBankTrap.deactivate(); } catch (e) {}
+        dataBankTrap = null;
+    }
+
+    // K. Token Counter
+    const $tokenCounter = $('dialog[open] h3[data-i18n="Token Counter"]').closest('dialog');
+    if ($tokenCounter.length && $tokenCounter.is(':visible')) {
+         if (!tokenCounterTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            tokenCounterTrap = focusTrap.createFocusTrap($tokenCounter[0], {
+                allowOutsideClick: true,
+                initialFocus: '#token_counter_textarea',
+                escapeDeactivates: false,
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { tokenCounterTrap.activate(); } catch (e) {}
+        }
+    } else if (tokenCounterTrap) {
+        try { tokenCounterTrap.deactivate(); } catch (e) {}
+        tokenCounterTrap = null;
     }
 };
 
@@ -1391,6 +1537,12 @@ function cleanupA11y() {
     if (extensionTrap) { try { extensionTrap.deactivate(); } catch (e) {} extensionTrap = null; }
     if (extensionsMenuTrap) { try { extensionsMenuTrap.deactivate(); } catch (e) {} extensionsMenuTrap = null; }
     if (optionsMenuTrap) { try { optionsMenuTrap.deactivate(); } catch (e) {} optionsMenuTrap = null; }
+    if (selectChatTrap) { try { selectChatTrap.deactivate(); } catch (e) {} selectChatTrap = null; }
+    if (floatingPromptTrap) { try { floatingPromptTrap.deactivate(); } catch (e) {} floatingPromptTrap = null; }
+    if (cfgConfigTrap) { try { cfgConfigTrap.deactivate(); } catch (e) {} cfgConfigTrap = null; }
+    if (logprobsTrap) { try { logprobsTrap.deactivate(); } catch (e) {} logprobsTrap = null; }
+    if (dataBankTrap) { try { dataBankTrap.deactivate(); } catch (e) {} dataBankTrap = null; }
+    if (tokenCounterTrap) { try { tokenCounterTrap.deactivate(); } catch (e) {} tokenCounterTrap = null; }
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
@@ -1448,7 +1600,8 @@ export function initAccessibility() {
     });
 
     // 2. Global Event Bindings
-    $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle', function (e) {
+    // Explicitly added #options_button and #extensionsMenuButton to ensure they work with Spacebar
+    $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle, #options_button, #extensionsMenuButton', function (e) {
         if (!isA11yEnabled) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -1512,14 +1665,13 @@ export function initAccessibility() {
         }
     });
 
-    // --- Escape Key Handler for Main Menus (#options, #extensionsMenu) ---
+    // --- Escape Key Handler for Main Menus & Popups ---
     $(document).on('keydown', function(e) {
         if (!isA11yEnabled || e.key !== 'Escape') return;
 
         // Options Menu
         const $optionsMenu = $('#options');
         if ($optionsMenu.is(':visible') && $optionsMenu.find('.options-content').is(':visible')) {
-            // Check if focus is inside options menu
             if ($(e.target).closest('#options').length) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1531,13 +1683,48 @@ export function initAccessibility() {
         // Extensions Menu
         const $extMenu = $('#extensionsMenu');
         if ($extMenu.is(':visible')) {
-            // Check if focus is inside extension menu, but NOT inside an inner drawer (handled above)
             if ($(e.target).closest('#extensionsMenu').length && !$(e.target).closest('.inline-drawer-content').length) {
                  e.preventDefault();
                  e.stopPropagation();
                  $('#extensionsMenuButton').trigger('click').trigger('focus');
                  return;
             }
+        }
+
+        // Select Chat Popup
+        const $selectChat = $('#select_chat_popup');
+        if ($selectChat.is(':visible')) {
+            e.preventDefault();
+            e.stopPropagation();
+            $('#select_chat_cross').trigger('click');
+            return;
+        }
+
+        // Floating Panel: Author's Note
+        const $floatingPrompt = $('#floatingPrompt');
+        if ($floatingPrompt.is(':visible') && $floatingPrompt.css('opacity') !== '0') {
+            e.preventDefault();
+            e.stopPropagation();
+            $('#ANClose').trigger('click');
+            return;
+        }
+
+        // Floating Panel: CFG
+        const $cfg = $('#cfgConfig');
+        if ($cfg.is(':visible') && $cfg.css('opacity') !== '0') {
+             e.preventDefault();
+             e.stopPropagation();
+             $('#CFGClose').trigger('click');
+             return;
+        }
+
+        // Floating Panel: Logprobs
+        const $logprobs = $('#logprobsViewer');
+        if ($logprobs.is(':visible') && $logprobs.css('opacity') !== '0') {
+             e.preventDefault();
+             e.stopPropagation();
+             $('#logprobsViewerClose').trigger('click');
+             return;
         }
     });
 
