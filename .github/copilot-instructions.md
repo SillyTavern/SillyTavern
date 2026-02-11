@@ -96,11 +96,38 @@ SillyTavern is a self-hosted AI chat interface (LLM frontend) built with Node.js
 
 - **Lint**: `npm run lint` (ESLint). Fix with `npm run lint:fix`. Must pass before submitting changes.
 - **Tests**: Jest for unit tests (`tests/`), Playwright for E2E tests. Run with the test infrastructure in the `tests/` directory.
-- Format code with VS Code's auto-formatter.
+Example of correctly formatted code:
 
-## Pull Request Guidelines
+```js
+import path from 'node:path';
 
-- Target the `staging` branch for most contributions; `release` only for README updates, GitHub Actions, or critical hotfixes.
-- Keep PRs small — aim for ≤200 lines of code changes.
-- Write clear, descriptive commit messages and PR descriptions in English.
-- Ensure "Allow edits from maintainers" is checked; do not force-push after the PR is out of draft.
+import express from 'express';
+
+import { getConfigValue } from '../util.js';
+
+const MAX_RETRIES = 3;
+
+/**
+ * Gets something by its name.
+ * @param {import('express').Request} request Express request object
+ * @param {string} name The name to look up
+ * @returns {object} The result object
+ */
+function getSomethingByName(request, name) {
+    const { directories } = request.user;
+    const filePath = path.join(directories.root, name);
+    return { name, filePath, isValid: true };
+}
+
+export const router = express.Router();
+
+router.post('/something', async (request, response) => {
+    try {
+        const result = getSomethingByName(request, request.body.name);
+        return response.json(result);
+    } catch (error) {
+        console.error('Something went wrong:', error);
+        return response.status(500).send('Internal server error');
+    }
+});
+```
