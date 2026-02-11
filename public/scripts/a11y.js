@@ -668,7 +668,14 @@ const enhanceSpecificA11y = () => {
     });
 
     // --- 8. TTS Fixes ---
-    $('#tts_refresh').attr('aria-labelledby', 'st-a11y-tts-provider-title');
+    const $ttsProviderLabelSpan = $('#drawer-n8gxyt > span[data-i18n="Select TTS Provider"]');
+    if ($ttsProviderLabelSpan.length) {
+        $ttsProviderLabelSpan.attr('id', 'lbl-tts-provider-text');
+        $('#tts_provider').attr('aria-labelledby', 'lbl-tts-provider-text').removeAttr('aria-describedby');
+    }
+    $('#tts_voices').removeAttr('aria-labelledby aria-describedby');
+    
+    $('#tts_refresh').attr('aria-label', 'Reload TTS Provider');
 
     $('#tts_provider_settings select, #tts_provider_settings input').each(function() {
         const id = this.id;
@@ -681,6 +688,13 @@ const enhanceSpecificA11y = () => {
     });
 
     // --- 9. Caption Fixes ---
+    const $captionSourceLabel = $('label[for="caption_source"]');
+    if ($captionSourceLabel.length) {
+        const lblId = $captionSourceLabel.attr('id') || 'lbl-caption-source';
+        $captionSourceLabel.attr('id', lblId);
+        $('#caption_source').attr('aria-labelledby', lblId).removeAttr('aria-describedby');
+    }
+
     $('#caption_template, #caption_prompt').each(function() {
          const id = this.id;
          const $label = $(`label[for="${id}"]`);
@@ -688,10 +702,22 @@ const enhanceSpecificA11y = () => {
              const labelId = $label.attr('id') || `a11y-lbl-${id}`;
              $label.attr('id', labelId);
              $(this).attr('aria-labelledby', labelId);
+             $(this).removeAttr('aria-describedby');
          }
     });
 
     // --- 10. Summary Fixes ---
+    const $sumSourceLabel = $('label[for="summary_source"]');
+    if ($sumSourceLabel.length) {
+        $sumSourceLabel.attr('id', 'lbl-sum-source');
+        $('#summary_source').attr('aria-labelledby', 'lbl-sum-source').removeAttr('aria-describedby');
+    }
+    const $sumContentLabelSpan = $('#summaryExtensionDrawerContents span[data-i18n="ext_sum_current_summary"]');
+    if ($sumContentLabelSpan.length) {
+        $sumContentLabelSpan.attr('id', 'lbl-sum-content');
+        $('#memory_contents').attr('aria-labelledby', 'lbl-sum-content').removeAttr('aria-describedby');
+    }
+
     $('#summarySettingsBlock input, #summarySettingsBlock textarea, #summarySettingsBlock select').each(function() {
         const id = this.id;
         if (!id) return;
@@ -765,11 +791,85 @@ const enhanceSpecificA11y = () => {
         }
     });
 
-    // Inject sort button into Quick Reply items
-    $('.qr--item, .qr--set-item').each(function() {
+    // Quick Replies: Enhanced Logic for Containers and Items
+    const qrContainers = [
+        { id: '#qr--global', label: 'Global Quick Reply Sets' },
+        { id: '#qr--chat', label: 'Chat Quick Reply Sets' },
+        { id: '#qr--character', label: 'Character Quick Reply Sets' }
+    ];
+
+    qrContainers.forEach(container => {
+        const $cont = $(container.id);
+        if (!$cont.length) return;
+
+        // 1. Fix Container Title ID for referencing
+        const $title = $cont.find('.qr--title');
+        const titleId = `lbl-${container.id.substring(1)}-title`;
+        $title.attr('id', titleId);
+
+        // 2. Fix "Add" button binding
+        const $addBtn = $cont.find('.qr--setListAdd');
+        $addBtn.attr('aria-label', `Add new ${container.label}`);
+
+        // 3. Process Items within this container
+        $cont.find('.qr--item').each(function() {
+            const $li = $(this);
+            
+            // Fix Select Box binding
+            // The select box (.qr--set) should be labelled by the container title
+            const $select = $li.find('.qr--set');
+            $select.removeAttr('aria-labelledby aria-describedby').attr('aria-labelledby', titleId);
+            
+            // Get current set name for binding other buttons
+            const setName = $select.find('option:selected').text() || 'Set';
+
+            // Bind "Buttons" checkbox
+            const $cbLabel = $li.find('.qr--visible');
+            const $cbInput = $cbLabel.find('input');
+            $cbLabel.removeAttr('title'); // Remove tooltip to avoid reading duplicate
+            $cbInput.attr('aria-label', `Show buttons for set: ${setName}`).removeAttr('aria-describedby');
+
+            // Bind "Edit" button
+            $li.find('.fa-pencil').parent().attr('aria-label', `Edit set: ${setName}`);
+
+            // Bind "Remove" button
+            $li.find('.qr--del').attr('aria-label', `Remove set: ${setName}`);
+
+            // Inject Sort Button if missing
+            if ($li.find('.a11y-sort-button').length === 0) {
+                const $sortBtn = $('<div>', {
+                    class: 'a11y-sort-button menu_button menu_button_icon fa-solid fa-sort interactable',
+                    role: 'button',
+                    tabindex: '0',
+                    title: 'Sort',
+                    'aria-label': `Sort set: ${setName}`
+                });
+                
+                const $delBtn = $li.find('.qr--del');
+                if ($delBtn.length) {
+                    $sortBtn.insertBefore($delBtn);
+                } else {
+                    $li.append($sortBtn);
+                }
+
+                $sortBtn.on('click keydown', function(e) {
+                    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSortMenu(this, '.qr--item', container.id + '-setList');
+                });
+            } else {
+                // Update existing sort button label if set name changed
+                $li.find('.a11y-sort-button').attr('aria-label', `Sort set: ${setName}`);
+            }
+        });
+    });
+
+    // Quick Replies: Editor Items (Individual Replies)
+    $('.qr--set-item').each(function() {
         const $li = $(this);
-        const isEditor = $li.hasClass('qr--set-item');
-        let $targetContainer = isEditor ? $li.find('.qr--set-itemLabelContainer') : $li;
+        const $targetContainer = $li.find('.qr--set-itemLabelContainer');
+        const replyLabel = $li.find('.qr--set-itemLabel').val() || 'Quick Reply';
 
         if ($targetContainer.length && $li.find('.a11y-sort-button').length === 0) {
             const $sortBtn = $('<div>', {
@@ -777,28 +877,18 @@ const enhanceSpecificA11y = () => {
                 role: 'button',
                 tabindex: '0',
                 title: 'Sort',
-                'aria-label': 'Sort Quick Reply'
+                'aria-label': `Sort reply: ${replyLabel}`
             });
-            
-            if (isEditor) {
-                $targetContainer.append($sortBtn);
-            } else {
-                const $delBtn = $li.find('.qr--del');
-                if ($delBtn.length) {
-                    $sortBtn.insertBefore($delBtn);
-                } else {
-                    $li.append($sortBtn);
-                }
-            }
+            $targetContainer.append($sortBtn);
 
             $sortBtn.on('click keydown', function(e) {
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
                 e.stopPropagation();
-                const itemSelector = isEditor ? '.qr--set-item' : '.qr--item';
-                const containerSelector = isEditor ? '.qr--set-qrListContents' : '.qr--setList';
-                handleSortMenu(this, itemSelector, containerSelector);
+                handleSortMenu(this, '.qr--set-item', '.qr--set-qrListContents');
             });
+        } else {
+             $li.find('.a11y-sort-button').attr('aria-label', `Sort reply: ${replyLabel}`);
         }
     });
     
@@ -829,16 +919,22 @@ const enhanceSpecificA11y = () => {
 
     $('.regex-script-container label.checkbox').each(function() {
         const $lbl = $(this);
+        $lbl.removeAttr('for');
+
         if (!$lbl.attr('tabindex')) {
+            const $inp = $lbl.find('input');
+            const scriptName = $lbl.closest('.regex-script-label').find('.regex_script_name').text() || 'Script';
+            
             $lbl.attr({
                 'role': 'checkbox',
                 'tabindex': '0',
-                'aria-label': $lbl.find('input').hasClass('disable_regex') ? 'Enable/Disable Script' : 'Toggle'
+                'aria-label': $inp.hasClass('disable_regex') ? `Enable script: ${scriptName}` : `Toggle ${scriptName}`
             });
-            const $inp = $lbl.find('input');
+            
             const isChecked = $inp.prop('checked');
             $lbl.attr('aria-checked', isChecked ? 'true' : 'false');
-            $inp.on('change', function() {
+            
+            $inp.off('change.a11y').on('change.a11y', function() {
                  $lbl.attr('aria-checked', $(this).prop('checked') ? 'true' : 'false');
             });
         }
