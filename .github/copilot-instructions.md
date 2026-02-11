@@ -40,33 +40,6 @@ SillyTavern is a self-hosted AI chat interface (LLM frontend) built with Node.js
 - Use **spaces inside object curly braces**: `{ key: value }`.
 - Use **spaces around infix operators**: `a + b`, not `a+b`.
 
-### Naming Conventions
-
-- **Variables and functions**: `camelCase` (e.g., `getConfigValue`, `readSecret`).
-- **Constants**: `UPPER_SNAKE_CASE` for true constants and enum-like objects (e.g., `SECRET_KEYS`, `PUBLIC_DIRECTORIES`, `EVENT_NAMES`).
-- **Client-side legacy**: Some older client code uses `snake_case` for variables (e.g., `power_user`, `event_types`, `this_chid`). Follow the convention of the file you are editing — do not introduce `snake_case` in new code unless extending an existing `snake_case` API.
-- **CSS classes and HTML IDs**: `kebab-case`.
-- **File names**: `kebab-case` for multi-word names (e.g., `server-main.js`, `content-manager.js`). Some legacy files use `camelCase` — match the surrounding convention.
-
-### Functions & Documentation
-
-- Use **JSDoc** comments for all exported functions, including `@param`, `@returns`, and `@type` annotations. The project uses `eslint-plugin-jsdoc` and has `checkJs: true` in `jsconfig.json` for type checking.
-- Use **JSDoc type imports** (`@type {import('express').Request}`) for type annotations.
-- Keep functions small and focused. Prefer pure utility functions in `util.js` or `public/scripts/utils.js`.
-- Use `async`/`await` for asynchronous code; avoid raw `.then()` chains where possible.
-
-### Error Handling
-
-- Server endpoints: wrap handlers in `try/catch`, send appropriate HTTP error responses with `response.status(code).send(message)`.
-- Use `console.error` or the `color` helper from `src/util.js` for server-side error logging.
-- Client-side: use `toastr` for user-facing error notifications; `console.error` for developer logging.
-
-### Imports
-
-- Group imports: Node.js built-ins first, then third-party packages, then local modules — separated by blank lines.
-- Use named exports/imports where possible. Default exports are used for middleware and some configuration.
-- Client-side: prefer **absolute imports** for new files and new code (e.g., `import { ... } from '/script.js'`). The `/` path is aliased to `public/`. Use relative imports only in existing modules that already use relative paths.
-
 Example of correctly formatted code:
 
 ```js
@@ -102,6 +75,33 @@ router.post('/something', async (request, response) => {
     }
 });
 ```
+
+### Naming Conventions
+
+- **Variables and functions**: `camelCase` (e.g., `getConfigValue`, `readSecret`).
+- **Constants**: `UPPER_SNAKE_CASE` for true constants and enum-like objects (e.g., `SECRET_KEYS`, `PUBLIC_DIRECTORIES`, `EVENT_NAMES`).
+- **Client-side legacy**: Some older client code uses `snake_case` for variables (e.g., `power_user`, `event_types`, `this_chid`). Follow the convention of the file you are editing — do not introduce `snake_case` in new code unless extending an existing `snake_case` API.
+- **CSS classes and HTML IDs**: `kebab-case`.
+- **File names**: `kebab-case` for multi-word names (e.g., `server-main.js`, `content-manager.js`). Some legacy files use `camelCase` — match the surrounding convention.
+
+### Functions & Documentation
+
+- Use **JSDoc** comments for all exported functions, including `@param`, `@returns`, and `@type` annotations. The project uses `eslint-plugin-jsdoc` and has `checkJs: true` in `jsconfig.json` for type checking.
+- Use **JSDoc type imports** (`@type {import('express').Request}`) for type annotations.
+- Keep functions small and focused. Prefer pure utility functions in `util.js` or `public/scripts/utils.js`.
+- Use `async`/`await` for asynchronous code; avoid raw `.then()` chains where possible.
+
+### Error Handling
+
+- Server endpoints: wrap handlers in `try/catch`, send appropriate HTTP error responses with `response.status(code).send(message)`.
+- Use `console.error` or the `color` helper from `src/util.js` for server-side error logging.
+- Client-side: use `toastr` for user-facing error notifications; `console.error` for developer logging.
+
+### Imports
+
+- Group imports: Node.js built-ins first, then third-party packages, then local modules — separated by blank lines.
+- Use named exports/imports where possible. Default exports are used for middleware and some configuration.
+- Client-side: prefer **absolute imports** for new files and new code (e.g., `import { ... } from '/script.js'`). The `/` path is aliased to `public/`. Use relative imports only in existing modules that already use relative paths.
 
 ## Server-Side Patterns
 
