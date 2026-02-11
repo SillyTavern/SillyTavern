@@ -564,3 +564,7 @@ label[for="bind_preset_to_connection"]:has(input:checked) {
 #request_images_block:has(#openai_request_images:not(:checked)) #request_images_settings {
     display: none;
 }
+
+#adaptive_p_block:has([data-tg-samplers="adaptive_target"][style*="display: none"]):has([data-tg-samplers="adaptive_decay"][style*="display: none"]) {
+    display: none;
+}

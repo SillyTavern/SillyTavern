@@ -54,6 +54,7 @@ import {
     system_avatar,
     system_message_types,
     this_chid,
+    updateMessageElement,
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
@@ -64,7 +65,7 @@ import { getRegexedString, regex_placement } from './extensions/regex/engine.js'
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
 import { chat_completion_sources, oai_settings, promptManager, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
-import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, power_user } from './power-user.js';
+import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
@@ -2120,7 +2121,7 @@ export function initDefaultSlashCommands() {
                 isRequired: true,
                 enumProvider: (executor, scope) => [
                     ...commonEnumProviders.variables('scope')(executor, scope),
-                    ...(typeof window['qrEnumProviderExecutables'] === 'function') ? window['qrEnumProviderExecutables']() : [],
+                    ...(typeof globalThis.qrEnumProviderExecutables === 'function') ? globalThis.qrEnumProviderExecutables() : [],
                 ],
             }),
         ],
@@ -2971,7 +2972,7 @@ export function initDefaultSlashCommands() {
             if (isFinite(firstDisplayedMessageId) && messageIndex < firstDisplayedMessageId) {
                 const needToLoadCount = firstDisplayedMessageId - messageIndex;
                 await showMoreMessages(needToLoadCount);
-                await delay(1);
+                await delay(debounce_timeout.quick);
             }
 
             const chatContainer = document.getElementById('chat');
@@ -3100,6 +3101,59 @@ export function initDefaultSlashCommands() {
 
             return oai_settings.custom_prompt_post_processing;
         },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reroll-pick',
+        callback: (_, value) => {
+            const currentSeed = chat_metadata.pick_reroll_seed ?? 0;
+            const parsedValue = value ? parseInt(String(value), 10) : NaN;
+
+            if (!isNaN(parsedValue)) {
+                chat_metadata.pick_reroll_seed = parsedValue;
+            } else {
+                chat_metadata.pick_reroll_seed = currentSeed + 1;
+            }
+
+            saveMetadataDebounced();
+            return String(chat_metadata.pick_reroll_seed);
+        },
+        returns: t`The new reroll seed value.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`Optional seed value to set. If not provided, increments current seed by 1.`,
+                typeList: [ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        helpString: `
+            <div>
+                ${t`Rerolls all <code>{{pick}}</code> macro choices in the current chat.`}
+            </div>
+            <div>
+                ${t`The <code>{{pick}}</code> macro normally keeps stable choices per chat. This command changes the seed used for all picks, causing them to resolve to (possibly) different values.`}
+            </div>
+            <div>
+                ${t`If a number is provided, sets the seed to that value. Otherwise, increments the current seed by 1.`}
+            </div>
+            <div>
+                <strong>${t`Example:`}</strong>
+                <ul>
+                    <li><pre><code>/reroll-pick</code></pre> ${t`Increments the seed by 1.`}</li>
+                    <li><pre><code>/reroll-pick 5</code></pre> ${t`Sets the seed to 5.`}</li>
+                </ul>
+            </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'beep',
+        aliases: ['ding'],
+        returns: t`an empty string`,
+        callback: async () => {
+            playMessageSound({ force: true });
+            return '';
+        },
+        helpString: t`Plays the message received sound effect.`,
     }));
 
     registerVariableCommands();
@@ -3572,7 +3626,7 @@ async function runCallback(args, name) {
         return result.pipe;
     }
 
-    if (typeof window['executeQuickReplyByName'] !== 'function') {
+    if (typeof globalThis.executeQuickReplyByName !== 'function') {
         throw new Error(t`Quick Reply extension is not loaded`);
     }
 
@@ -3583,7 +3637,7 @@ async function runCallback(args, name) {
             abortController: args._abortController,
             debugController: args._debugController,
         };
-        return await window['executeQuickReplyByName'](name, args, options);
+        return await globalThis.executeQuickReplyByName(name, args, options);
     } catch (error) {
         throw new Error(t`Error running Quick Reply "${name}": ${error.message}`);
     }
@@ -4642,7 +4696,8 @@ async function messageRoleCallback(args, role) {
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
     const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
     if (existingMessage.length) {
-        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        const newMessageElement = updateMessageElement(message, { messageId: modifyAt });
+        existingMessage.after(newMessageElement);
         existingMessage.remove();
     }
     await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
@@ -4707,7 +4762,8 @@ async function messageNameCallback(args, name) {
     await eventSource.emit(event_types.MESSAGE_EDITED, modifyAt);
     const existingMessage = chatElement.find(`.mes[mesid="${modifyAt}"]`);
     if (existingMessage.length) {
-        addOneMessage(message, { forceId: modifyAt, insertAfter: modifyAt, scroll: false });
+        const newMessageElement = updateMessageElement(message, { messageId: modifyAt });
+        existingMessage.after(newMessageElement);
         existingMessage.remove();
     }
     await eventSource.emit(event_types.MESSAGE_UPDATED, modifyAt);
@@ -4788,7 +4844,7 @@ export async function sendMessageAs(args, text) {
         insertAt = chat.length + insertAt;
     }
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -4840,7 +4896,7 @@ export async function sendNarratorMessage(args, text) {
         insertAt = chat.length + insertAt;
     }
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -4892,7 +4948,7 @@ export async function promptQuietForLoudResponse(who, text) {
         },
     };
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     chat.push(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
@@ -4928,7 +4984,7 @@ async function sendCommentMessage(args, text) {
         insertAt = chat.length + insertAt;
     }
 
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
 
     if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);

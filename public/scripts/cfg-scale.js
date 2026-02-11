@@ -42,13 +42,13 @@ function setCharCfg(tempValue, setting) {
 
     switch (setting) {
         case settingType.guidance_scale:
-            tempCharaCfg['guidance_scale'] = Number(tempValue);
+            tempCharaCfg.guidance_scale = Number(tempValue);
             break;
         case settingType.negative_prompt:
-            tempCharaCfg['negative_prompt'] = tempValue;
+            tempCharaCfg.negative_prompt = tempValue;
             break;
         case settingType.positive_prompt:
-            tempCharaCfg['positive_prompt'] = tempValue;
+            tempCharaCfg.positive_prompt = tempValue;
             break;
         default:
             return false;
@@ -239,31 +239,31 @@ function migrateSettings() {
 
     if (power_user.guidance_scale) {
         extension_settings.cfg.global.guidance_scale = power_user.guidance_scale;
-        delete power_user['guidance_scale'];
+        delete power_user.guidance_scale;
         performSettingsSave = true;
     }
 
     if (power_user.negative_prompt) {
         extension_settings.cfg.global.negative_prompt = power_user.negative_prompt;
-        delete power_user['negative_prompt'];
+        delete power_user.negative_prompt;
         performSettingsSave = true;
     }
 
-    if (chat_metadata['cfg_negative_combine']) {
-        chat_metadata[metadataKeys.prompt_combine] = chat_metadata['cfg_negative_combine'];
-        chat_metadata['cfg_negative_combine'] = undefined;
+    if (chat_metadata.cfg_negative_combine) {
+        chat_metadata[metadataKeys.prompt_combine] = chat_metadata.cfg_negative_combine;
+        chat_metadata.cfg_negative_combine = undefined;
         performMetaSave = true;
     }
 
-    if (chat_metadata['cfg_negative_insertion_depth']) {
-        chat_metadata[metadataKeys.prompt_insertion_depth] = chat_metadata['cfg_negative_insertion_depth'];
-        chat_metadata['cfg_negative_insertion_depth'] = undefined;
+    if (chat_metadata.cfg_negative_insertion_depth) {
+        chat_metadata[metadataKeys.prompt_insertion_depth] = chat_metadata.cfg_negative_insertion_depth;
+        chat_metadata.cfg_negative_insertion_depth = undefined;
         performMetaSave = true;
     }
 
-    if (chat_metadata['cfg_negative_separator']) {
-        chat_metadata[metadataKeys.prompt_separator] = chat_metadata['cfg_negative_separator'];
-        chat_metadata['cfg_negative_separator'] = undefined;
+    if (chat_metadata.cfg_negative_separator) {
+        chat_metadata[metadataKeys.prompt_separator] = chat_metadata.cfg_negative_separator;
+        chat_metadata.cfg_negative_separator = undefined;
         performMetaSave = true;
     }
 

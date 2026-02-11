@@ -96,6 +96,12 @@
     font-size: calc(var(--mainFontSize) * 0.95);
 }
 
+#bg-sort {
+    width: auto;
+    max-width: 6em;
+    flex-shrink: 0;
+}
+
 /* Thumbnails */
 .bg_example:hover .BGSampleTitle {
     opacity: 1;

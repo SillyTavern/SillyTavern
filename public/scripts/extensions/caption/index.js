@@ -204,7 +204,7 @@ async function sendCaptionedMessage(caption, image, mimeType) {
             inline_image: !!extension_settings.caption.show_in_chat,
         },
     };
-    chat_metadata['tainted'] = true;
+    chat_metadata.tainted = true;
     context.chat.push(message);
     const messageId = context.chat.length - 1;
     await eventSource.emit(event_types.MESSAGE_SENT, messageId);
@@ -489,6 +489,8 @@ jQuery(async function () {
                         'vertexai': SECRET_KEYS.VERTEXAI,
                         'anthropic': SECRET_KEYS.CLAUDE,
                         'xai': SECRET_KEYS.XAI,
+                        'zai': SECRET_KEYS.ZAI,
+                        'moonshot': SECRET_KEYS.MOONSHOT,
                     };
 
                     if (reverseProxyApis[api]) {
@@ -502,11 +504,10 @@ jQuery(async function () {
                         'groq': SECRET_KEYS.GROQ,
                         'cohere': SECRET_KEYS.COHERE,
                         'aimlapi': SECRET_KEYS.AIMLAPI,
-                        'moonshot': SECRET_KEYS.MOONSHOT,
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
-                        'zai': SECRET_KEYS.ZAI,
+                        'pollinations': SECRET_KEYS.POLLINATIONS,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -530,7 +531,7 @@ jQuery(async function () {
                     }
 
                     // Custom API doesn't need additional checks
-                    if (api === 'custom' || api === 'pollinations') {
+                    if (api === 'custom') {
                         return true;
                     }
                 }
@@ -602,7 +603,7 @@ jQuery(async function () {
             const modelIds = await response.json();
             if (Array.isArray(modelIds) && modelIds.length > 0) {
                 modelIds.sort().forEach((modelId) => {
-                    if (!modelId || typeof modelId !== 'string' || options.some(o => o.value === modelId)) {
+                    if (!modelId || typeof modelId !== 'string' || options.some(o => o.value === modelId && o.dataset.type === api)) {
                         return;
                     }
                     const option = document.createElement('option');
@@ -622,6 +623,7 @@ jQuery(async function () {
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
         await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
         await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
+        await processEndpoint('moonshot', '/api/backends/chat-completions/multimodal-models/moonshot');
     }
 
     await addSettings();
@@ -697,6 +699,10 @@ jQuery(async function () {
     });
     $('#caption_ollama_custom_model').val(extension_settings.caption.ollama_custom_model || '').on('input', () => {
         extension_settings.caption.ollama_custom_model = String($('#caption_ollama_custom_model').val()).trim();
+        saveSettingsDebounced();
+    });
+    $('#caption_custom_model').val(extension_settings.caption.custom_model || '').on('input', () => {
+        extension_settings.caption.custom_model = String($('#caption_custom_model').val()).trim();
         saveSettingsDebounced();
     });
     $('#caption_refresh_models').on('click', async () => {

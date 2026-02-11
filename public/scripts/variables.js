@@ -438,7 +438,7 @@ async function ifCallback(args, value) {
  * @param {string} name Local variable name
  * @returns {boolean} True if the local variable exists, false otherwise
  */
-function existsLocalVariable(name) {
+export function existsLocalVariable(name) {
     return chat_metadata.variables && chat_metadata.variables[name] !== undefined;
 }
 
@@ -447,7 +447,7 @@ function existsLocalVariable(name) {
  * @param {string} name Global variable name
  * @returns {boolean} True if the global variable exists, false otherwise
  */
-function existsGlobalVariable(name) {
+export function existsGlobalVariable(name) {
     return extension_settings.variables.global && extension_settings.variables.global[name] !== undefined;
 }
 

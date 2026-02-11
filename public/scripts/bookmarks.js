@@ -12,6 +12,7 @@ import {
     saveChatConditional,
     saveItemizedPrompts,
     setActiveGroup,
+    getCurrentChatDetails,
 } from '../script.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import {
@@ -81,30 +82,35 @@ async function getExistingChatNames() {
 }
 
 async function getBookmarkName({ isReplace = false, forceName = null } = {}) {
-    const chatNames = await getExistingChatNames();
+    const mainChatName = (getCurrentChatDetails()).sessionName;
 
-    const body = await renderTemplateAsync('createCheckpoint', { isReplace: isReplace });
-    let name = forceName ?? await Popup.show.input('Create Checkpoint', body);
+    function buildCheckpointName(name, i) {
+        // Strip off existing suffixes, then build new name
+        let cleanName = name.replace(new RegExp(` - ${bookmarkNameToken}\\d+$`), '');
+        // Strip off legacy old name prefix too
+        cleanName = cleanName.replace(new RegExp(`^${bookmarkNameToken}\\d+ - `), '');
+        return `${cleanName} - ${bookmarkNameToken}${i}`;
+    }
+    const existingChats = await getExistingChatNames();
+    const suggestedName = getUniqueName(mainChatName, (x) => existingChats.includes(x), { nameBuilder: buildCheckpointName });
+
+    const body = await renderTemplateAsync('createCheckpoint', { isReplace: isReplace, suggestedName: suggestedName });
+    let name = forceName ?? await Popup.show.input('Create Checkpoint', body, suggestedName);
     // Special handling for confirmed empty input (=> auto-generate name)
     if (name === '') {
-        for (let i = chatNames.length; i < 1000; i++) {
-            name = bookmarkNameToken + i;
-            if (!chatNames.includes(name)) {
-                break;
-            }
-        }
+        name = suggestedName;
     }
     if (!name) {
         return null;
     }
 
-    return `${name} - ${humanizedDateTime()}`;
+    return name;
 }
 
 function getMainChatName() {
     if (chat_metadata) {
-        if (chat_metadata['main_chat']) {
-            return chat_metadata['main_chat'];
+        if (chat_metadata.main_chat) {
+            return chat_metadata.main_chat;
         }
         // groups didn't support bookmarks before chat metadata was introduced
         else if (selected_group) {
@@ -112,8 +118,8 @@ function getMainChatName() {
         }
         else if (characters[this_chid].chat && characters[this_chid].chat.includes(bookmarkNameToken)) {
             const tokenIndex = characters[this_chid].chat.lastIndexOf(bookmarkNameToken);
-            chat_metadata['main_chat'] = characters[this_chid].chat.substring(0, tokenIndex).trim();
-            return chat_metadata['main_chat'];
+            chat_metadata.main_chat = characters[this_chid].chat.substring(0, tokenIndex).trim();
+            return chat_metadata.main_chat;
         }
     }
     return null;
@@ -127,7 +133,7 @@ export function showBookmarksButtons() {
             $('#option_convert_to_group').show();
         }
 
-        if (chat_metadata['main_chat']) {
+        if (chat_metadata.main_chat) {
             // In bookmark chat
             $('#option_back_to_main').show();
             $('#option_new_bookmark').show();
@@ -170,9 +176,23 @@ export async function createBranch(mesId) {
     }
 
     const lastMes = chat[mesId];
-    const mainChat = selected_group ? groups?.find(x => x.id == selected_group)?.chat_id : characters[this_chid].chat;
-    const newMetadata = { main_chat: mainChat };
-    let name = `Branch #${mesId} - ${humanizedDateTime()}`;
+    const mainChatName = (getCurrentChatDetails()).sessionName;
+    const newMetadata = { main_chat: mainChatName };
+
+    function buildBranchName(name, i) {
+        // Strip off existing suffixes, then build new name
+        let cleanName = name.replace(/ - Branch #\d+$/, '');
+        // Strip off legacy old name prefix too
+        cleanName = cleanName.replace(/^Branch #\d+ - /, '');
+        return `${cleanName} - Branch #${i}`;
+    }
+    const existingChats = await getExistingChatNames();
+    const name = getUniqueName(mainChatName, (x) => existingChats.includes(x), { nameBuilder: buildBranchName });
+    if (!name) {
+        console.error('Could not generate a unique branch name.');
+        toastr.error('Could not generate a unique branch name.', 'Branch creation failed');
+        return;
+    }
 
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
@@ -184,10 +204,10 @@ export async function createBranch(mesId) {
     if (typeof lastMes.extra !== 'object') {
         lastMes.extra = {};
     }
-    if (typeof lastMes.extra['branches'] !== 'object') {
-        lastMes.extra['branches'] = [];
+    if (typeof lastMes.extra.branches !== 'object') {
+        lastMes.extra.branches = [];
     }
-    lastMes.extra['branches'].push(name);
+    lastMes.extra.branches.push(name);
     return name;
 }
 
@@ -236,7 +256,7 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
         await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
     }
 
-    lastMes.extra['bookmark_link'] = name;
+    lastMes.extra.bookmark_link = name;
 
     const mes = $(`.mes[mesid="${mesId}"]`);
     updateBookmarkDisplay(mes, name);
@@ -636,7 +656,7 @@ export function initBookmarks() {
 
         const fileName = $(this).hasClass('mes_bookmark')
             ? $(this).closest('.mes').attr('bookmark_link')
-            : $(this).attr('file_name').replace('.jsonl', '');
+            : $(this).attr('file_name');
 
         if (!fileName) {
             return;

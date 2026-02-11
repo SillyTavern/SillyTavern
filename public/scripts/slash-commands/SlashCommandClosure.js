@@ -1,4 +1,5 @@
 import { substituteParams } from '../../script.js';
+import { power_user } from '../power-user.js';
 import { delay, escapeRegex, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
@@ -48,6 +49,104 @@ export class SlashCommandClosure {
     }
 
     /**
+     * Performs parameter substitution using the macro engine.
+     * @param {string} text Text to substitute
+     * @param {SlashCommandScope} scope Script scope
+     * @param {{key:string, value:string|SlashCommandClosure}[]} macroList Custom scope macros
+     * @returns {string|SlashCommandClosure|(string|SlashCommandClosure)[]} Substituted text or list of strings/closures
+     */
+    substituteWithMacroEngine(text, scope, macroList) {
+        /** @type {Record<string, import('./../macros/engine/MacroEnv.types.js').DynamicMacroValue>} */
+        const dynamicMacros = {
+            'pipe': () => scope.pipe,
+            'var': {
+                strictArgs: false,
+                list: { min: 1, max: 2 },
+                handler: (context) => {
+                    try {
+                        // NB: Legacy replacer halted the script execution on unknown variables
+                        return scope.getVariable(context.list[0], context.list[1]);
+                    } catch (error) {
+                        console.warn('{{var}} dynamic macro execution error:', error);
+                        return '';
+                    }
+                },
+            },
+        };
+
+        // Special marker to denote closures in the substituted text
+        const CLOSURE_BOUNDARY = '\uFFF0~CLOSURE~\uFFF0';
+        /** @type {Map<string, SlashCommandClosure>} */
+        const closures = new Map();
+        /** @type {Record<string, { args: string[], value: string|SlashCommandClosure }[]>} */
+        const customMacros = {};
+
+        for (const macro of macroList) {
+            const [name, ...rest] = macro.key.split('::');
+            if (!Object.hasOwn(customMacros, name)) {
+                customMacros[name] = [];
+            }
+            customMacros[name].push({ args: rest, value: macro.value });
+        }
+
+        for (const [macroName, macroArguments] of Object.entries(customMacros)) {
+            dynamicMacros[macroName] = {
+                strictArgs: false,
+                list: { min: 0, max: Number.MAX_SAFE_INTEGER },
+                handler: (context) => {
+                    // Sort to prefer exact matches over wildcard matches
+                    const sortedMacroArgs = macroArguments.toSorted((a, b) => {
+                        const aHasWildcard = a.args.includes('*');
+                        const bHasWildcard = b.args.includes('*');
+                        if (aHasWildcard && !bHasWildcard) return 1;
+                        if (!aHasWildcard && bHasWildcard) return -1;
+                        return 0;
+                    });
+
+                    const findMacroMatch = (/** @type {{args: string[]}} */ i) => {
+                        // Exact match
+                        if (i.args.length === context.list.length && i.args.every((arg, index) => arg === context.list[index])) {
+                            return true;
+                        }
+                        // Wildcard match - if any definition arg is '*', it matches any value at that position
+                        if (i.args.length === context.list.length) {
+                            return i.args.every((arg, index) => arg === '*' || arg === context.list[index]);
+                        }
+                        return false;
+                    };
+
+                    const replacer = sortedMacroArgs.find(findMacroMatch)?.value;
+                    if (replacer instanceof SlashCommandClosure) {
+                        replacer.abortController = this.abortController;
+                        replacer.breakController = this.breakController;
+                        replacer.scope.parent = this.scope;
+                        if (this.debugController && !replacer.debugController) {
+                            replacer.debugController = this.debugController;
+                        }
+
+                        const closureKey = uuidv4();
+                        closures.set(closureKey, replacer);
+                        return `${CLOSURE_BOUNDARY}${closureKey}${CLOSURE_BOUNDARY}`;
+                    }
+
+                    return String(replacer ?? '');
+                },
+            };
+        }
+
+        const substitutedText = substituteParams(text, { dynamicMacros });
+
+        // If any closures were inserted, split the text accordingly
+        if (closures.size > 0) {
+            const parts = substitutedText.split(CLOSURE_BOUNDARY).map(part => closures.has(part) ? closures.get(part) : part).filter(Boolean);
+            return parts.length === 1 ? parts[0] : parts;
+        }
+
+        // No closures, return substituted text as-is
+        return substitutedText;
+    }
+
+    /**
      *
      * @param {string} text
      * @param {SlashCommandScope} scope
@@ -72,6 +171,9 @@ export class SlashCommandClosure {
             if (a.key.includes('*') && b.key.includes('*')) return b.key.indexOf('*') - a.key.indexOf('*');
             return 0;
         });
+        if (power_user.experimental_macro_engine) {
+            return this.substituteWithMacroEngine(text, scope, macroList);
+        }
         const macros = macroList.map(it=>escapeMacro(it)).join('|');
         const re = new RegExp(`(?<pipe>{{pipe}})|(?:{{var::(?<var>[^\\s]+?)(?:::(?<varIndex>(?!}}).+))?}})|(?:{{(?<macro>${macros})}})`);
         let done = '';

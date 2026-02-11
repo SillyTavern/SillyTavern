@@ -25,6 +25,7 @@ module.exports = {
         'node_modules/**/*',
     ],
     globals: {
+        SillyTavern: 'readonly',
     },
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],

@@ -594,7 +594,7 @@ function registerAuthorsNoteMacros() {
             handler: () => chat_metadata[metadata_keys.prompt] ?? '',
         });
         macros.register('charAuthorsNote', {
-            category: MacroCategory.CHARACTER,
+            category: MacroCategory.PROMPTS,
             description: t`The contents of the Character Author's Note`,
             handler: () => this_chid !== undefined ? (extension_settings.note.chara.find((e) => e.name === getCharaFilename())?.prompt ?? '') : '',
         });

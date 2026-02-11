@@ -1052,8 +1052,8 @@ router.post('/remote/kobold/count', async function (request, response) {
 
         /** @type {any} */
         const data = await result.json();
-        const count = data['value'];
-        const ids = data['ids'] ?? [];
+        const count = data.value;
+        const ids = data.ids ?? [];
         return response.send({ count, ids });
     } catch (error) {
         console.error(error);

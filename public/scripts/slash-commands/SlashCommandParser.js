@@ -15,15 +15,20 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { EnhancedMacroAutoCompleteOption, parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
+import {
+    findUnclosedScopes,
+    buildMacroAutoCompleteResult,
+} from '../autocomplete/MacroAutoCompleteHelper.js';
 import { SlashCommandBreakPoint } from './SlashCommandBreakPoint.js';
 import { SlashCommandDebugController } from './SlashCommandDebugController.js';
 import { commonEnumProviders } from './SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreak } from './SlashCommandBreak.js';
-import { macros as macroSystem } from '../macros/macro-system.js';
+import { parseMacroContext } from '../autocomplete/EnhancedMacroAutoCompleteOption.js';
 
 /** @typedef {import('./SlashCommand.js').NamedArgumentsCapture} NamedArgumentsCapture */
 /** @typedef {import('./SlashCommand.js').NamedArguments} NamedArguments */
+/** @typedef {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} MacroAutoCompleteContext */
+/** @typedef {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').EnhancedMacroAutoCompleteOptions} EnhancedMacroAutoCompleteOptions */
 
 /**
  * @enum {Number}
@@ -486,25 +491,33 @@ export class SlashCommandParser {
                 ?? null
             ;
             if (childClosure !== null) return null;
-            const macro = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
-            if (macro) {
-                // Calculate cursor position within the macro for argument context
-                const cursorInMacro = index - macro.start - 2; // -2 for {{
-                const macroContent = text.slice(macro.start + 2, macro.end - (text.slice(macro.end - 2, macro.end) === '}}' ? 2 : 0));
-                const context = parseMacroContext(macroContent, cursorInMacro);
+            // Check if cursor is inside a macro
+            const macroEntry = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
+            if (macroEntry) {
+                // Build macro info object for shared function
+                const macroContent = text.slice(macroEntry.start + 2, macroEntry.end - (text.slice(macroEntry.end - 2, macroEntry.end) === '}}' ? 2 : 0));
+                const macro = {
+                    start: macroEntry.start,
+                    end: macroEntry.end,
+                    content: macroContent,
+                };
 
-                // Extract just the identifier (strip trailing colons/whitespace/closing braces from macro.name)
-                const identifier = macro.name.replace(/[\s:}]+$/, '').trim();
+                // Use the shared macro autocomplete builder
+                const result = await buildMacroAutoCompleteResult(text, index, { macro });
+                if (result) return result;
+            }
 
-                // Use enhanced macro autocomplete when experimental engine is enabled
-                const options = this.#buildEnhancedMacroOptions(context);
-                const result = new AutoCompleteNameResult(
-                    identifier,
-                    macro.start + 2,
-                    options,
-                    false,
-                );
-                return result;
+            // Check if cursor is in scoped content of an unclosed macro (not inside a macro)
+            const textUpToCursor = text.slice(0, index);
+            const unclosedScopes = findUnclosedScopes(textUpToCursor);
+            if (unclosedScopes.length > 0) {
+                // Use the shared macro autocomplete builder for scoped content
+                const result = await buildMacroAutoCompleteResult(text, index, {
+                    macro: null,
+                    textUpToCursor,
+                    unclosedScopes,
+                });
+                if (result) return result;
             }
             if (executor.name == ':') {
                 const options = this.scopeIndex[this.commandIndex.indexOf(executor)]
@@ -536,44 +549,6 @@ export class SlashCommandParser {
             return result;
         }
         return null;
-    }
-
-    /**
-     * Builds enhanced macro autocomplete options from the MacroRegistry.
-     * When typing arguments (after ::), prioritizes the exact macro match.
-     * @param {import('../autocomplete/EnhancedMacroAutoCompleteOption.js').MacroAutoCompleteContext} context
-     * @returns {EnhancedMacroAutoCompleteOption[]}
-     */
-    #buildEnhancedMacroOptions(context) {
-        /** @type {EnhancedMacroAutoCompleteOption[]} */
-        const options = [];
-
-        // Get all macros from the registry (excluding hidden aliases)
-        const allMacros = macroSystem.registry.getAllMacros({ excludeHiddenAliases: true });
-
-        // If we're typing arguments (after ::), only show the context to the matching macro
-        const isTypingArgs = context.currentArgIndex >= 0;
-
-        for (const macro of allMacros) {
-            // Check if this macro matches the typed identifier
-            const isExactMatch = macro.name === context.identifier;
-            const isAliasMatch = macro.aliasOf === context.identifier;
-
-            // Only pass context to the macro that matches the identifier being typed
-            // This ensures argument hints only show for the relevant macro
-            const macroContext = (isExactMatch || isAliasMatch) ? context : null;
-
-            const option = new EnhancedMacroAutoCompleteOption(macro, macroContext);
-
-            // When typing arguments, prioritize exact matches by putting them first
-            if (isTypingArgs && (isExactMatch || isAliasMatch)) {
-                options.unshift(option);
-            } else {
-                options.push(option);
-            }
-        }
-
-        return options;
     }
 
     /**
@@ -670,6 +645,10 @@ export class SlashCommandParser {
     }
 
     replaceGetvar(value) {
+        // Not needed with the new parser.
+        if (power_user.experimental_macro_engine) {
+            return value;
+        }
         return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (match, cmd, name, idx) => {
             name = name.trim();
             cmd = cmd.toLowerCase();
@@ -679,7 +658,7 @@ export class SlashCommandParser {
             const pipeName = `_PARSER_PIPE_${uuidv4()}`;
             const storePipe = new SlashCommandExecutor(startIdx); {
                 storePipe.end = endIdx;
-                storePipe.command = this.commands['let'];
+                storePipe.command = this.commands.let;
                 storePipe.name = 'let';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
                 nameAss.value = pipeName;
@@ -702,7 +681,7 @@ export class SlashCommandParser {
             const varName = `_PARSER_VAR_${uuidv4()}`;
             const setvar = new SlashCommandExecutor(startIdx); {
                 setvar.end = endIdx;
-                setvar.command = this.commands['let'];
+                setvar.command = this.commands.let;
                 setvar.name = 'let';
                 const nameAss = new SlashCommandUnnamedArgumentAssignment();
                 nameAss.value = varName;
@@ -714,7 +693,7 @@ export class SlashCommandParser {
             // return pipe
             const returnPipe = new SlashCommandExecutor(startIdx); {
                 returnPipe.end = endIdx;
-                returnPipe.command = this.commands['return'];
+                returnPipe.command = this.commands.return;
                 returnPipe.name = 'return';
                 const varAss = new SlashCommandUnnamedArgumentAssignment();
                 varAss.value = `{{var::${pipeName}}}`;
@@ -839,7 +818,7 @@ export class SlashCommandParser {
     parseBreakPoint() {
         const cmd = new SlashCommandBreakPoint();
         cmd.name = 'breakpoint';
-        cmd.command = this.commands['breakpoint'];
+        cmd.command = this.commands.breakpoint;
         cmd.start = this.index + 1;
         this.take('/breakpoint'.length);
         cmd.end = this.index;
@@ -854,7 +833,7 @@ export class SlashCommandParser {
     parseBreak() {
         const cmd = new SlashCommandBreak();
         cmd.name = 'break';
-        cmd.command = this.commands['break'];
+        cmd.command = this.commands.break;
         cmd.start = this.index + 1;
         this.take('/break'.length);
         this.discardWhitespace();
@@ -957,7 +936,7 @@ export class SlashCommandParser {
         const cmd = new SlashCommandExecutor(start);
         cmd.name = ':';
         cmd.unnamedArgumentList = [];
-        cmd.command = this.commands['run'];
+        cmd.command = this.commands.run;
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         this.take(2); //discard "/:"
@@ -988,7 +967,33 @@ export class SlashCommandParser {
         return this.testSymbol('/');
     }
     testCommandEnd() {
-        return this.testClosureEnd() || this.testSymbol('|');
+        if (this.testClosureEnd()) return true;
+        // Only treat | as command end if we're not inside macro braces {{}}
+        if (this.testSymbol('|') && !this.isInsideMacroBraces()) return true;
+        return false;
+    }
+
+    /**
+     * Checks if the current position is inside unclosed macro braces {{...}}.
+     * This prevents pipes inside macros from being treated as command separators.
+     * @returns {boolean} True if inside unclosed macro braces.
+     */
+    isInsideMacroBraces() {
+        const textBehind = this.behind;
+        let depth = 0;
+
+        // Scan through the text to track macro brace depth
+        for (let i = 0; i < textBehind.length; i++) {
+            if (textBehind[i] === '{' && textBehind[i + 1] === '{') {
+                depth++;
+                i++; // Skip the second {
+            } else if (textBehind[i] === '}' && textBehind[i + 1] === '}') {
+                depth = Math.max(0, depth - 1);
+                i++; // Skip the second }
+            }
+        }
+
+        return depth > 0;
     }
     parseCommand() {
         const start = this.index + 1;
@@ -1286,18 +1291,66 @@ export class SlashCommandParser {
     }
 
     indexMacros(offset, text) {
-        const re = /{{(?:((?:(?!}})[^\s:])+[\s:]*)((?:(?!}}).)*)(}}|}$|$))?/s;
-        let remaining = text;
-        let localOffset = 0;
-        while (remaining.length > 0 && re.test(remaining)) {
-            const match = re.exec(remaining);
-            this.macroIndex.push({
-                start: offset + localOffset + match.index,
-                end: offset + localOffset + match.index + (match[0]?.length ?? 0),
-                name: match[1] ?? '',
-            });
-            localOffset += match.index + (match[0]?.length ?? 0);
-            remaining = remaining.slice(match.index + (match[0]?.length ?? 0));
+        // Index all macros including nested ones
+        // We need to track brace depth to properly handle nested macros like {{reverse::Hey {{user}}}}
+        let i = 0;
+        while (i < text.length - 1) {
+            // Look for macro start {{
+            if (text[i] === '{' && text[i + 1] === '{') {
+                const macroStart = i;
+                i += 2; // Skip {{
+
+                // Find where this macro ends, tracking nested braces
+                let depth = 1;
+                let macroEnd = text.length; // Default to end if unclosed
+
+                while (i < text.length - 1 && depth > 0) {
+                    if (text[i] === '{' && text[i + 1] === '{') {
+                        // Nested macro start - recursively index it
+                        // The nested macro will be indexed in subsequent iterations
+                        depth++;
+                        i += 2;
+                    } else if (text[i] === '}' && text[i + 1] === '}') {
+                        depth--;
+                        if (depth === 0) {
+                            macroEnd = i + 2; // Include the closing }}
+                        }
+                        i += 2;
+                    } else {
+                        i++;
+                    }
+                }
+
+                // Extract macro content (between {{ and }} or end)
+                const contentEnd = macroEnd === text.length ? macroEnd : macroEnd - 2;
+                const macroContent = text.slice(macroStart + 2, contentEnd);
+
+                // Use parseMacroContext to extract the identifier
+                const context = parseMacroContext(macroContent, macroContent.length);
+
+                this.macroIndex.push({
+                    start: offset + macroStart,
+                    end: offset + macroEnd,
+                    name: context.identifier,
+                });
+
+                // Continue from where we left off (don't skip ahead)
+                // This ensures nested macros get their own index entries
+                i = macroStart + 2; // Move past the opening {{ to look for nested macros
+                // Skip to find nested {{ inside this macro's content
+                while (i < contentEnd) {
+                    if (text[i] === '{' && i + 1 < text.length && text[i + 1] === '{') {
+                        break; // Found nested macro, outer loop will handle it
+                    }
+                    i++;
+                }
+                if (i >= contentEnd) {
+                    // No nested macro found, skip to end of this macro
+                    i = macroEnd;
+                }
+            } else {
+                i++;
+            }
         }
     }
 }
