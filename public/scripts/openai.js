@@ -4821,6 +4821,7 @@ function getZaiMaxContext(model, isUnlocked) {
     }
 
     const contextMap = {
+        'glm-5': max_200k,
         'glm-4.7': max_200k,
         'glm-4.7-flash': max_200k,
         'glm-4.7-flashx': max_200k,
