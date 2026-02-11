@@ -566,6 +566,11 @@
     font-size: 0.8em;
 }
 
+.macro-ac-arg-hint .macro-ac-arg-hint-small {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
 .macro-ac-hint-type {
     font-family: var(--monoFontFamily);
     font-size: 0.85em;

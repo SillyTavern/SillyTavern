@@ -355,8 +355,22 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
             // List argument hint
             const listIndex = argIndex - this.#macro.maxArgs + 1;
             const totalListItems = this.#context.args.length - this.#macro.maxArgs;
+
             const text = document.createElement('span');
             text.innerHTML = `<strong>List item ${listIndex}</strong>${(listIndex < totalListItems ? ` (of ${totalListItems})` : '')}`;
+
+            const listInfo = document.createElement('span');
+            listInfo.classList.add('macro-ac-arg-hint-small');
+            const minMax = [];
+            if (this.#macro.list.min > 0) minMax.push(`min: ${this.#macro.list.min}`);
+            if (this.#macro.list.max !== null) minMax.push(`max: ${this.#macro.list.max}`);
+            if (minMax.length > 0) {
+                listInfo.textContent = ` (list, ${minMax.join(', ')})`;
+            } else {
+                listInfo.textContent = ' (variable-length list)';
+            }
+            text.appendChild(listInfo);
+
             hint.append(text);
         } else {
             // Unnamed argument hint (required or optional)
