@@ -112,8 +112,9 @@ export function findUnclosedScopesRegex(text) {
             }
         } else {
             // Check if macro can accept scoped content
+            // List-arg macros don't support scopes - they accept arbitrary inline args instead
             const macroDef = macroSystem.registry.getPrimaryMacro(name);
-            if (macroDef && macroDef.maxArgs > 0) {
+            if (macroDef && macroDef.maxArgs > 0 && macroDef.list === null) {
                 // Try to find closing }} to extract trailing whitespace
                 let paddingAfter = '';
                 const afterMatch = text.slice(match.index + match[0].length);

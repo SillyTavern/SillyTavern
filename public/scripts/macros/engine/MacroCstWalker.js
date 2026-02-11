@@ -1309,15 +1309,13 @@ class MacroCstWalker {
         const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
         const currentArgCount = argumentNodes.length;
 
+        // List-arg macros don't support scoped content - they accept arbitrary inline args instead
+        if (def.list) {
+            return false;
+        }
+
         // Check if adding 1 more argument (scoped content) would be valid
         const newArgCount = currentArgCount + 1;
-
-        // Macro must accept at least newArgCount arguments
-        // For macros with list args, they can accept unlimited after maxArgs
-        if (def.list) {
-            // With list: valid if newArgCount >= minArgs (list can absorb extra)
-            return newArgCount >= def.minArgs;
-        }
 
         // Without list: newArgCount must be between minArgs and maxArgs
         return newArgCount >= def.minArgs && newArgCount <= def.maxArgs;

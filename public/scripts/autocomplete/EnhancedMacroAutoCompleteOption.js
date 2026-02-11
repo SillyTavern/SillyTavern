@@ -261,7 +261,7 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // Space-separated syntax provides 1 arg; with scoped content you can provide a 2nd arg
         // So it's valid for macros with maxArgs <= 2 (or with list args)
         if (this.#context.hasSpaceArgContent) {
-            if (maxArgs === 0) {
+            if (maxArgs === 0 && !hasList) {
                 return 'This macro does not accept any arguments. Remove the space or use a different macro.';
             }
             if (!hasList && maxArgs > 2) {
@@ -270,7 +270,8 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         }
 
         // Check if trying to add args to a no-arg macro via ::
-        if (this.#context.separatorCount > 0 && maxArgs === 0) {
+        // List-arg macros can accept args even if maxArgs === 0
+        if (this.#context.separatorCount > 0 && maxArgs === 0 && !hasList) {
             return 'This macro does not accept any arguments.';
         }
 
@@ -353,8 +354,9 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         if (isListArg) {
             // List argument hint
             const listIndex = argIndex - this.#macro.maxArgs + 1;
+            const totalListItems = this.#context.args.length - this.#macro.maxArgs;
             const text = document.createElement('span');
-            text.innerHTML = `<strong>List item ${listIndex}</strong>`;
+            text.innerHTML = `<strong>List item ${listIndex}</strong>${(listIndex < totalListItems ? ` (of ${totalListItems})` : '')}`;
             hint.append(text);
         } else {
             // Unnamed argument hint (required or optional)
