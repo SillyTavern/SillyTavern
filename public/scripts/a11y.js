@@ -402,6 +402,7 @@ let promptManagerTrap = null;
 let charPopupTrap = null;
 let worldInfoTrap = null;
 let worldInfoTrapUid = null;
+let qrEditorTrap = null;
 
 let lastFocusedBeforeTrap = null;
 let lastActivePromptId = null;
@@ -485,7 +486,7 @@ const enhanceSpecificA11y = () => {
         const $container = $el.closest('.range-block, .flex-container, .completion_prompt_manager_popup_entry_form_control, .world_entry_form_control, .inline-drawer-content');
         if (!$container.length) return;
 
-        let $title = $container.find('label, h4, .range-block-title, b, .justifyLeft').first();
+        let $title = $container.find('label, h4, h3, .range-block-title, b, .justifyLeft, small').first();
         if ($el.parent('label').length) $title = $el.parent('label').find('span').first();
 
         if ($title.length && !$el.attr('aria-labelledby')) {
@@ -668,10 +669,145 @@ const enhanceSpecificA11y = () => {
         'tabindex': '0',
         'aria-label': 'Expand Full Editor',
     });
+
     $('#character_cross').attr({
         'role': 'button',
         'tabindex': '0',
         'aria-label': 'Close',
+    });
+
+    $('#sd_seed, #sd_prompt_prefix, #sd_negative_prompt, #sd_character_prompt, #sd_character_negative_prompt').each(function() {
+        const id = this.id;
+        const $realLabel = $(`label[for="${id}"]`);
+        if ($realLabel.length) {
+            const lid = 'st-lbl-' + id;
+            $realLabel.attr('id', lid);
+            $(this).attr('aria-labelledby', lid).removeAttr('aria-describedby');
+        }
+    });
+
+    $('#sd_style').each(function() {
+        const $header = $(this).closest('.flex-container').prev('h4');
+        if ($header.length) {
+            const tid = 'st-sd-style-title';
+            $header.attr('id', tid);
+            $(this).attr('aria-labelledby', tid);
+        }
+    });
+
+    $('.neo-range-input').each(function() {
+        const $input = $(this);
+        const $container = $input.closest('.flex-container');
+        const $smallTitle = $container.find('small').first();
+        if ($smallTitle.length) {
+            const tid = 'st-range-title-' + ($input.attr('id') || Math.random().toString(36).substr(2, 5));
+            $smallTitle.attr('id', tid);
+            $input.attr('aria-labelledby', tid);
+        }
+    });
+
+    $('#tts_provider').each(function() {
+        const $titleSpan = $(this).closest('.tts_block').prevAll('span[data-i18n="Select TTS Provider"]').first();
+        if ($titleSpan.length) {
+            const tid = 'st-a11y-tts-provider-title';
+            $titleSpan.attr('id', tid);
+            $(this).attr('aria-labelledby', tid);
+        }
+    });
+
+    $('#sd_source').each(function() {
+        const $realLabel = $(this).prev('label[for="sd_source"]');
+        if ($realLabel.length) {
+            const tid = 'st-a11y-sd-source-title';
+            $realLabel.attr('id', tid);
+            $(this).attr('aria-labelledby', tid);
+        }
+    });
+
+    $('#rm_extensions_block h3[data-i18n="Extensions"]').attr('id', 'title_extensions');
+
+    $('#extensions_notify_updates').attr('aria-labelledby', 'label-extensions_notify_updates');
+
+    $('#main_api, #chat_completion_source').each(function() {
+        $(this).attr('aria-labelledby', 'title_api');
+        $(this).removeAttr('aria-describedby');
+    });
+
+    $('#chat_completion_source').each(function () {
+        $(this).removeAttr('aria-describedby');
+
+        const $header = $(this).prev('h4');
+        if ($header.length) {
+            const headerId = 'header_chat_completion_source';
+            $header.attr('id', headerId);
+            $(this).attr('aria-labelledby', headerId);
+        } else {
+            $(this).attr('aria-labelledby', 'title_api');
+        }
+    });
+
+    $('#translation_target_language, #translation_provider').each(function() {
+        const id = this.id;
+        const $realLabel = $(`label[for="${id}"]`);
+        if ($realLabel.length) {
+            const lid = 'st-lbl-' + id;
+            $realLabel.attr('id', lid);
+            $(this).attr('aria-labelledby', lid);
+        }
+    });
+    
+    $('#qr--global-setListAdd').attr('aria-label', 'Add Global Quick Reply Set');
+    $('#qr--chat-setListAdd').attr('aria-label', 'Add Chat Quick Reply Set');
+    $('#qr--character-setListAdd').attr('aria-label', 'Add Character Quick Reply Set');
+
+    $('#qr--set').each(function() {
+        const $title = $(this).closest('.qr--head').find('.qr--title');
+        if ($title.length) {
+            const tid = 'st-a11y-qr-editor-title';
+            $title.attr('id', tid);
+            $(this).attr('aria-labelledby', tid).removeAttr('aria-describedby');
+        }
+    });
+
+    $('.qr--set-item').each(function() {
+        const $item = $(this);
+        const $labelInput = $item.find('.qr--set-itemLabel');
+        const $msgInput = $item.find('.qr--set-itemMessage');
+        const currentLabel = $labelInput.val() || 'Unnamed';
+
+        $labelInput.attr('aria-label', `Quick Reply Label: ${currentLabel}`).removeAttr('aria-labelledby');
+        $msgInput.attr('aria-label', `Quick Reply Message for: ${currentLabel}`).removeAttr('aria-labelledby');
+    });
+
+    $('#qr--set-importFile').attr('aria-label', 'Import Quick Reply Set JSON');
+
+    $('#qr--modal-label, #qr--modal-title, #qr--modal-tabSize').each(function() {
+        const $input = $(this);
+        const $container = $input.closest('label, .label, .qr--modal-editorSettings');
+        const $labelSpan = $container.find('.qr--labelText, span[data-i18n^="Tab size"]').first();
+        
+        if ($labelSpan.length) {
+            const tid = 'st-qr-modal-' + $input.attr('id');
+            $labelSpan.attr('id', tid);
+            $input.attr('aria-labelledby', tid);
+        }
+    });
+    
+    $('#qr--automationId').each(function() {
+        const $label = $(this).prev('small');
+        if ($label.length) {
+            const tid = 'st-qr-auto-id';
+            $label.attr('id', tid);
+            $(this).attr('aria-labelledby', tid);
+        }
+    });
+
+    $('#qr--autoExec input[type="checkbox"]').each(function() {
+        const $span = $(this).next('span');
+        const text = $span.text().trim(); 
+        if (text) {
+            $(this).attr('aria-label', text).removeAttr('aria-labelledby');
+        }
     });
 };
 
@@ -777,6 +913,34 @@ const managePopupTraps = () => {
         worldInfoTrap = null;
         worldInfoTrapUid = null;
     }
+
+    const $qrEditor = $('#qr--modalEditor');
+    if ($qrEditor.is(':visible')) {
+        if (!qrEditorTrap) {
+            logDebug('TrapManager', 'Creating QR Editor Trap');
+            lastFocusedBeforeTrap = document.activeElement;
+            
+            const $trapContainer = $qrEditor.closest('.popup-body');
+
+            if ($trapContainer.length) {
+                qrEditorTrap = focusTrap.createFocusTrap($trapContainer[0], {
+                    allowOutsideClick: true,
+                    initialFocus: '#qr--modal-label', 
+                    fallbackFocus: '.popup-button-ok',
+                    escapeDeactivates: false,
+                    onDeactivate: () => {
+                        logDebug('TrapManager', 'QR Editor Trap Deactivated');
+                        if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                    },
+                });
+                try { qrEditorTrap.activate(); } catch (e) { console.warn(e); }
+            }
+        }
+    } else if (qrEditorTrap) {
+        logDebug('TrapManager', 'Deactivating QR Editor Trap');
+        try { qrEditorTrap.deactivate(); } catch (e) {}
+        qrEditorTrap = null;
+    }
 };
 
 const trapFocusInChat = (e) => {
@@ -809,6 +973,7 @@ function cleanupA11y() {
     if (promptManagerTrap) { try { promptManagerTrap.deactivate(); } catch (e) {} promptManagerTrap = null; }
     if (charPopupTrap) { try { charPopupTrap.deactivate(); } catch (e) {} charPopupTrap = null; }
     if (worldInfoTrap) { try { worldInfoTrap.deactivate(); } catch (e) {} worldInfoTrap = null; }
+    if (qrEditorTrap) { try { qrEditorTrap.deactivate(); } catch (e) {} qrEditorTrap = null; }
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
@@ -921,6 +1086,25 @@ export function initAccessibility() {
         if (isChatSaving || (typeof this_edit_mes_id === 'number' && this_edit_mes_id >= 0)) {
             e.preventDefault();
             e.returnValue = true;
+        }
+    });
+
+    // Special handler: Allow escaping the QR message editor (which consumes Tab)
+    $(document).on('keydown', '#qr--modal-message', function (e) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const $popup = $(this).closest('.popup-body');
+            const $focusable = $popup.find('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])').filter(':visible:not(:disabled)');
+            const index = $focusable.index(this);
+            
+            if (index > -1 && index < $focusable.length - 1) {
+                $focusable.eq(index + 1).trigger('focus');
+            } else {
+                $popup.find('.popup-button-ok').trigger('focus');
+            }
+            announceA11y('Exited text editor.');
         }
     });
 
