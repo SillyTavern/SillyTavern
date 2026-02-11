@@ -417,6 +417,8 @@ let worldInfoTrapUid = null;
 let qrEditorTrap = null;
 let regexEditorTrap = null; // New Regex Trap
 let extensionTrap = null;
+let extensionsMenuTrap = null;
+let optionsMenuTrap = null;
 
 let lastFocusedBeforeTrap = null;
 let lastActiveWIUid = null;
@@ -982,6 +984,204 @@ const enhanceSpecificA11y = () => {
             $btn.attr('aria-label', `Remove ${title}`);
         }
     });
+
+    // --- 16. Character Management Panel Fixes ---
+    const charPanelButtons = [
+        '#rm_button_bar .menu_button',
+        '#rm_button_bar .right_menu_button',
+        '#HotSwapWrapper .hotswap',
+        '#rm_button_characters',
+    ].join(', ');
+
+    $(charPanelButtons).each(function() {
+        const $btn = $(this);
+        const title = $btn.attr('title') || $btn.attr('data-i18n-title') || $btn.attr('data-original-title');
+        if (title && !$btn.attr('aria-label')) {
+            $btn.attr('aria-label', title);
+        }
+    });
+
+    // Sort Dropdown
+    const $sortOrder = $('#character_sort_order');
+    if ($sortOrder.length && !$sortOrder.attr('aria-label')) {
+        $sortOrder.attr('aria-label', $sortOrder.attr('title') || 'Sort Characters');
+    }
+
+    // Tag Filters (Favorites, Groups, etc.)
+    $('.rm_tag_filter .tag').each(function() {
+        const $tag = $(this);
+        if (!$tag.attr('aria-label')) {
+            const title = $tag.find('.tag_name').attr('title');
+            if (title) {
+                $tag.attr('aria-label', title);
+            }
+        }
+    });
+
+    // Panel Pin Button
+    const $panelPin = $('#rm_button_panel_pin');
+    if ($panelPin.length && !$panelPin.attr('aria-label')) {
+        const pinTitle = $panelPin.closest('#rm_button_panel_pin_div').attr('title');
+        if (pinTitle) {
+            $panelPin.attr('aria-label', pinTitle);
+        }
+    }
+
+    // --- 17. Character Edit Panel (Avatar Controls) ---
+    // Includes buttons like Advanced Definitions, World Info, etc.
+    $('#avatar_controls .menu_button').each(function() {
+        const $btn = $(this);
+        // Skip keys that might have been covered by generic rules if they have aria-label already
+        if ($btn.attr('aria-label')) return;
+
+        const title = $btn.attr('title') || $btn.attr('data-i18n-title') || $btn.attr('data-original-title');
+        if (title) {
+            // Clean up title if it contains newlines (common in tooltips)
+            const cleanTitle = title.split('\n')[0].trim();
+            $btn.attr('aria-label', cleanTitle);
+        }
+    });
+
+    // --- 18. World Info Selectors (Character & Chat) ---
+    $('.character_world_info_selector, .chat_world_info_selector').each(function() {
+        const $el = $(this);
+        const $container = $el.closest('.range-block');
+        const $label = $container.find('.range-block-title h3, .range-block-title h4').first();
+
+        if ($label.length && !$el.attr('aria-labelledby')) {
+            const labelId = $label.attr('id') || 'lbl-wi-' + Math.random().toString(36).substr(2, 5);
+            $label.attr('id', labelId);
+            $el.attr('aria-labelledby', labelId);
+        }
+    });
+
+    // Additional Lorebooks (Select2)
+    $('.character_extra_world_info_selector').each(function() {
+        const $el = $(this);
+        const $container = $el.closest('.range-block');
+        // The label is usually the h4 preceding it
+        const $label = $container.find('h4').first();
+
+        if ($label.length) {
+            const labelId = $label.attr('id') || 'lbl-wi-extra-' + Math.random().toString(36).substr(2, 5);
+            $label.attr('id', labelId);
+            $el.attr('aria-labelledby', labelId);
+
+            // Also try to fix the Select2 search field if it exists and is visible
+            const $s2Search = $container.find('.select2-search__field');
+            if ($s2Search.length && !$s2Search.attr('aria-labelledby')) {
+                $s2Search.attr('aria-labelledby', labelId);
+                $s2Search.attr('placeholder', 'Search additional lorebooks...'); // Improve placeholder if generic
+            }
+        }
+    });
+
+    // --- 19. Persona Connections Popup ---
+    const $personaPopup = $('.popup h3:contains("Persona Connections")').closest('.popup');
+    if ($personaPopup.length && $personaPopup.is(':visible')) {
+        const $list = $personaPopup.find('.persona-list');
+        $list.attr({
+            'role': 'list',
+            'aria-label': 'Connected Personas List',
+        });
+
+        const $avatars = $list.find('.avatar'); // Assuming avatars are the items
+        if ($avatars.length) {
+            $avatars.attr('role', 'listitem').attr('tabindex', '0');
+        } else if ($list.text().includes('no personas connected')) {
+            $list.attr('aria-label', 'No personas connected');
+        }
+
+        $personaPopup.find('.popup-button-custom[data-result="2"]').attr('role', 'button');
+    }
+
+    // --- 20. Alternate Greetings Popup ---
+    const $altGreetings = $('.alternate_greetings_list');
+    if ($altGreetings.length && $altGreetings.is(':visible')) {
+        $altGreetings.attr('role', 'list');
+
+        // Add Button
+        $('.add_alternate_greeting').attr({
+            'role': 'button',
+            'tabindex': '0',
+            'aria-label': 'Add new greeting',
+        });
+
+        $altGreetings.find('.alternate_greeting').each(function() {
+            const $item = $(this);
+            $item.attr('role', 'listitem');
+
+            // Controls
+            $item.find('.move_up_alternate_greeting').attr('aria-label', 'Move greeting up');
+            $item.find('.move_down_alternate_greeting').attr('aria-label', 'Move greeting down');
+            $item.find('.delete_alternate_greeting').attr('aria-label', 'Delete greeting');
+            $item.find('.editor_maximize').attr('aria-label', 'Maximize editor');
+
+            // Textarea Labeling
+            const index = $item.data('index');
+            const $ta = $item.find('textarea');
+            const $label = $item.find('strong span').first(); // "Alternate Greeting #"
+
+            if ($ta.length && $label.length) {
+                // Ensure unique ID
+                const labelId = 'lbl-alt-greet-' + index;
+                $label.closest('strong').attr('id', labelId);
+                $ta.attr('aria-labelledby', labelId);
+            }
+        });
+    }
+
+    // --- 21. Left Menu (#options) & Magic Wand Popup (#extensionsMenu) ---
+    const $optionsBtn = $('#options_button');
+    const $optionsMenu = $('#options');
+    if ($optionsBtn.length && $optionsMenu.length) {
+        const isExpanded = $optionsMenu.is(':visible') && $optionsMenu.find('.options-content').is(':visible');
+        
+        $optionsBtn.attr({
+            'role': 'button',
+            'tabindex': '0',
+            'aria-haspopup': 'true',
+            'aria-expanded': isExpanded ? 'true' : 'false',
+            'aria-controls': 'options',
+            'aria-label': 'User Options',
+        });
+
+        $optionsMenu.find('.options-content').attr({
+            'role': 'menu',
+            'aria-labelledby': 'options_button',
+        });
+
+        $optionsMenu.find('a').attr({
+            'role': 'menuitem',
+            'tabindex': '0',
+        });
+    }
+
+    const $extBtn = $('#extensionsMenuButton');
+    const $extMenu = $('#extensionsMenu');
+    if ($extBtn.length && $extMenu.length) {
+        const isExpanded = $extMenu.is(':visible');
+
+        $extBtn.attr({
+            'role': 'button',
+            'tabindex': '0',
+            'aria-haspopup': 'true',
+            'aria-expanded': isExpanded ? 'true' : 'false',
+            'aria-controls': 'extensionsMenu',
+            'aria-label': 'Extensions Menu',
+        });
+
+        $extMenu.attr({
+            'role': 'menu',
+            'aria-labelledby': 'extensionsMenuButton',
+        });
+
+        // The items inside are .extension_container, sometimes containing .list-group-item
+        $extMenu.find('.list-group-item').attr({
+            'role': 'menuitem',
+            'tabindex': '0',
+        });
+    }
 };
 
 /**
@@ -1109,6 +1309,51 @@ const managePopupTraps = () => {
         try { regexEditorTrap.deactivate(); } catch (e) {}
         regexEditorTrap = null;
     }
+
+    // F. Extensions Menu
+    const $extMenu = $('#extensionsMenu');
+    if ($extMenu.is(':visible')) {
+        if (!extensionsMenuTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            extensionsMenuTrap = focusTrap.createFocusTrap('#extensionsMenu', {
+                allowOutsideClick: true,
+                clickOutsideDeactivates: true,
+                initialFocus: false, // Let user navigate naturally or set specific focus if needed
+                escapeDeactivates: false, // Handled manually
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { extensionsMenuTrap.activate(); } catch (e) {}
+        }
+    } else if (extensionsMenuTrap) {
+        try { extensionsMenuTrap.deactivate(); } catch (e) {}
+        extensionsMenuTrap = null;
+    }
+
+    // G. Options Menu (Left Side)
+    const $optionsMenu = $('#options');
+    // Check if truly visible (opacity/visibility might be used for animation, but :visible handles standard display:none)
+    // The options menu is tricky because it might animate. Usually checking .options-content visibility or the container.
+    // Based on user HTML, #options contains .options-content.
+    if ($optionsMenu.is(':visible') && $optionsMenu.find('.options-content').is(':visible')) {
+        if (!optionsMenuTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            optionsMenuTrap = focusTrap.createFocusTrap('#options', {
+                allowOutsideClick: true,
+                clickOutsideDeactivates: true,
+                initialFocus: false,
+                escapeDeactivates: false,
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { optionsMenuTrap.activate(); } catch (e) {}
+        }
+    } else if (optionsMenuTrap) {
+        try { optionsMenuTrap.deactivate(); } catch (e) {}
+        optionsMenuTrap = null;
+    }
 };
 
 const trapFocusInChat = (e) => {
@@ -1144,6 +1389,8 @@ function cleanupA11y() {
     if (qrEditorTrap) { try { qrEditorTrap.deactivate(); } catch (e) {} qrEditorTrap = null; }
     if (regexEditorTrap) { try { regexEditorTrap.deactivate(); } catch (e) {} regexEditorTrap = null; }
     if (extensionTrap) { try { extensionTrap.deactivate(); } catch (e) {} extensionTrap = null; }
+    if (extensionsMenuTrap) { try { extensionsMenuTrap.deactivate(); } catch (e) {} extensionsMenuTrap = null; }
+    if (optionsMenuTrap) { try { optionsMenuTrap.deactivate(); } catch (e) {} optionsMenuTrap = null; }
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
@@ -1261,6 +1508,35 @@ export function initAccessibility() {
                 }
 
                 announceA11y('Extension menu closed.');
+            }
+        }
+    });
+
+    // --- Escape Key Handler for Main Menus (#options, #extensionsMenu) ---
+    $(document).on('keydown', function(e) {
+        if (!isA11yEnabled || e.key !== 'Escape') return;
+
+        // Options Menu
+        const $optionsMenu = $('#options');
+        if ($optionsMenu.is(':visible') && $optionsMenu.find('.options-content').is(':visible')) {
+            // Check if focus is inside options menu
+            if ($(e.target).closest('#options').length) {
+                e.preventDefault();
+                e.stopPropagation();
+                $('#options_button').trigger('click').trigger('focus');
+                return;
+            }
+        }
+
+        // Extensions Menu
+        const $extMenu = $('#extensionsMenu');
+        if ($extMenu.is(':visible')) {
+            // Check if focus is inside extension menu, but NOT inside an inner drawer (handled above)
+            if ($(e.target).closest('#extensionsMenu').length && !$(e.target).closest('.inline-drawer-content').length) {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 $('#extensionsMenuButton').trigger('click').trigger('focus');
+                 return;
             }
         }
     });
