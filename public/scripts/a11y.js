@@ -18,6 +18,7 @@ import { callGenericPopup, POPUP_TYPE, POPUP_RESULT, Popup } from './popup.js';
 
 let isA11yEnabled = true;
 let mainObserver = null;
+let focusRestoreSelector = null;
 
 // ============================================================================
 // DEBUGGING UTILITIES
@@ -48,6 +49,7 @@ function logDebug(location, message, data = null) {
 const buttonSelectors = [
     '.menu_button',
     '.right_menu_button',
+    '.killSwitch',
     '.mes_button',
     '.drawer-icon',
     '.swipe_left',
@@ -425,6 +427,7 @@ let cfgConfigTrap = null;
 let logprobsTrap = null;
 let dataBankTrap = null;
 let tokenCounterTrap = null;
+let exportFormatTrap = null;
 
 let lastFocusedBeforeTrap = null;
 let lastActiveWIUid = null;
@@ -794,14 +797,23 @@ const enhanceSpecificA11y = () => {
     // Inject sort button into Prompt Manager items if missing
     $('.completion_prompt_manager_prompt').each(function () {
         const $li = $(this);
+        const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
+
+        $li.find('.prompt-manager-inspect-action').attr({
+            'role': 'button',
+            'tabindex': '0',
+            'aria-label': 'Inspect: ' + itemName
+        });
+
         const $controls = $li.find('.prompt_manager_prompt_controls');
+        
         if ($controls.length && $controls.find('.a11y-sort-button').length === 0) {
             const $sortBtn = $('<span>', {
                 class: 'a11y-sort-button fa-solid fa-sort fa-xs',
                 role: 'button',
                 tabindex: '0',
                 title: 'Sort',
-                'aria-label': 'Sort Prompt',
+                'aria-label': 'Sort Prompt: ' + itemName,
             });
             $controls.prepend($sortBtn);
 
@@ -812,6 +824,28 @@ const enhanceSpecificA11y = () => {
                 handleSortMenu(this, '.completion_prompt_manager_prompt', '#completion_prompt_manager_list');
             });
         }
+
+        $controls.find('span').not('.a11y-sort-button').each(function () {
+            const $btn = $(this);
+            const isAction = $btn.hasClass('prompt-manager-toggle-action') ||
+                             $btn.hasClass('prompt-manager-edit-action') ||
+                             $btn.hasClass('prompt-manager-detach-action') ||
+                             $btn.hasClass('prompt-manager-delete-action');
+
+            if (isAction) {
+                const title = $btn.attr('title') || 'Action';
+                $btn.attr({
+                    'role': 'button',
+                    'tabindex': '0',
+                    'aria-label': `${title}: ${itemName}`
+                });
+                if ($btn.hasClass('prompt-manager-toggle-action')) {
+                    $btn.attr('aria-pressed', $btn.hasClass('fa-toggle-on') ? 'true' : 'false');
+                }
+            } else {
+                $btn.attr('aria-hidden', 'true');
+            }
+        });
     });
 
     // Quick Replies: Enhanced Logic for Containers and Items
@@ -989,9 +1023,98 @@ const enhanceSpecificA11y = () => {
     // --- 15. General Fixes ---
     $('#rm_extensions_block h3[data-i18n="Extensions"]').attr('id', 'title_extensions');
     $('#extensions_notify_updates').attr('aria-labelledby', 'label-extensions_notify_updates');
-    $('#main_api, #chat_completion_source').each(function() {
-        if (!$(this).attr('aria-labelledby')) {
-            $(this).attr('aria-labelledby', 'title_api');
+
+    // 1. Connection Profile
+    const $connProfile = $('#connection_profiles');
+    const $connProfileHeader = $connProfile.parent().prev('div').find('h3');
+    if ($connProfileHeader.length) {
+        const id = $connProfileHeader.attr('id') || 'title_connection_profiles';
+        $connProfileHeader.attr('id', id);
+        $connProfile.attr('aria-labelledby', id);
+    }
+
+    // 2. Main API Select
+    $('#main_api').attr('aria-labelledby', 'title_api');
+
+    // 3. Chat Completion Source
+    const $chatSource = $('#chat_completion_source');
+    const $chatSourceHeader = $chatSource.prev('h4');
+    if ($chatSourceHeader.length) {
+        const id = $chatSourceHeader.attr('id') || 'title_chat_completion_source';
+        $chatSourceHeader.attr('id', id);
+        $chatSource.attr('aria-labelledby', id);
+    }
+
+    // 4. Fix other broken label references in API panel and generic inputs
+    // This logic is enhanced to handle Reverse Proxy sections, flex containers, and intervening descriptions.
+    $('#rm_api_block select, #rm_api_block input').each(function() {
+        const $el = $(this);
+        let labelledBy = $el.attr('aria-labelledby');
+
+        // 1. Clean up known bad references
+        // 'label-main_api' often incorrectly targets the main API dropdown label for inputs that should have their own.
+        if (labelledBy && labelledBy.includes('label-main_api')) {
+            $el.removeAttr('aria-labelledby');
+            labelledBy = null;
+        }
+
+        // 2. Skip if already validly labelled (and check if the ID actually exists)
+        if (labelledBy && document.getElementById(labelledBy)) return;
+        
+        // Skip specific elements handled elsewhere
+        if ($el.attr('id') === 'main_api') return;
+
+        let $label = null;
+
+        // Strategy A: Explicit label[for] match
+        if ($el.attr('id')) {
+            const $forLabel = $(`label[for="${$el.attr('id')}"]`);
+            if ($forLabel.length) $label = $forLabel;
+        }
+
+        // Strategy B: Look backwards in DOM for a meaningful header/title
+        // This handles structures like: Title -> Description -> Container -> Input
+        if (!$label || !$label.length) {
+            let $current = $el;
+            const $parent = $el.parent();
+            
+            // If wrapped in a utility container (flex, wide, or specific form divs), start traversing from the container
+            // Added 'openai_logit_bias_preset_form' specifically for Reverse Proxy Preset dropdown
+            if ($parent.length && ($parent.hasClass('flex-container') || $parent.hasClass('wide100p') || $parent.hasClass('openai_logit_bias_preset_form') || $parent.is('div'))) {
+                $current = $parent;
+            }
+
+            // Traverse previous siblings
+            let $prev = $current.prev();
+            while ($prev.length) {
+                // If we hit a valid header-like element, use it
+                // Added '.range-block-title' for Reverse Proxy and other drawer inputs
+                if ($prev.is('.range-block-title, h3, h4, h5, label, strong, b')) {
+                    $label = $prev;
+                    break;
+                }
+                
+                // If we hit a description, warning, or drawer toggle, skip it and keep looking up
+                if ($prev.is('.toggle-description, .neutral_warning, small, hr, .inline-drawer-toggle') || $prev.hasClass('notes-link')) {
+                    $prev = $prev.prev();
+                } else {
+                    // If we hit something else (like another input field container), stop to prevent grabbing the wrong label
+                    break;
+                }
+            }
+        }
+
+        // 3. Apply the found label
+        if ($label && $label.length) {
+            // Safety check: Don't link to a warning box as a label
+            if ($label.closest('.neutral_warning').length) return;
+
+            let labelId = $label.attr('id');
+            if (!labelId) {
+                labelId = 'lbl-' + ($el.attr('id') || Math.random().toString(36).substr(2, 5));
+                $label.attr('id', labelId);
+            }
+            $el.attr('aria-labelledby', labelId);
         }
     });
 
@@ -1038,14 +1161,14 @@ const enhanceSpecificA11y = () => {
         }
     });
 
-    // Panel Pin Button
-    const $panelPin = $('#rm_button_panel_pin');
-    if ($panelPin.length && !$panelPin.attr('aria-label')) {
-        const pinTitle = $panelPin.closest('#rm_button_panel_pin_div').attr('title');
-        if (pinTitle) {
-            $panelPin.attr('aria-label', pinTitle);
+    // Panel Pin Buttons (Left and Right)
+    $('#lm_button_panel_pin_div, #rm_button_panel_pin_div').each(function() {
+        const $container = $(this);
+        const title = $container.attr('title');
+        if (title) {
+            $container.find('.right_menu_button').attr('aria-label', title);
         }
-    }
+    });
 
     // --- 17. Character Edit Panel (Avatar Controls) ---
     // Includes buttons like Advanced Definitions, World Info, etc.
@@ -1199,6 +1322,20 @@ const enhanceSpecificA11y = () => {
             .attr({ 'role': 'button', 'tabindex': '0' });
     }
 
+    // --- 20.c Export Format Popup ---
+    const $exportFormatPopup = $('#export_format_popup');
+    if ($exportFormatPopup.length) {
+        $exportFormatPopup.attr({
+            'role': 'menu',
+            'aria-label': 'Export Format Options',
+        });
+        $exportFormatPopup.find('.export_format').attr({
+            'role': 'menuitem',
+            'tabindex': '0',
+            'aria-label': function() { return $(this).text().trim() + ' format'; }
+        });
+    }
+
     // --- 21. Left Menu (#options) & Magic Wand Popup (#extensionsMenu) ---
     const $optionsBtn = $('#options_button');
     const $optionsMenu = $('#options');
@@ -1249,6 +1386,19 @@ const enhanceSpecificA11y = () => {
             'role': 'menuitem',
             'tabindex': '0',
         });
+    }
+
+    if (focusRestoreSelector) {
+        const $target = $(focusRestoreSelector);
+        if ($target.length && $target.is(':visible')) {
+            setTimeout(() => {
+                if (document.activeElement === document.body) {
+                    $target.trigger('focus');
+                    logDebug('FocusRestore', `Restored focus to: ${focusRestoreSelector}`);
+                }
+                focusRestoreSelector = null;
+            }, 50);
+        }
     }
 };
 
@@ -1495,6 +1645,27 @@ const managePopupTraps = () => {
         dataBankTrap = null;
     }
 
+    // L. Export Format Popup
+    const $exportFormat = $('#export_format_popup');
+    if ($exportFormat.is(':visible')) {
+        if (!exportFormatTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            exportFormatTrap = focusTrap.createFocusTrap('#export_format_popup', {
+                allowOutsideClick: true,
+                clickOutsideDeactivates: true,
+                initialFocus: false,
+                escapeDeactivates: false, // Handled by global listener
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { exportFormatTrap.activate(); } catch (e) {}
+        }
+    } else if (exportFormatTrap) {
+        try { exportFormatTrap.deactivate(); } catch (e) {}
+        exportFormatTrap = null;
+    }
+
     // K. Token Counter
     const $tokenCounter = $('dialog[open] h3[data-i18n="Token Counter"]').closest('dialog');
     if ($tokenCounter.length && $tokenCounter.is(':visible')) {
@@ -1557,6 +1728,7 @@ function cleanupA11y() {
     if (logprobsTrap) { try { logprobsTrap.deactivate(); } catch (e) {} logprobsTrap = null; }
     if (dataBankTrap) { try { dataBankTrap.deactivate(); } catch (e) {} dataBankTrap = null; }
     if (tokenCounterTrap) { try { tokenCounterTrap.deactivate(); } catch (e) {} tokenCounterTrap = null; }
+    if (exportFormatTrap) { try { exportFormatTrap.deactivate(); } catch (e) {} exportFormatTrap = null; }
 
     $('[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]')
         .removeAttr('role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby');
@@ -1652,13 +1824,56 @@ export function initAccessibility() {
     });
 
     // Explicitly added #options_button and #extensionsMenuButton to ensure they work with Spacebar
-    $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle, #options_button, #extensionsMenuButton', function (e) {
+    $(document).on('keydown', '[role="button"][tabindex="0"], [role="menuitem"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle, #options_button, #extensionsMenuButton', function (e) {
         if (!isA11yEnabled) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             if (this.tagName !== 'BUTTON') {
                 $(this).trigger('click');
             }
+        }
+    });
+
+    // --- Smart Focus Preservation Strategy ---
+    $(document).on('mousedown click', '.killSwitch, .prompt-manager-toggle-action, .disable_regex, .enable_scoped', function() {
+        if (!isA11yEnabled) return;
+        const $el = $(this);
+        let selector = null;
+
+        // 1. World Info (.killSwitch)
+        const $wiEntry = $el.closest('.world_entry');
+        if ($wiEntry.length) {
+            const uid = $wiEntry.attr('uid');
+            if (uid) selector = `.world_entry[uid="${uid}"] .killSwitch`;
+        }
+
+        // 2. Prompt Manager (.prompt-manager-toggle-action)
+        if (!selector) {
+            const $pmEntry = $el.closest('.completion_prompt_manager_prompt');
+            if ($pmEntry.length) {
+                const id = $pmEntry.attr('data-pm-identifier');
+                if (id) selector = `.completion_prompt_manager_prompt[data-pm-identifier="${id}"] .prompt-manager-toggle-action`;
+            }
+        }
+
+        // 3. Regex Scripts (.disable_regex - inside label)
+        if (!selector) {
+            const $regexEntry = $el.closest('.regex-script-label');
+            if ($regexEntry.length) {
+                const id = $regexEntry.attr('id'); // Regex entries usually have UUIDs as ID
+                if (id) selector = `#${id} .disable_regex`;
+            }
+        }
+
+        // 4. Scoped/Preset Regex Toggles (.enable_scoped)
+        if (!selector && $el.hasClass('enable_scoped')) {
+             const id = $el.attr('id');
+             if (id) selector = `#${id}`;
+        }
+
+        if (selector) {
+            focusRestoreSelector = selector;
+            // console.log('[A11y] Saving focus target:', selector);
         }
     });
 
@@ -1776,6 +1991,15 @@ export function initAccessibility() {
              e.stopPropagation();
              $('#logprobsViewerClose').trigger('click');
              return;
+        }
+
+        // Export Format Popup
+        const $exportFormat = $('#export_format_popup');
+        if ($exportFormat.is(':visible')) {
+            e.preventDefault();
+            e.stopPropagation();
+            $exportFormat.hide();
+            return;
         }
     });
 
