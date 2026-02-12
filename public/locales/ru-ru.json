@@ -1902,7 +1902,7 @@
     "Save": "Сохранить",
     "Chat Lorebook": "Лорбук для чата",
     "chat_world_template_txt": "Выбранный мир будет привязан к этому чату. Будет работать наряду с глобальным лорбуком и лором персонажа.",
-    "world_button_title": "Лор персонажа\n\nНажмите, чтобы загрузить\nShift + ЛКМ, чтобы открыть диалог привязки мира",
+    "Character Lore Shift+Click to open the lorebook": "Лор персонажа\nShift + ЛКМ чтобы открыть лорбук",
     "No auxillary Lorebooks set. Click here to select.": "Вспомогательный лорбук не выбран. Нажмите, чтобы выбрать.",
     "ext_regex_user_input_desc": "Отправленные вами сообщения.",
     "ext_regex_ai_input_desc": "Полученные от API ответы.",

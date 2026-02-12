@@ -5746,7 +5746,7 @@ export function openWorldInfoEditor(worldName) {
 export async function assignLorebookToChat(event) {
     const selectedName = chat_metadata[METADATA_KEY];
 
-    if (selectedName && event.shiftKey) {
+    if (selectedName && (event.shiftKey || event.altKey)) {
         openWorldInfoEditor(selectedName);
         return;
     }
@@ -5779,7 +5779,23 @@ export async function assignLorebookToChat(event) {
         saveMetadata();
     });
 
+    let openAfterClose = null;
+    template.find('.open_lorebook_button').on('click', function () {
+        const selectedWorld = String(worldSelect.val());
+        if (selectedWorld) {
+            openAfterClose = selectedWorld;
+            const dialog = $(this).closest('.popup')[0];
+            const popupId = dialog?.getAttribute('data-id');
+            const popup = Popup.util.popups.find(x => x.id === popupId);
+            popup?.completeAffirmative();
+        }
+    });
+
     await callGenericPopup(template, POPUP_TYPE.TEXT);
+
+    if (openAfterClose) {
+        openWorldInfoEditor(openAfterClose);
+    }
 }
 
 /**
@@ -6117,16 +6133,12 @@ export function initWorldInfo() {
         }
 
         const worldName = characters[chid]?.data?.extensions?.world;
-        const hasEmbed = checkEmbeddedWorld(chid);
-        if (worldName && world_names.includes(worldName) && !event.shiftKey) {
+        if ((event.shiftKey || event.altKey) && worldName && world_names.includes(worldName)) {
             openWorldInfoEditor(worldName);
-        } else if (hasEmbed && !event.shiftKey) {
-            await importEmbeddedWorldInfo();
-            saveCharacterDebounced();
+            return;
         }
-        else {
-            openSetWorldMenu();
-        }
+
+        openSetWorldMenu();
     });
 
     const debouncedWorldInfoSearch = debounce((searchQuery) => {

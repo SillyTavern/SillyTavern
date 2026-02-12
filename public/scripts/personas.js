@@ -1181,7 +1181,7 @@ async function onPersonaLoreButtonClick(event) {
         return;
     }
 
-    if (event.shiftKey && selectedLorebook) {
+    if ((event.shiftKey || event.altKey) && selectedLorebook) {
         openWorldInfoEditor(selectedLorebook);
         return;
     }
@@ -1211,7 +1211,23 @@ async function onPersonaLoreButtonClick(event) {
         saveSettingsDebounced();
     });
 
+    let openAfterClose = null;
+    template.find('.open_lorebook_button').on('click', function () {
+        const selectedWorld = String(worldSelect.val());
+        if (selectedWorld) {
+            openAfterClose = selectedWorld;
+            const dialog = $(this).closest('.popup')[0];
+            const popupId = dialog?.getAttribute('data-id');
+            const popup = Popup.util.popups.find(x => x.id === popupId);
+            popup?.completeAffirmative();
+        }
+    });
+
     await callGenericPopup(template, POPUP_TYPE.TEXT);
+
+    if (openAfterClose) {
+        openWorldInfoEditor(openAfterClose);
+    }
 }
 
 function onPersonaDescriptionPositionInput() {

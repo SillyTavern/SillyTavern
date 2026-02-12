@@ -1028,7 +1028,6 @@
     "Click to select a new avatar for this character": "单击以为此角色选择新的头像",
     "Add to Favorites": "添加到收藏夹",
     "Advanced Definition": "高级定义",
-    "world_button_title": "角色世界书\n\n单击加载\nShift+单击打开“链接到世界信息”弹出窗口",
     "Chat Lore Shift+Click to open the lorebook": "聊天世界书\nShift+单击打开世界书",
     "Connected Personas": "绑定的用户设定",
     "Export and Download": "导出并下载",
@@ -2330,5 +2329,6 @@
     "Delete chat": "删除聊天",
     "Title/Memo": "标题（备忘）",
     "Strategy": "触发策略",
-    "Trigger %": "触发概率%"
+    "Trigger %": "触发概率%",
+    "Character Lore Shift+Click to open the lorebook": "角色世界书\nShift+单击打开世界书"
 }

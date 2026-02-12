@@ -49,6 +49,7 @@ import {
     initWorldInfo,
     charUpdatePrimaryWorld,
     charSetAuxWorlds,
+    openWorldInfoEditor,
 } from './scripts/world-info.js';
 
 import {
@@ -9324,12 +9325,24 @@ async function openCharacterWorldPopup() {
         extrasSelect.append(new Option(item, String(i), isSelected, isSelected));
     });
 
+    let openAfterClose = null;
+
     const popup = new Popup(template, POPUP_TYPE.TEXT, '', {
         onOpen: function (popup) {
             const popupDialog = $(popup.dlg);
 
             primarySelect.on('change', handlePrimaryWorldSelect);
             extrasSelect.on('change', handleExtrasWorldSelect);
+
+            template.find('.open_lorebook_button').on('click', function () {
+                const selectedValue = String(primarySelect.val());
+                const worldIndex = selectedValue !== '' ? Number(selectedValue) : NaN;
+                const worldName = !isNaN(worldIndex) ? world_names[worldIndex] : '';
+                if (worldName) {
+                    openAfterClose = worldName;
+                    popup.completeAffirmative();
+                }
+            });
 
             // Not needed on mobile.
             if (!isMobile()) {
@@ -9345,6 +9358,10 @@ async function openCharacterWorldPopup() {
     });
 
     await popup.show();
+
+    if (openAfterClose) {
+        openWorldInfoEditor(openAfterClose);
+    }
 }
 
 function openAlternateGreetings() {

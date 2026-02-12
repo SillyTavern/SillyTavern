@@ -1541,7 +1541,7 @@
     "When enabled, nodes that have swipes splitting off of them will appear subtly larger, in addition to having the double border.": "啟用後，具分支滑動的節點將顯示雙重邊框，還會略微放大。",
     "WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized": "世界資訊條目狀態：\\r🔵 恆定\\r🟢 正常\\r🔗 向量化",
     "Width of a node, in pixels at zoom level 1.0.": "縮放等級為 1.0 時，節點的像素寬度。",
-    "world_button_title": "角色背景設定\n「Shift+點選」可開啟「連結至世界資訊」彈窗",
+    "Character Lore Shift+Click to open the lorebook": "角色背景設定\n「Shift+點選」可開啟知識書",
     "# of Beams": "# of Beams",
     "Additional Parameters": "其他參數",
     "All": "全部",
