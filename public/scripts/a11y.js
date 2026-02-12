@@ -479,16 +479,31 @@ const enhanceSpecificA11y = () => {
     $('#chat .mes').each(function () {
         const $mes = $(this);
         if ($mes.hasClass('a11y-refactored')) return;
-        const charName = $mes.find('.name_text').text() || 'System';
-        const isUser = $mes.attr('is_user') === 'true';
-        const textContent = $mes.find('.mes_text').text().trim();
 
+        const $nameText = $mes.find('.name_text');
+        const charName = $nameText.text() || 'System';
+        const isUser = $mes.attr('is_user') === 'true';
+        const timestamp = $mes.find('.timestamp').text().trim();
+
+        // Discord Pattern: Only the last message is focusable via Tab by default.
+        // Others are reached via Arrow Keys (Roving Tabindex).
+        const isLast = $mes.is(':last-child');
         $mes.attr({
             'role': 'article',
-            'aria-label': `${isUser ? 'You' : charName}: ${textContent}`,
-            'tabindex': '0',
+            'tabindex': isLast ? '0' : '-1',
         }).addClass('a11y-refactored');
 
+        // Character name and timestamp as H3 Heading
+        // Allows screen reader users to jump between messages using 'H' or 'Shift+H'
+        if ($nameText.length) {
+            $nameText.attr({
+                'role': 'heading',
+                'aria-level': '3',
+                'aria-label': `${isUser ? 'You' : charName} ${timestamp ? ', ' + timestamp : ''}`,
+            });
+        }
+
+        // Hide decorative elements from screen readers
         $mes.find('.mesIDDisplay, .extraMesButtons, .drag-handle, .swipes-counter, .mes_timer, .timestamp').attr('aria-hidden', 'true');
     });
 
@@ -1600,6 +1615,53 @@ export function initAccessibility() {
     });
 
     // 2. Global Event Bindings
+    // Manages focus movement within the chat list.
+    const moveMessageFocus = ($current, $target) => {
+        if ($target.length) {
+            $current.attr('tabindex', '-1');
+            $target.attr('tabindex', '0').trigger('focus');
+            $target[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    };
+
+    $(document).on('keydown', '#chat .mes', function (e) {
+        if (!isA11yEnabled) return;
+
+        const $this = $(this);
+        const $allMessages = $('#chat .mes:visible');
+        const index = $allMessages.index($this);
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (index < $allMessages.length - 1) {
+                    moveMessageFocus($this, $allMessages.eq(index + 1));
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                if (index > 0) {
+                    moveMessageFocus($this, $allMessages.eq(index - 1));
+                }
+                break;
+            case 'Home':
+                e.preventDefault();
+                moveMessageFocus($this, $allMessages.first());
+                announceA11y('Jumped to first message');
+                break;
+            case 'End':
+                e.preventDefault();
+                moveMessageFocus($this, $allMessages.last());
+                announceA11y('Jumped to latest message');
+                break;
+            case 'Escape':
+                e.preventDefault();
+                $('#send_textarea').trigger('focus');
+                announceA11y('Returned to text input');
+                break;
+        }
+    });
+
     // Explicitly added #options_button and #extensionsMenuButton to ensure they work with Spacebar
     $(document).on('keydown', '[role="button"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle, #options_button, #extensionsMenuButton', function (e) {
         if (!isA11yEnabled) return;
@@ -1754,6 +1816,11 @@ export function initAccessibility() {
         isAiGenerating = false;
         const msg = /** @type {any} */ (chat[mid]);
         if (msg) announceA11y(`AI has replied: ${msg.mes}`);
+
+        // Update roving tabindex: reset all and set the new latest message as the Tab target
+        $('#chat .mes').attr('tabindex', '-1');
+        $('#chat .mes').last().attr('tabindex', '0');
+
         $('#send_textarea').trigger('focus');
     });
 
