@@ -1181,7 +1181,7 @@ async function onPersonaLoreButtonClick(event) {
         return;
     }
 
-    if (event.altKey && selectedLorebook) {
+    if (event.shiftKey && selectedLorebook) {
         openWorldInfoEditor(selectedLorebook);
         return;
     }
