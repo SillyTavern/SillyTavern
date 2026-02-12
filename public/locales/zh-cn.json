@@ -291,7 +291,7 @@
     "openai_reasoning_effort_maximum": "极高",
     "OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.": "OpenAI式选项：低、中、高。极低等于低，极高等于高。选择自动，则不传入推理强度参数。",
     "Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.": "将最大回复空间的一部分分配给思维链（极低：1024词符，低：10%，中：25%，高：50%，极高：95%），最低1024词符。选择“自动”不会请求模型思维链。",
-    "Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.": "Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.",
+    "Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.": "设置动态推理强度等级（3 Flash / 3 Pro）。两者都支持高和低，但极低和中只有 3 Flash 支持。自动会让模型自己选择。",
     "Allocates a portion of the response length for thinking (Flash 2.5/Pro 2.5) (min: 0/128 tokens, low: 10%, medium: 25%, high: 50%, max: 24576/32768 tokens). Auto lets the model decide.": "将最大回复空间的一部分分配给思维链（仅 2.5 Flash / 2.5 Pro 模型）（极低：0/128词符，低：10%，中：25%，高：50%，极高：24576/32768词符），最低1024词符。选择“自动”会让模型自己决定。",
     "Verbosity": "长度",
     "openai_verbosity_auto": "自动",
