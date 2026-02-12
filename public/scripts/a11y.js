@@ -485,7 +485,6 @@ const enhanceSpecificA11y = () => {
         const isUser = $mes.attr('is_user') === 'true';
         const timestamp = $mes.find('.timestamp').text().trim();
 
-        // Discord Pattern: Only the last message is focusable via Tab by default.
         // Others are reached via Arrow Keys (Roving Tabindex).
         const isLast = $mes.is(':last-child');
         $mes.attr({
@@ -1644,16 +1643,6 @@ export function initAccessibility() {
                     moveMessageFocus($this, $allMessages.eq(index - 1));
                 }
                 break;
-            case 'Home':
-                e.preventDefault();
-                moveMessageFocus($this, $allMessages.first());
-                announceA11y('Jumped to first message');
-                break;
-            case 'End':
-                e.preventDefault();
-                moveMessageFocus($this, $allMessages.last());
-                announceA11y('Jumped to latest message');
-                break;
             case 'Escape':
                 e.preventDefault();
                 $('#send_textarea').trigger('focus');
@@ -1859,6 +1848,50 @@ export function initAccessibility() {
                 $popup.find('.popup-button-ok').trigger('focus');
             }
             announceA11y('Exited text editor.');
+        }
+    });
+
+    // --- Setup UI Landmarks ---
+    const setupLandmarks = () => {
+        $('#top-settings-holder').attr({'role': 'banner', 'aria-label': 'Main Navigation'});
+        $('#left-nav-panel').attr({'role': 'region', 'aria-label': 'AI Configuration'});
+        $('#right-nav-panel').attr({'role': 'region', 'aria-label': 'Character Management'});
+        $('#sheld').attr({'role': 'main', 'aria-label': 'Chat Log'});
+        $('#send_form').attr({'role': 'form', 'aria-label': 'Message Input'});
+    };
+    setupLandmarks();
+
+    // --- Smart ESC Navigation Logic ---
+    $(document).on('keydown', function(e) {
+        if (!isA11yEnabled || e.key !== 'Escape') return;
+
+        if ($(e.target).is('#send_textarea')) {
+            e.preventDefault();
+            $('#leftNavDrawerIcon').trigger('focus');
+            announceA11y('Focus moved to Navigation Bar');
+            return;
+        }
+
+        if ($(e.target).closest('#left-nav-panel').length) {
+            if ($('#lm_button_panel_pin').is(':checked')) {
+                e.preventDefault();
+                $('#send_textarea').trigger('focus');
+                announceA11y('Focus moved to Chat Input');
+            } else {
+                setTimeout(() => $('#leftNavDrawerIcon').trigger('focus'), 50);
+            }
+            return;
+        }
+
+        if ($(e.target).closest('#right-nav-panel').length) {
+            if ($('#rm_button_panel_pin').is(':checked')) {
+                e.preventDefault();
+                $('#send_textarea').trigger('focus');
+                announceA11y('Focus moved to Chat Input');
+            } else {
+                setTimeout(() => $('#rightNavDrawerIcon').trigger('focus'), 50);
+            }
+            return;
         }
     });
 
