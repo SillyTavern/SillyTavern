@@ -526,11 +526,11 @@ async function activateExtensions() {
         if (meetsModuleRequirements && meetsExtensionDeps && meetsClientMinimumVersion && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
-                const localePromise = addExtensionLocale(name, manifest);
+                await addExtensionLocale(name, manifest);
                 const scriptPromise = addExtensionScript(name, manifest);
                 const stylePromise = addExtensionStyle(name, manifest);
 
-                await Promise.all([localePromise, scriptPromise, stylePromise]);
+                await Promise.all([scriptPromise, stylePromise]);
                 activeExtensions.add(name);
             } catch (error) {
                 console.error('Could not activate extension', name, error);
@@ -553,8 +553,10 @@ async function activateExtensions() {
         }
     };
 
-    // Load independent extensions in parallel
-    await Promise.allSettled(independentExtensions.map(loadExtension));
+    // Load independent extensions sequentially
+    for (const entry of independentExtensions) {
+        await loadExtension(entry);
+    }
 
     // Load dependent extensions sequentially to respect potential order (or could be parallelized if we resolve dependency graph)
     // For now, sequential safe approach for dependents
