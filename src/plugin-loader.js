@@ -69,7 +69,7 @@ class PluginCache {
         const cacheKey = this.generateKey(key);
         this.cache.set(cacheKey, {
             value,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         });
     }
 
