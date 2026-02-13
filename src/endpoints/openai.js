@@ -505,7 +505,8 @@ router.post('/nanogpt/models/embedding', async (request, response) => {
         const result = await fetch('https://nano-gpt.com/api/v1/embedding-models', {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${key}`,
+                'Authorization': `Bearer ${key}`,
+                'Accept-Encoding': 'identity',
             },
         });
 
