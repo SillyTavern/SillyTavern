@@ -71,6 +71,7 @@ const settings = {
     webllm_model: '',
     google_model: 'text-embedding-005',
     chutes_model: 'chutes-qwen-qwen3-embedding-8b',
+    nanogpt_model: 'text-embedding-3-small',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -834,6 +835,9 @@ function getVectorsRequestBody(args = {}) {
         case 'chutes':
             body.model = extension_settings.vectors.chutes_model;
             break;
+        case 'nanogpt':
+            body.model = extension_settings.vectors.nanogpt_model;
+            break;
         default:
             break;
     }
@@ -919,6 +923,7 @@ function throwIfSourceInvalid() {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'electronhub' && !secret_state[SECRET_KEYS.ELECTRONHUB] ||
         settings.source === 'chutes' && !secret_state[SECRET_KEYS.CHUTES] ||
+        settings.source === 'nanogpt' && !secret_state[SECRET_KEYS.NANOGPT] ||
         settings.source === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'vertexai' && !secret_state[SECRET_KEYS.VERTEXAI] && !secret_state[SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT] ||
@@ -1134,6 +1139,7 @@ function toggleSettings() {
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
     $('#chutes_vectorsModel').toggle(settings.source === 'chutes');
+    $('#nanogpt_vectorsModel').toggle(settings.source === 'nanogpt');
     $('#openrouter_vectorsModel').toggle(settings.source === 'openrouter');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
@@ -1156,6 +1162,9 @@ function toggleSettings() {
             break;
         case 'chutes':
             loadChutesModels();
+            break;
+        case 'nanogpt':
+            loadNanoGPTModels();
             break;
     }
 }
@@ -1192,6 +1201,40 @@ function populateChutesModelSelect(models) {
         settings.chutes_model = models[0].slug;
     }
     $('#vectors_chutes_model').val(settings.chutes_model);
+}
+
+async function loadNanoGPTModels() {
+    try {
+        const response = await fetch('/api/openai/nanogpt/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateNanoGPTModelSelect(models);
+    } catch (err) {
+        console.warn('NanoGPT models fetch failed', err);
+        populateNanoGPTModelSelect([]);
+    }
+}
+
+function populateNanoGPTModelSelect(models) {
+    const select = $('#vectors_nanogpt_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.name || m.id;
+        select.append(option);
+    }
+    if (!settings.nanogpt_model && models.length) {
+        settings.nanogpt_model = models[0].id;
+    }
+    $('#vectors_nanogpt_model').val(settings.nanogpt_model);
 }
 
 async function loadElectronHubModels() {
@@ -1676,6 +1719,11 @@ jQuery(async () => {
     });
     $('#vectors_chutes_model').val(settings.chutes_model).on('change', () => {
         settings.chutes_model = String($('#vectors_chutes_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_nanogpt_model').val(settings.nanogpt_model).on('change', () => {
+        settings.nanogpt_model = String($('#vectors_nanogpt_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
