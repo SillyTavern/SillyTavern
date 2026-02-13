@@ -433,14 +433,50 @@ let lastFocusedBeforeTrap = null;
 let lastActiveWIUid = null;
 let isAiGenerating = false;
 
+/**
+ * Announces text to screen readers using an aria-live region.
+ * Creates the element dynamically if it doesn't exist.
+ * @param {string} text - The text to announce.
+ */
 export function announceA11y(text) {
-    const a11yAnnouncer = document.getElementById('a11y-announcer');
-    if (a11yAnnouncer) {
-        a11yAnnouncer.textContent = '';
-        setTimeout(() => {
-            a11yAnnouncer.textContent = text;
-        }, 50);
+    // 1. Debug Log: Check console to see if function is called
+    console.log(`%c[A11y Announce] ${text}`, 'background: #4caf50; color: #fff; padding: 2px 5px; border-radius: 3px;');
+
+    // 2. Find or Create the Announcer Element
+    let a11yAnnouncer = document.getElementById('a11y-announcer');
+
+    if (!a11yAnnouncer) {
+        console.log('[A11y] Creating missing announcer element...');
+        a11yAnnouncer = document.createElement('div');
+        a11yAnnouncer.id = 'a11y-announcer';
+        
+        // Essential ARIA attributes for screen readers
+        a11yAnnouncer.setAttribute('aria-live', 'polite');
+        a11yAnnouncer.setAttribute('aria-atomic', 'true');
+        
+        // Visually hidden styles (but accessible to screen readers)
+        // Do NOT use display:none or visibility:hidden
+        Object.assign(a11yAnnouncer.style, {
+            position: 'absolute',
+            width: '1px',
+            height: '1px',
+            padding: '0',
+            margin: '-1px',
+            overflow: 'hidden',
+            clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap',
+            border: '0'
+        });
+
+        document.body.appendChild(a11yAnnouncer);
     }
+
+    // 3. Update Content
+    // Briefly clear content to ensure repeated identical messages are announced
+    a11yAnnouncer.textContent = '';
+    setTimeout(() => {
+        a11yAnnouncer.textContent = text;
+    }, 50);
 }
 
 export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
@@ -817,7 +853,13 @@ const enhanceSpecificA11y = () => {
             });
             $controls.prepend($sortBtn);
 
-            $sortBtn.on('click keydown', function(e) {
+            $sortBtn.on('click keydown focus', function(e) {
+                if (e.type === 'focus') {
+                    const idx = $(this).closest('.completion_prompt_manager_prompt').index() + 1;
+                    const tot = $('#completion_prompt_manager_list').children('.completion_prompt_manager_prompt').length;
+                    announceA11y(`Sort ${itemName}. Position ${idx} of ${tot}.`);
+                    return;
+                }
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
                 e.stopPropagation();
@@ -909,7 +951,13 @@ const enhanceSpecificA11y = () => {
                     $li.append($sortBtn);
                 }
 
-                $sortBtn.on('click keydown', function(e) {
+                $sortBtn.on('click keydown focus', function(e) {
+                    if (e.type === 'focus') {
+                        const idx = $(this).closest('.qr--item').index() + 1;
+                        const tot = $(container.id + '-setList').children('.qr--item').length;
+                        announceA11y(`Sort set: ${setName}. Position ${idx} of ${tot}.`);
+                        return;
+                    }
                     if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                     e.preventDefault();
                     e.stopPropagation();
@@ -938,7 +986,13 @@ const enhanceSpecificA11y = () => {
             });
             $targetContainer.append($sortBtn);
 
-            $sortBtn.on('click keydown', function(e) {
+            $sortBtn.on('click keydown focus', function(e) {
+                if (e.type === 'focus') {
+                    const idx = $(this).closest('.qr--set-item').index() + 1;
+                    const tot = $(this).closest('.qr--set-qrListContents').children('.qr--set-item').length;
+                    announceA11y(`Sort reply: ${replyLabel}. Position ${idx} of ${tot}.`);
+                    return;
+                }
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
                 e.stopPropagation();
@@ -965,7 +1019,14 @@ const enhanceSpecificA11y = () => {
 
             $btnContainer.prepend($sortBtn);
 
-            $sortBtn.on('click keydown', function(e) {
+            $sortBtn.on('click keydown focus', function(e) {
+                if (e.type === 'focus') {
+                    const idx = $(this).closest('.regex-script-label').index() + 1;
+                    const tot = $('.regex-script-container').children('.regex-script-label').length;
+                    const scriptName = $(this).closest('.regex-script-label').find('.regex_script_name').text() || 'Script';
+                    announceA11y(`Sort ${scriptName}. Position ${idx} of ${tot}.`);
+                    return;
+                }
                 if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                 e.preventDefault();
                 e.stopPropagation();
