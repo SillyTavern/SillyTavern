@@ -15,7 +15,7 @@ import { createThumbnail, isValidUrl } from '../utils.js';
  */
 export async function getMultimodalCaption(base64Img, prompt) {
     const useReverseProxy =
-        (['openai', 'anthropic', 'google', 'mistral', 'vertexai', 'xai'].includes(extension_settings.caption.multimodal_api))
+        (['openai', 'anthropic', 'google', 'mistral', 'vertexai', 'xai', 'zai', 'moonshot'].includes(extension_settings.caption.multimodal_api))
         && extension_settings.caption.allow_reverse_proxy
         && oai_settings.reverse_proxy
         && isValidUrl(oai_settings.reverse_proxy);
@@ -108,8 +108,15 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     if (isCustom) {
+        if (extension_settings.caption.multimodal_model === 'custom_current') {
+            requestBody.model = oai_settings.custom_model || '';
+        }
+
+        if (extension_settings.caption.multimodal_model === 'custom_custom') {
+            requestBody.model = extension_settings.caption.custom_model || '';
+        }
+
         requestBody.server_url = oai_settings.custom_url;
-        requestBody.model = oai_settings.custom_model || 'gpt-4-turbo';
         requestBody.custom_include_headers = oai_settings.custom_include_headers;
         requestBody.custom_include_body = oai_settings.custom_include_body;
         requestBody.custom_exclude_body = oai_settings.custom_exclude_body;
@@ -245,6 +252,10 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Custom API URL is not set.');
     }
 
+    if (multimodalApi === 'custom' && multimodalModel === 'custom_custom' && !extension_settings.caption.custom_model) {
+        throw new Error('Custom OpenAI-compatible Model ID is not set.');
+    }
+
     if (multimodalApi === 'aimlapi' && !secret_state[SECRET_KEYS.AIMLAPI]) {
         throw new Error('AI/ML API key is not set.');
     }
@@ -267,6 +278,10 @@ function throwIfInvalidModel(useReverseProxy) {
 
     if (multimodalApi === 'zai' && !secret_state[SECRET_KEYS.ZAI]) {
         throw new Error('Z.AI API key is not set.');
+    }
+
+    if (multimodalApi === 'pollinations' && !secret_state[SECRET_KEYS.POLLINATIONS]) {
+        throw new Error('Pollinations API key is not set.');
     }
 }
 

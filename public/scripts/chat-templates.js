@@ -148,8 +148,8 @@ export async function bindModelTemplates(power_user, online_status) {
         ?? power_user.model_templates_mappings[chatTemplateHash]
         ?? {};
     const bindingsMatch = bindModelTemplates
-        && power_user.context.preset == bindModelTemplates['context']
-        && (!power_user.instruct.enabled || power_user.instruct.preset === bindModelTemplates['instruct']);
+        && power_user.context.preset == bindModelTemplates.context
+        && (!power_user.instruct.enabled || power_user.instruct.preset === bindModelTemplates.instruct);
 
     const bound = [];
 
@@ -160,21 +160,21 @@ export async function bindModelTemplates(power_user, online_status) {
         toastr.info(t`Context preset for ${online_status} will use defaults when loaded the next time.`);
     } else {
         if (power_user.context_derived) {
-            if (power_user.context.preset !== bindModelTemplates['context']) {
+            if (power_user.context.preset !== bindModelTemplates.context) {
                 bound.push(`${power_user.context.preset} context preset`);
                 // toastr.info(`Bound ${power_user.context.preset} preset to currently loaded model and all models that share its chat template.`);
 
                 // map current preset to current chat template hash
-                bindModelTemplates['context'] = power_user.context.preset;
+                bindModelTemplates.context = power_user.context.preset;
             }
         } else {
             toastr.warning(t`Note: Context derivation is disabled. Not including context preset.`);
         }
         if (power_user.instruct.enabled) {
             if (power_user.instruct_derived) {
-                if (power_user.instruct.preset !== bindModelTemplates['instruct']) {
+                if (power_user.instruct.preset !== bindModelTemplates.instruct) {
                     bound.push(`${power_user.instruct.preset} instruct preset`);
-                    bindModelTemplates['instruct'] = power_user.instruct.preset;
+                    bindModelTemplates.instruct = power_user.instruct.preset;
                 }
             } else {
                 toastr.warning(t`Note: Instruct derivation is disabled. Not including instruct preset.`);

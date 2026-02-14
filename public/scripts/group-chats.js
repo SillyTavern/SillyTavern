@@ -18,7 +18,6 @@ import {
     paginationDropdownChangeHandler,
     waitUntilCondition,
     uuidv4,
-    humanFileSize,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -81,7 +80,7 @@ import {
     chatElement,
     ensureMessageMediaIsArray,
 } from '../script.js';
-import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -135,6 +134,7 @@ export const group_generation_mode = {
 export const DEFAULT_AUTO_MODE_DELAY = 5;
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
+export const groupMembersFilter = new FilterHelper(debounce(printGroupMembers, debounce_timeout.quick));
 let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
 /** @type {Map<string, number>} */
@@ -274,8 +274,8 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     // Add integrity slug if missing
-    if (!metadata['integrity']) {
-        metadata['integrity'] = uuidv4();
+    if (!metadata.integrity) {
+        metadata.integrity = uuidv4();
     }
 
     await loadItemizedPrompts(getCurrentChatId());
@@ -559,8 +559,8 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
         return values.filter(x => x.length).join('\n');
     }
 
-    const scenarioOverride = String(chat_metadata['scenario'] || '');
-    const mesExamplesOverride = String(chat_metadata['mes_example'] || '');
+    const scenarioOverride = String(chat_metadata.scenario || '');
+    const mesExamplesOverride = String(chat_metadata.mes_example || '');
 
     return createLazyFields({
         description: () => collectField('Description', c => c.description),
@@ -593,16 +593,16 @@ async function getFirstCharacterMessage(character) {
     }
 
     const mes = {};
-    mes['is_user'] = false;
-    mes['is_system'] = false;
-    mes['name'] = character.name;
-    mes['send_date'] = getMessageTimeStamp();
-    mes['original_avatar'] = character.avatar;
-    mes['extra'] = { 'gen_id': Date.now() * Math.random() * 1000000 };
-    mes['mes'] = messageText
+    mes.is_user = false;
+    mes.is_system = false;
+    mes.name = character.name;
+    mes.send_date = getMessageTimeStamp();
+    mes.original_avatar = character.avatar;
+    mes.extra = { 'gen_id': Date.now() * Math.random() * 1000000 };
+    mes.mes = messageText
         ? substituteParams(messageText.trim(), { name2Override: character.name })
         : '';
-    mes['force_avatar'] =
+    mes.force_avatar =
         character.avatar != 'none'
             ? getThumbnailUrl('avatar', character.avatar)
             : default_avatar;
@@ -628,7 +628,7 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
         return;
     }
     const chatId = group.chat_id;
-    group['date_last_chat'] = Date.now();
+    group.date_last_chat = Date.now();
     /** @type {ChatHeader} */
     const chatHeader = {
         chat_metadata: { ...chat_metadata },
@@ -1450,6 +1450,10 @@ async function modifyGroupMember(groupId, groupMember, isDelete) {
     printGroupCandidates();
     printGroupMembers();
 
+    // Refresh the tag filters for both lists to reflect any new tags
+    printTagFilters(tag_filter_type.group_candidates_list);
+    printTagFilters(tag_filter_type.group_members_list);
+
     const groupHasMembers = getGroupCharacters({ doFilter: false, onlyMembers: true }).length > 0;
     $('#rm_group_submit').prop('disabled', !groupHasMembers);
 }
@@ -1558,31 +1562,63 @@ function isGroupMember(group, avatarId) {
  * @returns {Array<{item: Character, id: number, type: string}>} Array of group character objects
  */
 function getGroupCharacters({ doFilter = false, onlyMembers = false } = {}) {
-    function sortMembersFn(a, b) {
+    function applyFilterAndSort(results, filter, filterSelector) {
+        let filtered = results;
+        if (doFilter) {
+            filtered = filter.applyFilters(filtered);
+        }
+        const useFilterOrder = doFilter && !!$(filterSelector).val();
+        sortEntitiesList(filtered, useFilterOrder, filter);
+        filter.clearFuzzySearchCaches();
+        return filtered;
+    }
+
+    function handleMembers(results, thisGroup) {
         const membersArray = thisGroup?.members ?? newGroupMembers;
-        const aIndex = membersArray.indexOf(a.item.avatar);
-        const bIndex = membersArray.indexOf(b.item.avatar);
-        return aIndex - bIndex;
+
+        // Create index map for O(1) lookups in member sort function
+        // (separate from characterIndexMap which maps character objects to their array indices)
+        const memberIndexMap = new Map(membersArray.map((avatar, index) => [avatar, index]));
+
+        function sortMembersFn(a, b) {
+            const aIndex = memberIndexMap.get(a.item.avatar) ?? -1;
+            const bIndex = memberIndexMap.get(b.item.avatar) ?? -1;
+            return aIndex - bIndex;
+        }
+
+        // Apply manual member sort before filter and sort
+        let filtered = results;
+        if (doFilter) {
+            filtered = groupMembersFilter.applyFilters(filtered);
+        }
+        filtered.sort(sortMembersFn);
+
+        // Apply conditional filter-based sort and cleanup
+        const useFilterOrder = doFilter && !!$('#rm_group_members_filter').val();
+        if (useFilterOrder) {
+            sortEntitiesList(filtered, useFilterOrder, groupMembersFilter);
+        }
+        groupMembersFilter.clearFuzzySearchCaches();
+        return filtered;
     }
 
     const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
-    let candidates = characters
+
+    // Create index map for O(1) lookups when mapping characters to their array indices
+    // (separate from memberIndexMap used later for sorting members by their group order)
+    const characterIndexMap = new Map(characters.map((char, index) => [char, index]));
+
+    const results = characters
         .filter((x) => isGroupMember(thisGroup, x.avatar) == onlyMembers)
-        .map((x) => ({ item: x, id: characters.indexOf(x), type: 'character' }));
+        .map((x) => ({ item: x, id: characterIndexMap.get(x), type: 'character' }));
 
-    if (doFilter) {
-        candidates = groupCandidatesFilter.applyFilters(candidates);
+    // Early return for candidates (non-members)
+    if (!onlyMembers) {
+        return applyFilterAndSort(results, groupCandidatesFilter, '#rm_group_filter');
     }
 
-    if (onlyMembers) {
-        candidates.sort(sortMembersFn);
-    } else {
-        const useFilterOrder = doFilter && !!$('#rm_group_filter').val();
-        sortEntitiesList(candidates, useFilterOrder, groupCandidatesFilter);
-    }
-
-    groupCandidatesFilter.clearFuzzySearchCaches();
-    return candidates;
+    // Handle members with manual sort capability
+    return handleMembers(results, thisGroup);
 }
 
 function printGroupCandidates() {
@@ -1622,7 +1658,7 @@ function printGroupMembers() {
         const pageSize = Number(accountStorage.getItem(storageKey)) || 5;
         const sizeChangerOptions = [5, 10, 25, 50, 100, 200, 500, 1000];
         $(this).pagination({
-            dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
+            dataSource: getGroupCharacters({ doFilter: true, onlyMembers: true }),
             pageRange: 1,
             position: 'top',
             showPageNumbers: false,
@@ -1783,6 +1819,7 @@ function select_group_chats(groupId, skipAnimation) {
     $('#group_avatar_preview').empty().append(getGroupAvatar(group));
     $('#rm_group_restore_avatar').toggle(!!group && isValidImageUrl(group.avatar_url));
     $('#rm_group_filter').val('').trigger('input');
+    $('#rm_group_members_filter').val('').trigger('input');
     $('#rm_group_activation_strategy').val(replyStrategy);
     $(`#rm_group_activation_strategy option[value="${replyStrategy}"]`).prop('selected', true);
     $('#rm_group_generation_mode').val(generationMode);
@@ -2002,14 +2039,14 @@ export async function openGroupById(groupId) {
 
         if (selected_group !== groupId) {
             groupChatQueueOrder = new Map();
-            await clearChat();
-            cancelTtsPlay();
-            selected_group = groupId;
             setCharacterId(undefined);
             setCharacterName('');
+            resetSelectedGroup();
+            await clearChat({ clearData: true });
+            cancelTtsPlay();
+            selected_group = groupId;
             setEditedMessageId(undefined);
             updateChatMetadata({}, true);
-            chat.length = 0;
             await getGroupChat(groupId);
             return true;
         }
@@ -2048,6 +2085,11 @@ async function openCharacterDefinition(characterSelect) {
 function filterGroupMembers() {
     const searchValue = String($(this).val()).toLowerCase();
     groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
+}
+
+function filterGroupMemberList() {
+    const searchValue = String($(this).val()).toLowerCase();
+    groupMembersFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 
 async function createGroup() {
@@ -2110,8 +2152,7 @@ export async function createNewGroupChat(groupId) {
         return;
     }
 
-    await clearChat();
-    chat.length = 0;
+    await clearChat({ clearData: true });
     const newChatName = humanizedDateTime();
     group.chats.push(newChatName);
     group.chat_id = newChatName;
@@ -2124,7 +2165,7 @@ export async function createNewGroupChat(groupId) {
 /**
  * Retrieves past chats for a specified group.
  * @param {string} groupId Group ID
- * @returns {Promise<Array>} Array of past chats
+ * @returns {Promise<Array<import('../../src/endpoints/chats.js').ChatInfo>>} Array of past chats
  */
 export async function getGroupPastChats(groupId) {
     const group = groups.find(x => x.id === groupId);
@@ -2137,24 +2178,15 @@ export async function getGroupPastChats(groupId) {
 
     try {
         for (const chatId of group.chats) {
-            const messages = await loadGroupChat(chatId);
-            if (!Array.isArray(messages)) {
-                continue;
-            }
-            const fileSize = humanFileSize(JSON.stringify(messages).length);
-            if (messages.length > 0 && Object.hasOwn(messages[0], 'chat_metadata')) {
-                messages.shift();
-            }
-            const chatItems = messages.length;
-            const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
-            const lastMessageDate = messages.length ? (messages[messages.length - 1].send_date || Date.now()) : Date.now();
-            chats.push({
-                'file_name': chatId,
-                'mes': lastMessage,
-                'last_mes': lastMessageDate,
-                'file_size': fileSize,
-                'chat_items': chatItems,
+            const response = await fetch('/api/chats/group/info', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ id: chatId }),
             });
+            if (response.ok) {
+                const data = await response.json();
+                chats.push(data);
+            }
         }
     } catch (err) {
         console.error(err);
@@ -2176,10 +2208,9 @@ export async function openGroupChat(groupId, chatId) {
         return;
     }
 
-    await clearChat();
-    chat.length = 0;
+    await clearChat({ clearData: true });
     group.chat_id = chatId;
-    group['date_last_chat'] = Date.now();
+    group.date_last_chat = Date.now();
     updateChatMetadata({}, true);
 
     await editGroup(groupId, true, false);
@@ -2434,6 +2465,7 @@ jQuery(() => {
         openGroupById(groupId);
     });
     $('#rm_group_filter').on('input', filterGroupMembers);
+    $('#rm_group_members_filter').on('input', filterGroupMemberList);
     $('#rm_group_submit').on('click', createGroup);
     $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {

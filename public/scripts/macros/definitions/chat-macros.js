@@ -104,7 +104,7 @@ function getLastCharMessage() {
 }
 
 function getFirstIncludedMessageId() {
-    const value = chat_metadata['lastInContextMessageId'];
+    const value = chat_metadata.lastInContextMessageId;
     return typeof value === 'number' ? value : null;
 }
 

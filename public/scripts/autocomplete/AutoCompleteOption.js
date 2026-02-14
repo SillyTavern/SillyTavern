@@ -13,6 +13,22 @@ export class AutoCompleteOption {
     /** @type {(input:string)=>boolean} */ matchProvider;
     /** @type {(input:string)=>string} */ valueProvider;
     /** @type {boolean} */ makeSelectable = false;
+    /** @type {boolean} */ forceFullNameMatch = false;
+
+    /**
+     * Offset to adjust the replacement start position.
+     * Negative values start replacement earlier (e.g., -2 to include 2 chars before normal start).
+     * Used by closing tag autocomplete to replace leading whitespace.
+     * @type {number}
+     */
+    replacementStartOffset = 0;
+
+    /**
+     * Priority for sorting. Lower values = higher priority (sorted first).
+     * Default is 100 (normal priority). Use lower values for items that should appear at the top.
+     * @type {number}
+     */
+    sortPriority = 100;
 
 
     /**

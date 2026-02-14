@@ -8,7 +8,8 @@ import sanitize from 'sanitize-filename';
 import fetch from 'node-fetch';
 
 import { UNSAFE_EXTENSIONS } from '../constants.js';
-import { clientRelativePath } from '../util.js';
+import { clientRelativePath, isValidUrl } from '../util.js';
+import { getHostFromUrl, isHostWhitelisted } from './content-manager.js';
 
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
 
@@ -145,7 +146,7 @@ router.post('/get', async (request, response) => {
                     for (let file of files) {
                         if (!file.endsWith('.placeholder')) {
                             //console.debug("Asset VRM model found:",file)
-                            output['vrm']['model'].push(clientRelativePath(request.user.directories.root, file));
+                            output.vrm.model.push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
 
@@ -156,7 +157,7 @@ router.post('/get', async (request, response) => {
                     for (let file of files) {
                         if (!file.endsWith('.placeholder')) {
                             //console.debug("Asset VRM animation found:",file)
-                            output['vrm']['animation'].push(clientRelativePath(request.user.directories.root, file));
+                            output.vrm.animation.push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
                     continue;
@@ -189,31 +190,42 @@ router.post('/get', async (request, response) => {
  * @returns {void}
  */
 router.post('/download', async (request, response) => {
-    const url = request.body.url;
-    const inputCategory = request.body.category;
-
-    // Check category
-    let category = null;
-    for (let i of VALID_CATEGORIES)
-        if (i == inputCategory)
-            category = i;
-
-    if (category === null) {
-        console.error('Bad request: unsupported asset category.');
-        return response.sendStatus(400);
-    }
-
-    // Validate filename
-    ensureFoldersExist(request.user.directories);
-    const validation = validateAssetFileName(request.body.filename);
-    if (validation.error)
-        return response.status(400).send(validation.message);
-
-    const temp_path = path.join(request.user.directories.assets, 'temp', request.body.filename);
-    const file_path = path.join(request.user.directories.assets, category, request.body.filename);
-    console.info('Request received to download', url, 'to', file_path);
-
     try {
+        if (!isValidUrl(request.body.url)) {
+            console.warn('Asset download failed: Must be a valid URL');
+            return response.sendStatus(400);
+        }
+
+        const url = String(request.body.url);
+        const inputCategory = request.body.category;
+
+        const host = getHostFromUrl(url);
+        if (!isHostWhitelisted(host)) {
+            console.error(`Received an import for "${host}", but site is not whitelisted. This domain must be added to the config key "whitelistImportDomains" to allow import from this source.`);
+            return response.sendStatus(404);
+        }
+
+        // Check category
+        let category = null;
+        for (let i of VALID_CATEGORIES)
+            if (i == inputCategory)
+                category = i;
+
+        if (category === null) {
+            console.error('Bad request: unsupported asset category.');
+            return response.sendStatus(400);
+        }
+
+        // Validate filename
+        ensureFoldersExist(request.user.directories);
+        const validation = validateAssetFileName(request.body.filename);
+        if (validation.error)
+            return response.status(400).send(validation.message);
+
+        const temp_path = path.join(request.user.directories.assets, 'temp', request.body.filename);
+        const file_path = path.join(request.user.directories.assets, category, request.body.filename);
+        console.info('Request received to download', url, 'to', file_path);
+
         // Download to temp
         const res = await fetch(url);
         if (!res.ok || res.body === null) {

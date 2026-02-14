@@ -38,6 +38,9 @@ browserLaunch:
   avoidLocalhost: false
 # Server port
 port: 8000
+# Interval in seconds to write a heartbeat file. Set to 0 to disable.
+# This is used primarily for Docker healthchecks.
+heartbeatInterval: 0
 # -- SSL options --
 ssl:
   # Enable SSL/TLS encryption
@@ -68,6 +71,25 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
+# CORS settings (applied to all routes)
+cors:
+  # Enable or disable CORS middleware
+  enabled: true
+  # Allowed origins. Use "null" to match the default browser file origin.
+  # You can set "*" to allow any origin, or a list of allowed origins.
+  origin:
+    - "null"
+  # Allowed methods
+  methods:
+    - "OPTIONS"
+  # Allowed request headers (optional)
+  allowedHeaders: []
+  # Exposed response headers (optional)
+  exposedHeaders: []
+  # Allow credentials (cookies, authorization headers)
+  credentials: false
+  # Preflight cache max age in seconds (optional)
+  maxAge: null
 # -- REQUEST PROXY CONFIGURATION --
 requestProxy:
   # If a proxy is enabled, all outgoing HTTP/HTTPS requests will be routed through it.
@@ -200,7 +222,6 @@ whitelistImportDomains:
   - cdn.discordapp.com
   - files.catbox.moe
   - raw.githubusercontent.com
-  - char-archive.evulid.cc
 # API request overrides (for KoboldAI and Text Completion APIs)
 ## Note: host includes the port number if it's not the default (80 or 443)
 ## Format is an array of objects:
@@ -265,7 +286,7 @@ ollama:
 # -- ANTHROPIC CLAUDE API CONFIGURATION --
 claude:
   # Enables caching of the system prompt (if supported).
-  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # https://platform.claude.com/docs/en/build-with-claude/prompt-caching
   # -- IMPORTANT! --
   # Use only when the prompt before the chat history is static and doesn't change between requests
   # (e.g {{random}} macro or lorebooks not as in-chat injections).
@@ -287,6 +308,8 @@ claude:
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")
   apiVersion: 'v1beta'
+  # Adds thought signatures to requests (if available). Only for Gemini 3 and above.
+  thoughtSignatures: true
   # Enables caching of the system prompt (if supported). Only for OpenRouter.
   # -- IMPORTANT! --
   # Use only when the prompt before the chat history is static and doesn't change between requests

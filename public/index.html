@@ -1399,6 +1399,28 @@
                                         <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
+
+                                    <div data-tg-type="koboldcpp, llamacpp, tabby" id="adaptive_p_block" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Adaptive-P">Adaptive-P</label>
+                                            <a href="https://github.com/MrJackSpade/adaptive-p-docs" target="_blank">
+                                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                                            </a>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
+                                            <div data-tg-samplers="adaptive_target" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Target">Target</small>
+                                                <input class="neo-range-slider" type="range" id="adaptive_target_textgenerationwebui" min="-0.01" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="-0.01" max="1" step="0.01" data-for="adaptive_target_textgenerationwebui" id="adaptive_target_counter_textgenerationwebui">
+                                            </div>
+                                            <div data-tg-samplers="adaptive_decay" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Decay">Decay</small>
+                                                <input class="neo-range-slider" type="range" id="adaptive_decay_textgenerationwebui" min="0" max="0.99" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="0.99" step="0.01" data-for="adaptive_decay_textgenerationwebui" id="adaptive_decay_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" data-tg-samplers="smoothing_factor" id="smoothingBlock" name="smoothingBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>
@@ -1974,7 +1996,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -2002,7 +2024,7 @@
                                                     <i class="icon-supported fa-solid fa-film" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
                                                     <i class="icon-unsupported fa-solid fa-film" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
                                                 </div>
-                                                <div id="openai_audio_inlining_supported" data-source="makersuite,vertexai,openrouter">
+                                                <div id="openai_audio_inlining_supported" data-source="makersuite,vertexai,openrouter,openai,custom">
                                                     <i class="icon-supported fa-solid fa-music" title="Supported by the current model" data-i18n="[title]Supported by the current model"></i>
                                                     <i class="icon-unsupported fa-solid fa-music" title="Unsupported by the current model" data-i18n="[title]Unsupported by the current model"></i>
                                                 </div>
@@ -2083,12 +2105,12 @@
                                             <span data-i18n="Allows the model to return its thinking process.">
                                                 Allows the model to return its thinking process.
                                             </span>
-                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai">
+                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai,moonshot">
                                                 This setting affects visibility only.
                                             </strong>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes,nanogpt">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2418,6 +2440,20 @@
                                         <input id="openrouter_allow_fallbacks_textgenerationwebui" type="checkbox" />
                                         <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                     </label>
+                                </div>
+                                <div>
+                                    <h4 data-i18n="Model Quantizations">Model Quantizations</h4>
+                                    <select id="openrouter_quantizations_text" class="openrouter_quantizations" multiple>
+                                        <option data-i18n="Integer (4 bit)" value="int4">Integer (4 bit)</option>
+                                        <option data-i18n="Integer (8 bit)" value="int8">Integer (8 bit)</option>
+                                        <option data-i18n="Floating point (4 bit)" value="fp4">Floating point (4 bit)</option>
+                                        <option data-i18n="Floating point (6 bit)" value="fp6">Floating point (6 bit)</option>
+                                        <option data-i18n="Floating point (8 bit)" value="fp8">Floating point (8 bit)</option>
+                                        <option data-i18n="Floating point (16 bit)" value="fp16">Floating point (16 bit)</option>
+                                        <option data-i18n="Brain floating point (16 bit)" value="bf16">Brain floating point (16 bit)</option>
+                                        <option data-i18n="Floating point (32 bit)" value="fp32">Floating point (32 bit)</option>
+                                        <option data-i18n="Unknown" value="unknown">Unknown</option>
+                                    </select>
                                 </div>
                             </div>
                             <div data-tg-type="infermaticai" class="flex-container flexFlowColumn">
@@ -2845,7 +2881,7 @@
                                 <option value="zai">Z.AI (GLM)</option>
                             </optgroup>
                         </select>
-                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
+                        <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai,zai,moonshot">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2909,7 +2945,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai">
+                        <div id="ReverseProxyWarningMessage" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai,zai,moonshot">
                             <div class="reverse_proxy_warning">
                                 <b>
                                     <div data-i18n="Using a proxy that you're not running yourself is a risk to your data privacy.">
@@ -3068,6 +3104,7 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-opus-4-6">claude-opus-4-6</option>
                                         <option value="claude-opus-4-5">claude-opus-4-5</option>
                                         <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                                         <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
@@ -3161,6 +3198,20 @@
                                 <i class="fa-solid fa-lightbulb"></i>
                                 <span data-i18n="To use instruct formatting, switch to OpenRouter under Text Completion API.">To use instruct formatting, switch to OpenRouter under Text Completion API.</span>
                             </small>
+                            <div>
+                                <h4 data-i18n="Model Quantizations">Model Quantizations</h4>
+                                <select id="openrouter_quantizations_chat" class="openrouter_quantizations" multiple>
+                                    <option data-i18n="Integer (4 bit)" value="int4">Integer (4 bit)</option>
+                                    <option data-i18n="Integer (8 bit)" value="int8">Integer (8 bit)</option>
+                                    <option data-i18n="Floating point (4 bit)" value="fp4">Floating point (4 bit)</option>
+                                    <option data-i18n="Floating point (6 bit)" value="fp6">Floating point (6 bit)</option>
+                                    <option data-i18n="Floating point (8 bit)" value="fp8">Floating point (8 bit)</option>
+                                    <option data-i18n="Floating point (16 bit)" value="fp16">Floating point (16 bit)</option>
+                                    <option data-i18n="Brain floating point (16 bit)" value="bf16">Brain floating point (16 bit)</option>
+                                    <option data-i18n="Floating point (32 bit)" value="fp32">Floating point (32 bit)</option>
+                                    <option data-i18n="Unknown" value="unknown">Unknown</option>
+                                </select>
+                            </div>
                         </form>
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="AI21 API Key">AI21 API Key</h4>
@@ -3750,19 +3801,22 @@
                             </select>
                         </div>
                         <div id="pollinations_form" data-source="pollinations">
+                            <h4>
+                                <a href="https://enter.pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Pollinations API Key">
+                                    Pollinations API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_pollinations" name="api_key_pollinations" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_pollinations"></div>
+                            </div>
+                            <div data-for="api_key_pollinations" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
                             <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
                             <select id="model_pollinations_select">
                                 <!-- Populated by JavaScript -->
                             </select>
-                            <div class="info-block hint">
-                                <a href="https://pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Provided free of charge by Pollinations.AI">
-                                    Provided free of charge by Pollinations.AI
-                                </a>
-                                <br>
-                                <span data-i18n="Avoid sending sensitive information. Provider's outputs may include ads.">
-                                    Avoid sending sensitive information. Provider's outputs may include ads.
-                                </span>
-                            </div>
                         </div>
                         <div id="moonshot_form" data-source="moonshot">
                             <h4>
@@ -3811,7 +3865,10 @@
                             </select>
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
+                                <option value="glm-5">glm-5</option>
                                 <option value="glm-4.7">glm-4.7</option>
+                                <option value="glm-4.7-flash">glm-4.7-flash</option>
+                                <option value="glm-4.7-flashx">glm-4.7-flashx</option>
                                 <option value="glm-4.6">glm-4.6</option>
                                 <option value="glm-4.6v">glm-4.6v</option>
                                 <option value="glm-4.6v-flash">glm-4.6v-flash</option>
@@ -3982,7 +4039,7 @@
                                         <small data-i18n="Story String">Story String</small>
                                         <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="context_story_string" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                     </label>
-                                    <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                    <textarea id="context_story_string" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                 </div>
                                 <div class="flex-container flexFlowColumn" data-cc-null>
                                     <div id="context_story_string_position_block">
@@ -4019,7 +4076,7 @@
                                             <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_example_separator" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                            <textarea id="context_example_separator" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                         </div>
                                     </div>
                                     <div class="flex1">
@@ -4027,7 +4084,7 @@
                                             <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_chat_start" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                            <textarea id="context_chat_start" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -4191,11 +4248,11 @@
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before a User message and as a last prompt line when impersonating." data-i18n="[title]Inserted before a User message and as a last prompt line when impersonating.">
                                         <small data-i18n="User Prefix">User Message Prefix</small>
-                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_input_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <div class="flexAuto" title="Inserted after a User message." data-i18n="[title]Inserted after a User message.">
                                         <small data-i18n="User Suffix">User Message Suffix</small>
-                                        <textarea id="instruct_input_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_input_suffix" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                             </details>
@@ -4204,11 +4261,11 @@
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before an Assistant message and as a last prompt line when generating an AI reply." data-i18n="[title]Inserted before an Assistant message and as a last prompt line when generating an AI reply.">
                                         <small data-i18n="Assistant Prefix">Assistant Message Prefix</small>
-                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_output_sequence" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <div class="flexAuto" title="Inserted after an Assistant message." data-i18n="[title]Inserted after an Assistant message.">
                                         <small data-i18n="Assistant Suffix">Assistant Message Suffix</small>
-                                        <textarea id="instruct_output_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_output_suffix" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                             </details>
@@ -4217,11 +4274,11 @@
                                 <div class="flex-container">
                                     <div class="flexAuto" id="instruct_system_sequence_block" title="Inserted before a System (added by slash commands or extensions) message." data-i18n="[title]Inserted before a System (added by slash commands or extensions) message.">
                                         <small data-i18n="System Prefix">System Message Prefix</small>
-                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_system_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <div class="flexAuto" id="instruct_system_suffix_block" title="Inserted after a System message." data-i18n="[title]Inserted after a System message.">
                                         <small data-i18n="System Suffix">System Message Suffix</small>
-                                        <textarea id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_system_suffix" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                                 <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences." data-i18n="[title]If enabled, System Sequences will be the same as User Sequences.">
@@ -4236,37 +4293,37 @@
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before the first Assistant's message." data-i18n="[title]Inserted before the first Assistant's message.">
                                         <small data-i18n="First Assistant Prefix">First Assistant Prefix</small>
-                                        <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_first_output_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <div class="flexAuto" title="Inserted before the last Assistant's message or as a last prompt line when generating an AI reply (except a neutral/system role)." data-i18n="[title]instruct_last_output_sequence">
                                         <small data-i18n="Last Assistant Prefix">Last Assistant Prefix</small>
-                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_last_output_sequence" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Inserted before the first User's message." data-i18n="[title]Inserted before the first User's message.">
                                         <small data-i18n="First User Prefix">First User Prefix</small>
-                                        <textarea id="instruct_first_input_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_first_input_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <div class="flexAuto" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
                                         <small data-i18n="Last User Prefix">Last User Prefix</small>
-                                        <textarea id="instruct_last_input_sequence" class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_last_input_sequence" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Will be inserted as a last prompt line when using system/neutral generation." data-i18n="[title]Will be inserted as a last prompt line when using system/neutral generation.">
                                         <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
-                                        <textarea id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_last_system_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <div class="flexAuto" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive)." data-i18n="[title]If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
-                                        <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_stop_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex-container">
                                     <div class="flexAuto" title="Will be inserted at the start of the chat history if it doesn't start with a User message." data-i18n="[title]Will be inserted at the start of the chat history if it doesn't start with a User message.">
                                         <small data-i18n="User Filler Message">User Filler Message</small>
-                                        <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="instruct_user_alignment_message" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                 </div>
                             </details>
@@ -4304,7 +4361,7 @@
                                     <small data-i18n="Prompt Content">Prompt Content</small>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="sysprompt_content" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </label>
-                                <textarea id="sysprompt_content" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                <textarea id="sysprompt_content" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                             </div>
 
                             <div>
@@ -4312,7 +4369,7 @@
                                     <small data-i18n="Post-History Instructions">Post-History Instructions</small>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="sysprompt_post_history" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </label>
-                                <textarea id="sysprompt_post_history" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                <textarea id="sysprompt_post_history" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                             </div>
                         </div>
 
@@ -4437,17 +4494,17 @@
                                     <div class="flex-container">
                                         <div class="flex1" title="Inserted before the reasoning content." data-i18n="[title]reasoning_prefix">
                                             <small data-i18n="Prefix">Prefix</small>
-                                            <textarea id="reasoning_prefix" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                            <textarea id="reasoning_prefix" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                         </div>
                                         <div class="flex1" title="Inserted after the reasoning content." data-i18n="[title]reasoning_suffix">
                                             <small data-i18n="Suffix">Suffix</small>
-                                            <textarea id="reasoning_suffix" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                            <textarea id="reasoning_suffix" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                         </div>
                                     </div>
                                     <div class="flex-container">
                                         <div class="flex1" title="Inserted between the reasoning and the message content." data-i18n="[title]reasoning_separator">
                                             <small data-i18n="Separator">Separator</small>
-                                            <textarea id="reasoning_separator" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                            <textarea id="reasoning_separator" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                         </div>
                                     </div>
                                 </details>
@@ -4469,7 +4526,7 @@
                                     </span>
                                 </small>
                                 <div>
-                                    <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]comma delimited,no spaces between" placeholder="comma delimited,no spaces between" />
+                                    <input id="markdown_escape_strings" data-macros class="text_pole textarea_compact" type="text" data-i18n="[placeholder]comma delimited,no spaces between" placeholder="comma delimited,no spaces between" />
                                 </div>
                             </div>
 
@@ -4481,7 +4538,7 @@
                                         </span>
                                     </small>
                                     <div>
-                                        <textarea id="start_reply_with" class="text_pole textarea_compact autoSetHeight"></textarea>
+                                        <textarea id="start_reply_with" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
                                     <label class="checkbox_label" for="chat-show-reply-prefix-checkbox">
                                         <input id="chat-show-reply-prefix-checkbox" type="checkbox" />
@@ -4780,7 +4837,7 @@
                         <div name="themeElements" class="flex-container flexFlowColumn flexNoGap">
                             <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
                             <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
-                                <div class="flex-container alignItemsBaseline" title="This style applies to all avatars globaly, including your Persona, Character Managment, Account selection, etc." data-i18n="[title]This style applies to all avatars globaly, including your Persona, Character Managment, Account selection, etc.">
+                                <div class="flex-container alignItemsBaseline" title="This style applies to all avatars globaly, including your Persona, Character Management, Account selection, etc." data-i18n="[title]This style applies to all avatars globaly, including your Persona, Character Management, Account selection, etc.">
                                     <span data-i18n="Avatar Style:">Avatars:</span>
                                     <select id="avatar_style" class="widthNatural flex1 margin0 text_pole">
                                         <option value="0" data-i18n="Circle">Circle</option>
@@ -5362,18 +5419,26 @@
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                 </div>
                                 <div class="inline-drawer-content">
-                                    <label for="stscript_autocomplete_state">
-                                        <small data-i18n="Visibility">Visibility</small>
-                                    </label>
-                                    <select id="stscript_autocomplete_state">
-                                        <option value="0" data-i18n="Don't show">Don't show</option>
-                                        <option value="1" data-i18n="Input length > 1">Input length > 1</option>
-                                        <option value="2" data-i18n="Always show">Always show</option>
-                                    </select>
+                                    <div class="flex1" title="When to show the autocomplete for slash commands and macros." data-i18n="[title]When to show the autocomplete for slash commands and macros.">
+                                        <label for="stscript_autocomplete_state">
+                                            <small data-i18n="Visibility">Visibility</small>
+                                        </label>
+                                        <select id="stscript_autocomplete_state">
+                                            <option value="0" data-i18n="Don't show">Don't show</option>
+                                            <option value="1" data-i18n="Input length > 1">Input length > 1</option>
+                                            <option value="2" data-i18n="Always show">Always show</option>
+                                        </select>
+                                    </div>
                                     <label class="checkbox_label" for="stscript_autocomplete_autoHide">
                                         <input id="stscript_autocomplete_autoHide" type="checkbox" />
                                         <small data-i18n="Automatically hide details">
                                             Automatically hide details
+                                        </small>
+                                    </label>
+                                    <label class="checkbox_label" for="stscript_autocomplete_showInAllMacroFields" title="Show macro autocomplete in all macro-enabled fields. When off, autocomplete only shows in expanded editors or when pressing Ctrl+Space." data-i18n="[title]Show macro autocomplete in all macro-enabled fields. When off, autocomplete only shows in expanded editors or when pressing Ctrl+Space.">
+                                        <input id="stscript_autocomplete_showInAllMacroFields" type="checkbox" />
+                                        <small data-i18n="Show in all macro fields">
+                                            Show in all macro fields
                                         </small>
                                     </label>
                                     <div class="flex-container">
@@ -5499,6 +5564,12 @@
                     </div>
                     <div class="bg-header-row-2">
                         <input id="bg-filter" class="text_pole" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                        <select id="bg-sort" class="text_pole margin0" title="Sort backgrounds" data-i18n="[title]Sort backgrounds">
+                            <option value="az" data-i18n="A-Z">A-Z</option>
+                            <option value="za" data-i18n="Z-A">Z-A</option>
+                            <option value="newest" data-i18n="Newest">Newest</option>
+                            <option value="oldest" data-i18n="Oldest">Oldest</option>
+                        </select>
                     </div>
                 </div>
                 <div id="bg_tabs" class="heading-container-with-controls">
@@ -5695,7 +5766,7 @@
                                     <span data-i18n="Persona Description">Persona Description</span>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="persona_description" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                 </h4>
-                                <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" value="" autocomplete="off" rows="8"></textarea>
+                                <textarea id="persona_description" name="persona_description" data-macros data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" value="" autocomplete="off" rows="8"></textarea>
 
                                 <div class="flex-container justifySpaceBetween">
                                     <h4 data-i18n="Position">Position</h4>
@@ -5954,7 +6025,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <textarea id="description_textarea" class="mdHotkeys" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
+                                <textarea id="description_textarea" class="mdHotkeys" data-macros data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
                                 <div class="extension_token_counter">
                                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                                 </div>
@@ -5974,7 +6045,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <textarea class="mdHotkeys" id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
+                                <textarea id="firstmessage_textarea" class="mdHotkeys" data-macros data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
                                 <div class="extension_token_counter">
                                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="firstmessage_textarea">counting...</span>
                                 </div>
@@ -6104,6 +6175,12 @@
                             </div>
                             <div class="inline-drawer-content">
                                 <div id="currentGroupMembers" name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                    <div id="rm_group_members_header">
+                                        <input id="rm_group_members_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
+                                    </div>
+                                    <div class="rm_tag_controls">
+                                        <div class="tags rm_tag_filter"></div>
+                                    </div>
                                     <div id="rm_group_members_pagination" class="rm_group_members_pagination group_pagination"></div>
                                     <div id="rm_group_members" class="rm_group_members overflowYAuto flex-container" group_empty_text="Group is empty." data-i18n="[group_empty_text]Group is empty."></div>
                                 </div>
@@ -6115,7 +6192,7 @@
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             </div>
                             <div class="inline-drawer-content">
-                                <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                <div id="unaddedCharList" name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                     <div id="rm_group_add_members_header">
                                         <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." />
                                     </div>
@@ -6292,7 +6369,7 @@
                             <span data-i18n="Main Prompt">Main Prompt</span>
                             <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="system_prompt_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                         </h4>
-                        <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
+                        <textarea id="system_prompt_textarea" name="system_prompt" data-macros data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="system_prompt_textarea">counting...</span>
                         </div>
@@ -6302,7 +6379,7 @@
                             <span data-i18n="Post-History Instructions">Post-History Instructions</span>
                             <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="post_history_instructions_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                         </h4>
-                        <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
+                        <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-macros data-i18n="[placeholder]Any contents here will replace the default Post-History Instructions used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Post-History Instructions used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                         </div>
@@ -6355,7 +6432,7 @@
                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="personality_textarea" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </h4>
-                <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
+                <textarea id="personality_textarea" name="personality" data-macros data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
                 </div>
@@ -6368,7 +6445,7 @@
                         <span class="fa-solid fa-circle-question note-link-span"></span>
                     </a>
                 </h4>
-                <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" value="" autocomplete="off" form="form_create" rows="4"></textarea>
+                <textarea id="scenario_pole" name="scenario" data-macros data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" value="" autocomplete="off" form="form_create" rows="4"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
                 </div>
@@ -6381,7 +6458,7 @@
                         </span>
                         <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="depth_prompt_prompt" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                     </h4>
-                    <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="5" autocomplete="off" form="form_create" data-i18n="[placeholder](Text to be inserted in-chat @ designated depth and role)" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
+                    <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" data-macros class="text_pole" rows="5" autocomplete="off" form="form_create" data-i18n="[placeholder](Text to be inserted in-chat @ designated depth and role)" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
                 </div>
                 <div>
                     <h4>
@@ -6431,7 +6508,7 @@
                         </a>
                     </h5>
                 </div>
-                <textarea id="mes_example_textarea" class="flexGrow mdHotkeys" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" rows="6"></textarea>
+                <textarea id="mes_example_textarea" class="flexGrow mdHotkeys" name="mes_example" data-macros data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" rows="6"></textarea>
                 <div class="extension_token_counter">
                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="mes_example_textarea">counting...</span>
                 </div>
@@ -7124,7 +7201,7 @@
                                 <span>&nbsp;</span>
                                 <span id="completion_prompt_manager_popup_entry_source"></span>
                             </div>
-                            <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt" placeholder="The prompt to be sent." data-i18n="[placeholder]The prompt to be sent."></textarea>
+                            <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt" data-macros data-macros-autocomplete="always" data-macros-autocomplete-style="expanded" placeholder="The prompt to be sent." data-i18n="[placeholder]The prompt to be sent."></textarea>
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_footer">
                             <a id="completion_prompt_manager_popup_entry_form_close" title="Close" data-i18n="[title]close" class="fa-solid fa-close menu_button"></a>
@@ -7410,7 +7487,7 @@
                             </div>
                         </div>
                     </summary>
-                    <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text mdHotkeys" value="" autocomplete="off" rows="12"></textarea>
+                    <textarea data-macros name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text mdHotkeys" value="" autocomplete="off" rows="12"></textarea>
                 </details>
             </div>
         </div>
@@ -7500,7 +7577,7 @@
                             <b data-i18n="Unique to this chat">Unique to this chat</b>.<br>
                             <span data-i18n="Checkpoints inherit the Note from their parent, and can be changed individually after that.">Checkpoints inherit the Note from their parent, and can be changed individually after that.</span><br>
                         </small>
-                        <textarea id="extension_floating_prompt" class="text_pole textarea_compact" rows="8"></textarea>
+                        <textarea id="extension_floating_prompt" data-macros class="text_pole textarea_compact" rows="8"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
@@ -7557,7 +7634,7 @@
                     <div class="inline-drawer-content">
                         <small data-i18n="Will be automatically added as the author's note for this character. Will be used in groups, but can't be modified when a group chat is open.">Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
-                        <textarea id="extension_floating_chara" class="text_pole textarea_compact" rows="8" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" data-macros class="text_pole textarea_compact" rows="8" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -7589,7 +7666,7 @@
                     </div>
                     <div class="inline-drawer-content">
                         <small data-i18n="Will be automatically added as the Author's Note for all new chats.">Will be automatically added as the Author's Note for all new chats.</small>
-                        <textarea id="extension_floating_default" class="text_pole textarea_compact" rows="8" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" data-macros class="text_pole textarea_compact" rows="8" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_default_token_counter">0</span>
                         </div>

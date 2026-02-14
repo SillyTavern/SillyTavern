@@ -67,6 +67,17 @@
                         Different voices for "quotes", *text inside asterisks* and other text
                     </small>
                 </label>
+                <label class="checkbox_label" for="tts_apply_regex" title="Applies the regex pattern to filter text before TTS.">
+                    <input type="checkbox" id="tts_apply_regex">
+                    <small data-i18n="Apply regex filter">Apply regex filter to text</small>
+                </label>
+                <div id="tts_regex_block" class="marginTop5">
+                    <div class="range-block-title justifyLeft">
+                        <small data-i18n="Regex Pattern">Regex Pattern (removes matching text)</small>
+                    </div>
+                    <input type="text" id="tts_regex_pattern" class="text_pole width100p" placeholder="Example: /[^a-zA-Z0-9\s.,!?;:'&quot;()]+/g" />
+                    <small id="tts_regex_warning" class="warning" data-i18n="Invalid regex pattern.">Invalid regex pattern.</small>
+                </div>
             </div>
             <div id="playback_rate_block" class="range-block">
                 <hr>

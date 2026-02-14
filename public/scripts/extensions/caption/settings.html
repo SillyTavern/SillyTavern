@@ -49,13 +49,10 @@
                         </div>
                     </label>
                     <select id="caption_multimodal_model" class="flex1 text_pole">
-                        <!-- AI/ML API, OpenRouter, Pollinations, NanoGPT, Mistral, xAI are added externally by JavaScript -->
+                        <!-- AI/ML API, OpenRouter, Pollinations, NanoGPT, Mistral, xAI, Moonshot are added externally by JavaScript -->
                         <option data-type="cohere" value="c4ai-aya-vision-8b">c4ai-aya-vision-8b</option>
                         <option data-type="cohere" value="c4ai-aya-vision-32b">c4ai-aya-vision-32b</option>
                         <option data-type="cohere" value="command-a-vision-07-2025">command-a-vision-07-2025</option>
-                        <option data-type="moonshot" value="moonshot-v1-8k-vision-preview">moonshot-v1-8k-vision-preview</option>
-                        <option data-type="moonshot" value="moonshot-v1-32k-vision-preview">moonshot-v1-32k-vision-preview</option>
-                        <option data-type="moonshot" value="moonshot-v1-128k-vision-preview">moonshot-v1-128k-vision-preview</option>
                         <option data-type="openai" value="gpt-5.2">gpt-5.2</option>
                         <option data-type="openai" value="gpt-5.2-2025-12-11">gpt-5.2-2025-12-11</option>
                         <option data-type="openai" value="gpt-5.2-chat-latest">gpt-5.2-chat-latest</option>
@@ -89,6 +86,7 @@
                         <option data-type="openai" value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
                         <option data-type="openai" value="gpt-4.5-preview">gpt-4.5-preview</option>
                         <option data-type="openai" value="gpt-4.5-preview-2025-02-27">gpt-4.5-preview-2025-02-27</option>
+                        <option data-type="anthropic" value="claude-opus-4-6">claude-opus-4-6</option>
                         <option data-type="anthropic" value="claude-opus-4-5">claude-opus-4-5</option>
                         <option data-type="anthropic" value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
                         <option data-type="anthropic" value="claude-sonnet-4-5">claude-sonnet-4-5</option>
@@ -177,7 +175,15 @@
                         <option data-type="koboldcpp" value="koboldcpp_current" data-i18n="currently_loaded">[Currently loaded]</option>
                         <option data-type="vllm" value="vllm_current" data-i18n="currently_selected">[Currently selected]</option>
                         <option data-type="custom" value="custom_current" data-i18n="currently_selected">[Currently selected]</option>
+                        <option data-type="custom" value="custom_custom" data-i18n="[Custom model]">[Custom model]</option>
                     </select>
+                </div>
+                <div data-type="custom">
+                    <label for="caption_custom_model">
+                        <span data-i18n="Model Id">Model Id</span>
+                        <small data-i18n="(for [Custom model] option)">(for [Custom model] option)</small>
+                    </label>
+                    <input id="caption_custom_model" class="text_pole" type="text" placeholder="e.g. gpt-4o" />
                 </div>
                 <div data-type="ollama">
                     <div>
@@ -191,7 +197,7 @@
                         <input id="caption_ollama_custom_model" class="text_pole" type="text" placeholder="e.g. gemma3:latest" />
                     </div>
                 </div>
-                <label data-type="openai,anthropic,google,vertexai,mistral,xai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                <label data-type="openai,anthropic,google,vertexai,mistral,xai,zai,moonshot" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                     <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                     <span data-i18n="Allow reverse proxy">Allow reverse proxy</span>
                 </label>
