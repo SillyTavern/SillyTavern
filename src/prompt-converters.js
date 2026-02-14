@@ -118,7 +118,6 @@ export function postProcessPrompt(messages, type, names) {
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
 export function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
-
     //Prepare messages for claude.
     //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(last message is exception).
     if (messages.length > 0) {
@@ -1278,7 +1277,7 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         return getGemini3ProBudget();
     }
 
-    if (/gemini-3-flash/.test(model) ) {
+    if (/gemini-3-flash/.test(model)) {
         return getGemini3FlashBudget();
     }
 

@@ -2477,7 +2477,6 @@ jQuery(() => {
         const value = $(this).prop('checked');
         hideMutedSprites = value;
         onHideMutedSpritesClick(value);
-
     });
     $('#send_textarea').on('keyup', onSendTextareaInput);
     $('#groupCurrentMemberPopoutButton').on('click', doCurMemberListPopout);

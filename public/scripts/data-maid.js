@@ -251,7 +251,6 @@ class DataMaidDialog {
                 categoryElement.remove();
                 this.displayEmptyPlaceholder();
             });
-
         });
         categoryElement.querySelectorAll('.dataMaidItemDelete').forEach(button => {
             button.addEventListener('click', async () => {

@@ -2091,7 +2091,6 @@ function onTagAsFolderClick() {
     // If folder display has changed, we have to redraw the character list, otherwise this folders state would not change
     printCharactersDebounced();
     saveSettingsDebounced();
-
 }
 
 function updateDrawTagFolder(element, tag) {

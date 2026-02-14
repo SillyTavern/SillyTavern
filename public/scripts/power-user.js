@@ -536,7 +536,6 @@ function switchSwipeNumAllMessages() {
 var originalSliderValues = [];
 
 async function switchLabMode({ noReset = false } = {}) {
-
     /*     if (power_user.enableZenSliders && power_user.enableLabMode) {
             toastr.warning("Can't start Lab Mode while Zen Sliders are active")
             return
@@ -571,8 +570,6 @@ async function switchLabMode({ noReset = false } = {}) {
         $('#amount_gen').attr('min', '1')
             .attr('max', '99999')
             .attr('step', '1');
-
-
     } else if (!noReset) {
         //re apply the original sliders values to each input
         originalSliderValues.forEach(function (slider) {
@@ -628,7 +625,6 @@ async function switchZenSliders() {
         });
         $('div[id$="_zenslider"]').remove();
     }
-
 }
 async function CreateZenSliders(elmnt) {
     var originalSlider = elmnt;
@@ -1178,7 +1174,6 @@ function applyShadowWidth() {
     document.documentElement.style.setProperty('--shadowWidth', String(power_user.shadow_width));
     $('#shadow_width_counter').val(power_user.shadow_width);
     $('#shadow_width').val(power_user.shadow_width);
-
 }
 
 function applyFontScale(type) {
@@ -2954,7 +2949,6 @@ function setAvgBG() {
         } */
 
     function getAverageRGB(imgEl) {
-
         var blockSize = 5, // only visit every 5 pixels
             defaultRGB = { r: 0, g: 0, b: 0 }, // for non-supporting envs
             canvas = document.createElement('canvas'),
@@ -2994,7 +2988,6 @@ function setAvgBG() {
         rgb.b = ~~(rgb.b / count);
 
         return rgb;
-
     }
 
     /**
@@ -4035,7 +4028,7 @@ jQuery(() => {
             return;
         }
 
-        eventSource.once(event_types.SETTINGS_UPDATED, function() {
+        eventSource.once(event_types.SETTINGS_UPDATED, function () {
             toastr.warning(
                 t`Click here to reload.`,
                 t`Toggling the Experimental Macro Engine requires a reload.`,

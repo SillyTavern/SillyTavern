@@ -189,7 +189,6 @@ router.post('/generate-voice', async (request, response) => {
                 response.setHeader('Content-Length', audioBytes.length);
 
                 return response.send(Buffer.from(audioBytes));
-
             } catch (conversionError) {
                 console.error('MiniMax TTS: Audio conversion error:', conversionError);
                 return response.status(500).json({ error: `Audio data conversion failed: ${conversionError.message}` });
@@ -222,7 +221,6 @@ router.post('/generate-voice', async (request, response) => {
             console.error('MiniMax TTS: No valid audio data in response:', responseData);
             return response.status(500).json({ error: `API Error: ${errorMessage}` });
         }
-
     } catch (error) {
         console.error('MiniMax TTS generation failed:', error);
         return response.status(500).json({ error: 'Internal server error' });

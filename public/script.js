@@ -2516,7 +2516,6 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
  * @returns {JQuery<HTMLElement>} Rendered HTMLElement.
  */
 export function updateMessageElement(mes, { messageId = chat.length - 1, messageElement = messageTemplate.clone(), adjustMediaScroll = SCROLL_BEHAVIOR.NONE } = {}) {
-
     let avatarImg = getThumbnailUrl('persona', user_avatar);
 
     //for non-user messages
@@ -3709,9 +3708,9 @@ class StreamingProcessor {
     }
 
     /**
-     * @returns {Generator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs, toolCalls: any[], state: any }, void, void>}
+     * @returns {AsyncGenerator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs, toolCalls: any[], state: any }, void, void>}
      */
-    *nullStreamingGeneration() {
+    async* nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
 
@@ -4862,7 +4861,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         // Add quiet generation prompt at depth 0
         if (quiet_prompt && quiet_prompt.length) {
-
             // here name1 is forced for all quiet prompts..why?
             const name = name1;
             //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
@@ -5399,7 +5397,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(getMessage)) {
             is_send_press = false;
             return await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.AUTO_SWIPE, repeated: true, forceMesId: chat.length - 1 });
-
         }
 
         console.debug('/api/chats/save called by /Generate');
@@ -6517,7 +6514,6 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, type);
         addOneMessage(chat[chat_id], { type: 'swipe' });
         !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, type);
-
     } else {
         console.debug('entering chat update routine for non-swipe post');
         const newMessage = {};
@@ -8247,7 +8243,6 @@ export async function getChatsFromFiles(data, isGroupChat) {
                     currentChat.shift();
                 }
                 chat_dict[file_name] = currentChat;
-
             } catch (error) {
                 console.error(error);
             }
@@ -9588,7 +9583,6 @@ export async function createOrEditCharacter(e) {
             select_rm_info('char_create', avatarId, oldSelectedChar);
 
             crop_data = undefined;
-
         } catch (error) {
             console.error('Error creating character', error);
             toastr.error(t`Failed to create character`);
@@ -9984,7 +9978,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
             duration: 0, //used to be 100 //Disabled on Cohee's request. https://github.com/SillyTavern/SillyTavern/pull/4610/files#r2408731744
             queue: false,
             progress: function (animation, progress, remainingMs) {
-
                 if (is_animation_scroll) chatElement.scrollTop(getMessageBottomHeight(thisMesDiv));
             },
             complete: function () {
@@ -10001,7 +9994,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
      * @param {boolean} [skipSwipeOut=false]
      */
     async function animateSwipe(run_generate = false, skipSwipeOut = false) {
-
         if (!skipSwipeOut) {
             //Swipe out.
             await animateSwipeTransition(mesId, { xEnd: `${swipeRange}px`, duration: swipeDuration });
@@ -10069,7 +10061,6 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
     //If the swipe is not being deleted.
     if (source != SWIPE_SOURCE.DELETE && source != SWIPE_SOURCE.BACK) {
-
         // Make sure ad-hoc changes to extras are saved before swiping away
         syncMesToSwipe(mesId);
 
@@ -10382,7 +10373,6 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
         await createOrEditCharacter(new CustomEvent('newChat'));
         if (deleteCurrentChat) await delChat(chat_file_for_del + '.jsonl');
     }
-
 }
 
 /**
@@ -11407,9 +11397,7 @@ jQuery(async function () {
 
                 divchat.style.borderRadius = '';
                 divchat.style.backgroundColor = '';
-
             } else {
-
                 divchat.style.borderRadius = '10px'; // Adjust the value to control the roundness of the corners
                 divchat.style.backgroundColor = ''; // Set the background color to your preference
 

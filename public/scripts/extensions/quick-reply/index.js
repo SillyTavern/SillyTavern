@@ -14,8 +14,6 @@ import { selected_group } from '../../group-chats.js';
 export { debounceAsync };
 
 
-
-
 const _VERBOSE = true;
 export const debug = (...msg) => _VERBOSE ? console.debug('[QR2]', ...msg) : null;
 export const log = (...msg) => _VERBOSE ? console.log('[QR2]', ...msg) : null;
@@ -54,8 +52,6 @@ let autoExec;
 export let quickReplyApi;
 
 
-
-
 const loadSets = async () => {
     const response = await fetch('/api/settings/get', {
         method: 'POST',
@@ -72,7 +68,7 @@ const loadSets = async () => {
                 set.disableSend = set.quickActionEnabled ?? false;
                 set.placeBeforeInput = set.placeBeforeInputEnabled ?? false;
                 set.injectInput = set.AutoInputInject ?? false;
-                set.qrList = set.quickReplySlots.map((slot,idx)=>{
+                set.qrList = set.quickReplySlots.map((slot, idx) => {
                     const qr = {};
                     qr.id = idx + 1;
                     qr.label = slot.label ?? '';
@@ -87,7 +83,7 @@ const loadSets = async () => {
                     qr.executeOnNewChat = slot.autoExecute_newChat ?? false;
                     qr.executeBeforeGeneration = slot.autoExecute_beforeGeneration ?? false;
                     qr.automationId = slot.automationId ?? '';
-                    qr.contextList = (slot.contextMenu ?? []).map(it=>({
+                    qr.contextList = (slot.contextMenu ?? []).map(it => ({
                         set: it.preset,
                         isChained: it.chain,
                     }));
@@ -99,8 +95,8 @@ const loadSets = async () => {
             }
         }
         // need to load QR lists after all sets are loaded to be able to resolve context menu entries
-        setList.forEach((set, idx)=>{
-            QuickReplySet.list[idx].qrList = set.qrList.map(it=>QuickReply.from(it));
+        setList.forEach((set, idx) => {
+            QuickReplySet.list[idx].qrList = set.qrList.map(it => QuickReply.from(it));
             QuickReplySet.list[idx].init();
         });
         log('sets: ', QuickReplySet.list);
@@ -140,7 +136,7 @@ const executeIfReadyElseQueue = async (functionToCall, args) => {
         await functionToCall(...args);
     } else {
         log('queueing', { functionToCall, args });
-        executeQueue.push(async()=>await functionToCall(...args));
+        executeQueue.push(async () => await functionToCall(...args));
     }
 };
 
@@ -183,9 +179,9 @@ const init = async () => {
 
     buttons = new ButtonUi(settings);
     buttons.show();
-    settings.onSave = ()=>buttons.refresh();
+    settings.onSave = () => buttons.refresh();
 
-    globalThis.executeQuickReplyByName = async(name, args = {}, options = {}) => {
+    globalThis.executeQuickReplyByName = async (name, args = {}, options = {}) => {
         let qr = [
             ...settings.config.setList,
             ...(settings.chatConfig?.setList ?? []),
@@ -193,14 +189,14 @@ const init = async () => {
         ]
             .map(it => it.set.qrList)
             .flat()
-            .find(it=>it.label == name)
+            .find(it => it.label == name)
             ;
         if (!qr) {
             let [setName, ...qrName] = name.split('.');
             qrName = qrName.join('.');
             let qrs = QuickReplySet.get(setName);
             if (qrs) {
-                qr = qrs.qrList.find(it=>it.label == qrName);
+                qr = qrs.qrList.find(it => it.label == qrName);
             }
         }
         if (qr && qr.onExecute) {
@@ -215,7 +211,7 @@ const init = async () => {
     slash.init();
     autoExec = new AutoExecuteHandler(settings);
 
-    eventSource.on(event_types.APP_READY, async()=>await finalizeInit());
+    eventSource.on(event_types.APP_READY, async () => await finalizeInit());
 
     globalThis.quickReplyApi = quickReplyApi;
 };
@@ -275,14 +271,14 @@ const onChatChanged = async (chatIdx) => {
 
     await autoExec.handleChatChanged();
 };
-eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onChatChanged, args));
+eventSource.on(event_types.CHAT_CHANGED, (...args) => executeIfReadyElseQueue(onChatChanged, args));
 eventSource.on(event_types.CHARACTER_DELETED, purgeCharacterQuickReplySets);
 eventSource.on(event_types.CHARACTER_RENAMED, updateCharacterQuickReplySets);
 
 const onUserMessage = async () => {
     await autoExec.handleUser();
 };
-eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
+eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, (...args) => executeIfReadyElseQueue(onUserMessage, args));
 
 const onAiMessage = async (messageId) => {
     if (['...'].includes(chat[messageId]?.mes)) {
@@ -292,7 +288,7 @@ const onAiMessage = async (messageId) => {
 
     await autoExec.handleAi();
 };
-eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
+eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, (...args) => executeIfReadyElseQueue(onAiMessage, args));
 
 const onGroupMemberDraft = async () => {
     await autoExec.handleGroupMemberDraft();

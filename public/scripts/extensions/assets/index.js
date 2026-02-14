@@ -94,8 +94,7 @@ async function downloadAssetsList(url) {
     updateCurrentAssets().then(async function () {
         fetch(url, { cache: 'no-cache' })
             .then(response => response.json())
-            .then(async function(json) {
-
+            .then(async function (json) {
                 availableAssets = {};
                 $('#assets_menu').empty();
 

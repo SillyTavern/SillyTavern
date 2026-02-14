@@ -1,4 +1,3 @@
-
 import { saveTtsProviderSettings } from './index.js';
 
 export { GSVITtsProvider };
@@ -60,9 +59,7 @@ class GSVITtsProvider {
         const characterList = await response.json();
         this.characterList = characterList;
         this.voices = Object.keys(characterList);
-
     }
-
 
 
     get settingsHtml() {
@@ -142,11 +139,8 @@ class GSVITtsProvider {
         $('#gsvi_batch_size_output').text(this.settings.batch_size);
 
 
-
-
         // Persist settings changes
         saveTtsProviderSettings();
-
     }
 
     async loadSettings(settings) {
@@ -195,7 +189,6 @@ class GSVITtsProvider {
         await this.checkReady();
         console.debug('GSVI: Settings loaded');
     }
-
 
 
     // Perform a simple readiness check by trying to fetch voiceIds
@@ -256,12 +249,10 @@ class GSVITtsProvider {
 
 
         return `${this.settings.provider_endpoint}/tts?${params.toString()}`;
-
     }
 
     // Interface not used by GSVI TTS
     async fetchTtsFromHistory(history_item_id) {
         return Promise.resolve(history_item_id);
     }
-
 }

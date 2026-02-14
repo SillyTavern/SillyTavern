@@ -2279,7 +2279,6 @@ function appendElectronHubOptions(model_list, groupModels = false) {
             appendOption(model);
         });
     }
-
 }
 
 function electronHubSortBy(data, property = 'alphabetically') {
@@ -3985,7 +3984,6 @@ function loadOpenAISettings(data, settings) {
         option.value = i;
         option.text = item;
         $('#settings_preset_openai').append(option);
-
     });
     openai_setting_names = settingNames;
 
@@ -4896,7 +4894,6 @@ function getSiliconflowMaxContext(model, isUnlocked) {
 
     // Return context size if model found, otherwise default to 32k
     return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_32k;
-
 }
 
 /**
@@ -5041,7 +5038,6 @@ async function onModelChange() {
         console.log('Claude model changed to', value);
         oai_settings.claude_model = value;
         $('#model_claude_select').val(oai_settings.claude_model);
-
     }
 
     if ($(this).is('#model_openai_select')) {

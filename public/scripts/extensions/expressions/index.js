@@ -1414,7 +1414,6 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
                 });
 
                 if (apiResult.ok) {
-
                     const data = await apiResult.json();
                     expressionsList = data.labels;
                     return expressionsList;
@@ -1488,7 +1487,6 @@ function chooseSpriteForExpression(spriteFolderName, expression, { prevExpressio
     }
 
     return spriteFile;
-
 }
 
 /**
@@ -2333,7 +2331,7 @@ function migrateSettings() {
         name: 'expression-folder-override',
         aliases: ['spriteoverride', 'costume'],
         callback: setSpriteFolderCommand,
-        namedArgumentList:[
+        namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
                 description: 'Character name to set a subfolder for. If not provided, the character who last sent a message will be used.',

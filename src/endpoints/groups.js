@@ -51,7 +51,7 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                     if (!needsMigration) {
                         continue;
                     }
-                    if (!fs.existsSync(backupPath)){
+                    if (!fs.existsSync(backupPath)) {
                         await fsPromises.mkdir(backupPath, { recursive: true });
                     }
                     await fsPromises.copyFile(groupFilePath, path.join(backupPath, groupFile.name));

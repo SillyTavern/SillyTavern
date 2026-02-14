@@ -111,7 +111,6 @@ router.post('/get', async (request, response) => {
 
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-
             ensureFoldersExist(request.user.directories);
 
             const folders = fs.readdirSync(folderPath, { withFileTypes: true })
@@ -346,7 +345,6 @@ router.post('/character', async (request, response) => {
     let output = [];
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-
             // Live2d assets
             if (category == 'live2d') {
                 const folders = fs.readdirSync(folderPath, { withFileTypes: true });

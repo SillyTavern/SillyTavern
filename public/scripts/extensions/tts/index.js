@@ -611,7 +611,6 @@ async function processTtsQueue() {
 
             // Pass the full voiceMapKey (e.g., "User ("Quotes")") as well with character name
             await tts(segmentText, voiceId, char, voiceMapKey);
-
         } catch (error) {
             toastr.error(error.toString());
             console.error(error);
@@ -707,7 +706,6 @@ async function processTtsQueue() {
 
         // Clear current job so the segmented jobs can be processed
         currentTtsJob = null;
-
     } catch (error) {
         toastr.error(error.toString());
         console.error(error);
@@ -1286,7 +1284,6 @@ export function getCharacters(unrestricted) {
     }
 
     return characters;
-
 }
 
 export function sanitizeId(input) {
@@ -1312,7 +1309,6 @@ function parseVoiceMap(voiceMapString) {
     }
     return parsedVoiceMap;
 }
-
 
 
 /**

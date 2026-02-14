@@ -158,7 +158,6 @@ router.post('/samplers', async (request, response) => {
         const data = await result.json();
         const names = data.map(x => x.name);
         return response.send(names);
-
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

@@ -101,7 +101,6 @@ observer.observe(document.documentElement, observerConfig);
  * @returns {string} - A human-readable string that represents the time spent generating characters.
  */
 export function humanizeGenTime(total_gen_time) {
-
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
     let time_spent = total_gen_time || 0;
     time_spent = Math.floor(time_spent / 1000);
@@ -1272,8 +1271,6 @@ export function initRossMods() {
                 return;
             }
         }
-
-
 
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {

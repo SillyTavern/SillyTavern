@@ -1456,7 +1456,6 @@ async function onViewStatsClick() {
             messageElement.addClass('vectorized');
         }
     }
-
 }
 
 async function onVectorizeAllFilesClick() {

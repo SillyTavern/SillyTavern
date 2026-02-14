@@ -675,7 +675,6 @@ class WorldInfoTimedEffects {
                 console.log('[WI] Timed effect "delay" applied to entry', entry);
             }
         }
-
     }
 
     /**
@@ -4495,7 +4494,6 @@ function parseDecorators(content) {
     }
 
     return [[], content];
-
 }
 
 /**

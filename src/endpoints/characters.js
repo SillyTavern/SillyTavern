@@ -639,7 +639,6 @@ function charaFormatData(data, directories) {
             if (file && file.entries) {
                 _.set(char, 'data.character_book', convertWorldInfoToCharacterBook(data.world, file.entries));
             }
-
         } catch {
             console.warn(`Failed to read world info file: ${data.world}. Character book will not be available.`);
         }
@@ -921,7 +920,8 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         let charJSON = JSON.stringify(char);
         const result = await writeCharacterData(DEFAULT_AVATAR_PATH, charJSON, pngName, request);
         return result ? pngName : '';
-    } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
+    } else if (jsonData.char_name !== undefined) {
+        //json Pygmalion notepad
         console.info('Importing from gradio json');
         jsonData.char_name = sanitize(jsonData.char_name);
         if (jsonData.creator_notes) {

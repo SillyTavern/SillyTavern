@@ -155,7 +155,7 @@ export const commonEnumProviders = {
             ...isAll || types.includes('scope') ? scope.allVariableNames.map(name => new SlashCommandEnumValue(name, null, enumTypes.variable, enumIcons.scopeVariable)) : [],
             ...isAll || types.includes('local') ? Object.keys(chat_metadata.variables ?? []).map(name => new SlashCommandEnumValue(name, null, enumTypes.name, enumIcons.localVariable)) : [],
             ...isAll || types.includes('global') ? Object.keys(extension_settings.variables.global ?? []).map(name => new SlashCommandEnumValue(name, null, enumTypes.macro, enumIcons.globalVariable)) : [],
-        ].filter((item, idx, list)=>idx == list.findIndex(it=>it.value == item.value));
+        ].filter((item, idx, list) => idx == list.findIndex(it => it.value == item.value));
     },
 
     /**

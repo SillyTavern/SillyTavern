@@ -1593,7 +1593,6 @@ export async function showCharConnections() {
         highlightPersonas: true,
         targetedChar: getCurrentConnectionObj(),
         shiftClickHandler: (element, ev) => {
-
             const personaId = $(element).attr('data-pid');
 
             /** @type {PersonaConnection[]} */
@@ -1845,7 +1844,6 @@ async function lockPersonaCallback(_args, value) {
     if (isFalseBoolean(value)) {
         await setPersonaLockState(false, type);
         return 'false';
-
     }
 
     return '';

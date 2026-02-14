@@ -160,7 +160,7 @@ class CoquiTtsProvider {
             .then(response => response.json())
             .then(json => {
                 coquiApiModels = json;
-                console.debug(DEBUG_PREFIX,'initialized coqui-api model list to', coquiApiModels);
+                console.debug(DEBUG_PREFIX, 'initialized coqui-api model list to', coquiApiModels);
             /*
             $('#coqui_api_language')
                 .find('option')
@@ -180,7 +180,7 @@ class CoquiTtsProvider {
             .then(response => response.json())
             .then(json => {
                 coquiApiModelsFull = json;
-                console.debug(DEBUG_PREFIX,'initialized coqui-api full model list to', coquiApiModelsFull);
+                console.debug(DEBUG_PREFIX, 'initialized coqui-api full model list to', coquiApiModelsFull);
             /*
             $('#coqui_api_full_language')
                 .find('option')
@@ -197,7 +197,7 @@ class CoquiTtsProvider {
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
-    async checkReady(){
+    async checkReady() {
         throwIfModuleMissing();
         await this.fetchTtsVoiceObjects();
     }
@@ -384,12 +384,12 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select model language</option>')
                 .val('none');
 
-            for(let language in coquiApiModels) {
+            for (let language in coquiApiModels) {
                 let languageLabel = language;
                 if (language in languageLabels)
                     languageLabel = languageLabels[language];
-                $('#coqui_api_language').append(new Option(languageLabel,language));
-                console.log(DEBUG_PREFIX,'added language',languageLabel,'(',language,')');
+                $('#coqui_api_language').append(new Option(languageLabel, language));
+                console.log(DEBUG_PREFIX, 'added language', languageLabel, '(', language, ')');
             }
 
             $('#coqui_api_model_div').show();
@@ -406,12 +406,12 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select model language</option>')
                 .val('none');
 
-            for(let language in coquiApiModelsFull) {
+            for (let language in coquiApiModelsFull) {
                 let languageLabel = language;
                 if (language in languageLabels)
                     languageLabel = languageLabels[language];
-                $('#coqui_api_language').append(new Option(languageLabel,language));
-                console.log(DEBUG_PREFIX,'added language',languageLabel,'(',language,')');
+                $('#coqui_api_language').append(new Option(languageLabel, language));
+                console.log(DEBUG_PREFIX, 'added language', languageLabel, '(', language, ')');
             }
 
             $('#coqui_api_model_div').show();
@@ -450,8 +450,8 @@ class CoquiTtsProvider {
         if (model_origin == 'coqui-api-full')
             modelDict = coquiApiModelsFull;
 
-        for(let model_dataset in modelDict[model_language])
-            for(let model_name in modelDict[model_language][model_dataset]) {
+        for (let model_dataset in modelDict[model_language])
+            for (let model_name in modelDict[model_language][model_dataset]) {
                 const model_id = model_dataset + '/' + model_name;
                 const model_label = model_name + ' (' + model_dataset + ' dataset)';
                 $('#coqui_api_model_name').append(new Option(model_label, model_id));
@@ -526,7 +526,7 @@ class CoquiTtsProvider {
 
         // Check if already installed and propose to do it otherwise
         const model_id = modelDict[model_language][model_dataset][model_name].id;
-        console.debug(DEBUG_PREFIX,'Check if model is already installed',model_id);
+        console.debug(DEBUG_PREFIX, 'Check if model is already installed', model_id);
         const result = await CoquiTtsProvider.checkmodel_state(model_id);
         const resultJSON = await result.json();
         const model_state = resultJSON.model_state;
@@ -583,7 +583,6 @@ class CoquiTtsProvider {
             $('#coqui_api_model_install_button').show();
             return;
         }
-
     }
 
 

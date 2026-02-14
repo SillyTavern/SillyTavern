@@ -256,7 +256,6 @@ router.post('/caption-image', async (request, response) => {
             console.info(status);
 
             if (status.state === HordeAsyncRequestStates.done) {
-
                 if (status.forms === undefined) {
                     console.error('Image interrogation request failed: no forms found.');
                     return response.sendStatus(500);
@@ -278,7 +277,6 @@ router.post('/caption-image', async (request, response) => {
                 return response.sendStatus(503);
             }
         }
-
     } catch (error) {
         console.error(error);
         response.sendStatus(500);

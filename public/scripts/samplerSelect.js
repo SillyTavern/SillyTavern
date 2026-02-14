@@ -203,7 +203,6 @@ function setSamplerListListeners() {
 
         console.log(samplerName, relatedDOMElement.data(SELECT_SAMPLER.DATA), shouldDisplay);
     });
-
 }
 
 function isElementVisibleInDOM(element) {

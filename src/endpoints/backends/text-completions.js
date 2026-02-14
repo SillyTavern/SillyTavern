@@ -541,7 +541,6 @@ llamacpp.post('/props', async function (request, response) {
         console.debug('LlamaCpp props response:', data);
 
         return response.send(data);
-
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -591,7 +590,6 @@ llamacpp.post('/slots', async function (request, response) {
         console.debug('LlamaCpp slots response:', data);
 
         return response.send(data);
-
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

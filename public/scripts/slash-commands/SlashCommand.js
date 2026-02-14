@@ -26,7 +26,6 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 */
 
 
-
 export class SlashCommand {
     /**
      * Creates a SlashCommand from a properties object.
@@ -46,8 +45,6 @@ export class SlashCommand {
         const instance = Object.assign(new this(), props);
         return instance;
     }
-
-
 
 
     /**@type {string}*/ name;
@@ -86,7 +83,7 @@ export class SlashCommand {
                         name.classList.add('name');
                         name.classList.add('monospace');
                         name.textContent = '/';
-                        key.split('').forEach(char=>{
+                        key.split('').forEach(char => {
                             const span = document.createElement('span'); {
                                 span.textContent = char;
                                 name.append(span);
@@ -229,7 +226,7 @@ export class SlashCommand {
             const unnamedArguments = cmd.unnamedArgumentList ?? [];
             const returnType = cmd.returns ?? 'void';
             const helpString = cmd.helpString ?? 'NO DETAILS';
-            const aliasList = [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key);
+            const aliasList = [cmd.name, ...(cmd.aliases ?? [])].filter(it => it != key);
             const specs = document.createElement('div'); {
                 specs.classList.add('specs');
                 const head = document.createElement('div'); {
@@ -257,7 +254,7 @@ export class SlashCommand {
                             this.isExtension ? 'Extension' : 'Core',
                             this.isThirdParty ? 'Third Party' : (this.isExtension ? 'Core' : null),
                             this.source,
-                        ].filter(it=>it).join('\n');
+                        ].filter(it => it).join('\n');
                         head.append(src);
                     }
                     if (this.rawQuotes) {

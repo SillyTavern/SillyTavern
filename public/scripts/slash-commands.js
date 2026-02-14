@@ -4916,7 +4916,6 @@ export async function sendNarratorMessage(args, text) {
 }
 
 export async function promptQuietForLoudResponse(who, text) {
-
     let character_id = getContext().characterId;
     if (who === 'sys') {
         text = 'System: ' + text;
@@ -4955,7 +4954,6 @@ export async function promptQuietForLoudResponse(who, text) {
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     await saveChatConditional();
-
 }
 
 async function sendCommentMessage(args, text) {

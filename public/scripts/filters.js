@@ -76,7 +76,6 @@ export const fuzzySearchCategories = Object.freeze({
  * data = filterHelper.applyFilters(data);
  */
 export class FilterHelper {
-
     /**
      * Cache fuzzy search weighting scores for re-usability, sorting and stuff
      *

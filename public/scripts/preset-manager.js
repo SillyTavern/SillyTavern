@@ -514,7 +514,6 @@ class PresetManager {
             console.error('Preset could not be renamed', error);
             throw new Error('Preset could not be renamed');
         }
-
     }
 
     /**

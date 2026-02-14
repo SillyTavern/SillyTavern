@@ -865,7 +865,6 @@ function selectReasoningTemplateCallback(args, name) {
     UI.$select.val(foundName).trigger('change');
     !quiet && toastr.success(`Reasoning template "${foundName}" selected`);
     return foundName;
-
 }
 
 function registerReasoningSlashCommands() {

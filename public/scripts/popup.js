@@ -478,7 +478,6 @@ export class Popup {
                     break;
                 }
             }
-
         };
         this.dlg.addEventListener('keydown', keyListener.bind(this));
     }

@@ -1012,7 +1012,6 @@ export async function canResolve(name, useIPv6 = true, useIPv4 = true) {
         }
 
         return v6Resolved || v4Resolved;
-
     } catch (error) {
         return false;
     }
