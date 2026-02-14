@@ -859,7 +859,7 @@ body .panelControlBar {
     overflow-x: hidden;
     padding-bottom: 0;
     overflow-y: scroll;
-    display: flex;
+    display: flex; /* This breaks swiping transitions when the message grows past chat's height. */
     bottom: 10px;
     /*     border-bottom: 1px solid var(--SmartThemeBorderColor);
     border-left: 1px solid var(--SmartThemeBorderColor);
@@ -4518,7 +4518,8 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .mes_reasoning_edit_done,
-.mes_edit_done.menu_button {
+.mes_edit_done.menu_button,
+.mes_edit_fork.menu_button {
     background-color: var(--okGreen70a);
 }
 

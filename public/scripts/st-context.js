@@ -65,6 +65,8 @@ import {
     getMediaIndex,
     scrollChatToBottom,
     scrollOnMediaLoad,
+    redisplayChat,
+    updateMessageElement,
     getOneCharacter,
     getCharacterSource,
 } from '../script.js';
@@ -103,12 +105,14 @@ import { ChatCompletionService, TextCompletionService } from './custom-request.j
 import { ConnectionManagerRequestService } from './extensions/shared.js';
 import { updateReasoningUI, parseReasoningFromString, getReasoningTemplateByName } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
+import { tree } from './chat-tree.js';
 import { macros } from './macros/macro-system.js';
 
 export function getContext() {
     return {
         accountStorage,
         chat,
+        tree,
         characters,
         groups,
         name1,
@@ -131,6 +135,7 @@ export function getContext() {
         eventSource,
         eventTypes: event_types,
         addOneMessage,
+        updateMessageElement,
         deleteLastMessage,
         deleteMessage,
         generate: Generate,
@@ -274,6 +279,7 @@ export function getContext() {
         getChatCompletionModel,
         printMessages,
         clearChat,
+        redisplayChat,
         ChatCompletionService,
         TextCompletionService,
         ConnectionManagerRequestService,

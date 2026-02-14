@@ -338,6 +338,7 @@ export const power_user = {
     reduced_motion: false,
     compact_input_area: true,
     show_swipe_num_all_messages: false,
+    enable_chat_tree: false,
     auto_connect: false,
     auto_load_chat: false,
     forbid_external_media: true,
@@ -530,7 +531,26 @@ function switchCompactInputArea() {
 
 function switchSwipeNumAllMessages() {
     $('#show_swipe_num_all_messages').prop('checked', power_user.show_swipe_num_all_messages);
-    $('body').toggleClass('swipeAllMessages', !!power_user.show_swipe_num_all_messages);
+    $('body').toggleClass('swipeNumAllMessages', !!power_user.show_swipe_num_all_messages);
+}
+
+function switchSwipesAllMessages() {
+    $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
+    $('body').toggleClass('swipeAllMessages', !!power_user.enable_chat_tree);
+}
+
+async function askSwitchSwipesAllMessages() {
+    //Only ask when it's being enabled.
+    if (!power_user.enable_chat_tree)
+    // https://docs.sillytavern.app/usage/chatting/swipes Future link.
+    {   let warning = $(` <h1> ${t`Are you certain?`} </h1> <div> ${ t`Swiping on all messages is an experimental feature,<br>It can be disabled at any time.<br>Alternate swipes are saved in first line of your chat file.`} \n <pre> <a href="https://github.com/SillyTavern/SillyTavern-Docs/pull/174/files">Click for documentation. (Temporary)</a> </pre></div>`);
+        const result = await callGenericPopup(warning, POPUP_TYPE.CONFIRM, null, {
+            okButton: t`Yes, I’ve made a backup and agree to report any bugs.`,
+            cancelButton: 'Cancel',
+        });
+        return result;
+    }
+    return true;
 }
 
 var originalSliderValues = [];
@@ -1823,6 +1843,7 @@ export async function loadPowerUserSettings(settings, data) {
     loadCharListState();
     toggleMDHotkeyIconDisplay();
     applyToastrPosition();
+    switchSwipesAllMessages();
 }
 
 function toggleMDHotkeyIconDisplay() {
@@ -4175,6 +4196,21 @@ jQuery(() => {
         power_user.show_swipe_num_all_messages = !!$(this).prop('checked');
         switchSwipeNumAllMessages();
         saveSettingsDebounced();
+    });
+
+    $('#show_swipes_for_all_messages').on('input', async function () {
+        //Ask user if they're sure.
+        if (await askSwitchSwipesAllMessages())
+        {
+            power_user.enable_chat_tree = !!$(this).prop('checked');
+            saveSettingsDebounced();
+            switchSwipesAllMessages();
+            await reloadCurrentChat();
+        }
+        else {
+            //Toggle checkbox off.
+            $('#show_swipes_for_all_messages').prop('checked', power_user.enable_chat_tree);
+        }
     });
 
     $('#auto-connect-checkbox').on('input', function () {

@@ -57,6 +57,7 @@ import { t } from './i18n.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
+import { tree } from './chat-tree.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -1862,7 +1863,7 @@ export function preserveNeutralChat() {
         return;
     }
 
-    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chat_metadata }));
+    sessionStorage.setItem(NEUTRAL_CHAT_KEY, JSON.stringify({ chat, chatTree:tree.chatTree, chat_metadata }));
 }
 
 export function restoreNeutralChat() {
@@ -1875,9 +1876,12 @@ export function restoreNeutralChat() {
         return;
     }
 
-    const { chat: neutralChatData, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
+    const { chat: neutralChatData, chatTree: neutralChatTree, chat_metadata: neutralChatMetadata } = JSON.parse(neutralChat);
     chat.splice(0, chat.length, ...neutralChatData);
     updateChatMetadata(neutralChatMetadata, true);
+    if (tree.toggled()) {
+        tree.setChatTree(neutralChatTree);
+    }
     sessionStorage.removeItem(NEUTRAL_CHAT_KEY);
 }
 
@@ -2144,6 +2148,8 @@ export function initChatUtilities() {
             chat_metadata: chat_metadata,
             user_name: 'unused',
             character_name: 'unused',
+            //Only set the tree if it exists.
+            ...(!isNaN(tree.chatTree?.branch_id) && { tree: tree.chatTree }),
         };
         const chatToSave = [
             chatHeader,

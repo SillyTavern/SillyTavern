@@ -86,6 +86,7 @@ import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { tree, Tree } from './chat-tree.js';
 
 export {
     selected_group,
@@ -190,7 +191,7 @@ async function regenerateGroup() {
 /**
  * Loads group chat messages from the server.
  * @param {string} chatId Chat ID
- * @returns {Promise<ChatFile>} Array of chat messages
+ * @returns {Promise<ChatFile>} Array of chat messages, optionally prefixed by a header.
  */
 async function loadGroupChat(chatId) {
     const response = await fetch('/api/chats/group/get', {
@@ -200,11 +201,11 @@ async function loadGroupChat(chatId) {
     });
 
     if (response.ok) {
-        const data = await response.json();
-        if (!Array.isArray(data)) {
+        let chatFile = await response.json();
+        if (!Array.isArray(chatFile)) {
             return [];
         }
-        return data;
+        return chatFile;
     }
 
     return [];
@@ -264,14 +265,20 @@ export async function getGroupChat(groupId, reload = false) {
     await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
-    const data = await loadGroupChat(chat_id);
-    const metadata = data?.[0]?.chat_metadata ?? {};
-    const freshChat = !metadata.tainted && (!Array.isArray(data) || !data.length);
+    const chatFile = await loadGroupChat(chat_id);
+
+    /** @type {ChatMetadata} */
+    let metadata = {};
+    /** @type {ChatTree} */
+    let treeData;
 
     // Remove chat file header if present
-    if (Array.isArray(data) && data.length && Object.hasOwn(data[0], 'chat_metadata')) {
-        data.shift();
+    if (Array.isArray(chatFile) && chatFile.length && Object.hasOwn(chatFile[0], 'chat_metadata')) {
+        const chatHeader = /** @type {ChatHeader} */ (chatFile.shift());
+        metadata = chatHeader?.chat_metadata ?? {};
+        treeData = chatHeader?.tree ?? {};
     }
+    const freshChat = !metadata.tainted && (!Array.isArray(chatFile) || !chatFile.length);
 
     // Add integrity slug if missing
     if (!metadata.integrity) {
@@ -302,9 +309,10 @@ export async function getGroupChat(groupId, reload = false) {
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1), 'first_message');
         }
         await saveGroupChat(groupId, false);
-    } else if (Array.isArray(data) && data.length) {
-        chat.splice(0, chat.length, ...data);
+    } else if (Array.isArray(chatFile) && chatFile.length) {
+        chat.splice(0, chat.length, ...chatFile);
         chat.forEach(ensureMessageMediaIsArray);
+        tree.setChatTree(treeData);
         chatElement.find('.mes').remove();
         await printMessages();
     }
@@ -634,6 +642,8 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
         chat_metadata: { ...chat_metadata },
         user_name: 'unused',
         character_name: 'unused',
+        //Only set the tree if it exists.
+        ...(!isNaN(tree.chatTree?.branch_id) && { tree: tree.chatTree }),
     };
     const response = await fetch('/api/chats/group/save', {
         method: 'POST',
@@ -699,41 +709,71 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 
             // Load all chats from this group
             for (const chatId of group.chats) {
-                const messages = await loadGroupChat(chatId);
+                /** @type {ChatFile} */
+                const chatFile = await loadGroupChat(chatId);
 
                 // Only save the chat if there were any changes to the chat content
                 let hadChanges = false;
+
+                function updateMessage(message) {
+                    // Message belonged to the old-named character:
+                    // Update name, avatar thumbnail URL and original avatar link
+                    if (message.force_avatar && message.force_avatar.indexOf(encodeURIComponent(oldAvatar)) !== -1) {
+                        message.name = newName;
+                        message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
+                        message.original_avatar = newAvatar;
+                        hadChanges = true;
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+
+                let treeData;
+                let metadata;
+
+                // Remove chat file header if present
+                if (Array.isArray(chatFile) && chatFile.length && Object.hasOwn(chatFile[0], 'chat_metadata')) {
+                    metadata = chatFile?.[0]?.chat_metadata ?? {};
+                    const temporaryTree = new Tree(chatFile[0]?.tree ?? {}, false);
+
+                    //Recursively update the chatTree
+                    await temporaryTree.updateMessages(updateMessage, newName);
+                    treeData = temporaryTree.chatTree;
+                    chatFile.shift();
+                }
+
                 // Chat shouldn't be empty
-                if (Array.isArray(messages) && messages.length) {
+                if (Array.isArray(chatFile) && chatFile.length) {
                     // Iterate over every chat message
-                    for (const message of messages) {
-                        // Skip the chat header
-                        if (Object.hasOwn(message, 'chat_metadata')) {
-                            continue;
-                        }
+                    for (const message of chatFile) {
 
                         // Only look at character messages
                         if (message.is_user || message.is_system) {
                             continue;
                         }
 
-                        // Message belonged to the old-named character:
-                        // Update name, avatar thumbnail URL and original avatar link
-                        if (message.force_avatar && message.force_avatar.indexOf(encodeURIComponent(oldAvatar)) !== -1) {
-                            message.name = newName;
-                            message.force_avatar = message.force_avatar.replace(encodeURIComponent(oldAvatar), encodeURIComponent(newAvatar));
-                            message.original_avatar = newAvatar;
-                            hadChanges = true;
-                        }
+                        updateMessage(message);
                     }
 
                     if (hadChanges) {
-                        await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, messages, oldAvatar, newAvatar);
+                        await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, chatFile, oldAvatar, newAvatar);
+
+                        /** @type {ChatHeader} */
+                        const chatHeader = {
+                            chat_metadata: metadata,
+                            user_name: 'unused',
+                            character_name: 'unused',
+                            //Only set the tree if it exists.
+                            ...(!isNaN(treeData?.branch_id) && { tree: treeData }),
+                        };
+
+                        chatFile.unshift(chatHeader);
 
                         const saveChatResponse = await fetch('/api/chats/group/save', {
                             method: 'POST',
                             headers: getRequestHeaders(),
-                            body: JSON.stringify({ id: chatId, chat: [...messages] }),
+                            body: JSON.stringify({ id: chatId, chat: [...chatFile] }),
                         });
 
                         if (!saveChatResponse.ok) {
@@ -2377,6 +2417,8 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
         chat_metadata: { ...chat_metadata, ...(metadata || {}) },
         user_name: 'unused',
         character_name: 'unused',
+        //Only set the tree if it exists.
+        ...(!isNaN(tree.chatTree?.branch_id) && { tree: tree.chatTree }),
     };
 
     /** @type {ChatMessage[]} */

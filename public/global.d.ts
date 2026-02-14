@@ -52,6 +52,7 @@ declare global {
         user_name: 'unused';
         /** @deprecated For backward compatibility ONLY */
         character_name: 'unused';
+        tree?: ChatTree;
     }
 
     interface ChatMetadata {
@@ -60,6 +61,33 @@ declare global {
         scenario?: string;
         persona?: string;
         [key: string]: any;
+    }
+
+    interface ChatTree {
+        branch_id?: number;
+        branch?: ChatTreeMessage[]
+    }
+
+    interface ChatTreeMessage extends Omit<ChatMessage, 'swipe_id' | 'swipes' | 'swipe_info'>{
+        branch_id?: number;
+        branch?: ChatTreeMessage[];
+    }
+
+    interface ChatTreeNode extends Omit<ChatMessage, 'swipe_id' | 'swipes' | 'swipe_info'>{
+        branch_id?: number;
+        parents?: ChatTreeNode[]; // This is an array to allow for future flexibility.
+        children?: ChatTreeNode[];
+        id: number;
+    }
+    interface SerializedChatTreeNode extends Omit<ChatTreeNode, 'parents' | 'children'>{
+        parentIds?: number[]; // This is an array to allow for future flexibility.
+        childIds?: number[];
+    }
+    interface ChatTreeNodes {
+        [key: number]: ChatTreeNode;
+    }
+     interface SerializedChatTreeNodes {
+        [key: number]: SerializedChatTreeNode;
     }
 
     interface ChatMessage {

@@ -1417,7 +1417,7 @@ function registerReasoningAppEvents() {
         }
 
         if (contentUpdated) {
-            syncMesToSwipe();
+            syncMesToSwipe(idx);
             saveChatDebounced();
 
             // Find if a message already exists in DOM and must be updated

@@ -79,8 +79,9 @@ const STORAGE_KEYS = {
  * @property {string} avatars - The directory where the avatars are stored
  * @property {string} userImages - The directory where the images are stored
  * @property {string} groups - The directory where the groups are stored
- * @property {string} groupChats - The directory where the group chats are stored
  * @property {string} chats - The directory where the chats are stored
+ * @property {string} groupChats - The directory where the group chats are stored
+ * @property {string} backups - The directory where the backups are stored
  * @property {string} characters - The directory where the characters are stored
  * @property {string} backgrounds - The directory where the backgrounds are stored
  * @property {string} novelAI_Settings - The directory where the NovelAI settings are stored
@@ -97,7 +98,6 @@ const STORAGE_KEYS = {
  * @property {string} comfyWorkflows - The directory where the ComfyUI workflows are stored
  * @property {string} files - The directory where the uploaded files are stored
  * @property {string} vectors - The directory where the vectors are stored
- * @property {string} backups - The directory where the backups are stored
  * @property {string} sysprompt - The directory where the system prompt data is stored
  * @property {string} reasoning - The directory where the reasoning templates are stored
  */

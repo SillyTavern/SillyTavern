@@ -24,8 +24,9 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     avatars: 'User Avatars',
     userImages: 'user/images',
     groups: 'groups',
-    groupChats: 'group chats',
     chats: 'chats',
+    groupChats: 'group chats',
+    backups: 'backups',
     characters: 'characters',
     backgrounds: 'backgrounds',
     novelAI_Settings: 'NovelAI Settings',
@@ -42,7 +43,6 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     comfyWorkflows: 'user/workflows',
     files: 'user/files',
     vectors: 'vectors',
-    backups: 'backups',
     sysprompt: 'sysprompt',
     reasoning: 'reasoning',
 });

@@ -19,7 +19,8 @@ import {
     tryWriteFileSync,
     tryReadFileSync,
     tryDeleteFile,
-    readFirstLine,
+    pickFirstObjectFromJsonFile,
+    ensureAccess,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -317,11 +318,20 @@ async function checkChatIntegrity(filePath, integritySlug) {
     if (!fs.existsSync(filePath)) {
         return true;
     }
+    let chatIntegrity;
+    //This is needed for pickFirstObjectFromJsonFile.
+    ensureAccess(filePath);
 
-    // Parse the first line of the chat file as JSON
-    const firstLine = await readFirstLine(filePath);
-    const jsonData = tryParse(firstLine);
-    const chatIntegrity = jsonData?.chat_metadata?.integrity;
+    try {
+        // Parse the first part of the file to find it's integrity slug.
+        const data = await pickFirstObjectFromJsonFile(filePath, ['chat_metadata', 'integrity']);
+        chatIntegrity = data?.value;
+    } catch (err) {
+        if (err.message === 'Parser cannot parse input: unexpected characters') {
+            console.debug(`${filePath}'s first line is not valid json/jsonl.`);
+        }
+        throw new Error(err);
+    }
 
     // If the chat has no integrity metadata, assume it's intact
     if (!chatIntegrity) {
@@ -343,6 +353,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * @property {number|string} [last_mes] - The timestamp of the last message
  * @property {object} [chat_metadata] - Additional chat metadata
  * @property {boolean} [match] - Whether the chat matches the search criteria
+ * @property {number?} [treeSize] - The size of the chatTree, if it exists.
  */
 
 /**
@@ -388,10 +399,15 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
         let hasAnyMatch = false;
         let matchBuffer = [];
         rl.on('line', (line) => {
-            if (withMetadata && itemCounter === 0) {
+            if (itemCounter === 0) {
                 const jsonData = tryParse(line);
                 if (jsonData && _.isObjectLike(jsonData.chat_metadata)) {
-                    chatData.chat_metadata = jsonData.chat_metadata;
+                    if (Object.hasOwn(jsonData, 'tree')) {
+                        const tree = jsonData?.tree;
+                        chatData.treeSize = formatBytes(JSON.stringify(tree).length);
+                    }
+
+                    if (withMetadata) chatData.chat_metadata = jsonData.chat_metadata;
                 }
             }
             // Skip matching if any match was already found
@@ -908,6 +924,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
          * @property {number} [message_count] - The number of messages in the chat
          * @property {number|string} [last_mes] - The timestamp of the last message
          * @property {string} [preview_message] - A preview of the last message
+         * @property {string} [treeSize] - Size in bytes of the chatTree.
          */
         const results = [];
 
@@ -945,6 +962,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
                     message_count: chatInfo.chat_items,
                     last_mes: chatInfo.last_mes,
                     preview_message: getPreviewMessage(chatInfo.mes),
+                    treeSize: chatInfo.treeSize,
                 });
             }
         }
