@@ -46,6 +46,7 @@ const UI = {
     $autoExpand: $('#reasoning_auto_expand'),
     $showHidden: $('#reasoning_show_hidden'),
     $addToPrompts: $('#reasoning_add_to_prompts'),
+    $forwardToolChains: $('#reasoning_forward_tool_chains'),
     $maxAdditions: $('#reasoning_max_additions'),
 };
 
@@ -775,6 +776,12 @@ function loadReasoningSettings() {
     UI.$addToPrompts.prop('checked', power_user.reasoning.add_to_prompts);
     UI.$addToPrompts.on('change', function () {
         power_user.reasoning.add_to_prompts = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    UI.$forwardToolChains.prop('checked', power_user.reasoning.forward_tool_chains ?? true);
+    UI.$forwardToolChains.on('change', function () {
+        power_user.reasoning.forward_tool_chains = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

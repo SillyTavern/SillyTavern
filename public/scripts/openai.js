@@ -580,6 +580,7 @@ function setOpenAIMessages(chat) {
         const originModel = chat[j]?.extra?.model;
         const isSameModel = originApi === currentApi && originModel === currentModel;
         const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
+        const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
 
         // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
@@ -593,7 +594,7 @@ function setOpenAIMessages(chat) {
             });
         }
 
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature };
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning };
         j++;
     }
 
@@ -889,7 +890,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
     const includeSignature = isReasoningSignatureSupported();
-    const shouldForwardOpenRouterReasoning = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER;
+    const shouldForwardOpenRouterReasoning = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER
+        && (power_user.reasoning.forward_tool_chains ?? true);
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
     const lastNonToolAssistantIdxAfterLastUser = messages.findLastIndex((x, idx) =>
         idx > lastUserIdx && x.role === 'assistant' && !Array.isArray(x.invocations));
@@ -947,11 +949,17 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const promptIdx = messages.indexOf(chatPrompt);
             const inActiveToolChain = promptIdx > lastUserIdx && promptIdx > lastNonToolAssistantIdxAfterLastUser;
+            const previousAssistantReasoning = promptIdx > 0
+                ? String(messages.slice(0, promptIdx).findLast(x => x.role === 'assistant' && !Array.isArray(x.invocations) && x.reasoning)?.reasoning ?? '')
+                : '';
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
                 if (!inActiveToolChain) {
                     delete clone.signature;
                     delete clone.reasoning;
+                } else if (previousAssistantReasoning) {
+                    // Prefer currently editable reasoning text over stale invocation snapshot.
+                    clone.reasoning = previousAssistantReasoning;
                 }
                 return clone;
             });
@@ -6048,7 +6056,8 @@ export function isAudioInliningSupported() {
 export function isReasoningSignatureSupported(settings = oai_settings) {
     // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
     const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(settings.chat_completion_source);
-    const isOpenRouter = settings.chat_completion_source === chat_completion_sources.OPENROUTER;
+    const isOpenRouter = settings.chat_completion_source === chat_completion_sources.OPENROUTER
+        && (power_user.reasoning.forward_tool_chains ?? true);
     return isGoogle || isOpenRouter;
 }
 

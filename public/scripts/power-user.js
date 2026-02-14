@@ -282,6 +282,7 @@ export const power_user = {
         name: DEFAULT_REASONING_TEMPLATE,
         auto_parse: false,
         add_to_prompts: false,
+        forward_tool_chains: true,
         auto_expand: false,
         show_hidden: false,
         prefix: '<think>\n',
