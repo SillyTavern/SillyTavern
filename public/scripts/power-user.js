@@ -832,7 +832,7 @@ async function CreateZenSliders(elmnt) {
                 var numVal = Number(sliderValue).toFixed(decimals);
                 offVal = Number(offVal).toFixed(decimals);
                 if (numVal === offVal) {
-                    handle.text('Off').css('color', 'rgba(128,128,128,0.5');
+                    handle.text('Off').css('color', 'rgba(128,128,128,0.5)');
                 } else {
                     handle.text(numVal).css('color', '');
                 }
@@ -935,13 +935,13 @@ async function CreateZenSliders(elmnt) {
             handleText = steps[stepNumber];
             handle.text(handleText);
             newSlider.val(stepNumber);
-            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); } else if (numVal === allVal) { handle.text('All'); } else { handle.css('color', ''); }
+            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5)'); } else if (numVal === allVal) { handle.text('All'); } else { handle.css('color', ''); }
             numVal = steps[stepNumber];
         } else {
             //everything else uses the flat slider value
             //also note: the above sliders are not custom inputtable due to the array aliasing
             //show 'off' if disabled value is set
-            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); } else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
+            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5)'); } else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
             newSlider.val(handleText);
         }
         //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
