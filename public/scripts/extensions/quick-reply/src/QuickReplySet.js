@@ -209,8 +209,7 @@ export class QuickReplySet {
 
     addQuickReply(data = {}) {
         const id = Math.max(this.idIndex, this.qrList.reduce((max, qr) => Math.max(max, qr.id), 0)) + 1;
-        data.id =
-        this.idIndex = id + 1;
+        data.id = this.idIndex = id + 1;
         const qr = QuickReply.from(data);
         this.qrList.push(qr);
         this.hookQuickReply(qr);
