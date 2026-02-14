@@ -6062,11 +6062,11 @@ function getOpenRouterToolReasoningMode() {
     }
 
     // Legacy boolean fallback.
-    if (power_user.reasoning?.forward_tool_chains === false) {
-        return 'disabled';
+    if (power_user.reasoning?.forward_tool_chains === true) {
+        return 'active_chain';
     }
 
-    return 'active_chain';
+    return 'disabled';
 }
 
 /**

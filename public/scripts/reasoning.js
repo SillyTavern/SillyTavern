@@ -776,7 +776,7 @@ function loadReasoningSettings() {
     const validForwardModes = ['disabled', 'since_last_user', 'active_chain'];
     let forwardMode = String(power_user.reasoning.forward_tool_chains_mode ?? '');
     if (!validForwardModes.includes(forwardMode)) {
-        forwardMode = power_user.reasoning.forward_tool_chains === false ? 'disabled' : 'active_chain';
+        forwardMode = power_user.reasoning.forward_tool_chains === true ? 'active_chain' : 'disabled';
         power_user.reasoning.forward_tool_chains_mode = forwardMode;
     }
     power_user.reasoning.forward_tool_chains = forwardMode !== 'disabled';
