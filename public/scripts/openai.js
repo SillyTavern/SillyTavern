@@ -890,8 +890,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
     const includeSignature = isReasoningSignatureSupported();
-    const shouldForwardOpenRouterReasoning = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER
-        && (power_user.reasoning.forward_tool_chains ?? true);
+    const isOpenRouterSource = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER;
+    const toolReasoningMode = isOpenRouterSource ? getOpenRouterToolReasoningMode() : 'active_chain';
+    const shouldForwardOpenRouterReasoning = isOpenRouterSource && toolReasoningMode !== 'disabled';
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
     const lastNonToolAssistantIdxAfterLastUser = messages.findLastIndex((x, idx) =>
         idx > lastUserIdx && x.role === 'assistant' && !Array.isArray(x.invocations));
@@ -948,13 +949,15 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const promptIdx = messages.indexOf(chatPrompt);
-            const inActiveToolChain = promptIdx > lastUserIdx && promptIdx > lastNonToolAssistantIdxAfterLastUser;
+            const reasoningIsEligible = toolReasoningMode !== 'disabled'
+                && promptIdx > lastUserIdx
+                && (toolReasoningMode === 'since_last_user' || promptIdx > lastNonToolAssistantIdxAfterLastUser);
             const previousAssistantReasoning = promptIdx > 0
                 ? String(messages.slice(0, promptIdx).findLast(x => x.role === 'assistant' && !Array.isArray(x.invocations) && x.reasoning)?.reasoning ?? '')
                 : '';
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
-                if (!inActiveToolChain) {
+                if (!reasoningIsEligible) {
                     delete clone.signature;
                     delete clone.reasoning;
                 } else if (previousAssistantReasoning) {
@@ -6049,6 +6052,24 @@ export function isAudioInliningSupported() {
 }
 
 /**
+ * Gets the OpenRouter tool-call reasoning forwarding mode.
+ * @returns {'disabled'|'since_last_user'|'active_chain'} Reasoning forwarding mode
+ */
+function getOpenRouterToolReasoningMode() {
+    const mode = String(power_user.reasoning?.forward_tool_chains_mode ?? '');
+    if (mode === 'disabled' || mode === 'since_last_user' || mode === 'active_chain') {
+        return mode;
+    }
+
+    // Legacy boolean fallback.
+    if (power_user.reasoning?.forward_tool_chains === false) {
+        return 'disabled';
+    }
+
+    return 'active_chain';
+}
+
+/**
  * Check if the model supports encrypted reasoning signatures.
  * @param {ChatCompletionSettings} settings Settings object to use
  * @returns {boolean} True if reasoning signatures should be included in the request
@@ -6057,7 +6078,7 @@ export function isReasoningSignatureSupported(settings = oai_settings) {
     // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
     const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(settings.chat_completion_source);
     const isOpenRouter = settings.chat_completion_source === chat_completion_sources.OPENROUTER
-        && (power_user.reasoning.forward_tool_chains ?? true);
+        && getOpenRouterToolReasoningMode() !== 'disabled';
     return isGoogle || isOpenRouter;
 }
 

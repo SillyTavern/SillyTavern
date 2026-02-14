@@ -4469,12 +4469,14 @@
                                             Add to Prompts
                                         </small>
                                     </label>
-                                    <label class="checkbox_label flex1" for="reasoning_forward_tool_chains" title="Forward reasoning for OpenRouter tool-call continuations in the active chain." data-i18n="[title]reasoning_forward_tool_chains">
-                                        <input id="reasoning_forward_tool_chains" type="checkbox" />
-                                        <small data-i18n="Forward Tool Reasoning">
-                                            Forward Tool Reasoning
-                                        </small>
-                                    </label>
+                                    <div class="flex1" title="How reasoning is forwarded for OpenRouter tool-call continuations." data-i18n="[title]reasoning_forward_tool_chains_mode">
+                                        <small data-i18n="Tool Reasoning Forwarding">Tool Reasoning Forwarding</small>
+                                        <select id="reasoning_forward_tool_chains_mode" class="text_pole widthUnset">
+                                            <option value="disabled">Disabled</option>
+                                            <option value="since_last_user">Since Last User Message</option>
+                                            <option value="active_chain">Active Tool Chain (Current)</option>
+                                        </select>
+                                    </div>
                                     <div class="flex1 flex-container alignItemsBaseline" title="Maximum number of reasoning blocks to be added per prompt, counting from the last message." data-i18n="[title]reasoning_max_additions">
                                         <input id="reasoning_max_additions" class="text_pole textarea_compact widthUnset" type="number" min="0" max="999" />
                                         <small data-i18n="Max">Max</small>
