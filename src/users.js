@@ -822,13 +822,10 @@ async function basicUserLogin(request) {
         return false;
     }
 
-    const decoded = Buffer.from(credentials, 'base64').toString('utf8');
-    const colonIndex = decoded.indexOf(':');
-    if (colonIndex === -1) {
-        return false;
-    }
-    const username = decoded.substring(0, colonIndex);
-    const password = decoded.substring(colonIndex + 1);
+    const [username, ...passwordParts] = Buffer.from(credentials, 'base64')
+        .toString('utf8')
+        .split(':');
+    const password = passwordParts.join(':');
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {
