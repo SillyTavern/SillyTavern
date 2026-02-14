@@ -820,7 +820,7 @@ async function CreateZenSliders(elmnt) {
                 leftMargin = ((stepNumber) / numSteps) * 50 * -1;
                 if (sliderValue === offVal) {
                     handleText = 'Off';
-                    handle.css('color', 'rgba(128,128,128,0.5');
+                    handle.css('color', 'rgba(128,128,128,0.5)');
                 } else if (sliderValue === allVal) { handleText = 'All'; } else { handle.css('color', ''); }
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`);

@@ -1863,10 +1863,6 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 /**
  * Inserts or replaces an SVG icon adjacent to the provided message's timestamp.
  *
- * If the `extra.api` is "openai" and `extra.model` contains the substring "claude",
- * the function fetches the "claude.svg". Otherwise, it fetches the SVG named after
- * the value in `extra.api`.
- *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {ChatMessageExtra} extra - Contains the API and model details.
  */
