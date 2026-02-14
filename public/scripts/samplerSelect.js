@@ -246,9 +246,7 @@ async function listSamplers(main_api, arrayOnly = false) {
 
             if (prioritizeManualSamplerSelect) {
                 finalState = isManuallyActivated;
-            }
-
-            else if (!isInDefaultState) {
+            } else if (!isInDefaultState) {
                 finalState = displayModified === SELECT_SAMPLER.SHOWN;
                 customColor = finalState ? forcedOnColoring : forcedOffColoring;
             }

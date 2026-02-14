@@ -326,9 +326,8 @@ async function tryReadImage(imgPath, crop) {
     try {
         const rawImg = await Jimp.read(imgPath);
         return await applyAvatarCropResize(rawImg, crop);
-    }
-    // If it's an unsupported type of image (APNG) - just read the file as buffer
-    catch (error) {
+    } catch (error) {
+        // If it's an unsupported type of image (APNG) - just read the file as buffer
         console.error(`Failed to read image: ${imgPath}`, error);
         return fs.readFileSync(imgPath);
     }
@@ -423,8 +422,7 @@ const processCharacter = async (item, directories, { shallow }) => {
         character.date_last_chat = dateLastChat;
         character.data_size = calculateDataSize(jsonObject?.data);
         return shallow ? toShallow(character) : character;
-    }
-    catch (err) {
+    } catch (err) {
         console.error(`Could not process character: ${item}`);
 
         if (err instanceof SyntaxError) {
@@ -1081,8 +1079,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 
         // Return new avatar name to ST
         return response.send({ avatar: newAvatarName });
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
         return response.sendStatus(500);
     }
@@ -1495,8 +1492,7 @@ router.post('/duplicate', validateAvatarUrlMiddleware, async function (request, 
         fs.copyFileSync(filename, newFilename);
         console.info(`${filename} was copied to ${newFilename}`);
         response.send({ path: path.parse(newFilename).base });
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.send({ error: true });
     }
@@ -1532,8 +1528,7 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
                     const jsonObject = getCharaCardV2(JSON.parse(json), request.user.directories);
                     unsetPrivateFields(jsonObject);
                     return response.type('json').send(JSON.stringify(jsonObject, null, 4));
-                }
-                catch {
+                } catch {
                     return response.sendStatus(400);
                 }
             }

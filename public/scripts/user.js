@@ -327,8 +327,7 @@ async function changePassword(handle, callback) {
 
         toastr.success('Password changed successfully', 'Password Changed');
         callback();
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Error changing password:', error);
     }
 }

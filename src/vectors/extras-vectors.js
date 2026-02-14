@@ -34,8 +34,7 @@ async function getExtrasVectorImpl(text, apiUrl, apiKey) {
     try {
         url = new URL(apiUrl);
         url.pathname = '/api/embeddings/compute';
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Failed to set up Extras API call:', error);
         console.debug('Extras API URL given was:', apiUrl);
         throw error;

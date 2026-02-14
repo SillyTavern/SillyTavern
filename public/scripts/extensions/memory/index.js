@@ -881,11 +881,9 @@ async function summarizeChatExtras(context) {
         }
 
         setMemoryContext(summary, true);
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
-    }
-    finally {
+    } finally {
         inApiCall = false;
     }
 }

@@ -45,8 +45,7 @@ router.post('/chat/delete', async (request, response) => {
 
         await fsPromises.unlink(filePath);
         return response.sendStatus(200);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -67,8 +66,7 @@ router.post('/chat/download', async (request, response) => {
         }
 
         return response.download(filePath);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }

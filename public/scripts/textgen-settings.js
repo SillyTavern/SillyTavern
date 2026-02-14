@@ -1040,12 +1040,10 @@ export function initTextGenSettings() {
             if (isCheckbox) {
                 const value = $(this).prop('checked');
                 textgenerationwebui_settings[id] = value;
-            }
-            else if (isText) {
+            } else if (isText) {
                 const value = $(this).val();
                 textgenerationwebui_settings[id] = value;
-            }
-            else {
+            } else {
                 const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 textgenerationwebui_settings[id] = value;
@@ -1254,11 +1252,9 @@ function setSettingByName(setting, value, trigger) {
         if ('send_banned_tokens' === setting) {
             $(`#${setting}_textgenerationwebui`).trigger('change');
         }
-    }
-    else if (isText) {
+    } else if (isText) {
         $(`#${setting}_textgenerationwebui`).val(value);
-    }
-    else {
+    } else {
         const val = parseFloat(value);
         $(`#${setting}_textgenerationwebui`).val(val);
         $(`#${setting}_counter_textgenerationwebui`).val(val);

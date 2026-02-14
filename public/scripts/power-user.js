@@ -810,9 +810,8 @@ async function CreateZenSliders(elmnt) {
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`);
                 //console.log(`${newSlider.attr('id')} initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
-            }
-            //handling creation of rep_pen_range for ooba
-            else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+            } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+                //handling creation of rep_pen_range for ooba
                 if ($('#rep_pen_range_textgenerationwebui_zensliders').length !== 0) {
                     $('#rep_pen_range_textgenerationwebui_zensliders').remove();
                 }
@@ -822,17 +821,14 @@ async function CreateZenSliders(elmnt) {
                 if (sliderValue === offVal) {
                     handleText = 'Off';
                     handle.css('color', 'rgba(128,128,128,0.5');
-                }
-                else if (sliderValue === allVal) { handleText = 'All'; }
-                else { handle.css('color', ''); }
+                } else if (sliderValue === allVal) { handleText = 'All'; } else { handle.css('color', ''); }
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`);
                 //console.log(sliderValue, handleText, offVal, allVal)
                 //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 originalSlider.val(steps[sliderValue]);
-            }
-            //create all other sliders
-            else {
+            } else {
+                //create all other sliders
                 var numVal = Number(sliderValue).toFixed(decimals);
                 offVal = Number(offVal).toFixed(decimals);
                 if (numVal === offVal) {
@@ -928,29 +924,24 @@ async function CreateZenSliders(elmnt) {
                 width: ${newSlider.width()}
                 percent of max: ${percentOfMax}
                 left: ${leftPos}`) */
-        //special handling for response length slider, pulls text aliases for step values from an array
         if (newSlider.attr('id') == 'amount_gen_zenslider') {
+            //special handling for response length slider, pulls text aliases for step values from an array
             handleText = steps[stepNumber];
             handle.text(handleText);
             newSlider.val(stepNumber);
             numVal = steps[stepNumber];
-        }
-        //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
-        else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+        } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+            //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
             handleText = steps[stepNumber];
             handle.text(handleText);
             newSlider.val(stepNumber);
-            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
-            else if (numVal === allVal) { handle.text('All'); }
-            else { handle.css('color', ''); }
+            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); } else if (numVal === allVal) { handle.text('All'); } else { handle.css('color', ''); }
             numVal = steps[stepNumber];
-        }
-        //everything else uses the flat slider value
-        //also note: the above sliders are not custom inputtable due to the array aliasing
-        else {
+        } else {
+            //everything else uses the flat slider value
+            //also note: the above sliders are not custom inputtable due to the array aliasing
             //show 'off' if disabled value is set
-            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
-            else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
+            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); } else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
             newSlider.val(handleText);
         }
         //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
@@ -991,8 +982,7 @@ function switchSpoilerMode() {
         $('#firstMessageWrapper').hide();
         $('#spoiler_free_desc').addClass('flex1');
         $('#creators_note_desc_hidden').show();
-    }
-    else {
+    } else {
         $('#descriptionWrapper').show();
         $('#firstMessageWrapper').show();
         $('#spoiler_free_desc').removeClass('flex1');
@@ -2524,8 +2514,7 @@ async function saveTheme(name = undefined, theme = undefined) {
         option.value = name;
         option.innerText = name;
         $('#themes').append(option);
-    }
-    else {
+    } else {
         themes[themeIndex] = theme;
         $(`#themes option[value="${name}"]`).prop('selected', true);
     }
@@ -2632,8 +2621,7 @@ async function saveMovingUI() {
             option.value = name;
             option.innerText = name;
             $('#movingUIPresets').append(option);
-        }
-        else {
+        } else {
             movingUIPresets[movingUIPresetIndex] = movingUIPreset;
             $(`#movingUIPresets option[value="${name}"]`).prop('selected', true);
         }

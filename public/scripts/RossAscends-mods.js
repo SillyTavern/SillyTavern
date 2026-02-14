@@ -379,8 +379,7 @@ function RA_autoconnect(PrevApi) {
                     || (textgen_settings.type === textgen_types.FEATHERLESS && secret_state[SECRET_KEYS.FEATHERLESS])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
-                }
-                else if (isValidUrl(getTextGenServer())) {
+                } else if (isValidUrl(getTextGenServer())) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
                 break;
@@ -1053,8 +1052,7 @@ export function initRossMods() {
                 $('#send_textarea').trigger('focus');
                 reasoningMesDone.trigger('click');
                 return;
-            }
-            else if (is_send_press == false) {
+            } else if (is_send_press == false) {
                 const skipConfirmKey = 'RegenerateWithCtrlEnter';
                 const skipConfirm = accountStorage.getItem(skipConfirmKey) === 'true';
                 function doRegenerate() {

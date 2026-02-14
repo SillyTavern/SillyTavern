@@ -1316,8 +1316,7 @@ chutes.post('/models', async (request, response) => {
         const chutesData = /** @type {{items: Array<{name: string}>}} */ (data);
         const models = chutesData.items.map(x => ({ value: x.name, text: x.name })).sort((a, b) => a?.text?.localeCompare(b?.text));
         return response.send(models);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1363,8 +1362,7 @@ chutes.post('/generate', async (request, response) => {
         const base64 = Buffer.from(buffer).toString('base64');
 
         return response.send({ image: base64 });
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1405,8 +1403,7 @@ nanogpt.post('/models', async (request, response) => {
 
         const models = Object.values(imageModels).map(x => ({ value: x.model, text: x.name }));
         return response.send(models);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1447,8 +1444,7 @@ nanogpt.post('/generate', async (request, response) => {
         }
 
         return response.send({ image });
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }

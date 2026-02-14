@@ -497,8 +497,7 @@ class CoquiTtsProvider {
                 const language_label = JSON.stringify(model_settings.languages[i]).replaceAll('"', '');
                 $('#coqui_api_model_settings_language').append(new Option(language_label, i));
             }
-        }
-        else {
+        } else {
             $('#coqui_api_model_settings_language').hide();
         }
 
@@ -516,8 +515,7 @@ class CoquiTtsProvider {
                 const speaker_label = JSON.stringify(model_settings.speakers[i]).replaceAll('"', '');
                 $('#coqui_api_model_settings_speaker').append(new Option(speaker_label, i));
             }
-        }
-        else {
+        } else {
             $('#coqui_api_model_settings_speaker').hide();
         }
 
@@ -536,15 +534,13 @@ class CoquiTtsProvider {
         if (model_state == 'installed') {
             $('#coqui_api_model_install_status').text('Model already installed on extras server');
             $('#coqui_api_model_install_button').hide();
-        }
-        else {
+        } else {
             let action = 'download';
             if (model_state == 'corrupted') {
                 action = 'repare';
                 //toastr.error("Click install button to reinstall the model "+$("#coqui_api_model_name").find(":selected").text(), DEBUG_PREFIX+" corrupted model install", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                 $('#coqui_api_model_install_status').text('Model found but incomplete try install again (maybe still downloading)'); // (remove and download again)
-            }
-            else {
+            } else {
                 toastr.info('Click download button to install the model ' + $('#coqui_api_model_name').find(':selected').text(), DEBUG_PREFIX + ' model not installed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                 $('#coqui_api_model_install_status').text('Model not found on extras server');
             }

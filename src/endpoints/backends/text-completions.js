@@ -405,8 +405,7 @@ router.post('/generate', async function (request, response) {
             const completionsStream = await fetch(url, args);
             // Pipe remote SSE stream to Express response
             forwardFetchResponse(completionsStream, response);
-        }
-        else {
+        } else {
             const completionsReply = await fetch(url, args);
 
             if (completionsReply.ok) {

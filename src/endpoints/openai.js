@@ -262,8 +262,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         return response.json({ caption });
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         response.status(500).send('Internal server error');
     }

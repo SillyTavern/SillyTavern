@@ -102,8 +102,8 @@ module.exports = {
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
-        'brace-style': 'off',
         // Additional formatting rules based on codebase conventions
+        'brace-style': ['error', '1tbs', { allowSingleLine: true }],
         'array-bracket-spacing': ['error', 'never'],
         'computed-property-spacing': ['error', 'never'],
         'block-spacing': ['error', 'always'],

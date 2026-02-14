@@ -398,8 +398,7 @@ export class QuickReply {
             if (this.icon) {
                 icon.classList.add('fa-solid');
                 icon.classList.add(this.icon);
-            }
-            else {
+            } else {
                 icon.textContent = '…';
             }
             icon.addEventListener('click', async () => {

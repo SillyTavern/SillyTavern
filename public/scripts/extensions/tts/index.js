@@ -346,8 +346,7 @@ globalThis.tts_preview = function (id) {
 
     if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
         audio.play();
-    }
-    else {
+    } else {
         ttsProvider.previewTtsVoice(id);
     }
 };
@@ -1452,8 +1451,7 @@ async function initVoiceMapInternal(unrestricted) {
     let voiceIdsFromProvider;
     try {
         voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceObjects();
-    }
-    catch {
+    } catch {
         toastr.error('TTS Provider failed to return voice ids.');
     }
 

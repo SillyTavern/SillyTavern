@@ -126,8 +126,7 @@ export async function getStatusHorde() {
     try {
         const hordeStatus = await checkHordeStatus();
         setOnlineStatus(hordeStatus ? t`Connected` : 'no_connection');
-    }
-    catch {
+    } catch {
         setOnlineStatus('no_connection');
     }
 

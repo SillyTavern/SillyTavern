@@ -328,8 +328,7 @@ export class FilterHelper {
                 // We can filter easily by checking if we have saved a score
                 const score = _this.getScore(FILTER_TYPES.SEARCH, `${entity.type}.${entity.id}`);
                 return score !== undefined;
-            }
-            else {
+            } else {
                 // Compare insensitive and without accents
                 return includesIgnoreCaseAndAccents(entity.item?.name, searchValue);
             }

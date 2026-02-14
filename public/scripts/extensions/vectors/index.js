@@ -251,8 +251,7 @@ async function summarizeExtra(element) {
             const data = await apiResult.json();
             element.text = data.summary;
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
         return false;
     }
@@ -938,8 +937,7 @@ function throwIfSourceInvalid() {
         if (!settings.alt_endpoint_url) {
             throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
         }
-    }
-    else {
+    } else {
         if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
             settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
             settings.source === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP] ||

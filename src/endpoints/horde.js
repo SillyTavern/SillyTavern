@@ -113,8 +113,7 @@ router.post('/text-models', async (request, response) => {
         try {
             const metadata = await getHordeTextModelMetadata();
             data = await mergeModelsAndMetadata(data, metadata);
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Failed to fetch metadata:', error);
         }
 

@@ -3026,8 +3026,7 @@ export function initDefaultSlashCommands() {
             try {
                 const text = await navigator.clipboard.readText();
                 return text;
-            }
-            catch (error) {
+            } catch (error) {
                 console.error('Error reading clipboard:', error);
                 toastr.warning(t`Failed to read clipboard text. Have you granted the permission?`);
                 return '';
@@ -4432,8 +4431,7 @@ async function sendUserMessageCallback(args, text) {
         const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
         message = await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
-    }
-    else {
+    } else {
         message = await sendMessageAsUser(text, bias, insertAt, compact);
     }
 
@@ -4640,12 +4638,10 @@ export function getNameAndAvatarForMessage(character, name = null) {
     let force_avatar, original_avatar;
     if (character?.avatar === currentChar?.avatar || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
-    }
-    else if (character && character.avatar !== 'none') {
+    } else if (character && character.avatar !== 'none') {
         force_avatar = getThumbnailUrl('avatar', character.avatar);
         original_avatar = character.avatar;
-    }
-    else {
+    } else {
         force_avatar = default_avatar;
         original_avatar = default_avatar;
     }

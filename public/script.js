@@ -512,8 +512,7 @@ export function reloadMarkdownProcessor() {
 export function getCurrentChatId() {
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
-    }
-    else if (this_chid !== undefined) {
+    } else if (this_chid !== undefined) {
         return characters[this_chid]?.chat;
     }
 }
@@ -910,8 +909,7 @@ function getCharacterBlock(item, id) {
     const description = item.data?.creator_notes || '';
     if (description) {
         template.find('.ch_description').text(description);
-    }
-    else {
+    } else {
         template.find('.ch_description').hide();
     }
 
@@ -919,8 +917,7 @@ function getCharacterBlock(item, id) {
     const auxFieldValue = (item.data && item.data[auxFieldName]) || '';
     if (auxFieldValue) {
         template.find('.character_version').text(auxFieldValue);
-    }
-    else {
+    } else {
         template.find('.character_version').hide();
     }
 
@@ -1364,16 +1361,14 @@ export async function replaceCurrentChat() {
         const chats = Object.values(await chatsResponse.json());
         chats.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
 
-        // pick existing chat
         if (chats.length && typeof chats[0] === 'object') {
+            // pick existing chat
             characters[this_chid].chat = chats[0].file_name.replace('.jsonl', '');
             $('#selected_chat_pole').val(characters[this_chid].chat);
             saveCharacterDebounced();
             await getChat();
-        }
-
-        // start new chat
-        else {
+        } else {
+            // start new chat
             characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
             $('#selected_chat_pole').val(characters[this_chid].chat);
             saveCharacterDebounced();
@@ -1640,11 +1635,9 @@ export async function reloadCurrentChatUnsafe() {
 
     if (selected_group) {
         await getGroupChat(selected_group, true);
-    }
-    else if (this_chid !== undefined) {
+    } else if (this_chid !== undefined) {
         await getChat();
-    }
-    else {
+    } else {
         resetChatState();
         restoreNeutralChat();
         await getCharacters();
@@ -1879,23 +1872,11 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
  */
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
-    let modelName;
+    let modelName = extra?.api || '';
 
-    // Claude on OpenRouter or Anthropic
-    if (extra.api === 'openai' && extra.model?.toLowerCase().includes('claude')) {
-        modelName = 'claude';
-    }
-    // OpenAI on OpenRouter
-    else if (extra.api === 'openai' && extra.model?.toLowerCase().includes('openai')) {
-        modelName = 'openai';
-    }
-    // OpenRouter website model or other models
-    else if (extra.api === 'openai' && (extra.model === null || extra.model?.toLowerCase().includes('/'))) {
-        modelName = 'openrouter';
-    }
-    // Everything else
-    else {
-        modelName = extra.api;
+    // If there's no API information, we can't determine which SVG to use
+    if (!modelName) {
+        return;
     }
 
     const insertOrReplaceSVG = (image, className, targetSelector, insertBefore) => {
@@ -3755,8 +3736,7 @@ class StreamingProcessor {
             }
             const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
             console.warn(`Stream stats: ${timestamps.length} tokens, ${seconds.toFixed(2)} seconds, rate: ${Number(timestamps.length / seconds).toFixed(2)} TPS`);
-        }
-        catch (err) {
+        } catch (err) {
             // in the case of a self-inflicted abort, we have already cleaned up
             if (!this.isFinished) {
                 console.error(err);
@@ -4236,8 +4216,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         textareaText = '';
         if (chat.length && lastMessage.is_user) {
             //do nothing? why does this check exist?
-        }
-        else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && !depth && chat.length) {
+        } else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && !depth && chat.length) {
             deleteItemizedPromptForMessage(chat.length - 1);
             chat.length = chat.length - 1;
             await removeLastMessage();
@@ -4282,12 +4261,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // If user message contains no text other than bias - send as a system message
         if (messageBias && !removeMacros(textareaText)) {
             sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
-        }
-        else {
+        } else {
             await sendMessageAsUser(textareaText, messageBias);
         }
-    }
-    else if (textareaText == '' && !automatic_trigger && !dryRun && [undefined, 'normal'].includes(type) && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0 && !depth) {
+    } else if (textareaText == '' && !automatic_trigger && !dryRun && [undefined, 'normal'].includes(type) && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0 && !depth) {
         // Use send_if_empty if set and the user message is empty. Only when sending messages normally
         await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
     }
@@ -4406,8 +4383,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
         try {
             adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
-        }
-        catch {
+        } catch {
             unblockGeneration(type);
             return Promise.resolve();
         }
@@ -4585,8 +4561,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             // When continuing generation of previous output, last user message precedes the message to continue
             if (isContinue) {
                 coreChat.splice(coreChat.length - 1, 0, { mes: jailbreak, is_user: true });
-            }
-            else {
+            } else {
                 // This operation will result in the injectedIndices indexes being off by one
                 coreChat.push({ mes: jailbreak, is_user: true });
                 // Add +1 to the elements to correct for the new PHI/Jailbreak message.
@@ -5207,8 +5182,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (itemizedIndex !== -1) {
             itemizedPrompts[itemizedIndex] = additionalPromptStuff;
-        }
-        else {
+        } else {
             itemizedPrompts.push(additionalPromptStuff);
         }
 
@@ -5350,17 +5324,14 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (isImpersonate) {
             $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
-        }
-        else if (type == 'quiet') {
+        } else if (type == 'quiet') {
             unblockGeneration(type);
             return getMessage;
-        }
-        else {
+        } else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
                 ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
-            }
-            else {
+            } else {
                 ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
             }
 
@@ -5829,9 +5800,7 @@ function addChatsPreamble(mesSendString) {
 function addChatsSeparator(mesSendString) {
     if (power_user.context.chat_start) {
         return substituteParams(power_user.context.chat_start + '\n') + mesSendString;
-    }
-
-    else {
+    } else {
         return mesSendString;
     }
 }
@@ -7055,16 +7024,13 @@ export async function renameCharacter(name = null, { silent = false, renameChats
                 } else {
                     toastr.success(t`Character renamed!`, t`Rename Character`);
                 }
-            }
-            else {
+            } else {
                 throw new Error('Newly renamed character was lost?');
             }
-        }
-        else {
+        } else {
             throw new Error('Could not rename the character');
         }
-    }
-    catch (error) {
+    } catch (error) {
         // Reloading to prevent data corruption
         if (!silent) await Popup.show.text(t`Rename Character`, t`Something went wrong. The page will be reloaded.`);
         else toastr.error(t`Something went wrong. The page will be reloaded.`, t`Rename Character`);
@@ -7356,8 +7322,7 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
             avatarTemplate.append(grpTemplate.children());
             avatarTemplate.attr({ 'data-grid': id, 'data-chid': null });
             avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
-        }
-        else if (entity.type === 'persona') {
+        } else if (entity.type === 'persona') {
             avatarTemplate.attr({ 'data-pid': id, 'data-chid': null });
             avatarTemplate.find('img').attr('src', getThumbnailUrl('persona', entity.item.avatar));
             avatarTemplate.attr('title', `[Persona] ${entity.item.name}\nFile: ${entity.item.avatar}`);
@@ -8099,8 +8064,7 @@ async function messageEditCancel(messageId = this_edit_mes_id) {
     await eventSource.emit(event_types.MESSAGE_UPDATED, messageId);
     if (messageId == this_edit_mes_id) {
         this_edit_mes_id = undefined;
-    }
-    else {
+    } else {
         console.warn(`The message editor was closed on message #${messageId} while #${this_edit_mes_id} is being edited.`);
     }
 
@@ -8134,8 +8098,7 @@ async function messageEditMove(sourceId, targetId) {
 
     if (sourceId <= targetId) {
         sourceMessageDiv.insertAfter(targetMessageDiv);
-    }
-    else {
+    } else {
         sourceMessageDiv.insertBefore(targetMessageDiv);
     }
 
@@ -8951,11 +8914,13 @@ export function isMessageSwipeable(messageId, message = undefined) {
             //User messages are not swipeable.
             !message.is_user
         )
-    )
-    //The message is swipeable.
-    { return true; }
-    //The message is not swipeable.
-    else { return false; }
+    ) {
+        // The message is swipeable.
+        return true;
+    } else {
+        // The message is not swipeable.
+        return false;
+    }
 }
 
 /**
@@ -9145,8 +9110,7 @@ export async function saveChatConditional() {
 
         if (selected_group) {
             await saveGroupChat(selected_group, true);
-        }
-        else {
+        } else {
             await saveChat();
         }
 
@@ -9252,8 +9216,7 @@ export function closeMessageEditor(what = 'all') {
 export function setGenerationProgress(progress) {
     if (!progress) {
         $('#send_textarea').css({ 'background': '', 'transition': '' });
-    }
-    else {
+    } else {
         $('#send_textarea').css({
             'background': `linear-gradient(90deg, #008000d6 ${progress}%, transparent ${progress}%)`,
             'transition': '0.25s ease-in-out',
@@ -9767,8 +9730,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 document.body.dataset.swiping = 'true';
                 await generation;
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.warn(`Swipe failed, Swiping back. ${error}`);
         }
 
@@ -9804,8 +9766,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
                 await redisplayChat({ startIndex: mesId });
-            }
-            else {
+            } else {
                 await Popup.show.confirm(
                     t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
                     t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
@@ -10104,9 +10065,8 @@ export async function swipe(event, direction, { source, repeated, message = chat
         }
         await standardSwipe(newSwipeId);
         return;
-    }
-    //If swiping right.
-    else if (direction === SWIPE_DIRECTION.RIGHT) {
+    } else if (direction === SWIPE_DIRECTION.RIGHT) {
+        //If swiping right.
         // make new slot in array
         if (forceSwipeId == null) newSwipeId++;
 
@@ -10133,18 +10093,16 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 chat[mesId].swipe_id = originalSwipeId;
                 await endSwipe();
                 return;
-            }
-            //Regenerate the message
-            else if (overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) {
+            } else if (overswipe == OVERSWIPE_BEHAVIOR.REGENERATE) {
+                //Regenerate the message
                 clearMessageData(chat[mesId]);
                 let run_generate = true;
                 //Generate.
                 await animateSwipe(run_generate);
                 await endSwipe();
                 return;
-            }
-            // Loop to the first swipe.
-            else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP || overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
+            } else if (overswipe == OVERSWIPE_BEHAVIOR.LOOP || overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING) {
+                // Loop to the first swipe.
                 newSwipeId = 0;
             }
         }
@@ -10363,8 +10321,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
     if (selected_group) {
         await createNewGroupChat(selected_group);
         if (deleteCurrentChat) await deleteGroupChat(selected_group, chat_file_for_del, { jumpToNewChat: false }); // don't jump, new chat was already created and jumped to above
-    }
-    else {
+    } else {
         //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
         chat_metadata = {};
         characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
@@ -10427,8 +10384,7 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
 
         if (groupId) {
             await renameGroupChat(groupId, oldFileName, newFileName);
-        }
-        else if (characterId !== undefined && String(characterId) === String(this_chid) && characters[characterId]?.chat === oldFileName) {
+        } else if (characterId !== undefined && String(characterId) === String(this_chid) && characters[characterId]?.chat === oldFileName) {
             characters[characterId].chat = newFileName;
             $('#selected_chat_pole').val(characters[characterId].chat);
             await createOrEditCharacter();
@@ -11080,8 +11036,7 @@ jQuery(async function () {
             if (popup_type == 'input') {
                 dialogueResolve($('#dialogue_popup_input').val());
                 $('#dialogue_popup_input').val('');
-            }
-            else {
+            } else {
                 dialogueResolve(true);
             }
 
@@ -11316,9 +11271,7 @@ jQuery(async function () {
                     });
                 }
             }
-        }
-
-        else if (id == 'option_start_new_chat') {
+        } else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 let deleteCurrentChat = false;
                 const result = await Popup.show.confirm(t`Start new chat?`, await renderTemplateAsync('newChatConfirm'), {
@@ -11334,9 +11287,7 @@ jQuery(async function () {
                 const alreadyInTempChat = this_chid === undefined && name2 === neutralCharacterName;
                 await newAssistantChat({ temporary: alreadyInTempChat });
             }
-        }
-
-        else if (id == 'option_regenerate') {
+        } else if (id == 'option_regenerate') {
             //Attempting to regenerate a user message will instead generate a new message.
             if (chat.length && chat.length - 1 === this_edit_mes_id && chat[this_edit_mes_id]?.is_user == false) {
                 toastr.warning(t`Finish the edit before starting a generation.`, t`You cannot regenerate the message you are editing.`);
@@ -11345,22 +11296,17 @@ jQuery(async function () {
             if (is_send_press == false) {
                 if (selected_group) {
                     regenerateGroup();
-                }
-                else {
+                } else {
                     is_send_press = true;
                     Generate('regenerate', buildOrFillAdditionalArgs());
                 }
             }
-        }
-
-        else if (id == 'option_impersonate') {
+        } else if (id == 'option_impersonate') {
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate('impersonate', buildOrFillAdditionalArgs());
             }
-        }
-
-        else if (id == 'option_continue') {
+        } else if (id == 'option_continue') {
             if (swipeState == SWIPE_STATE.EDITING) {
                 toastr.warning(t`Confirm the edit to start a generation.`, t`You cannot send a message during a swipe-edit.`);
                 return;
@@ -11374,17 +11320,11 @@ jQuery(async function () {
                 is_send_press = true;
                 Generate('continue', buildOrFillAdditionalArgs());
             }
-        }
-
-        else if (id == 'option_delete_mes') {
+        } else if (id == 'option_delete_mes') {
             setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
-        }
-
-        else if (id == 'option_close_chat') {
+        } else if (id == 'option_close_chat') {
             await closeCurrentChat();
-        }
-
-        else if (id === 'option_settings') {
+        } else if (id === 'option_settings') {
             //var checkBox = document.getElementById("waifuMode");
             var topBar = document.getElementById('top-bar');
             var topSettingsHolder = document.getElementById('top-settings-holder');

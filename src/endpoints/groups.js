@@ -145,8 +145,7 @@ router.post('/all', (request, response) => {
             group.date_last_chat = date_last_chat;
             group.chat_size = chat_size;
             groups.push(group);
-        }
-        catch (error) {
+        } catch (error) {
             console.error(error);
         }
     });
