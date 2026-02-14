@@ -52,6 +52,8 @@ export function registerInstructMacros() {
 
     registerSimple(['instructFirstUserPrefix', 'instructFirstInput'], () => power_user.instruct.first_input_sequence || power_user.instruct.input_sequence, instEnabled, 'Instruct first user / input prefix sequence.');
     registerSimple(['instructLastUserPrefix', 'instructLastInput'], () => power_user.instruct.last_input_sequence || power_user.instruct.input_sequence, instEnabled, 'Instruct last user / input prefix sequence.');
+    
+    registerSimple(['instructConsecutiveAssistantMessage'], () => power_user.instruct.consecutive_assistant_message, instEnabled, 'Instruct consecutive assistant message.');
 
     // System prompt macros
     registerSimple(['defaultSystemPrompt', 'instructSystem', 'instructSystemPrompt'], () => power_user.sysprompt.content, sysEnabled, 'Default system prompt.');

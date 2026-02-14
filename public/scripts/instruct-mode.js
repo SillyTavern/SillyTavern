@@ -45,6 +45,7 @@ const controls = [
     { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
     { id: 'instruct_sequences_as_stop_strings', property: 'sequences_as_stop_strings', isCheckbox: true },
+    { id: 'instruct_consecutive_assistant_message', property: 'consecutive_assistant_message', isCheckbox: false },
 ];
 
 /**
@@ -80,6 +81,7 @@ function migrateInstructModeSettings(settings) {
         system_same_as_user: false,
         names_behavior: names_behavior_types.FORCE,
         sequences_as_stop_strings: true,
+        consecutive_assistant_message: '',
         story_string_prefix: '',
         story_string_suffix: '',
     };
