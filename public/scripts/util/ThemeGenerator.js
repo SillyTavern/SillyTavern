@@ -320,16 +320,16 @@ export function generateThemePalette(dominantRgb) {
 
     return {
         blur_tint_color: rgbaString(blurTintRgb, 0.95),
-        chat_tint_color: rgbaString(chatTintRgb, 0.65),
-        user_mes_blur_tint_color: rgbaString(userTintRgb, 0.5),
-        bot_mes_blur_tint_color: rgbaString(botTintRgb, 0.5),
+        chat_tint_color: rgbaString(chatTintRgb, 0.7),
+        user_mes_blur_tint_color: rgbaString(userTintRgb, 0.6),
+        bot_mes_blur_tint_color: rgbaString(botTintRgb, 0.6),
         main_text_color: rgbaString(mainTextRgb),
         italics_text_color: rgbaString(italicsRgb),
         underline_text_color: rgbaString(underlineRgb),
         quote_text_color: rgbaString(quoteRgb),
         shadow_color: rgbaString(shadowRgb, isDark ? 0.8 : 0.3),
         shadow_width: isDark ? 2 : 1,
-        border_color: rgbaString(borderRgb, 0.6),
+        border_color: rgbaString(borderRgb, 0.7),
         blur_strength: isDark ? 10 : 8,
     };
 }
