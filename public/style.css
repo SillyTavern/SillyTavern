@@ -6300,12 +6300,6 @@ body:not(.movingUI) .drawer-content.maximized {
     background-color: rgba(241, 163, 163, 0.2);
 }
 
-/* Reduced motion overrides for hardcoded animations (not using --animation-duration) */
-body.reduced-motion .mes_text .text_segment,
-body.reduced-motion .mes_reasoning_details[data-state="thinking"] .mes_reasoning .text_segment {
-    animation-duration: 0ms;
-}
-
 @media (prefers-contrast: more) {
     :root {
         --interactable-outline-color: CanvasText;
