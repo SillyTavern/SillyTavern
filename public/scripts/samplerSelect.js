@@ -220,7 +220,7 @@ async function listSamplers(main_api, arrayOnly = false) {
     let availableSamplers;
     if (main_api === 'textgenerationwebui') {
         availableSamplers = TGsamplerNames;
-        const valuesToRemove = new Set(['streaming', 'bypass_status_check', 'custom_model', 'legacy_api', 'extensions']);
+        const valuesToRemove = new Set(['streaming', 'bypass_status_check', 'custom_model', 'generic_model', 'openrouter_allow_fallbacks', 'legacy_api', 'extensions']);
         availableSamplers = availableSamplers.filter(sampler => !valuesToRemove.has(sampler));
         availableSamplers.sort();
     }
