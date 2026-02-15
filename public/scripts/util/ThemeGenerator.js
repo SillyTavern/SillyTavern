@@ -255,8 +255,8 @@ export function generateThemePalette(dominantRgb) {
 
     // Hue shift angles for color theory relationships (in radians)
     const ANALOGOUS_HUE_SHIFT = Math.PI / 3;         // +60° for analogous colors
-    const COMPLEMENTARY_HUE_SHIFT = Math.PI;          // +180° for complementary colors
-    const TRIADIC_HUE_SHIFT = (2 * Math.PI / 3);      // +120° for triadic colors
+    const COMPLEMENTARY_HUE_SHIFT = Math.PI;         // +180° for complementary colors
+    const TRIADIC_HUE_SHIFT = (2 * Math.PI / 3);     // +120° for triadic colors
 
     // Main text: near-white/near-black with a slight hue tint from the base
     const mainTextC = Math.min(base.C * 0.15, 0.03);
@@ -285,9 +285,9 @@ export function generateThemePalette(dominantRgb) {
 
     return {
         blur_tint_color: rgbaString(blurTintRgb, 0.95),
-        chat_tint_color: rgbaString(chatTintRgb, 0.7),
-        user_mes_blur_tint_color: rgbaString(userTintRgb, 0.6),
-        bot_mes_blur_tint_color: rgbaString(botTintRgb, 0.6),
+        chat_tint_color: rgbaString(chatTintRgb, 0.6),
+        user_mes_blur_tint_color: rgbaString(userTintRgb, 0.7),
+        bot_mes_blur_tint_color: rgbaString(botTintRgb, 0.7),
         main_text_color: rgbaString(mainTextRgb),
         italics_text_color: rgbaString(italicsRgb),
         underline_text_color: rgbaString(underlineRgb),
@@ -317,9 +317,6 @@ export function deriveBackgroundName(bgUrl) {
     name = name.replace(/\.[^.]+$/, '');
     // Replace underscores/dashes with spaces, trim
     name = name.replace(/[_-]+/g, ' ').trim();
-    // Capitalize first letter
-    if (name.length > 0) {
-        name = name.charAt(0).toUpperCase() + name.slice(1);
-    }
-    return name || 'Background';
+    // Limit length to 32 chars for theme name
+    return name.slice(0, 32) || 'Background';
 }

@@ -67,6 +67,7 @@ import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.
 import { bindModelTemplates } from './chat-templates.js';
 import { IMAGE_OVERSWIPE, MEDIA_DISPLAY } from './constants.js';
 import { t } from './i18n.js';
+import { getBackgroundPath, isCustomBackgroundUrl } from './backgrounds.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -2888,12 +2889,14 @@ function doResetPanels() {
 async function setAvgBG(args) {
     const nameOverride = args?.name ? String(args.name).trim() : '';
     const bgOverride = args?.bg ? String(args.bg).trim() : '';
+    const force = isTrueBoolean(args?.force?.toString());
 
     let bgUrl;
 
     if (bgOverride) {
         // Use the specified background file
-        bgUrl = `backgrounds/${encodeURIComponent(bgOverride)}`;
+        const isCustom = isCustomBackgroundUrl(bgOverride);
+        bgUrl = isCustom ? bgOverride : getBackgroundPath(bgOverride);
     } else {
         // Use the currently active background
         bgUrl = $('#bg1')
@@ -2904,6 +2907,16 @@ async function setAvgBG(args) {
 
     if (!bgUrl || bgUrl === 'none') {
         toastr.warning('No background image set.');
+        return '';
+    }
+
+    // Build theme name from background filename or use override
+    const bgName = deriveBackgroundName(bgUrl);
+    const themeName = nameOverride || `bgcol - ${bgName}`;
+
+    // Check if a theme with the same name already exists
+    if (themes.some(t => t.name === themeName) && !force) {
+        toastr.warning('Pass "force=true" to overwrite.', `A theme named "${themeName}" already exists.`);
         return '';
     }
 
@@ -2921,10 +2934,6 @@ async function setAvgBG(args) {
 
     // Generate a full theme palette from the dominant color
     const palette = generateThemePalette(dominantRgb);
-
-    // Build theme name from background filename or use override
-    const bgName = deriveBackgroundName(bgUrl);
-    const themeName = nameOverride || `Generated - ${bgName}`;
 
     // Create theme object from current settings, then override colors
     const theme = getThemeObject(themeName);
@@ -4185,6 +4194,13 @@ jQuery(() => {
         callback: setAvgBG,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
+                name: 'force',
+                description: 'force generation even if a theme with the same name already exists',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'name',
                 description: 'override the generated theme name',
                 typeList: [ARGUMENT_TYPE.STRING],
@@ -4196,7 +4212,7 @@ jQuery(() => {
                 enumProvider: commonEnumProviders.backgrounds,
             }),
         ],
-        helpString: 'Generates a new theme from a background image using dominant color extraction and color theory. Saves as "Generated - &lt;background name&gt;".',
+        helpString: 'Generates a new theme based on a dominant color of the specified background image. Saves as "bgcol - background name".',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'theme',

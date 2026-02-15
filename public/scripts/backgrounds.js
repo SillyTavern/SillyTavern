@@ -254,7 +254,22 @@ async function onChatChanged() {
     highlightSelectedBackground();
 }
 
-function getBackgroundPath(fileUrl) {
+/**
+ * Checks if a given URL corresponds to a custom background in the current chat's metadata.
+ * @param {string} fileUrl - The URL to check against the chat's custom backgrounds.
+ * @returns {boolean} True if the URL corresponds to a custom background, false otherwise.
+ */
+export function isCustomBackgroundUrl(fileUrl) {
+    const customBackgrounds = chat_metadata[LIST_METADATA_KEY] || [];
+    return customBackgrounds.some(bg => bg === fileUrl || generateUrlParameter(bg, true) === fileUrl);
+}
+
+/**
+ * Gets the client path for a background image, encoding the file name for safe URL usage.
+ * @param {string} fileUrl File name or URL of the background image
+ * @returns {string} Client path for the system backgroun
+ */
+export function getBackgroundPath(fileUrl) {
     return `backgrounds/${encodeURIComponent(fileUrl)}`;
 }
 
