@@ -2529,9 +2529,8 @@ async function saveTheme(name = undefined, theme = undefined) {
 /**
  * Gets a snapshot of the current theme settings.
  * @param {string} name Name of the theme
- * @returns {object} Theme object
  */
-function getThemeObject(name) {
+export function getThemeObject(name) {
     return {
         name,
         blur_strength: power_user.blur_strength,
@@ -2579,7 +2578,7 @@ function getThemeObject(name) {
 /**
  * Applies imported theme properties to the theme object.
  * @param {object} parsed Parsed object to get the theme from.
- * @returns {object} Theme assigned to the parsed object.
+ * @returns {Theme} Theme assigned to the parsed object.
  */
 function getNewTheme(parsed) {
     const theme = getThemeObject(parsed.name);
@@ -4194,20 +4193,7 @@ jQuery(() => {
                 name: 'bg',
                 description: 'background image filename to use instead of the current one',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: async () => {
-                    try {
-                        const response = await fetch('/api/backgrounds/all', {
-                            method: 'POST',
-                            headers: getRequestHeaders(),
-                            body: JSON.stringify({}),
-                        });
-                        if (response.ok) {
-                            const { images } = await response.json();
-                            return images.map(img => new SlashCommandEnumValue(img, null, enumTypes.enum, enumIcons.image));
-                        }
-                    } catch { /* fallback to empty */ }
-                    return [];
-                },
+                enumProvider: commonEnumProviders.backgrounds,
             }),
         ],
         helpString: 'Generates a new theme from a background image using dominant color extraction and color theory. Saves as "Generated - &lt;background name&gt;".',

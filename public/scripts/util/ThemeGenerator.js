@@ -240,7 +240,7 @@ function rgbaString(rgb, alpha = 1) {
  * with accessibility contrast checking.
  *
  * @param {{r: number, g: number, b: number}} dominantRgb The dominant image color
- * @returns {object} Theme color properties ready to merge into a theme object
+ * @returns {Partial<Theme>} Theme color properties ready to merge into a theme object
  */
 export function generateThemePalette(dominantRgb) {
     const baseLab = srgbToOklab(dominantRgb.r, dominantRgb.g, dominantRgb.b);
@@ -319,10 +319,10 @@ export function generateThemePalette(dominantRgb) {
     const borderRgb = oklabToSrgb(borderL, borderAb.a, borderAb.b);
 
     return {
-        blur_tint_color: rgbaString(blurTintRgb, 0.75),
-        chat_tint_color: rgbaString(chatTintRgb, 0.5),
-        user_mes_blur_tint_color: rgbaString(userTintRgb, 0.4),
-        bot_mes_blur_tint_color: rgbaString(botTintRgb, 0.4),
+        blur_tint_color: rgbaString(blurTintRgb, 0.95),
+        chat_tint_color: rgbaString(chatTintRgb, 0.65),
+        user_mes_blur_tint_color: rgbaString(userTintRgb, 0.5),
+        bot_mes_blur_tint_color: rgbaString(botTintRgb, 0.5),
         main_text_color: rgbaString(mainTextRgb),
         italics_text_color: rgbaString(italicsRgb),
         underline_text_color: rgbaString(underlineRgb),
