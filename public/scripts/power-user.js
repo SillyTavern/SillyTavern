@@ -527,8 +527,8 @@ function switchReducedMotion() {
     $('#reduced_motion').prop('disabled', osReduced);
     $('#reduced_motion').closest('label').attr('title',
         osReduced
-            ? 'Controlled by your operating system\'s reduced motion setting'
-            : 'Disable animations and transitions',
+            ? t`Controlled by your operating system's reduced motion setting`
+            : t`Disable animations and transitions`,
     );
     $('body').toggleClass('reduced-motion', power_user.reduced_motion);
 }
