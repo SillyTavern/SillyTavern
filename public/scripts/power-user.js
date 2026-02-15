@@ -2916,7 +2916,7 @@ async function setAvgBG(args) {
         bgimg.onerror = () => reject(new Error('Failed to load background image'));
     });
 
-    // Extract dominant vivid color using Oklab-weighted sampling
+    // Extract dominant vivid color using Oklch-weighted sampling
     const dominantRgb = extractDominantColor(bgimg);
 
     // Generate a full theme palette from the dominant color
