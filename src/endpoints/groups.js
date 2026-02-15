@@ -51,7 +51,7 @@ export async function migrateGroupChatsMetadataFormat(userDirectories) {
                     if (!needsMigration) {
                         continue;
                     }
-                    if (!fs.existsSync(backupPath)){
+                    if (!fs.existsSync(backupPath)) {
                         await fsPromises.mkdir(backupPath, { recursive: true });
                     }
                     await fsPromises.copyFile(groupFilePath, path.join(backupPath, groupFile.name));
@@ -145,8 +145,7 @@ router.post('/all', (request, response) => {
             group.date_last_chat = date_last_chat;
             group.chat_size = chat_size;
             groups.push(group);
-        }
-        catch (error) {
+        } catch (error) {
             console.error(error);
         }
     });

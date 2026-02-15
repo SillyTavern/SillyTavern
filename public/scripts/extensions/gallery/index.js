@@ -791,7 +791,6 @@ async function listGalleryCommand(args) {
 
         const items = await getGalleryItems(url);
         return JSON.stringify(items.map(it => it.src));
-
     } catch (err) {
         console.error(err);
     }

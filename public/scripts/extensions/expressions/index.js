@@ -363,8 +363,7 @@ export async function visualNovelUpdateLayers(container) {
             if (power_user.reduced_motion) {
                 element.css('left', currentPosition + 'px');
                 requestAnimationFrame(() => resolve());
-            }
-            else {
+            } else {
                 element.animate({ left: currentPosition + 'px' }, 500, () => {
                     resolve();
                 });
@@ -525,8 +524,7 @@ async function moduleWorker({ newChat = false } = {}) {
         }
 
         return;
-    }
-    else {
+    } else {
         // force reload expressions list on connect to API
         if (offlineMode.is(':visible')) {
             expressionsList = null;
@@ -599,11 +597,9 @@ async function moduleWorker({ newChat = false } = {}) {
         }
 
         await sendExpressionCall(spriteFolderName, expression, { force: force, vnMode: vnMode });
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
-    }
-    finally {
+    } finally {
         inApiCall = false;
         lastCharacter = context.groupId || context.characterId;
         lastMessage = currentLastMessage.mes;
@@ -631,8 +627,7 @@ function getFolderNameByMessage(message) {
 
     if (context.groupId) {
         avatarPath = message.original_avatar || context.characters.find(x => message.force_avatar && message.force_avatar.includes(encodeURIComponent(x.avatar)))?.avatar;
-    }
-    else if (context.characterId !== undefined) {
+    } else if (context.characterId !== undefined) {
         avatarPath = getCharaFilename();
     }
 
@@ -1303,8 +1298,7 @@ async function getSpritesList(name) {
         }
 
         return grouped;
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
         return [];
     }
@@ -1414,7 +1408,6 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
                 });
 
                 if (apiResult.ok) {
-
                     const data = await apiResult.json();
                     expressionsList = data.labels;
                     return expressionsList;
@@ -1477,9 +1470,8 @@ function chooseSpriteForExpression(spriteFolderName, expression, { prevExpressio
         const searched = sprite.files.find(x => x.fileName === overrideSpriteFile);
         if (searched) spriteFile = searched;
         else toastr.warning(t`Couldn't find sprite file ${overrideSpriteFile} for expression ${expression}.`, t`Sprite Not Found`);
-    }
-    // Else calculate next expression, if multiple are allowed
-    else if (extension_settings.expressions.allowMultiple && sprite.files.length > 1) {
+    } else if (extension_settings.expressions.allowMultiple && sprite.files.length > 1) {
+        // Else calculate next expression, if multiple are allowed
         let possibleFiles = sprite.files;
         if (extension_settings.expressions.rerollIfSame) {
             possibleFiles = possibleFiles.filter(x => !prevExpressionSrc || x.imageSrc !== prevExpressionSrc);
@@ -1488,7 +1480,6 @@ function chooseSpriteForExpression(spriteFolderName, expression, { prevExpressio
     }
 
     return spriteFile;
-
 }
 
 /**
@@ -1595,8 +1586,7 @@ async function setExpression(spriteFolderName, expression, { force = false, over
         }
 
         console.info('Expression set', { expression: spriteFile.expression, file: spriteFile.fileName });
-    }
-    else {
+    } else {
         img.attr('data-sprite-folder-name', spriteFolderName);
 
         img.off('error');
@@ -1846,19 +1836,16 @@ async function onClickExpressionUpload(event) {
             const fileNameWithoutExtension = withoutExtension(file.name);
             const validFileName = validateExpressionSpriteName(expression, fileNameWithoutExtension);
 
-            // If there is no expression yet and it's a valid expression, we just take it
             if (!clickedFileName && validFileName) {
+                // If there is no expression yet and it's a valid expression, we just take it
                 spriteName = fileNameWithoutExtension;
-            }
-            // If the filename matches the one that was clicked, we just take it and replace it
-            else if (clickedFileName === file.name) {
+            } else if (clickedFileName === file.name) {
+                // If the filename matches the one that was clicked, we just take it and replace it
                 spriteName = fileNameWithoutExtension;
-            }
-            // If it's a valid filename and there's no existing file with the same name, we just take it
-            else if (!matchesExisting && validFileName) {
+            } else if (!matchesExisting && validFileName) {
+                // If it's a valid filename and there's no existing file with the same name, we just take it
                 spriteName = fileNameWithoutExtension;
-            }
-            else {
+            } else {
                 /** @type {import('../../popup.js').CustomPopupButton[]} */
                 const customButtons = [];
                 if (clickedFileName) {
@@ -2333,7 +2320,7 @@ function migrateSettings() {
         name: 'expression-folder-override',
         aliases: ['spriteoverride', 'costume'],
         callback: setSpriteFolderCommand,
-        namedArgumentList:[
+        namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'name',
                 description: 'Character name to set a subfolder for. If not provided, the character who last sent a message will be used.',

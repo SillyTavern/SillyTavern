@@ -89,8 +89,7 @@ async function installPlugin(pluginName) {
 
         await git().clone(pluginName, pluginPath, { '--depth': 1 });
         console.log(`Plugin ${color.green(pluginName)} installed to ${color.cyan(pluginPath)}`);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(color.red(`Failed to install plugin ${pluginName}`), error);
     }
 }

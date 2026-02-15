@@ -62,7 +62,7 @@ export function getThumbnailResolution(type) {
  * @param {Buffer} buffer The file buffer.
  * @returns {boolean}
  */
-function isAnimatedApng(buffer) {
+export function isAnimatedApng(buffer) {
     return buffer.subarray(0, 200).includes('acTL');
 }
 
@@ -442,7 +442,6 @@ router.post('/', async function (request, response) {
         }
 
         return response.status(400).json({ error: 'Invalid request format.' });
-
     } catch (error) {
         console.error('[ImageMetadata] API error:', error);
         return response.status(500).json({ error: 'Internal server error.' });

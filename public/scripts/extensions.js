@@ -278,12 +278,10 @@ async function discoverExtensions() {
         if (response.ok) {
             const extensions = await response.json();
             return extensions;
-        }
-        else {
+        } else {
             return [];
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
         return [];
     }
@@ -627,8 +625,7 @@ async function connectToApi(baseUrl) {
         }
 
         updateStatus(getExtensionsResult.ok);
-    }
-    catch {
+    } catch {
         updateStatus(false);
     }
 }

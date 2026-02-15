@@ -346,8 +346,7 @@ globalThis.tts_preview = function (id) {
 
     if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
         audio.play();
-    }
-    else {
+    } else {
         ttsProvider.previewTtsVoice(id);
     }
 };
@@ -611,7 +610,6 @@ async function processTtsQueue() {
 
             // Pass the full voiceMapKey (e.g., "User ("Quotes")") as well with character name
             await tts(segmentText, voiceId, char, voiceMapKey);
-
         } catch (error) {
             toastr.error(error.toString());
             console.error(error);
@@ -707,7 +705,6 @@ async function processTtsQueue() {
 
         // Clear current job so the segmented jobs can be processed
         currentTtsJob = null;
-
     } catch (error) {
         toastr.error(error.toString());
         console.error(error);
@@ -1286,7 +1283,6 @@ export function getCharacters(unrestricted) {
     }
 
     return characters;
-
 }
 
 export function sanitizeId(input) {
@@ -1312,7 +1308,6 @@ function parseVoiceMap(voiceMapString) {
     }
     return parsedVoiceMap;
 }
-
 
 
 /**
@@ -1456,8 +1451,7 @@ async function initVoiceMapInternal(unrestricted) {
     let voiceIdsFromProvider;
     try {
         voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceObjects();
-    }
-    catch {
+    } catch {
         toastr.error('TTS Provider failed to return voice ids.');
     }
 

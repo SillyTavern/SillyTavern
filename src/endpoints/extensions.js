@@ -367,7 +367,6 @@ router.post('/version', async (request, response) => {
         const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
 
         return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
-
     } catch (error) {
         console.error('Getting extension version failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
@@ -406,7 +405,6 @@ router.post('/delete', async (request, response) => {
         console.info(`Extension has been deleted at ${extensionPath}`);
 
         return response.send(`Extension has been deleted at ${extensionPath}`);
-
     } catch (error) {
         console.error('Deleting custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);

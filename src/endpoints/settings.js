@@ -58,8 +58,7 @@ function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
         try {
             const file = fs.readFileSync(path.join(directoryPath, item), 'utf-8');
             parsedFiles.push(fileExtension == '.json' ? JSON.parse(file) : file);
-        }
-        catch {
+        } catch {
             // skip
         }
     });

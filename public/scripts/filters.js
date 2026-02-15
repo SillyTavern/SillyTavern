@@ -76,7 +76,6 @@ export const fuzzySearchCategories = Object.freeze({
  * data = filterHelper.applyFilters(data);
  */
 export class FilterHelper {
-
     /**
      * Cache fuzzy search weighting scores for re-usability, sorting and stuff
      *
@@ -329,8 +328,7 @@ export class FilterHelper {
                 // We can filter easily by checking if we have saved a score
                 const score = _this.getScore(FILTER_TYPES.SEARCH, `${entity.type}.${entity.id}`);
                 return score !== undefined;
-            }
-            else {
+            } else {
                 // Compare insensitive and without accents
                 return includesIgnoreCaseAndAccents(entity.item?.name, searchValue);
             }

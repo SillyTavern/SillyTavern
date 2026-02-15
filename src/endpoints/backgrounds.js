@@ -78,7 +78,7 @@ router.post('/upload', function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
     const img_path = path.join(request.file.destination, request.file.filename);
-    const filename = request.file.originalname;
+    const filename = sanitize(request.file.originalname);
 
     try {
         fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));

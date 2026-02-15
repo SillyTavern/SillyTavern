@@ -9,8 +9,6 @@ export class SubMenu {
     /**@type {HTMLElement}*/ root;
 
 
-
-
     constructor(/**@type {MenuItem[]}*/items) {
         this.itemList = items;
     }
@@ -27,8 +25,6 @@ export class SubMenu {
         }
         return this.root;
     }
-
-
 
 
     show(/**@type {HTMLElement}*/parent) {

@@ -3021,8 +3021,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const errorText = 'SD prompt text generation failed. ' + reason;
         toastr.error(errorText, 'Image Generation');
         throw new Error(errorText);
-    }
-    finally {
+    } finally {
         $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);

@@ -8,7 +8,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { imageSize as sizeOf } from 'image-size';
 
 import { getConfigValue, invalidateFirefoxCache } from '../util.js';
-import { getThumbnailResolution, isAnimatedWebP, thumbnailDimensions as dimensions } from './image-metadata.js';
+import { getThumbnailResolution, isAnimatedWebP, thumbnailDimensions as dimensions, isAnimatedApng } from './image-metadata.js';
 import { ResizeStrategy } from '@jimp/plugin-resize';
 
 export const publicRouter = express.Router();
@@ -159,6 +159,16 @@ export async function generateThumbnail(directories, type, file, forceGenerate =
             }
         }
 
+        // For PNG files, check if they are actually APNGs.
+        if (fileExtension === '.png' && isKnownAnimated !== false) {
+            const buffer = fs.readFileSync(pathToOriginalFile);
+            const isAnimated = isAnimatedApng(buffer);
+            if (isAnimated) {
+                // The client is expected to handle it.
+                return { path: null, aspectRatio: null, resolution: null };
+            }
+        }
+
         if (SKIPPED_EXTENSIONS.has(fileExtension)) {
             return { path: null, aspectRatio: null, resolution: null };
         }
@@ -286,12 +296,11 @@ publicRouter.get('/', async function (request, response) {
 
         if (fs.existsSync(pathToCachedFile)) {
             invalidateFirefoxCache(pathToCachedFile, request, response);
-            return response.sendFile(path.resolve(pathToCachedFile));
+            return response.sendFile(file, { root: thumbnailFolder, dotfiles: 'allow' });
         }
 
         // Send a 404 so the frontend can display a placeholder
         return response.sendStatus(404);
-
     } catch (error) {
         console.error('Failed getting thumbnail', error);
         return response.sendStatus(500);

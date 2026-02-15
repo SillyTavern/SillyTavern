@@ -325,8 +325,7 @@ class VITSTtsProvider {
         if (streaming) {
             params.append('streaming', streaming);
             // Streaming response only supports MP3
-        }
-        else {
+        } else {
             params.append('format', this.settings.format);
         }
         params.append('lang', lang ?? this.settings.lang);
@@ -337,8 +336,7 @@ class VITSTtsProvider {
 
         if (model_type == this.modelTypes.W2V2_VITS) {
             params.append('emotion', this.settings.dim_emotion);
-        }
-        else if (model_type == this.modelTypes.BERT_VITS2) {
+        } else if (model_type == this.modelTypes.BERT_VITS2) {
             params.append('sdp_ratio', this.settings.sdp_ratio);
             params.append('emotion', this.settings.emotion);
             if (this.settings.text_prompt) {

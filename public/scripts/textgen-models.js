@@ -541,14 +541,11 @@ export async function loadFeatherlessModels(data) {
 
             if (selectedCategory === 'All') {
                 return matchesSearch && matchesClass;
-            }
-            else if (selectedCategory === 'Top') {
+            } else if (selectedCategory === 'Top') {
                 return matchesSearch && matchesClass && matchesTop;
-            }
-            else if (selectedCategory === 'New') {
+            } else if (selectedCategory === 'New') {
                 return matchesSearch && matchesClass && matchesNew;
-            }
-            else {
+            } else {
                 return matchesSearch && matchesClass;
             }
         });

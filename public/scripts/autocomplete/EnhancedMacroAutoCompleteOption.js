@@ -223,15 +223,20 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // Determine current argument index for highlighting
         const currentArgIndex = this.#context?.currentArgIndex ?? -1;
 
-        // Render argument hint banner if we're typing an argument (and no warning)
-        if (!warning && currentArgIndex >= 0) {
+        // For most warnings, we can still highlight which argument we are currently at.
+        // This even goes for "too many arguments" when navigating the cursor back to
+        // a valid argument.
+        // Extend this in the future, if *some* warnings don't make sense to still highlight args.
+        const hightlightArgsHint = currentArgIndex >= 0;
+
+        // Render argument hint banner if we're typing an argument
+        if (hightlightArgsHint && currentArgIndex >= 0) {
             const hint = this.#renderArgumentHint();
             if (hint) frag.append(hint);
         }
 
         // Reuse MacroBrowser's renderMacroDetails with options
-        // Don't highlight args if there's a warning
-        const details = renderMacroDetails(this.#macro, { currentArgIndex: warning ? -1 : currentArgIndex });
+        const details = renderMacroDetails(this.#macro, { currentArgIndex: hightlightArgsHint ? currentArgIndex : -1 });
 
         // Add class for autocomplete-specific styling overrides
         details.classList.add('macro-ac-details');
@@ -261,7 +266,7 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // Space-separated syntax provides 1 arg; with scoped content you can provide a 2nd arg
         // So it's valid for macros with maxArgs <= 2 (or with list args)
         if (this.#context.hasSpaceArgContent) {
-            if (maxArgs === 0) {
+            if (maxArgs === 0 && !hasList) {
                 return 'This macro does not accept any arguments. Remove the space or use a different macro.';
             }
             if (!hasList && maxArgs > 2) {
@@ -270,8 +275,25 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         }
 
         // Check if trying to add args to a no-arg macro via ::
-        if (this.#context.separatorCount > 0 && maxArgs === 0) {
+        // List-arg macros can accept args even if maxArgs === 0
+        if (this.#context.separatorCount > 0 && maxArgs === 0 && !hasList) {
             return 'This macro does not accept any arguments.';
+        }
+
+        // Check list bounds (min/max) if the macro has a list with constraints
+        if (hasList && typeof this.#macro.list === 'object') {
+            const listItemCount = Math.max(0, argCount - maxArgs);
+            const listMin = this.#macro.list.min ?? 0;
+            const listMax = this.#macro.list.max ?? null;
+
+            if (listItemCount < listMin) {
+                const needed = listMin - listItemCount;
+                return `Not enough list items yet: this macro requires at least ${listMin} item${listMin === 1 ? '' : 's'}, but only ${listItemCount} provided. Add ${needed} more.`;
+            }
+
+            if (listMax !== null && listItemCount > listMax) {
+                return `Too many list items: this macro accepts at most ${listMax} item${listMax === 1 ? '' : 's'}, but ${listItemCount} provided.`;
+            }
         }
 
         return null;
@@ -353,8 +375,23 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         if (isListArg) {
             // List argument hint
             const listIndex = argIndex - this.#macro.maxArgs + 1;
+            const totalListItems = this.#context.args.length - this.#macro.maxArgs;
+
             const text = document.createElement('span');
-            text.innerHTML = `<strong>List item ${listIndex}</strong>`;
+            text.innerHTML = `<strong>List item ${listIndex}</strong>${(listIndex < totalListItems ? ` (of ${totalListItems})` : '')}`;
+
+            const listInfo = document.createElement('span');
+            listInfo.classList.add('macro-ac-arg-hint-small');
+            const minMax = [];
+            if (this.#macro.list.min > 0) minMax.push(`min: ${this.#macro.list.min}`);
+            if (this.#macro.list.max !== null) minMax.push(`max: ${this.#macro.list.max}`);
+            if (minMax.length > 0) {
+                listInfo.textContent = ` (list, ${minMax.join(', ')})`;
+            } else {
+                listInfo.textContent = ' (variable-length list)';
+            }
+            text.appendChild(listInfo);
+
             hint.append(text);
         } else {
             // Unnamed argument hint (required or optional)

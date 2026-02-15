@@ -798,7 +798,6 @@ jQuery(() => {
             $('#instruct_system_sequence').prop('readOnly', false);
             $('#instruct_system_suffix').prop('readOnly', false);
         }
-
     });
 
     $('#instruct_enabled').on('change', function () {

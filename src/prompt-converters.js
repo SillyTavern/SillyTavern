@@ -118,7 +118,6 @@ export function postProcessPrompt(messages, type, names) {
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
 export function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
-
     //Prepare messages for claude.
     //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(last message is exception).
     if (messages.length > 0) {
@@ -940,8 +939,7 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
         if (mergedMessages.length && placeholders) {
             if (mergedMessages[0].role === 'system' && (mergedMessages.length === 1 || mergedMessages[1].role !== 'user')) {
                 mergedMessages.splice(1, 0, { role: 'user', content: PROMPT_PLACEHOLDER });
-            }
-            else if (mergedMessages[0].role !== 'system' && mergedMessages[0].role !== 'user') {
+            } else if (mergedMessages[0].role !== 'system' && mergedMessages[0].role !== 'user') {
                 mergedMessages.unshift({ role: 'user', content: PROMPT_PLACEHOLDER });
             }
         }
@@ -965,11 +963,9 @@ export function convertTextCompletionPrompt(messages) {
     messages.forEach(m => {
         if (m.role === 'system' && m.name === undefined) {
             messageStrings.push('System: ' + m.content);
-        }
-        else if (m.role === 'system' && m.name !== undefined) {
+        } else if (m.role === 'system' && m.name !== undefined) {
             messageStrings.push(m.name + ': ' + m.content);
-        }
-        else {
+        } else {
             messageStrings.push(m.role + ': ' + m.content);
         }
     });
@@ -1278,7 +1274,7 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         return getGemini3ProBudget();
     }
 
-    if (/gemini-3-flash/.test(model) ) {
+    if (/gemini-3-flash/.test(model)) {
         return getGemini3FlashBudget();
     }
 

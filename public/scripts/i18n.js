@@ -272,6 +272,7 @@ function addLanguagesToDropdown() {
 export async function initLocales() {
     langs = await fetch('/locales/lang.json').then(response => response.json());
     localeData = await getLocaleData(localeFile);
+    document.documentElement.lang = localeFile;
     applyLocale();
     addLanguagesToDropdown();
     updateSecretDisplay();
