@@ -73,7 +73,8 @@ export const POPUP_RESULT = {
  * @property {string} label - The label text for the input
  * @property {string?} [tooltip=null] - Optional tooltip icon displayed behind the label
  * @property {boolean|string|undefined} [defaultState=false] - The default state when opening the popup (false if not set)
- * @property {string?} [type='checkbox'] - The type of the input (default is checkbox)
+ * @property {('checkbox'|'text'|'textarea')?} [type='checkbox'] - The type of the input (default is checkbox)
+ * @property {number?} [rows=1] - The number of rows for the input field, if the input is 'textarea'
  */
 
 /**
@@ -307,8 +308,28 @@ export class Popup {
                 label.appendChild(inputElement);
 
                 this.inputControls.appendChild(label);
+            } else if (input.type === 'textarea') {
+                const label = document.createElement('label');
+                label.classList.add('text_label', 'justifyCenter');
+                label.setAttribute('for', input.id);
+
+                const inputElement = document.createElement('textarea');
+                inputElement.classList.add('text_pole', 'result-control');
+                inputElement.id = input.id;
+                inputElement.value = String(input.defaultState ?? '');
+                inputElement.placeholder = input.tooltip ?? '';
+                inputElement.rows = input.rows ?? 1;
+
+                const labelText = document.createElement('span');
+                labelText.innerText = input.label;
+                labelText.dataset.i18n = input.label;
+
+                label.appendChild(labelText);
+                label.appendChild(inputElement);
+
+                this.inputControls.appendChild(label);
             } else {
-                console.warn('Unknown custom input type. Only checkbox and text are supported.', input);
+                console.warn('Unknown custom input type. Only checkbox, text and textarea are supported.', input);
                 return;
             }
         });
@@ -583,7 +604,7 @@ export class Popup {
             this.inputResults = new Map(this.customInputs.map(input => {
                 /** @type {HTMLInputElement} */
                 const inputControl = this.dlg.querySelector(`#${input.id}`);
-                const value = input.type === 'text' ? inputControl.value : inputControl.checked;
+                const value = ['text', 'textarea'].includes(input.type) ? inputControl.value : inputControl.checked;
                 return [inputControl.id, value];
             }));
         }
