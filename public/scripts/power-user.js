@@ -2886,11 +2886,22 @@ function doResetPanels() {
     return '';
 }
 
-async function setAvgBG() {
-    const bgUrl = $('#bg1')
-        .css('background-image')
-        .replace(/^url\(['"]?/, '')
-        .replace(/['"]?\)$/, '');
+async function setAvgBG(args) {
+    const nameOverride = args?.name ? String(args.name).trim() : '';
+    const bgOverride = args?.bg ? String(args.bg).trim() : '';
+
+    let bgUrl;
+
+    if (bgOverride) {
+        // Use the specified background file
+        bgUrl = `backgrounds/${encodeURIComponent(bgOverride)}`;
+    } else {
+        // Use the currently active background
+        bgUrl = $('#bg1')
+            .css('background-image')
+            .replace(/^url\(['"]?/, '')
+            .replace(/['"]?\)$/, '');
+    }
 
     if (!bgUrl || bgUrl === 'none') {
         toastr.warning('No background image set.');
@@ -2912,9 +2923,9 @@ async function setAvgBG() {
     // Generate a full theme palette from the dominant color
     const palette = generateThemePalette(dominantRgb);
 
-    // Build theme name from background filename
+    // Build theme name from background filename or use override
     const bgName = deriveBackgroundName(bgUrl);
-    const themeName = `Generated - ${bgName}`;
+    const themeName = nameOverride || `Generated - ${bgName}`;
 
     // Create theme object from current settings, then override colors
     const theme = getThemeObject(themeName);
@@ -4173,7 +4184,33 @@ jQuery(() => {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'bgcol',
         callback: setAvgBG,
-        helpString: 'Generates a new theme from the current background image using dominant color extraction and color theory. Saves as "Generated - &lt;background name&gt;".',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'override the generated theme name',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'bg',
+                description: 'background image filename to use instead of the current one',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: async () => {
+                    try {
+                        const response = await fetch('/api/backgrounds/all', {
+                            method: 'POST',
+                            headers: getRequestHeaders(),
+                            body: JSON.stringify({}),
+                        });
+                        if (response.ok) {
+                            const { images } = await response.json();
+                            return images.map(img => new SlashCommandEnumValue(img, null, enumTypes.enum, enumIcons.image));
+                        }
+                    } catch { /* fallback to empty */ }
+                    return [];
+                },
+            }),
+        ],
+        helpString: 'Generates a new theme from a background image using dominant color extraction and color theory. Saves as "Generated - &lt;background name&gt;".',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'theme',
