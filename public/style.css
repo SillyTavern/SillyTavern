@@ -6306,10 +6306,7 @@ body:not(.movingUI) .drawer-content.maximized {
         --interactable-outline-color-faint: CanvasText;
     }
 
-    .interactable:focus-visible {
-        outline-width: 2px;
-    }
-
+    .interactable:focus-visible,
     select:focus-visible,
     input:focus-visible,
     textarea:focus-visible {
@@ -6320,10 +6317,7 @@ body:not(.movingUI) .drawer-content.maximized {
         border: 2px solid var(--SmartThemeBorderColor);
     }
 
-    .menu_button {
-        border-width: 2px;
-    }
-
+    .menu_button,
     .popup {
         border-width: 2px;
     }
