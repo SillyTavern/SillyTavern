@@ -168,7 +168,7 @@ export const a11yProcessors = {
     listItem: (element) => {
         if (!element.hasAttribute('role')) element.setAttribute('role', 'listitem');
         if (element.hasAttribute('tabindex') && element.getAttribute('tabindex') === '0' && (
-            element.classList.contains('completion_prompt_manager_prompt') || 
+            element.classList.contains('completion_prompt_manager_prompt') ||
             element.classList.contains('qr--item') ||
             element.classList.contains('regex-script-label') ||
             element.classList.contains('list-group-item')
@@ -669,15 +669,15 @@ const SpecificProcessors = {
             const $visDesc = $visHeader.next('small');
             if ($visDesc.length) {
                 $visDesc.attr('id', 'sd-vis-desc');
-                $('#sd_wand_visible, #sd_command_visible, #sd_interactive_visible, #sd_tool_visible').each(function() {
-                    if(!$(this).attr('aria-describedby')) $(this).attr('aria-describedby', 'sd-vis-desc');
+                $('#sd_wand_visible, #sd_command_visible, #sd_interactive_visible, #sd_tool_visible').each(function () {
+                    if (!$(this).attr('aria-describedby')) $(this).attr('aria-describedby', 'sd-vis-desc');
                 });
             }
         }
 
         const $sdPrompt = findId('sd_prompt_templates');
         if ($sdPrompt) {
-            $sdPrompt.find('textarea').each(function() {
+            $sdPrompt.find('textarea').each(function () {
                 if ($(this).attr('aria-labelledby')) return;
                 const id = this.id;
                 const $labelWrapper = $(this).prev('.title_restorable');
@@ -716,13 +716,13 @@ const SpecificProcessors = {
         // --- FIXED API BLOCK LOGIC ---
         // This logic is now unblocked and will properly find labels even if inputs() ran first.
         if ($(root).find('#rm_api_block').length || $(root).is('#rm_api_block')) {
-            $('#rm_api_block select, #rm_api_block input').each(function() {
+            $('#rm_api_block select, #rm_api_block input').each(function () {
                 const $el = $(this);
                 if ($el.attr('id') === 'main_api') return;
-                
+
                 // If it already has a "generic" st-a11y label, we might want to overwrite it if we find a better one here.
                 // But for safety, let's just check if we can find a better one.
-                
+
                 let $label = null;
                 if ($el.attr('id')) {
                     const $forLabel = $(`label[for="${$el.attr('id')}"]`);
@@ -791,7 +791,7 @@ const SpecificProcessors = {
     inputs: (root) => {
         const $root = $(root);
         const $inputs = $root.find('input:not([type="range"]), textarea, select').addBack('input:not([type="range"]), textarea, select');
-        
+
         $inputs.each(function () {
             const $el = $(this);
             if ($el.is('[type="hidden"]')) return;
@@ -812,11 +812,11 @@ const SpecificProcessors = {
 
             if (!$label || !$label.length) {
                 let $curr = $el;
-                
+
                 for (let i = 0; i < 4; i++) {
                     let $prev = $curr.prev();
                     let attempts = 0;
-                    
+
                     while ($prev.length && attempts < 5) {
                         if ($prev.is('.range-block-title, h4, h3, h5, label, strong, b')) {
                             $label = $prev;
@@ -828,8 +828,8 @@ const SpecificProcessors = {
                             break;
                         }
 
-                        if ($prev.is('.toggle-description, .neutral_warning, small, hr, .inline-drawer-toggle, .notes-link, .fa-circle-info') || 
-                            $prev.hasClass('notes-link') || 
+                        if ($prev.is('.toggle-description, .neutral_warning, small, hr, .inline-drawer-toggle, .notes-link, .fa-circle-info') ||
+                            $prev.hasClass('notes-link') ||
                             $prev.text().trim() === '') {
                             $prev = $prev.prev();
                             attempts++;
@@ -842,11 +842,11 @@ const SpecificProcessors = {
 
                     const $parent = $curr.parent();
                     if ($parent.length && (
-                        $parent.hasClass('range-block-range') || 
-                        $parent.hasClass('range-block-range-and-counter') || 
-                        $parent.hasClass('range-block') || 
-                        $parent.hasClass('wide100p') || 
-                        $parent.hasClass('flex-container') || 
+                        $parent.hasClass('range-block-range') ||
+                        $parent.hasClass('range-block-range-and-counter') ||
+                        $parent.hasClass('range-block') ||
+                        $parent.hasClass('wide100p') ||
+                        $parent.hasClass('flex-container') ||
                         $parent.hasClass('oneline-dropdown') ||
                         $parent.is('div')
                     )) {
@@ -860,7 +860,7 @@ const SpecificProcessors = {
             if (!$label || !$label.length) {
                 const $container = $el.closest('.range-block');
                 if ($container.length) {
-                     $label = $container.find('.range-block-title, h4, h3, label').first();
+                    $label = $container.find('.range-block-title, h4, h3, label').first();
                 }
             }
 
@@ -879,10 +879,10 @@ const SpecificProcessors = {
 
             const $descContainer = $el.closest('.range-block, .wide100p, .flex-container');
             if ($descContainer.length) {
-                const $desc = $descContainer.find('.text_muted, .toggle-description, small.flexBasis100p').filter(function() {
+                const $desc = $descContainer.find('.text_muted, .toggle-description, small.flexBasis100p').filter(function () {
                     return $(this).text().trim().length > 0;
                 }).first();
-                
+
                 if ($desc.length && !$el.attr('aria-describedby')) {
                     const descId = $desc.attr('id') || 'desc-' + id;
                     $desc.attr('id', descId);
@@ -898,7 +898,7 @@ const SpecificProcessors = {
             }
         });
 
-        $root.find('input[type="range"]').addBack('input[type="range"]').each(function() {
+        $root.find('input[type="range"]').addBack('input[type="range"]').each(function () {
             const $el = $(this);
             if ($el.attr('aria-hidden') === 'true') return;
             const hasSiblingNumber = $el.siblings('input[type="number"]').length > 0 ||
@@ -909,7 +909,7 @@ const SpecificProcessors = {
             }
         });
 
-        $root.find('.select2-selection__choice__remove').addBack('.select2-selection__choice__remove').each(function() {
+        $root.find('.select2-selection__choice__remove').addBack('.select2-selection__choice__remove').each(function () {
             const $btn = $(this);
             if ($btn.attr('tabindex')) return;
             $btn.attr('tabindex', '0');
@@ -961,7 +961,7 @@ const SpecificProcessors = {
     navAndCharPanel: (root) => {
         const $root = $(root);
 
-        $root.find('#lm_button_panel_pin_div, #rm_button_panel_pin_div').addBack('#lm_button_panel_pin_div, #rm_button_panel_pin_div').each(function() {
+        $root.find('#lm_button_panel_pin_div, #rm_button_panel_pin_div').addBack('#lm_button_panel_pin_div, #rm_button_panel_pin_div').each(function () {
             const $container = $(this);
             const $btnDiv = $container.find('.right_menu_button');
             if ($btnDiv.attr('aria-pressed')) return; // Skip if done
@@ -973,7 +973,7 @@ const SpecificProcessors = {
         });
 
         const charPanelSelectors = '#rm_button_bar .menu_button, #rm_button_bar .right_menu_button, #HotSwapWrapper .hotswap, #rm_button_characters';
-        $root.find(charPanelSelectors).addBack(charPanelSelectors).each(function() {
+        $root.find(charPanelSelectors).addBack(charPanelSelectors).each(function () {
             const $btn = $(this);
             if ($btn.attr('aria-label')) return;
             const title = $btn.attr('title') || $btn.attr('data-i18n-title') || $btn.attr('data-original-title');
@@ -985,14 +985,14 @@ const SpecificProcessors = {
             $sortOrder.attr('aria-label', $sortOrder.attr('title') || 'Sort Characters');
         }
 
-        $root.find('.rm_tag_filter .tag').addBack('.rm_tag_filter .tag').each(function() {
+        $root.find('.rm_tag_filter .tag').addBack('.rm_tag_filter .tag').each(function () {
             const $tag = $(this);
             if ($tag.attr('aria-label')) return;
             const title = $tag.find('.tag_name').attr('title');
             if (title) $tag.attr('aria-label', title);
         });
 
-        $root.find('#avatar_controls .menu_button').addBack('#avatar_controls .menu_button').each(function() {
+        $root.find('#avatar_controls .menu_button').addBack('#avatar_controls .menu_button').each(function () {
             const $btn = $(this);
             if ($btn.attr('aria-label')) return;
             const title = $btn.attr('title') || $btn.attr('data-i18n-title');
@@ -1000,10 +1000,10 @@ const SpecificProcessors = {
         });
 
         // WI Selectors - ensure we re-check in case labels loaded late
-        $root.find('.character_world_info_selector, .chat_world_info_selector').addBack('.character_world_info_selector, .chat_world_info_selector').each(function() {
+        $root.find('.character_world_info_selector, .chat_world_info_selector').addBack('.character_world_info_selector, .chat_world_info_selector').each(function () {
             const $el = $(this);
             if ($el.attr('aria-labelledby')) return;
-            
+
             const $container = $el.closest('.range-block');
             const $label = $container.find('.range-block-title h3, .range-block-title h4').first();
             if ($label.length) {
@@ -1013,7 +1013,7 @@ const SpecificProcessors = {
             }
         });
 
-        $root.find('.character_extra_world_info_selector').addBack('.character_extra_world_info_selector').each(function() {
+        $root.find('.character_extra_world_info_selector').addBack('.character_extra_world_info_selector').each(function () {
             const $el = $(this);
             if ($el.attr('aria-labelledby')) return;
 
@@ -1040,7 +1040,7 @@ const SpecificProcessors = {
             const $controls = $li.find('.prompt_manager_prompt_controls');
             if ($controls.length && $controls.find('.a11y-sort-button').length === 0) {
                 const itemName = $li.find('.completion_prompt_manager_prompt_name').text().trim() || 'Prompt';
-                
+
                 // IMPORTANT: Ensure children buttons are focusable to solve "cannot focus item"
                 $li.find('.prompt-manager-inspect-action').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Inspect: ' + itemName });
 
@@ -1078,13 +1078,13 @@ const SpecificProcessors = {
         qrContainers.forEach(container => {
             const $cont = $root.find(container.id).addBack(container.id);
             if (!$cont.length) return;
-            
+
             // Re-apply header ID in case it was missed
             const titleId = `lbl-${container.id.substring(1)}-title`;
             $cont.find('.qr--title').attr('id', titleId);
             $cont.find('.qr--setListAdd').attr('aria-label', `Add new ${container.label} set`);
 
-            $cont.find('.qr--item').each(function() {
+            $cont.find('.qr--item').each(function () {
                 const $li = $(this);
                 // Check if button exists to prevent duplicate
                 if ($li.find('.a11y-sort-button').length === 0) {
@@ -1111,7 +1111,7 @@ const SpecificProcessors = {
         });
 
         // C. Regex Scripts
-        $root.find('.regex-script-label').addBack('.regex-script-label').each(function() {
+        $root.find('.regex-script-label').addBack('.regex-script-label').each(function () {
             const $row = $(this);
             if (!$row.attr('tabindex')) $row.attr({ 'role': 'listitem', 'tabindex': '0' });
 
@@ -1125,7 +1125,7 @@ const SpecificProcessors = {
                     'aria-label': 'Sort Script',
                 }).append('<i class="fa-solid fa-sort"></i>');
                 $btnContainer.prepend($sortBtn);
-                
+
                 // Fix checkbox
                 const scriptName = $row.find('.regex_script_name').text() || 'Script';
                 const $lbl = $row.find('label.checkbox');
@@ -1154,18 +1154,18 @@ const SpecificProcessors = {
                     'id': detailsId,
                     'role': 'status',
                     'aria-live': 'polite',
-                    'aria-atomic': 'true'
+                    'aria-atomic': 'true',
                 });
             }
 
-            $visibleDetails.find('.source').each(function() {
+            $visibleDetails.find('.source').each(function () {
                 const $icon = $(this);
                 if (!$icon.attr('aria-label')) {
                     const titleText = $icon.attr('title') || 'Command Source';
                     const cleanLabel = titleText.replace(/\n/g, ' ').trim();
                     $icon.attr({
                         'role': 'img',
-                        'aria-label': cleanLabel
+                        'aria-label': cleanLabel,
                     });
                 }
             });
@@ -1176,8 +1176,8 @@ const SpecificProcessors = {
             }
 
             $input.removeAttr('aria-activedescendant');
-            
-            $input.attr('aria-expanded', 'true'); 
+
+            $input.attr('aria-expanded', 'true');
 
             return;
         }
@@ -1189,7 +1189,7 @@ const SpecificProcessors = {
                 $visibleList.attr({
                     'role': 'listbox',
                     'id': listId,
-                    'aria-label': 'Command Suggestions'
+                    'aria-label': 'Command Suggestions',
                 });
             }
 
@@ -1198,7 +1198,7 @@ const SpecificProcessors = {
                     'aria-expanded': 'true',
                     'aria-autocomplete': 'list',
                     'aria-controls': listId,
-                    'aria-haspopup': 'listbox'
+                    'aria-haspopup': 'listbox',
                 });
             }
 
@@ -1210,9 +1210,9 @@ const SpecificProcessors = {
             const $items = $visibleList.find('li');
             let activeId = '';
 
-            $items.each(function(index) {
+            $items.each(function (index) {
                 const $li = $(this);
-                
+
                 let id = $li.attr('id');
                 if (!id) {
                     id = `autocomplete-item-${index}`;
@@ -1225,7 +1225,7 @@ const SpecificProcessors = {
                     'role': 'option',
                     'aria-setsize': $items.length,
                     'aria-posinset': index + 1,
-                    'aria-disabled': isBlank ? 'true' : 'false'
+                    'aria-disabled': isBlank ? 'true' : 'false',
                 });
 
                 if ($li.hasClass('selected')) {
@@ -1241,15 +1241,15 @@ const SpecificProcessors = {
             } else {
                 $input.removeAttr('aria-activedescendant');
             }
-            
+
             return;
         }
 
         if ($input.attr('aria-expanded') === 'true') {
             $input.attr('aria-expanded', 'false')
-                  .removeAttr('aria-activedescendant')
-                  .removeAttr('aria-controls');
-            
+                .removeAttr('aria-activedescendant')
+                .removeAttr('aria-controls');
+
             let currentDescribedBy = $input.attr('aria-describedby') || '';
             if (currentDescribedBy.includes('a11y-slash-details')) {
                 $input.attr('aria-describedby', currentDescribedBy.replace('a11y-slash-details', '').trim());
@@ -1264,17 +1264,17 @@ const SpecificProcessors = {
         // Extensions (Sidebar & Popup Manager)
         const $extBlocks = $root.find('.extension_block').addBack('.extension_block').filter(':visible');
         if ($extBlocks.length) {
-            $extBlocks.each(function() {
+            $extBlocks.each(function () {
                 const $block = $(this);
                 if ($block.attr('data-a11y-processed-ext')) return;
 
                 const name = $block.find('.extension_name').text().trim() || $block.attr('data-name');
-                
+
                 // Toggle Checkbox
                 $block.find('.extension_toggle input').attr('aria-label', `Enable extension: ${name}`);
-                
+
                 // Action Buttons (Update, Branch, Move, Delete)
-                $block.find('.extension_actions button, .extension_actions .menu_button').each(function() {
+                $block.find('.extension_actions button, .extension_actions .menu_button').each(function () {
                     const $btn = $(this);
                     const title = $btn.attr('title') || $btn.text().trim() || 'Action';
                     const cleanTitle = title.split('\n')[0].trim();
@@ -1339,7 +1339,7 @@ const SpecificProcessors = {
             $exportFormatPopup.find('.export_format').attr({
                 'role': 'menuitem',
                 'tabindex': '0',
-                'aria-label': function() { return $(this).text().trim() + ' format'; },
+                'aria-label': function () { return $(this).text().trim() + ' format'; },
             });
         }
 
@@ -1355,7 +1355,7 @@ const SpecificProcessors = {
             $altGreetings.attr('role', 'list');
             $root.find('.add_alternate_greeting').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Add new greeting' });
 
-            $altGreetings.find('.alternate_greeting').each(function() {
+            $altGreetings.find('.alternate_greeting').each(function () {
                 const $item = $(this);
                 if ($item.attr('role')) return;
                 $item.attr('role', 'listitem');
@@ -1765,7 +1765,7 @@ const managePopupTraps = () => {
             lastFocusedBeforeTrap = document.activeElement;
             apiParamsTrap = focusTrap.createFocusTrap($apiParams[0], {
                 allowOutsideClick: true,
-                initialFocus: 'textarea', 
+                initialFocus: 'textarea',
                 fallbackFocus: '.popup-button-ok',
                 escapeDeactivates: false,
                 onDeactivate: () => {
@@ -1966,7 +1966,7 @@ export function initAccessibility() {
     // Instead of attaching listeners to thousands of elements, we attach to document.
 
     // 1. Sort Buttons (Generic Handler)
-    $(document).on('focus', '.a11y-sort-button', function() {
+    $(document).on('focus', '.a11y-sort-button', function () {
         if (!isA11yEnabled) return;
         const $this = $(this);
         let label = $this.attr('aria-label');
@@ -1987,9 +1987,9 @@ export function initAccessibility() {
         }
     });
 
-    $(document).on('click keydown', '.a11y-sort-button', function(e) {
+    $(document).on('click keydown', '.a11y-sort-button', function (e) {
         if (!isA11yEnabled) return;
-        
+
         if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
 
         e.preventDefault();
@@ -2011,7 +2011,7 @@ export function initAccessibility() {
     // Ensures visual checkboxes sync their state to ARIA attributes on custom labels.
 
     // Regex Checkboxes
-    $(document).on('change', '.regex-script-container input[type="checkbox"]', function() {
+    $(document).on('change', '.regex-script-container input[type="checkbox"]', function () {
         if (!isA11yEnabled) return;
         const $lbl = $(this).closest('.regex-script-label').find('label.checkbox');
         if ($lbl.length) {
@@ -2020,7 +2020,7 @@ export function initAccessibility() {
     });
 
     // Panel Pin Toggles (Left/Right Menu)
-    $(document).on('change', '#lm_button_panel_pin, #rm_button_panel_pin', function() {
+    $(document).on('change', '#lm_button_panel_pin, #rm_button_panel_pin', function () {
         if (!isA11yEnabled) return;
         const $checkbox = $(this);
         const $container = $checkbox.parent();
@@ -2035,7 +2035,7 @@ export function initAccessibility() {
     });
 
     // Prompt Manager Toggle Buttons
-    $(document).on('click', '.prompt-manager-toggle-action', function() {
+    $(document).on('click', '.prompt-manager-toggle-action', function () {
         if (!isA11yEnabled) return;
         // Wait briefly for the class to toggle (visual change)
         setTimeout(() => {
@@ -2102,7 +2102,7 @@ export function initAccessibility() {
     // --- C. Smart Focus Preservation ---
     // Tracks where the user was before clicking a toggle that might redraw the UI.
     // Allows restoring focus to the correct element after a re-render.
-    $(document).on('mousedown click', '.killSwitch, .prompt-manager-toggle-action, .disable_regex, .enable_scoped', function() {
+    $(document).on('mousedown click', '.killSwitch, .prompt-manager-toggle-action, .disable_regex, .enable_scoped', function () {
         if (!isA11yEnabled) return;
         const $el = $(this);
         let selector = null;
@@ -2200,7 +2200,7 @@ export function initAccessibility() {
 
     // --- E. Global Escape Key Logic ---
     // Prioritized handling of Escape key to close topmost menus/popups.
-    $(document).on('keydown', function(e) {
+    $(document).on('keydown', function (e) {
         if (!isA11yEnabled || e.key !== 'Escape') return;
 
         // 1. Options Menu
@@ -2344,7 +2344,7 @@ export function initAccessibility() {
 
     // --- H. Navigation Bar Shortcuts (Smart Escape) ---
     // Determines where to move focus when Escape is pressed in various contexts.
-    $(document).on('keydown', function(e) {
+    $(document).on('keydown', function (e) {
         if (!isA11yEnabled || e.key !== 'Escape') return;
 
         // Case 1: Escape in Main Input -> Go to Left Nav (Toggle)
