@@ -276,6 +276,11 @@ export function generateThemePalette(dominantRgb) {
     // --- Text colors (ensure ≥ 3.0:1 contrast against panel background) ---
     const minContrast = 3.5;
 
+    // Hue shift angles for color theory relationships (in radians)
+    const ANALOGOUS_HUE_SHIFT = Math.PI / 3;         // +60° for analogous colors
+    const COMPLEMENTARY_HUE_SHIFT = Math.PI;          // +180° for complementary colors
+    const TRIADIC_HUE_SHIFT = (2 * Math.PI / 3);      // +120° for triadic colors
+
     // Main text: near-white/near-black with a slight hue tint from the base
     const mainTextChroma = Math.min(baseC * 0.15, 0.03);
     const mainTextAb = lchToOklab(mainTextChroma, baseH);
@@ -284,7 +289,7 @@ export function generateThemePalette(dominantRgb) {
     const mainTextRgb = oklabToSrgb(mainTextLab.L, mainTextLab.a, mainTextLab.b);
 
     // Italics: analogous hue shift (+60°), slightly softer
-    const italicsHue = baseH + Math.PI / 3;
+    const italicsHue = baseH + ANALOGOUS_HUE_SHIFT;
     const italicsChroma = Math.min(baseC * 0.5 + 0.02, 0.12);
     const italicsAb = lchToOklab(italicsChroma, italicsHue);
     const italicsTarget = { L: panelIsDark ? 0.78 : 0.3, a: italicsAb.a, b: italicsAb.b };
@@ -292,7 +297,7 @@ export function generateThemePalette(dominantRgb) {
     const italicsRgb = oklabToSrgb(italicsLab.L, italicsLab.a, italicsLab.b);
 
     // Underline: complementary hue (+180°), medium saturation
-    const underlineHue = baseH + Math.PI;
+    const underlineHue = baseH + COMPLEMENTARY_HUE_SHIFT;
     const underlineChroma = Math.min(baseC * 0.4 + 0.02, 0.10);
     const underlineAb = lchToOklab(underlineChroma, underlineHue);
     const underlineTarget = { L: panelIsDark ? 0.75 : 0.32, a: underlineAb.a, b: underlineAb.b };
@@ -300,7 +305,7 @@ export function generateThemePalette(dominantRgb) {
     const underlineRgb = oklabToSrgb(underlineLab.L, underlineLab.a, underlineLab.b);
 
     // Quotes: triadic hue shift (+120°), more saturated for distinctiveness
-    const quoteHue = baseH + (2 * Math.PI / 3);
+    const quoteHue = baseH + TRIADIC_HUE_SHIFT;
     const quoteChroma = Math.min(baseC * 0.6 + 0.03, 0.14);
     const quoteAb = lchToOklab(quoteChroma, quoteHue);
     const quoteTarget = { L: panelIsDark ? 0.65 : 0.38, a: quoteAb.a, b: quoteAb.b };
