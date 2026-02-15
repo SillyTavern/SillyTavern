@@ -318,7 +318,7 @@ input[type='checkbox']:focus-visible {
 .dragover {
     filter: brightness(1.1) saturate(1.0);
     outline: 3px dashed var(--SmartThemeBorderColor);
-    animation: pulse 0.5s infinite alternate;
+    animation: pulse var(--animation-duration-3x) infinite alternate;
 }
 
 .dragover.no_animation {
@@ -6304,10 +6304,6 @@ body:not(.movingUI) .drawer-content.maximized {
 body.reduced-motion .mes_text .text_segment,
 body.reduced-motion .mes_reasoning_details[data-state="thinking"] .mes_reasoning .text_segment {
     animation-duration: 0ms;
-}
-
-body.reduced-motion .dragover {
-    animation: none;
 }
 
 @media (prefers-contrast: more) {
