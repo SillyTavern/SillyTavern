@@ -857,7 +857,7 @@ function updateGroupAvatar(group) {
  */
 function isValidImageUrl(url) {
     // check if empty dict
-    if (Object.keys(url).length === 0) {
+    if (!url || Object.keys(url).length === 0) {
         return false;
     }
     return isDataURL(url) || (url && (url.startsWith('user') || url.startsWith('/user')));
