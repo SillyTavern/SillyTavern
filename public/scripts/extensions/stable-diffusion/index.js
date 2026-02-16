@@ -5562,7 +5562,7 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified). The image is saved to the character gallery by default; use <code>gallery=false</code> to skip saving.
+                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified). The image is saved to the character gallery by default; use <code>gallery=false</code> to save to the root of the user images directory.
             </div>
             <div>
                 Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
