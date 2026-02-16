@@ -5763,6 +5763,52 @@ export function getMaxContextSize(overrideResponseLength = null) {
     return this_max_context;
 }
 
+/**
+ * Gets the maximum context token limit (the full context window size before subtracting response length).
+ * @returns {number} The maximum context token limit for the current API.
+ */
+export function getMaxContextTokens() {
+    if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
+        return max_context;
+    }
+    if (main_api == 'novel') {
+        let this_max_context = Number(max_context);
+        if (nai_settings.model_novel.includes('clio')) {
+            this_max_context = Math.min(max_context, 8192);
+        }
+        if (nai_settings.model_novel.includes('kayra')) {
+            this_max_context = Math.min(max_context, 8192);
+            const subscriptionLimit = getKayraMaxContextTokens();
+            if (typeof subscriptionLimit === 'number' && this_max_context > subscriptionLimit) {
+                this_max_context = subscriptionLimit;
+            }
+        }
+        if (nai_settings.model_novel.includes('erato')) {
+            this_max_context = Math.min(max_context, 8192);
+            this_max_context -= 10;
+        }
+        return this_max_context;
+    }
+    if (main_api == 'openai') {
+        return oai_settings.openai_max_context;
+    }
+    return 1487;
+}
+
+/**
+ * Gets the maximum response token limit (the max generation/reply length).
+ * @returns {number} The maximum response token limit for the current API.
+ */
+export function getMaxResponseTokens() {
+    if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui' || main_api == 'novel') {
+        return amount_gen;
+    }
+    if (main_api == 'openai') {
+        return oai_settings.openai_max_tokens;
+    }
+    return 0;
+}
+
 function parseTokenCounts(counts, thisPromptBits) {
     /**
      * @param {any[]} numbers
