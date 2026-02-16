@@ -238,7 +238,8 @@ export class Popup {
             /** @type {CustomPopupButton} */
             const button = typeof x === 'string' ? { text: x, result: index + 2 } : x;
 
-            const buttonElement = document.createElement('div');
+            const buttonElement = document.createElement('button');
+            buttonElement.type = 'button';
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
@@ -444,6 +445,8 @@ export class Popup {
                     if (evt.altKey || evt.shiftKey)
                         return;
 
+                    if (document.activeElement?.tagName === 'BUTTON') return;
+
                     // Check if we are the currently active popup
                     if (this.dlg != document.activeElement?.closest('.popup'))
                         return;
@@ -495,6 +498,16 @@ export class Popup {
         this.dlg.setAttribute('opening', '');
 
         this.dlg.showModal();
+
+        try {
+            // @ts-ignore
+            this.trap = focusTrap.createFocusTrap(this.dlg, {
+                initialFocus: () => this.dlg.querySelector('.result-control:not([style*="display: none"])') || this.dlg,
+                fallbackFocus: this.dlg,
+                allowOutsideClick: true,
+            });
+            this.trap.activate();
+        } catch (e) { console.warn('Focus trap failed', e); }
 
         // We need to fix the toastr to be present inside this dialog
         fixToastrForDialogs();
@@ -561,6 +574,7 @@ export class Popup {
      * @returns {Promise<string|number|boolean|undefined?>} A promise that resolves with the value of the popup when it is completed. <b>Returns `undefined` if the closing action was cancelled.</b>
      */
     async complete(result) {
+        if (result === null || result === 1000) return;
         // In all cases besides INPUT the popup value should be the result
         /** @type {POPUP_RESULT|number|boolean|string?} */
         let value = result;

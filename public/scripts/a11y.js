@@ -14,7 +14,7 @@ import {
     focusTrap,
 } from '../lib.js';
 // Import Popup System
-import { callGenericPopup, POPUP_TYPE, POPUP_RESULT, Popup } from './popup.js';
+import { callGenericPopup, POPUP_TYPE } from './popup.js';
 
 // ============================================================================
 // GLOBAL STATE & CONFIGURATION
@@ -335,27 +335,27 @@ async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
             customButtons: [
                 {
                     text: 'Move Up',
-                    result: POPUP_RESULT.CUSTOM1,
+                    result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'up'),
                 },
                 {
                     text: 'Move Down',
-                    result: POPUP_RESULT.CUSTOM2,
+                    result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'down'),
                 },
                 {
                     text: 'To Top',
-                    result: POPUP_RESULT.CUSTOM3,
+                    result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'top'),
                 },
                 {
                     text: 'To Bottom',
-                    result: POPUP_RESULT.CUSTOM4,
+                    result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'bottom'),
                 },
                 {
                     text: 'Jump to...',
-                    result: POPUP_RESULT.CUSTOM5,
+                    result: 1000,
                     action: () => setTimeout(() => handleGenericJumpAction($li, $container, itemSelector), 150),
                 },
             ],
@@ -397,6 +397,15 @@ async function handleGenericJumpAction($item, $container, itemSelector) {
     }
 }
 
+function getA11yItemName($li) {
+    const $nameLink = $li.find('.prompt-manager-inspect-action');
+    if ($nameLink.length) return $nameLink.text().trim();
+
+    return ($li.find('.completion_prompt_manager_prompt_name, .qr--set-itemLabel, .regex_script_name').first().val() ||
+            $li.find('.completion_prompt_manager_prompt_name, .qr--set-itemLabel, .regex_script_name').first().text() ||
+            'Item').trim();
+}
+
 /**
  * Performs the actual DOM manipulation to reorder items and triggers persistence events.
  *
@@ -408,83 +417,62 @@ async function handleGenericJumpAction($item, $container, itemSelector) {
  */
 function performGenericSortAction($item, $container, itemSelector, action, targetIndex = null) {
     const $allItems = $container.children(itemSelector);
+    const total = $allItems.length;
     const currentIndex = $allItems.index($item);
+    let targetName = '';
     let newIndex = currentIndex;
     let changed = false;
 
-    logDebug('SortAction', `Performing sort. Action: ${action}, Current: ${currentIndex}`);
-
-    // Determine new position logic
-    if (action === 'up') {
-        if (currentIndex > 0) {
-            $item.insertBefore($allItems.eq(currentIndex - 1));
-            newIndex = currentIndex - 1;
-            changed = true;
-        }
-    } else if (action === 'down') {
-        if (currentIndex < $allItems.length - 1) {
-            $item.insertAfter($allItems.eq(currentIndex + 1));
-            newIndex = currentIndex + 1;
-            changed = true;
-        }
-    } else if (action === 'top') {
-        if (currentIndex > 0) {
-            $item.prependTo($container);
-            newIndex = 0;
-            changed = true;
-        }
-    } else if (action === 'bottom') {
-        if (currentIndex < $allItems.length - 1) {
-            $item.appendTo($container);
-            newIndex = $allItems.length - 1;
-            changed = true;
-        }
-    } else if (action === 'jump' && targetIndex !== null) {
-        if (targetIndex !== currentIndex) {
-            if (targetIndex <= 0) {
-                $item.prependTo($container);
-                newIndex = 0;
-            } else if (targetIndex >= $allItems.length - 1) {
-                $item.appendTo($container);
-                newIndex = $allItems.length - 1;
-            } else {
-                const $target = $allItems.eq(targetIndex);
-                // Insert before or after based on direction to ensure correct index
-                if (targetIndex > currentIndex) {
-                    $item.insertAfter($target);
-                } else {
-                    $item.insertBefore($target);
-                }
-                newIndex = targetIndex;
-            }
-            changed = true;
-        }
+    if (action === 'up' && currentIndex > 0) {
+        const $other = $allItems.eq(currentIndex - 1);
+        targetName = getA11yItemName($other);
+        $item.insertBefore($other);
+        newIndex = currentIndex - 1;
+        changed = true;
+    } else if (action === 'down' && currentIndex < total - 1) {
+        const $other = $allItems.eq(currentIndex + 1);
+        targetName = getA11yItemName($other);
+        $item.insertAfter($other);
+        newIndex = currentIndex + 1;
+        changed = true;
+    } else if (action === 'top' && currentIndex > 0) {
+        $item.insertBefore($allItems.first());
+        newIndex = 0;
+        changed = true;
+    } else if (action === 'bottom' && currentIndex < total - 1) {
+        $item.insertAfter($allItems.last());
+        newIndex = total - 1;
+        changed = true;
     }
 
     if (changed) {
-        logDebug('SortAction', 'DOM moved. Triggering sortable update.');
-
-        // Trigger updates so the application saves the new order
         if ($container.data('ui-sortable')) {
-            // If using jQuery UI Sortable
             /** @type {any} */ ($container).sortable('refresh');
             $container.trigger('sortupdate');
         } else {
-            // Fallback for custom lists (e.g., Quick Replies)
             $container.trigger('sortupdate');
         }
 
-        announceA11y(`Moved. New position: ${newIndex + 1}.`);
-    } else {
-        announceA11y('Position not changed.');
+        let message = '';
+        if (action === 'up' || action === 'down') {
+            message = `Swapped with ${targetName}. Position ${newIndex + 1} of ${total}.`;
+        } else {
+            message = `Moved to ${action}. Position ${newIndex + 1} of ${total}.`;
+        }
+
+        announceA11y(message, true);
     }
 
-    // Restore Focus to the button so user can continue sorting
     setTimeout(() => {
-        const $triggerBtn = $item.find('.a11y-sort-button');
-        logDebug('SortAction', 'Restoring focus to sort button');
-        $triggerBtn.trigger('focus');
-    }, 100);
+        const $popup = $('.popup:visible');
+        if ($popup.length) {
+            const btnText = action === 'up' ? 'Move Up' : (action === 'down' ? 'Move Down' : (action === 'top' ? 'To Top' : (action === 'bottom' ? 'To Bottom' : '')));
+            if (btnText) {
+                const $btn = $popup.find(`.popup-button-custom:contains("${btnText}")`);
+                $btn.focus();
+            }
+        }
+    }, 50);
 }
 
 // ============================================================================
@@ -523,44 +511,36 @@ let isAiGenerating = false;
  *
  * @param {string} text - The text to announce.
  */
-export function announceA11y(text) {
-    // 1. Debug Log to Console
-    console.log(`%c[A11y Announce] ${text}`, 'background: #4caf50; color: #fff; padding: 2px 5px; border-radius: 3px;');
+export function announceA11y(text, force = false) {
+    console.log(`%c[A11y] ${text}`, 'color: #4caf50');
 
-    // 2. Find or Create the Announcer Element
-    let a11yAnnouncer = document.getElementById('a11y-announcer');
-
-    if (!a11yAnnouncer) {
-        console.log('[A11y] Creating missing announcer element...');
-        a11yAnnouncer = document.createElement('div');
-        a11yAnnouncer.id = 'a11y-announcer';
-
-        // 'polite' waits for current speech to finish; 'assertive' interrupts.
-        a11yAnnouncer.setAttribute('aria-live', 'polite');
-        a11yAnnouncer.setAttribute('aria-atomic', 'true');
-
-        // CSS to visually hide the element but keep it in the accessibility tree
-        Object.assign(a11yAnnouncer.style, {
-            position: 'absolute',
-            width: '1px',
-            height: '1px',
-            padding: '0',
-            margin: '-1px',
-            overflow: 'hidden',
-            clip: 'rect(0, 0, 0, 0)',
-            whiteSpace: 'nowrap',
-            border: '0',
+    let announcer = document.getElementById('a11y-announcer');
+    if (!announcer) {
+        announcer = document.createElement('div');
+        announcer.id = 'a11y-announcer';
+        // 默认礼貌模式，但支持强制模式
+        announcer.setAttribute('aria-live', 'polite');
+        announcer.setAttribute('aria-atomic', 'true');
+        Object.assign(announcer.style, {
+            position: 'absolute', width: '1px', height: '1px', padding: '0',
+            margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)',
+            whiteSpace: 'nowrap', border: '0',
         });
-
-        document.body.appendChild(a11yAnnouncer);
+        document.body.appendChild(announcer);
     }
 
-    // 3. Update Content
-    // Briefly clear content to ensure repeated identical messages are announced by some screen readers
-    a11yAnnouncer.textContent = '';
+    // 如果是排序操作，临时设为极高优先级
+    if (force) {
+        announcer.setAttribute('aria-live', 'assertive');
+    } else {
+        announcer.setAttribute('aria-live', 'polite');
+    }
+
+    // 彻底清空内容并强制触发浏览器重绘 live region
+    announcer.textContent = '';
     setTimeout(() => {
-        a11yAnnouncer.textContent = text;
-    }, 50);
+        announcer.textContent = text;
+    }, 20); // 缩短延迟，抢在焦点变化前
 }
 
 /**
@@ -2088,7 +2068,7 @@ export function initAccessibility() {
 
     // Activate pseudo-buttons with Keyboard (Enter/Space)
     // Many UI elements are <div>s with click handlers. This makes them keyboard accessible.
-    $(document).on('keydown', '[role="button"][tabindex="0"], [role="listitem"][tabindex="0"], [role="menuitem"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle, #options_button, #extensionsMenuButton', function (e) {
+    $(document).on('keydown', '[role="button"][tabindex="0"]:not(.a11y-sort-button), [role="listitem"][tabindex="0"], [role="menuitem"][tabindex="0"], .prompt-manager-toggle-action, .killSwitch, .inline-drawer-toggle, #options_button, #extensionsMenuButton', function (e) {
         if (!isA11yEnabled) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();

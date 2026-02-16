@@ -11842,7 +11842,7 @@ jQuery(async function () {
     // Navbar Focus Management
     const $navButtons = $('#top-settings-holder .drawer-icon');
 
-    $navButtons.on('keydown', function(e) {
+    $navButtons.on('keydown', function (e) {
         // 1. Activate on Enter/Space
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
