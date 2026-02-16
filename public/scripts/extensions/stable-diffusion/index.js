@@ -2952,7 +2952,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     const quietPrompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
-    const characterName = context.groupId
+    let characterName = context.groupId
         ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
         : context.characters[context.characterId]?.name;
 
