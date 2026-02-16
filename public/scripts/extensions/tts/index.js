@@ -409,14 +409,14 @@ function addAudioControl() {
     $('#tts_wand_container').append(`
         <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
-            TTS Playback
+            <span data-i18n="TTS Playback">TTS Playback</span>
         </div>`);
     $('#tts_wand_container').append(`
         <div id="ttsExtensionNarrateAll" class="list-group-item flex-container flexGap5">
             <div class="extensionsMenuExtensionButton fa-solid fa-radio"></div>
             <span data-i18n="Narrate All Chat">Narrate All Chat</span>
         </div>`);
-    $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked);
+    $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').attr('data-i18n', '[title]TTS play/pause').on('click', onAudioControlClicked);
     $('#ttsExtensionNarrateAll').attr('title', 'Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').attr('data-i18n', '[title]Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').on('click', playFullConversation);
     updateUiAudioPlayState();
 }
