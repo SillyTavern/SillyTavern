@@ -2974,6 +2974,10 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         callback = () => { };
     }
 
+    if (isFalseBoolean(args?.gallery)) {
+        characterName = '';
+    }
+
     const dimensions = setTypeSpecificDimensions(generationType);
     const abortController = new AbortController();
     const stopButton = document.getElementById('sd_stop_gen');
@@ -5373,6 +5377,9 @@ jQuery(async () => {
             new SlashCommandNamedArgument(
                 'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
             ),
+            new SlashCommandNamedArgument(
+                'gallery', 'whether to save the generated image to the character gallery', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
+            ),
             SlashCommandNamedArgument.fromProps({
                 name: 'negative',
                 description: 'negative prompt prefix',
@@ -5555,7 +5562,7 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified).
+                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified). The image is saved to the character gallery by default; use <code>gallery=false</code> to skip saving.
             </div>
             <div>
                 Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
