@@ -5720,21 +5720,15 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
 }
 
 /**
- * Gets the maximum usable context size for the current API.
- * @param {number|null} overrideResponseLength Optional override for the response length.
- * @returns {number} Maximum usable context size.
+ * Gets the maximum context token limit (the full context window size before subtracting response length).
+ * @returns {number} The maximum context token limit for the current API.
  */
-export function getMaxContextSize(overrideResponseLength = null) {
-    if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
-        overrideResponseLength = null;
-    }
-
-    let this_max_context = 1487;
+export function getMaxContextTokens() {
     if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
-        this_max_context = (max_context - (overrideResponseLength || amount_gen));
+        return max_context;
     }
     if (main_api == 'novel') {
-        this_max_context = Number(max_context);
+        let this_max_context = Number(max_context);
         if (nai_settings.model_novel.includes('clio')) {
             this_max_context = Math.min(max_context, 8192);
         }
@@ -5752,39 +5746,6 @@ export function getMaxContextSize(overrideResponseLength = null) {
             this_max_context = Math.min(max_context, 8192);
 
             // Added special tokens and whatnot
-            this_max_context -= 10;
-        }
-
-        this_max_context = this_max_context - (overrideResponseLength || amount_gen);
-    }
-    if (main_api == 'openai') {
-        this_max_context = oai_settings.openai_max_context - (overrideResponseLength || oai_settings.openai_max_tokens);
-    }
-    return this_max_context;
-}
-
-/**
- * Gets the maximum context token limit (the full context window size before subtracting response length).
- * @returns {number} The maximum context token limit for the current API.
- */
-export function getMaxContextTokens() {
-    if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
-        return max_context;
-    }
-    if (main_api == 'novel') {
-        let this_max_context = Number(max_context);
-        if (nai_settings.model_novel.includes('clio')) {
-            this_max_context = Math.min(max_context, 8192);
-        }
-        if (nai_settings.model_novel.includes('kayra')) {
-            this_max_context = Math.min(max_context, 8192);
-            const subscriptionLimit = getKayraMaxContextTokens();
-            if (typeof subscriptionLimit === 'number' && this_max_context > subscriptionLimit) {
-                this_max_context = subscriptionLimit;
-            }
-        }
-        if (nai_settings.model_novel.includes('erato')) {
-            this_max_context = Math.min(max_context, 8192);
             this_max_context -= 10;
         }
         return this_max_context;
@@ -5807,6 +5768,19 @@ export function getMaxResponseTokens() {
         return oai_settings.openai_max_tokens;
     }
     return 0;
+}
+
+/**
+ * Gets the maximum usable context size for the current API.
+ * @param {number|null} overrideResponseLength Optional override for the response length.
+ * @returns {number} Maximum usable context size.
+ */
+export function getMaxContextSize(overrideResponseLength = null) {
+    if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
+        overrideResponseLength = null;
+    }
+
+    return getMaxContextTokens() - (overrideResponseLength || getMaxResponseTokens());
 }
 
 function parseTokenCounts(counts, thisPromptBits) {

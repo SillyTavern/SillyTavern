@@ -256,8 +256,6 @@ export function registerCoreMacros() {
     MacroRegistry.registerMacro('maxResponse', {
         aliases: [
             { alias: 'maxResponseTokens', visible: true },
-            { alias: 'maxReply', visible: true },
-            { alias: 'maxReplyTokens', visible: true },
         ],
         category: MacroCategory.STATE,
         description: 'Maximum response token limit.',

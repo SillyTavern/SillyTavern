@@ -645,8 +645,6 @@ export function evaluateMacros(content, env, postProcessFn) {
         { regex: /{{maxContextTokens}}/gi, replace: () => String(getMaxContextTokens()) },
         { regex: /{{maxResponse}}/gi, replace: () => String(getMaxResponseTokens()) },
         { regex: /{{maxResponseTokens}}/gi, replace: () => String(getMaxResponseTokens()) },
-        { regex: /{{maxReply}}/gi, replace: () => String(getMaxResponseTokens()) },
-        { regex: /{{maxReplyTokens}}/gi, replace: () => String(getMaxResponseTokens()) },
         { regex: /{{lastMessage}}/gi, replace: () => getLastMessage() },
         { regex: /{{lastMessageId}}/gi, replace: () => String(getLastMessageId() ?? '') },
         { regex: /{{lastUserMessage}}/gi, replace: () => getLastUserMessage() },
