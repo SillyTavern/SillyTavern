@@ -902,8 +902,15 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const toolReasoningMode = isOpenRouterSource ? getOpenRouterToolReasoningMode() : openrouter_tool_reasoning_modes.ACTIVE_CHAIN;
     const shouldForwardOpenRouterReasoning = isOpenRouterSource && toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED;
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
-    const lastNonToolAssistantIdxAfterLastUser = messages.findLastIndex((x, idx) =>
-        idx > lastUserIdx && x.role === 'assistant' && !Array.isArray(x.invocations));
+    const isToolChainMessage = (x) => x?.role === 'tool' || (x?.role === 'assistant' && Array.isArray(x.invocations));
+    let activeToolChainStartIdx = messages.length;
+    for (let idx = messages.length - 1; idx >= 0; idx--) {
+        if (isToolChainMessage(messages[idx])) {
+            activeToolChainStartIdx = idx;
+            continue;
+        }
+        break;
+    }
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -959,7 +966,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx
-                && (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER || promptIdx > lastNonToolAssistantIdxAfterLastUser);
+                && (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER || promptIdx >= activeToolChainStartIdx);
             const previousAssistantReasoning = promptIdx > 0
                 ? String(messages.slice(0, promptIdx).findLast(x => x.role === 'assistant' && !Array.isArray(x.invocations) && x.reasoning)?.reasoning ?? '')
                 : '';
