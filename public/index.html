@@ -2011,6 +2011,21 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="openrouter">
+                                        <div class="flex-container oneline-dropdown">
+                                            <label for="openrouter_tool_reasoning_mode" data-i18n="Tool Reasoning Forwarding">Tool Reasoning Forwarding</label>
+                                            <select id="openrouter_tool_reasoning_mode" class="text_pole widthUnset">
+                                                <option value="disabled">Disabled</option>
+                                                <option value="since_last_user">Since Last User Message</option>
+                                                <option value="active_chain">Active Tool Chain</option>
+                                            </select>
+                                        </div>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="How reasoning is forwarded for OpenRouter tool-call continuations.">
+                                                How reasoning is forwarded for OpenRouter tool-call continuations.
+                                            </span>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes">
                                         <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_media_inlining" type="checkbox" />
@@ -4472,16 +4487,6 @@
                                     <div class="flex1 flex-container alignItemsBaseline" title="Maximum number of reasoning blocks to be added per prompt, counting from the last message." data-i18n="[title]reasoning_max_additions">
                                         <input id="reasoning_max_additions" class="text_pole textarea_compact widthUnset" type="number" min="0" max="999" />
                                         <small data-i18n="Max">Max</small>
-                                    </div>
-                                </div>
-                                <div class="flex-container alignItemsBaseline">
-                                    <div class="flex1" title="How reasoning is forwarded for OpenRouter tool-call continuations." data-i18n="[title]reasoning_forward_tool_chains_mode">
-                                        <small data-i18n="Tool Reasoning Forwarding">Tool Reasoning Forwarding</small>
-                                        <select id="reasoning_forward_tool_chains_mode" class="text_pole widthUnset">
-                                            <option value="disabled">Disabled</option>
-                                            <option value="since_last_user">Since Last User Message</option>
-                                            <option value="active_chain">Active Tool Chain</option>
-                                        </select>
                                     </div>
                                 </div>
                                 <details>

@@ -46,7 +46,6 @@ const UI = {
     $autoExpand: $('#reasoning_auto_expand'),
     $showHidden: $('#reasoning_show_hidden'),
     $addToPrompts: $('#reasoning_add_to_prompts'),
-    $forwardToolChainsMode: $('#reasoning_forward_tool_chains_mode'),
     $maxAdditions: $('#reasoning_max_additions'),
 };
 
@@ -773,25 +772,9 @@ export class PromptReasoning {
 }
 
 function loadReasoningSettings() {
-    const validForwardModes = ['disabled', 'since_last_user', 'active_chain'];
-    let forwardMode = String(power_user.reasoning.forward_tool_chains_mode ?? '');
-    if (!validForwardModes.includes(forwardMode)) {
-        forwardMode = power_user.reasoning.forward_tool_chains === true ? 'active_chain' : 'disabled';
-        power_user.reasoning.forward_tool_chains_mode = forwardMode;
-    }
-    power_user.reasoning.forward_tool_chains = forwardMode !== 'disabled';
-
     UI.$addToPrompts.prop('checked', power_user.reasoning.add_to_prompts);
     UI.$addToPrompts.on('change', function () {
         power_user.reasoning.add_to_prompts = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    UI.$forwardToolChainsMode.val(forwardMode);
-    UI.$forwardToolChainsMode.on('change', function () {
-        const nextMode = String($(this).val() || 'active_chain');
-        power_user.reasoning.forward_tool_chains_mode = nextMode;
-        power_user.reasoning.forward_tool_chains = nextMode !== 'disabled';
         saveSettingsDebounced();
     });
 

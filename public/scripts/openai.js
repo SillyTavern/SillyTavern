@@ -248,6 +248,12 @@ export const verbosity_levels = {
     high: 'high',
 };
 
+export const openrouter_tool_reasoning_modes = {
+    DISABLED: 'disabled',
+    SINCE_LAST_USER: 'since_last_user',
+    ACTIVE_CHAIN: 'active_chain',
+};
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -291,6 +297,7 @@ export const settingsToUpdate = {
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
+    openrouter_tool_reasoning_mode: ['#openrouter_tool_reasoning_mode', 'openrouter_tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
@@ -438,6 +445,7 @@ const default_settings = {
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
+    openrouter_tool_reasoning_mode: openrouter_tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -891,8 +899,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const canUseTools = ToolManager.isToolCallingSupported();
     const includeSignature = isReasoningSignatureSupported();
     const isOpenRouterSource = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER;
-    const toolReasoningMode = isOpenRouterSource ? getOpenRouterToolReasoningMode() : 'active_chain';
-    const shouldForwardOpenRouterReasoning = isOpenRouterSource && toolReasoningMode !== 'disabled';
+    const toolReasoningMode = isOpenRouterSource ? getOpenRouterToolReasoningMode() : openrouter_tool_reasoning_modes.ACTIVE_CHAIN;
+    const shouldForwardOpenRouterReasoning = isOpenRouterSource && toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED;
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
     const lastNonToolAssistantIdxAfterLastUser = messages.findLastIndex((x, idx) =>
         idx > lastUserIdx && x.role === 'assistant' && !Array.isArray(x.invocations));
@@ -947,18 +955,17 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
-            /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const promptIdx = messages.indexOf(chatPrompt);
-            const reasoningIsEligible = toolReasoningMode !== 'disabled'
+            /** @type {import('./tool-calling.js').ToolInvocation[]} */
+            const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx
-                && (toolReasoningMode === 'since_last_user' || promptIdx > lastNonToolAssistantIdxAfterLastUser);
+                && (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER || promptIdx > lastNonToolAssistantIdxAfterLastUser);
             const previousAssistantReasoning = promptIdx > 0
                 ? String(messages.slice(0, promptIdx).findLast(x => x.role === 'assistant' && !Array.isArray(x.invocations) && x.reasoning)?.reasoning ?? '')
                 : '';
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
-                    delete clone.signature;
                     delete clone.reasoning;
                 } else if (previousAssistantReasoning) {
                     // Prefer currently editable reasoning text over stale invocation snapshot.
@@ -6053,20 +6060,15 @@ export function isAudioInliningSupported() {
 
 /**
  * Gets the OpenRouter tool-call reasoning forwarding mode.
+ * @param {ChatCompletionSettings} settings Settings object to use
  * @returns {'disabled'|'since_last_user'|'active_chain'} Reasoning forwarding mode
  */
-function getOpenRouterToolReasoningMode() {
-    const mode = String(power_user.reasoning?.forward_tool_chains_mode ?? '');
-    if (mode === 'disabled' || mode === 'since_last_user' || mode === 'active_chain') {
+function getOpenRouterToolReasoningMode(settings = oai_settings) {
+    const mode = String(settings.openrouter_tool_reasoning_mode ?? '');
+    if (Object.values(openrouter_tool_reasoning_modes).includes(mode)) {
         return mode;
     }
-
-    // Legacy boolean fallback.
-    if (power_user.reasoning?.forward_tool_chains === true) {
-        return 'active_chain';
-    }
-
-    return 'disabled';
+    return openrouter_tool_reasoning_modes.DISABLED;
 }
 
 /**
@@ -6077,9 +6079,9 @@ function getOpenRouterToolReasoningMode() {
 export function isReasoningSignatureSupported(settings = oai_settings) {
     // If it's Vertex AI or Makersuite, that's OK - convertGooglePrompt() will handle it later
     const isGoogle = [chat_completion_sources.VERTEXAI, chat_completion_sources.MAKERSUITE].includes(settings.chat_completion_source);
-    const isOpenRouter = settings.chat_completion_source === chat_completion_sources.OPENROUTER
-        && getOpenRouterToolReasoningMode() !== 'disabled';
-    return isGoogle || isOpenRouter;
+    // Need a more crunchy check for OpenRouter: look for Gemini models
+    const isOpenRouterGemini = settings.chat_completion_source === chat_completion_sources.OPENROUTER && /google\/gemini/i.test(settings.openrouter_model);
+    return isGoogle || isOpenRouterGemini;
 }
 
 /**
@@ -6670,6 +6672,14 @@ export function initOpenAI() {
     $('#openai_function_calling').on('input', function () {
         oai_settings.function_calling = !!$(this).prop('checked');
         updateFeatureSupportFlags();
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_tool_reasoning_mode').on('input', function () {
+        oai_settings.openrouter_tool_reasoning_mode = getOpenRouterToolReasoningMode({
+            ...oai_settings,
+            openrouter_tool_reasoning_mode: String($(this).val()),
+        });
         saveSettingsDebounced();
     });
 
