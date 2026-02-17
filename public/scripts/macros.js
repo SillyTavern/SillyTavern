@@ -1,5 +1,5 @@
 import { Handlebars, moment, seedrandom, droll } from '../lib.js';
-import { chat, chat_metadata, main_api, getMaxContextSize, getMaxContextTokens, getMaxResponseTokens, getCurrentChatId, substituteParams, eventSource, event_types, extension_prompts } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMaxResponseTokens, getCurrentChatId, substituteParams, eventSource, event_types, extension_prompts } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { getInstructMacros } from './instruct-mode.js';
@@ -639,8 +639,8 @@ export function evaluateMacros(content, env, postProcessFn) {
      * @type {Macro[]}
     */
     const postEnvMacros = [
-        { regex: /{{maxPrompt}}/gi, replace: () => String(getMaxContextSize()) },
-        { regex: /{{maxPromptTokens}}/gi, replace: () => String(getMaxContextSize()) },
+        { regex: /{{maxPrompt}}/gi, replace: () => String(getMaxPromptTokens()) },
+        { regex: /{{maxPromptTokens}}/gi, replace: () => String(getMaxPromptTokens()) },
         { regex: /{{maxContext}}/gi, replace: () => String(getMaxContextTokens()) },
         { regex: /{{maxContextTokens}}/gi, replace: () => String(getMaxContextTokens()) },
         { regex: /{{maxResponse}}/gi, replace: () => String(getMaxResponseTokens()) },

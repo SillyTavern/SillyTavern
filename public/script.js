@@ -326,6 +326,8 @@ export {
     setCharacterSettingsOverrides as setScenarioOverride,
     /** @deprecated Use appendMediaToMessage instead. */
     appendMediaToMessage as appendImageToMessage,
+    /** @deprecated Use getMaxPromptTokens instead. */
+    getMaxPromptTokens as getMaxContextSize,
 };
 
 /**
@@ -4359,7 +4361,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // Determine token limit
-    let this_max_context = getMaxContextSize();
+    let this_max_context = getMaxPromptTokens();
 
     if (!dryRun) {
         console.debug('Running extension interceptors');
@@ -5771,11 +5773,11 @@ export function getMaxResponseTokens() {
 }
 
 /**
- * Gets the maximum usable context size for the current API.
+ * Gets the maximum usable prompt size for the current API.
  * @param {number|null} overrideResponseLength Optional override for the response length.
- * @returns {number} Maximum usable context size.
+ * @returns {number} Maximum usable prompt size.
  */
-export function getMaxContextSize(overrideResponseLength = null) {
+export function getMaxPromptTokens(overrideResponseLength = null) {
     if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
         overrideResponseLength = null;
     }
