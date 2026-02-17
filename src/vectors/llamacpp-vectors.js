@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import urlJoin from 'url-join';
 import { setAdditionalHeadersByType } from '../additional-headers.js';
 import { TEXTGEN_TYPES } from '../constants.js';
 
@@ -10,8 +11,7 @@ import { TEXTGEN_TYPES } from '../constants.js';
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
-    const url = new URL(apiUrl);
-    url.pathname = '/v1/embeddings';
+    const url = new URL(urlJoin(apiUrl, 'v1/embeddings'));
 
     const headers = {};
     setAdditionalHeadersByType(headers, TEXTGEN_TYPES.LLAMACPP, apiUrl, directories);
