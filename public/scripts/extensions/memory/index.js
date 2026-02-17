@@ -13,7 +13,7 @@ import {
     saveSettingsDebounced,
     substituteParamsExtended,
     generateRaw,
-    getMaxContextSize,
+    getMaxPromptTokens,
     setExtensionPrompt,
     streamingProcessor,
     animation_easing,
@@ -71,7 +71,7 @@ async function getSourceContextSize() {
         return 1024 - 64;
     }
 
-    return getMaxContextSize(overrideLength);
+    return getMaxPromptTokens(overrideLength);
 }
 
 const formatMemoryValue = function (value) {
