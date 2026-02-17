@@ -442,7 +442,6 @@ router.post('/', async function (request, response) {
         }
 
         return response.status(400).json({ error: 'Invalid request format.' });
-
     } catch (error) {
         console.error('[ImageMetadata] API error:', error);
         return response.status(500).json({ error: 'Internal server error.' });

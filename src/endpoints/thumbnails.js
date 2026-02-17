@@ -301,7 +301,6 @@ publicRouter.get('/', async function (request, response) {
 
         // Send a 404 so the frontend can display a placeholder
         return response.sendStatus(404);
-
     } catch (error) {
         console.error('Failed getting thumbnail', error);
         return response.sendStatus(500);

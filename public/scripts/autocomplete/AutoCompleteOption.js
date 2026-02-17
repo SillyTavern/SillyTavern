@@ -1,7 +1,6 @@
 import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 
 
-
 export class AutoCompleteOption {
     /** @type {string} */ name;
     /** @type {string} */ typeIcon;
@@ -72,7 +71,7 @@ export class AutoCompleteOption {
                     name.classList.add('name');
                     name.classList.add('monospace');
                     name.textContent = noSlash ? '' : '/';
-                    key.split('').forEach(char=>{
+                    key.split('').forEach(char => {
                         const span = document.createElement('span'); {
                             span.textContent = char;
                             name.append(span);

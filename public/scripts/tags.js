@@ -858,8 +858,7 @@ function addTagToMap(tagId, characterId = null) {
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [tagId];
         return true;
-    }
-    else {
+    } else {
         if (tag_map[key].includes(tagId))
             return false;
 
@@ -885,8 +884,7 @@ function removeTagFromMap(tagId, characterId = null) {
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
         return false;
-    }
-    else {
+    } else {
         const indexOf = tag_map[key].indexOf(tagId);
         tag_map[key].splice(indexOf, 1);
         return indexOf !== -1;
@@ -2091,7 +2089,6 @@ function onTagAsFolderClick() {
     // If folder display has changed, we have to redraw the character list, otherwise this folders state would not change
     printCharactersDebounced();
     saveSettingsDebounced();
-
 }
 
 function updateDrawTagFolder(element, tag) {

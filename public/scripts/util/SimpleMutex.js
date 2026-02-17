@@ -36,8 +36,7 @@ export class SimpleMutex {
         try {
             this.isBusy = true;
             await this.callback(...args);
-        }
-        finally {
+        } finally {
             this.isBusy = false;
         }
     }

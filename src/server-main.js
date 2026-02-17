@@ -145,16 +145,6 @@ if (cliArgs.listen) {
     app.use(accessLoggerMiddleware());
 }
 
-if (cliArgs.enableCorsProxy) {
-    app.use('/proxy/:url(*)', corsProxyMiddleware);
-} else {
-    app.use('/proxy/:url(*)', async (_, res) => {
-        const message = 'CORS proxy is disabled. Enable it in config.yaml or use the --corsProxy flag.';
-        console.log(message);
-        res.status(404).send(message);
-    });
-}
-
 app.use(cookieSession({
     name: getCookieSessionName(),
     sameSite: 'lax',
@@ -184,6 +174,9 @@ if (!cliArgs.disableCsrf) {
                 return;
             }
             req.session.csrfToken = token;
+        },
+        skipCsrfProtection: (req) => {
+            return cliArgs.enableCorsProxy ? /^\/proxy\//.test(req.path) : false;
         },
         size: 32,
     });
@@ -251,6 +244,16 @@ app.post('/api/ping', (request, response) => {
 
     response.sendStatus(204);
 });
+
+if (cliArgs.enableCorsProxy) {
+    app.use('/proxy/:url(*)', corsProxyMiddleware);
+} else {
+    app.use('/proxy/:url(*)', async (_, res) => {
+        const message = 'CORS proxy is disabled. Enable it in config.yaml or use the --corsProxy flag.';
+        console.log(message);
+        res.status(404).send(message);
+    });
+}
 
 // File uploads
 const uploadsPath = path.join(cliArgs.dataRoot, UPLOADS_DIRECTORY);

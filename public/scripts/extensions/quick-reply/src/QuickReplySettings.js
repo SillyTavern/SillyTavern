@@ -15,8 +15,6 @@ export class QuickReplySettings {
     }
 
 
-
-
     /**@type {Boolean}*/ isEnabled = false;
     /**@type {Boolean}*/ isCombined = false;
     /**@type {Boolean}*/ isPopout = false;
@@ -50,8 +48,6 @@ export class QuickReplySettings {
     /**@type {Function}*/ onRequestEditSet;
 
 
-
-
     init() {
         this.hookConfig(this.config);
         this.hookConfig(this.chatConfig);
@@ -60,8 +56,8 @@ export class QuickReplySettings {
 
     hookConfig(config) {
         if (config) {
-            config.onUpdate = ()=>this.save();
-            config.onRequestEditSet = (qrs)=>this.requestEditSet(qrs);
+            config.onUpdate = () => this.save();
+            config.onRequestEditSet = (qrs) => this.requestEditSet(qrs);
         }
     }
     unhookConfig(config) {
@@ -70,8 +66,6 @@ export class QuickReplySettings {
             config.onRequestEditSet = null;
         }
     }
-
-
 
 
     save() {

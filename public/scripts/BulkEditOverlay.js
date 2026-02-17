@@ -101,7 +101,7 @@ class CharacterContextMenu {
      * @param {number} characterId
      * @returns {Promise<void>}
      */
-    static persona = async (characterId) => void(await convertCharacterToPersona(characterId));
+    static persona = async (characterId) => void (await convertCharacterToPersona(characterId));
 
     /**
      * Delete one or more characters,
@@ -754,7 +754,7 @@ class BulkEditOverlay {
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
-        const [x,y] = this.#getContextMenuPosition(event);
+        const [x, y] = this.#getContextMenuPosition(event);
         CharacterContextMenu.show(x, y);
         this.#contextMenuOpen = true;
     };

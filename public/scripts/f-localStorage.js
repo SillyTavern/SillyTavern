@@ -13,7 +13,6 @@ export function SaveLocal(target, val) {
 export function LoadLocal(target) {
     console.debug('LoadLocal -- ' + target);
     return localStorage.getItem(target);
-
 }
 /**
  * @deprecated THIS FUNCTION IS OBSOLETE. DO NOT USE

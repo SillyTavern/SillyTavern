@@ -1001,9 +1001,8 @@ class MacroCstWalker {
                         endOffset: element.endOffset ?? element.startOffset,
                         token: element,
                     });
-                }
-                // Handle nested CstNode (macro or argument)
-                else if ('children' in element) {
+                } else if ('children' in element) {
+                    // Handle nested CstNode (macro or argument)
                     const nestedChildren = element.children || {};
                     const nestedEnd = /** @type {IToken?} */ ((nestedChildren['Macro.End'] || [])[0]);
                     const nestedStart = /** @type {IToken?} */ ((nestedChildren['Macro.Start'] || [])[0]);

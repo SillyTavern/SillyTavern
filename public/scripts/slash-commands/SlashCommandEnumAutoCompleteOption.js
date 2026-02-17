@@ -9,14 +9,13 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
      * @returns {SlashCommandEnumAutoCompleteOption}
      */
     static from(cmd, enumValue) {
-        const mapped = this.valueToOptionMap.find(it=>enumValue instanceof it.value)?.option ?? this;
+        const mapped = this.valueToOptionMap.find(it => enumValue instanceof it.value)?.option ?? this;
         return new mapped(cmd, enumValue);
     }
     /**@type {{value:(typeof SlashCommandEnumValue), option:(typeof SlashCommandEnumAutoCompleteOption)}[]} */
     static valueToOptionMap = [];
     /**@type {SlashCommand}*/ cmd;
     /**@type {SlashCommandEnumValue}*/ enumValue;
-
 
 
     /**

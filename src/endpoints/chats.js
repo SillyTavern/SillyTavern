@@ -595,7 +595,7 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
     const pathToFolder = request.body.is_group
         ? request.user.directories.groupChats
         : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
-    let filename = path.join(pathToFolder, request.body.file);
+    let filename = path.join(pathToFolder, sanitize(request.body.file));
     let exportfilename = request.body.exportfilename;
     if (!fs.existsSync(filename)) {
         const errorMessage = {
@@ -837,8 +837,7 @@ router.post('/group/save', async function (request, response) {
         if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
             return response.send({ ok: true });
-        }
-        else {
+        } else {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {

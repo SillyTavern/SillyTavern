@@ -29,8 +29,7 @@ var speechUtteranceChunker = function (utt, settings, callback) {
                 callback();
             }
         });
-    }
-    else {
+    } else {
         var chunkLength = (settings && settings.chunkLength) || 160;
         var pattRegex = new RegExp('^[\\s\\S]{' + Math.floor(chunkLength / 2) + ',' + chunkLength + '}[.!?,]{1}|^[\\s\\S]{1,' + chunkLength + '}$|^[\\s\\S]{1,' + chunkLength + '} ');
         var chunkArr = txt.match(pattRegex);

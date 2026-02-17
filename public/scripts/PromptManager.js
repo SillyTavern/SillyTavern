@@ -986,7 +986,6 @@ class PromptManager {
      * @returns {void}
      */
     addPrompt(prompt, identifier) {
-
         if (typeof prompt !== 'object' || prompt === null) throw new Error('Object is not a prompt');
 
         const newPrompt = {
@@ -1318,7 +1317,6 @@ class PromptManager {
             this.updatePromptByIdentifier(identifier, prompt);
             debouncedSaveServiceSettings().then(() => this.render());
         });
-
     }
 
     /**

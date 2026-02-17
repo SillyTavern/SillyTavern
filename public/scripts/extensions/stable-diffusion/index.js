@@ -2952,7 +2952,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     const quietPrompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
-    const characterName = context.groupId
+    let characterName = context.groupId
         ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
         : context.characters[context.characterId]?.name;
 
@@ -2972,6 +2972,10 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     if (isTrueBoolean(args?.quiet)) {
         callback = () => { };
+    }
+
+    if (isFalseBoolean(args?.gallery)) {
+        characterName = '';
     }
 
     const dimensions = setTypeSpecificDimensions(generationType);
@@ -3021,8 +3025,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const errorText = 'SD prompt text generation failed. ' + reason;
         toastr.error(errorText, 'Image Generation');
         throw new Error(errorText);
-    }
-    finally {
+    } finally {
         $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
@@ -3367,7 +3370,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         return;
     }
 
-    const filename = `${characterName}_${humanizedDateTime()}`;
+    const filename = characterName ? `${characterName}_${humanizedDateTime()}` : humanizedDateTime();
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback
         ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt, result.format)
@@ -5373,6 +5376,9 @@ jQuery(async () => {
             new SlashCommandNamedArgument(
                 'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
             ),
+            new SlashCommandNamedArgument(
+                'gallery', 'whether to save the generated image to the character gallery', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
+            ),
             SlashCommandNamedArgument.fromProps({
                 name: 'negative',
                 description: 'negative prompt prefix',
@@ -5555,7 +5561,7 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified).
+                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified). The image is saved to the character gallery by default; use <code>gallery=false</code> to save to the root of the user images directory.
             </div>
             <div>
                 Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.

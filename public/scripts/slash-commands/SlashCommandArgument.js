@@ -5,7 +5,6 @@ import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandScope } from './SlashCommandScope.js';
 
 
-
 /**@readonly*/
 /**@enum {string}*/
 export const ARGUMENT_TYPE = {
@@ -68,7 +67,7 @@ export class SlashCommandArgument {
         this.isRequired = isRequired ?? false;
         this.acceptsMultiple = acceptsMultiple ?? false;
         this.defaultValue = defaultValue;
-        this.enumList = (enums ? Array.isArray(enums) ? enums : [enums] : []).map(it=>{
+        this.enumList = (enums ? Array.isArray(enums) ? enums : [enums] : []).map(it => {
             if (it instanceof SlashCommandEnumValue) return it;
             return new SlashCommandEnumValue(it);
         });
