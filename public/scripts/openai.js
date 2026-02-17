@@ -951,7 +951,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
             const promptIdx = messages.indexOf(chatPrompt);
-            /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx;
             let previousAssistantReasoning = '';
@@ -994,6 +993,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                     }
                 }
             }
+            /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
@@ -6025,7 +6025,7 @@ export function isAudioInliningSupported() {
 /**
  * Gets the OpenRouter tool-call reasoning forwarding mode.
  * @param {ChatCompletionSettings} settings Settings object to use
- * @returns {'disabled'|'since_last_user'|'active_chain'} Reasoning forwarding mode
+ * @returns {string} Reasoning forwarding mode
  */
 function getOpenRouterToolReasoningMode(settings = oai_settings) {
     const mode = String(settings.openrouter_tool_reasoning_mode ?? '');
