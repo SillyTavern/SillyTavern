@@ -2759,8 +2759,8 @@
     "[title]Delete a ": "刪除 ",
     "[title]Rename a ": "重新命名 ",
     "completions note prefix": "完成提示前綴",
-    "Interleaved Thinking": "Interleaved Thinking",
-    "Since Last User Message": "Since Last User Message",
-    "Active Tool Chain": "Active Tool Chain",
-    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
+    "Interleaved Thinking": "交錯思維",
+    "Since Last User Message": "自上一則使用者訊息起",
+    "Active Tool Chain": "使用中的工具鏈",
+    "openrouter_interleaved_thinking_hint": "會在工具呼叫請求中附帶先前助理回合的推理，以維持交錯思維的上下文。"
 }

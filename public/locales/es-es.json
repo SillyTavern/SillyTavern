@@ -1546,8 +1546,8 @@
     "Sets the expression of the user sprite": "Establece la expresión del sprite de usuario",
     "Sets the user sprite set to use for the user sprite": "Establece el conjunto de sprites de usuario para usar en el sprite de usuario",
     "Toggles the user sprite on the VN UI": "Alterna el sprite de usuario en la interfaz VN",
-    "Interleaved Thinking": "Interleaved Thinking",
-    "Since Last User Message": "Since Last User Message",
-    "Active Tool Chain": "Active Tool Chain",
-    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
+    "Interleaved Thinking": "Razonamiento intercalado",
+    "Since Last User Message": "Desde el último mensaje del usuario",
+    "Active Tool Chain": "Cadena de herramientas activa",
+    "openrouter_interleaved_thinking_hint": "Envía razonamiento de turnos anteriores del asistente junto con solicitudes de herramientas para mantener el contexto del razonamiento intercalado."
 }

@@ -1456,8 +1456,8 @@
   "Stop Inspecting": "Stop Inspecting",
   "Inspect Prompts": "ตรวจสอบ Prompt",
   "Toggle prompt inspection": "สลับการตรวจสอบ Prompt",
-    "Interleaved Thinking": "Interleaved Thinking",
-    "Since Last User Message": "Since Last User Message",
-    "Active Tool Chain": "Active Tool Chain",
-    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
+    "Interleaved Thinking": "การคิดแบบสลับขั้น",
+    "Since Last User Message": "ตั้งแต่ข้อความล่าสุดของผู้ใช้",
+    "Active Tool Chain": "สายโซ่เครื่องมือที่ใช้งานอยู่",
+    "openrouter_interleaved_thinking_hint": "ส่งเหตุผลจากเทิร์นก่อนหน้าของผู้ช่วยไปพร้อมกับคำขอเรียกใช้เครื่องมือ เพื่อคงบริบทการคิดแบบสลับขั้นไว้"
 }

@@ -1439,8 +1439,8 @@
     "Join the SillyTavern Discord": "Unisciti al SillyTavern Discord",
     "Post a GitHub issue": "Pubblica un problema su GitHub",
     "Contact the developers": "Contatta gli sviluppatori",
-    "Interleaved Thinking": "Interleaved Thinking",
-    "Since Last User Message": "Since Last User Message",
-    "Active Tool Chain": "Active Tool Chain",
-    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
+    "Interleaved Thinking": "Ragionamento intercalato",
+    "Since Last User Message": "Dall'ultimo messaggio utente",
+    "Active Tool Chain": "Catena di strumenti attiva",
+    "openrouter_interleaved_thinking_hint": "Invia il ragionamento dai turni precedenti dell'assistente con le richieste di strumenti per mantenere il contesto del ragionamento intercalato."
 }
