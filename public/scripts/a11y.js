@@ -310,9 +310,9 @@ async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
     itemName = String(itemName).trim();
 
     // 1. Pause existing traps to prevent conflict
-    if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) {}
-    if (qrEditorTrap) try { qrEditorTrap.pause(); } catch (e) {}
-    if (regexEditorTrap) try { regexEditorTrap.pause(); } catch (e) {}
+    if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) { /* ignore error */ }
+    if (qrEditorTrap) try { qrEditorTrap.pause(); } catch (e) { /* ignore error */ }
+    if (regexEditorTrap) try { regexEditorTrap.pause(); } catch (e) { /* ignore error */ }
 
     // 2. Define the popup actions
     const popupPromise = callGenericPopup(
@@ -381,9 +381,9 @@ async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
         $('.popup').off('keydown.a11ySort');
 
         // Unpause traps
-        if (promptManagerTrap) try { promptManagerTrap.unpause(); } catch (e) {}
-        if (qrEditorTrap) try { qrEditorTrap.unpause(); } catch (e) {}
-        if (regexEditorTrap) try { regexEditorTrap.unpause(); } catch (e) {}
+        if (promptManagerTrap) try { promptManagerTrap.unpause(); } catch (e) { /* ignore error */ }
+        if (qrEditorTrap) try { qrEditorTrap.unpause(); } catch (e) { /* ignore error */ }
+        if (regexEditorTrap) try { regexEditorTrap.unpause(); } catch (e) { /* ignore error */ }
 
         // Restore focus to the trigger button
         setTimeout(() => {
@@ -432,7 +432,8 @@ async function handleGenericJumpAction($item, $container, itemSelector) {
     }
 }
 
-function getA11yItemName($li) {
+// eslint-disable-next-line no-unused-vars
+function _getA11yItemName($li) {
     const $nameLink = $li.find('.prompt-manager-inspect-action');
     if ($nameLink.length) return $nameLink.text().trim();
 
@@ -562,7 +563,8 @@ let apiParamsTrap = null;
 
 // Global state trackers
 let lastFocusedBeforeTrap = null;
-let lastActiveWIUid = null;
+// eslint-disable-next-line no-unused-vars
+let _lastActiveWIUid = null;
 let isAiGenerating = false;
 
 /**
@@ -643,7 +645,7 @@ export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
     } else {
         triggerButton.attr('aria-expanded', 'false');
         if (currentFocusTrap) {
-            try { currentFocusTrap.deactivate(); } catch (e) {}
+            try { currentFocusTrap.deactivate(); } catch (e) { /* ignore error */ }
             currentFocusTrap = null;
         }
         // Return focus to the toggle button
@@ -1487,7 +1489,7 @@ const managePopupTraps = () => {
             optionsMenuTrap, selectChatTrap, floatingPromptTrap, cfgConfigTrap,
             logprobsTrap, dataBankTrap, tokenCounterTrap, exportFormatTrap,
         ];
-        traps.forEach(trap => { if (trap) try { trap.deactivate(); } catch (e) {} });
+        traps.forEach(trap => { if (trap) try { trap.deactivate(); } catch (e) { /* ignore error */ } });
 
         // Reset global variables
         currentFocusTrap = null; promptManagerTrap = null; charPopupTrap = null;
@@ -1512,10 +1514,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { charPopupTrap.activate(); } catch (e) {}
+            try { charPopupTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (charPopupTrap) {
-        try { charPopupTrap.deactivate(); } catch (e) {}
+        try { charPopupTrap.deactivate(); } catch (e) { /* ignore error */ }
         charPopupTrap = null;
     }
 
@@ -1529,7 +1531,7 @@ const managePopupTraps = () => {
     if (isPromptActive) {
         // Pause trap if a secondary popup (like the Sort Menu) is open on top
         if (isSortMenuOpen) {
-            if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) {}
+            if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) { /* ignore error */ }
         } else {
             if (!promptManagerTrap) {
                 lastFocusedBeforeTrap = document.activeElement;
@@ -1540,13 +1542,13 @@ const managePopupTraps = () => {
                         if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                     },
                 });
-                try { promptManagerTrap.activate(); } catch (e) {}
+                try { promptManagerTrap.activate(); } catch (e) { /* ignore error */ }
             } else {
-                try { promptManagerTrap.unpause(); } catch (e) {}
+                try { promptManagerTrap.unpause(); } catch (e) { /* ignore error */ }
             }
         }
     } else if (promptManagerTrap) {
-        try { promptManagerTrap.deactivate(); } catch (e) {}
+        try { promptManagerTrap.deactivate(); } catch (e) { /* ignore error */ }
         promptManagerTrap = null;
     }
 
@@ -1556,7 +1558,7 @@ const managePopupTraps = () => {
     if ($expandedWI.length === 1) {
         const currentUid = $expandedWI.attr('uid');
         if (!worldInfoTrap || worldInfoTrapUid !== currentUid) {
-            if (worldInfoTrap) try { worldInfoTrap.deactivate(); } catch (e) {}
+            if (worldInfoTrap) try { worldInfoTrap.deactivate(); } catch (e) { /* ignore error */ }
 
             worldInfoTrap = focusTrap.createFocusTrap($expandedWI.find('.world_entry_form')[0], {
                 allowOutsideClick: true,
@@ -1565,10 +1567,10 @@ const managePopupTraps = () => {
                 escapeDeactivates: false, // Handled by global listeners
             });
             worldInfoTrapUid = currentUid;
-            try { worldInfoTrap.activate(); } catch (e) {}
+            try { worldInfoTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (worldInfoTrap) {
-        try { worldInfoTrap.deactivate(); } catch (e) {}
+        try { worldInfoTrap.deactivate(); } catch (e) { /* ignore error */ }
         worldInfoTrap = null;
         worldInfoTrapUid = null;
     }
@@ -1590,11 +1592,11 @@ const managePopupTraps = () => {
                         if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                     },
                 });
-                try { qrEditorTrap.activate(); } catch (e) {}
+                try { qrEditorTrap.activate(); } catch (e) { /* ignore error */ }
             }
         }
     } else if (qrEditorTrap) {
-        try { qrEditorTrap.deactivate(); } catch (e) {}
+        try { qrEditorTrap.deactivate(); } catch (e) { /* ignore error */ }
         qrEditorTrap = null;
     }
 
@@ -1611,10 +1613,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { regexEditorTrap.activate(); } catch (e) {}
+            try { regexEditorTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (regexEditorTrap) {
-        try { regexEditorTrap.deactivate(); } catch (e) {}
+        try { regexEditorTrap.deactivate(); } catch (e) { /* ignore error */ }
         regexEditorTrap = null;
     }
 
@@ -1632,10 +1634,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { extensionsMenuTrap.activate(); } catch (e) {}
+            try { extensionsMenuTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (extensionsMenuTrap) {
-        try { extensionsMenuTrap.deactivate(); } catch (e) {}
+        try { extensionsMenuTrap.deactivate(); } catch (e) { /* ignore error */ }
         extensionsMenuTrap = null;
     }
 
@@ -1653,10 +1655,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { optionsMenuTrap.activate(); } catch (e) {}
+            try { optionsMenuTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (optionsMenuTrap) {
-        try { optionsMenuTrap.deactivate(); } catch (e) {}
+        try { optionsMenuTrap.deactivate(); } catch (e) { /* ignore error */ }
         optionsMenuTrap = null;
     }
 
@@ -1675,10 +1677,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { selectChatTrap.activate(); } catch (e) {}
+            try { selectChatTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (selectChatTrap) {
-        try { selectChatTrap.deactivate(); } catch (e) {}
+        try { selectChatTrap.deactivate(); } catch (e) { /* ignore error */ }
         selectChatTrap = null;
     }
 
@@ -1709,10 +1711,10 @@ const managePopupTraps = () => {
                     },
                 });
                 setTrapVar(newTrap);
-                try { newTrap.activate(); } catch (e) {}
+                try { newTrap.activate(); } catch (e) { /* ignore error */ }
             }
         } else if (trapVar) {
-            try { trapVar.deactivate(); } catch (e) {}
+            try { trapVar.deactivate(); } catch (e) { /* ignore error */ }
             setTrapVar(null);
         }
     };
@@ -1734,10 +1736,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { dataBankTrap.activate(); } catch (e) {}
+            try { dataBankTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (dataBankTrap) {
-        try { dataBankTrap.deactivate(); } catch (e) {}
+        try { dataBankTrap.deactivate(); } catch (e) { /* ignore error */ }
         dataBankTrap = null;
     }
 
@@ -1755,10 +1757,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { exportFormatTrap.activate(); } catch (e) {}
+            try { exportFormatTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (exportFormatTrap) {
-        try { exportFormatTrap.deactivate(); } catch (e) {}
+        try { exportFormatTrap.deactivate(); } catch (e) { /* ignore error */ }
         exportFormatTrap = null;
     }
 
@@ -1775,10 +1777,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { tokenCounterTrap.activate(); } catch (e) {}
+            try { tokenCounterTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (tokenCounterTrap) {
-        try { tokenCounterTrap.deactivate(); } catch (e) {}
+        try { tokenCounterTrap.deactivate(); } catch (e) { /* ignore error */ }
         tokenCounterTrap = null;
     }
 
@@ -1796,10 +1798,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { extManagerTrap.activate(); } catch (e) {}
+            try { extManagerTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (extManagerTrap) {
-        try { extManagerTrap.deactivate(); } catch (e) {}
+        try { extManagerTrap.deactivate(); } catch (e) { /* ignore error */ }
         extManagerTrap = null;
     }
 
@@ -1817,10 +1819,10 @@ const managePopupTraps = () => {
                     if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
                 },
             });
-            try { apiParamsTrap.activate(); } catch (e) {}
+            try { apiParamsTrap.activate(); } catch (e) { /* ignore error */ }
         }
     } else if (apiParamsTrap) {
-        try { apiParamsTrap.deactivate(); } catch (e) {}
+        try { apiParamsTrap.deactivate(); } catch (e) { /* ignore error */ }
         apiParamsTrap = null;
     }
 };
@@ -1848,9 +1850,7 @@ const trapFocusInChat = (e) => {
     if (e.shiftKey && document.activeElement === first) {
         e.preventDefault();
         last.focus();
-    }
-    // Tab on last element -> Loop to first
-    else if (!e.shiftKey && document.activeElement === last) {
+    } else if (!e.shiftKey && document.activeElement === last) {     // Tab on last element -> Loop to first
         e.preventDefault();
         first.focus();
     }
@@ -1960,9 +1960,7 @@ export function setAccessibilityEnabled(enabled) {
                 if (mutation.removedNodes.length > 0) {
                     shouldCheckTraps = true;
                 }
-            }
-            // B. Handle visibility/attribute changes (Triggers Trap logic)
-            else if (mutation.type === 'attributes') {
+            } else if (mutation.type === 'attributes') {    // B. Handle visibility/attribute changes (Triggers Trap logic)
                 shouldCheckTraps = true;
             }
         }
@@ -2198,7 +2196,7 @@ export function initAccessibility() {
         setTimeout(() => {
             if ($content.is(':visible')) {
                 // Close existing trap, create new one
-                if (extensionTrap) try { extensionTrap.deactivate(); } catch (e) {}
+                if (extensionTrap) try { extensionTrap.deactivate(); } catch (e) { /* ignore error */ }
 
                 extensionTrap = focusTrap.createFocusTrap($drawer[0], {
                     allowOutsideClick: true,
@@ -2207,10 +2205,10 @@ export function initAccessibility() {
                     fallbackFocus: $(this)[0],
                     escapeDeactivates: false, // Handled below
                 });
-                try { extensionTrap.activate(); } catch (e) {}
+                try { extensionTrap.activate(); } catch (e) { /* ignore error */ }
             } else {
                 if (extensionTrap) {
-                    try { extensionTrap.deactivate(); } catch (e) {}
+                    try { extensionTrap.deactivate(); } catch (e) { /* ignore error */ }
                     extensionTrap = null;
                 }
             }
@@ -2233,7 +2231,7 @@ export function initAccessibility() {
                 $header.trigger('focus'); // Restore focus
 
                 if (typeof extensionTrap !== 'undefined' && extensionTrap) {
-                    try { extensionTrap.deactivate(); } catch (e) {}
+                    try { extensionTrap.deactivate(); } catch (e) { /* ignore error */ }
                     extensionTrap = null;
                 }
                 announceA11y('Extension menu closed.');

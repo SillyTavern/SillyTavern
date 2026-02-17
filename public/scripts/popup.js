@@ -2,6 +2,7 @@ import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
+import { focusTrap } from '../lib.js';
 
 /** @readonly */
 /** @enum {Number} */
