@@ -86,6 +86,7 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_MEGANOVA = 'https://api.meganova.ai/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
 /**
@@ -1827,6 +1828,36 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_SILICONFLOW;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVA) {
+            const meganovaApiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVA);
+            if (!meganovaApiKey) {
+                console.warn('MegaNova AI API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+            try {
+                const modelsResponse = await fetch('https://api.meganova.ai/api/v1/serverless/models', {
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + meganovaApiKey },
+                });
+                if (!modelsResponse.ok) {
+                    throw new Error(`MegaNova AI models request failed with status ${modelsResponse.status}`);
+                }
+                /** @type {any} */
+                const modelsData = await modelsResponse.json();
+                const allModels = modelsData?.data?.models ?? [];
+                const chatModels = allModels.filter(m => m.model_type === 'Text');
+                return statusResponse.send({
+                    data: chatModels.map(m => ({
+                        id: m.model_name,
+                        object: 'model',
+                        owned_by: 'meganova',
+                        context_length: m.context_length,
+                    })),
+                });
+            } catch (error) {
+                console.error('MegaNova AI status check error:', error);
+                return statusResponse.status(500).send({ error: true, message: 'Failed to fetch MegaNova AI models.' });
+            }
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2299,6 +2330,14 @@ router.post('/generate', async function (request, response) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
             apiUrl = API_SILICONFLOW;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+            headers = {};
+            bodyParams = {};
+            if (request.body.json_schema) {
+                setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVA) {
+            apiUrl = API_MEGANOVA;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVA);
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="100" height="100" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <!-- Manta ray silhouette inspired by Meganova AI logo -->
+    <path d="M 50,15 C 35,15 20,25 5,50 C 20,40 35,38 45,42 L 50,35 L 55,42 C 65,38 80,40 95,50 C 80,25 65,15 50,15 Z" fill="#7B7BF7"/>
+    <path d="M 45,42 C 40,50 38,60 42,75 L 50,60 L 58,75 C 62,60 60,50 55,42 L 50,35 Z" fill="#7B7BF7"/>
+</svg>
