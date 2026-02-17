@@ -967,15 +967,16 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx
                 && (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER || promptIdx >= activeToolChainStartIdx);
-            const previousAssistantReasoning = promptIdx > 0
-                ? String(messages.slice(0, promptIdx).findLast(x => x.role === 'assistant' && !Array.isArray(x.invocations) && x.reasoning)?.reasoning ?? '')
+            const previousPrompt = promptIdx > 0 ? messages[promptIdx - 1] : null;
+            const previousAssistantReasoning = previousPrompt?.role === 'assistant' && !Array.isArray(previousPrompt.invocations)
+                ? String(previousPrompt.reasoning ?? '')
                 : '';
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
                     delete clone.reasoning;
                 } else if (previousAssistantReasoning) {
-                    // Prefer currently editable reasoning text over stale invocation snapshot.
+                    // Prefer currently editable adjacent assistant reasoning over stale invocation snapshot.
                     clone.reasoning = previousAssistantReasoning;
                 }
                 return clone;
