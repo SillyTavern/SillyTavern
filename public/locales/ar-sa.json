@@ -1438,5 +1438,9 @@
     "Still have questions?": "هل ما زالت لديك اسئلة؟",
     "Join the SillyTavern Discord": "انضم إلى ديسكورد SillyTavern",
     "Post a GitHub issue": "نشر مشكلة على GitHub",
-    "Contact the developers": "الاتصال بالمطورين"
+    "Contact the developers": "الاتصال بالمطورين",
+    "Interleaved Thinking": "Interleaved Thinking",
+    "Since Last User Message": "Since Last User Message",
+    "Active Tool Chain": "Active Tool Chain",
+    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
 }

@@ -2312,5 +2312,9 @@
     "Delete chat": "删除聊天",
     "Title/Memo": "标题（备忘）",
     "Strategy": "触发策略",
-    "Trigger %": "触发概率%"
+    "Trigger %": "触发概率%",
+    "Interleaved Thinking": "Interleaved Thinking",
+    "Since Last User Message": "Since Last User Message",
+    "Active Tool Chain": "Active Tool Chain",
+    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
 }

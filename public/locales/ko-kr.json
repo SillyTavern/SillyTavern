@@ -1617,5 +1617,9 @@
     "to install additional features.": "으로 가세요.",
     "Master Import": "마스터 불러오기",
     "Master Export": "마스터 내보내기",
-    "Chat Quick Reply Sets": "채팅 빠른 답장 세트들"
+    "Chat Quick Reply Sets": "채팅 빠른 답장 세트들",
+    "Interleaved Thinking": "Interleaved Thinking",
+    "Since Last User Message": "Since Last User Message",
+    "Active Tool Chain": "Active Tool Chain",
+    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
 }

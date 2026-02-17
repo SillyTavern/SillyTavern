@@ -1434,5 +1434,9 @@
     "Still have questions?": "Heb je nog vragen?",
     "Join the SillyTavern Discord": "Word lid van de SillyTavern Discord",
     "Post a GitHub issue": "Plaats een GitHub-probleem",
-    "Contact the developers": "Neem contact op met de ontwikkelaars"
+    "Contact the developers": "Neem contact op met de ontwikkelaars",
+    "Interleaved Thinking": "Interleaved Thinking",
+    "Since Last User Message": "Since Last User Message",
+    "Active Tool Chain": "Active Tool Chain",
+    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
 }

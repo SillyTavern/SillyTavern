@@ -2046,5 +2046,9 @@
     "System Prompt Name": "Nom du prompt système:",
     "Instruct Mode": "Mode Instruction:",
     "Save and Update": "Sauvegarder et mettre à jour",
-    "Don't ask again for this URL": "Ne plus demander pour cette URL"
+    "Don't ask again for this URL": "Ne plus demander pour cette URL",
+    "Interleaved Thinking": "Interleaved Thinking",
+    "Since Last User Message": "Since Last User Message",
+    "Active Tool Chain": "Active Tool Chain",
+    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
 }

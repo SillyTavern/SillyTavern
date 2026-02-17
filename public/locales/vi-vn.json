@@ -1436,5 +1436,9 @@
     "Still have questions?": "Bạn còn thắc mắc?",
     "Join the SillyTavern Discord": "Tham gia Kênh Discord của SillyTavern",
     "Post a GitHub issue": "Đăng một vấn đề trên GitHub",
-    "Contact the developers": "Liên hệ với Devs"
+    "Contact the developers": "Liên hệ với Devs",
+    "Interleaved Thinking": "Interleaved Thinking",
+    "Since Last User Message": "Since Last User Message",
+    "Active Tool Chain": "Active Tool Chain",
+    "openrouter_interleaved_thinking_hint": "Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context."
 }
