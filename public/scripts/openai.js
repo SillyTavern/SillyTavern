@@ -902,15 +902,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const toolReasoningMode = isOpenRouterSource ? getOpenRouterToolReasoningMode() : openrouter_tool_reasoning_modes.ACTIVE_CHAIN;
     const shouldForwardOpenRouterReasoning = isOpenRouterSource && toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED;
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
-    const isToolChainMessage = (x) => x?.role === 'tool' || (x?.role === 'assistant' && Array.isArray(x.invocations));
-    let activeToolChainStartIdx = messages.length;
-    for (let idx = messages.length - 1; idx >= 0; idx--) {
-        if (isToolChainMessage(messages[idx])) {
-            activeToolChainStartIdx = idx;
-            continue;
-        }
-        break;
-    }
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -965,20 +956,47 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             const promptIdx = messages.indexOf(chatPrompt);
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
-                && promptIdx > lastUserIdx
-                && (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER || promptIdx >= activeToolChainStartIdx);
-            let previousPrompt = null;
-            for (let idx = promptIdx - 1; idx >= 0; idx--) {
-                const candidate = messages[idx];
-                if (candidate?.role === 'tool') {
-                    continue;
+                && promptIdx > lastUserIdx;
+            let previousAssistantReasoning = '';
+            if (reasoningIsEligible) {
+                if (toolReasoningMode === openrouter_tool_reasoning_modes.ACTIVE_CHAIN) {
+                    // Strict chain mode: skip tool/tool-call messages, then use only the first assistant text boundary.
+                    for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
+                        const candidate = messages[idx];
+                        if (candidate?.role === 'tool') {
+                            continue;
+                        }
+                        if (candidate?.role === 'assistant' && Array.isArray(candidate.invocations)) {
+                            continue;
+                        }
+                        const hasAssistantText = candidate?.role === 'assistant'
+                            && !Array.isArray(candidate.invocations)
+                            && typeof candidate.content === 'string'
+                            && candidate.content.trim().length > 0;
+                        if (hasAssistantText) {
+                            previousAssistantReasoning = String(candidate.reasoning ?? '');
+                        }
+                        break;
+                    }
+                } else if (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER) {
+                    // Broad mode: use the latest assistant text reasoning anywhere since the last user.
+                    for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
+                        const candidate = messages[idx];
+                        const hasAssistantText = candidate?.role === 'assistant'
+                            && !Array.isArray(candidate.invocations)
+                            && typeof candidate.content === 'string'
+                            && candidate.content.trim().length > 0;
+                        if (!hasAssistantText) {
+                            continue;
+                        }
+                        const candidateReasoning = String(candidate.reasoning ?? '');
+                        if (candidateReasoning) {
+                            previousAssistantReasoning = candidateReasoning;
+                            break;
+                        }
+                    }
                 }
-                previousPrompt = candidate;
-                break;
             }
-            const previousAssistantReasoning = previousPrompt?.role === 'assistant' && !Array.isArray(previousPrompt.invocations)
-                ? String(previousPrompt.reasoning ?? '')
-                : '';
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
