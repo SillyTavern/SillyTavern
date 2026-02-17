@@ -285,6 +285,7 @@ import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
+import { syncMessageUserNameToPersona } from './scripts/personas.js'
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -2538,6 +2539,11 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
     messageElement.find('.ch_name .name_text').text(mes.name);
     messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
     messageElement.find('.mesIDDisplay').text(`#${messageId}`);
+
+    if (!mes.is_user){
+        messageElement.find('.mes_sync_mes_persona').remove();
+    }    
+
     tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     mes.title && messageElement.attr('title', mes.title);
     timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -8117,6 +8123,20 @@ async function messageEditMove(sourceId, targetId) {
     return true;
 }
 
+async function messageSyncPersona(div) {
+    const mesElement = div.closest('.mes');
+    const mes = chat[mesElement.attr('mesid')];
+
+    await syncMessageUserNameToPersona(mes);
+
+    mesElement.attr({
+        'ch_name': mes.name,
+        'force_avatar': mes.force_avatar,
+    });
+    mesElement.find('.avatar img').attr('src', mes.force_avatar);
+    mesElement.find('.ch_name .name_text').text(mes.name);
+}
+
 async function messageEditDone(div) {
     if (!(this_edit_mes_id >= 0)) {
         console.trace('this_edit_mes_id cannot be blank when calling messageEditDone.');
@@ -11646,6 +11666,11 @@ jQuery(async function () {
         const canDeleteSwipe = power_user.confirm_message_delete && !fromSlashCommand && !message.is_user && swipesArray.length > 1 && this_edit_mes_id === chat.length - 1 && selectedSwipe !== undefined;
         await deleteMessage(Number(this_edit_mes_id), canDeleteSwipe ? selectedSwipe : undefined, power_user.confirm_message_delete && fromSlashCommand !== true);
     });
+
+    $(document).on('click', '.mes_sync_mes_persona', async function () {
+        await messageSyncPersona($(this));
+    });
+
 
     $(document).on('click', '.mes_edit_done', async function () {
         await messageEditDone($(this));

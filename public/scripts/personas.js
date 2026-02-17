@@ -1726,6 +1726,12 @@ async function onPersonasRestoreInput(e) {
     saveSettingsDebounced();
     $('#personas_restore_input').val('');
 }
+function updateMessageWithPersona(mes) {
+    if (mes.is_user) {
+        mes.name = name1;
+        mes.force_avatar = getThumbnailUrl('persona', user_avatar);
+    }
+}
 
 async function syncUserNameToPersona() {
     const confirmation = await Popup.show.confirm(t`Are you sure?`, t`All user-sent messages in this chat will be attributed to ${name1}.`);
@@ -1735,10 +1741,7 @@ async function syncUserNameToPersona() {
     }
 
     for (const mes of chat) {
-        if (mes.is_user) {
-            mes.name = name1;
-            mes.force_avatar = getThumbnailUrl('persona', user_avatar);
-        }
+        updateMessageWithPersona(mes);
     }
 
     await saveChatConditional();
@@ -1759,6 +1762,12 @@ export async function retriggerFirstMessageOnEmptyChat() {
         await createOrEditCharacter();
     }
 }
+
+export async function syncMessageUserNameToPersona(mes) {
+    updateMessageWithPersona(mes);
+    await saveChatConditional();
+}
+
 
 /**
  * Duplicates a persona.
