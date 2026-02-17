@@ -3313,9 +3313,8 @@ class Message {
             },
             ...(includeSignature && i.signature ? { signature: i.signature } : {}),
         }));
-        const hasAnySignature = invocations.some(i => typeof i.signature === 'string' && i.signature.length > 0);
         const fallbackReasoning = invocations.find(i => typeof i.reasoning === 'string' && i.reasoning.length > 0)?.reasoning || null;
-        this.reasoning = includeReasoning && !hasAnySignature ? fallbackReasoning : null;
+        this.reasoning = includeReasoning ? fallbackReasoning : null;
         this.tokens = await tokenHandler.countAsync({
             role: this.role,
             tool_calls: JSON.stringify(this.tool_calls),
