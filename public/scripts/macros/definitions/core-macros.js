@@ -1,5 +1,5 @@
 import { seedrandom, droll } from '../../../lib.js';
-import { chat_metadata, main_api, getMaxContextSize, getMaxContextTokens, getMaxResponseTokens, extension_prompts, getCurrentChatId } from '../../../script.js';
+import { chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMaxResponseTokens, extension_prompts, getCurrentChatId } from '../../../script.js';
 import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
@@ -239,7 +239,7 @@ export function registerCoreMacros() {
         description: 'Maximum prompt context size.',
         returns: 'Maximum prompt context size.',
         returnType: MacroValueType.INTEGER,
-        handler: () => String(getMaxContextSize()),
+        handler: () => String(getMaxPromptTokens()),
     });
 
     // {{maxContext}} -> max context token limit
@@ -254,9 +254,7 @@ export function registerCoreMacros() {
 
     // {{maxResponse}} -> max response token limit
     MacroRegistry.registerMacro('maxResponse', {
-        aliases: [
-            { alias: 'maxResponseTokens', visible: true },
-        ],
+        aliases: [{ alias: 'maxResponseTokens', visible: true }],
         category: MacroCategory.STATE,
         description: 'Maximum response token limit.',
         returns: 'Maximum response token limit.',
