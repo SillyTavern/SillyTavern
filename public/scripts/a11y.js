@@ -291,46 +291,37 @@ function applyGenericA11yRules(rootElement) {
 
 /**
  * Opens the generic sort menu for a list item.
- * Triggered by the `.a11y-sort-button` injected into sortable lists.
- *
- * @param {HTMLElement} triggerElement - The button that triggered the menu.
- * @param {string} itemSelector - CSS selector for the item being sorted (e.g., '.qr--item').
- * @param {string} containerSelector - CSS selector for the container (e.g., '#qr--global-setList').
+ * Fixes: ESC key requiring multiple presses, focus loss on close.
  */
 async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
-    const $li = $(triggerElement).closest(itemSelector);
+    const $trigger = $(triggerElement);
+    const $li = $trigger.closest(itemSelector);
     const $container = $li.closest(containerSelector);
-    const $allItems = $container.children(itemSelector); // Ensure only direct children are counted
 
-    if ($allItems.length === 0) return;
-
+    // Logic to calculate position based solely on items (ignoring scripts/hidden inputs)
+    const $allItems = $container.children(itemSelector);
     const total = $allItems.length;
     const currentIndex = $allItems.index($li);
     const displayIndex = currentIndex + 1;
 
-    // Attempt to extract a meaningful name for the item being sorted for the UI
     let itemName = $li.find('.completion_prompt_manager_prompt_name, .qr--set option:selected, .qr--set-itemLabel, .regex_script_name').first().val() ||
                    $li.find('.completion_prompt_manager_prompt_name, .qr--set option:selected, .qr--set-itemLabel, .regex_script_name').first().text() ||
                    'Item';
-
     itemName = String(itemName).trim();
 
-    logDebug('handleSortMenu', `Opening sort menu for item: ${displayIndex}/${total}`);
-    announceA11y(`Sorting ${itemName}. Current position: ${displayIndex} of ${total}.`);
-
-    // Temporarily pause any active focus traps to allow the popup to take focus
+    // 1. Pause existing traps to prevent conflict
     if (promptManagerTrap) try { promptManagerTrap.pause(); } catch (e) {}
     if (qrEditorTrap) try { qrEditorTrap.pause(); } catch (e) {}
     if (regexEditorTrap) try { regexEditorTrap.pause(); } catch (e) {}
 
-    // Call the generic popup system
-    await callGenericPopup(
+    // 2. Define the popup actions
+    const popupPromise = callGenericPopup(
         `<h3>Sort Item</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`,
         POPUP_TYPE.TEXT,
         '',
         {
-            okButton: false,
-            cancelButton: 'Close',
+            okButton: 'Close',
+            cancelButton: false,
             wide: true,
             customButtons: [
                 {
@@ -361,6 +352,50 @@ async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
             ],
         },
     );
+
+    // 3. ESC KEY FIX: Attach a direct listener to the popup immediately
+    // Wait a tiny bit for the DOM to render
+    setTimeout(() => {
+        const $popup = $('.popup:visible').last();
+        if ($popup.length) {
+            // Force focus to the popup container first to ensure keystrokes are caught
+            $popup.attr('tabindex', '-1').focus();
+
+            // Intercept ESC
+            $popup.on('keydown.a11ySort', (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault(); // Stop browser from moving focus to "Close" button
+                    e.stopPropagation(); // Stop global handlers
+                    // Trigger the Close/OK button programmatically
+                    $popup.find('.popup-button-ok').trigger('click');
+                }
+            });
+        }
+    }, 50);
+
+    try {
+        await popupPromise;
+    } finally {
+        // 4. Cleanup and Restore
+        // Remove our custom listener (just in case)
+        $('.popup').off('keydown.a11ySort');
+
+        // Unpause traps
+        if (promptManagerTrap) try { promptManagerTrap.unpause(); } catch (e) {}
+        if (qrEditorTrap) try { qrEditorTrap.unpause(); } catch (e) {}
+        if (regexEditorTrap) try { regexEditorTrap.unpause(); } catch (e) {}
+
+        // Restore focus to the trigger button
+        setTimeout(() => {
+            if ($trigger.closest('body').length) {
+                $trigger.trigger('focus');
+            } else {
+                // If the DOM moved, find the button at the new index
+                const $newLi = $container.children(itemSelector).eq(currentIndex);
+                $newLi.find('.a11y-sort-button').trigger('focus');
+            }
+        }, 150);
+    }
 }
 
 /**
@@ -407,72 +442,97 @@ function getA11yItemName($li) {
 }
 
 /**
- * Performs the actual DOM manipulation to reorder items and triggers persistence events.
- *
- * @param {JQuery} $item - Item to move.
- * @param {JQuery} $container - List container.
- * @param {string} itemSelector - Item selector.
- * @param {string} action - 'up', 'down', 'top', 'bottom', or 'jump'.
- * @param {number|null} [targetIndex] - Required if action is 'jump'.
+ * Performs DOM manipulation and handles accessibility announcements.
+ * Announces the swap target name and the new position.
  */
 function performGenericSortAction($item, $container, itemSelector, action, targetIndex = null) {
-    const $allItems = $container.children(itemSelector);
+    const validSelectors = '.qr--item, .qr--set-item, .completion_prompt_manager_prompt, .regex-script-label, .list-group-item';
+
+    let $allItems = $container.children(validSelectors);
     const total = $allItems.length;
     const currentIndex = $allItems.index($item);
-    let targetName = '';
-    let newIndex = currentIndex;
+
     let changed = false;
+    let actionText = '';
+    let targetName = '';
+
+    const getA11yName = ($el) => {
+        return ($el.find('.completion_prompt_manager_prompt_name, .qr--set option:selected, .qr--set-itemLabel, .regex_script_name').first().val() ||
+                $el.find('.completion_prompt_manager_prompt_name, .qr--set option:selected, .qr--set-itemLabel, .regex_script_name').first().text() ||
+                'Item').trim();
+    };
 
     if (action === 'up' && currentIndex > 0) {
         const $other = $allItems.eq(currentIndex - 1);
-        targetName = getA11yItemName($other);
+        targetName = getA11yName($other);
         $item.insertBefore($other);
-        newIndex = currentIndex - 1;
         changed = true;
+        actionText = `Swapped with ${targetName}`;
     } else if (action === 'down' && currentIndex < total - 1) {
         const $other = $allItems.eq(currentIndex + 1);
-        targetName = getA11yItemName($other);
+        targetName = getA11yName($other);
         $item.insertAfter($other);
-        newIndex = currentIndex + 1;
         changed = true;
+        actionText = `Swapped with ${targetName}`;
     } else if (action === 'top' && currentIndex > 0) {
-        $item.insertBefore($allItems.first());
-        newIndex = 0;
+        $item.prependTo($container);
         changed = true;
+        actionText = 'Moved to top';
     } else if (action === 'bottom' && currentIndex < total - 1) {
-        $item.insertAfter($allItems.last());
-        newIndex = total - 1;
+        $item.appendTo($container);
         changed = true;
+        actionText = 'Moved to bottom';
+    } else if (action === 'jump' && targetIndex !== null) {
+        if (targetIndex >= 0 && targetIndex < total && targetIndex !== currentIndex) {
+            const $target = $allItems.eq(targetIndex);
+            targetName = getA11yName($target);
+            if (currentIndex < targetIndex) $item.insertAfter($target);
+            else $item.insertBefore($target);
+            changed = true;
+            actionText = `Moved to position ${targetIndex + 1}`;
+        }
     }
 
     if (changed) {
         if ($container.data('ui-sortable')) {
             /** @type {any} */ ($container).sortable('refresh');
-            $container.trigger('sortupdate');
-        } else {
-            $container.trigger('sortupdate');
         }
+        $container.trigger('sortupdate');
 
-        let message = '';
-        if (action === 'up' || action === 'down') {
-            message = `Swapped with ${targetName}. Position ${newIndex + 1} of ${total}.`;
-        } else {
-            message = `Moved to ${action}. Position ${newIndex + 1} of ${total}.`;
-        }
+        const $newAllItems = $container.children(validSelectors);
+        const newIndex = $newAllItems.index($item) + 1;
 
-        announceA11y(message, true);
-    }
+        const finalMessage = `${actionText}. Position ${newIndex} of ${total}.`;
 
-    setTimeout(() => {
         const $popup = $('.popup:visible');
-        if ($popup.length) {
-            const btnText = action === 'up' ? 'Move Up' : (action === 'down' ? 'Move Down' : (action === 'top' ? 'To Top' : (action === 'bottom' ? 'To Bottom' : '')));
-            if (btnText) {
-                const $btn = $popup.find(`.popup-button-custom:contains("${btnText}")`);
-                $btn.focus();
+        let btnType = '';
+        if (action === 'up') btnType = 'Move Up';
+        else if (action === 'down') btnType = 'Move Down';
+        else if (action === 'top') btnType = 'To Top';
+        else if (action === 'bottom') btnType = 'To Bottom';
+
+        if ($popup.length && btnType) {
+            const $btn = $popup.find('.popup-button-custom').filter(function () {
+                return $(this).text().trim() === btnType;
+            });
+
+            if ($btn.length) {
+                $btn.attr('aria-label', finalMessage);
+
+                $btn.trigger('focus');
+
+                setTimeout(() => {
+                    $btn.removeAttr('aria-label');
+                }, 2000);
+
+                return;
             }
         }
-    }, 50);
+
+        announceA11y(finalMessage, true);
+    } else {
+        announceA11y('Already at limit.', true);
+    }
 }
 
 // ============================================================================
@@ -507,20 +567,20 @@ let isAiGenerating = false;
 
 /**
  * Announces text to screen readers using a dynamic aria-live region.
- * This is essential for non-visual feedback (e.g., "AI is generating").
+ * Uses a "nuclear" approach to ensure the message cuts through all other noise.
  *
  * @param {string} text - The text to announce.
+ * @param {boolean} force - If true, uses role="alert" and assertive live region.
  */
 export function announceA11y(text, force = false) {
+    if (!text) return;
     console.log(`%c[A11y] ${text}`, 'color: #4caf50');
 
     let announcer = document.getElementById('a11y-announcer');
     if (!announcer) {
         announcer = document.createElement('div');
         announcer.id = 'a11y-announcer';
-        // 默认礼貌模式，但支持强制模式
-        announcer.setAttribute('aria-live', 'polite');
-        announcer.setAttribute('aria-atomic', 'true');
+        // Hide visually but keep available for screen readers
         Object.assign(announcer.style, {
             position: 'absolute', width: '1px', height: '1px', padding: '0',
             margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)',
@@ -529,18 +589,23 @@ export function announceA11y(text, force = false) {
         document.body.appendChild(announcer);
     }
 
-    // 如果是排序操作，临时设为极高优先级
+    // 1. Clear content to register a change
+    announcer.textContent = '';
+
+    // 2. Set attributes based on urgency
     if (force) {
+        announcer.setAttribute('role', 'alert');
         announcer.setAttribute('aria-live', 'assertive');
     } else {
+        announcer.setAttribute('role', 'status');
         announcer.setAttribute('aria-live', 'polite');
     }
 
-    // 彻底清空内容并强制触发浏览器重绘 live region
-    announcer.textContent = '';
+    // 3. Tiny delay to ensure the browser registers the "clear" then "set"
+    // This "flicker" forces the screen reader to treat it as new content.
     setTimeout(() => {
         announcer.textContent = text;
-    }, 20); // 缩短延迟，抢在焦点变化前
+    }, 50);
 }
 
 /**
@@ -1944,26 +2009,24 @@ export function initAccessibility() {
 
     // --- A. Global Event Delegation (Optimization) ---
     // Instead of attaching listeners to thousands of elements, we attach to document.
-
     // 1. Sort Buttons (Generic Handler)
     $(document).on('focus', '.a11y-sort-button', function () {
         if (!isA11yEnabled) return;
         const $this = $(this);
-        let label = $this.attr('aria-label');
-        if (!label) {
-            const $item = $this.closest('.qr--item, .qr--set-item, .completion_prompt_manager_prompt, .regex-script-label');
-            const idx = $item.index() + 1;
-            const tot = $item.parent().children().length;
-            announceA11y(`Sort item. Position ${idx} of ${tot}.`);
-        } else {
-            const $item = $this.closest('li, .qr--item, .qr--set-item, .completion_prompt_manager_prompt, .regex-script-label');
-            if ($item.length) {
-                const idx = $item.index() + 1;
-                const tot = $item.parent().children($item.prop('tagName')).length;
-                announceA11y(`${label}. Position ${idx} of ${tot}.`);
-            } else {
-                announceA11y(label);
-            }
+
+        const validSelectors = '.qr--item, .qr--set-item, .completion_prompt_manager_prompt, .regex-script-label, .list-group-item';
+        const $item = $this.closest(validSelectors);
+
+        if ($item.length) {
+            const $container = $item.parent();
+            const $siblings = $container.children(validSelectors);
+
+            const idx = $siblings.index($item) + 1;
+            const tot = $siblings.length;
+
+            console.log(`[A11y Debug] Item Focus: ${idx}/${tot} (Total DOM children: ${$container.children().length})`);
+
+            announceA11y(`Position ${idx} of ${tot}.`);
         }
     });
 
