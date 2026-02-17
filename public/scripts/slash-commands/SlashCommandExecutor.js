@@ -31,8 +31,8 @@ export class SlashCommandExecutor {
 
     get commandCount() {
         return 1
-            + this.namedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it =>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum) => cur + sum, 0)
-            + this.unnamedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it =>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum) => cur + sum, 0)
+            + this.namedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it => /**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum) => cur + sum, 0)
+            + this.unnamedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it => /**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum) => cur + sum, 0)
         ;
     }
 

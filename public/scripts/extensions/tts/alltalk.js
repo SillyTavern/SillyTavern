@@ -66,7 +66,7 @@ class AllTalkTtsProvider {
     get settingsHtml() {
         // HTML template literals can trigger ESLint quotes warnings when quotes are used in HTML attributes.
         // Disabling quotes rule for this one line as it's a false positive with HTML template literals.
-        // eslint-disable-next-line quotes
+        // eslint-disable-next-line @stylistic/quotes
         let html = `<div class="at-settings-separator">AllTalk V2 Settings</div>`;
 
         html += `<div class='at-settings-row'>
