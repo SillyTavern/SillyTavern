@@ -967,7 +967,15 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx
                 && (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER || promptIdx >= activeToolChainStartIdx);
-            const previousPrompt = promptIdx > 0 ? messages[promptIdx - 1] : null;
+            let previousPrompt = null;
+            for (let idx = promptIdx - 1; idx >= 0; idx--) {
+                const candidate = messages[idx];
+                if (candidate?.role === 'tool') {
+                    continue;
+                }
+                previousPrompt = candidate;
+                break;
+            }
             const previousAssistantReasoning = previousPrompt?.role === 'assistant' && !Array.isArray(previousPrompt.invocations)
                 ? String(previousPrompt.reasoning ?? '')
                 : '';
