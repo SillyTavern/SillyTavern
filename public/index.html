@@ -2012,13 +2012,17 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openrouter">
-                                        <div class="flex-container oneline-dropdown" title="Forwards interleaved thinking across OpenRouter tool-call turns.&#10;Modes define how far back within the current post-user tool sequence reasoning may be used." data-i18n="[title]Forwards interleaved thinking across OpenRouter tool-call turns.">
-                                            <label for="openrouter_tool_reasoning_mode" data-i18n="Interleaved Thinking">Interleaved Thinking</label>
-                                            <select id="openrouter_tool_reasoning_mode" class="text_pole widthUnset">
-                                                <option value="disabled">Disabled</option>
-                                                <option value="since_last_user">Since Last User Message</option>
-                                                <option value="active_chain">Active Tool Chain</option>
-                                            </select>
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10">
+                                            <div class="flex-container oneline-dropdown" title="Forwards interleaved thinking across OpenRouter tool-call turns.&#10;Modes define how far back within the current post-user tool sequence reasoning may be used." data-i18n="[title]Forwards interleaved thinking across OpenRouter tool-call turns.">
+                                                <label for="openrouter_tool_reasoning_mode" data-i18n="Interleaved Thinking">
+                                                    Interleaved Thinking
+                                                </label>
+                                                <select id="openrouter_tool_reasoning_mode">
+                                                    <option value="disabled">Disabled</option>
+                                                    <option value="since_last_user">Since Last User Message</option>
+                                                    <option value="active_chain">Active Tool Chain</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes">

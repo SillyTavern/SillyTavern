@@ -1002,7 +1002,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                 if (!reasoningIsEligible) {
                     delete clone.reasoning;
                 } else if (previousAssistantReasoning) {
-                    // Prefer currently editable adjacent assistant reasoning over stale invocation snapshot.
+                    // Prefer currently editable assistant-text reasoning based on forwarding mode over invocation snapshot.
                     clone.reasoning = previousAssistantReasoning;
                 }
                 return clone;
