@@ -3,7 +3,6 @@ import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 import { focusTrap } from '../lib.js';
-
 /** @readonly */
 /** @enum {Number} */
 export const POPUP_TYPE = {
@@ -441,6 +440,13 @@ export class Popup {
 
         const keyListener = async (evt) => {
             switch (evt.key) {
+                case 'Escape': {
+                    // Handle ESC key to close the popup
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    await this.complete(POPUP_RESULT.CANCELLED);
+                    break;
+                }
                 case 'Enter': {
                     // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
                     if (evt.altKey || evt.shiftKey)
@@ -493,6 +499,11 @@ export class Popup {
      * @returns {Promise<string|number|boolean?>} A promise that resolves with the value of the popup when it is completed.
      */
     async show() {
+        // Capture the element that triggered the popup (if any) to restore focus later
+        if (document.activeElement instanceof HTMLElement) {
+            this.openerElement = document.activeElement;
+        }
+
         document.body.append(this.dlg);
 
         // Run opening animation
@@ -506,6 +517,7 @@ export class Popup {
                 initialFocus: () => this.dlg.querySelector('.result-control:not([style*="display: none"])') || this.dlg,
                 fallbackFocus: this.dlg,
                 allowOutsideClick: true,
+                returnFocusOnDeactivate: false, // Fix: Prevent conflict with manual focus restoration
             });
             this.trap.activate();
         } catch (e) { console.warn('Focus trap failed', e); }
@@ -646,6 +658,12 @@ export class Popup {
 
         // After the dialog is actually completely closed, remove it from the DOM
         runAfterAnimation(this.dlg, async () => {
+            // Fix: Deactivate the trap immediately to prevent focus locking
+            if (this.trap) {
+                try { this.trap.deactivate(); } catch (e) { /* ignore error */ }
+                this.trap = null;
+            }
+
             // Call the close on the dialog
             this.dlg.close();
 
@@ -660,16 +678,21 @@ export class Popup {
             // Remove it from the popup references
             removeFromArray(Popup.util.popups, this);
 
-            // If there is any popup below this one, see if we can set the focus
-            if (Popup.util.popups.length > 0) {
-                const activeDialog = document.activeElement?.closest('.popup');
-                const id = activeDialog?.getAttribute('data-id');
-                const popup = Popup.util.popups.find(x => x.id == id);
-                if (popup) {
-                    if (popup.lastFocus) popup.lastFocus.focus();
-                    else popup.setAutoFocus();
+            // Fix: Use setTimeout to prevent the Enter key from re-triggering the restored button (Double Popup Fix)
+            setTimeout(() => {
+                // If there is any popup below this one, see if we can set the focus
+                if (Popup.util.popups.length > 0) {
+                    const activeDialog = document.activeElement?.closest('.popup');
+                    const id = activeDialog?.getAttribute('data-id');
+                    const popup = Popup.util.popups.find(x => x.id == id);
+                    if (popup) {
+                        if (popup.lastFocus) popup.lastFocus.focus();
+                        else popup.setAutoFocus();
+                    }
+                } else if (this.openerElement instanceof HTMLElement && document.body.contains(this.openerElement)) {   // If no other popups are open, restore focus to the original trigger element
+                    this.openerElement.focus();
                 }
-            }
+            }, 50);
 
             this.#resolver(this.value);
         });

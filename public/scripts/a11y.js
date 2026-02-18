@@ -560,6 +560,10 @@ let tokenCounterTrap = null;
 let exportFormatTrap = null;
 let extManagerTrap = null;
 let apiParamsTrap = null;
+let genericPopupTrap = null;
+let actionModalTrap = null;
+/** @type {Element|null} Tracks the currently trapped generic popup element */
+let activeGenericElement = null; // New state variable
 
 // Global state trackers
 let lastFocusedBeforeTrap = null;
@@ -1364,12 +1368,28 @@ const SpecificProcessors = {
         }
 
         const $selectChat = $('#select_chat_popup');
-        if ($selectChat.length && !$selectChat.attr('role')) {
-            $selectChat.attr({ 'role': 'dialog', 'aria-label': 'Chat History' });
-            $('#select_chat_cross').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close Chat History' });
-            $('#newChatFromManageScreenButton, #chat_import_button').attr({ 'role': 'button', 'tabindex': '0' });
-            $selectChat.find('.select_chat_block').attr({ 'role': 'listitem', 'tabindex': '0' });
-            $selectChat.find('.chatBackupsList').attr('role', 'list');
+        if ($selectChat.length) {
+            if (!$selectChat.attr('role')) {
+                $selectChat.attr({ 'role': 'dialog', 'aria-label': 'Chat History' });
+                $('#select_chat_cross').attr({ 'role': 'button', 'tabindex': '0', 'aria-label': 'Close Chat History' });
+                $('#newChatFromManageScreenButton, #chat_import_button').attr({ 'role': 'button', 'tabindex': '0' });
+                $selectChat.find('.chatBackupsList').attr('role', 'list');
+            }
+            $selectChat.find('.select_chat_block').each(function () {
+                const $el = $(this);
+                if (!$el.attr('tabindex')) {
+                    $el.attr({ 'role': 'button', 'tabindex': '0' }); // 使用 button 角色以获得更好的交互支持
+                    $el.find('.renameChatButton, .exportRawChatButton, .exportChatButton, .PastChat_cross')
+                        .attr({ 'role': 'button', 'tabindex': '0' });
+                }
+            });
+        }
+
+        // Action Buttons Modal
+        const $actionModal = $root.find('.actionButtonsModal').addBack('.actionButtonsModal');
+        if ($actionModal.length) {
+            $actionModal.attr('role', 'menu');
+            $actionModal.find('.actionButton').attr({ 'role': 'menuitem', 'tabindex': '0' });
         }
 
         const $dataBank = $root.find('.dataBankAttachments').addBack('.dataBankAttachments');
@@ -1488,6 +1508,7 @@ const managePopupTraps = () => {
             qrEditorTrap, regexEditorTrap, extensionTrap, extensionsMenuTrap,
             optionsMenuTrap, selectChatTrap, floatingPromptTrap, cfgConfigTrap,
             logprobsTrap, dataBankTrap, tokenCounterTrap, exportFormatTrap,
+            genericPopupTrap,
         ];
         traps.forEach(trap => { if (trap) try { trap.deactivate(); } catch (e) { /* ignore error */ } });
 
@@ -1498,7 +1519,7 @@ const managePopupTraps = () => {
         optionsMenuTrap = null; selectChatTrap = null; floatingPromptTrap = null;
         cfgConfigTrap = null; logprobsTrap = null; dataBankTrap = null;
         tokenCounterTrap = null; exportFormatTrap = null;
-        extManagerTrap = null; apiParamsTrap = null;
+        extManagerTrap = null; apiParamsTrap = null; genericPopupTrap = null; actionModalTrap = null;
         return;
     }
 
@@ -1723,6 +1744,27 @@ const managePopupTraps = () => {
     handleFloatingTrap('#cfgConfig', cfgConfigTrap, (t) => cfgConfigTrap = t);
     handleFloatingTrap('#logprobsViewer', logprobsTrap, (t) => logprobsTrap = t);
 
+    // --- J-0. Action Buttons Modal (Data Bank / Global) ---
+    // 处理数据银行等地方出现的悬浮操作菜单
+    const $actionModal = $('.actionButtonsModal:visible');
+    if ($actionModal.length) {
+        if (!actionModalTrap) {
+            lastFocusedBeforeTrap = document.activeElement;
+            actionModalTrap = focusTrap.createFocusTrap($actionModal[0], {
+                allowOutsideClick: true,
+                initialFocus: '.actionButton',
+                escapeDeactivates: false,
+                onDeactivate: () => {
+                    if (lastFocusedBeforeTrap instanceof HTMLElement) lastFocusedBeforeTrap.focus();
+                },
+            });
+            try { actionModalTrap.activate(); } catch (e) { /* ignore error */ }
+        }
+    } else if (actionModalTrap) {
+        try { actionModalTrap.deactivate(); } catch (e) { /* ignore error */ }
+        actionModalTrap = null;
+    }
+
     // --- J. Data Bank / Attachments ---
     const $dataBank = $('dialog[open] .dataBankAttachments').closest('dialog');
     if ($dataBank.length && $dataBank.is(':visible')) {
@@ -1825,6 +1867,49 @@ const managePopupTraps = () => {
         try { apiParamsTrap.deactivate(); } catch (e) { /* ignore error */ }
         apiParamsTrap = null;
     }
+
+    // --- O. Generic Popups (Catch-all) ---
+    // Handle generic dynamic popups (rename, confirm, sort menus, etc.)
+    const $allPopups = $('.popup:visible');
+    const $handledPopups = $('#character_popup, #completion_prompt_manager_popup, #qr--modalEditor, #extensionsMenu, #options, #select_chat_popup, #floatingPrompt, #cfgConfig, #logprobsViewer, #export_format_popup, #token_counter_popup');
+
+    const $generic = $allPopups.not($handledPopups).filter(function () {
+        const $this = $(this);
+        return !$this.find('.regex_editor, .dataBankAttachments, .extensions_info').length &&
+               !$this.find('h3[data-i18n="Additional Parameters"], h3[data-i18n="Token Counter"]').length;
+    }).last();
+
+    if ($generic.length && $generic.css('display') !== 'none') {
+        const el = $generic[0];
+        if (!genericPopupTrap || activeGenericElement !== el) {
+            if (genericPopupTrap) {
+                try { genericPopupTrap.deactivate(); } catch (e) { /* ignore error */ }
+            }
+
+            // Record focus before opening the trap
+            const previousFocus = document.activeElement;
+
+            genericPopupTrap = focusTrap.createFocusTrap(el, {
+                allowOutsideClick: true,
+                initialFocus: '.popup-input, .popup-button-ok, input[autofocus], textarea, button, [tabindex]:not([tabindex="-1"])',
+                fallbackFocus: el,
+                escapeDeactivates: false,
+                onDeactivate: () => {
+                    // Fix: Cast Element to HTMLElement to ensure .focus() exists
+                    if (previousFocus instanceof HTMLElement && document.body.contains(previousFocus)) {
+                        previousFocus.focus();
+                    }
+                },
+            });
+            activeGenericElement = el; // Store the element in our new state variable
+            try { genericPopupTrap.activate(); } catch (e) { /* ignore */ }
+        }
+    } else if (genericPopupTrap) {
+        // Cleanup when no generic popup is visible
+        try { genericPopupTrap.deactivate(); } catch (e) { /* ignore */ }
+        genericPopupTrap = null;
+        activeGenericElement = null; // Reset state
+    }
 };
 
 /**
@@ -1877,7 +1962,7 @@ function cleanupA11y() {
         qrEditorTrap, regexEditorTrap, extensionTrap, extensionsMenuTrap,
         optionsMenuTrap, selectChatTrap, floatingPromptTrap, cfgConfigTrap,
         logprobsTrap, dataBankTrap, tokenCounterTrap, exportFormatTrap,
-        extManagerTrap, apiParamsTrap,
+        extManagerTrap, apiParamsTrap, genericPopupTrap, actionModalTrap,
     ];
 
     trapVars.forEach(trap => {
