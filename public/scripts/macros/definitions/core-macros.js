@@ -1,5 +1,5 @@
 import { seedrandom, droll } from '../../../lib.js';
-import { chat_metadata, main_api, getMaxContextSize, extension_prompts, getCurrentChatId } from '../../../script.js';
+import { chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMaxResponseTokens, extension_prompts, getCurrentChatId } from '../../../script.js';
 import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
@@ -232,13 +232,34 @@ export function registerCoreMacros() {
         handler: () => (/** @type {HTMLTextAreaElement} */(document.querySelector('#send_textarea')))?.value ?? '',
     });
 
-    // {{maxPrompt}} -> max context size
+    // {{maxPrompt}} -> max context size (context minus response)
     MacroRegistry.registerMacro('maxPrompt', {
+        aliases: [{ alias: 'maxPromptTokens', visible: true }],
         category: MacroCategory.STATE,
         description: 'Maximum prompt context size.',
         returns: 'Maximum prompt context size.',
         returnType: MacroValueType.INTEGER,
-        handler: () => String(getMaxContextSize()),
+        handler: () => String(getMaxPromptTokens()),
+    });
+
+    // {{maxContext}} -> max context token limit
+    MacroRegistry.registerMacro('maxContext', {
+        aliases: [{ alias: 'maxContextTokens', visible: true }],
+        category: MacroCategory.STATE,
+        description: 'Maximum context token limit.',
+        returns: 'Maximum context token limit.',
+        returnType: MacroValueType.INTEGER,
+        handler: () => String(getMaxContextTokens()),
+    });
+
+    // {{maxResponse}} -> max response token limit
+    MacroRegistry.registerMacro('maxResponse', {
+        aliases: [{ alias: 'maxResponseTokens', visible: true }],
+        category: MacroCategory.STATE,
+        description: 'Maximum response token limit.',
+        returns: 'Maximum response token limit.',
+        returnType: MacroValueType.INTEGER,
+        handler: () => String(getMaxResponseTokens()),
     });
 
     // String utilities

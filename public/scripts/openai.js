@@ -132,8 +132,6 @@ const max_256k = 256 * 1000;
 const max_400k = 400 * 1000;
 const max_1mil = 1000 * 1000;
 const max_2mil = 2000 * 1000;
-const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
-const claude_100k_max = 99000;
 const unlocked_max = max_2mil;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
@@ -960,7 +958,6 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
             const promptIdx = messages.indexOf(chatPrompt);
-            /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx;
             let previousAssistantReasoning = '';
@@ -1003,6 +1000,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                     }
                 }
             }
+            /** @type {import('./tool-calling.js').ToolInvocation[]} */
             const invocations = chatPrompt.invocations.map(invocation => {
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
@@ -5353,14 +5351,12 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (value.startsWith('claude-sonnet-4-5') || value.startsWith('claude-opus-4-6')) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
-        } else if (value == 'claude-2.1' || value.startsWith('claude-3') || value.startsWith('claude-opus') || value.startsWith('claude-haiku') || value.startsWith('claude-sonnet')) {
+        } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
-        } else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
-            $('#openai_max_context').attr('max', claude_100k_max);
         } else {
-            $('#openai_max_context').attr('max', claude_max);
+            $('#openai_max_context').attr('max', max_200k);
         }
 
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
@@ -6036,7 +6032,7 @@ export function isAudioInliningSupported() {
 /**
  * Gets the OpenRouter tool-call reasoning forwarding mode.
  * @param {ChatCompletionSettings} settings Settings object to use
- * @returns {'disabled'|'since_last_user'|'active_chain'} Reasoning forwarding mode
+ * @returns {string} Reasoning forwarding mode
  */
 function getOpenRouterToolReasoningMode(settings = oai_settings) {
     const mode = String(settings.openrouter_tool_reasoning_mode ?? '');
