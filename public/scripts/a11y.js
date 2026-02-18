@@ -432,16 +432,6 @@ async function handleGenericJumpAction($item, $container, itemSelector) {
     }
 }
 
-// eslint-disable-next-line no-unused-vars
-function _getA11yItemName($li) {
-    const $nameLink = $li.find('.prompt-manager-inspect-action');
-    if ($nameLink.length) return $nameLink.text().trim();
-
-    return ($li.find('.completion_prompt_manager_prompt_name, .qr--set-itemLabel, .regex_script_name').first().val() ||
-            $li.find('.completion_prompt_manager_prompt_name, .qr--set-itemLabel, .regex_script_name').first().text() ||
-            'Item').trim();
-}
-
 /**
  * Performs DOM manipulation and handles accessibility announcements.
  * Announces the swap target name and the new position.
@@ -567,8 +557,6 @@ let activeGenericElement = null; // New state variable
 
 // Global state trackers
 let lastFocusedBeforeTrap = null;
-// eslint-disable-next-line no-unused-vars
-let _lastActiveWIUid = null;
 let isAiGenerating = false;
 
 /**
