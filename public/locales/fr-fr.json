@@ -2012,7 +2012,7 @@
     "Downloader Options": "Options de téléchargement",
     "Extra parameters for downloading/HuggingFace API": "Paramètres supplémentaires pour le téléchargement/HuggingFace API.\rSi vous n'êtes pas sûr, laissez ces paramètres vides.",
     "Revision": "Révision",
-    "Folder Name": "Nom du dossier de sortie",
+    "Output Folder Name": "Nom du dossier de sortie",
     "HF Token": "Token HF",
     "Include Patterns": "Inclure les patterns",
     "Glob patterns of files to include in the download.": "Patterns globaux de fichiers à inclure dans le téléchargement.\rSéparer chaque pattern par une nouvelle ligne.",
