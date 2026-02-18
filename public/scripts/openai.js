@@ -254,6 +254,11 @@ export const openrouter_tool_reasoning_modes = {
     ACTIVE_CHAIN: 'active_chain',
 };
 
+// Providers that support interleaved reasoning forwarding in tool-call chains.
+const interleaved_reasoning_providers = [
+    chat_completion_sources.OPENROUTER,
+];
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -897,9 +902,11 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
     const includeSignature = isReasoningSignatureSupported();
-    const isOpenRouterSource = oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER;
-    const toolReasoningMode = isOpenRouterSource ? getOpenRouterToolReasoningMode() : openrouter_tool_reasoning_modes.ACTIVE_CHAIN;
-    const shouldForwardOpenRouterReasoning = isOpenRouterSource && toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED;
+    const isToolReasoningProvider = interleaved_reasoning_providers.includes(oai_settings.chat_completion_source);
+    const toolReasoningMode = isToolReasoningProvider
+        ? getOpenRouterToolReasoningMode()
+        : openrouter_tool_reasoning_modes.DISABLED;
+    const includeToolReasoning = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED;
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
 
     // Insert chat messages as long as there is budget available
@@ -1008,7 +1015,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             });
             const toolCallMessage = await Message.createAsync(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
             const toolResultMessages = await Promise.all(invocations.slice().reverse().map((invocation) => Message.createAsync('tool', invocation.result || '[No content]', invocation.id)));
-            await toolCallMessage.setToolCalls(invocations, includeSignature, shouldForwardOpenRouterReasoning);
+            await toolCallMessage.setToolCalls(invocations, includeSignature, includeToolReasoning);
             if (chatCompletion.canAffordAll([toolCallMessage, ...toolResultMessages])) {
                 for (const resultMessage of toolResultMessages) {
                     chatCompletion.insertAtStart(resultMessage, 'chatHistory');
