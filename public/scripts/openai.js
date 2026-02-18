@@ -246,7 +246,7 @@ export const verbosity_levels = {
     high: 'high',
 };
 
-export const openrouter_tool_reasoning_modes = {
+export const tool_reasoning_modes = {
     DISABLED: 'disabled',
     SINCE_LAST_USER: 'since_last_user',
     ACTIVE_CHAIN: 'active_chain',
@@ -300,7 +300,7 @@ export const settingsToUpdate = {
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
-    openrouter_tool_reasoning_mode: ['#openrouter_tool_reasoning_mode', 'openrouter_tool_reasoning_mode', false, false],
+    tool_reasoning_mode: ['#tool_reasoning_mode', 'tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
@@ -448,7 +448,7 @@ const default_settings = {
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
-    openrouter_tool_reasoning_mode: openrouter_tool_reasoning_modes.DISABLED,
+    tool_reasoning_mode: tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -902,9 +902,9 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const includeSignature = isReasoningSignatureSupported();
     const isToolReasoningProvider = interleaved_reasoning_providers.includes(oai_settings.chat_completion_source);
     const toolReasoningMode = isToolReasoningProvider
-        ? getOpenRouterToolReasoningMode()
-        : openrouter_tool_reasoning_modes.DISABLED;
-    const includeToolReasoning = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED;
+        ? getToolReasoningMode()
+        : tool_reasoning_modes.DISABLED;
+    const includeToolReasoning = toolReasoningMode !== tool_reasoning_modes.DISABLED;
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
 
     // Insert chat messages as long as there is budget available
@@ -958,11 +958,11 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
             const promptIdx = messages.indexOf(chatPrompt);
-            const reasoningIsEligible = toolReasoningMode !== openrouter_tool_reasoning_modes.DISABLED
+            const reasoningIsEligible = toolReasoningMode !== tool_reasoning_modes.DISABLED
                 && promptIdx > lastUserIdx;
             let previousAssistantReasoning = '';
             if (reasoningIsEligible) {
-                if (toolReasoningMode === openrouter_tool_reasoning_modes.ACTIVE_CHAIN) {
+                if (toolReasoningMode === tool_reasoning_modes.ACTIVE_CHAIN) {
                     // Strict chain mode: skip tool/tool-call messages, then use only the first assistant text boundary.
                     for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
                         const candidate = messages[idx];
@@ -981,7 +981,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                         }
                         break;
                     }
-                } else if (toolReasoningMode === openrouter_tool_reasoning_modes.SINCE_LAST_USER) {
+                } else if (toolReasoningMode === tool_reasoning_modes.SINCE_LAST_USER) {
                     // Broad mode: use the latest assistant text reasoning anywhere since the last user.
                     for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
                         const candidate = messages[idx];
@@ -6030,16 +6030,16 @@ export function isAudioInliningSupported() {
 }
 
 /**
- * Gets the OpenRouter tool-call reasoning forwarding mode.
+ * Gets the tool-call reasoning forwarding mode.
  * @param {ChatCompletionSettings} settings Settings object to use
  * @returns {string} Reasoning forwarding mode
  */
-function getOpenRouterToolReasoningMode(settings = oai_settings) {
-    const mode = String(settings.openrouter_tool_reasoning_mode ?? '');
-    if (Object.values(openrouter_tool_reasoning_modes).includes(mode)) {
+function getToolReasoningMode(settings = oai_settings) {
+    const mode = String(settings.tool_reasoning_mode ?? '');
+    if (Object.values(tool_reasoning_modes).includes(mode)) {
         return mode;
     }
-    return openrouter_tool_reasoning_modes.DISABLED;
+    return tool_reasoning_modes.DISABLED;
 }
 
 /**
@@ -6646,10 +6646,10 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#openrouter_tool_reasoning_mode').on('input', function () {
-        oai_settings.openrouter_tool_reasoning_mode = getOpenRouterToolReasoningMode({
+    $('#tool_reasoning_mode').on('input', function () {
+        oai_settings.tool_reasoning_mode = getToolReasoningMode({
             ...oai_settings,
-            openrouter_tool_reasoning_mode: String($(this).val()),
+            tool_reasoning_mode: String($(this).val()),
         });
         saveSettingsDebounced();
     });
