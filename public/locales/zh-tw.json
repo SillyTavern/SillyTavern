@@ -2093,7 +2093,7 @@
     "Downloader Options": "下載選項",
     "Extra parameters for downloading/HuggingFace API": "下載／使用 HuggingFace API 的額外參數。\r若不確定，請留空。",
     "Revision": "修訂",
-    "Folder Name": "輸出資料夾名稱",
+    "Output Folder Name": "輸出資料夾名稱",
     "HF Token": "HF 符元",
     "Include Patterns": "包含模式",
     "Glob patterns of files to include in the download.": "要包含於下載中文件的全域模式。\r每行輸入一個模式。",

@@ -41,6 +41,8 @@ const THUMBNAIL_CONFIG = {
     height: 90,
 };
 
+const ANIMATED_BACKGROUND_EXTENSIONS = ['mp4', 'webp', 'gif', 'apng'];
+
 /**
  * Cache for image metadata.
  * @type {Map<string, import('../../src/endpoints/image-metadata.js').ImageMetadata>}
@@ -88,7 +90,7 @@ let lazyLoadObserver = null;
 /**
  * Cache for the current list of system background filenames.
  * Used to re-sort backgrounds without refetching from the server.
- * @type {string[]}
+ * @type {Array<{filename: string, isAnimated: boolean}>}
  */
 let cachedSystemBackgrounds = [];
 
@@ -136,12 +138,13 @@ function sortBackgrounds(backgrounds, isCustom = false) {
 
 /**
  * Creates a single thumbnail DOM element. The CSS now handles all sizing.
- * @param {object} imageData - Data for the image (filename, isCustom).
+ * @param {object} imageData - Data for the image (filename, isCustom, isAnimated).
  * @returns {HTMLElement} The created thumbnail element.
  */
 function createThumbnailElement(imageData) {
     const bg = imageData.filename;
     const isCustom = imageData.isCustom;
+    const isAnimated = imageData.isAnimated ?? false;
 
     const thumbnail = $('#background_template .bg_example').clone();
 
@@ -172,6 +175,7 @@ function createThumbnailElement(imageData) {
     thumbnail.attr('title', title);
     thumbnail.attr('bgfile', bg);
     thumbnail.attr('custom', String(isCustom));
+    thumbnail.attr('animated', String(isAnimated));
     thumbnail.data('url', url);
     titleElement.text(friendlyTitle);
 
@@ -216,6 +220,7 @@ export function loadBackgroundSettings(settings) {
     }
     background_settings.thumbnailColumns = columns;
     background_settings.sortOrder = backgroundSettings.sortOrder;
+    background_settings.animation = backgroundSettings.animation;
     applyThumbnailColumns(background_settings.thumbnailColumns);
 
     setBackground(backgroundSettings.name, backgroundSettings.url);
@@ -498,14 +503,13 @@ async function onDeleteBackgroundClick(e) {
     const url = bgToDelete.data('url');
     const isCustom = bgToDelete.attr('custom') === 'true';
     const deleteFromServerId = 'delete_bg_from_server';
-    const customInputs = [
-        {
-            type: 'checkbox',
-            label: t`Also delete file from server`,
-            id: deleteFromServerId,
-            defaultState: true,
-        },
-    ];
+    /** @type {import('./popup.js').CustomPopupInput[]} */
+    const customInputs = [{
+        type: 'checkbox',
+        label: t`Also delete file from server`,
+        id: deleteFromServerId,
+        defaultState: true,
+    }];
     let deleteFromServer = false;
     const confirm = await Popup.show.confirm(t`Delete the background?`, null, {
         customInputs: isCustom ? customInputs : [],
@@ -522,7 +526,7 @@ async function onDeleteBackgroundClick(e) {
         if (!isCustom) {
             await delBackground(bg);
             // Remove from cache to prevent reappearing on sort change
-            const cacheIndex = cachedSystemBackgrounds.indexOf(bg);
+            const cacheIndex = cachedSystemBackgrounds.findIndex(s => s.filename === bg);
             if (cacheIndex !== -1) {
                 cachedSystemBackgrounds.splice(cacheIndex, 1);
             }
@@ -605,7 +609,7 @@ async function autoBackgroundCommand() {
 
 /**
  * Renders the system backgrounds gallery.
- * @param {string[]} [backgrounds] - Optional filtered list of backgrounds.
+ * @param {Array<{filename: string, isAnimated: boolean}>} [backgrounds] - Optional filtered list of backgrounds with metadata.
  */
 function renderSystemBackgrounds(backgrounds) {
     const sourceList = backgrounds || [];
@@ -614,9 +618,11 @@ function renderSystemBackgrounds(backgrounds) {
 
     if (sourceList.length === 0) return;
 
-    const sortedList = sortBackgrounds(sourceList, false);
-    sortedList.forEach(bg => {
-        const imageData = { filename: bg, isCustom: false };
+    const sortedList = sortBackgrounds(sourceList.map(bg => bg.filename), false);
+    const metadataByFilename = new Map(sourceList.map(bg => [bg.filename, bg]));
+    sortedList.forEach(filename => {
+        const bg = metadataByFilename.get(filename);
+        const imageData = { filename, isCustom: false, isAnimated: bg?.isAnimated ?? false };
         const thumbnail = createThumbnailElement(imageData);
         container.append(thumbnail);
     });
@@ -638,7 +644,9 @@ function renderChatBackgrounds(backgrounds) {
 
     const sortedList = sortBackgrounds(sourceList, true);
     sortedList.forEach(bg => {
-        const imageData = { filename: bg, isCustom: true };
+        // For custom backgrounds, infer isAnimated from extension since we don't have server metadata
+        const isAnimated = isAnimatedBackgroundExtension(bg);
+        const imageData = { filename: bg, isCustom: true, isAnimated };
         const thumbnail = createThumbnailElement(imageData);
         container.append(thumbnail);
     });
@@ -647,8 +655,6 @@ function renderChatBackgrounds(backgrounds) {
 }
 
 export async function getBackgrounds() {
-    const metadataPromise = preloadImageMetadata();
-
     const response = await fetch('/api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -657,10 +663,8 @@ export async function getBackgrounds() {
     if (response.ok) {
         const { images, config } = await response.json();
         Object.assign(THUMBNAIL_CONFIG, config);
-
         cachedSystemBackgrounds = images;
-
-        await metadataPromise;
+        await preloadImageMetadata();
 
         renderSystemBackgrounds(images);
         highlightSelectedBackground();
@@ -716,7 +720,8 @@ function activateLazyLoader() {
                 if (parentThumbnail) {
                     const bg = parentThumbnail.getAttribute('bgfile');
                     const isCustom = parentThumbnail.getAttribute('custom') === 'true';
-                    resolveImageUrl(bg, isCustom)
+                    const isAnimated = parentThumbnail.getAttribute('animated') === 'true';
+                    resolveImageUrl(bg, isCustom, isAnimated)
                         .then(url => { clipper.style.backgroundImage = url; })
                         .catch(() => { clipper.style.backgroundImage = PLACEHOLDER_IMAGE; });
                 }
@@ -745,16 +750,26 @@ function generateUrlParameter(bg, isCustom) {
     return isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
 }
 
+function isAnimatedBackgroundExtension(fileName) {
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    return ANIMATED_BACKGROUND_EXTENSIONS.includes(fileExtension);
+}
+
 /**
  * Resolves the image URL for the background.
  * @param {string} bg Background file name
  * @param {boolean} isCustom Is a custom background
+ * @param {boolean|null} [isAnimated=null] Is the background animated (from metadata). If null, infers from extension.
  * @returns {Promise<string>} CSS URL of the background
  */
-async function resolveImageUrl(bg, isCustom) {
-    const fileExtension = bg.split('.').pop().toLowerCase();
-    const isAnimated = ['mp4', 'webp'].includes(fileExtension);
-    const thumbnailUrl = isAnimated && !background_settings.animation
+async function resolveImageUrl(bg, isCustom, isAnimated = null) {
+    // If isAnimated is not provided (null), fall back to extension-based heuristic
+    let animated = isAnimated;
+    if (animated === null) {
+        animated = isAnimatedBackgroundExtension(bg);
+    }
+
+    const thumbnailUrl = animated && !background_settings.animation
         ? await getThumbnailFromStorage(bg, isCustom)
         : isCustom
             ? bg

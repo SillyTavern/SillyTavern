@@ -132,8 +132,6 @@ const max_256k = 256 * 1000;
 const max_400k = 400 * 1000;
 const max_1mil = 1000 * 1000;
 const max_2mil = 2000 * 1000;
-const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
-const claude_100k_max = 99000;
 const unlocked_max = max_2mil;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
@@ -5211,7 +5209,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-3-pro-image')) {
             $('#openai_max_context').attr('max', max_64k);
-        } else if (/gemini-3-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
+        } else if (/gemini-3[.\d]*-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-exp') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
             $('#openai_max_context').attr('max', max_1mil);
@@ -5259,14 +5257,12 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (value.startsWith('claude-sonnet-4-5') || value.startsWith('claude-opus-4-6')) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
-        } else if (value == 'claude-2.1' || value.startsWith('claude-3') || value.startsWith('claude-opus') || value.startsWith('claude-haiku') || value.startsWith('claude-sonnet')) {
+        } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
-        } else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
-            $('#openai_max_context').attr('max', claude_100k_max);
         } else {
-            $('#openai_max_context').attr('max', claude_max);
+            $('#openai_max_context').attr('max', max_200k);
         }
 
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
