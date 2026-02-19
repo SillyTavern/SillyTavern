@@ -90,6 +90,7 @@ import { ScraperManager } from './scrapers.js';
 import { executeSlashCommands, executeSlashCommandsWithOptions, registerSlashCommand } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { tag_map, tags, importTags } from './tags.js';
 import { getTextGenServer, textgenerationwebui_settings } from './textgen-settings.js';
@@ -159,6 +160,7 @@ export function getContext() {
         SlashCommand,
         SlashCommandArgument,
         SlashCommandNamedArgument,
+        SlashCommandEnumValue,
         ARGUMENT_TYPE,
         executeSlashCommandsWithOptions,
         /** @deprecated Use SlashCommandParser.addCommandObject() instead */
