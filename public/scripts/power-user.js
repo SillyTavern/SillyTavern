@@ -347,6 +347,7 @@ export const power_user = {
     click_to_edit: false,
     media_display: MEDIA_DISPLAY.LIST,
     image_overswipe: IMAGE_OVERSWIPE.GENERATE,
+    accessibility_mode: true,
 };
 
 let themes = [];

@@ -2,7 +2,9 @@ import {
     chat,
     isChatSaving,
     this_edit_mes_id,
+    animation_duration,
 } from '../script.js';
+import { t } from './i18n.js';
 import {
     debounce,
 } from './utils.js';
@@ -316,36 +318,36 @@ async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
 
     // 2. Define the popup actions
     const popupPromise = callGenericPopup(
-        `<h3>Sort Item</h3><p>Move <b>${itemName}</b> (Position ${displayIndex} of ${total})</p>`,
+        `<h3>${t`Sort Item`}</h3><p>${t`Move`} <b>${itemName}</b> (${t`Position ${displayIndex} of ${total}`})</p>`,
         POPUP_TYPE.TEXT,
         '',
         {
-            okButton: 'Close',
+            okButton: t`Close`,
             cancelButton: false,
             wide: true,
             customButtons: [
                 {
-                    text: 'Move Up',
+                    text: t`Move Up`,
                     result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'up'),
                 },
                 {
-                    text: 'Move Down',
+                    text: t`Move Down`,
                     result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'down'),
                 },
                 {
-                    text: 'To Top',
+                    text: t`To Top`,
                     result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'top'),
                 },
                 {
-                    text: 'To Bottom',
+                    text: t`To Bottom`,
                     result: 1000,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'bottom'),
                 },
                 {
-                    text: 'Jump to...',
+                    text: t`Jump to...`,
                     result: 1000,
                     action: () => setTimeout(() => handleGenericJumpAction($li, $container, itemSelector), 150),
                 },
@@ -411,10 +413,10 @@ async function handleGenericJumpAction($item, $container, itemSelector) {
     logDebug('JumpAction', `Requesting input 1-${max}`);
 
     const input = await callGenericPopup(
-        `Enter new position (1-${max}):`,
+        t`Enter new position (1-${max}):`,
         POPUP_TYPE.INPUT,
         '',
-        { okButton: 'Move' },
+        { okButton: t`Move` },
     );
 
     if (input) {
@@ -423,7 +425,7 @@ async function handleGenericJumpAction($item, $container, itemSelector) {
             logDebug('JumpAction', `Jumping to ${targetPos}`);
             performGenericSortAction($item, $container, itemSelector, 'jump', targetPos - 1);
         } else {
-            announceA11y('Invalid position number.');
+            announceA11y(t`Invalid position number.`);
             $item.find('.a11y-sort-button').trigger('focus');
         }
     } else {
@@ -458,21 +460,21 @@ function performGenericSortAction($item, $container, itemSelector, action, targe
         targetName = getA11yName($other);
         $item.insertBefore($other);
         changed = true;
-        actionText = `Swapped with ${targetName}`;
+        actionText = t`Swapped with ${targetName}`;
     } else if (action === 'down' && currentIndex < total - 1) {
         const $other = $allItems.eq(currentIndex + 1);
         targetName = getA11yName($other);
         $item.insertAfter($other);
         changed = true;
-        actionText = `Swapped with ${targetName}`;
+        actionText = t`Swapped with ${targetName}`;
     } else if (action === 'top' && currentIndex > 0) {
         $item.prependTo($container);
         changed = true;
-        actionText = 'Moved to top';
+        actionText = t`Moved to top`;
     } else if (action === 'bottom' && currentIndex < total - 1) {
         $item.appendTo($container);
         changed = true;
-        actionText = 'Moved to bottom';
+        actionText = t`Moved to bottom`;
     } else if (action === 'jump' && targetIndex !== null) {
         if (targetIndex >= 0 && targetIndex < total && targetIndex !== currentIndex) {
             const $target = $allItems.eq(targetIndex);
@@ -480,7 +482,7 @@ function performGenericSortAction($item, $container, itemSelector, action, targe
             if (currentIndex < targetIndex) $item.insertAfter($target);
             else $item.insertBefore($target);
             changed = true;
-            actionText = `Moved to position ${targetIndex + 1}`;
+            actionText = t`Moved to position ${targetIndex + 1}`;
         }
     }
 
@@ -493,14 +495,14 @@ function performGenericSortAction($item, $container, itemSelector, action, targe
         const $newAllItems = $container.children(validSelectors);
         const newIndex = $newAllItems.index($item) + 1;
 
-        const finalMessage = `${actionText}. Position ${newIndex} of ${total}.`;
+        const finalMessage = t`${actionText}. Position ${newIndex} of ${total}.`;
 
         const $popup = $('.popup:visible');
         let btnType = '';
-        if (action === 'up') btnType = 'Move Up';
-        else if (action === 'down') btnType = 'Move Down';
-        else if (action === 'top') btnType = 'To Top';
-        else if (action === 'bottom') btnType = 'To Bottom';
+        if (action === 'up') btnType = t`Move Up`;
+        else if (action === 'down') btnType = t`Move Down`;
+        else if (action === 'top') btnType = t`To Top`;
+        else if (action === 'bottom') btnType = t`To Bottom`;
 
         if ($popup.length && btnType) {
             const $btn = $popup.find('.popup-button-custom').filter(function () {
@@ -522,7 +524,7 @@ function performGenericSortAction($item, $container, itemSelector, action, targe
 
         announceA11y(finalMessage, true);
     } else {
-        announceA11y('Already at limit.', true);
+        announceA11y(t`Already at limit.`, true);
     }
 }
 
@@ -1087,8 +1089,8 @@ const SpecificProcessors = {
                     class: 'a11y-sort-button fa-solid fa-sort fa-xs',
                     role: 'button',
                     tabindex: '0',
-                    title: 'Sort',
-                    'aria-label': 'Sort Prompt: ' + itemName,
+                    title: t`Sort`,
+                    'aria-label': t`Sort Prompt: ${itemName}`,
                 });
                 $controls.prepend($sortBtn);
 
@@ -1139,8 +1141,8 @@ const SpecificProcessors = {
                         class: 'a11y-sort-button menu_button menu_button_icon fa-solid fa-sort interactable',
                         role: 'button',
                         tabindex: '0',
-                        title: 'Sort',
-                        'aria-label': `Sort set: ${setName}`,
+                        title: t`Sort`,
+                        'aria-label': t`Sort set: ${setName}`,
                     });
                     const $delBtn = $li.find('.qr--del');
                     if ($delBtn.length) $sortBtn.insertBefore($delBtn);
@@ -1160,8 +1162,8 @@ const SpecificProcessors = {
                     class: 'a11y-sort-button menu_button interactable',
                     role: 'button',
                     tabindex: '0',
-                    title: 'Sort',
-                    'aria-label': 'Sort Script',
+                    title: t`Sort`,
+                    'aria-label': t`Sort Script`,
                 }).append('<i class="fa-solid fa-sort"></i>');
                 $btnContainer.prepend($sortBtn);
 
@@ -2097,7 +2099,7 @@ export function initAccessibility() {
 
             console.log(`[A11y Debug] Item Focus: ${idx}/${tot} (Total DOM children: ${$container.children().length})`);
 
-            announceA11y(`Position ${idx} of ${tot}.`);
+            announceA11y(t`Position ${idx} of ${tot}.`);
         }
     });
 
@@ -2143,8 +2145,8 @@ export function initAccessibility() {
 
         $btnDiv.attr('aria-pressed', isChecked ? 'true' : 'false');
 
-        const panelName = $checkbox.attr('id') === 'lm_button_panel_pin' ? 'AI Configuration' : 'Character Management';
-        const status = isChecked ? 'Locked open' : 'Unlocked';
+        const panelName = $checkbox.attr('id') === 'lm_button_panel_pin' ? t`AI Configuration` : t`Character Management`;
+        const status = isChecked ? t`Locked open` : t`Unlocked`;
         announceA11y(`${panelName} panel ${status}`);
     });
 
@@ -2195,7 +2197,7 @@ export function initAccessibility() {
             case 'Escape': // Return to Input
                 e.preventDefault();
                 $('#send_textarea').trigger('focus');
-                announceA11y('Returned to text input');
+                announceA11y(t`Returned to text input`);
                 break;
         }
     });
@@ -2266,6 +2268,7 @@ export function initAccessibility() {
         const $content = $drawer.find('.inline-drawer-content');
 
         // Delay to allow animation to start/finish
+        const delayMs = animation_duration > 0 ? 450 : 50;
         setTimeout(() => {
             if ($content.is(':visible')) {
                 // Close existing trap, create new one
@@ -2285,7 +2288,7 @@ export function initAccessibility() {
                     extensionTrap = null;
                 }
             }
-        }, 450);
+        }, delayMs);
     });
 
     // Escape Key Handler for Extension Drawers
@@ -2307,7 +2310,7 @@ export function initAccessibility() {
                     try { extensionTrap.deactivate(); } catch (e) { /* ignore error */ }
                     extensionTrap = null;
                 }
-                announceA11y('Extension menu closed.');
+                announceA11y(t`Extension menu closed.`);
             }
         }
     });
@@ -2382,7 +2385,7 @@ export function initAccessibility() {
     eventSource.on(event_types.GENERATION_STARTED, (type) => {
         if (!isA11yEnabled || type === 'quiet') return;
         isAiGenerating = true;
-        announceA11y('AI is generating response...');
+        announceA11y(t`AI is generating response...`);
         // Focus Stop button so user can easily cancel
         setTimeout(() => {
             document.getElementById('mes_stop')?.focus();
@@ -2393,7 +2396,7 @@ export function initAccessibility() {
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mid) => {
         isAiGenerating = false;
         const msg = /** @type {any} */ (chat[mid]);
-        if (msg) announceA11y(`AI has replied: ${msg.mes}`);
+        if (msg) announceA11y(t`AI has replied: ${msg.mes}`);
 
         // Update roving tabindex: Set focusable to the NEW last message
         $('#chat .mes').attr('tabindex', '-1');
@@ -2406,7 +2409,7 @@ export function initAccessibility() {
     // 3. Generation Stopped Manually
     eventSource.on(event_types.GENERATION_STOPPED, () => {
         isAiGenerating = false;
-        announceA11y('AI generation stopped.');
+        announceA11y(t`AI generation stopped.`);
         $('#send_textarea').trigger('focus');
     });
 
@@ -2441,7 +2444,7 @@ export function initAccessibility() {
             } else {
                 $popup.find('.popup-button-ok').trigger('focus');
             }
-            announceA11y('Exited text editor.');
+            announceA11y(t`Exited text editor.`);
         }
     });
 
@@ -2465,7 +2468,7 @@ export function initAccessibility() {
         if ($(e.target).is('#send_textarea')) {
             e.preventDefault();
             $('#leftNavDrawerIcon').trigger('focus');
-            announceA11y('Focus moved to Navigation Bar');
+            announceA11y(t`Focus moved to Navigation Bar`);
             return;
         }
 
@@ -2475,7 +2478,7 @@ export function initAccessibility() {
             if ($('#lm_button_panel_pin').is(':checked')) {
                 e.preventDefault();
                 $('#send_textarea').trigger('focus');
-                announceA11y('Focus moved to Chat Input');
+                announceA11y(t`Focus moved to Chat Input`);
             } else {
                 setTimeout(() => $('#leftNavDrawerIcon').trigger('focus'), 50);
             }
@@ -2487,7 +2490,7 @@ export function initAccessibility() {
             if ($('#rm_button_panel_pin').is(':checked')) {
                 e.preventDefault();
                 $('#send_textarea').trigger('focus');
-                announceA11y('Focus moved to Chat Input');
+                announceA11y(t`Focus moved to Chat Input`);
             } else {
                 setTimeout(() => $('#rightNavDrawerIcon').trigger('focus'), 50);
             }

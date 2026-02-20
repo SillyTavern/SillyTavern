@@ -78,10 +78,6 @@ export function initLibraryShims() {
         // @ts-ignore
         window.droll = droll;
     }
-    if (!('focusTrap' in window)) {
-        // @ts-ignore
-        window.focusTrap = focusTrap;
-    }
 }
 
 export default {

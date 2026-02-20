@@ -512,7 +512,7 @@ export class Popup {
         this.dlg.showModal();
 
         try {
-            // @ts-ignore
+            /** @type {import('focus-trap').FocusTrap} */
             this.trap = focusTrap.createFocusTrap(this.dlg, {
                 initialFocus: () => this.dlg.querySelector('.result-control:not([style*="display: none"])') || this.dlg,
                 fallbackFocus: this.dlg,
@@ -587,7 +587,7 @@ export class Popup {
      * @returns {Promise<string|number|boolean|undefined?>} A promise that resolves with the value of the popup when it is completed. <b>Returns `undefined` if the closing action was cancelled.</b>
      */
     async complete(result) {
-        if (result === null || result === 1000) return;
+        if (result === null) return;
         // In all cases besides INPUT the popup value should be the result
         /** @type {POPUP_RESULT|number|boolean|string?} */
         let value = result;

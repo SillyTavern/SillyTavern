@@ -276,7 +276,7 @@ import { initDataMaid } from './scripts/data-maid.js';
 import { clearItemizedPrompts, deleteItemizedPromptForMessage, deleteItemizedPrompts, findItemizedPromptSet, initItemizedPrompts, itemizedParams, itemizedPrompts, loadItemizedPrompts, promptItemize, replaceItemizedPromptText, saveItemizedPrompts, swapItemizedPrompts } from './scripts/itemized-prompts.js';
 import { getSystemMessageByType, initSystemMessages, SAFETY_CHAT, sendSystemMessage, system_message_types, system_messages } from './scripts/system-messages.js';
 import { event_types, eventSource } from './scripts/events.js';
-import { initAccessibility, announceA11y, handleDrawerFocus, setAccessibilityEnabled, registerA11ySelector, a11yProcessors } from './scripts/a11y.js';
+import { initAccessibility, announceA11y, handleDrawerFocus, setAccessibilityEnabled } from './scripts/a11y.js';
 import { applyStreamFadeIn } from './scripts/util/stream-fadein.js';
 import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
@@ -290,11 +290,6 @@ import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/Macro
 globalThis.SillyTavern = {
     libs,
     getContext,
-    a11y: {
-        registerSelector: registerA11ySelector,
-        processors: a11yProcessors,
-        announce: announceA11y,
-    },
 };
 
 export {
@@ -3601,7 +3596,7 @@ class StreamingProcessor {
     async onFinishStreaming(messageId, text) {
         await this.onProgressStreaming(messageId, text, true);
         // A11y: Announce full response
-        announceA11y(`AI response complete: ${text}`);
+        announceA11y(t`AI response complete: ${text}`);
         const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
         const message = chat[messageId];
         addCopyToCodeBlocks(messageElement);
@@ -4244,13 +4239,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // A11y: Announce generation start and focus stop button
     if (!dryRun) {
         deactivateSendButtons();
-        announceA11y('AI is generating...');
-        setTimeout(() => {
-            const stopBtn = document.getElementById('mes_stop');
-            if (stopBtn && stopBtn.offsetParent !== null) {
-                stopBtn.focus();
-            }
-        }, 100);
+        announceA11y(t`AI is generating...`);
+        if (power_user.accessibility_mode) {
+            setTimeout(() => {
+                const stopBtn = document.getElementById('mes_stop');
+                if (stopBtn && stopBtn.offsetParent !== null) {
+                    stopBtn.focus();
+                }
+            }, 100);
+        }
     }
 
     let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
@@ -7718,11 +7715,7 @@ export async function getSettings() {
         // Apply theme toggles from power user settings
         applyPowerUserSettings();
 
-        if (power_user.accessibility_mode === undefined) {
-            power_user.accessibility_mode = true;
-        }
-        $('#accessibility_mode').prop('checked', power_user.accessibility_mode);
-        setAccessibilityEnabled(power_user.accessibility_mode);
+        setAccessibilityEnabled(power_user.accessibility_mode ?? true);
 
         // Load character tags
         loadTagsSettings(settings);

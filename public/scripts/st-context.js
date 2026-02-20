@@ -104,6 +104,7 @@ import { ConnectionManagerRequestService } from './extensions/shared.js';
 import { updateReasoningUI, parseReasoningFromString, getReasoningTemplateByName } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
 import { macros } from './macros/macro-system.js';
+import { registerA11ySelector, a11yProcessors, announceA11y } from './a11y.js';
 
 export function getContext() {
     return {
@@ -285,6 +286,11 @@ export function getContext() {
         openThirdPartyExtensionMenu,
         symbols: {
             ignore: IGNORE_SYMBOL,
+        },
+        a11y: {
+            registerSelector: registerA11ySelector,
+            processors: a11yProcessors,
+            announce: announceA11y,
         },
     };
 }
