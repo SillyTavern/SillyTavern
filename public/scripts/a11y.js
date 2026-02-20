@@ -328,27 +328,27 @@ async function handleSortMenu(triggerElement, itemSelector, containerSelector) {
             customButtons: [
                 {
                     text: t`Move Up`,
-                    result: 1000,
+                    preventClose: true,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'up'),
                 },
                 {
                     text: t`Move Down`,
-                    result: 1000,
+                    preventClose: true,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'down'),
                 },
                 {
                     text: t`To Top`,
-                    result: 1000,
+                    preventClose: true,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'top'),
                 },
                 {
                     text: t`To Bottom`,
-                    result: 1000,
+                    preventClose: true,
                     action: () => performGenericSortAction($li, $container, itemSelector, 'bottom'),
                 },
                 {
                     text: t`Jump to...`,
-                    result: 1000,
+                    preventClose: true,
                     action: () => setTimeout(() => handleGenericJumpAction($li, $container, itemSelector), 150),
                 },
             ],

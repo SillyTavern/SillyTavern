@@ -65,6 +65,7 @@ export const POPUP_RESULT = {
  * @property {string[]|string?} [classes] - Optional custom CSS classes applied to the button
  * @property {()=>void?} [action] - Optional action to perform when the button is clicked
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
+ * @property {boolean?} [preventClose] - Whether to prevent the popup from closing when this button is clicked
  */
 
 /**
@@ -243,6 +244,9 @@ export class Popup {
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
+            if (button.preventClose) {
+                buttonElement.setAttribute('data-prevent-close', 'true');
+            }
             buttonElement.textContent = button.text;
             buttonElement.dataset.i18n = buttonElement.textContent;
             buttonElement.tabIndex = 0;
@@ -478,6 +482,9 @@ export class Popup {
                         return;
                     }
 
+                    if (document.activeElement.hasAttribute('data-prevent-close')) {
+                        return;
+                    }
                     evt.preventDefault();
                     evt.stopPropagation();
                     const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
@@ -588,6 +595,12 @@ export class Popup {
      */
     async complete(result) {
         if (result === null) return;
+
+        // Check if the currently focused element (the button clicked) has the preventClose attribute
+        if (document.activeElement?.hasAttribute('data-prevent-close')) {
+            return;
+        }
+
         // In all cases besides INPUT the popup value should be the result
         /** @type {POPUP_RESULT|number|boolean|string?} */
         let value = result;
