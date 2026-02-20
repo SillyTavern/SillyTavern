@@ -1,0 +1,87 @@
+#batch-gen-panel {
+    display: none;
+    position: fixed;
+    bottom: 60px;
+    right: 20px;
+    width: 400px;
+    max-height: 50vh;
+    background: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 15px;
+    z-index: 9999;
+    overflow-y: auto;
+    backdrop-filter: blur(10px);
+}
+
+#batch-gen-panel.active {
+    display: block;
+}
+
+#batch-gen-panel .batch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: var(--SmartThemeBodyColor);
+}
+
+#batch-gen-panel .batch-progress {
+    width: 100%;
+    height: 6px;
+    background: var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+#batch-gen-panel .batch-progress-bar {
+    height: 100%;
+    background: var(--SmartThemeQuoteColor);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+#batch-gen-panel .batch-job {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.85em;
+    color: var(--SmartThemeBodyColor);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+}
+
+#batch-gen-panel .batch-job:last-child {
+    border-bottom: none;
+}
+
+#batch-gen-panel .batch-job .status-icon {
+    flex-shrink: 0;
+    width: 16px;
+    text-align: center;
+}
+
+#batch-gen-panel .batch-job .prompt-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#batch-gen-panel .batch-job.pending .status-icon::before { content: '\u25CB'; }
+#batch-gen-panel .batch-job.running .status-icon::before { content: '\u25D4'; color: var(--SmartThemeQuoteColor); }
+#batch-gen-panel .batch-job.done .status-icon::before { content: '\u25CF'; color: #4caf50; }
+#batch-gen-panel .batch-job.error .status-icon::before { content: '\u2716'; color: #f44336; }
+
+#batch-gen-panel .batch-cancel-btn {
+    cursor: pointer;
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.7;
+}
+
+#batch-gen-panel .batch-cancel-btn:hover {
+    opacity: 1;
+}
