@@ -1,10 +1,14 @@
-import { getRequestHeaders } from '../../../script.js';
-import { textgen_types, textgenerationwebui_settings, getTextGenServer } from '../../textgen-settings.js';
+import { getRequestHeaders, name1, name2 } from '../../../script.js';
+import { textgen_types, textgenerationwebui_settings, getTextGenServer, getTextGenGenerationData } from '../../textgen-settings.js';
+import { power_user } from '../../power-user.js';
+import { formatInstructModeChat, formatInstructModePrompt, force_output_sequence } from '../../instruct-mode.js';
 
 /**
  * Concurrency-controlled batch generation engine.
- * Sends raw prompts directly to the text-completions backend,
- * bypassing all prompt templates, instruct mode, and sampler presets.
+ *
+ * Uses the currently selected sampler preset, instruct template, and stop
+ * strings — but does NOT inject character card, world info, chat history,
+ * or system prompt. The caller is responsible for providing a clean prompt.
  */
 export class BatchRunner {
     constructor() {
@@ -78,7 +82,7 @@ export class BatchRunner {
     }
 
     /**
-     * Execute a single job: direct HTTP to backend, no templates.
+     * Execute a single job.
      * @param {import('./BatchJob.js').BatchJob} job
      * @param {number} maxTokens
      * @param {number} timeoutMs
@@ -90,7 +94,6 @@ export class BatchRunner {
         const perJobController = new AbortController();
         const timer = setTimeout(() => perJobController.abort(), timeoutMs);
 
-        // Also abort if the whole batch is cancelled
         const onBatchAbort = () => perJobController.abort();
         this._abortController?.signal.addEventListener('abort', onBatchAbort, { once: true });
 
@@ -114,32 +117,34 @@ export class BatchRunner {
     }
 
     /**
-     * Direct fetch to /api/backends/text-completions/generate.
-     * Sends ONLY raw prompt + minimal params — no instruct template,
-     * no system prompt, no character card, no sampler preset.
-     * @param {string} prompt
+     * Build the final prompt, apply instruct template if enabled, then fetch.
+     *
+     * Uses `getTextGenGenerationData` which reads the current sampler preset
+     * and stop strings (including instruct template stop sequences).
+     * The only things NOT included: character card, world info, chat history.
+     *
+     * @param {string} prompt - Raw user prompt
      * @param {number} maxTokens
      * @param {AbortSignal} signal
      * @returns {Promise<string>}
      */
     async _callBackend(prompt, maxTokens, signal) {
-        const body = {
-            prompt: prompt,
-            max_tokens: maxTokens,
-            max_new_tokens: maxTokens,
-            stream: false,
-            n: 1,
-            temperature: 1,
-            stop: [],
-            stopping_strings: [],
-            api_type: textgenerationwebui_settings.type,
-            api_server: getTextGenServer(),
-        };
+        // 1. Optionally wrap in current instruct template
+        const finalPrompt = power_user.instruct?.enabled
+            ? this._wrapInInstruct(prompt)
+            : prompt;
+
+        // 2. Build generation body: sampler preset + stop strings from current settings
+        //    isImpersonate=false, isContinue=false, cfgValues=null, type=null
+        const genData = await getTextGenGenerationData(finalPrompt, maxTokens, false, false, null, null);
+
+        // 3. Force non-streaming for batch
+        genData.stream = false;
 
         const response = await fetch('/api/backends/text-completions/generate', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(body),
+            body: JSON.stringify(genData),
             signal,
         });
 
@@ -164,6 +169,37 @@ export class BatchRunner {
         }
 
         throw new Error('Unexpected response format');
+    }
+
+    /**
+     * Wrap a prompt in the current instruct template (user turn + output prompt).
+     * Equivalent to a single-turn exchange with no prior context.
+     * @param {string} prompt
+     * @returns {string}
+     */
+    _wrapInInstruct(prompt) {
+        const userTurn = formatInstructModeChat(
+            name1,               // speaker name
+            prompt,              // message text
+            true,                // isUser
+            false,               // isNarrator
+            false,               // forceAvatar
+            name1,               // name1
+            name2,               // name2
+            force_output_sequence.LAST,  // treat as the last user turn
+        );
+
+        const outputPrompt = formatInstructModePrompt(
+            name2,    // AI name
+            false,    // isImpersonate
+            '',       // promptBias
+            name1,    // name1
+            name2,    // name2
+            false,    // isQuiet
+            false,    // isQuietToLoud
+        );
+
+        return userTurn + outputPrompt;
     }
 
     /**
