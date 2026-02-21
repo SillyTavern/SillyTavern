@@ -619,7 +619,7 @@ async function downloadJannyCharacter(uuid) {
         console.log('📥 Downloading character with avatar...');
 
         // Fetch avatar first
-        const avatarUrl = charData.avatar ? \`https://ella.janitorai.com/bot-avatars/\${charData.avatar}\` : null;
+        const avatarUrl = charData.avatar ? 'https://ella.janitorai.com/bot-avatars/' + charData.avatar : null;
 
         const processCharacter = async () => {
             let avatarBase64 = null;
