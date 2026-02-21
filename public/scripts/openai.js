@@ -902,7 +902,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const includeSignature = isReasoningSignatureSupported();
     const isToolReasoningProvider = interleaved_reasoning_providers.includes(oai_settings.chat_completion_source);
     const toolReasoningMode = isToolReasoningProvider
-        ? getToolReasoningMode()
+        ? getEffectiveToolReasoningMode()
         : tool_reasoning_modes.DISABLED;
     const includeToolReasoning = toolReasoningMode !== tool_reasoning_modes.DISABLED;
     const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
@@ -4133,6 +4133,7 @@ function loadOpenAISettings(data, settings) {
 
     setNamesBehaviorControls();
     setContinuePostfixControls();
+    setToolReasoningControls();
 
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
@@ -4183,6 +4184,12 @@ function setContinuePostfixControls() {
     $('#continue_postfix').val(oai_settings.continue_postfix);
     const checkedItemText = $('input[name="continue_postfix"]:checked ~ span').text().trim();
     $('#continue_postfix_display').text(checkedItemText);
+}
+
+function setToolReasoningControls() {
+    const isEnabled = oai_settings.show_thoughts;
+    $('#tool_reasoning_mode').prop('disabled', !isEnabled);
+    $('#openrouter_interleaved_thinking_disabled_hint').toggle(!isEnabled);
 }
 
 async function getStatusOpen() {
@@ -5774,6 +5781,8 @@ function toggleChatCompletionForms() {
         const matchesSource = validSources.includes(oai_settings.chat_completion_source);
         $(this).toggle(mode !== 'except' ? matchesSource : !matchesSource);
     });
+
+    setToolReasoningControls();
 }
 
 async function testApiConnection() {
@@ -6040,6 +6049,20 @@ function getToolReasoningMode(settings = oai_settings) {
         return mode;
     }
     return tool_reasoning_modes.DISABLED;
+}
+
+/**
+ * Gets the effective tool-call reasoning forwarding mode.
+ * Interleaved thinking requires explicit reasoning requests.
+ * @param {ChatCompletionSettings} settings Settings object to use
+ * @returns {string} Effective reasoning forwarding mode
+ */
+function getEffectiveToolReasoningMode(settings = oai_settings) {
+    if (!settings.show_thoughts) {
+        return tool_reasoning_modes.DISABLED;
+    }
+
+    return getToolReasoningMode(settings);
 }
 
 /**
@@ -6757,6 +6780,7 @@ export function initOpenAI() {
 
     $('#openai_show_thoughts').on('input', function () {
         oai_settings.show_thoughts = !!$(this).prop('checked');
+        setToolReasoningControls();
         saveSettingsDebounced();
     });
 
