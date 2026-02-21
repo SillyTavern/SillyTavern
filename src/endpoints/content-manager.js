@@ -521,37 +521,268 @@ function parseChubUrl(str) {
     return null;
 }
 
-// Warning: Some characters might not exist in JannyAI.me
+/**
+ * Downloads a character from JanitorAI by scraping the character page HTML.
+ * @param {string} uuid Character UUID
+ * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
+ */
 async function downloadJannyCharacter(uuid) {
-    // This endpoint is being guarded behind Bot Fight Mode of Cloudflare
-    // So hosted ST on Azure/AWS/GCP/Collab might get blocked by IP
-    // Should work normally on self-host PC/Android
-    const result = await fetch('https://api.jannyai.com/api/v1/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            'characterId': uuid,
-        }),
-    });
+    try {
+        const pageUrl = `https://janitorai.com/characters/${uuid}`;
+        const response = await fetch(pageUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Upgrade-Insecure-Requests': '1',
+            },
+        });
 
-    if (result.ok) {
-        /** @type {any} */
-        const downloadResult = await result.json();
-        if (downloadResult.status === 'ok') {
-            const imageResult = await fetch(downloadResult.downloadUrl);
-            const buffer = Buffer.from(await imageResult.arrayBuffer());
-            const fileName = `${sanitize(uuid)}.png`;
-            const fileType = imageResult.headers.get('content-type');
-
-            return { buffer, fileName, fileType };
-        } else {
-            console.error('Janny failed to download', downloadResult);
+        if (!response.ok) {
+            if (response.status === 403) {
+                const bookmarkletCode = getJanitorBookmarkletCode();
+                const cfError = new Error('Cloudflare blocked request');
+                cfError.cloudflareBlock = true;
+                cfError.status = 403;
+                cfError.uuid = uuid;
+                cfError.url = pageUrl;
+                cfError.bookmarklet = bookmarkletCode;
+                throw cfError;
+            }
+            throw new Error(`Failed to fetch character page: ${response.statusText}`);
         }
-    } else {
-        console.error('Janny returned error', result.statusText, await result.text());
-    }
 
-    throw new Error('Failed to download character');
+        const html = await response.text();
+
+        const mbxMatch = html.match(/window\.mbxM\.push\(JSON\.parse\("((?:\\.|[^"\\])*?)"\)\)/s);
+        if (!mbxMatch) {
+            throw new Error('Character data not found in page HTML. JanitorAI may have changed their page structure.');
+        }
+
+        let mbxData;
+        try {
+            const unescapedJson = JSON.parse('"' + mbxMatch[1] + '"');
+            mbxData = JSON.parse(unescapedJson);
+        } catch (parseError) {
+            throw new Error('Failed to parse character JSON from HTML');
+        }
+
+        const janitorData = mbxData?.['Sk--a:a-a--characterStore']?.character;
+
+        if (!janitorData) {
+            throw new Error('Invalid character data structure');
+        }
+
+        const tavernCard = {
+            spec: 'chara_card_v2',
+            spec_version: '2.0',
+            data: {
+                name: janitorData.chat_name || janitorData.name || 'Unknown',
+                description: stripHtml(janitorData.description || ''),
+                personality: janitorData.personality || '',
+                scenario: janitorData.scenario || '',
+                first_mes: Array.isArray(janitorData.first_messages)
+                    ? janitorData.first_messages[0] || ''
+                    : janitorData.first_message || '',
+                mes_example: janitorData.example_dialogs || '',
+                creator_notes: '',
+                system_prompt: '',
+                post_history_instructions: '',
+                alternate_greetings: Array.isArray(janitorData.first_messages)
+                    ? janitorData.first_messages.slice(1)
+                    : [],
+                character_book: undefined,
+                tags: janitorData.tags?.map(t => t.name) || [],
+                creator: janitorData.creator_name || '',
+                character_version: '',
+                extensions: {
+                    janitor_uuid: janitorData.id,
+                    janitor_display_name: janitorData.name,
+                },
+            },
+        };
+
+        let finalBuffer;
+
+        if (!janitorData.avatar) {
+            const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
+            finalBuffer = fs.readFileSync(defaultAvatarPath);
+        } else {
+            const avatarUrl = `https://ella.janitorai.com/bot-avatars/${janitorData.avatar}`;
+
+            try {
+                const avatarResponse = await fetch(avatarUrl, {
+                    headers: { 'User-Agent': USER_AGENT },
+                });
+
+                if (!avatarResponse.ok) {
+                    throw new Error(`Avatar fetch failed: ${avatarResponse.status}`);
+                }
+
+                const avatarBuffer = Buffer.from(await avatarResponse.arrayBuffer());
+                const contentType = avatarResponse.headers.get('content-type');
+
+                if (contentType && !contentType.includes('png')) {
+                    try {
+                        const image = await Jimp.read(avatarBuffer);
+                        finalBuffer = await image.getBuffer(JimpMime.png);
+                    } catch {
+                        finalBuffer = avatarBuffer;
+                    }
+                } else {
+                    finalBuffer = avatarBuffer;
+                }
+            } catch {
+                const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
+                finalBuffer = fs.readFileSync(defaultAvatarPath);
+            }
+        }
+
+        const cardBuffer = write(finalBuffer, JSON.stringify(tavernCard));
+
+        return {
+            buffer: cardBuffer,
+            fileName: `${sanitize(janitorData.chat_name || janitorData.name || uuid)}.png`,
+            fileType: 'image/png',
+        };
+    } catch (error) {
+        if (!error.cloudflareBlock) {
+            console.error('Error downloading JanitorAI character:', error);
+        }
+        throw error;
+    }
+}
+
+/**
+ * Strips HTML tags from a string.
+ * @param {string} html HTML string
+ * @returns {string} Plain text
+ */
+function stripHtml(html) {
+    if (!html) return '';
+    return html
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, '\'')
+        .replace(/&apos;/g, '\'')
+        .trim();
+}
+
+/**
+ * Returns the bookmarklet code for extracting JanitorAI characters via browser console.
+ * @returns {string} Bookmarklet code
+ */
+function getJanitorBookmarkletCode() {
+    return `(function() {
+    let charData = null;
+
+    fetch(window.location.href)
+        .then(r => r.text())
+        .then(html => {
+            const match = html.match(/window\\.mbxM\\.push\\(JSON\\.parse\\("((?:\\\\.|[^"\\\\])*?)"\\)\\)/);
+
+            if (!match) {
+                if (window.mbxM && window.mbxM.length > 0) {
+                    for (let i = 0; i < window.mbxM.length; i++) {
+                        if (window.mbxM[i]?.['Sk--a:a-a--characterStore']?.character) {
+                            charData = window.mbxM[i]['Sk--a:a-a--characterStore'].character;
+                            downloadCharacter(charData);
+                            return;
+                        }
+                    }
+                }
+                alert('Failed to extract character data.');
+                return;
+            }
+
+            try {
+                const unescaped = JSON.parse('"' + match[1] + '"');
+                const parsedData = JSON.parse(unescaped);
+                charData = parsedData['Sk--a:a-a--characterStore']?.character;
+                if (!charData) throw new Error('Character not in expected location');
+                downloadCharacter(charData);
+            } catch(e) {
+                alert('Failed to parse character data: ' + e.message);
+            }
+        })
+        .catch(err => {
+            alert('Failed to fetch page HTML: ' + err.message);
+        });
+
+    function downloadCharacter(charData) {
+        const avatarUrl = charData.avatar ? 'https://ella.janitorai.com/bot-avatars/' + charData.avatar : null;
+
+        const processCharacter = async () => {
+            let avatarBase64 = null;
+
+            if (avatarUrl) {
+                try {
+                    const avatarResponse = await fetch(avatarUrl);
+                    if (avatarResponse.ok) {
+                        const blob = await avatarResponse.blob();
+                        const reader = new FileReader();
+                        avatarBase64 = await new Promise((resolve) => {
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                    }
+                } catch (err) {}
+            }
+
+            const tavernCard = {
+                spec: 'chara_card_v2',
+                spec_version: '2.0',
+                data: {
+                    name: charData.chat_name || charData.name || 'Unknown',
+                    description: (charData.description || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').trim(),
+                    personality: charData.personality || '',
+                    scenario: charData.scenario || '',
+                    first_mes: Array.isArray(charData.first_messages) ? (charData.first_messages[0] || '') : (charData.first_message || ''),
+                    mes_example: charData.example_dialogs || '',
+                    creator_notes: '',
+                    system_prompt: '',
+                    post_history_instructions: '',
+                    alternate_greetings: Array.isArray(charData.first_messages) ? charData.first_messages.slice(1) : [],
+                    character_book: undefined,
+                    tags: charData.tags?.map(t => t.name) || [],
+                    creator: charData.creator_name || '',
+                    character_version: '',
+                    extensions: {
+                        janitor_uuid: charData.id,
+                        janitor_display_name: charData.name,
+                        avatar_url: avatarUrl,
+                        avatar_base64: avatarBase64
+                    }
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(tavernCard, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (charData.chat_name || charData.name || 'character').replace(/[^a-z0-9]/gi, '_') + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            alert('Character downloaded: ' + (charData.chat_name || charData.name) + '.json' + (avatarBase64 ? ' (with avatar)' : ' (without avatar)'));
+        };
+
+        processCharacter();
+    }
+})();`.trim();
 }
 
 //Download Character Cards from AICharactersCards.com (AICC) API.
@@ -980,6 +1211,17 @@ router.post('/importURL', async (request, response) => {
         response.set('X-Custom-Content-Type', type);
         return response.send(result.buffer);
     } catch (error) {
+        if (error.cloudflareBlock) {
+            if (!error.uuid || !error.url || !error.bookmarklet) {
+                return response.status(500).json({ error: 'Internal error preparing Cloudflare bypass' });
+            }
+            return response.status(error.status).json({
+                error: 'cloudflare_block',
+                uuid: error.uuid,
+                url: error.url,
+                bookmarklet: error.bookmarklet,
+            });
+        }
         console.error('Importing custom content failed', error);
         return response.sendStatus(500);
     }
@@ -995,17 +1237,18 @@ router.post('/importUUID', async (request, response) => {
         let result;
 
         const isJannny = uuid.includes('_character');
-        const isPygmalion = (!isJannny && uuid.length == 36);
         const isAICC = uuid.startsWith('AICC/');
         const isPerchance = isPerchanceUUID(uuid);
+        const isUuidFormat = uuid.length === 36 && uuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
         const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
 
-        if (isPygmalion) {
-            console.info('Downloading Pygmalion character:', uuid);
-            result = await downloadPygmalionCharacter(uuid);
-        } else if (isJannny) {
-            console.info('Downloading Janitor character:', uuid.split('_')[0]);
-            result = await downloadJannyCharacter(uuid.split('_')[0]);
+        if (isJannny) {
+            const jannyUuid = uuid.split('_')[0];
+            if (!jannyUuid) {
+                return response.status(400).json({ error: 'Invalid JanitorAI UUID format' });
+            }
+            console.info('Downloading Janitor character:', jannyUuid);
+            result = await downloadJannyCharacter(jannyUuid);
         } else if (isAICC) {
             const [, author, card] = uuid.split('/');
             console.info('Downloading AICC character:', `${author}/${card}`);
@@ -1014,6 +1257,24 @@ router.post('/importUUID', async (request, response) => {
             console.info('Downloading Perchance character:', uuid);
             const parsedUuid = parsePerchanceSlug(uuid);
             result = await downloadPerchanceCharacter(parsedUuid);
+        } else if (isUuidFormat) {
+            console.info('Attempting to download character with UUID:', uuid);
+            try {
+                result = await downloadJannyCharacter(uuid);
+            } catch (janitorError) {
+                if (janitorError.cloudflareBlock) {
+                    throw janitorError;
+                }
+                try {
+                    result = await downloadPygmalionCharacter(uuid);
+                } catch {
+                    if (uuidType === 'character') {
+                        result = await downloadChubCharacter(uuid);
+                    } else if (uuidType === 'lorebook') {
+                        result = await downloadChubLorebook(uuid);
+                    }
+                }
+            }
         } else {
             if (uuidType === 'character') {
                 console.info('Downloading chub character:', uuid);
@@ -1035,6 +1296,17 @@ router.post('/importUUID', async (request, response) => {
         response.set('X-Custom-Content-Type', uuidType);
         return response.send(result.buffer);
     } catch (error) {
+        if (error.cloudflareBlock) {
+            if (!error.uuid || !error.url || !error.bookmarklet) {
+                return response.status(500).json({ error: 'Internal error preparing Cloudflare bypass' });
+            }
+            return response.status(error.status).json({
+                error: 'cloudflare_block',
+                uuid: error.uuid,
+                url: error.url,
+                bookmarklet: error.bookmarklet,
+            });
+        }
         console.error('Importing custom content failed', error);
         return response.sendStatus(500);
     }

@@ -889,8 +889,16 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         jsonData = readFromV2(jsonData);
         jsonData.create_date = new Date().toISOString();
         const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
+
+        let avatarInput = DEFAULT_AVATAR_PATH;
+        if (jsonData.data?.extensions?.avatar_base64) {
+            const base64Data = jsonData.data.extensions.avatar_base64.split(',')[1] || jsonData.data.extensions.avatar_base64;
+            avatarInput = Buffer.from(base64Data, 'base64');
+            delete jsonData.data.extensions.avatar_base64;
+        }
+
         const char = JSON.stringify(jsonData);
-        const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
+        const result = await writeCharacterData(avatarInput, char, pngName, request);
         return result ? pngName : '';
     } else if (jsonData.name !== undefined) {
         console.info('Importing from v1 json');

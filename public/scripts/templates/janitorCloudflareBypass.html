@@ -1,0 +1,191 @@
+<div class="janitor-cloudflare-bypass">
+    <h3>
+        <i class="fa-solid fa-shield-halved"></i>
+        JanitorAI Import Blocked by Cloudflare
+    </h3>
+
+    <div class="alert alert-warning marginTopBot10">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <strong>Why is this happening?</strong>
+        <p>JanitorAI uses Cloudflare Bot Fight Mode which blocks server-side requests.
+        Don't worry - you can still import this character using your browser!</p>
+    </div>
+
+    <div class="instruction-section">
+        <h4><i class="fa-solid fa-1"></i> Open the Character Page</h4>
+        <p>Click the button below to open the character page in a new tab:</p>
+        <a href="{{url}}" target="_blank" class="menu_button menu_button_icon margin10">
+            <i class="fa-solid fa-external-link-alt"></i>
+            Open Character Page
+        </a>
+    </div>
+
+    <div class="instruction-section">
+        <h4><i class="fa-solid fa-2"></i> Run the Extraction Code</h4>
+        <p>On the character page:</p>
+        <ol>
+            <li>Press <kbd>F12</kbd> to open browser console (Developer Tools)</li>
+            <li>Click the <strong>Console</strong> tab</li>
+            <li>Copy the code below and paste it into the console</li>
+            <li>Press <kbd>Enter</kbd> to run it</li>
+        </ol>
+
+        <div class="code-container margin10" style="position: relative;">
+            <button id="copy-bookmarklet-btn" class="menu_button menu_button_icon fa-solid fa-copy"
+                    title="Copy to clipboard" style="position: absolute; top: 5px; right: 5px; z-index: 10;">
+            </button>
+            <pre id="bookmarklet-code" class="code-block" style="white-space: pre-wrap; word-break: break-all; padding-right: 50px;">{{{bookmarklet}}}</pre>
+        </div>
+
+        <small class="text-muted">
+            <i class="fa-solid fa-circle-info"></i>
+            The code will automatically download a JSON file containing the character data.
+        </small>
+    </div>
+
+    <div class="instruction-section">
+        <h4><i class="fa-solid fa-3"></i> Import the Downloaded File</h4>
+        <p>After the JSON file downloads:</p>
+        <ol>
+            <li>Go to <strong>Character Management</strong> in SillyTavern</li>
+            <li>Click <strong>Import Character from File</strong></li>
+            <li>Select the downloaded <code>.json</code> file</li>
+        </ol>
+
+        <div class="margin10">
+            <p><strong>Or drag and drop the file here:</strong></p>
+            <div id="janitor-drop-zone" style="
+                border: 2px dashed var(--SmartThemeBorderColor);
+                border-radius: 10px;
+                padding: 30px;
+                text-align: center;
+                background: var(--black30a);
+                cursor: pointer;
+            ">
+                <i class="fa-solid fa-file-arrow-up fa-3x"></i>
+                <p>Drag & drop the downloaded JSON file here<br>or click to browse</p>
+            </div>
+            <input type="file" id="janitor-file-input" accept=".json" style="display: none;">
+        </div>
+    </div>
+
+    <details class="marginTopBot10">
+        <summary style="cursor: pointer; user-select: none;"><i class="fa-solid fa-circle-question"></i> Troubleshooting</summary>
+        <div class="margin10">
+            <p><strong>Code doesn't work?</strong></p>
+            <ul>
+                <li>Make sure you're on the correct character page</li>
+                <li>Try refreshing the page and running the code again</li>
+                <li>Check the console for error messages</li>
+            </ul>
+
+            <p><strong>Still having issues?</strong></p>
+            <ul>
+                <li>Press <kbd>Ctrl+U</kbd> to view page source</li>
+                <li>Press <kbd>Ctrl+F</kbd> and search for <code>window.mbxM.push</code></li>
+                <li>If you can't find it, JanitorAI may have changed their website structure</li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+<style>
+.janitor-cloudflare-bypass h3 {
+    margin-top: 0;
+}
+
+.janitor-cloudflare-bypass h3 i {
+    color: var(--SmartThemeQuoteColor);
+    margin-right: 10px;
+}
+
+.janitor-cloudflare-bypass .alert {
+    padding: 15px;
+    border-radius: 8px;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.chakra-ui-dark .janitor-cloudflare-bypass .alert,
+[data-theme=dark] .janitor-cloudflare-bypass .alert {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.janitor-cloudflare-bypass .instruction-section {
+    margin: 20px 0;
+    padding: 15px;
+    background: var(--black10a);
+    border-radius: 8px;
+    border-left: 3px solid var(--SmartThemeQuoteColor);
+}
+
+.janitor-cloudflare-bypass .instruction-section h4 {
+    margin-top: 0;
+    color: var(--SmartThemeQuoteColor);
+}
+
+.janitor-cloudflare-bypass .instruction-section h4 i {
+    margin-right: 8px;
+}
+
+.janitor-cloudflare-bypass .code-container {
+    position: relative;
+    background: var(--black50a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.janitor-cloudflare-bypass .code-block {
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    margin: 0;
+    padding: 5px;
+    background: transparent;
+}
+
+.janitor-cloudflare-bypass kbd {
+    background: var(--black50a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.janitor-cloudflare-bypass code {
+    background: var(--black30a);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+.janitor-cloudflare-bypass ol {
+    padding-left: 25px;
+}
+
+.janitor-cloudflare-bypass ol li {
+    margin: 8px 0;
+}
+
+.janitor-cloudflare-bypass #janitor-drop-zone:hover {
+    background: var(--black50a);
+    border-color: var(--SmartThemeQuoteColor);
+}
+
+.code-container {
+    position: relative;
+}
+
+.code-block {
+    max-height: 300px;
+    overflow-y: auto;
+}
+</style>

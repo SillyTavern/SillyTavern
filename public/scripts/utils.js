@@ -2866,6 +2866,23 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
     }
 
     if (!request.ok) {
+        console.log('[Frontend] Error response - Status:', request.status);
+        console.log('[Frontend] Content-Type header:', request.headers.get('Content-Type'));
+
+        // Check if this is a Cloudflare block error
+        const contentType = request.headers.get('Content-Type');
+        if (contentType && contentType.includes('application/json')) {
+            try {
+                const errorData = await request.json();
+                if (errorData.error === 'cloudflare_block') {
+                    // Show special Cloudflare bypass modal
+                    await showCloudflareBypassModal(errorData);
+                    return;
+                }
+            } catch (e) {
+                // Not JSON, fall through to normal error handling
+            }
+        }
         toastr.info(request.statusText, 'Custom content import failed');
         console.error('Custom content import failed', request.status, request.statusText);
         return;
@@ -2893,6 +2910,123 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
             toastr.warning('Unknown content type');
             console.error('Unknown content type', customContentType);
             break;
+    }
+}
+
+/**
+ * Shows a modal with instructions to bypass Cloudflare protection for JanitorAI.
+ * @param {Object} errorData Error data from the server
+ * @param {string} errorData.uuid Character UUID
+ * @param {string} errorData.url Character page URL
+ * @param {string} errorData.bookmarklet Bookmarklet code
+ */
+async function showCloudflareBypassModal(errorData) {
+    try {
+        // Validate errorData
+        if (!errorData?.url || !errorData?.bookmarklet) {
+            console.error('Invalid errorData for Cloudflare bypass modal:', errorData);
+            toastr.error('Failed to show Cloudflare bypass instructions. Missing required data.');
+            return;
+        }
+
+        const { renderTemplateAsync } = await import('./templates.js');
+        const { callGenericPopup, POPUP_TYPE } = await import('./popup.js');
+        const { processDroppedFiles } = await import('../script.js');
+
+        const html = await renderTemplateAsync('janitorCloudflareBypass', errorData);
+
+        // Show the popup (don't await yet, we need to set up handlers first)
+        const popupPromise = callGenericPopup(html, POPUP_TYPE.TEXT, '', {
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
+            okButton: 'Close',
+        });
+
+        // Wait for popup to be in DOM
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Set up copy button handler
+        const copyBtn = document.getElementById('copy-bookmarklet-btn');
+        const codeBlock = document.getElementById('bookmarklet-code');
+        if (copyBtn && codeBlock) {
+            copyBtn.addEventListener('click', () => {
+                const code = codeBlock.textContent;
+                if (code) {
+                    navigator.clipboard.writeText(code).then(() => {
+                        toastr.success('Code copied to clipboard!');
+                    }).catch(err => {
+                        console.error('Failed to copy:', err);
+                        toastr.error('Failed to copy code. Please select and copy manually.');
+                    });
+                }
+            });
+        }
+
+        // Set up drag & drop zone
+        const dropZone = document.getElementById('janitor-drop-zone');
+        const fileInput = document.getElementById('janitor-file-input');
+
+        if (dropZone && fileInput) {
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--SmartThemeQuoteColor)';
+                dropZone.style.background = 'var(--black50a)';
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--SmartThemeBorderColor)';
+                dropZone.style.background = 'var(--black30a)';
+            });
+
+            dropZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropZone.style.borderColor = 'var(--SmartThemeBorderColor)';
+                dropZone.style.background = 'var(--black30a)';
+
+                const files = Array.from(e.dataTransfer?.files || []).filter(f => f.name.endsWith('.json'));
+                if (files.length > 0) {
+                    // Close the modal
+                    $('#dialogue_popup_cancel').trigger('click');
+                    // Import the files
+                    try {
+                        await processDroppedFiles(files);
+                    } catch (err) {
+                        console.error('Error processing dropped files:', err);
+                        toastr.error('Failed to import character file.');
+                    }
+                }
+            });
+
+            fileInput.addEventListener('change', async (e) => {
+                const files = Array.from(e.target?.files || []);
+                if (files.length > 0) {
+                    // Close the modal
+                    $('#dialogue_popup_cancel').trigger('click');
+                    // Import the files
+                    try {
+                        await processDroppedFiles(files);
+                    } catch (err) {
+                        console.error('Error processing selected files:', err);
+                        toastr.error('Failed to import character file.');
+                    }
+                }
+            });
+        }
+
+        // Now await the popup result
+        await popupPromise;
+    } catch (error) {
+        console.error('[Frontend] Error showing Cloudflare bypass modal:', error);
+        toastr.error('Failed to show modal. Check console for details.');
     }
 }
 
