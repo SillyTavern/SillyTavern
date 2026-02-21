@@ -1259,19 +1259,33 @@ router.post('/importUUID', async (request, response) => {
             result = await downloadPerchanceCharacter(parsedUuid);
         } else if (isUuidFormat) {
             console.info('Attempting to download character with UUID:', uuid);
+            let savedCloudflareError = null;
             try {
                 result = await downloadJannyCharacter(uuid);
             } catch (janitorError) {
                 if (janitorError.cloudflareBlock) {
-                    throw janitorError;
+                    // Cloudflare blocked the request — save the error but don't throw yet.
+                    // The UUID might belong to Pygmalion or Chub, so try those first.
+                    savedCloudflareError = janitorError;
+                    console.info('JanitorAI Cloudflare block detected, trying other sources before showing bypass modal...');
                 }
-                try {
-                    result = await downloadPygmalionCharacter(uuid);
-                } catch {
-                    if (uuidType === 'character') {
-                        result = await downloadChubCharacter(uuid);
-                    } else if (uuidType === 'lorebook') {
-                        result = await downloadChubLorebook(uuid);
+                if (!result) {
+                    try {
+                        result = await downloadPygmalionCharacter(uuid);
+                    } catch {
+                        try {
+                            if (uuidType === 'character') {
+                                result = await downloadChubCharacter(uuid);
+                            } else if (uuidType === 'lorebook') {
+                                result = await downloadChubLorebook(uuid);
+                            }
+                        } catch {
+                            // All fallbacks failed — if we have a saved CF error, throw it now
+                            // so the user gets the Janitor bookmarklet modal as a last resort.
+                            if (savedCloudflareError) {
+                                throw savedCloudflareError;
+                            }
+                        }
                     }
                 }
             }
