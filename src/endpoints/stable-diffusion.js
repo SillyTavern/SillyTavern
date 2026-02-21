@@ -1136,25 +1136,30 @@ huggingface.post('/generate', async (request, response) => {
 
         console.debug('Hugging Face request:', request.body);
 
-        const result = await fetch(`https://api-inference.huggingface.co/models/${request.body.model}`, {
-            method: 'POST',
-            body: JSON.stringify({
-                inputs: request.body.prompt,
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`,
-            },
-        });
+        const result = await fetch(
+            `https://router.huggingface.co/nscale/v1/images/generations`,
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    response_format: "b64_json",
+                    prompt: request.body.prompt,
+                    model: request.body.model
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${key}`,
+                },
+            }
+        );
 
         if (!result.ok) {
             console.warn('Hugging Face returned an error.');
             return response.sendStatus(500);
         }
 
-        const buffer = await result.arrayBuffer();
+        const json = await result.json()
         return response.send({
-            image: Buffer.from(buffer).toString('base64'),
+            image: json['data'][0]['b64_json'],
         });
     } catch (error) {
         console.error(error);
