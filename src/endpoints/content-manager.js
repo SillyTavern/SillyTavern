@@ -773,16 +773,22 @@ async function downloadJannyCharacter(uuid) {
 
         // Download avatar (ella.janitorai.com hosts the images)
         // Note: Avatar download will also fail with Cloudflare, but we try anyway
-        const avatarUrl = `https://ella.janitorai.com/bot-avatars/${janitorData.avatar}`;
-        console.log('Downloading avatar from:', avatarUrl);
-
         let finalBuffer;
-        try {
-            const avatarResponse = await fetch(avatarUrl, {
-                headers: {
-                    'User-Agent': USER_AGENT,
-                },
-            });
+
+        if (!janitorData.avatar) {
+            console.warn('Character has no avatar, using default');
+            const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
+            finalBuffer = fs.readFileSync(defaultAvatarPath);
+        } else {
+            const avatarUrl = `https://ella.janitorai.com/bot-avatars/${janitorData.avatar}`;
+            console.log('Downloading avatar from:', avatarUrl);
+
+            try {
+                const avatarResponse = await fetch(avatarUrl, {
+                    headers: {
+                        'User-Agent': USER_AGENT,
+                    },
+                });
 
             if (!avatarResponse.ok) {
                 throw new Error(`Avatar fetch failed: ${avatarResponse.status}`);
@@ -811,14 +817,7 @@ async function downloadJannyCharacter(uuid) {
             const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
             finalBuffer = fs.readFileSync(defaultAvatarPath);
         }
-
-        // Embed character data into PNG
-        const cardBuffer = write(finalBuffer, JSON.stringify(tavernCard));
-
-        return {
-            buffer: cardBuffer,
-            fileName: `${sanitize(janitorData.chat_name || janitorData.name || uuid)}.png`,
-            fileType: 'image/png',
+        }
         };
     } catch (error) {
         // Don't log Cloudflare errors, let the endpoint handler deal with them
@@ -1235,10 +1234,12 @@ router.post('/importURL', async (request, response) => {
             if (chubParsed?.type === 'character') {
                 console.info('Downloading chub character:', chubParsed.id);
                 result = await downloadChubCharacter(chubParsed.id);
-            } else if (chubParsed?.type === 'lorebook') {
+            }
+            else if (chubParsed?.type === 'lorebook') {
                 console.info('Downloading chub lorebook:', chubParsed.id);
                 result = await downloadChubLorebook(chubParsed.id);
-            } else {
+            }
+            else {
                 return response.sendStatus(404);
             }
         } else if (isRisu) {
@@ -1276,6 +1277,11 @@ router.post('/importURL', async (request, response) => {
     } catch (error) {
         // Handle Cloudflare block specially
         if (error.cloudflareBlock) {
+            // Validate required fields before sending response
+            if (!error.uuid || !error.url || !error.bookmarklet) {
+                console.error('Cloudflare error missing required fields:', error);
+                return response.status(500).json({ error: 'Internal error preparing Cloudflare bypass' });
+            }
             return response.status(error.status).json({
                 error: 'cloudflare_block',
                 message: 'JanitorAI is protected by Cloudflare. Please use the browser extraction method.',
@@ -1305,8 +1311,12 @@ router.post('/importUUID', async (request, response) => {
         const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
 
         if (isJannny) {
-            console.info('Downloading Janitor character:', uuid.split('_')[0]);
-            result = await downloadJannyCharacter(uuid.split('_')[0]);
+            const jannyUuid = uuid.split('_')[0];
+            if (!jannyUuid) {
+                return response.status(400).json({ error: 'Invalid JanitorAI UUID format' });
+            }
+            console.info('Downloading Janitor character:', jannyUuid);
+            result = await downloadJannyCharacter(jannyUuid);
         } else if (isAICC) {
             const [, author, card] = uuid.split('/');
             console.info('Downloading AICC character:', `${author}/${card}`);
@@ -1342,10 +1352,12 @@ router.post('/importUUID', async (request, response) => {
             if (uuidType === 'character') {
                 console.info('Downloading chub character:', uuid);
                 result = await downloadChubCharacter(uuid);
-            } else if (uuidType === 'lorebook') {
+            }
+            else if (uuidType === 'lorebook') {
                 console.info('Downloading chub lorebook:', uuid);
                 result = await downloadChubLorebook(uuid);
-            } else {
+            }
+            else {
                 return response.sendStatus(404);
             }
         }
@@ -1361,6 +1373,11 @@ router.post('/importUUID', async (request, response) => {
     } catch (error) {
         // Handle Cloudflare block specially
         if (error.cloudflareBlock) {
+            // Validate required fields before sending response
+            if (!error.uuid || !error.url || !error.bookmarklet) {
+                console.error('Cloudflare error missing required fields:', error);
+                return response.status(500).json({ error: 'Internal error preparing Cloudflare bypass' });
+            }
             return response.status(error.status).json({
                 error: 'cloudflare_block',
                 message: 'JanitorAI is protected by Cloudflare. Please use the browser extraction method.',
