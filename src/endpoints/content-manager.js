@@ -819,7 +819,6 @@ async function downloadJannyCharacter(uuid) {
             fileName: `${sanitize(janitorData.chat_name || janitorData.name || uuid)}.png`,
             fileType: 'image/png',
         };
-
     } catch (error) {
         // Don't log Cloudflare errors, let the endpoint handler deal with them
         if (!error.cloudflareBlock) {
