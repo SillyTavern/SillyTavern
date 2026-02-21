@@ -889,9 +889,40 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         jsonData = readFromV2(jsonData);
         jsonData.create_date = new Date().toISOString();
         const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
+
+        // Check if avatar is embedded as base64 (JanitorAI, Perchance, etc)
+        let avatarPath = DEFAULT_AVATAR_PATH;
+        let tempAvatarPath = null;
+        if (jsonData.data?.extensions?.avatar_base64) {
+            console.info('Using embedded base64 avatar from extensions');
+            const base64Data = jsonData.data.extensions.avatar_base64.split(',')[1] || jsonData.data.extensions.avatar_base64;
+            const avatarBuffer = Buffer.from(base64Data, 'base64');
+
+            // Write temporary avatar file
+            tempAvatarPath = path.join(process.cwd(), 'temp_avatar.png');
+            fs.writeFileSync(tempAvatarPath, avatarBuffer);
+            avatarPath = tempAvatarPath;
+
+            // Clean up extensions to avoid bloating the character JSON
+            delete jsonData.data.extensions.avatar_base64;
+        }
+
+        // Stringify AFTER removing avatar_base64
         const char = JSON.stringify(jsonData);
-        const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
-        return result ? pngName : '';
+
+        try {
+            const result = await writeCharacterData(avatarPath, char, pngName, request);
+            return result ? pngName : '';
+        } finally {
+            // Always clean up temp avatar file, even if writeCharacterData throws
+            if (tempAvatarPath && fs.existsSync(tempAvatarPath)) {
+                try {
+                    fs.unlinkSync(tempAvatarPath);
+                } catch (unlinkError) {
+                    console.warn('Failed to clean up temp avatar file:', unlinkError.message);
+                }
+            }
+        }
     } else if (jsonData.name !== undefined) {
         console.info('Importing from v1 json');
         jsonData.name = sanitize(jsonData.name);
