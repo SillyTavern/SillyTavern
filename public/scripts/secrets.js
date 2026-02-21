@@ -76,6 +76,7 @@ export const SECRET_KEYS = {
     POLLINATIONS: 'api_key_pollinations',
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
+    MODELSLAB_TTS: 'api_key_modelslab_tts',
 };
 
 const FRIENDLY_NAMES = {
@@ -140,6 +141,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.POLLINATIONS]: 'Pollinations',
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
     [SECRET_KEYS.VOLCENGINE_ACCESS_KEY]: 'Volcengine Access Key',
+    [SECRET_KEYS.MODELSLAB_TTS]: 'ModelsLab TTS',
 };
 
 const INPUT_MAP = {
