@@ -715,6 +715,7 @@ async function downloadJannyCharacter(uuid) {
             if (!altMatch) {
                 throw new Error('Character data not found in page HTML. JanitorAI may have changed their page structure.');
             }
+            throw new Error('Character data structure not found. JanitorAI may have changed their page structure.');
         }
 
         // The captured group contains the escaped JSON string
