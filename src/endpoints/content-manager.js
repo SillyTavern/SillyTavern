@@ -708,14 +708,12 @@ async function downloadJannyCharacter(uuid) {
         const mbxMatch = html.match(/window\.mbxM\.push\(JSON\.parse\("((?:\\.|[^"\\])*?)"\)\)/s);
         if (!mbxMatch) {
             console.error(color.red('Could not find character data in HTML'));
-            console.error(color.yellow('The page structure may have changed. Trying alternative extraction...'));
-
-            // Fallback: Try to find any JSON.parse call with character data
-            const altMatch = html.match(/"Sk--a:a-a--characterStore":\s*\{\s*"character":\s*(\{[^}]+\})/s);
-            if (!altMatch) {
-                throw new Error('Character data not found in page HTML. JanitorAI may have changed their page structure.');
+            // Check if the data exists in a different format for better diagnostics
+            const hasCharStore = html.includes('Sk--a:a-a--characterStore');
+            if (hasCharStore) {
+                console.error(color.yellow('Character store key found but mbxM.push pattern not matched. Page structure may have changed.'));
             }
-            throw new Error('Character data structure not found. JanitorAI may have changed their page structure.');
+            throw new Error('Character data not found in page HTML. JanitorAI may have changed their page structure.');
         }
 
         // The captured group contains the escaped JSON string
