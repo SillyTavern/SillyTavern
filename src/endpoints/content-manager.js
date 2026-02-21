@@ -790,34 +790,42 @@ async function downloadJannyCharacter(uuid) {
                     },
                 });
 
-            if (!avatarResponse.ok) {
-                throw new Error(`Avatar fetch failed: ${avatarResponse.status}`);
-            }
+                if (!avatarResponse.ok) {
+                    throw new Error(`Avatar fetch failed: ${avatarResponse.status}`);
+                }
 
-            const avatarBuffer = Buffer.from(await avatarResponse.arrayBuffer());
+                const avatarBuffer = Buffer.from(await avatarResponse.arrayBuffer());
 
-            // Convert avatar to PNG if needed (JanitorAI uses WEBP)
-            const contentType = avatarResponse.headers.get('content-type');
+                // Convert avatar to PNG if needed (JanitorAI uses WEBP)
+                const contentType = avatarResponse.headers.get('content-type');
 
-            if (contentType && !contentType.includes('png')) {
-                console.log('Converting avatar to PNG format');
-                try {
-                    const image = await Jimp.read(avatarBuffer);
-                    finalBuffer = await image.getBufferAsync(JimpMime.PNG);
-                } catch (conversionError) {
-                    console.warn('Failed to convert avatar, using original:', conversionError);
+                if (contentType && !contentType.includes('png')) {
+                    console.log('Converting avatar to PNG format');
+                    try {
+                        const image = await Jimp.read(avatarBuffer);
+                        finalBuffer = await image.getBufferAsync(JimpMime.PNG);
+                    } catch (conversionError) {
+                        console.warn('Failed to convert avatar, using original:', conversionError);
+                        finalBuffer = avatarBuffer;
+                    }
+                } else {
                     finalBuffer = avatarBuffer;
                 }
-            } else {
-                finalBuffer = avatarBuffer;
+            } catch (avatarError) {
+                console.warn('Failed to download avatar, using default:', avatarError.message);
+                // Use default avatar if download fails
+                const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
+                finalBuffer = fs.readFileSync(defaultAvatarPath);
             }
-        } catch (avatarError) {
-            console.warn('Failed to download avatar, using default:', avatarError.message);
-            // Use default avatar if download fails
-            const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
-            finalBuffer = fs.readFileSync(defaultAvatarPath);
         }
-        }
+
+        // Embed character data into PNG
+        const cardBuffer = write(finalBuffer, JSON.stringify(tavernCard));
+
+        return {
+            buffer: cardBuffer,
+            fileName: `${sanitize(janitorData.chat_name || janitorData.name || uuid)}.png`,
+            fileType: 'image/png',
         };
     } catch (error) {
         // Don't log Cloudflare errors, let the endpoint handler deal with them
@@ -1234,12 +1242,10 @@ router.post('/importURL', async (request, response) => {
             if (chubParsed?.type === 'character') {
                 console.info('Downloading chub character:', chubParsed.id);
                 result = await downloadChubCharacter(chubParsed.id);
-            }
-            else if (chubParsed?.type === 'lorebook') {
+            } else if (chubParsed?.type === 'lorebook') {
                 console.info('Downloading chub lorebook:', chubParsed.id);
                 result = await downloadChubLorebook(chubParsed.id);
-            }
-            else {
+            } else {
                 return response.sendStatus(404);
             }
         } else if (isRisu) {
@@ -1352,12 +1358,10 @@ router.post('/importUUID', async (request, response) => {
             if (uuidType === 'character') {
                 console.info('Downloading chub character:', uuid);
                 result = await downloadChubCharacter(uuid);
-            }
-            else if (uuidType === 'lorebook') {
+            } else if (uuidType === 'lorebook') {
                 console.info('Downloading chub lorebook:', uuid);
                 result = await downloadChubLorebook(uuid);
-            }
-            else {
+            } else {
                 return response.sendStatus(404);
             }
         }
