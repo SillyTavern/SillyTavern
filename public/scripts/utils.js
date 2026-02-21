@@ -2310,6 +2310,7 @@ export function highlightRegex(regexStr) {
                 flags: new RegExp('(?<=\\/)([gimsuy]*)$', 'g'),  // Match trailing flags
                 delimiters: new RegExp('^\\/|(?<![\\\\<])\\/', 'g'),  // Match leading or trailing delimiters
             };
+
         } catch (error) {
             return {
                 brackets: new RegExp('(\\\\)?\\[.*?\\]', 'g'),  // Non-escaped square brackets
@@ -2922,6 +2923,13 @@ export async function importFromExternalUrl(url, { preserveFileName = null } = {
  */
 async function showCloudflareBypassModal(errorData) {
     try {
+        // Validate errorData
+        if (!errorData?.url || !errorData?.bookmarklet) {
+            console.error('Invalid errorData for Cloudflare bypass modal:', errorData);
+            toastr.error('Failed to show Cloudflare bypass instructions. Missing required data.');
+            return;
+        }
+
         const { renderTemplateAsync } = await import('./templates.js');
         const { callGenericPopup, POPUP_TYPE } = await import('./popup.js');
         const { processDroppedFiles } = await import('../script.js');
@@ -2990,7 +2998,12 @@ async function showCloudflareBypassModal(errorData) {
                     // Close the modal
                     $('#dialogue_popup_cancel').trigger('click');
                     // Import the files
-                    await processDroppedFiles(files);
+                    try {
+                        await processDroppedFiles(files);
+                    } catch (err) {
+                        console.error('Error processing dropped files:', err);
+                        toastr.error('Failed to import character file.');
+                    }
                 }
             });
 
@@ -3000,7 +3013,12 @@ async function showCloudflareBypassModal(errorData) {
                     // Close the modal
                     $('#dialogue_popup_cancel').trigger('click');
                     // Import the files
-                    await processDroppedFiles(files);
+                    try {
+                        await processDroppedFiles(files);
+                    } catch (err) {
+                        console.error('Error processing selected files:', err);
+                        toastr.error('Failed to import character file.');
+                    }
                 }
             });
         }
