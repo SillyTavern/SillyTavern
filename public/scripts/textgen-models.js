@@ -101,6 +101,43 @@ const OPENROUTER_PROVIDERS = [
     'Z.AI',
 ];
 
+async function syncOpenRouterProvidersForModel(modelId) {
+    const providersSelect = $('.openrouter_providers');
+
+    if (!modelId || !modelId.includes('/')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/openrouter/models/providers', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ model: modelId }),
+
+        if (!response.ok) {
+            return;
+        }
+
+        const providerNames = await response.json();
+
+        if (!Array.isArray(providerNames) || providerNames.length === 0) {
+            return;
+        }
+
+        const previousSelection = textgen_settings.openrouter_providers || [];
+
+        providersSelect.empty();
+        for (const provider of providerNames) {
+            providersSelect.append($('<option>', { value: provider, text: provider }));
+        }
+
+        const stillValid = previousSelection.filter(p => providerNames.includes(p));
+        providersSelect.val(stillValid).trigger('change');
+    } catch (error) {
+        console.error('Failed to fetch OpenRouter providers for model', error);
+    }
+}
+
 export async function loadOllamaModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Ollama models data', data);
@@ -315,6 +352,7 @@ export async function loadOpenRouterModels(data) {
 
     // Calculate the cost of the selected model + update on settings change
     calculateOpenRouterCost();
+    syncOpenRouterProvidersForModel(textgen_settings.openrouter_model);
 }
 
 export async function loadVllmModels(data) {
@@ -675,6 +713,7 @@ function onOpenRouterModelSelect() {
     textgen_settings.openrouter_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
+    syncOpenRouterProvidersForModel(modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
