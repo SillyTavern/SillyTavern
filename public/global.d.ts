@@ -139,6 +139,8 @@ declare global {
     interface ImageGenerationAttachmentProps {
         generation_type?: number;
         negative?: string;
+        width?: number;
+        height?: number;
     }
 
     interface ImageCaptionAttachmentProps {

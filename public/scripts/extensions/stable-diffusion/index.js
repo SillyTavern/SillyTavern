@@ -4848,6 +4848,8 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         title: prompt,
         generation_type: generationType,
         negative: additionalNegativePrefix,
+        width: extension_settings.sd.width,
+        height: extension_settings.sd.height,
         source: MEDIA_SOURCE.GENERATED,
     };
     /** @type {ChatMessage} */
@@ -5150,7 +5152,14 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     const stopButton = document.getElementById('sd_stop_gen');
     const stopListener = () => abortController.abort('Aborted by user');
     const generationType = mediaAttachment.generation_type ?? message?.extra?.generationType ?? generationMode.FREE;
-    const dimensions = setTypeSpecificDimensions(generationType);
+
+    // Save original dimensions and apply saved attachment dimensions if available
+    const originalWidth = extension_settings.sd.width;
+    const originalHeight = extension_settings.sd.height;
+    if (mediaAttachment.width) extension_settings.sd.width = mediaAttachment.width;
+    if (mediaAttachment.height) extension_settings.sd.height = mediaAttachment.height;
+
+    setTypeSpecificDimensions(generationType);
     extension_settings.sd.original_seed = extension_settings.sd.seed;
     extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
 
@@ -5180,11 +5189,14 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         result.generation_type = generationType;
         result.title = prompt;
         result.negative = negative;
+        result.width = extension_settings.sd.width;
+        result.height = extension_settings.sd.height;
     } finally {
         onComplete();
         $(stopButton).hide();
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
-        restoreOriginalDimensions(dimensions);
+        extension_settings.sd.width = originalWidth;
+        extension_settings.sd.height = originalHeight;
         extension_settings.sd.seed = extension_settings.sd.original_seed;
         delete extension_settings.sd.original_seed;
     }
