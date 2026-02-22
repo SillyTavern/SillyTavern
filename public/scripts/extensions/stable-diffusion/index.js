@@ -5157,11 +5157,12 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     const originalWidth = extension_settings.sd.width;
     const originalHeight = extension_settings.sd.height;
     const hasDimensionOverride = Number.isInteger(mediaAttachment.width) && Number.isInteger(mediaAttachment.height);
+    let typeSpecificDimensions = null;
     if (hasDimensionOverride) {
         extension_settings.sd.width = mediaAttachment.width;
         extension_settings.sd.height = mediaAttachment.height;
     } else {
-        setTypeSpecificDimensions(generationType);
+        typeSpecificDimensions = setTypeSpecificDimensions(generationType);
     }
     extension_settings.sd.original_seed = extension_settings.sd.seed;
     extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
@@ -5198,8 +5199,12 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         onComplete();
         $(stopButton).hide();
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
-        extension_settings.sd.width = originalWidth;
-        extension_settings.sd.height = originalHeight;
+        if (typeSpecificDimensions) {
+            restoreOriginalDimensions(typeSpecificDimensions);
+        } else {
+            extension_settings.sd.width = originalWidth;
+            extension_settings.sd.height = originalHeight;
+        }
         extension_settings.sd.seed = extension_settings.sd.original_seed;
         delete extension_settings.sd.original_seed;
     }
