@@ -5158,8 +5158,6 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     const stopButton = document.getElementById('sd_stop_gen');
     const stopListener = () => abortController.abort('Aborted by user');
     const generationType = mediaAttachment.generation_type ?? message?.extra?.generationType ?? generationMode.FREE;
-
-    // Save original dimensions and apply saved attachment dimensions if available
     const dimensions = setTypeSpecificDimensions(generationType, mediaAttachment);
     extension_settings.sd.original_seed = extension_settings.sd.seed;
     extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
