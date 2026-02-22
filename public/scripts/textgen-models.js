@@ -714,7 +714,7 @@ function onOpenRouterModelSelect() {
     textgen_settings.openrouter_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
-    syncOpenRouterProvidersForModel(modelId); 
+    syncOpenRouterProvidersForModel(modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
