@@ -136,8 +136,8 @@
     "main": "server.js",
     "devDependencies": {
         "@chevrotain/types": "^11.0.3",
-        "@eslint/js": "^9.39.2",
-        "@stylistic/eslint-plugin": "^5.8.0",
+        "@eslint/js": "^10.0.1",
+        "@stylistic/eslint-plugin": "^5.9.0",
         "@types/archiver": "^6.0.3",
         "@types/bytes": "^3.1.5",
         "@types/command-exists": "^1.2.3",
@@ -164,10 +164,10 @@
         "@types/write-file-atomic": "^4.0.3",
         "@types/yargs": "^17.0.33",
         "@types/yauzl": "^2.10.3",
-        "eslint": "^9.39.2",
+        "eslint": "^10.0.1",
         "eslint-plugin-jest": "^29.15.0",
-        "eslint-plugin-jsdoc": "^62.5.5",
-        "eslint-plugin-playwright": "^2.5.1",
-        "globals": "^16.5.0"
+        "eslint-plugin-jsdoc": "^62.7.0",
+        "eslint-plugin-playwright": "^2.7.0",
+        "globals": "^17.3.0"
     }
 }

@@ -49,6 +49,9 @@ export default [
             'no-async-promise-executor': 'off',
             'no-constant-binary-expression': 'off',
             'no-unused-private-class-members': 'off',
+            'no-unassigned-vars': 'off',
+            'no-useless-assignment': 'off',
+            'preserve-caught-error': 'off',
             // Stylistic rules (moved from core ESLint to @stylistic)
             '@stylistic/quotes': ['error', 'single'],
             '@stylistic/semi': ['error', 'always'],
