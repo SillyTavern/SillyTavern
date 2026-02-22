@@ -521,165 +521,50 @@ function parseChubUrl(str) {
     return null;
 }
 
-/**
- * Downloads a character from JanitorAI by scraping the character page HTML.
- * @param {string} uuid Character UUID
- * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
- */
+// Warning: Some characters might not exist in JannyAI.me
+// The API endpoint is guarded behind Cloudflare Bot Fight Mode.
+// Hosted ST on Azure/AWS/GCP/Colab might get blocked by IP.
+// Should work normally on self-host PC/Android.
+// If Cloudflare blocks, we throw a cloudflareBlock error so the caller
+// can show the bookmarklet modal as a last resort.
 async function downloadJannyCharacter(uuid) {
-    try {
-        const pageUrl = `https://janitorai.com/characters/${uuid}`;
-        const response = await fetch(pageUrl, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none',
-                'Sec-Fetch-User': '?1',
-                'Upgrade-Insecure-Requests': '1',
-            },
-        });
+    const result = await fetch('https://api.jannyai.com/api/v1/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            'characterId': uuid,
+        }),
+    });
 
-        if (!response.ok) {
-            if (response.status === 403) {
-                const bookmarkletCode = getJanitorBookmarkletCode();
-                const cfError = new Error('Cloudflare blocked request');
-                cfError.cloudflareBlock = true;
-                cfError.status = 403;
-                cfError.uuid = uuid;
-                cfError.url = pageUrl;
-                cfError.bookmarklet = bookmarkletCode;
-                throw cfError;
-            }
-            throw new Error(`Failed to fetch character page: ${response.statusText}`);
-        }
-
-        const html = await response.text();
-
-        const mbxMatch = html.match(/window\.mbxM\.push\(JSON\.parse\("((?:\\.|[^"\\])*?)"\)\)/s);
-        if (!mbxMatch) {
-            throw new Error('Character data not found in page HTML. JanitorAI may have changed their page structure.');
-        }
-
-        let mbxData;
-        try {
-            const unescapedJson = JSON.parse('"' + mbxMatch[1] + '"');
-            mbxData = JSON.parse(unescapedJson);
-        } catch (parseError) {
-            throw new Error('Failed to parse character JSON from HTML');
-        }
-
-        const janitorData = mbxData?.['Sk--a:a-a--characterStore']?.character;
-
-        if (!janitorData) {
-            throw new Error('Invalid character data structure');
-        }
-
-        const tavernCard = {
-            spec: 'chara_card_v2',
-            spec_version: '2.0',
-            data: {
-                name: janitorData.chat_name || janitorData.name || 'Unknown',
-                description: stripHtml(janitorData.description || ''),
-                personality: janitorData.personality || '',
-                scenario: janitorData.scenario || '',
-                first_mes: Array.isArray(janitorData.first_messages)
-                    ? janitorData.first_messages[0] || ''
-                    : janitorData.first_message || '',
-                mes_example: janitorData.example_dialogs || '',
-                creator_notes: '',
-                system_prompt: '',
-                post_history_instructions: '',
-                alternate_greetings: Array.isArray(janitorData.first_messages)
-                    ? janitorData.first_messages.slice(1)
-                    : [],
-                character_book: undefined,
-                tags: janitorData.tags?.map(t => t.name) || [],
-                creator: janitorData.creator_name || '',
-                character_version: '',
-                extensions: {
-                    janitor_uuid: janitorData.id,
-                    janitor_display_name: janitorData.name,
-                },
-            },
-        };
-
-        let finalBuffer;
-
-        if (!janitorData.avatar) {
-            const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
-            finalBuffer = fs.readFileSync(defaultAvatarPath);
+    if (result.ok) {
+        /** @type {any} */
+        const downloadResult = await result.json();
+        if (downloadResult.status === 'ok') {
+            const imageResult = await fetch(downloadResult.downloadUrl);
+            const buffer = Buffer.from(await imageResult.arrayBuffer());
+            const fileName = `${sanitize(uuid)}.png`;
+            const fileType = imageResult.headers.get('content-type');
+            return { buffer, fileName, fileType };
         } else {
-            const avatarUrl = `https://ella.janitorai.com/bot-avatars/${janitorData.avatar}`;
-
-            try {
-                const avatarResponse = await fetch(avatarUrl, {
-                    headers: { 'User-Agent': USER_AGENT },
-                });
-
-                if (!avatarResponse.ok) {
-                    throw new Error(`Avatar fetch failed: ${avatarResponse.status}`);
-                }
-
-                const avatarBuffer = Buffer.from(await avatarResponse.arrayBuffer());
-                const contentType = avatarResponse.headers.get('content-type');
-
-                if (contentType && !contentType.includes('png')) {
-                    try {
-                        const image = await Jimp.read(avatarBuffer);
-                        finalBuffer = await image.getBuffer(JimpMime.png);
-                    } catch {
-                        finalBuffer = avatarBuffer;
-                    }
-                } else {
-                    finalBuffer = avatarBuffer;
-                }
-            } catch {
-                const defaultAvatarPath = path.join(serverDirectory, DEFAULT_AVATAR_PATH);
-                finalBuffer = fs.readFileSync(defaultAvatarPath);
-            }
+            console.error('Janny API failed to download', downloadResult);
         }
-
-        const cardBuffer = write(finalBuffer, JSON.stringify(tavernCard));
-
-        return {
-            buffer: cardBuffer,
-            fileName: `${sanitize(janitorData.chat_name || janitorData.name || uuid)}.png`,
-            fileType: 'image/png',
-        };
-    } catch (error) {
-        if (!error.cloudflareBlock) {
-            console.error('Error downloading JanitorAI character:', error);
-        }
-        throw error;
+    } else if (result.status === 403) {
+        // Cloudflare Bot Fight Mode blocked the API request
+        console.warn('JanitorAI API returned 403 — Cloudflare block detected for UUID:', uuid);
+        const bookmarkletCode = getJanitorBookmarkletCode();
+        const pageUrl = `https://janitorai.com/characters/${uuid}`;
+        const cfError = new Error('Cloudflare blocked JanitorAI API request');
+        cfError.cloudflareBlock = true;
+        cfError.status = 403;
+        cfError.uuid = uuid;
+        cfError.url = pageUrl;
+        cfError.bookmarklet = bookmarkletCode;
+        throw cfError;
+    } else {
+        console.error('Janny API returned error', result.statusText, await result.text());
     }
-}
 
-/**
- * Strips HTML tags from a string.
- * @param {string} html HTML string
- * @returns {string} Plain text
- */
-function stripHtml(html) {
-    if (!html) return '';
-    return html
-        .replace(/<[^>]*>/g, '')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, '\'')
-        .replace(/&apos;/g, '\'')
-        .trim();
+    throw new Error('Failed to download character');
 }
 
 /**
