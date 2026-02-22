@@ -3035,23 +3035,29 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     return imagePath;
 }
 
-function setTypeSpecificDimensions(generationType) {
+/**
+ * Adjusts image generation dimensions based on the generation type and/or previous media attachment.
+ * @param {number} generationType The type of image generation to perform, used to determine dimension adjustments
+ * @param {MediaAttachment} [mediaAttachment] Media attachment to base dimension adjustments on
+ * @returns {{height: number, width: number}} Previous dimensions before modification
+ */
+function setTypeSpecificDimensions(generationType, mediaAttachment = null) {
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
 
-    // Face images are always portrait (pun intended)
-    if ((generationType === generationMode.FACE || generationType === generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
+    // 1. If there's a media attachment, match its previous dimensions
+    // 2. Face images are always portrait (pun intended) - increase height if needed
+    // 3. Background images are always landscape - increase width if needed
+    if (Number.isInteger(mediaAttachment?.width) && Number.isInteger(mediaAttachment?.height)) {
+        extension_settings.sd.width = mediaAttachment.width;
+        extension_settings.sd.height = mediaAttachment.height;
+    } else if ((generationType === generationMode.FACE || generationType === generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
         // Round to nearest multiple of 64
         extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
-    }
-
-    if (generationType === generationMode.BACKGROUND) {
-        // Background images are always landscape
-        if (aspectRatio <= 1) {
-            // Round to nearest multiple of 64
-            extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
-        }
+    } else if (generationType === generationMode.BACKGROUND && aspectRatio <= 1) {
+        // Round to nearest multiple of 64
+        extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
     }
 
     if (extension_settings.sd.snap) {
@@ -5154,16 +5160,7 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     const generationType = mediaAttachment.generation_type ?? message?.extra?.generationType ?? generationMode.FREE;
 
     // Save original dimensions and apply saved attachment dimensions if available
-    const originalWidth = extension_settings.sd.width;
-    const originalHeight = extension_settings.sd.height;
-    const hasDimensionOverride = Number.isInteger(mediaAttachment.width) && Number.isInteger(mediaAttachment.height);
-    let typeSpecificDimensions = null;
-    if (hasDimensionOverride) {
-        extension_settings.sd.width = mediaAttachment.width;
-        extension_settings.sd.height = mediaAttachment.height;
-    } else {
-        typeSpecificDimensions = setTypeSpecificDimensions(generationType);
-    }
+    const dimensions = setTypeSpecificDimensions(generationType, mediaAttachment);
     extension_settings.sd.original_seed = extension_settings.sd.seed;
     extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
 
@@ -5199,12 +5196,7 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         onComplete();
         $(stopButton).hide();
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
-        if (typeSpecificDimensions) {
-            restoreOriginalDimensions(typeSpecificDimensions);
-        } else {
-            extension_settings.sd.width = originalWidth;
-            extension_settings.sd.height = originalHeight;
-        }
+        restoreOriginalDimensions(dimensions);
         extension_settings.sd.seed = extension_settings.sd.original_seed;
         delete extension_settings.sd.original_seed;
     }
