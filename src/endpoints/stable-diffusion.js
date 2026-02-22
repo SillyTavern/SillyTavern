@@ -1136,26 +1136,40 @@ huggingface.post('/generate', async (request, response) => {
 
         console.debug('Hugging Face request:', request.body);
 
-        const result = await fetch(`https://api-inference.huggingface.co/models/${request.body.model}`, {
-            method: 'POST',
-            body: JSON.stringify({
-                inputs: request.body.prompt,
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`,
-            },
-        });
+        const result = await fetch('https://router.huggingface.co/nscale/v1/images/generations',
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                },
+                method: 'POST',
+                body: JSON.stringify({
+                    response_format: "b64_json",
+                    prompt: request.body.prompt,
+                    model: request.body.model,
+                    width: request.body.width,
+                    height: request.body.height
+                })
+            }
+        );
+
+        const json = await result.json();
 
         if (!result.ok) {
-            console.warn('Hugging Face returned an error.');
-            return response.sendStatus(500);
+            console.warn('Hugging Face returned an error:', result.statusText, json?.error);
+
+            return response.sendStatus(500).send(json?.error);
         }
 
-        const buffer = await result.arrayBuffer();
-        return response.send({
-            image: Buffer.from(buffer).toString('base64'),
-        });
+        const image = json?.data?.[0]?.b64_json;
+
+        if (!image) {
+            console.warn('No image returned from Hugging Face.')
+            return response.sendStatus(500).send('No image returned from Hugging Face.');
+        }
+
+        return response.send({ image });
+
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

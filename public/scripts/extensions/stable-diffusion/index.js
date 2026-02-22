@@ -1893,7 +1893,7 @@ async function loadModels() {
             models = await loadStabilityModels();
             break;
         case sources.huggingface:
-            models = [{ value: '', text: t`<Enter Model ID above>` }];
+            models = [{ value: '', text: t`<Model ID Preselected Above>` }];
             break;
         case sources.chutes:
             models = await loadChutesModels();
@@ -4255,6 +4255,8 @@ async function generateHuggingFaceImage(prompt, signal) {
         body: JSON.stringify({
             model: extension_settings.sd.huggingface_model_id,
             prompt: prompt,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height
         }),
     });
 
