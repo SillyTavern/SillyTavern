@@ -5156,10 +5156,13 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     // Save original dimensions and apply saved attachment dimensions if available
     const originalWidth = extension_settings.sd.width;
     const originalHeight = extension_settings.sd.height;
-    if (mediaAttachment.width) extension_settings.sd.width = mediaAttachment.width;
-    if (mediaAttachment.height) extension_settings.sd.height = mediaAttachment.height;
-
-    setTypeSpecificDimensions(generationType);
+    const hasDimensionOverride = Number.isInteger(mediaAttachment.width) && Number.isInteger(mediaAttachment.height);
+    if (hasDimensionOverride) {
+        extension_settings.sd.width = mediaAttachment.width;
+        extension_settings.sd.height = mediaAttachment.height;
+    } else {
+        setTypeSpecificDimensions(generationType);
+    }
     extension_settings.sd.original_seed = extension_settings.sd.seed;
     extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
 
