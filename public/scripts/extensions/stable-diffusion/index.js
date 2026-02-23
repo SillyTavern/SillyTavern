@@ -4905,8 +4905,6 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
         title: prompt,
         generation_type: generationType,
         negative: additionalNegativePrefix,
-        width: extension_settings.sd.width,
-        height: extension_settings.sd.height,
         source: MEDIA_SOURCE.GENERATED,
     };
     /** @type {ChatMessage} */
@@ -5243,8 +5241,6 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         result.generation_type = generationType;
         result.title = prompt;
         result.negative = refineArgs.negative;
-        result.width = extension_settings.sd.width;
-        result.height = extension_settings.sd.height;
     } finally {
         onComplete();
         $(stopButton).hide();
@@ -5424,7 +5420,23 @@ jQuery(async () => {
             const currentSettings = applyCommandArguments(args);
 
             try {
-                return await generatePicture(initiators.command, args, String(trigger));
+                const url = await generatePicture(initiators.command, args, String(trigger));
+
+                // Save override width/height into a message result
+                if (!isTrueBoolean(args?.quiet?.toString()) && Object.hasOwn(args, 'width') && Object.hasOwn(args, 'height')) {
+                    const context = getContext();
+                    const message = context.chat.at(-1);
+                    if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
+                        const mediaAttachment = message.extra.media.findLast(m => m.url === url);
+                        if (mediaAttachment) {
+                            mediaAttachment.width = extension_settings.sd.width;
+                            mediaAttachment.height = extension_settings.sd.height;
+                            await context.saveChat();
+                        }
+                    }
+                }
+
+                return url;
             } catch (error) {
                 console.error('Failed to generate image:', error);
                 return '';
