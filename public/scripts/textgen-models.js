@@ -101,10 +101,12 @@ const OPENROUTER_PROVIDERS = [
     'Z.AI',
 ];
 
-async function syncOpenRouterProvidersForModel(modelId) {
-    const providersSelect = $('.openrouter_providers');
+export async function syncOpenRouterProvidersForModel(modelId, providersSelector) {
+    const $providers = $(providersSelector);
 
     if (!modelId || !modelId.includes('/')) {
+        $providers.find('option').prop('disabled', false);
+        $providers.trigger('change.select2');
         return;
     }
 
@@ -122,18 +124,15 @@ async function syncOpenRouterProvidersForModel(modelId) {
         const providerNames = await response.json();
 
         if (!Array.isArray(providerNames) || providerNames.length === 0) {
+            $providers.find('option').prop('disabled', false);
+            $providers.trigger('change.select2');
             return;
         }
 
-        const previousSelection = textgen_settings.openrouter_providers || [];
-
-        providersSelect.empty();
-        for (const provider of providerNames) {
-            providersSelect.append($('<option>', { value: provider, text: provider }));
-        }
-
-        const stillValid = previousSelection.filter(p => providerNames.includes(p));
-        providersSelect.val(stillValid).trigger('change');
+        $providers.find('option').each(function () {
+            const isAvailable = providerNames.includes($(this).val());
+            $(this).prop('disabled', !isAvailable);
+        });
     } catch (error) {
         console.error('Failed to fetch OpenRouter providers for model', error);
     }
@@ -353,7 +352,7 @@ export async function loadOpenRouterModels(data) {
 
     // Calculate the cost of the selected model + update on settings change
     calculateOpenRouterCost();
-    syncOpenRouterProvidersForModel(textgen_settings.openrouter_model);
+    syncOpenRouterProvidersForModel(textgen_settings.openrouter_model, '#openrouter_providers_text');
 }
 
 export async function loadVllmModels(data) {
@@ -714,7 +713,7 @@ function onOpenRouterModelSelect() {
     textgen_settings.openrouter_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
-    syncOpenRouterProvidersForModel(modelId);
+    syncOpenRouterProvidersForModel(modelId, '#openrouter_providers_text');
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 

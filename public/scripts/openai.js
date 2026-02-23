@@ -79,6 +79,7 @@ import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
+import { syncOpenRouterProvidersForModel } from './textgen-models.js';
 
 export {
     openai_messages_count,
@@ -5131,6 +5132,7 @@ async function onModelChange() {
 
         console.log('OpenRouter model changed to', value);
         oai_settings.openrouter_model = value;
+        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat');
     }
 
     if ($(this).is('#model_ai21_select')) {
