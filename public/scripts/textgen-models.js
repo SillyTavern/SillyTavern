@@ -133,6 +133,7 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
             const isAvailable = providerNames.includes($(this).val());
             $(this).prop('disabled', !isAvailable);
         });
+        $providers.trigger('change.select2');
     } catch (error) {
         console.error('Failed to fetch OpenRouter providers for model', error);
     }
