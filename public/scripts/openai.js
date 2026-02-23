@@ -2462,6 +2462,10 @@ function getReasoningEffort(settings = null, model = null) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
+                if (chat_completion_sources.OPENROUTER === settings.chat_completion_source && !settings.show_thoughts) {
+                    return 'none';
+                }
+
                 return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(model)
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;

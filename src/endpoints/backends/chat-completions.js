@@ -2107,8 +2107,8 @@ router.post('/generate', async function (request, response) {
                 bodyParams['route'] = 'fallback';
             }
 
-            if (request.body.reasoning_effort || !includeReasoning) {
-                bodyParams['reasoning']['effort'] = includeReasoning ? request.body.reasoning_effort : 'none';
+            if (request.body.reasoning_effort) {
+                bodyParams['reasoning']['effort'] = request.body.reasoning_effort;
             }
 
             if (request.body.verbosity) {
