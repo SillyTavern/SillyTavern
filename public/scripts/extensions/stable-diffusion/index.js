@@ -823,7 +823,7 @@ async function refinePrompt(prompt, args = null) {
         if (args?.negative) {
             customInputs.push({
                 id: 'sd_refine_negative',
-                label: t`Negative prompt`,
+                label: t`Negative prompt (optional)`,
                 type: 'textarea',
                 rows: 4,
                 defaultState: String(args.negative || ''),
@@ -846,7 +846,7 @@ async function refinePrompt(prompt, args = null) {
             {
                 rows: 8,
                 okButton: t`Continue`,
-                cancelButton: t`Abort`,
+                cancelButton: t`Cancel`,
                 customInputs,
                 onClose: (popup) => {
                     if (!popup.result || !args) {
