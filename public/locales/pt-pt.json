@@ -1436,5 +1436,9 @@
     "Still have questions?": "Ainda tem perguntas?",
     "Join the SillyTavern Discord": "Junte-se ao Discord do SillyTavern",
     "Post a GitHub issue": "Publicar um problema no GitHub",
-    "Contact the developers": "Contatar os desenvolvedores"
+    "Contact the developers": "Contatar os desenvolvedores",
+    "Interleaved Thinking": "Raciocínio intercalado",
+    "Since Last User Message": "Desde a última mensagem do utilizador",
+    "Active Tool Chain": "Cadeia de ferramentas ativa",
+    "openrouter_interleaved_thinking_hint": "Envia o raciocínio de turnos anteriores do assistente com pedidos de ferramentas para manter o contexto de raciocínio intercalado."
 }

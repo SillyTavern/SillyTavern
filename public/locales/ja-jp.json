@@ -1443,5 +1443,9 @@
     "Contact the developers": "開発者に連絡",
     "Stop Inspecting": "検査を停止",
     "Inspect Prompts": "プロンプトを検査",
-    "Toggle prompt inspection": "プロンプト検査の切り替え"
+    "Toggle prompt inspection": "プロンプト検査の切り替え",
+    "Interleaved Thinking": "インターリーブ思考",
+    "Since Last User Message": "直前のユーザーメッセージ以降",
+    "Active Tool Chain": "アクティブなツールチェーン",
+    "openrouter_interleaved_thinking_hint": "インターリーブ思考の文脈を維持するため、直前のアシスタントターンの推論をツール呼び出しリクエストとともに送信します。"
 }

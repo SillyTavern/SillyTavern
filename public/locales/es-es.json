@@ -1545,5 +1545,9 @@
     "Toggles sharing world tint with character sprites (This will override Character Tint)": "Alterna el tinte mundial compartido con los sprites de personajes (esto anulará el tinte de personajes)",
     "Sets the expression of the user sprite": "Establece la expresión del sprite de usuario",
     "Sets the user sprite set to use for the user sprite": "Establece el conjunto de sprites de usuario para usar en el sprite de usuario",
-    "Toggles the user sprite on the VN UI": "Alterna el sprite de usuario en la interfaz VN"
+    "Toggles the user sprite on the VN UI": "Alterna el sprite de usuario en la interfaz VN",
+    "Interleaved Thinking": "Razonamiento intercalado",
+    "Since Last User Message": "Desde el último mensaje del usuario",
+    "Active Tool Chain": "Cadena de herramientas activa",
+    "openrouter_interleaved_thinking_hint": "Envía razonamiento de turnos anteriores del asistente junto con solicitudes de herramientas para mantener el contexto del razonamiento intercalado."
 }

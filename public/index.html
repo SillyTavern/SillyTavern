@@ -2011,6 +2011,30 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="openrouter">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10">
+                                            <div class="flex-container oneline-dropdown">
+                                                <label for="tool_reasoning_mode" data-i18n="Interleaved Thinking">
+                                                    Interleaved Thinking
+                                                </label>
+                                                <select id="tool_reasoning_mode">
+                                                    <option data-i18n="Disabled" value="disabled">Disabled</option>
+                                                    <option data-i18n="Since Last User Message" value="since_last_user">Since Last User Message</option>
+                                                    <option data-i18n="Active Tool Chain" value="active_chain">Active Tool Chain</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="openrouter_interleaved_thinking_hint">
+                                                Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context.
+                                            </span>
+                                        </div>
+                                        <div id="openrouter_interleaved_thinking_disabled_hint" class="toggle-description justifyLeft" style="display:none;">
+                                            <em data-i18n="Enable &quot;Request model reasoning&quot; to use Interleaved Thinking.">
+                                                Enable "Request model reasoning" to use Interleaved Thinking.
+                                            </em>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,meganova,chutes">
                                         <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_media_inlining" type="checkbox" />
@@ -3261,6 +3285,9 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
+                                    <optgroup label="Gemini 3.1">
+                                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
@@ -3434,6 +3461,9 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
+                                    <optgroup label="Gemini 3.1">
+                                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>

@@ -247,6 +247,17 @@ export const verbosity_levels = {
     high: 'high',
 };
 
+export const tool_reasoning_modes = {
+    DISABLED: 'disabled',
+    SINCE_LAST_USER: 'since_last_user',
+    ACTIVE_CHAIN: 'active_chain',
+};
+
+// Providers that support interleaved reasoning forwarding in tool-call chains.
+const interleaved_reasoning_providers = [
+    chat_completion_sources.OPENROUTER,
+];
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -290,6 +301,7 @@ export const settingsToUpdate = {
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
+    tool_reasoning_mode: ['#tool_reasoning_mode', 'tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
@@ -439,6 +451,7 @@ const default_settings = {
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
+    tool_reasoning_mode: tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -580,19 +593,21 @@ function setOpenAIMessages(chat) {
         const originModel = chat[j]?.extra?.model;
         const isSameModel = originApi === currentApi && originModel === currentModel;
         const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
+        const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
 
-        // Remove signatures from invocations if the API/model don't match
+        // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
             invocations.forEach((invocation, index) => {
-                if (invocation.signature && !isSameModel) {
+                if (!isSameModel && (invocation.signature || invocation.reasoning)) {
                     const cloneInvocation = structuredClone(invocation);
                     delete cloneInvocation.signature;
+                    delete cloneInvocation.reasoning;
                     invocations[index] = cloneInvocation;
                 }
             });
         }
 
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature };
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning };
         j++;
     }
 
@@ -888,6 +903,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
     const includeSignature = isReasoningSignatureSupported();
+    const isToolReasoningProvider = interleaved_reasoning_providers.includes(oai_settings.chat_completion_source);
+    const toolReasoningMode = isToolReasoningProvider
+        ? getEffectiveToolReasoningMode()
+        : tool_reasoning_modes.DISABLED;
+    const includeToolReasoning = toolReasoningMode !== tool_reasoning_modes.DISABLED;
+    const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -939,11 +960,63 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
+            const promptIdx = messages.indexOf(chatPrompt);
+            const reasoningIsEligible = toolReasoningMode !== tool_reasoning_modes.DISABLED
+                && promptIdx > lastUserIdx;
+            let previousAssistantReasoning = '';
+            if (reasoningIsEligible) {
+                if (toolReasoningMode === tool_reasoning_modes.ACTIVE_CHAIN) {
+                    // Strict chain mode: skip tool/tool-call messages, then use only the first assistant text boundary.
+                    for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
+                        const candidate = messages[idx];
+                        if (candidate?.role === 'tool') {
+                            continue;
+                        }
+                        if (candidate?.role === 'assistant' && Array.isArray(candidate.invocations)) {
+                            continue;
+                        }
+                        const hasAssistantText = candidate?.role === 'assistant'
+                            && !Array.isArray(candidate.invocations)
+                            && typeof candidate.content === 'string'
+                            && candidate.content.trim().length > 0;
+                        if (hasAssistantText) {
+                            previousAssistantReasoning = String(candidate.reasoning ?? '');
+                        }
+                        break;
+                    }
+                } else if (toolReasoningMode === tool_reasoning_modes.SINCE_LAST_USER) {
+                    // Broad mode: use the latest assistant text reasoning anywhere since the last user.
+                    for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
+                        const candidate = messages[idx];
+                        const hasAssistantText = candidate?.role === 'assistant'
+                            && !Array.isArray(candidate.invocations)
+                            && typeof candidate.content === 'string'
+                            && candidate.content.trim().length > 0;
+                        if (!hasAssistantText) {
+                            continue;
+                        }
+                        const candidateReasoning = String(candidate.reasoning ?? '');
+                        if (candidateReasoning) {
+                            previousAssistantReasoning = candidateReasoning;
+                            break;
+                        }
+                    }
+                }
+            }
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
-            const invocations = chatPrompt.invocations;
+            const invocations = chatPrompt.invocations.map(invocation => {
+                const clone = structuredClone(invocation);
+                if (!reasoningIsEligible) {
+                    delete clone.reasoning;
+                } else if (previousAssistantReasoning) {
+                    // Prefer currently editable assistant-text reasoning based on forwarding mode over invocation snapshot.
+                    clone.reasoning = previousAssistantReasoning;
+                }
+                return clone;
+            });
             const toolCallMessage = await Message.createAsync(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
             const toolResultMessages = await Promise.all(invocations.slice().reverse().map((invocation) => Message.createAsync('tool', invocation.result || '[No content]', invocation.id)));
-            await toolCallMessage.setToolCalls(invocations, includeSignature);
+            await toolCallMessage.setToolCalls(invocations, includeSignature, includeToolReasoning);
             if (chatCompletion.canAffordAll([toolCallMessage, ...toolResultMessages])) {
                 for (const resultMessage of toolResultMessages) {
                     chatCompletion.insertAtStart(resultMessage, 'chatHistory');
@@ -2962,15 +3035,25 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.images.push(...imageUrls.filter(isDataURL));
         }
         if (show_thoughts) {
-            state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
+            state.reasoning +=
+                data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning ??
+                data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
+                data.choices?.filter(x => x?.message?.reasoning)?.[0]?.message?.reasoning ??
+                data.choices?.filter(x => x?.message?.reasoning_content)?.[0]?.message?.reasoning_content ??
+                '';
         }
-        // Extract thought signatures from OpenRouter streaming (reasoning_details in delta)
-        const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details || [];
+        // Extract thought signatures from OpenRouter streaming.
+        const reasoningDetails = [
+            ...(data?.choices?.[0]?.delta?.reasoning_details || []),
+            ...(data?.choices?.[0]?.message?.reasoning_details || []),
+        ];
         reasoningDetails.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                if (/^tool_/.test(detail.id)) {
+                const isToolLikeId = typeof detail.id === 'string' && /^(tool_|call_)/.test(detail.id);
+                if (typeof detail.id === 'string' && detail.id.length > 0) {
                     state.toolSignatures[detail.id] = detail.data;
-                } else {
+                }
+                if (!isToolLikeId) {
                     state.signature = detail.data;
                 }
             }
@@ -3214,6 +3297,8 @@ class Message {
     tool_call = null;
     /** @type {string?} */
     signature = null;
+    /** @type {string?} */
+    reasoning = null;
 
     /**
      * @constructor
@@ -3256,9 +3341,10 @@ class Message {
      * Reconstruct the message from a tool invocation.
      * @param {import('./tool-calling.js').ToolInvocation[]} invocations - The tool invocations to reconstruct the message from.
      * @param {boolean} includeSignature Whether to include the signature in the tool calls.
+     * @param {boolean} includeReasoning Whether to include plaintext reasoning fallback.
      * @returns {Promise<void>}
      */
-    async setToolCalls(invocations, includeSignature) {
+    async setToolCalls(invocations, includeSignature, includeReasoning = false) {
         this.tool_calls = invocations.map(i => ({
             id: i.id,
             type: 'function',
@@ -3268,7 +3354,13 @@ class Message {
             },
             ...(includeSignature && i.signature ? { signature: i.signature } : {}),
         }));
-        this.tokens = await tokenHandler.countAsync({ role: this.role, tool_calls: JSON.stringify(this.tool_calls) });
+        const fallbackReasoning = invocations.find(i => typeof i.reasoning === 'string' && i.reasoning.length > 0)?.reasoning || null;
+        this.reasoning = includeReasoning ? fallbackReasoning : null;
+        this.tokens = await tokenHandler.countAsync({
+            role: this.role,
+            tool_calls: JSON.stringify(this.tool_calls),
+            ...(this.reasoning ? { reasoning: this.reasoning } : {}),
+        });
     }
 
     /**
@@ -3519,6 +3611,7 @@ class MessageCollection {
                     ...(message.tool_calls && { tool_calls: message.tool_calls }),
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
                     ...(message.signature && { signature: message.signature }),
+                    ...(message.reasoning && { reasoning: message.reasoning }),
                 });
             }
             return acc;
@@ -3809,6 +3902,7 @@ export class ChatCompletion {
                     ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
                     ...(item.signature ? { signature: item.signature } : {}),
+                    ...(item.reasoning ? { reasoning: item.reasoning } : {}),
                 };
                 chat.push(message);
             } else {
@@ -4062,6 +4156,7 @@ function loadOpenAISettings(data, settings) {
 
     setNamesBehaviorControls();
     setContinuePostfixControls();
+    setToolReasoningControls();
 
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
@@ -4112,6 +4207,12 @@ function setContinuePostfixControls() {
     $('#continue_postfix').val(oai_settings.continue_postfix);
     const checkedItemText = $('input[name="continue_postfix"]:checked ~ span').text().trim();
     $('#continue_postfix_display').text(checkedItemText);
+}
+
+function setToolReasoningControls() {
+    const isEnabled = oai_settings.show_thoughts;
+    $('#tool_reasoning_mode').prop('disabled', !isEnabled);
+    $('#openrouter_interleaved_thinking_disabled_hint').toggle(!isEnabled);
 }
 
 async function getStatusOpen() {
@@ -5262,7 +5363,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-3-pro-image')) {
             $('#openai_max_context').attr('max', max_64k);
-        } else if (/gemini-3-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
+        } else if (/gemini-3[.\d]*-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-exp') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
             $('#openai_max_context').attr('max', max_1mil);
@@ -5745,6 +5846,8 @@ function toggleChatCompletionForms() {
         const matchesSource = validSources.includes(oai_settings.chat_completion_source);
         $(this).toggle(mode !== 'except' ? matchesSource : !matchesSource);
     });
+
+    setToolReasoningControls();
 }
 
 async function testApiConnection() {
@@ -6000,6 +6103,33 @@ export function isAudioInliningSupported() {
         default:
             return false;
     }
+}
+
+/**
+ * Gets the tool-call reasoning forwarding mode.
+ * @param {ChatCompletionSettings} settings Settings object to use
+ * @returns {string} Reasoning forwarding mode
+ */
+function getToolReasoningMode(settings = oai_settings) {
+    const mode = String(settings.tool_reasoning_mode ?? '');
+    if (Object.values(tool_reasoning_modes).includes(mode)) {
+        return mode;
+    }
+    return tool_reasoning_modes.DISABLED;
+}
+
+/**
+ * Gets the effective tool-call reasoning forwarding mode.
+ * Interleaved thinking requires explicit reasoning requests.
+ * @param {ChatCompletionSettings} settings Settings object to use
+ * @returns {string} Effective reasoning forwarding mode
+ */
+function getEffectiveToolReasoningMode(settings = oai_settings) {
+    if (!settings.show_thoughts) {
+        return tool_reasoning_modes.DISABLED;
+    }
+
+    return getToolReasoningMode(settings);
 }
 
 /**
@@ -6606,6 +6736,14 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#tool_reasoning_mode').on('input', function () {
+        oai_settings.tool_reasoning_mode = getToolReasoningMode({
+            ...oai_settings,
+            tool_reasoning_mode: String($(this).val()),
+        });
+        saveSettingsDebounced();
+    });
+
     $('#seed_openai').on('input', function () {
         oai_settings.seed = Number($(this).val());
         saveSettingsDebounced();
@@ -6709,6 +6847,7 @@ export function initOpenAI() {
 
     $('#openai_show_thoughts').on('input', function () {
         oai_settings.show_thoughts = !!$(this).prop('checked');
+        setToolReasoningControls();
         saveSettingsDebounced();
     });
 

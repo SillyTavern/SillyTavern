@@ -2871,7 +2871,7 @@ function ensureSelectionExists(setting, selector) {
 function updateGenerationIndicator() {
     if (activeGenerations > 0) {
         const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
-        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating image`}${countText}...`;
+        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating an image`}${countText}...`;
 
         // Show persistent toast if not already showing
         if (!generationToast) {
@@ -5344,7 +5344,6 @@ function registerFunctionTool() {
             const url = await generatePicture(initiators.tool, {}, args.prompt);
             return encodeURI(url);
         },
-        formatMessage: () => 'Generating an image...',
     });
 }
 

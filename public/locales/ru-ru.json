@@ -2738,5 +2738,9 @@
     "Uses the voices provided by your operating system": "Используем стандартные голоса вашей ОС",
     "Your browser or operating system doesn't support speech synthesis": "Ваш браузер либо ОС не поддерживают синтез речи",
     "Works best when: Pass Asterisks to TTS Engine is enabled, and both Only narrate quotes and Ignore *text, even 'quotes', inside asterisks* are disabled.": "Работает лучше всего, когда: одновременно включена опция \"Передавать звёздочки TTS-движку\", а также отключены обе опции: \"Не озвучивать *текст, даже \"в кавычках\", если он внутри звёздочек*\", и \"Озвучивать только текст \"в кавычках\"\"",
-    "Available voices": "Доступные голоса"
+    "Available voices": "Доступные голоса",
+    "Interleaved Thinking": "Чередующееся рассуждение",
+    "Since Last User Message": "С момента последнего сообщения пользователя",
+    "Active Tool Chain": "Активная цепочка инструментов",
+    "openrouter_interleaved_thinking_hint": "Отправляет рассуждение из предыдущих ходов ассистента вместе с запросами вызова инструментов, чтобы сохранять контекст чередующегося рассуждения."
 }

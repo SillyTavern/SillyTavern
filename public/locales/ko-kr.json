@@ -1617,5 +1617,9 @@
     "to install additional features.": "으로 가세요.",
     "Master Import": "마스터 불러오기",
     "Master Export": "마스터 내보내기",
-    "Chat Quick Reply Sets": "채팅 빠른 답장 세트들"
+    "Chat Quick Reply Sets": "채팅 빠른 답장 세트들",
+    "Interleaved Thinking": "인터리브드 사고",
+    "Since Last User Message": "마지막 사용자 메시지 이후",
+    "Active Tool Chain": "활성 도구 체인",
+    "openrouter_interleaved_thinking_hint": "인터리브드 사고 컨텍스트를 유지하기 위해 이전 어시스턴트 턴의 추론을 도구 호출 요청과 함께 전송합니다."
 }
