@@ -1,0 +1,11 @@
+{
+    "display_name": "PRTS Narrative Engine",
+    "loading_order": 200,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "PRTS",
+    "version": "1.0.0",
+    "homePage": ""
+}
