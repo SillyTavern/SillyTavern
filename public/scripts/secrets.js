@@ -72,6 +72,7 @@ export const SECRET_KEYS = {
     COMETAPI: 'api_key_cometapi',
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
+    BRAINIALL: 'api_key_brainiall',
     ELEVENLABS: 'api_key_elevenlabs',
     POLLINATIONS: 'api_key_pollinations',
     VOLCENGINE_APP_ID: 'volcengine_app_id',
@@ -136,6 +137,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.AZURE_OPENAI]: 'Azure OpenAI',
     [SECRET_KEYS.ZAI]: 'Z.AI',
     [SECRET_KEYS.SILICONFLOW]: 'SiliconFlow',
+    [SECRET_KEYS.BRAINIALL]: 'Brainiall',
     [SECRET_KEYS.ELEVENLABS]: 'ElevenLabs TTS',
     [SECRET_KEYS.POLLINATIONS]: 'Pollinations',
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
@@ -182,6 +184,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
     [SECRET_KEYS.ZAI]: '#api_key_zai',
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
+    [SECRET_KEYS.BRAINIALL]: '#api_key_brainiall',
     [SECRET_KEYS.COMFY_RUNPOD]: '#api_key_comfy_runpod',
     [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
 };
