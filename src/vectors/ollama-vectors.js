@@ -12,12 +12,39 @@ import { TEXTGEN_TYPES } from '../constants.js';
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 export async function getOllamaBatchVector(texts, apiUrl, model, keep, directories) {
-    const result = [];
-    for (const text of texts) {
-        const vector = await getOllamaVector(text, apiUrl, model, keep, directories);
-        result.push(vector);
+    const url = new URL(apiUrl);
+    url.pathname = '/api/embed';
+
+    const headers = {};
+    setAdditionalHeadersByType(headers, TEXTGEN_TYPES.OLLAMA, apiUrl, directories);
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...headers,
+        },
+        body: JSON.stringify({
+            input: texts,
+            model: model,
+            keep_alive: keep ? -1 : undefined,
+            truncate: true,
+        }),
+    });
+
+    if (!response.ok) {
+        const responseText = await response.text();
+        throw new Error(`Ollama: Failed to get batch vectors: ${response.statusText} ${responseText}`);
     }
-    return result;
+
+    /** @type {any} */
+    const data = await response.json();
+
+    if (!Array.isArray(data?.embeddings)) {
+        throw new Error('API response was not an array');
+    }
+
+    return data.embeddings;
 }
 
 /**
@@ -31,7 +58,7 @@ export async function getOllamaBatchVector(texts, apiUrl, model, keep, directori
  */
 export async function getOllamaVector(text, apiUrl, model, keep, directories) {
     const url = new URL(apiUrl);
-    url.pathname = '/api/embeddings';
+    url.pathname = '/api/embed';
 
     const headers = {};
     setAdditionalHeadersByType(headers, TEXTGEN_TYPES.OLLAMA, apiUrl, directories);
@@ -43,7 +70,7 @@ export async function getOllamaVector(text, apiUrl, model, keep, directories) {
             ...headers,
         },
         body: JSON.stringify({
-            prompt: text,
+            input: text,
             model: model,
             keep_alive: keep ? -1 : undefined,
             truncate: true,
@@ -58,9 +85,9 @@ export async function getOllamaVector(text, apiUrl, model, keep, directories) {
     /** @type {any} */
     const data = await response.json();
 
-    if (!Array.isArray(data?.embedding)) {
+    if (!Array.isArray(data?.embeddings?.[0])) {
         throw new Error('API response was not an array');
     }
 
-    return data.embedding;
+    return data.embeddings[0];
 }
