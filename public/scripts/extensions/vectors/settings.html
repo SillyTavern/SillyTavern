@@ -19,6 +19,7 @@
                     <option value="koboldcpp">KoboldCpp</option>
                     <option value="llamacpp">llama.cpp</option>
                     <option value="transformers" data-i18n="Local (Transformers)">Local (Transformers)</option>
+                    <option value="meganova">MegaNova</option>
                     <option value="mistral">MistralAI</option>
                     <option value="nanogpt">NanoGPT</option>
                     <option value="nomicai">NomicAI</option>
@@ -46,6 +47,17 @@
                 <select id="vectors_nanogpt_model" class="text_pole"></select>
                 <i data-i18n="Hint: Set your NanoGPT API key in API Connections.">
                     Hint: Set your NanoGPT API key in API Connections.
+                </i>
+            </div>
+            <div class="flex-container flexFlowColumn" id="meganova_vectorsModel">
+                <label for="vectors_meganova_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_meganova_model" class="text_pole">
+                    <option value="Qwen/Qwen3-Embedding-8B">Qwen3-Embedding-8B</option>
+                </select>
+                <i data-i18n="Hint: Set your MegaNova API key in API Connections.">
+                    Hint: Set your MegaNova API key in API Connections.
                 </i>
             </div>
             <div class="flex-container flexFlowColumn" id="electronhub_vectorsModel">

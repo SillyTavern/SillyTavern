@@ -691,6 +691,24 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MEGANOVA && oai_settings.meganova_model) {
+        const model = oai_settings.meganova_model.toLowerCase();
+
+        if (model.includes('deepseek')) {
+            return deepseekTokenizer;
+        } else if (model.includes('qwen') || model.includes('qwq')) {
+            return qwen2Tokenizer;
+        } else if (model.includes('llama')) {
+            return llama3Tokenizer;
+        } else if (model.includes('gemma')) {
+            return gemmaTokenizer;
+        } else if (model.includes('gemini') || model.includes('gpt-4o')) {
+            return gpt4oTokenizer;
+        } else if (model.includes('mistral')) {
+            return mistralTokenizer;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         if (oai_settings.cohere_model.includes('command-a')) {
             return commandATokenizer;

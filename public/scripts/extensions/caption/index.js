@@ -620,6 +620,7 @@ jQuery(async function () {
         await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
         await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
         await processEndpoint('moonshot', '/api/backends/chat-completions/multimodal-models/moonshot');
+        await processEndpoint('meganova', '/api/backends/chat-completions/multimodal-models/meganova');
     }
 
     await addSettings();

@@ -5008,14 +5008,13 @@ function getMeganovaMaxContext(model, isUnlocked) {
         return unlocked_max;
     }
 
-    const contextMap = {
-        'meganova-ai/manta-mini-1.0': max_8k,
-        'meganova-ai/manta-flash-1.0': max_16k,
-        'meganova-ai/manta-pro-1.0': max_32k,
-    };
-
-    // Return context size if model found, otherwise default to 128k
-    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_128k;
+    if (Array.isArray(model_list)) {
+        const modelInfo = model_list.find(m => m.id === model);
+        if (modelInfo?.context_length) {
+            return modelInfo.context_length;
+        }
+    }
+    return max_128k;
 }
 
 /**
@@ -6018,8 +6017,10 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
-        case chat_completion_sources.MEGANOVA:
-            return visionSupportedModels.some(model => oai_settings.meganova_model.includes(model));
+        case chat_completion_sources.MEGANOVA: {
+            const modelType = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.meganova_model)?.model_type;
+            return modelType === 'multimodal' || modelType === 'Vision';
+        }
         default:
             return false;
     }

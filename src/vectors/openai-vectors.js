@@ -54,6 +54,13 @@ const SOURCES = {
         headers: {},
         processBody: () => {},
     },
+    'meganova': {
+        secretKey: SECRET_KEYS.MEGANOVA,
+        url: 'https://api.meganova.ai/v1',
+        model: 'Qwen/Qwen3-Embedding-8B',
+        headers: {},
+        processBody: () => {},
+    },
 };
 
 /**

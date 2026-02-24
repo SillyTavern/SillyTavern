@@ -1845,13 +1845,13 @@ router.post('/status', async function (request, statusResponse) {
                 /** @type {any} */
                 const modelsData = await modelsResponse.json();
                 const allModels = modelsData?.data?.models ?? [];
-                const chatModels = allModels.filter(m => m.model_type === 'Text');
+                const excludedTypes = ['Embedding', 'Image', 'Video', 'Reranking'];
+                const chatModels = allModels.filter(m => !excludedTypes.includes(m.model_type));
                 return statusResponse.send({
                     data: chatModels.map(m => ({
                         id: m.model_name,
-                        object: 'model',
-                        owned_by: 'meganova',
                         context_length: m.context_length,
+                        model_type: m.model_type,
                     })),
                 });
             } catch (error) {
@@ -2683,6 +2683,38 @@ multimodalModels.post('/moonshot', async (req, res) => {
         const data = await response.json();
 
         const multimodalModels = data.data.filter(m => m.supports_image_in).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/meganova', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.MEGANOVA);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://api.meganova.ai/api/v1/serverless/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const allModels = data?.data?.models ?? [];
+        const visionTypes = ['multimodal', 'Vision'];
+        const multimodalModels = allModels
+            .filter(m => visionTypes.includes(m.model_type))
+            .map(m => m.model_name);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
