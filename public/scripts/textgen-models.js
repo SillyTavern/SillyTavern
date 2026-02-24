@@ -136,9 +136,7 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
     const $providers = $(providersSelector);
 
     const refreshWarningState = () => {
-        updateOpenRouterProvidersWarning(
-            providersSelector
-        );
+        updateOpenRouterProvidersWarning(providersSelector);
     };
 
     if (!modelId || !modelId.includes('/')) {
