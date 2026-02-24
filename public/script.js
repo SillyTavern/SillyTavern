@@ -2821,6 +2821,7 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
         environment.char_version = fields.version || '';
         environment.charDepthPrompt = fields.charDepthPrompt || '';
         environment.creatorNotes = fields.creatorNotes || '';
+        environment.firstMessage = environment.greeting = fields.firstMessage || '';
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
@@ -3230,6 +3231,7 @@ export function baseChatReplace(value, name1Override = null, name2Override = nul
  * @property {string} version Character version
  * @property {string} charDepthPrompt Character depth note
  * @property {string} creatorNotes Character creator notes
+ * @property {string} firstMessage Character first message / greeting
  */
 
 /**
@@ -3316,6 +3318,10 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
             const exampleDialog = chat_metadata.mes_example || character.mes_example || '';
             return baseChatReplace(exampleDialog.trim());
         },
+        firstMessage: () => {
+            if (!character) return '';
+            return character.first_mes?.trim() ?? '';
+        },
     };
 
     return createLazyFields(resolvers);
@@ -3342,6 +3348,7 @@ export function getCharacterCardFields({ chid = undefined } = {}) {
         version: lazy.version,
         charDepthPrompt: lazy.charDepthPrompt,
         creatorNotes: lazy.creatorNotes,
+        firstMessage: lazy.firstMessage,
     };
 }
 

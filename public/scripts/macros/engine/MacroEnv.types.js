@@ -38,6 +38,7 @@
  * @property {string} [charDepthPrompt]
  * @property {string} [creatorNotes]
  * @property {string} [version]
+ * @property {string} [firstMessage]
  */
 
 /**

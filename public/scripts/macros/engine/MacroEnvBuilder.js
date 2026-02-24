@@ -109,6 +109,7 @@ class MacroEnvBuilder {
                     ['version', 'version'],
                     ['charDepthPrompt', 'charDepthPrompt'],
                     ['creatorNotes', 'creatorNotes'],
+                    ['firstMessage', 'firstMessage'],
                 ]);
                 for (const [envKey, fieldKey] of fieldMappings) {
                     Object.defineProperty(env.character, envKey, {

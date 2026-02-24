@@ -140,6 +140,14 @@ export function registerEnvMacros() {
         handler: ({ env }) => env.character.creatorNotes ?? '',
     });
 
+    MacroRegistry.registerMacro('charFirstMessage', {
+        aliases: [{ alias: 'firstMessage' }, { alias: 'greeting' }],
+        category: MacroCategory.CHARACTER,
+        description: 'The character\'s first message / greeting.',
+        returns: 'Character first message.',
+        handler: ({ env }) => env.character.firstMessage ?? '',
+    });
+
     // Character version macros (legacy variants and documented {{charVersion}})
     MacroRegistry.registerMacro('charVersion', {
         aliases: [
