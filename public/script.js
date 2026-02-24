@@ -3320,7 +3320,7 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
         },
         firstMessage: () => {
             if (!character) return '';
-            return character.first_mes?.trim() ?? '';
+            return character.first_mes?.trim() || '';
         },
     };
 
