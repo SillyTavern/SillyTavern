@@ -101,12 +101,50 @@ const OPENROUTER_PROVIDERS = [
     'Z.AI',
 ];
 
+const OPENROUTER_PROVIDER_WARNING_SELECTORS = {
+    '#openrouter_providers_text': {
+        fallbackSelector: '#openrouter_allow_fallbacks_textgenerationwebui',
+        warningSelector: '#openrouter_provider_warning_text',
+    },
+    '#openrouter_providers_chat': {
+        fallbackSelector: '#openrouter_allow_fallbacks',
+        warningSelector: '#openrouter_provider_warning_chat',
+    },
+};
+
+export function updateOpenRouterProvidersWarning(providersSelector) {
+    const $providers = $(providersSelector);
+
+    const warningSelectors = OPENROUTER_PROVIDER_WARNING_SELECTORS[providersSelector];
+
+    if ($providers.length === 0 || !warningSelectors) {
+        return;
+    }
+
+    const $fallback = $(warningSelectors.fallbackSelector);
+    const $warning = $(warningSelectors.warningSelector);
+
+    const allowFallback = !!$fallback.prop('checked');
+    const selectedCount = $providers.find('option:selected').length;
+    const applicableSelectedCount = $providers.find('option:selected:not(:disabled)').length;
+    const showWarning = !allowFallback && selectedCount > 0 && applicableSelectedCount === 0;
+
+    $warning.toggleClass('displayNone', !showWarning);
+}
+
 export async function syncOpenRouterProvidersForModel(modelId, providersSelector) {
     const $providers = $(providersSelector);
+
+    const refreshWarningState = () => {
+        updateOpenRouterProvidersWarning(
+            providersSelector
+        );
+    };
 
     if (!modelId || !modelId.includes('/')) {
         $providers.find('option').prop('disabled', false);
         $providers.trigger('change.select2');
+        refreshWarningState();
         return;
     }
 
@@ -118,6 +156,7 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
         });
 
         if (!response.ok) {
+            refreshWarningState();
             return;
         }
 
@@ -126,6 +165,7 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
         if (!Array.isArray(providerNames) || providerNames.length === 0) {
             $providers.find('option').prop('disabled', false);
             $providers.trigger('change.select2');
+            refreshWarningState();
             return;
         }
 
@@ -133,9 +173,12 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
             const isAvailable = providerNames.includes($(this).val());
             $(this).prop('disabled', !isAvailable);
         });
+
         $providers.trigger('change.select2');
+        refreshWarningState();
     } catch (error) {
         console.error('Failed to fetch OpenRouter providers for model', error);
+        refreshWarningState();
     }
 }
 
