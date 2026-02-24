@@ -124,6 +124,7 @@ export async function setUserAvatar(imgfile, { toastPersonaNameChange = true, na
     await retriggerFirstMessageOnEmptyChat();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
+    await eventSource.emit(event_types.PERSONA_CHANGED, user_avatar);
 }
 
 function reloadUserAvatar(force = false) {
