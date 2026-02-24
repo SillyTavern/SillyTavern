@@ -530,6 +530,7 @@ export async function initUserStorage(dataRoot) {
  */
 export function getCookieSecret(dataRoot) {
     const cookieSecretPath = path.join(dataRoot, COOKIE_SECRET_PATH);
+    fs.mkdirSync(path.dirname(cookieSecretPath), { recursive: true });
 
     if (fs.existsSync(cookieSecretPath)) {
         const stat = fs.statSync(cookieSecretPath);
