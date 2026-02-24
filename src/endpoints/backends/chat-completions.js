@@ -228,6 +228,7 @@ async function sendClaudeRequest(request, response) {
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6)/.test(request.body.model);
         const useVerbosity = /^claude-(opus-4-5|opus-4-6|sonnet-4-6)/.test(request.body.model);
         const noPrefillModel = /^claude-(opus-4-6|sonnet-4-6)/.test(request.body.model);
+        const isAdaptiveModel = /^claude-(opus-4-6|sonnet-4-6)/.test(request.body.model);
         let fixThinkingPrefill = false;
         // Add custom stop sequences
         const stopSequences = [];
@@ -305,10 +306,18 @@ async function sendClaudeRequest(request, response) {
         }
 
         const reasoningEffort = request.body.reasoning_effort;
-        const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, reasoningEffort, requestBody.stream);
+        const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, reasoningEffort, requestBody.stream, isAdaptiveModel);
 
-        if (useThinking && Number.isInteger(budgetTokens)) {
-            // No prefill when thinking
+        // Adaptive thinking: returns a string effort level (like Gemini 3)
+        if (useThinking && typeof budgetTokens === 'string') {
+            fixThinkingPrefill = true;
+            requestBody.thinking = { type: 'adaptive' };
+            requestBody.output_config ??= {};
+            requestBody.output_config.effort = budgetTokens;
+            // top_k is not allowed in adaptive mode
+            delete requestBody.top_k;
+        } else if (useThinking && Number.isInteger(budgetTokens)) {
+            // Traditional thinking: returns a numeric budget
             fixThinkingPrefill = true;
             const minThinkTokens = 1024;
             if (requestBody.max_tokens <= minThinkTokens) {
@@ -332,8 +341,8 @@ async function sendClaudeRequest(request, response) {
             convertedPrompt.messages[convertedPrompt.messages.length - 1].role = 'user';
         }
 
-        // Verbosity = 'effort' (same values as OpenAI)
-        if (useVerbosity && request.body.verbosity) {
+        // Verbosity = 'effort' (same values as OpenAI) - only if not already set by adaptive thinking
+        if (useVerbosity && request.body.verbosity && !requestBody.output_config?.effort) {
             betaHeaders.push('effort-2025-11-24');
             requestBody.output_config ??= {};
             requestBody.output_config.effort = request.body.verbosity;
