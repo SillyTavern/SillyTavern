@@ -1764,6 +1764,7 @@ function makeTagListDraggable(tagContainer) {
  * Sorts the given tags, returning a shallow copy of it
  *
  * @param {Tag[]} tags - The tags
+ * @param {Map<string, number>} [counts=null] - Optional map of tag ID to usage count
  * @returns {Tag[]} The sorted tags
  */
 function sortTags(tags, counts = null) {
@@ -1784,8 +1785,8 @@ function compareTagsForSort(a, b, counts = null) {
 
     // sort on number of entries
     if (power_user.tag_sort_mode === tag_sort_mode.BY_ENTRIES) {
-        const aCount = counts ? (counts.get(a.id) || 0) : (a.count || 0);
-        const bCount = counts ? (counts.get(b.id) || 0) : (b.count || 0);
+        const aCount = counts instanceof Map ? (counts.get(a.id) || 0) : (a.count || 0);
+        const bCount = counts instanceof Map ? (counts.get(b.id) || 0) : (b.count || 0);
         return (bCount - aCount) || defaultSort;
     }
 
