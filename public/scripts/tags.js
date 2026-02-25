@@ -2285,6 +2285,9 @@ function printViewTagList(tagContainer, empty = true) {
 
 function removeMissingTagFilters() {
     const tagIds = new Set(tags.map(tag => tag.id));
+    const assignedTagIds = new Set(Object.values(tag_map).flat());
+    const openBogusFolderIds = new Set(getOpenBogusFolders().map(tag => tag.id));
+    const isEmptyOpenBogusFolder = (tagId) => openBogusFolderIds.has(tagId) && !assignedTagIds.has(tagId);
 
     for (const helper of [groupCandidatesFilter, groupMembersFilter, entitiesFilter]) {
         const { selected, excluded } = helper.getFilterData(FILTER_TYPES.TAG);
@@ -2292,7 +2295,7 @@ function removeMissingTagFilters() {
 
         if (Array.isArray(selected)) {
             for (let i = selected.length - 1; i >= 0; i--) {
-                if (!tagIds.has(selected[i])) {
+                if (!tagIds.has(selected[i]) || isEmptyOpenBogusFolder(selected[i])) {
                     selected.splice(i, 1);
                     anyRemoved = true;
                 }
@@ -2301,7 +2304,7 @@ function removeMissingTagFilters() {
 
         if (Array.isArray(excluded)) {
             for (let i = excluded.length - 1; i >= 0; i--) {
-                if (!tagIds.has(excluded[i])) {
+                if (!tagIds.has(excluded[i]) || isEmptyOpenBogusFolder(excluded[i])) {
                     excluded.splice(i, 1);
                     anyRemoved = true;
                 }
