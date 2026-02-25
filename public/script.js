@@ -2821,7 +2821,6 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
         environment.char_version = fields.version || '';
         environment.charDepthPrompt = fields.charDepthPrompt || '';
         environment.creatorNotes = fields.creatorNotes || '';
-        environment.firstMessage = environment.greeting = fields.firstMessage || '';
     }
 
     // Must be substituted last so that they're replaced inside {{description}}

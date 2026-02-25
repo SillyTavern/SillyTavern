@@ -1,5 +1,5 @@
 import { Handlebars, moment, seedrandom, droll } from '../lib.js';
-import { chat, chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMaxResponseTokens, getCurrentChatId, substituteParams, eventSource, event_types, extension_prompts } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMaxResponseTokens, getCurrentChatId, substituteParams, eventSource, event_types, extension_prompts, characters, this_chid } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash, escapeRegex, uuidv4 } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { getInstructMacros } from './instruct-mode.js';
@@ -571,6 +571,28 @@ function getDiceRollMacro() {
 }
 
 /**
+ * Returns a macro for resolving character greeting by index.
+ * {{greeting}} or {{greeting::0}} returns the main first message.
+ * {{greeting::N}} (N >= 1) returns the Nth alternate greeting.
+ * {{charFirstMessage}} and {{charFirstMessage::N}} work the same way.
+ * @returns {Macro}
+ */
+function getGreetingMacro() {
+    return {
+        regex: /{{(?:greeting|charFirstMessage)(?:::(\d+))?}}/gi,
+        replace: (_, indexStr) => {
+            const index = indexStr !== undefined ? parseInt(indexStr, 10) : 0;
+            const character = characters[this_chid];
+            if (!character) return '';
+            if (index === 0) return character.first_mes?.trim() || '';
+            const altGreetings = character.data?.alternate_greetings;
+            if (!Array.isArray(altGreetings)) return '';
+            return altGreetings[index - 1]?.trim() ?? '';
+        },
+    };
+}
+
+/**
  * Returns the difference between two times. Works with any time format acceptable by moment().
  * Can work with {{date}} {{time}} macros
  * @returns {Macro} The time difference macro
@@ -664,6 +686,7 @@ export function evaluateMacros(content, env, postProcessFn) {
         { regex: /{{idle_duration}}/gi, replace: () => getTimeSinceLastMessage() },
         { regex: /{{time_UTC([-+]\d+)}}/gi, replace: (_, offset) => moment().utc().utcOffset(parseInt(offset, 10)).format('LT') },
         { regex: /{{outlet::(.+?)}}/gi, replace: (_, key) => getOutletPrompt(key.trim()) || '' },
+        getGreetingMacro(),
         getTimeDiffMacro(),
         getBannedWordsMacro(),
         getRandomReplaceMacro(),

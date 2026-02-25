@@ -1,6 +1,6 @@
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { isMobile } from '../../RossAscends-mods.js';
-import { parseMesExamples, main_api } from '../../../script.js';
+import { parseMesExamples, main_api, characters, this_chid } from '../../../script.js';
 import { power_user } from '../../power-user.js';
 import { formatInstructModeExamples } from '../../instruct-mode.js';
 
@@ -141,11 +141,27 @@ export function registerEnvMacros() {
     });
 
     MacroRegistry.registerMacro('charFirstMessage', {
-        aliases: [{ alias: 'firstMessage' }, { alias: 'greeting' }],
+        aliases: [{ alias: 'greeting' }],
         category: MacroCategory.CHARACTER,
-        description: 'The character\'s first message / greeting.',
-        returns: 'Character first message.',
-        handler: ({ env }) => env.character.firstMessage ?? '',
+        unnamedArgs: [
+            {
+                name: 'index',
+                optional: true,
+                defaultValue: '0',
+                type: MacroValueType.INTEGER,
+                description: '0-based index. 0 (default) returns the main greeting, 1 and up return alternate greetings.',
+            },
+        ],
+        description: 'The character\'s first message / greeting. Optionally specify an index to access alternate greetings.',
+        returns: 'Character greeting at the given index, or empty string if out of bounds.',
+        exampleUsage: ['{{greeting}}', '{{greeting::0}}', '{{greeting::1}}'],
+        handler: ({ env, unnamedArgs: [index] }) => {
+            const i = Number(index ?? 0);
+            if (i === 0) return env.character.firstMessage ?? '';
+            const altGreetings = characters[this_chid]?.data?.alternate_greetings;
+            if (!Array.isArray(altGreetings)) return '';
+            return altGreetings[i - 1]?.trim() ?? '';
+        },
     });
 
     // Character version macros (legacy variants and documented {{charVersion}})
