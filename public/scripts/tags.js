@@ -1766,8 +1766,8 @@ function makeTagListDraggable(tagContainer) {
  * @param {Tag[]} tags - The tags
  * @returns {Tag[]} The sorted tags
  */
-function sortTags(tags) {
-    return tags.slice().sort(compareTagsForSort);
+function sortTags(tags, counts = null) {
+    return tags.slice().sort((a, b) => compareTagsForSort(a, b, counts));
 }
 
 /**
@@ -1775,15 +1775,18 @@ function sortTags(tags) {
  *
  * @param {Tag} a - First tag
  * @param {Tag} b - Second tag
+ * @param {Map<string, number>} [counts=null] - Optional map of tag ID to usage count
  * @returns {number} The compare result
  */
-function compareTagsForSort(a, b) {
+function compareTagsForSort(a, b, counts = null) {
     // default sort: alphabetical, case insensitive
     const defaultSort = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 
     // sort on number of entries
     if (power_user.tag_sort_mode === tag_sort_mode.BY_ENTRIES) {
-        return ((b.count || 0) - (a.count || 0)) || defaultSort;
+        const aCount = counts ? (counts.get(a.id) || 0) : (a.count || 0);
+        const bCount = counts ? (counts.get(b.id) || 0) : (b.count || 0);
+        return (bCount - aCount) || defaultSort;
     }
 
     // alphabetical sort
@@ -2273,10 +2276,10 @@ function copyTags(data) {
 function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
-    const sortedTags = sortTags(tags);
+    const counts = new Map(tags.map(tag => [tag.id, everything.filter(x => x === tag.id).length]));
+    const sortedTags = sortTags(tags, counts);
     for (const tag of sortedTags) {
-        const count = everything.filter(x => x === tag.id).length;
-        appendViewTagToList(tagContainer, tag, count);
+        appendViewTagToList(tagContainer, tag, counts.get(tag.id) || 0);
     }
 }
 
