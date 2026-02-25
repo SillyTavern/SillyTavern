@@ -2038,7 +2038,7 @@ function appendViewTagToList(list, tag, count) {
         colorPicker[0].color = defaultColor;
     });
 
-    const getHideTooltip = () => tag.is_hidden_on_character_card ? t`Show on character card` : t`Hide on character card`;
+    const getHideTooltip = () => tag.is_hidden_on_character_card ? t`Hide on character card` : t`Show on character card`;
     const hideToggle = template.find('.eye-toggle');
     hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
     hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
