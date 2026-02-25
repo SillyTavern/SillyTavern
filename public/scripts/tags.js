@@ -326,7 +326,6 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [folder_type] - The bogus folder type of this tag (based on `TAG_FOLDER_TYPES`)
  * @property {string} [filter_state] - The saved state of the filter chosen of this tag (based on `FILTER_STATES`)
  * @property {number} [sort_order] - A custom integer representing the sort order if tags are sorted
- * @property {number} [count] - The number of entities that have this tag assigned
  * @property {string} [color] - The background color of the tag
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
@@ -1785,8 +1784,8 @@ function compareTagsForSort(a, b, counts = null) {
 
     // sort on number of entries
     if (power_user.tag_sort_mode === tag_sort_mode.BY_ENTRIES) {
-        const aCount = counts instanceof Map ? (counts.get(a.id) || 0) : (a.count || 0);
-        const bCount = counts instanceof Map ? (counts.get(b.id) || 0) : (b.count || 0);
+        const aCount = counts instanceof Map ? (counts.get(a.id) || 0) : 0;
+        const bCount = counts instanceof Map ? (counts.get(b.id) || 0) : 0;
         return (bCount - aCount) || defaultSort;
     }
 
