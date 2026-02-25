@@ -2279,7 +2279,8 @@ function printViewTagList(tagContainer, empty = true) {
     const counts = new Map(tags.map(tag => [tag.id, everything.filter(x => x === tag.id).length]));
     const sortedTags = sortTags(tags, counts);
     for (const tag of sortedTags) {
-        appendViewTagToList(tagContainer, tag, counts.get(tag.id) || 0);
+        const count = counts.get(tag.id) || 0;
+        appendViewTagToList(tagContainer, tag, count);
     }
 }
 
