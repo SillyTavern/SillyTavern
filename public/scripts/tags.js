@@ -2038,7 +2038,7 @@ function appendViewTagToList(list, tag, count) {
         colorPicker[0].color = defaultColor;
     });
 
-    const getHideTooltip = () => tag.is_hidden_on_character_card ? t`Hide on character card` : t`Show on character card`;
+    const getHideTooltip = () => tag.is_hidden_on_character_card ? t`Show on character card` : t`Hide on character card`;
     const hideToggle = template.find('.eye-toggle');
     hideToggle.toggleClass('fa-eye-slash', tag.is_hidden_on_character_card);
     hideToggle.toggleClass('fa-eye', !tag.is_hidden_on_character_card);
@@ -2273,13 +2273,10 @@ function copyTags(data) {
 function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
-    const tagsWithCounts = tags.map(tag => {
-        const count = everything.filter(x => x === tag.id).length;
-        return { ...tag, count: count };
-    });
-    const sortedTags = sortTags(tagsWithCounts);
+    const sortedTags = sortTags(tags);
     for (const tag of sortedTags) {
-        appendViewTagToList(tagContainer, tag, tag.count);
+        const count = everything.filter(x => x === tag.id).length;
+        appendViewTagToList(tagContainer, tag, count);
     }
 }
 
