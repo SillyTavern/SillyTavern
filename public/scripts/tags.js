@@ -490,7 +490,23 @@ function chooseBogusFolder(source, tagId, remove = false) {
     const FILTER_SELECTOR = ($(source).closest('#rm_characters_block') ?? $(source).closest('#rm_group_chats_block')).find('.rm_tag_filter');
     const tagElement = $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`);
 
-    toggleTagThreeState(tagElement, { stateOverride: !remove ? FILTER_STATES.SELECTED : DEFAULT_FILTER_STATE, simulateClick: true });
+    if (tagElement.length > 0) {
+        toggleTagThreeState(tagElement, { stateOverride: !remove ? FILTER_STATES.SELECTED : DEFAULT_FILTER_STATE, simulateClick: true });
+    } else if (tagId) {
+        // Tag element not in filter DOM (e.g. empty folder with no characters assigned).
+        // Directly update the filter state so the user isn't stuck.
+        const filterHelper = getFilterHelper($(FILTER_SELECTOR));
+        const filterData = filterHelper.getFilterData(FILTER_TYPES.TAG);
+        if (remove) {
+            const selectedIndex = filterData.selected.indexOf(tagId);
+            if (selectedIndex !== -1) filterData.selected.splice(selectedIndex, 1);
+            const excludedIndex = filterData.excluded.indexOf(tagId);
+            if (excludedIndex !== -1) filterData.excluded.splice(excludedIndex, 1);
+        } else {
+            if (!filterData.selected.includes(tagId)) filterData.selected.push(tagId);
+        }
+        filterHelper.setFilterData(FILTER_TYPES.TAG, filterData);
+    }
 }
 
 /**
