@@ -57,37 +57,6 @@ export async function getOllamaBatchVector(texts, apiUrl, model, keep, directori
  * @returns {Promise<number[]>} - The vector for the text
  */
 export async function getOllamaVector(text, apiUrl, model, keep, directories) {
-    const url = new URL(apiUrl);
-    url.pathname = '/api/embed';
-
-    const headers = {};
-    setAdditionalHeadersByType(headers, TEXTGEN_TYPES.OLLAMA, apiUrl, directories);
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            ...headers,
-        },
-        body: JSON.stringify({
-            input: text,
-            model: model,
-            keep_alive: keep ? -1 : undefined,
-            truncate: true,
-        }),
-    });
-
-    if (!response.ok) {
-        const responseText = await response.text();
-        throw new Error(`Ollama: Failed to get vector for text: ${response.statusText} ${responseText}`);
-    }
-
-    /** @type {any} */
-    const data = await response.json();
-
-    if (!Array.isArray(data?.embeddings?.[0])) {
-        throw new Error('API response was not an array');
-    }
-
-    return data.embeddings[0];
+    const vectors = await getOllamaBatchVector([text], apiUrl, model, keep, directories);
+    return vectors[0];
 }
