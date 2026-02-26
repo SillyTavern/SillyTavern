@@ -39,6 +39,7 @@ import {
     INJECTION_POSITION,
     Prompt,
     PromptManager,
+    promptManagerDefaultPromptFolders,
     promptManagerDefaultPromptOrders,
 } from './PromptManager.js';
 
@@ -383,6 +384,7 @@ const default_settings = {
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     ...chatCompletionDefaultPrompts,
+    ...promptManagerDefaultPromptFolders,
     ...promptManagerDefaultPromptOrders,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,

@@ -3,15 +3,15 @@
 import { DOMPurify } from '../lib.js';
 
 import { event_types, eventSource, is_send_press, main_api, substituteParams } from '../script.js';
-import { is_group_generating } from './group-chats.js';
-import { Message, MessageCollection, TokenHandler } from './openai.js';
-import { power_user } from './power-user.js';
-import { debounce, waitUntilCondition, escapeHtml, uuidv4 } from './utils.js';
 import { debounce_timeout } from './constants.js';
-import { renderTemplateAsync } from './templates.js';
-import { Popup } from './popup.js';
+import { is_group_generating } from './group-chats.js';
 import { t } from './i18n.js';
+import { Message, MessageCollection, TokenHandler } from './openai.js';
+import { Popup } from './popup.js';
+import { power_user } from './power-user.js';
 import { isMobile } from './RossAscends-mods.js';
+import { renderTemplateAsync } from './templates.js';
+import { debounce, escapeHtml, uuidv4, waitUntilCondition } from './utils.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -196,6 +196,41 @@ class Prompt {
 }
 
 /**
+ * @typedef {Object} PromptFolder
+ * @property {string} identifier
+ * @property {string} name
+ * @property {boolean} enabled
+ * @property {boolean} expanded
+ * @property {string[]} prompts
+ */
+
+/**
+ * @typedef {Object} PromptOrder
+ * @property {number} character_id
+ * @property {PromptOrderEntry[]} order
+ */
+
+/**
+ * @typedef {Object} PromptOrderEntry
+ * @property {string} identifier
+ * @property {boolean} enabled
+ */
+
+/**
+ * @typedef {Object} ServiceSettingsDetermined
+ * @property {number} openai_max_context
+ * @property {number} openai_max_tokens
+ * TODO: should not use Partial
+ * @property {Partial<Prompt>[]} prompts
+ * @property {PromptFolder[]} prompt_folders
+ * @property {PromptOrder[]} prompt_order
+ */
+
+/**
+ * @typedef {Record<string, any> & ServiceSettingsDetermined} ServiceSettings
+ */
+
+/**
  * Representing a collection of prompts.
  */
 export class PromptCollection {
@@ -346,7 +381,10 @@ class PromptManager {
             },
         };
 
-        // Chatcompletion configuration object
+        /**
+         * Chatcompletion configuration object
+         * @type {ServiceSettings|null}
+         */
         this.serviceSettings = null;
 
         // DOM element containing the prompt manager
@@ -432,7 +470,7 @@ class PromptManager {
     init(moduleConfiguration, serviceSettings) {
         this.configuration = Object.assign(this.configuration, moduleConfiguration);
         this.tokenHandler = this.tokenHandler || new TokenHandler(() => { throw new Error('Token handler not set'); });
-        this.serviceSettings = serviceSettings;
+        this.serviceSettings = /** @type {ServiceSettings} */(serviceSettings);
         this.containerElement = document.getElementById(this.configuration.containerIdentifier);
 
         if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = { id: this.configuration.promptOrder.dummyId };
@@ -791,7 +829,7 @@ class PromptManager {
         // Trigger re-render when token settings are changed
         document.getElementById('openai_max_context').addEventListener('change', (event) => {
             if (!(event.target instanceof HTMLInputElement)) return;
-            this.serviceSettings.openai_max_context = event.target.value;
+            this.serviceSettings.openai_max_context = Number(event.target.value);
             if (this.activeCharacter) this.renderDebounced();
         });
 
@@ -1256,7 +1294,7 @@ class PromptManager {
      * @returns {Prompt|null} The prompt object, or null if not found
      */
     getPromptById(identifier) {
-        return this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null;
+        return /** @type {Prompt|null} */(this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null);
     }
 
     /**
@@ -1266,6 +1304,33 @@ class PromptManager {
      */
     getPromptIndexById(identifier) {
         return this.serviceSettings.prompts.findIndex(item => item.identifier === identifier) ?? null;
+    }
+
+    /**
+     * Finds and returns a folder by its identifier.
+     * @param {string} identifier - Identifier of the folder
+     * @returns {PromptFolder|null} The folder object, or null if not found
+     */
+    getPromptFolderById(identifier) {
+        return this.serviceSettings.prompt_folders.find(item => item.identifier === identifier) ?? null;
+    }
+
+    /**
+     * Finds and returns the index of a prompt folder by its identifier.
+     * @param {string} identifier - Identifier of the prompt folder
+     * @returns {number|null} Index of the prompt, or null if not found
+     */
+    getPromptFolderIndexById(identifier) {
+        return this.serviceSettings.prompt_folders.findIndex(item => item.identifier === identifier) ?? null;
+    }
+
+    /**
+     * Find and returns a folder by a prompt it may contain
+     * @param {string} identifier - Identifier of the prompt folder
+     * @returns {PromptFolder|null} The folder object, or null if not found
+     */
+    getPromptFolderByPromptId(identifier) {
+        return this.serviceSettings.prompt_folders.find(folder => folder.prompts.includes(identifier)) ?? null;
     }
 
     /**
@@ -2082,6 +2147,10 @@ const chatCompletionDefaultPrompts = {
     ],
 };
 
+const promptManagerDefaultPromptFolders = {
+    'prompt_folder': [],
+}
+
 const promptManagerDefaultPromptOrders = {
     'prompt_order': [],
 };
@@ -2138,9 +2207,7 @@ const promptManagerDefaultPromptOrder = [
 ];
 
 export {
-    PromptManager,
-    registerPromptManagerMigration,
-    chatCompletionDefaultPrompts,
-    promptManagerDefaultPromptOrders,
-    Prompt,
+    chatCompletionDefaultPrompts, Prompt, PromptManager, promptManagerDefaultPromptFolders,
+    promptManagerDefaultPromptOrders, registerPromptManagerMigration
 };
+
