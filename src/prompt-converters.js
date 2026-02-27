@@ -1026,6 +1026,11 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
 
         passedThePrefill = true;
 
+        // Skip system messages so they don't affect depth counting or receive cache breakpoints
+        if (messages[i].role === 'system') {
+            continue;
+        }
+
         if (messages[i].role !== previousRoleName) {
             if (depth === cachingAtDepth || depth === cachingAtDepth + 2) {
                 const content = messages[i].content;
