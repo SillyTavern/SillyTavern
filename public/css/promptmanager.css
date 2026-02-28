@@ -17,7 +17,8 @@
     min-height: 1px;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li {
+#completion_prompt_manager #completion_prompt_manager_list li,
+#completion_prompt_manager #completion_prompt_manager_list ul {
     display: grid;
     grid-template-columns: 4fr 80px 45px;
     margin-bottom: 0.5em;
@@ -42,8 +43,8 @@
 }
 
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_list_head .prompt_manager_prompt_tokens,
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_tokens {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_list_head .prompt_manager_prompt_tokens,
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .prompt_manager_prompt_tokens {
     font-size: calc(var(--mainFontSize)*0.9);
     text-align: right;
 }
@@ -56,25 +57,25 @@
     padding: 0.5em 0.5em 0;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt {
     align-items: center;
     padding: 0.5em;
     border: 1px solid var(--SmartThemeBorderColor);
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .prompt_manager_prompt_controls {
     display: flex;
     justify-content: space-between;
     font-size: calc(var(--mainFontSize)*1.2);
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls span {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .prompt_manager_prompt_controls span {
     display: flex;
     height: 18px;
     width: 18px;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt span span span {
     flex-direction: column;
     justify-content: center;
     margin-left: 0.25em;
@@ -86,7 +87,7 @@
     opacity: 0.4;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span:hover {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt span span:hover {
     opacity: 1;
 }
 
@@ -208,7 +209,7 @@
     border: 1px solid var(--white20a);
 }
 
-#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .mes_edit {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .mes_edit {
     margin-left: 0.5em;
 }
 
@@ -293,6 +294,14 @@
     align-items: center;
 }
 
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt:not(.expanded) .completion_prompt_manager_prompt_items {
+    display: none
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_items {
+    display: block;
+}
+
 #completion_prompt_manager_footer_append_prompt {
     font-size: 1em;
 }
@@ -354,7 +363,7 @@
         max-width: 100%;
     }
 
-    #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
+    #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt span span span {
         margin-left: 0.5em;
     }
 }
