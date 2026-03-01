@@ -1,0 +1,242 @@
+/* =====================================================
+   DreamTavern Login - Crystal Ball / Scrying Theme
+   Based on original SillyTavern login.css
+   ===================================================== */
+
+/* === ORIGINAL STRUCTURE (keep intact) === */
+body.login #shadow_popup {
+    opacity: 1;
+    display: flex;
+}
+
+body.login .logo {
+    max-width: 40px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(206, 147, 216, 0.5);
+}
+
+body.login #logoBlock {
+    align-items: center;
+    margin: 0 auto;
+    gap: 12px;
+}
+
+body.login .userSelect {
+    display: flex;
+    flex-direction: column;
+    color: #e1bee7;
+    border: 1px solid rgba(206, 147, 216, 0.3);
+    border-radius: 12px;
+    padding: 10px 12px;
+    width: 30%;
+    cursor: pointer;
+    margin: 5px;
+    transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    background: rgba(206, 147, 216, 0.08);
+}
+
+body.login .userSelect .userName,
+body.login .userSelect .userHandle {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.login .userSelect:hover {
+    background: rgba(206, 147, 216, 0.2);
+    border-color: rgba(206, 147, 216, 0.5);
+    box-shadow: 0 0 25px rgba(206, 147, 216, 0.3);
+    transform: translateY(-2px);
+}
+
+body.login #handleEntryBlock,
+body.login #passwordEntryBlock,
+body.login #passwordRecoveryBlock {
+    margin: 8px 2px;
+}
+
+/* === DREAMTAVERN THEME ADDITIONS === */
+
+/* Background with mist effect */
+body.login {
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a12 70%) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated mist layer */
+body.login::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(ellipse at 20% 80%, rgba(206, 147, 216, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(121, 134, 203, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 60%, rgba(206, 147, 216, 0.05) 0%, transparent 40%);
+    animation: mist-move 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+@keyframes mist-move {
+    0%, 100% { transform: translateX(0) translateY(0); opacity: 1; }
+    50% { transform: translateX(20px) translateY(-20px); opacity: 0.7; }
+}
+
+/* Center the popup vertically */
+body.login #shadow_popup {
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+}
+
+/* Login box styling - Crystal Ball */
+body.login #dialogue_popup {
+    background: rgba(25, 25, 45, 0.92) !important;
+    border-radius: 20px !important;
+    border: 2px solid rgba(206, 147, 216, 0.25) !important;
+    box-shadow: 
+        0 0 50px rgba(206, 147, 216, 0.15),
+        0 0 100px rgba(121, 134, 203, 0.1),
+        inset 0 0 30px rgba(206, 147, 216, 0.03) !important;
+    backdrop-filter: blur(10px);
+    max-width: 420px !important;
+    width: 90% !important;
+}
+
+/* Crystal highlight effect */
+body.login #dialogue_popup::before {
+    content: '';
+    position: absolute;
+    top: 8%;
+    left: 15%;
+    width: 25px;
+    height: 25px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(3px);
+    pointer-events: none;
+}
+
+/* Welcome title */
+body.login #logoBlock span {
+    color: #e1bee7 !important;
+    text-shadow: 0 0 20px rgba(206, 147, 216, 0.5);
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+}
+
+/* Subtitles */
+body.login #normalLoginPrompt,
+body.login #discreetLoginPrompt {
+    color: rgba(206, 147, 216, 0.8) !important;
+    font-style: italic;
+}
+
+/* User name/handle colors */
+body.login .userSelect .userName {
+    color: #e1bee7;
+    font-weight: 500;
+}
+
+body.login .userSelect .userHandle {
+    color: rgba(159, 168, 218, 0.7);
+}
+
+/* Avatar styling */
+body.login .userSelect .avatar img {
+    border-radius: 50%;
+    border: 2px solid rgba(206, 147, 216, 0.4);
+    box-shadow: 0 0 15px rgba(206, 147, 216, 0.3);
+    transition: all 0.3s ease;
+}
+
+body.login .userSelect:hover .avatar img {
+    border-color: rgba(206, 147, 216, 0.7);
+    box-shadow: 0 0 25px rgba(206, 147, 216, 0.5);
+}
+
+/* Input fields */
+body.login .text_pole {
+    background: rgba(206, 147, 216, 0.08) !important;
+    border: 1px solid rgba(206, 147, 216, 0.3) !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    padding: 12px 16px !important;
+    transition: all 0.3s ease;
+}
+
+body.login .text_pole::placeholder {
+    color: rgba(206, 147, 216, 0.5) !important;
+}
+
+body.login .text_pole:focus {
+    border-color: rgba(206, 147, 216, 0.6) !important;
+    box-shadow: 0 0 15px rgba(206, 147, 216, 0.2) !important;
+    outline: none !important;
+}
+
+/* Forgot password link */
+body.login #recoverPassword {
+    color: #ffb74d !important;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+body.login #recoverPassword:hover {
+    color: #ffd54f !important;
+    text-shadow: 0 0 10px rgba(255, 183, 77, 0.4);
+    text-decoration: underline;
+}
+
+/* Login button */
+body.login .menu_button {
+    background: rgba(206, 147, 216, 0.2) !important;
+    color: #e1bee7 !important;
+    border: 1px solid rgba(206, 147, 216, 0.4) !important;
+    border-radius: 8px !important;
+    padding: 10px 30px !important;
+    transition: all 0.3s ease;
+}
+
+body.login .menu_button:hover {
+    background: rgba(206, 147, 216, 0.35) !important;
+    box-shadow: 0 0 25px rgba(206, 147, 216, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Error message styling */
+body.login #errorMessage {
+    color: #ef9a9a !important;
+}
+
+/* Recovery block styling */
+body.login #recoverMessage {
+    color: rgba(206, 147, 216, 0.8);
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    body.login .userSelect {
+        width: 45%;
+    }
+    
+    body.login #logoBlock span {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 400px) {
+    body.login .userSelect {
+        width: 90%;
+    }
+}

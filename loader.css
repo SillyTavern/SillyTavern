@@ -1,0 +1,134 @@
+/* DreamTavern Preloader */
+#preloader {
+    position: fixed;
+    margin: 0;
+    padding: 0;
+    top: 0;
+    left: 0;
+    z-index: 999999;
+    width: 100vw;
+    height: 100vh;
+    width: 100dvw;
+    height: 100dvh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+    color: var(--SmartThemeBodyColor);
+    backdrop-filter: blur(30px);
+    opacity: 1;
+}
+
+/* Main loader container */
+#loader {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Spinner container - keeps original ID for JS compatibility */
+#load-spinner {
+    transition: all var(--animation-duration-2x, 0.3s) ease-out;
+    opacity: 1;
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+/* ============================================
+   DreamTavern Magic Orb - Soft Mauve/Lavender
+   ============================================ */
+
+/* The orb itself */
+.magic-orb {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, 
+        #fce4ec 0%, 
+        #f8bbd9 30%, 
+        #ce93d8 50%, 
+        #9575cd 70%,
+        #5e35b1 100%);
+    box-shadow: 
+        0 0 30px rgba(206, 147, 216, 0.8),
+        0 0 60px rgba(149, 117, 205, 0.5),
+        inset 0 0 20px rgba(255, 255, 255, 0.3);
+    animation: pulse-orb 3s ease-in-out infinite;
+}
+
+/* Outer spinning ring */
+.magic-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 3px solid transparent;
+    border-top-color: #ce93d8;
+    border-right-color: #9fa8da;
+    border-radius: 50%;
+    animation: spin-ring 3s linear infinite;
+}
+
+/* Inner spinning ring (reverse direction) */
+.magic-ring::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 2px solid transparent;
+    border-bottom-color: #7986cb;
+    border-left-color: #f48fb1;
+    border-radius: 50%;
+    animation: spin-ring 4s linear infinite reverse;
+}
+
+/* Loading text */
+.loading-text {
+    margin-top: 30px;
+    color: #ce93d8;
+    font-family: 'Georgia', serif;
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    animation: text-glow 3s ease-in-out infinite;
+}
+
+/* Pulse animation for the orb */
+@keyframes pulse-orb {
+    0%, 100% { 
+        transform: translate(-50%, -50%) scale(1); 
+    }
+    50% { 
+        transform: translate(-50%, -50%) scale(1.1); 
+    }
+}
+
+/* Spin animation for the rings */
+@keyframes spin-ring {
+    0% { 
+        transform: rotate(0deg); 
+    }
+    100% { 
+        transform: rotate(360deg); 
+    }
+}
+
+/* Glow animation for the loading text */
+@keyframes text-glow {
+    0%, 100% { 
+        text-shadow: 0 0 10px rgba(206, 147, 216, 0.5);
+        opacity: 0.7;
+    }
+    50% { 
+        text-shadow: 0 0 20px rgba(206, 147, 216, 0.8), 0 0 30px rgba(149, 117, 205, 0.4);
+        opacity: 1;
+    }
+}
