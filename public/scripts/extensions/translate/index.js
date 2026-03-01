@@ -164,11 +164,7 @@ function showKeysButton() {
     $('#translate_url_button').toggle(providerOptionalUrl).data('key', extension_settings.translate.provider + '_url');
     $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
     $('#deepl_api_endpoint').toggle(extension_settings.translate.provider === 'deepl');
-    $('#translate_openai_compatible_url').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#translate_openai_compatible_model').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#translate_openai_compatible_system_prompt').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#translate_openai_compatible_user_prompt').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
-    $('#translate_openai_compatible_block_size').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
+    $('#translate_openai_compatible_settings').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
 }
 
 function loadSettings() {
