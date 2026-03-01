@@ -308,7 +308,7 @@ export const power_user = {
     custom_stopping_strings_macro: true,
     fuzzy_search: false,
     encode_tags: false,
-    experimental_macro_engine: false,
+    experimental_macro_engine: true,
     servers: [],
     bogus_folders: false,
     zoomed_avatar_magnification: false,
