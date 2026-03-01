@@ -154,8 +154,7 @@ router.post('/status', async function (req, res) {
         } else if (response.status == 401) {
             console.error('NovelAI Access Token is incorrect.');
             return res.send({ error: true });
-        }
-        else {
+        } else {
             console.warn('NovelAI returned an error:', response.statusText);
             return res.send({ error: true });
         }
@@ -281,8 +280,7 @@ router.post('/generate', async function (req, res) {
                 try {
                     const data = JSON.parse(text);
                     message = data.message;
-                }
-                catch {
+                } catch {
                     // ignore
                 }
 
@@ -476,8 +474,7 @@ router.post('/generate-voice', async (request, response) => {
         const buffer = Buffer.concat(chunks.map(chunk => new Uint8Array(chunk)));
         response.setHeader('Content-Type', 'audio/mpeg');
         return response.send(buffer);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }

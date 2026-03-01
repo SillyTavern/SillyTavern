@@ -10,14 +10,10 @@ export class QuickReplyApi {
     /** @type {SettingsUi} */ settingsUi;
 
 
-
-
     constructor(/** @type {QuickReplySettings} */settings, /** @type {SettingsUi} */settingsUi) {
         this.settings = settings;
         this.settingsUi = settingsUi;
     }
-
-
 
 
     /**
@@ -25,7 +21,7 @@ export class QuickReplyApi {
      * @returns {QuickReplySet}
      */
     getSetByQr(qr) {
-        return QuickReplySet.list.find(it=>it.qrList.includes(qr));
+        return QuickReplySet.list.find(it => it.qrList.includes(qr));
     }
 
     /**
@@ -48,11 +44,9 @@ export class QuickReplyApi {
     getQrByLabel(setName, label) {
         const set = this.getSetByName(setName);
         if (!set) return;
-        if (Number.isInteger(label)) return set.qrList.find(it=>it.id == label);
-        return set.qrList.find(it=>it.label == label);
+        if (Number.isInteger(label)) return set.qrList.find(it => it.id == label);
+        return set.qrList.find(it => it.label == label);
     }
-
-
 
 
     /**
@@ -63,7 +57,7 @@ export class QuickReplyApi {
      */
     async executeQuickReplyByIndex(idx) {
         const qr = [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
-            .map(it=>it.set.qrList)
+            .map(it => it.set.qrList)
             .flat()[idx]
         ;
         if (qr) {
@@ -400,7 +394,7 @@ export class QuickReplyApi {
         if (oldSet) {
             QuickReplySet.list.splice(QuickReplySet.list.indexOf(oldSet), 1, set);
         } else {
-            const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(name) == 1);
+            const idx = QuickReplySet.list.findIndex(it => it.name.localeCompare(name) == 1);
             if (idx > -1) {
                 QuickReplySet.list.splice(idx, 0, set);
             } else {
@@ -460,7 +454,7 @@ export class QuickReplyApi {
      * @returns array with the names of all quick reply sets
      */
     listSets() {
-        return QuickReplySet.list.map(it=>it.name);
+        return QuickReplySet.list.map(it => it.name);
     }
     /**
      * Gets a list of all globally active quick reply sets.
@@ -468,7 +462,7 @@ export class QuickReplyApi {
      * @returns array with the names of all quick reply sets
      */
     listGlobalSets() {
-        return this.settings.config.setList.map(it=>it.set.name);
+        return this.settings.config.setList.map(it => it.set.name);
     }
     /**
      * Gets a list of all quick reply sets activated by the current chat.
@@ -476,7 +470,7 @@ export class QuickReplyApi {
      * @returns array with the names of all quick reply sets
      */
     listChatSets() {
-        return this.settings.chatConfig?.setList?.flatMap(it=>it.set.name) ?? [];
+        return this.settings.chatConfig?.setList?.flatMap(it => it.set.name) ?? [];
     }
 
     /**
@@ -490,7 +484,7 @@ export class QuickReplyApi {
         if (!set) {
             throw new Error(`No quick reply set with name "${name}" found.`);
         }
-        return set.qrList.map(it=>it.label);
+        return set.qrList.map(it => it.label);
     }
 
     /**

@@ -680,8 +680,7 @@ export async function getUserAvatar(handle) {
         const mimeType = mime.lookup(avatarPath);
         const base64Content = fs.readFileSync(avatarPath, 'base64');
         return `data:${mimeType};base64,${base64Content}`;
-    }
-    catch {
+    } catch {
         // Ignore errors
         return PUBLIC_USER_AVATAR;
     }
@@ -822,9 +821,10 @@ async function basicUserLogin(request) {
         return false;
     }
 
-    const [username, password] = Buffer.from(credentials, 'base64')
+    const [username, ...passwordParts] = Buffer.from(credentials, 'base64')
         .toString('utf8')
         .split(':');
+    const password = passwordParts.join(':');
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {

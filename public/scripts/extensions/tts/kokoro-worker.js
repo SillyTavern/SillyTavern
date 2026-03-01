@@ -7,7 +7,7 @@ let ready = false;
 let voices = [];
 
 // Handle messages from the main thread
-self.onmessage = async function(e) {
+self.onmessage = async function (e) {
     const { action, data } = e.data;
 
     switch (action) {

@@ -1455,5 +1455,9 @@
   "Contact the developers": "ติดต่อผู้พัฒนา",
   "Stop Inspecting": "Stop Inspecting",
   "Inspect Prompts": "ตรวจสอบ Prompt",
-  "Toggle prompt inspection": "สลับการตรวจสอบ Prompt"
+  "Toggle prompt inspection": "สลับการตรวจสอบ Prompt",
+    "Interleaved Thinking": "การคิดแบบสลับขั้น",
+    "Since Last User Message": "ตั้งแต่ข้อความล่าสุดของผู้ใช้",
+    "Active Tool Chain": "สายโซ่เครื่องมือที่ใช้งานอยู่",
+    "openrouter_interleaved_thinking_hint": "ส่งเหตุผลจากเทิร์นก่อนหน้าของผู้ช่วยไปพร้อมกับคำขอเรียกใช้เครื่องมือ เพื่อคงบริบทการคิดแบบสลับขั้นไว้"
 }

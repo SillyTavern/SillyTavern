@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import express from 'express';
+import ipRegex from 'ip-regex';
 
 import { decode } from 'html-entities';
 import { readSecret, SECRET_KEYS } from './secrets.js';
@@ -416,7 +417,7 @@ router.post('/visit', async (request, response) => {
             }
 
             // Reject IP addresses
-            if (urlObj.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+            if (ipRegex.v4({ exact: true }).test(urlObj.hostname) || ipRegex.v6({ exact: true }).test(urlObj.hostname)) {
                 throw new Error('Invalid hostname');
             }
         } catch (error) {

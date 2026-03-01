@@ -367,6 +367,12 @@ router.post('/generate', async function (request, response) {
             } else {
                 delete request.body.provider;
             }
+
+            if (Array.isArray(request.body.quantizations) && request.body.quantizations.length > 0) {
+                request.body.provider ??= {};
+                request.body.provider.quantizations = request.body.quantizations;
+            }
+
             request.body = _.pickBy(request.body, (_, key) => OPENROUTER_KEYS.includes(key));
             args.body = JSON.stringify(request.body);
         }
@@ -399,8 +405,7 @@ router.post('/generate', async function (request, response) {
             const completionsStream = await fetch(url, args);
             // Pipe remote SSE stream to Express response
             forwardFetchResponse(completionsStream, response);
-        }
-        else {
+        } else {
             const completionsReply = await fetch(url, args);
 
             if (completionsReply.ok) {
@@ -535,7 +540,6 @@ llamacpp.post('/props', async function (request, response) {
         console.debug('LlamaCpp props response:', data);
 
         return response.send(data);
-
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -585,7 +589,6 @@ llamacpp.post('/slots', async function (request, response) {
         console.debug('LlamaCpp slots response:', data);
 
         return response.send(data);
-
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);

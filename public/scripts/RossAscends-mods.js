@@ -101,7 +101,6 @@ observer.observe(document.documentElement, observerConfig);
  * @returns {string} - A human-readable string that represents the time spent generating characters.
  */
 export function humanizeGenTime(total_gen_time) {
-
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
     let time_spent = total_gen_time || 0;
     time_spent = Math.floor(time_spent / 1000);
@@ -380,8 +379,7 @@ function RA_autoconnect(PrevApi) {
                     || (textgen_settings.type === textgen_types.FEATHERLESS && secret_state[SECRET_KEYS.FEATHERLESS])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
-                }
-                else if (isValidUrl(getTextGenServer())) {
+                } else if (isValidUrl(getTextGenServer())) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
                 break;
@@ -408,7 +406,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
                     || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
-                    || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
+                    || (secret_state[SECRET_KEYS.POLLINATIONS] && oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
                 ) {
@@ -1054,8 +1052,7 @@ export function initRossMods() {
                 $('#send_textarea').trigger('focus');
                 reasoningMesDone.trigger('click');
                 return;
-            }
-            else if (is_send_press == false) {
+            } else if (is_send_press == false) {
                 const skipConfirmKey = 'RegenerateWithCtrlEnter';
                 const skipConfirm = accountStorage.getItem(skipConfirmKey) === 'true';
                 function doRegenerate() {
@@ -1272,8 +1269,6 @@ export function initRossMods() {
                 return;
             }
         }
-
-
 
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {

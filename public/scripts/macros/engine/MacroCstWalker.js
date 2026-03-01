@@ -231,9 +231,12 @@ class MacroCstWalker {
             if (!info) continue;
 
             if (info.isClosing) {
-                // Closing tag - pop matching opener from stack (case-insensitive match)
-                if (unclosedStack.length > 0 && unclosedStack[unclosedStack.length - 1].name.toLowerCase() === info.name.toLowerCase()) {
-                    unclosedStack.pop();
+                // Find matching opener in stack (case-insensitive)
+                // When closing an outer scope, all inner unclosed scopes are implicitly closed
+                const matchIndex = unclosedStack.findLastIndex(s => s.name.toLowerCase() === info.name.toLowerCase());
+                if (matchIndex !== -1) {
+                    // Pop everything from matchIndex to end (inclusive) - closes the matched scope and all nested ones
+                    unclosedStack.splice(matchIndex);
                 }
                 // If no matching opener, ignore (orphan closing tag)
             } else {
@@ -998,9 +1001,8 @@ class MacroCstWalker {
                         endOffset: element.endOffset ?? element.startOffset,
                         token: element,
                     });
-                }
-                // Handle nested CstNode (macro or argument)
-                else if ('children' in element) {
+                } else if ('children' in element) {
+                    // Handle nested CstNode (macro or argument)
                     const nestedChildren = element.children || {};
                     const nestedEnd = /** @type {IToken?} */ ((nestedChildren['Macro.End'] || [])[0]);
                     const nestedStart = /** @type {IToken?} */ ((nestedChildren['Macro.Start'] || [])[0]);
@@ -1306,15 +1308,13 @@ class MacroCstWalker {
         const argumentNodes = /** @type {CstNode[]} */ (argumentsNode?.children?.argument || []);
         const currentArgCount = argumentNodes.length;
 
+        // List-arg macros don't support scoped content - they accept arbitrary inline args instead
+        if (def.list) {
+            return false;
+        }
+
         // Check if adding 1 more argument (scoped content) would be valid
         const newArgCount = currentArgCount + 1;
-
-        // Macro must accept at least newArgCount arguments
-        // For macros with list args, they can accept unlimited after maxArgs
-        if (def.list) {
-            // With list: valid if newArgCount >= minArgs (list can absorb extra)
-            return newArgCount >= def.minArgs;
-        }
 
         // Without list: newArgCount must be between minArgs and maxArgs
         return newArgCount >= def.minArgs && newArgCount <= def.maxArgs;

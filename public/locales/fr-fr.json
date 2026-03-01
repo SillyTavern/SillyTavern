@@ -290,6 +290,8 @@
     "View Remaining Credits": "Afficher les crédits restants",
     "OpenRouter Model": "Modèle OpenRouter",
     "Model Providers": "Fournisseurs de modèles",
+    "Model Quantizations": "Quantifications du modèle",
+    "Select quantizations. No selection = all quantizations.": "Sélectionnez les quantifications. Aucune sélection = toutes les quantifications.",
     "InfermaticAI API Key": "Clé API InfermaticAI",
     "InfermaticAI Model": "Modèle InfermaticAI",
     "DreamGen API key": "Clé API DreamGen",
@@ -2010,7 +2012,7 @@
     "Downloader Options": "Options de téléchargement",
     "Extra parameters for downloading/HuggingFace API": "Paramètres supplémentaires pour le téléchargement/HuggingFace API.\rSi vous n'êtes pas sûr, laissez ces paramètres vides.",
     "Revision": "Révision",
-    "Folder Name": "Nom du dossier de sortie",
+    "Output Folder Name": "Nom du dossier de sortie",
     "HF Token": "Token HF",
     "Include Patterns": "Inclure les patterns",
     "Glob patterns of files to include in the download.": "Patterns globaux de fichiers à inclure dans le téléchargement.\rSéparer chaque pattern par une nouvelle ligne.",
@@ -2044,5 +2046,9 @@
     "System Prompt Name": "Nom du prompt système:",
     "Instruct Mode": "Mode Instruction:",
     "Save and Update": "Sauvegarder et mettre à jour",
-    "Don't ask again for this URL": "Ne plus demander pour cette URL"
+    "Don't ask again for this URL": "Ne plus demander pour cette URL",
+    "Interleaved Thinking": "Raisonnement intercalé",
+    "Since Last User Message": "Depuis le dernier message utilisateur",
+    "Active Tool Chain": "Chaîne d'outils active",
+    "openrouter_interleaved_thinking_hint": "Envoie le raisonnement des tours précédents de l'assistant avec les requêtes d'outils pour conserver le contexte du raisonnement intercalé."
 }

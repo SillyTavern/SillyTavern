@@ -2093,7 +2093,7 @@
     "Downloader Options": "下載選項",
     "Extra parameters for downloading/HuggingFace API": "下載／使用 HuggingFace API 的額外參數。\r若不確定，請留空。",
     "Revision": "修訂",
-    "Folder Name": "輸出資料夾名稱",
+    "Output Folder Name": "輸出資料夾名稱",
     "HF Token": "HF 符元",
     "Include Patterns": "包含模式",
     "Glob patterns of files to include in the download.": "要包含於下載中文件的全域模式。\r每行輸入一個模式。",
@@ -2758,5 +2758,9 @@
     "[title]Create a new": "新增",
     "[title]Delete a ": "刪除 ",
     "[title]Rename a ": "重新命名 ",
-    "completions note prefix": "完成提示前綴"
+    "completions note prefix": "完成提示前綴",
+    "Interleaved Thinking": "交錯思維",
+    "Since Last User Message": "自上一則使用者訊息起",
+    "Active Tool Chain": "使用中的工具鏈",
+    "openrouter_interleaved_thinking_hint": "會在工具呼叫請求中附帶先前助理回合的推理，以維持交錯思維的上下文。"
 }

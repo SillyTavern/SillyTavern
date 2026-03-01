@@ -115,5 +115,4 @@ jQuery(() => {
         returns: 'number of tokens',
         helpString: 'Counts the number of tokens in the current chat.',
     }));
-
 });

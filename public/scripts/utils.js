@@ -2310,7 +2310,6 @@ export function highlightRegex(regexStr) {
                 flags: new RegExp('(?<=\\/)([gimsuy]*)$', 'g'),  // Match trailing flags
                 delimiters: new RegExp('^\\/|(?<![\\\\<])\\/', 'g'),  // Match leading or trailing delimiters
             };
-
         } catch (error) {
             return {
                 brackets: new RegExp('(\\\\)?\\[.*?\\]', 'g'),  // Non-escaped square brackets
@@ -2749,6 +2748,33 @@ export function textValueMatcher(params, data) {
  */
 export function versionCompare(srcVersion, minVersion) {
     return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+}
+
+/**
+ * Logs a warning to the console for slash command executions.
+ * Strips internal arguments (starting with '_') from the args object for cleaner logging.
+ * @param {string} message - The warning message to log.
+ * @param {Object} args - The arguments object from the slash command, including named arguments and internal values.
+ * @param {{[unnamedArgName: string]: string}} [valueObj=null] - The user-built object containing context for the warning (e.g., { uid: uid }).
+ * @returns {void}
+ */
+export function logSlashCommandWarn(message, args, valueObj = null) {
+    if (valueObj !== null && valueObj !== undefined) {
+        console.warn(message, valueObj, stripInternalArgs(args));
+    } else {
+        console.warn(message, stripInternalArgs(args));
+    }
+    return;
+    function stripInternalArgs(args) {
+        // strip all args/properties that start with an underscore
+        const result = {};
+        for (const [key, value] of Object.entries(args)) {
+            if (!key.startsWith('_')) {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
 }
 
 /**

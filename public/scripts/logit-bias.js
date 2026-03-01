@@ -117,11 +117,8 @@ export function getLogitBiasListResult(biasPreset, tokenizerType, getBiasObject)
             if (text.startsWith('{') && text.endsWith('}')) {
                 const tokens = getTextTokens(tokenizerType, text.slice(1, -1));
                 result.push(getBiasObject(entry.value, tokens));
-            }
-
-
-            // Raw token ids, JSON serialized
-            else if (text.startsWith('[') && text.endsWith(']')) {
+            } else if (text.startsWith('[') && text.endsWith(']')) {
+                // Raw token ids, JSON serialized
                 try {
                     const tokens = JSON.parse(text);
 
@@ -133,11 +130,8 @@ export function getLogitBiasListResult(biasPreset, tokenizerType, getBiasObject)
                 } catch (err) {
                     console.log(`Failed to parse logit bias token list: ${text}`, err);
                 }
-            }
-
-
-            // Text with a leading space
-            else {
+            } else {
+                // Text with a leading space
                 const biasText = ` ${text}`;
                 const tokens = getTextTokens(tokenizerType, biasText);
                 result.push(getBiasObject(entry.value, tokens));

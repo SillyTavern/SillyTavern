@@ -1436,5 +1436,9 @@
     "Still have questions?": "Ertu enn með spurningar?",
     "Join the SillyTavern Discord": "Skráðu þig í SillyTavern Discord",
     "Post a GitHub issue": "Senda inn GitHub málefni",
-    "Contact the developers": "Hafa samband við þróunaraðila"
+    "Contact the developers": "Hafa samband við þróunaraðila",
+    "Interleaved Thinking": "Fléttuð hugsun",
+    "Since Last User Message": "Frá síðustu notandaskilaboðum",
+    "Active Tool Chain": "Virk verkfærakeðja",
+    "openrouter_interleaved_thinking_hint": "Sendir röksemdir úr fyrri aðstoðarskilaboðum með verkfæraköllum til að viðhalda samhengi fléttaðrar hugsunar."
 }
