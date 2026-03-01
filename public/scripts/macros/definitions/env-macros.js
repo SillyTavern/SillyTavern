@@ -1,6 +1,6 @@
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { isMobile } from '../../RossAscends-mods.js';
-import { parseMesExamples, main_api, characters, this_chid } from '../../../script.js';
+import { parseMesExamples, main_api } from '../../../script.js';
 import { power_user } from '../../power-user.js';
 import { formatInstructModeExamples } from '../../instruct-mode.js';
 
@@ -158,9 +158,9 @@ export function registerEnvMacros() {
         handler: ({ env, unnamedArgs: [index] }) => {
             const i = Number(index ?? 0);
             if (i === 0) return env.character.firstMessage ?? '';
-            const altGreetings = characters[this_chid]?.data?.alternate_greetings;
+            const altGreetings = env.character.alternateGreetings;
             if (!Array.isArray(altGreetings)) return '';
-            return altGreetings[i - 1]?.trim() ?? '';
+            return altGreetings[i - 1] ?? '';
         },
     });
 

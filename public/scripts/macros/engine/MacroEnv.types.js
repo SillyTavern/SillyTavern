@@ -39,6 +39,7 @@
  * @property {string} [creatorNotes]
  * @property {string} [version]
  * @property {string} [firstMessage]
+ * @property {string[]} [alternateGreetings]
  */
 
 /**

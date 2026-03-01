@@ -99,6 +99,7 @@ test.describe('MacroEnvBuilder', () => {
             'charDepthPrompt',
             'creatorNotes',
             'firstMessage',
+            'alternateGreetings',
         ]));
     });
 

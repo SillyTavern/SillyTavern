@@ -3231,6 +3231,7 @@ export function baseChatReplace(value, name1Override = null, name2Override = nul
  * @property {string} charDepthPrompt Character depth note
  * @property {string} creatorNotes Character creator notes
  * @property {string} firstMessage Character first message / greeting
+ * @property {string[]} alternateGreetings Character alternate greetings
  */
 
 /**
@@ -3319,7 +3320,14 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
         },
         firstMessage: () => {
             if (!character) return '';
-            return character.first_mes?.trim() || '';
+            const firstMes = character.first_mes?.trim() || '';
+            return baseChatReplace(firstMes);
+        },
+        alternateGreetings: () => {
+            if (!character) return [];
+            const altGreetings = character.data?.alternate_greetings;
+            if (!Array.isArray(altGreetings)) return [];
+            return altGreetings.map(greeting => baseChatReplace(greeting?.trim()));
         },
     };
 
@@ -3348,6 +3356,7 @@ export function getCharacterCardFields({ chid = undefined } = {}) {
         charDepthPrompt: lazy.charDepthPrompt,
         creatorNotes: lazy.creatorNotes,
         firstMessage: lazy.firstMessage,
+        alternateGreetings: lazy.alternateGreetings,
     };
 }
 
