@@ -61,6 +61,7 @@
         "ip-matching": "^2.1.2",
         "ip-regex": "^5.0.0",
         "ipaddr.js": "^2.2.0",
+        "isomorphic-git": "^1.36.3",
         "is-docker": "^3.0.0",
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",

@@ -1387,7 +1387,7 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
             return;
         }
 
-        toastr.success(t`Extension ${extensionName} switched to ${branch}`);
+        toastr.success(t`Extension ${extensionName} switched to ${branch}`, t`Reload the page to apply updates`);
         await loadExtensionSettings({}, false, false);
         void showExtensionsDetails();
     } catch (error) {

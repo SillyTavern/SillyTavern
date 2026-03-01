@@ -326,7 +326,6 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [folder_type] - The bogus folder type of this tag (based on `TAG_FOLDER_TYPES`)
  * @property {string} [filter_state] - The saved state of the filter chosen of this tag (based on `FILTER_STATES`)
  * @property {number} [sort_order] - A custom integer representing the sort order if tags are sorted
- * @property {number} [count] - The number of entities that have this tag assigned
  * @property {string} [color] - The background color of the tag
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
@@ -1764,10 +1763,11 @@ function makeTagListDraggable(tagContainer) {
  * Sorts the given tags, returning a shallow copy of it
  *
  * @param {Tag[]} tags - The tags
+ * @param {Map<string, number>} [counts=null] - Optional map of tag ID to usage count
  * @returns {Tag[]} The sorted tags
  */
-function sortTags(tags) {
-    return tags.slice().sort(compareTagsForSort);
+function sortTags(tags, counts = null) {
+    return tags.slice().sort((a, b) => compareTagsForSort(a, b, counts));
 }
 
 /**
@@ -1775,15 +1775,18 @@ function sortTags(tags) {
  *
  * @param {Tag} a - First tag
  * @param {Tag} b - Second tag
+ * @param {Map<string, number>} [counts=null] - Optional map of tag ID to usage count
  * @returns {number} The compare result
  */
-function compareTagsForSort(a, b) {
+function compareTagsForSort(a, b, counts = null) {
     // default sort: alphabetical, case insensitive
     const defaultSort = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
 
     // sort on number of entries
     if (power_user.tag_sort_mode === tag_sort_mode.BY_ENTRIES) {
-        return ((b.count || 0) - (a.count || 0)) || defaultSort;
+        const aCount = counts instanceof Map ? (counts.get(a.id) || 0) : 0;
+        const bCount = counts instanceof Map ? (counts.get(b.id) || 0) : 0;
+        return (bCount - aCount) || defaultSort;
     }
 
     // alphabetical sort
@@ -2273,18 +2276,19 @@ function copyTags(data) {
 function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
-    const tagsWithCounts = tags.map(tag => {
-        const count = everything.filter(x => x === tag.id).length;
-        return { ...tag, count: count };
-    });
-    const sortedTags = sortTags(tagsWithCounts);
+    const counts = new Map(tags.map(tag => [tag.id, everything.filter(x => x === tag.id).length]));
+    const sortedTags = sortTags(tags, counts);
     for (const tag of sortedTags) {
-        appendViewTagToList(tagContainer, tag, tag.count);
+        const count = counts.get(tag.id) || 0;
+        appendViewTagToList(tagContainer, tag, count);
     }
 }
 
 function removeMissingTagFilters() {
     const tagIds = new Set(tags.map(tag => tag.id));
+    const assignedTagIds = new Set(Object.values(tag_map).flat());
+    const openBogusFolderIds = new Set(getOpenBogusFolders().map(tag => tag.id));
+    const isEmptyOpenBogusFolder = (tagId) => openBogusFolderIds.has(tagId) && !assignedTagIds.has(tagId);
 
     for (const helper of [groupCandidatesFilter, groupMembersFilter, entitiesFilter]) {
         const { selected, excluded } = helper.getFilterData(FILTER_TYPES.TAG);
@@ -2292,7 +2296,7 @@ function removeMissingTagFilters() {
 
         if (Array.isArray(selected)) {
             for (let i = selected.length - 1; i >= 0; i--) {
-                if (!tagIds.has(selected[i])) {
+                if (!tagIds.has(selected[i]) || isEmptyOpenBogusFolder(selected[i])) {
                     selected.splice(i, 1);
                     anyRemoved = true;
                 }
@@ -2301,7 +2305,7 @@ function removeMissingTagFilters() {
 
         if (Array.isArray(excluded)) {
             for (let i = excluded.length - 1; i >= 0; i--) {
-                if (!tagIds.has(excluded[i])) {
+                if (!tagIds.has(excluded[i]) || isEmptyOpenBogusFolder(excluded[i])) {
                     excluded.splice(i, 1);
                     anyRemoved = true;
                 }

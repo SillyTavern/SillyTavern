@@ -1026,6 +1026,11 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
 
         passedThePrefill = true;
 
+        // Skip system messages so they don't affect depth counting or receive cache breakpoints
+        if (messages[i].role === 'system') {
+            continue;
+        }
+
         if (messages[i].role !== previousRoleName) {
             if (depth === cachingAtDepth || depth === cachingAtDepth + 2) {
                 const content = messages[i].content;
@@ -1105,12 +1110,33 @@ export function cachingSystemPromptForOpenRouter(messages, ttl = undefined) {
 
 /**
  * Calculate the Claude budget tokens for a given reasoning effort.
+ * Returns a string effort level for adaptive thinking (Opus 4.6+), a number for traditional thinking, or null for auto.
  * @param {number} maxTokens Maximum tokens
  * @param {string} reasoningEffort Reasoning effort
  * @param {boolean} stream If streaming is enabled
- * @returns {number?} Budget tokens
+ * @param {boolean} isAdaptiveModel If the model supports adaptive thinking (Opus 4.6+)
+ * @returns {number|string|null} Budget tokens, effort string, or null
  */
-export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream) {
+export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, isAdaptiveModel) {
+    // Adaptive thinking for Opus 4.6+: return effort string (like Gemini 3)
+    if (isAdaptiveModel) {
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return null;
+            case REASONING_EFFORT.min:
+                return 'low';
+            case REASONING_EFFORT.low:
+                return 'low';
+            case REASONING_EFFORT.medium:
+                return 'medium';
+            case REASONING_EFFORT.high:
+                return 'high';
+            case REASONING_EFFORT.max:
+                return 'max';
+        }
+        return null;
+    }
+
     let budgetTokens = 0;
 
     switch (reasoningEffort) {
