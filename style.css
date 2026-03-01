@@ -1,0 +1,19 @@
+/* ──────────────────────────────────────────────
+   Push Bot button icon gradients
+   Append this to the END of public/style.css
+   ────────────────────────────────────────────── */
+
+/* Push Bot button icons */
+#world_popup_share.menu_button::before {
+    background: linear-gradient(135deg, #0d9488, #2dd4bf);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#world_bulk_push.menu_button::before {
+    background: linear-gradient(135deg, #ea580c, #fb923c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
