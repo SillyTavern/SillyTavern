@@ -2322,15 +2322,15 @@ router.post('/generate', async function (request, response) {
             return response.status(400).send({ error: true });
         }
 
-        // A few of OpenAIs reasoning models support reasoning effort
+        // OpenAI keeps the model allowlist, custom OpenAI-compatible endpoints always receive reasoning effort.
         if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-            if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM || OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
                 bodyParams['reasoning_effort'] = OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
             }
         }
 
         if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-            if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM || OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
                 bodyParams['verbosity'] = request.body.verbosity;
             }
         }
