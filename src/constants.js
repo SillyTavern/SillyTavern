@@ -476,10 +476,19 @@ export const OPENAI_REASONING_EFFORT_MODELS = [
     'gpt-5.2',
     'gpt-5.2-2025-12-11',
     'gpt-5.2-chat-latest',
+    'gpt-5.3-chat-latest',
 ];
 
 export const OPENAI_REASONING_EFFORT_MAP = {
     min: 'minimal',
+};
+
+/**
+ * Models that only accept a single fixed reasoning effort value.
+ * @type {Record<string, string>}
+ */
+export const OPENAI_FIXED_REASONING_EFFORT = {
+    'gpt-5.3-chat-latest': 'medium',
 };
 
 export const NANOGPT_REASONING_EFFORT_MAP = {
