@@ -1,5 +1,5 @@
-/*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
-@media screen and (max-width: 1000px) {
+/*will apply to anything 768px or less. this catches portrait tablets, horizontal phones, and vertical phones)*/
+@media screen and (max-width: 768px) {
 
     #UI-Theme-Block,
     #UI-Customization,
@@ -431,8 +431,8 @@
     }
 }
 
-/*landscape mode phones and ipads*/
-@media screen and (max-width: 1000px) and (orientation: landscape) {
+/*landscape mode phones*/
+@media screen and (max-width: 768px) and (orientation: landscape) {
     body.waifuMode img.expression {
         object-fit: contain;
     }
