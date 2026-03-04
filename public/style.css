@@ -90,6 +90,10 @@
 
     --sheldWidth: 50vw;
     /* 800px; */
+
+    /* Mobile breakpoint for responsive layout (note: CSS variables cannot be used in @media queries) */
+    --mobileBreakpoint: 1000px;
+
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 15px);
@@ -2475,7 +2479,7 @@ body[data-stscript-style] .hljs.language-stscript {
     }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 1000px) {
     .autoComplete-wrap {
         left: 1vw;
         right: 1vw;
@@ -2550,7 +2554,7 @@ body[data-stscript-style] .hljs.language-stscript {
             }
         }
 
-        @container (max-width: 768px) {
+        @container (max-width: 1000px) {
             >.autoComplete-detailsWrap {
                 width: 50%;
                 max-width: unset;
@@ -2606,14 +2610,14 @@ textarea::placeholder {
     margin-bottom: 0;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 1000px) {
     #form_create textarea {
         flex-grow: 1;
         min-height: 20dvh;
     }
 }
 
-@media screen and (min-width: 769px) {
+@media screen and (min-width: 1001px) {
     #description_textarea {
         height: 29vh;
         height: 29dvh;
@@ -5981,7 +5985,7 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 /* Jank mobile support for gallery and future draggables */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 1000px) {
     .draggable {
         display: block;
         width: 100vw;
