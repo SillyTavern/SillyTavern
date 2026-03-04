@@ -50,6 +50,7 @@ import {
     showMoreMessages,
     stopGeneration,
     substituteParams,
+    swipe_right,
     syncMesToSwipe,
     system_avatar,
     system_message_types,
@@ -62,7 +63,7 @@ import { getMessageTimeStamp, isMobile } from './RossAscends-mods.js';
 import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
+import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
 import { chat_completion_sources, oai_settings, promptManager, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
@@ -1129,6 +1130,51 @@ export function initDefaultSlashCommands() {
                     ${t`Continues the chat with the provided prompt and waits for the generation to finish.`}
                 </li>
             </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'regenerate',
+        callback: regenerateChatCallback,
+        aliases: ['regen'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                t`Whether to await for the regeneration before proceeding`,
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
+        helpString: `
+        <div>
+            ${t`Regenerates the latest reply in the chat.`}
+        </div>
+        <div>
+            ${t`If <code>await=true</code> named argument is passed, the command will await for the regeneration before proceeding.`}
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'swipe',
+        callback: swipeChatCallback,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                t`Whether to await for the swipe action before proceeding`,
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
+        helpString: `
+        <div>
+            ${t`Swipes right on the latest reply. If the next swipe doesn't exist yet, it may generate one depending on overswipe settings.`}
+        </div>
+        <div>
+            ${t`If <code>await=true</code> named argument is passed, the command will await for the swipe action before proceeding.`}
         </div>
     `,
     }));
@@ -4533,6 +4579,63 @@ async function continueChatCallback(args, prompt) {
 
     if (shouldAwait) {
         await outerPromise;
+    }
+
+    return '';
+}
+
+async function regenerateChatCallback(args) {
+    const shouldAwait = isTrueBoolean(args?.await);
+
+    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning(t`Cannot run /regenerate command while the reply is being generated.`);
+            outerResolve(Promise.resolve(''));
+            return '';
+        }
+
+        if (selected_group) {
+            outerResolve(Promise.resolve(regenerateGroup()));
+            return '';
+        }
+
+        outerResolve(new Promise(innerResolve => setTimeout(() => {
+            innerResolve(Generate('regenerate'));
+        }, 1)));
+        return '';
+    }, 1));
+
+    if (shouldAwait) {
+        const innerPromise = await outerPromise;
+        await innerPromise;
+    }
+
+    return '';
+}
+
+async function swipeChatCallback(args) {
+    const shouldAwait = isTrueBoolean(args?.await);
+
+    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning(t`Cannot run /swipe command while the reply is being generated.`);
+            outerResolve(Promise.resolve(''));
+            return '';
+        }
+
+        outerResolve(Promise.resolve(swipe_right(null, { repeated: false })));
+        return '';
+    }, 1));
+
+    if (shouldAwait) {
+        const innerPromise = await outerPromise;
+        await innerPromise;
     }
 
     return '';
