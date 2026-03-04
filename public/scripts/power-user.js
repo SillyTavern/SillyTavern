@@ -182,6 +182,7 @@ export const power_user = {
     movingUIPreset: '',
     noShadows: false,
     theme: 'Default (Dark) 1.7.1',
+    responsive_layout: 'auto', // 'auto', 'desktop', 'mobile'
 
     gestures: true,
     auto_swipe: false,
@@ -1733,6 +1734,7 @@ export async function loadPowerUserSettings(settings, data) {
     $(`#chat_display option[value=${power_user.chat_display}]`).prop('selected', true).trigger('change');
     $(`#toastr_position option[value=${power_user.toastr_position}]`).prop('selected', true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
+    $('#responsive_layout_select').val(power_user.responsive_layout || 'auto');
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
     $('#tag_import_setting').val(power_user.tag_import_setting);
@@ -1826,6 +1828,7 @@ export async function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
+    applyResponsiveLayout();
     toggleMDHotkeyIconDisplay();
     applyToastrPosition();
 }
@@ -1842,6 +1845,19 @@ function toggleMDHotkeyIconDisplay() {
 
 function loadCharListState() {
     document.body.classList.toggle('charListGrid', power_user.charListGrid);
+}
+
+function applyResponsiveLayout() {
+    // Remove existing responsive mode classes
+    document.body.classList.remove('force-desktop-mode', 'force-mobile-mode');
+
+    // Apply the selected responsive layout mode
+    if (power_user.responsive_layout === 'desktop') {
+        document.body.classList.add('force-desktop-mode');
+    } else if (power_user.responsive_layout === 'mobile') {
+        document.body.classList.add('force-mobile-mode');
+    }
+    // 'auto' mode uses default media query behavior (no class added)
 }
 
 export function loadMovingUIState() {
@@ -3550,6 +3566,12 @@ jQuery(() => {
         applyChatWidth(applyMode);
         saveSettingsDebounced();
         setHotswapsDebounced();
+    });
+
+    $('#responsive_layout_select').on('change', function () {
+        power_user.responsive_layout = String($(this).val());
+        applyResponsiveLayout();
+        saveSettingsDebounced();
     });
 
     $('#chat_truncation').on('input', function () {

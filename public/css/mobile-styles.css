@@ -1,5 +1,5 @@
-/*will apply to anything 768px or less. this catches portrait tablets, horizontal phones, and vertical phones)*/
-@media screen and (max-width: 768px) {
+/*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
+@media screen and (max-width: 1000px) {
 
     #UI-Theme-Block,
     #UI-Customization,
@@ -431,8 +431,8 @@
     }
 }
 
-/*landscape mode phones*/
-@media screen and (max-width: 768px) and (orientation: landscape) {
+/*landscape mode phones and ipads*/
+@media screen and (max-width: 1000px) and (orientation: landscape) {
     body.waifuMode img.expression {
         object-fit: contain;
     }
@@ -576,5 +576,85 @@
 
     #horde_model {
         height: unset;
+    }
+}
+
+/* =================================================================
+   Responsive Mode Override Classes
+   These classes allow forcing mobile or desktop mode regardless of
+   viewport width, controlled via JavaScript toggle in settings.
+   ================================================================= */
+
+/* Force mobile layout on any viewport size */
+body.force-mobile-mode #extensions_settings,
+body.force-mobile-mode #extensions_settings2 {
+    width: 100% !important;
+    min-width: 100% !important;
+}
+
+body.force-mobile-mode .drawer-content {
+    min-width: unset !important;
+    width: 100dvw !important;
+    max-height: calc(100vh - 45px) !important;
+    max-height: calc(100dvh - 45px) !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 5px !important;
+}
+
+body.force-mobile-mode #sheld,
+body.force-mobile-mode #character_popup {
+    width: 100dvw !important;
+    margin: 0 auto !important;
+    max-width: 100dvw !important;
+    left: 0 !important;
+    resize: none !important;
+    top: var(--topBarBlockSize) !important;
+}
+
+body.force-mobile-mode #right-nav-panel,
+body.force-mobile-mode #left-nav-panel {
+    height: calc(100dvh - 45px) !important;
+    min-width: 100dvw !important;
+    width: 100dvw !important;
+    max-width: 100dvw !important;
+}
+
+body.force-mobile-mode #sheldWidthToggleBlock {
+    display: none !important;
+}
+
+/* Prevent mobile styles when forcing desktop mode */
+@media screen and (max-width: 1000px) {
+    body.force-desktop-mode #extensions_settings,
+    body.force-desktop-mode #extensions_settings2 {
+        width: auto !important;
+        min-width: auto !important;
+    }
+
+    body.force-desktop-mode .drawer-content {
+        min-width: 450px !important;
+        width: var(--sheldWidth) !important;
+        max-height: calc(100vh - calc(var(--topBarBlockSize) + var(--bottomFormBlockSize))) !important;
+        position: absolute !important;
+    }
+
+    body.force-desktop-mode #sheld,
+    body.force-desktop-mode #character_popup {
+        width: var(--sheldWidth) !important;
+        resize: horizontal !important;
+    }
+
+    body.force-desktop-mode #right-nav-panel,
+    body.force-desktop-mode #left-nav-panel {
+        height: 0 !important;
+        min-width: 100px !important;
+        width: calc((100vw - var(--sheldWidth) - 2px) / 2) !important;
+        width: calc((100dvw - var(--sheldWidth) - 2px) / 2) !important;
+        max-width: none !important;
+    }
+
+    body.force-desktop-mode #sheldWidthToggleBlock {
+        display: flex !important;
     }
 }

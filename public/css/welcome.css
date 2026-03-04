@@ -231,7 +231,7 @@ body.big-avatars .welcomeRecent .recentChatList .recentChat .chatMessageContaine
     color: var(--SmartThemeQuoteColor);
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 1000px) {
     .welcomePanel .welcomeShortcuts a span {
         display: none;
     }
