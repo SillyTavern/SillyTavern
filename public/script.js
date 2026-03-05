@@ -3828,27 +3828,21 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 }
 
 /**
- * Generates a message using the provided prompt.
- * If the prompt is an array of chat-style messages and not using chat completion, it will be converted to a text prompt.
- * @typedef {object} GenerateRawParams
+ * Generates a raw data object using the provided prompt.
+ * This used to be part of `generateRaw`, but separating it out allows extensions to access other data such as reasoning message.
+ * @typedef {object} GenerateRawDataParams
  * @prop {string | object[]} [prompt] Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
  * @prop {string} [api] API to use. Main API is used if not specified.
  * @prop {boolean} [instructOverride] true to override instruct mode, false to use the default value
  * @prop {boolean} [quietToLoud] true to generate a message in system mode, false to generate a message in character mode
  * @prop {string} [systemPrompt] System prompt to use.
  * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
  * @prop {string} [prefill] An optional prefill for the prompt.
  * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
- * @param {GenerateRawParams} params Parameters for generating a message
+ * @param {GenerateRawDataParams} params Parameters for generating a message
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
-    if (arguments.length > 0 && typeof arguments[0] !== 'object') {
-        console.trace('generateRaw called with positional arguments. Please use an object instead.');
-        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
-    }
-
+export async function generateRawData({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, prefill = '', jsonSchema = null } = {}) {
     if (!api) {
         api = main_api;
     }
@@ -3951,22 +3945,7 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
             return extractJsonFromData(data, { mainApi: api });
         }
 
-        // format result, exclude user prompt bias
-        const message = cleanUpMessage({
-            getMessage: extractMessageFromData(data),
-            isImpersonate: false,
-            isContinue: false,
-            displayIncompleteSentences: true,
-            includeUserPromptBias: false,
-            trimNames: trimNames,
-            trimWrongNames: trimNames,
-        });
-
-        if (!message) {
-            throw new Error('No message generated');
-        }
-
-        return message;
+        return data;
     } finally {
         eventSource.removeListener(event_types.GENERATION_STOPPED, abortHook);
         if (responseLengthCustomized && TempResponseLength.isCustomized()) {
@@ -3974,6 +3953,51 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
             TempResponseLength.removeEventHook(api, eventHook);
         }
     }
+}
+
+/**
+ * Generates a message using the provided prompt.
+ * If the prompt is an array of chat-style messages and not using chat completion, it will be converted to a text prompt.
+ * @typedef {object} GenerateRawParams
+ * @prop {string | object[]} [prompt] Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
+ * @prop {string} [api] API to use. Main API is used if not specified.
+ * @prop {boolean} [instructOverride] true to override instruct mode, false to use the default value
+ * @prop {boolean} [quietToLoud] true to generate a message in system mode, false to generate a message in character mode
+ * @prop {string} [systemPrompt] System prompt to use.
+ * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
+ * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
+ * @prop {string} [prefill] An optional prefill for the prompt.
+ * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
+ * @param {GenerateRawParams} params Parameters for generating a message
+ * @returns {Promise<string>} Generated message
+ */
+export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
+    if (arguments.length > 0 && typeof arguments[0] !== 'object') {
+        console.trace('generateRaw called with positional arguments. Please use an object instead.');
+        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
+    }
+
+    let data = await generateRawData({prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, prefill, jsonSchema});
+
+    if (jsonSchema)
+        return data;
+
+    // format result, exclude user prompt bias
+    const message = cleanUpMessage({
+        getMessage: extractMessageFromData(data, api),
+        isImpersonate: false,
+        isContinue: false,
+        displayIncompleteSentences: true,
+        includeUserPromptBias: false,
+        trimNames: trimNames,
+        trimWrongNames: trimNames,
+    });
+
+    if (!message) {
+        throw new Error('No message generated');
+    }
+
+    return message;
 }
 
 class TempResponseLength {
