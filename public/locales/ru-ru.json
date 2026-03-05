@@ -2143,7 +2143,7 @@
     "Enter a valid API URL": "Введите корректный адрес API",
     "No Ollama model selected.": "Не выбрана модель Ollama",
     "Background Fitting": "Способ подгонки фона под разрешение",
-    "Chat Lore Alt+Click to open the lorebook": "Лорбук данного чата\nAlt + ЛКМ чтобы открыть лорбук",
+    "chat_lorebook_button_title": "Лорбук данного чата\n\nНажмите, чтобы открыть\nShift + ЛКМ, чтобы открыть диалог привязки лорбука",
     "Token Counter": "Подсчитать токены",
     "Type / paste in the box below to see the number of tokens in the text.": "Введите или вставьте текст в окошко ниже, чтобы подсчитать количество токенов в нём.",
     "Selected tokenizer:": "Выбранный токенайзер:",
