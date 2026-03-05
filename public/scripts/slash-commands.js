@@ -48,9 +48,9 @@ import {
     setCharacterName,
     setExtensionPrompt,
     showMoreMessages,
+    swipe,
     stopGeneration,
     substituteParams,
-    swipe_right,
     syncMesToSwipe,
     system_avatar,
     system_message_types,
@@ -91,7 +91,7 @@ import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { t } from './i18n.js';
 import { kai_settings } from './kai-settings.js';
 import { instruct_presets, selectContextPreset, selectInstructPreset } from './instruct-mode.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, SWIPE_DIRECTION } from './constants.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1161,6 +1161,21 @@ export function initDefaultSlashCommands() {
         callback: swipeChatCallback,
         namedArgumentList: [
             new SlashCommandNamedArgument(
+                'direction',
+                t`Swipe direction`,
+                [ARGUMENT_TYPE.STRING],
+                false,
+                false,
+                SWIPE_DIRECTION.RIGHT,
+                [
+                    new SlashCommandEnumValue(SWIPE_DIRECTION.RIGHT, t`Swipe to the next reply`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue(SWIPE_DIRECTION.LEFT, t`Swipe to the previous reply`, enumTypes.enum, enumIcons.default),
+                ],
+                [],
+                null,
+                true,
+            ),
+            new SlashCommandNamedArgument(
                 'await',
                 t`Whether to await for the swipe action before proceeding`,
                 [ARGUMENT_TYPE.BOOLEAN],
@@ -1171,7 +1186,7 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
         <div>
-            ${t`Swipes right on the latest reply. If the next swipe doesn't exist yet, it may generate one depending on overswipe settings.`}
+            ${t`Swipes the latest reply. Defaults to <code>direction=right</code>; use <code>direction=left</code> to go to the previous reply. If no next swipe exists, behavior depends on message context.`}
         </div>
         <div>
             ${t`If <code>await=true</code> named argument is passed, the command will await for the swipe action before proceeding.`}
@@ -4618,6 +4633,7 @@ async function regenerateChatCallback(args) {
 
 async function swipeChatCallback(args) {
     const shouldAwait = isTrueBoolean(args?.await);
+    const direction = args?.direction === SWIPE_DIRECTION.LEFT ? SWIPE_DIRECTION.LEFT : SWIPE_DIRECTION.RIGHT;
 
     const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
         try {
@@ -4629,7 +4645,7 @@ async function swipeChatCallback(args) {
             return '';
         }
 
-        outerResolve(Promise.resolve(swipe_right(null, { repeated: false })));
+        outerResolve(Promise.resolve(swipe(null, direction, { repeated: false })));
         return '';
     }, 1));
 
