@@ -1154,17 +1154,6 @@ async function sendXaiRequest(request, response) {
             bodyParams['reasoning_effort'] = request.body.reasoning_effort === 'high' ? 'high' : 'low';
         }
 
-        if (request.body.enable_web_search) {
-            bodyParams['search_parameters'] = {
-                mode: 'on',
-                sources: [
-                    { type: 'web', safe_search: false },
-                    { type: 'news', safe_search: false },
-                    { type: 'x' },
-                ],
-            };
-        }
-
         if (request.body.json_schema) {
             bodyParams['response_format'] = {
                 type: 'json_schema',
