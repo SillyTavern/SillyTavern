@@ -3970,7 +3970,7 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
 
     const data = await generateRawData({ prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, prefill, jsonSchema });
 
-    // JSON object will already be extracted.
+    // JSON string (matching the provided schema) will already be extracted.
     if (jsonSchema) {
         return data;
     }
