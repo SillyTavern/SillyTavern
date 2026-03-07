@@ -37,6 +37,7 @@ import { MiniMaxTtsProvider } from './minimax.js';
 import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
+import { CambAiTtsProvider } from './cambai.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -121,6 +122,7 @@ export function registerTtsProvider(name, provider) {
 
 const ttsProviders = {
     AllTalk: AllTalkTtsProvider,
+    'CAMB AI': CambAiTtsProvider,
     Azure: AzureTtsProvider,
     Chatterbox: ChatterboxTtsProvider,
     Chutes: ChutesTtsProvider,
