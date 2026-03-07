@@ -3960,7 +3960,7 @@ export async function generateRawData({ prompt = '', api = null, instructOverrid
  * @prop {string} [prefill] An optional prefill for the prompt.
  * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
  * @param {GenerateRawParams} params Parameters for generating a message
- * @returns {Promise<string>} Generated message
+ * @returns {Promise<string>} Generated output: a cleaned-up message string when `jsonSchema` is not provided, or an extracted JSON string conforming to `jsonSchema` when it is.
  */
 export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
