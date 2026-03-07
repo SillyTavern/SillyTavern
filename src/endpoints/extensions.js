@@ -414,43 +414,54 @@ router.post('/delete', async (request, response) => {
     }
 });
 
-/**
- * Discover the extension folders
- * If the folder is called third-party, search for subfolders instead
- */
-router.get('/discover', function (request, response) {
-    if (!fs.existsSync(path.join(request.user.directories.extensions))) {
-        fs.mkdirSync(path.join(request.user.directories.extensions));
+// Discover the extension folders
+// If the folder is called third-party, search for subfolders instead
+router.get('/discover', async function (request, response) {
+    try {
+        if (!fs.existsSync(path.join(request.user.directories.extensions))) {
+            await fs.promises.mkdir(path.join(request.user.directories.extensions), { recursive: true });
+        }
+
+        if (!fs.existsSync(PUBLIC_DIRECTORIES.globalExtensions)) {
+            await fs.promises.mkdir(PUBLIC_DIRECTORIES.globalExtensions, { recursive: true });
+        }
+
+        const getDirectories = async (source) => {
+            try {
+                const entries = await fs.promises.readdir(source, { withFileTypes: true });
+                return entries
+                    .filter(dirent => dirent.isDirectory())
+                    .map(dirent => dirent.name);
+            } catch {
+                return [];
+            }
+        };
+
+        // Get all folders in system extensions folder, excluding third-party
+        const systemExtensionsList = await getDirectories(PUBLIC_DIRECTORIES.extensions);
+        const builtInExtensions = systemExtensionsList
+            .filter(f => f !== 'third-party')
+            .map(f => ({ type: 'system', name: f }));
+
+        // Get all folders in local extensions folder
+        const localExtensionsList = await getDirectories(request.user.directories.extensions);
+        const userExtensions = localExtensionsList
+            .map(f => ({ type: 'local', name: `third-party/${f}` }));
+
+        // Get all folders in global extensions folder
+        // In case of a conflict, the extension will be loaded from the user folder
+        const globalExtensionsList = await getDirectories(PUBLIC_DIRECTORIES.globalExtensions);
+        const globalExtensions = globalExtensionsList
+            .map(f => ({ type: 'global', name: `third-party/${f}` }))
+            .filter(f => !userExtensions.some(e => e.name === f.name));
+
+        // Combine all extensions
+        const allExtensions = [...builtInExtensions, ...userExtensions, ...globalExtensions];
+        console.debug('Extensions available for', request.user.profile.handle, allExtensions);
+
+        return response.send(allExtensions);
+    } catch (error) {
+        console.error('Failed to discover extensions', error);
+        return response.status(500).send('Failed to discover extensions');
     }
-
-    if (!fs.existsSync(PUBLIC_DIRECTORIES.globalExtensions)) {
-        fs.mkdirSync(PUBLIC_DIRECTORIES.globalExtensions);
-    }
-
-    // Get all folders in system extensions folder, excluding third-party
-    const builtInExtensions = fs
-        .readdirSync(PUBLIC_DIRECTORIES.extensions)
-        .filter(f => fs.statSync(path.join(PUBLIC_DIRECTORIES.extensions, f)).isDirectory())
-        .filter(f => f !== 'third-party')
-        .map(f => ({ type: 'system', name: f }));
-
-    // Get all folders in local extensions folder
-    const userExtensions = fs
-        .readdirSync(path.join(request.user.directories.extensions))
-        .filter(f => fs.statSync(path.join(request.user.directories.extensions, f)).isDirectory())
-        .map(f => ({ type: 'local', name: `third-party/${f}` }));
-
-    // Get all folders in global extensions folder
-    // In case of a conflict, the extension will be loaded from the user folder
-    const globalExtensions = fs
-        .readdirSync(PUBLIC_DIRECTORIES.globalExtensions)
-        .filter(f => fs.statSync(path.join(PUBLIC_DIRECTORIES.globalExtensions, f)).isDirectory())
-        .map(f => ({ type: 'global', name: `third-party/${f}` }))
-        .filter(f => !userExtensions.some(e => e.name === f.name));
-
-    // Combine all extensions
-    const allExtensions = [...builtInExtensions, ...userExtensions, ...globalExtensions];
-    console.debug('Extensions available for', request.user.profile.handle, allExtensions);
-
-    return response.send(allExtensions);
 });

@@ -7,8 +7,81 @@ import { default as git, CheckRepoActions } from 'simple-git';
 import { sync as commandExistsSync } from 'command-exists';
 import { getConfigValue, color } from './util.js';
 
+
 const enableServerPlugins = !!getConfigValue('enableServerPlugins', false, 'boolean');
 const enableServerPluginsAutoUpdate = !!getConfigValue('enableServerPluginsAutoUpdate', true, 'boolean');
+
+/**
+ * Simple in-memory cache for plugin operations.
+ * Stores data with a TTL (Time To Live).
+ */
+class PluginCache {
+    /**
+     * @param {number} ttl Default TTL in milliseconds (default: 5 minutes)
+     * @param {number} maxSize Maximum number of entries (default: 1000)
+     */
+    constructor(ttl = 5 * 60 * 1000, maxSize = 1000) {
+        this.cache = new Map();
+        this.ttl = ttl;
+        this.maxSize = maxSize;
+    }
+
+    /**
+     * Generates a cache key from data.
+     * @param {any} data Data to generate key from
+     * @returns {string} Cache key
+     */
+    generateKey(data) {
+        return typeof data === 'string' ? data : JSON.stringify(data);
+    }
+
+    /**
+     * Gets an item from the cache.
+     * @param {any} key Unique identifier for the cache item
+     * @returns {any|null} Cached value or null if not found/expired
+     */
+    get(key) {
+        const cacheKey = this.generateKey(key);
+        const entry = this.cache.get(cacheKey);
+
+        if (!entry) return null;
+
+        if (Date.now() - entry.timestamp > this.ttl) {
+            this.cache.delete(cacheKey);
+            return null;
+        }
+
+        return entry.value;
+    }
+
+    /**
+     * Sets an item in the cache.
+     * @param {any} key Unique identifier
+     * @param {any} value Value to cache
+     */
+    set(key, value) {
+        // Simple LRU-like eviction if over capacity
+        if (this.cache.size >= this.maxSize) {
+            const firstKey = this.cache.keys().next().value;
+            this.cache.delete(firstKey);
+        }
+
+        const cacheKey = this.generateKey(key);
+        this.cache.set(cacheKey, {
+            value,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Clears all cache entries.
+     */
+    clear() {
+        this.cache.clear();
+    }
+}
+
+const pluginCache = new PluginCache();
 
 /**
  * Map of loaded plugins.
@@ -52,7 +125,7 @@ export async function loadPlugins(app, pluginsPath) {
             return emptyFn;
         }
 
-        const files = fs.readdirSync(pluginsPath);
+        const files = await fs.promises.readdir(pluginsPath);
 
         // No plugins to load.
         if (files.length === 0) {
@@ -212,6 +285,35 @@ async function initPlugin(app, plugin, exitHooks) {
 
     // Allow the plugin to register API routes under /api/plugins/[plugin ID] via a router
     const router = express.Router();
+
+    // Cache middleware for plugin routes
+
+
+    const cacheMiddleware = (req, res, next) => {
+        // Only cache GET requests
+        if (req.method !== 'GET') {
+            return next();
+        }
+
+        const cacheKey = `plugin_${id}_${req.path}_${JSON.stringify(req.query)}`;
+        const cached = pluginCache.get(cacheKey);
+
+        if (cached) {
+            return res.json(cached);
+        }
+
+        // Intercept res.json to cache the response
+        const originalJson = res.json.bind(res);
+        res.json = (data) => {
+            pluginCache.set(cacheKey, data);
+            return originalJson(data);
+        };
+
+        next();
+    };
+
+    // Apply cache middleware
+    router.use(cacheMiddleware);
 
     await init(router);
 
