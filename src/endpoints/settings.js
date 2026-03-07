@@ -13,6 +13,7 @@ import { getFileNameValidationFunction } from '../middleware/validateFileName.js
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
 const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
+const ENABLE_SAVE_UPLOAD_COMPRESSION = !!getConfigValue('performance.saveUploadCompression.enabled', true, 'boolean');
 
 // 10 minutes
 const AUTOSAVE_INTERVAL = 10 * 60 * 1000;
@@ -282,6 +283,7 @@ router.post('/get', (request, response) => {
         enable_extensions: ENABLE_EXTENSIONS,
         enable_extensions_auto_update: ENABLE_EXTENSIONS_AUTO_UPDATE,
         enable_accounts: ENABLE_ACCOUNTS,
+        enable_save_upload_compression: ENABLE_SAVE_UPLOAD_COMPRESSION,
     });
 });
 

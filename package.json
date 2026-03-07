@@ -48,6 +48,7 @@
         "droll": "^0.2.1",
         "env-paths": "^3.0.0",
         "express": "^4.21.0",
+        "fflate": "^0.8.2",
         "form-data": "^4.0.4",
         "fuse.js": "^7.1.0",
         "google-translate-api-x": "^10.7.2",

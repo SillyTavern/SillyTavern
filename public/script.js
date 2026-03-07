@@ -285,6 +285,7 @@ import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
+import { postSaveJson, setSaveUploadCompressionEnabled } from './scripts/save-upload.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -437,12 +438,6 @@ export let chatDragDropHandler = null;
 export const DEFAULT_SAVE_EDIT_TIMEOUT = debounce_timeout.relaxed;
 /** @type {debounce_timeout} The debounce timeout used for printing. debounce_timeout.quick: 100 ms */
 export const DEFAULT_PRINT_TIMEOUT = debounce_timeout.quick;
-const SAVE_UPLOAD_COMPRESSION_THRESHOLD_BYTES = 256 * 1024;
-const SAVE_UPLOAD_COMPRESSION_LOCALSTORAGE_KEY = 'st_save_upload_compression';
-const SAVE_UPLOAD_COMPRESSION_RETRY_STATUSES = new Set([400, 408, 413, 415, 422, 425, 429, 500, 502, 503, 504]);
-const SAVE_UPLOAD_COMPRESSION_TIMEOUT_MS = 4000;
-const SAVE_UPLOAD_COMPRESSION_FFLATE_URL = '/lib/fflate.min.js';
-let saveUploadFflatePromise = null;
 
 export const saveSettingsDebounced = debounce((loopCounter = 0) => saveSettings(loopCounter), DEFAULT_SAVE_EDIT_TIMEOUT);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), DEFAULT_SAVE_EDIT_TIMEOUT);
@@ -633,181 +628,6 @@ export function getRequestHeaders({ omitContentType = false } = {}) {
     }
 
     return headers;
-}
-
-function isSaveUploadCompressionEnabled() {
-    try {
-        const value = localStorage.getItem(SAVE_UPLOAD_COMPRESSION_LOCALSTORAGE_KEY);
-        return value === null ? true : value !== '0' && value.toLowerCase() !== 'false';
-    } catch {
-        return true;
-    }
-}
-
-function isLikelyWebKitBrowserForCompression() {
-    try {
-        const ua = navigator?.userAgent ?? '';
-        const vendor = navigator?.vendor ?? '';
-        const isIOS = /\b(iPhone|iPad|iPod)\b/i.test(ua);
-        const isCriOS = /\bCriOS\/\d+/i.test(ua);
-        const isFxiOS = /\bFxiOS\/\d+/i.test(ua);
-        const isEdgiOS = /\bEdgiOS\/\d+/i.test(ua);
-        const isOPiOS = /\bOPiOS\/\d+/i.test(ua);
-        const isSafariLike = /\bSafari\/\d+/i.test(ua) && !isCriOS && !isFxiOS && !isEdgiOS && !isOPiOS;
-        return isIOS || (vendor.includes('Apple') && isSafariLike);
-    } catch {
-        return false;
-    }
-}
-
-async function loadSaveUploadFflate() {
-    if (globalThis?.fflate?.gzipSync) {
-        return globalThis.fflate;
-    }
-
-    if (!saveUploadFflatePromise) {
-        saveUploadFflatePromise = new Promise((resolve, reject) => {
-            const onLoaded = () => {
-                if (globalThis?.fflate?.gzipSync) {
-                    resolve(globalThis.fflate);
-                    return;
-                }
-
-                reject(new Error('fflate_loaded_but_missing_api'));
-            };
-
-            const onError = () => reject(new Error('fflate_script_load_failed'));
-            const selector = `script[data-st-save-upload-fflate="1"]`;
-            const existing = document.querySelector(selector);
-            if (existing) {
-                if (existing.dataset.stSaveUploadReady === '1') {
-                    onLoaded();
-                    return;
-                }
-
-                existing.addEventListener('load', onLoaded, { once: true });
-                existing.addEventListener('error', onError, { once: true });
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.src = SAVE_UPLOAD_COMPRESSION_FFLATE_URL;
-            script.async = true;
-            script.defer = true;
-            script.dataset.stSaveUploadFflate = '1';
-            script.addEventListener('load', () => {
-                script.dataset.stSaveUploadReady = '1';
-                onLoaded();
-            }, { once: true });
-            script.addEventListener('error', onError, { once: true });
-            document.head.appendChild(script);
-        }).catch((error) => {
-            saveUploadFflatePromise = null;
-            throw error;
-        });
-    }
-
-    return saveUploadFflatePromise;
-}
-
-async function gzipJsonBodyWithFflate(jsonBody) {
-    const fflate = await loadSaveUploadFflate();
-    if (typeof fflate.gzipSync !== 'function') {
-        return null;
-    }
-
-    const input = new TextEncoder().encode(jsonBody);
-    const compressed = fflate.gzipSync(input, { level: 6 });
-    return compressed instanceof Uint8Array ? compressed : new Uint8Array(compressed);
-}
-
-async function gzipJsonBodyWithNative(jsonBody) {
-    if (typeof CompressionStream !== 'function') {
-        return null;
-    }
-
-    const compressionStream = new CompressionStream('gzip');
-    const writer = compressionStream.writable.getWriter();
-    const input = new TextEncoder().encode(jsonBody);
-    await writer.write(input);
-    await writer.close();
-    const compressed = await new Response(compressionStream.readable).arrayBuffer();
-    return new Uint8Array(compressed);
-}
-
-async function withCompressionTimeout(promise, timeoutMs, label) {
-    let timeoutId = null;
-    const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(`${label}_timeout`)), timeoutMs);
-    });
-
-    try {
-        return await Promise.race([promise, timeoutPromise]);
-    } finally {
-        if (timeoutId !== null) {
-            clearTimeout(timeoutId);
-        }
-    }
-}
-
-async function postSaveJson(url, payload) {
-    const jsonBody = JSON.stringify(payload);
-    const headers = getRequestHeaders();
-    const plainRequest = {
-        method: 'POST',
-        headers: headers,
-        body: jsonBody,
-        cache: 'no-cache',
-    };
-
-    const bodySize = new TextEncoder().encode(jsonBody).byteLength;
-    const canCompress = isSaveUploadCompressionEnabled()
-        && bodySize >= SAVE_UPLOAD_COMPRESSION_THRESHOLD_BYTES;
-
-    if (!canCompress) {
-        return fetch(url, plainRequest);
-    }
-
-    const compressionEngines = isLikelyWebKitBrowserForCompression()
-        ? ['fflate']
-        : ['fflate', 'native'];
-
-    for (const engine of compressionEngines) {
-        try {
-            const compressionPromise = engine === 'fflate'
-                ? gzipJsonBodyWithFflate(jsonBody)
-                : gzipJsonBodyWithNative(jsonBody);
-
-            const compressedBody = await withCompressionTimeout(
-                compressionPromise,
-                SAVE_UPLOAD_COMPRESSION_TIMEOUT_MS,
-                `compress_${engine}_gzip`,
-            );
-
-            if (!compressedBody || compressedBody.byteLength >= bodySize) {
-                continue;
-            }
-
-            const compressedResponse = await fetch(url, {
-                ...plainRequest,
-                headers: {
-                    ...headers,
-                    'Content-Encoding': 'gzip',
-                },
-                body: compressedBody,
-            });
-
-            if (compressedResponse.ok || !SAVE_UPLOAD_COMPRESSION_RETRY_STATUSES.has(compressedResponse.status)) {
-                return compressedResponse;
-            }
-
-            console.warn(`Compressed save request failed (${compressedResponse.status}, ${engine}), retrying without compression.`);
-        } catch (error) {
-            console.warn(`Compressed save request failed before upload (${engine}), retrying without compression.`, error);
-        }
-    }
-
-    return fetch(url, plainRequest);
 }
 
 export function getSlideToggleOptions() {
@@ -7299,7 +7119,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                     file_name: fileNameWithoutExtension,
                     chat: currentChat,
                     avatar_url: newAvatar,
-                });
+                }, getRequestHeaders());
 
                 if (!saveChatResponse.ok) {
                     throw new Error('Could not save chat');
@@ -7389,7 +7209,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
             chat: [chatHeader, ...trimmedChat],
             avatar_url: characters[this_chid].avatar,
             force: force,
-        });
+        }, getRequestHeaders());
 
         if (result.ok) {
             return;
@@ -7874,6 +7694,7 @@ export async function getSettings() {
     }
 
     const data = await response.json();
+    setSaveUploadCompressionEnabled(data.enable_save_upload_compression);
     if (data.result != 'file not find' && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined && settings.username !== '') {
@@ -8033,7 +7854,7 @@ export async function saveSettings(loopCounter = 0) {
     };
 
     try {
-        const result = await postSaveJson('/api/settings/save', payload);
+        const result = await postSaveJson('/api/settings/save', payload, getRequestHeaders());
 
         if (!result.ok) {
             throw new Error(`Failed to save settings: ${result.statusText}`);

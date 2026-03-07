@@ -202,6 +202,9 @@ performance:
   memoryCacheCapacity: '100mb'
   # Enables disk caching for character cards. Improves performances with large card libraries.
   useDiskCache: true
+  # Enables gzip compression for large settings/chat save uploads.
+  saveUploadCompression:
+    enabled: true
 
 # CACHE BUSTER CONFIGURATION
 # IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
