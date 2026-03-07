@@ -9691,7 +9691,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
     const mesId = Number(forceMesId ?? event?.currentTarget?.closest('.mes')?.getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK || source === SWIPE_SOURCE.AUTO_SWIPE) {
+    if ([SWIPE_SOURCE.DELETE, SWIPE_SOURCE.BACK, SWIPE_SOURCE.AUTO_SWIPE, SWIPE_SOURCE.SLASH_COMMAND].includes(source)) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
     } else {
         //Only show an error if swipes are not hidden and a message is generating.

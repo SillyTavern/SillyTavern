@@ -91,7 +91,7 @@ import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { t } from './i18n.js';
 import { kai_settings } from './kai-settings.js';
 import { instruct_presets, selectContextPreset, selectInstructPreset } from './instruct-mode.js';
-import { debounce_timeout, SWIPE_DIRECTION } from './constants.js';
+import { debounce_timeout, SWIPE_DIRECTION, SWIPE_SOURCE } from './constants.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -4645,7 +4645,7 @@ async function swipeChatCallback(args) {
             return '';
         }
 
-        outerResolve(Promise.resolve(swipe(null, direction, { repeated: false })));
+        outerResolve(Promise.resolve(swipe(null, direction, { source: SWIPE_SOURCE.SLASH_COMMAND, repeated: false })));
         return '';
     }, 1));
 
