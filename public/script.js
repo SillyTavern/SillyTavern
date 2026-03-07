@@ -437,6 +437,9 @@ export let chatDragDropHandler = null;
 export const DEFAULT_SAVE_EDIT_TIMEOUT = debounce_timeout.relaxed;
 /** @type {debounce_timeout} The debounce timeout used for printing. debounce_timeout.quick: 100 ms */
 export const DEFAULT_PRINT_TIMEOUT = debounce_timeout.quick;
+const SAVE_UPLOAD_COMPRESSION_THRESHOLD_BYTES = 256 * 1024;
+const SAVE_UPLOAD_COMPRESSION_LOCALSTORAGE_KEY = 'st_save_upload_compression';
+const SAVE_UPLOAD_COMPRESSION_RETRY_STATUSES = new Set([400, 408, 413, 415, 422, 425, 429, 500, 502, 503, 504]);
 
 export const saveSettingsDebounced = debounce((loopCounter = 0) => saveSettings(loopCounter), DEFAULT_SAVE_EDIT_TIMEOUT);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), DEFAULT_SAVE_EDIT_TIMEOUT);
@@ -627,6 +630,74 @@ export function getRequestHeaders({ omitContentType = false } = {}) {
     }
 
     return headers;
+}
+
+function isSaveUploadCompressionEnabled() {
+    try {
+        const value = localStorage.getItem(SAVE_UPLOAD_COMPRESSION_LOCALSTORAGE_KEY);
+        return value === null ? true : value !== '0' && value.toLowerCase() !== 'false';
+    } catch {
+        return true;
+    }
+}
+
+async function gzipJsonBody(jsonBody) {
+    if (typeof CompressionStream !== 'function') {
+        return null;
+    }
+
+    const compressionStream = new CompressionStream('gzip');
+    const writer = compressionStream.writable.getWriter();
+    const input = new TextEncoder().encode(jsonBody);
+    await writer.write(input);
+    await writer.close();
+    const compressed = await new Response(compressionStream.readable).arrayBuffer();
+    return new Uint8Array(compressed);
+}
+
+async function postSaveJson(url, payload) {
+    const jsonBody = JSON.stringify(payload);
+    const headers = getRequestHeaders();
+    const plainRequest = {
+        method: 'POST',
+        headers: headers,
+        body: jsonBody,
+        cache: 'no-cache',
+    };
+
+    const bodySize = new TextEncoder().encode(jsonBody).byteLength;
+    const canCompress = isSaveUploadCompressionEnabled()
+        && bodySize >= SAVE_UPLOAD_COMPRESSION_THRESHOLD_BYTES
+        && typeof CompressionStream === 'function';
+
+    if (!canCompress) {
+        return fetch(url, plainRequest);
+    }
+
+    try {
+        const compressedBody = await gzipJsonBody(jsonBody);
+
+        if (compressedBody && compressedBody.byteLength < bodySize) {
+            const compressedResponse = await fetch(url, {
+                ...plainRequest,
+                headers: {
+                    ...headers,
+                    'Content-Encoding': 'gzip',
+                },
+                body: compressedBody,
+            });
+
+            if (compressedResponse.ok || !SAVE_UPLOAD_COMPRESSION_RETRY_STATUSES.has(compressedResponse.status)) {
+                return compressedResponse;
+            }
+
+            console.warn(`Compressed save request failed (${compressedResponse.status}), retrying without compression.`);
+        }
+    } catch (error) {
+        console.warn('Compressed save request failed before upload, retrying without compression.', error);
+    }
+
+    return fetch(url, plainRequest);
 }
 
 export function getSlideToggleOptions() {
@@ -7113,16 +7184,11 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
-                const saveChatResponse = await fetch('/api/chats/save', {
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({
-                        ch_name: newName,
-                        file_name: fileNameWithoutExtension,
-                        chat: currentChat,
-                        avatar_url: newAvatar,
-                    }),
-                    cache: 'no-cache',
+                const saveChatResponse = await postSaveJson('/api/chats/save', {
+                    ch_name: newName,
+                    file_name: fileNameWithoutExtension,
+                    chat: currentChat,
+                    avatar_url: newAvatar,
                 });
 
                 if (!saveChatResponse.ok) {
@@ -7207,17 +7273,12 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     };
 
     try {
-        const result = await fetch('/api/chats/save', {
-            method: 'POST',
-            cache: 'no-cache',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                ch_name: characters[this_chid].name,
-                file_name: fileName,
-                chat: [chatHeader, ...trimmedChat],
-                avatar_url: characters[this_chid].avatar,
-                force: force,
-            }),
+        const result = await postSaveJson('/api/chats/save', {
+            ch_name: characters[this_chid].name,
+            file_name: fileName,
+            chat: [chatHeader, ...trimmedChat],
+            avatar_url: characters[this_chid].avatar,
+            force: force,
         });
 
         if (result.ok) {
@@ -7862,12 +7923,7 @@ export async function saveSettings(loopCounter = 0) {
     };
 
     try {
-        const result = await fetch('/api/settings/save', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(payload),
-            cache: 'no-cache',
-        });
+        const result = await postSaveJson('/api/settings/save', payload);
 
         if (!result.ok) {
             throw new Error(`Failed to save settings: ${result.statusText}`);
