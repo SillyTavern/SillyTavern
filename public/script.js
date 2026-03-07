@@ -3831,7 +3831,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * Generates a raw data object using the provided prompt.
  * This used to be part of `generateRaw`, but separating it out allows extensions to access other data such as reasoning message.
  * @param {GenerateRawParams} params Parameters for generating a message
- * @returns {Promise<object>} Generated message
+ * @returns {Promise<object>} Raw API response data
  */
 export async function generateRawData({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, prefill = '', jsonSchema = null } = {}) {
     if (!api) {
@@ -3970,8 +3970,10 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
 
     const data = await generateRawData({ prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, prefill, jsonSchema });
 
-    if (jsonSchema)
+    // JSON object will already be extracted.
+    if (jsonSchema) {
         return data;
+    }
 
     // format result, exclude user prompt bias
     const message = cleanUpMessage({
