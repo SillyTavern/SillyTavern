@@ -3830,17 +3830,8 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 /**
  * Generates a raw data object using the provided prompt.
  * This used to be part of `generateRaw`, but separating it out allows extensions to access other data such as reasoning message.
- * @typedef {object} GenerateRawDataParams
- * @prop {string | object[]} [prompt] Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
- * @prop {string} [api] API to use. Main API is used if not specified.
- * @prop {boolean} [instructOverride] true to override instruct mode, false to use the default value
- * @prop {boolean} [quietToLoud] true to generate a message in system mode, false to generate a message in character mode
- * @prop {string} [systemPrompt] System prompt to use.
- * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @prop {string} [prefill] An optional prefill for the prompt.
- * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
- * @param {GenerateRawDataParams} params Parameters for generating a message
- * @returns {Promise<string>} Generated message
+ * @param {GenerateRawParams} params Parameters for generating a message
+ * @returns {Promise<object>} Generated message
  */
 export async function generateRawData({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, prefill = '', jsonSchema = null } = {}) {
     if (!api) {
@@ -3977,7 +3968,7 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
         [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
     }
 
-    let data = await generateRawData({prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, prefill, jsonSchema});
+    const data = await generateRawData({ prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, prefill, jsonSchema });
 
     if (jsonSchema)
         return data;
