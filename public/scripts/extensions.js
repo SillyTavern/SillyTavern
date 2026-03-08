@@ -356,11 +356,71 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
 }
 
 /**
+ * Calls a manifest hook for an extension.
+ * Hooks are optional function names exported from the extension's JS entry point module.
+ * The hook function can optionally return a Promise that will be awaited.
+ * @param {string} name Extension name
+ * @param {'install' | 'delete' | 'enable' | 'disable'} hookName The hook to call
+ * @returns {Promise<void>}
+ */
+async function callExtensionHook(name, hookName) {
+    const manifest = manifests[name];
+
+    if (!manifest) {
+        console.debug(`callExtensionHook: Extension "${name}" has no manifest, skipping hook "${hookName}"`);
+        return;
+    }
+
+    if (!manifest.hooks || typeof manifest.hooks !== 'object') {
+        return;
+    }
+
+    const hookFunctionName = manifest.hooks[hookName];
+
+    if (hookFunctionName === undefined || hookFunctionName === null) {
+        return;
+    }
+
+    if (typeof hookFunctionName !== 'string' || !hookFunctionName) {
+        console.warn(`callExtensionHook: Extension "${name}" hook "${hookName}" is not a valid string`);
+        return;
+    }
+
+    if (!manifest.js) {
+        console.warn(`callExtensionHook: Extension "${name}" has hook "${hookName}" but no JS entry point defined in manifest`);
+        return;
+    }
+
+    const url = `/scripts/extensions/${name}/${manifest.js}`;
+    console.debug(`callExtensionHook: Calling hook "${hookName}" (function "${hookFunctionName}") for extension "${name}"`);
+
+    try {
+        const module = await import(url);
+
+        if (typeof module[hookFunctionName] !== 'function') {
+            console.warn(`callExtensionHook: Extension "${name}" hook "${hookName}" references "${hookFunctionName}" which is not an exported function`);
+            return;
+        }
+
+        const result = module[hookFunctionName]();
+
+        if (result instanceof Promise) {
+            await result;
+        }
+
+        console.debug(`callExtensionHook: Hook "${hookName}" completed for extension "${name}"`);
+    } catch (error) {
+        console.error(`callExtensionHook: Error calling hook "${hookName}" for extension "${name}":`, error);
+    }
+}
+
+/**
  * Enables an extension by name.
  * @param {string} name Extension name
  * @param {boolean} [reload=true] If true, reload the page after enabling the extension
  */
 export async function enableExtension(name, reload = true) {
+    await callExtensionHook(name, 'enable');
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
     stateChanged = true;
     await saveSettings();
@@ -377,6 +437,7 @@ export async function enableExtension(name, reload = true) {
  * @param {boolean} [reload=true] If true, reload the page after disabling the extension
  */
 export async function disableExtension(name, reload = true) {
+    await callExtensionHook(name, 'disable');
     extension_settings.disabledExtensions.push(name);
     stateChanged = true;
     await saveSettings();
@@ -1280,6 +1341,8 @@ async function moveExtension(extensionName, source, destination) {
  * @param {string} extensionName Extension name to delete
  */
 export async function deleteExtension(extensionName) {
+    await callExtensionHook(extensionName, 'delete');
+
     try {
         await fetch('/api/extensions/delete', {
             method: 'POST',
@@ -1428,6 +1491,12 @@ export async function installExtension(url, global, branch = '') {
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
     await loadExtensionSettings({}, false, false);
     await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
+
+    const extensionFolderName = String(response.extensionPath).split(/[/\\]/).pop();
+    if (extensionFolderName) {
+        const extensionName = `third-party/${extensionFolderName}`;
+        await callExtensionHook(extensionName, 'install');
+    }
 }
 
 /**
