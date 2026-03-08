@@ -405,12 +405,17 @@ async function callExtensionHook(name, hookName) {
         const hookCallResult = module[hookFunctionName]();
 
         const HOOK_TIMEOUT = 5000;
+        const HOOK_RESULT = {
+            OK: 'ok',
+            TIMEOUT: 'timeout',
+        };
+
         const result = await Promise.race([
-            (hookCallResult instanceof Promise ? hookCallResult : Promise.resolve(hookCallResult)).then(() => 'ok'),
-            delay(HOOK_TIMEOUT).then(() => 'timeout'),
+            (hookCallResult instanceof Promise ? hookCallResult : Promise.resolve(hookCallResult)).then(() => HOOK_RESULT.OK),
+            delay(HOOK_TIMEOUT).then(() => HOOK_RESULT.TIMEOUT),
         ]);
 
-        if (result === 'timeout') {
+        if (result === HOOK_RESULT.TIMEOUT) {
             console.warn(`callExtensionHook: Hook "${hookName}" for extension "${name}" timed out after ${HOOK_TIMEOUT}ms`);
         } else {
             console.debug(`callExtensionHook: Hook "${hookName}" completed for extension "${name}"`);
