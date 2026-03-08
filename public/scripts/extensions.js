@@ -360,7 +360,7 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
  * Hooks are optional function names exported from the extension's JS entry point module.
  * The hook function can optionally return a Promise that will be awaited.
  * @param {string} name Extension name
- * @param {'install' | 'delete' | 'enable' | 'disable'} hookName The hook to call
+ * @param {'install' | 'delete' | 'enable' | 'disable' | 'activate'} hookName The hook to call
  * @returns {Promise<void>}
  */
 async function callExtensionHook(name, hookName) {
@@ -375,11 +375,11 @@ async function callExtensionHook(name, hookName) {
         return;
     }
 
-    const hookFunctionName = manifest.hooks[hookName];
-
-    if (hookFunctionName === undefined || hookFunctionName === null) {
+    if (!Object.hasOwn(manifest.hooks, hookName)) {
         return;
     }
+
+    const hookFunctionName = manifest.hooks[hookName];
 
     if (typeof hookFunctionName !== 'string' || !hookFunctionName) {
         console.warn(`callExtensionHook: Extension "${name}" hook "${hookName}" is not a valid string`);
@@ -402,11 +402,7 @@ async function callExtensionHook(name, hookName) {
             return;
         }
 
-        const result = module[hookFunctionName]();
-
-        if (result instanceof Promise) {
-            await result;
-        }
+        await module[hookFunctionName]();
 
         console.debug(`callExtensionHook: Hook "${hookName}" completed for extension "${name}"`);
     } catch (error) {
@@ -566,7 +562,10 @@ async function activateExtensions() {
                     Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
                 );
                 await promise
-                    .then(() => activeExtensions.add(name))
+                    .then(() => {
+                        activeExtensions.add(name);
+                        return callExtensionHook(name, 'activate');
+                    })
                     .catch(err => {
                         console.log('Could not activate extension', name, err);
                         extensionLoadErrors.add(t`Extension "${displayName}" failed to load: ${err}`);
@@ -1492,9 +1491,8 @@ export async function installExtension(url, global, branch = '') {
     await loadExtensionSettings({}, false, false);
     await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
 
-    const extensionFolderName = String(response.extensionPath).split(/[/\\]/).pop();
-    if (extensionFolderName) {
-        const extensionName = `third-party/${extensionFolderName}`;
+    if (response.folderName) {
+        const extensionName = `third-party/${response.folderName}`;
         await callExtensionHook(extensionName, 'install');
     }
 }

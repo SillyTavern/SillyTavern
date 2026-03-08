@@ -113,8 +113,9 @@ router.post('/install', async (request, response) => {
         console.info(`Extension has been cloned to ${extensionPath} from ${url} at ${branch || '(default)'} branch`);
 
         const { version, author, display_name } = await getManifest(extensionPath);
+        const folderName = path.basename(extensionPath);
 
-        return response.send({ version, author, display_name, extensionPath });
+        return response.send({ version, author, display_name, extensionPath, folderName });
     } catch (error) {
         console.error('Importing custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
