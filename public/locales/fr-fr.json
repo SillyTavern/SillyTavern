@@ -1519,7 +1519,7 @@
     "persona_lore_button_title": "Lore de persona\n\nCliquer pour charger\nMajuscule/Alt-clic pour ouvrir la fenêtre contextuelle « Lien vers le Lorebook de persona ».",
     "None (disabled)": "Aucun (désactivé)",
     "world_button_title": "Lore de personnage\n\nCliquer pour charger\nMajuscule-clic pour ouvrir la fenêtre contextuelle « Lien vers le Wold Info ».",
-    "chat_lorebook_button_title": "Lore du chat\n\nCliquer pour charger\nMajuscule-clic pour ouvrir la fenêtre contextuelle « Lien vers le Lorebook du chat ».",
+    "chat_lorebook_button_title": "Lore du chat\n\nCliquer pour charger\nMajuscule/Alt-clic pour ouvrir la fenêtre contextuelle « Lien vers le Lorebook du chat ».",
     "Manual": "Manuel",
     "Duplicate persona": "Dupliquer la persona",
     "popup-button-crop": "Recadrer",
