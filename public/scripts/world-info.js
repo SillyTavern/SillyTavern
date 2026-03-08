@@ -6110,9 +6110,9 @@ export function initWorldInfo() {
 
         const worldName = characters[chid]?.data?.extensions?.world;
         const hasEmbed = checkEmbeddedWorld(chid);
-        if (worldName && world_names.includes(worldName) && !event.shiftKey) {
+        if (worldName && world_names.includes(worldName) && !event.shiftKey && !event.altKey) {
             openWorldInfoEditor(worldName);
-        } else if (hasEmbed && !event.shiftKey) {
+        } else if (hasEmbed && !event.shiftKey && !event.altKey) {
             await importEmbeddedWorldInfo();
             saveCharacterDebounced();
         } else {
