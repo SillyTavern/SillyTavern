@@ -402,7 +402,8 @@ async function callExtensionHook(name, hookName) {
             return;
         }
 
-        await module[hookFunctionName]();
+        const HOOK_TIMEOUT = 5000;
+        await Promise.race([module[hookFunctionName](), delay(HOOK_TIMEOUT)]);
 
         console.debug(`callExtensionHook: Hook "${hookName}" completed for extension "${name}"`);
     } catch (error) {
