@@ -402,9 +402,11 @@ async function callExtensionHook(name, hookName) {
             return;
         }
 
+        const hookCallResult = module[hookFunctionName]();
+
         const HOOK_TIMEOUT = 5000;
         const result = await Promise.race([
-            module[hookFunctionName]().then(() => 'ok'),
+            (hookCallResult instanceof Promise ? hookCallResult : Promise.resolve(hookCallResult)).then(() => 'ok'),
             delay(HOOK_TIMEOUT).then(() => 'timeout'),
         ]);
 
