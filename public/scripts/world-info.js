@@ -5738,7 +5738,7 @@ export function openWorldInfoEditor(worldName) {
 export async function assignLorebookToChat(event) {
     const selectedName = chat_metadata[METADATA_KEY];
 
-    if (selectedName && !event.shiftKey) {
+    if (selectedName && !event.shiftKey && !event.altKey) {
         openWorldInfoEditor(selectedName);
         return;
     }

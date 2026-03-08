@@ -1182,7 +1182,7 @@ async function onPersonaLoreButtonClick(event) {
         return;
     }
 
-    if (event.altKey && selectedLorebook) {
+    if (selectedLorebook && !event.shiftKey && !event.altKey) {
         openWorldInfoEditor(selectedLorebook);
         return;
     }
