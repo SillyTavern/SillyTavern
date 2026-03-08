@@ -360,7 +360,7 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
  * Hooks are optional function names exported from the extension's JS entry point module.
  * The hook function can optionally return a Promise that will be awaited.
  * @param {string} name Extension name
- * @param {'install' | 'delete' | 'enable' | 'disable' | 'activate'} hookName The hook to call
+ * @param {'install' | 'update' | 'delete' | 'enable' | 'disable' | 'activate'} hookName The hook to call
  * @returns {Promise<void>}
  */
 async function callExtensionHook(name, hookName) {
@@ -1207,6 +1207,8 @@ async function updateExtension(extensionName, quiet, timeout = null) {
                 toastr.success('Extension is already up to date');
             }
         } else {
+            const fullExtensionName = extensionName.startsWith('third-party') ? extensionName : `third-party${extensionName}`;
+            await callExtensionHook(fullExtensionName, 'update');
             toastr.success(t`Extension ${extensionName} updated to ${data.shortCommitHash}`, t`Reload the page to apply updates`);
         }
     } catch (error) {
