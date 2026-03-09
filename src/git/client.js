@@ -16,6 +16,10 @@ export const GIT_BACKENDS = {
 const CLONE_OPTION_KEYS = ['depth', 'branch'];
 const FETCH_OPTION_KEYS = ['remote', 'unshallow'];
 const BRANCH_OPTION_KEYS = ['remote'];
+const PULL_OPTION_KEYS = ['remote', 'branch'];
+const CHECKOUT_OPTION_KEYS = ['branch', 'remote', 'create'];
+const IS_DESCENDENT_OPTION_KEYS = ['oid', 'ancestor'];
+const SET_REMOTE_BRANCHES_OPTION_KEYS = ['remote'];
 const UNSHALLOW_DEPTH = 2147483647;
 const SHORT_COMMIT_LENGTH = 7;
 
@@ -37,12 +41,68 @@ const SHORT_COMMIT_LENGTH = 7;
  */
 
 /**
+ * @typedef {object} GitPullOptions
+ * @property {string} remote
+ * @property {string} branch
+ */
+
+/**
+ * @typedef {object} GitCheckoutOptions
+ * @property {string} branch
+ * @property {boolean} [create]
+ * @property {boolean | string} [remote]
+ */
+
+/**
+ * @typedef {object} GitIsDescendentOptions
+ * @property {string} oid
+ * @property {string} ancestor
+ */
+
+/**
+ * @typedef {object} GitSetRemoteBranchesOptions
+ * @property {string} remote
+ */
+
+/**
+ * @typedef {object} GitRemote
+ * @property {string} name
+ * @property {string} url
+ */
+
+/**
+ * @typedef {object} GitCommitInfo
+ * @property {string} oid
+ * @property {string} shortOid
+ * @property {string} commitDate
+ */
+
+/**
+ * @typedef {object} GitRepoUpdateState
+ * @property {boolean} isRepo
+ * @property {string} branch
+ * @property {string} currentCommit
+ * @property {string} remoteCommit
+ * @property {boolean} isUpToDate
+ * @property {string} remoteUrl
+ */
+
+/**
  * @typedef {object} GitClient
  * @property {'system' | 'builtin'} backend
  * @property {(url: string, localPath: string, options?: GitCloneOptions) => Promise<void>} clone
  * @property {(localPath: string) => Promise<boolean>} checkIsRepo
  * @property {(localPath: string, options: GitFetchOptions) => Promise<void>} fetch
  * @property {(localPath: string, options?: GitBranchOptions) => Promise<any>} branch
+ * @property {(localPath: string, ref: string) => Promise<string>} resolveRef
+ * @property {(localPath: string, ref: string) => Promise<GitCommitInfo>} getCommitInfo
+ * @property {(localPath: string, branch: string) => Promise<string | null>} getTrackingRef
+ * @property {(localPath: string) => Promise<GitRemote[]>} listRemotes
+ * @property {(localPath: string, options: GitIsDescendentOptions) => Promise<boolean>} isDescendent
+ * @property {(localPath: string, options: GitPullOptions) => Promise<void>} pull
+ * @property {(localPath: string, options: GitCheckoutOptions) => Promise<void>} checkout
+ * @property {(localPath: string, options: GitSetRemoteBranchesOptions) => Promise<void>} setRemoteBranches
+ * @property {(localPath: string) => Promise<boolean>} isShallowRepository
  */
 
 /**
@@ -70,7 +130,7 @@ function resolveBackend(preferredBackend) {
 }
 
 /**
- * @param {'clone' | 'fetch' | 'branch'} method
+ * @param {string} method
  * @param {object} options
  * @param {string[]} allowedKeys
  * @returns {void}
@@ -101,15 +161,91 @@ function normalizeRemote(remote, fallback = undefined) {
 }
 
 /**
+ * @param {string | null | undefined} remote
+ * @param {string | null | undefined} mergeRef
+ * @returns {string | null}
+ */
+function buildTrackingRef(remote, mergeRef) {
+    if (!remote || !mergeRef) {
+        return null;
+    }
+
+    if (remote === '.') {
+        return mergeRef;
+    }
+
+    if (mergeRef.startsWith('refs/heads/')) {
+        return `refs/remotes/${remote}/${mergeRef.slice('refs/heads/'.length)}`;
+    }
+
+    return mergeRef;
+}
+
+/**
+ * @param {string} method
+ * @param {object} options
+ * @param {string} option
+ * @param {string} [hint]
+ * @returns {string}
+ */
+function getRequiredStringOption(method, options, option, hint = '') {
+    if (typeof options[option] === 'string' && options[option]) {
+        return options[option];
+    }
+
+    const hintSuffix = hint ? `, ${hint}` : '';
+    throw new Error(`${method}() requires a non-empty "${option}" option${hintSuffix}.`);
+}
+
+/**
  * @param {GitFetchOptions} options
  * @returns {string}
  */
 function getRequiredFetchRemote(options) {
-    if (typeof options.remote === 'string' && options.remote) {
-        return options.remote;
+    return getRequiredStringOption('fetch', options, 'remote', 'e.g. { remote: "origin" }');
+}
+
+/**
+ * @param {string} localPath
+ * @returns {string}
+ */
+function getGitDirectory(localPath) {
+    const dotGitPath = path.join(localPath, '.git');
+    try {
+        const stats = fs.statSync(dotGitPath);
+        if (stats.isDirectory()) {
+            return dotGitPath;
+        }
+
+        if (stats.isFile()) {
+            const fileContent = fs.readFileSync(dotGitPath, 'utf8');
+            const match = fileContent.match(/^gitdir:\s*(.+)\s*$/im);
+            if (match && match[1]) {
+                return path.resolve(localPath, match[1]);
+            }
+        }
+    } catch {
+        // Fallback to the default .git path.
     }
 
-    throw new Error('fetch() requires an explicit remote name, e.g. { remote: "origin" }.');
+    return dotGitPath;
+}
+
+/**
+ * @param {string} localPath
+ * @returns {boolean}
+ */
+function isShallowRepository(localPath) {
+    const shallowFilePath = path.join(getGitDirectory(localPath), 'shallow');
+    try {
+        if (!fs.existsSync(shallowFilePath)) {
+            return false;
+        }
+
+        return fs.statSync(shallowFilePath).size > 0;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -150,6 +286,54 @@ export function createGitClient(options = {}) {
     }
 
     return new IsomorphicGitClient();
+}
+
+/**
+ * Determine whether a repository has updates available on a remote for its current branch.
+ * @param {GitClient} gitClient
+ * @param {string} localPath
+ * @param {{ remote?: string }} [options]
+ * @returns {Promise<GitRepoUpdateState>}
+ */
+export async function getRepoUpdateState(gitClient, localPath, options = {}) {
+    const remote = typeof options.remote === 'string' && options.remote ? options.remote : 'origin';
+    const isRepo = await gitClient.checkIsRepo(localPath);
+    if (!isRepo) {
+        return {
+            isRepo: false,
+            branch: '',
+            currentCommit: '',
+            remoteCommit: '',
+            isUpToDate: true,
+            remoteUrl: '',
+        };
+    }
+
+    await gitClient.fetch(localPath, { remote });
+
+    const remotes = await gitClient.listRemotes(localPath);
+    const remoteUrl = remotes.find(entry => entry.name === remote)?.url ?? '';
+    const branchInfo = await gitClient.branch(localPath);
+    const branch = branchInfo.current;
+    if (!branch) {
+        throw new Error(`No current branch found for repository at ${localPath}`);
+    }
+
+    const currentCommit = await gitClient.resolveRef(localPath, 'HEAD');
+    const remoteCommit = await gitClient.resolveRef(localPath, `refs/remotes/${remote}/${branch}`);
+    const isUpToDate = await gitClient.isDescendent(localPath, {
+        oid: currentCommit,
+        ancestor: remoteCommit,
+    });
+
+    return {
+        isRepo: true,
+        branch,
+        currentCommit,
+        remoteCommit,
+        isUpToDate,
+        remoteUrl,
+    };
 }
 
 /**
@@ -238,6 +422,143 @@ class SimpleGitClient {
         }
 
         return repositoryGit.branchLocal();
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {string} ref
+     * @returns {Promise<string>}
+     */
+    async resolveRef(localPath, ref) {
+        return this.getRepositoryGit(localPath).revparse([ref]);
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {string} ref
+     * @returns {Promise<GitCommitInfo>}
+     */
+    async getCommitInfo(localPath, ref) {
+        const repositoryGit = this.getRepositoryGit(localPath);
+        const oid = await repositoryGit.revparse([ref]);
+        const commitDate = (await repositoryGit.show(['-s', '--format=%ci', oid])).trim();
+
+        return {
+            oid,
+            shortOid: oid.slice(0, SHORT_COMMIT_LENGTH),
+            commitDate,
+        };
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {string} branch
+     * @returns {Promise<string | null>}
+     */
+    async getTrackingRef(localPath, branch) {
+        if (typeof branch !== 'string' || !branch) {
+            return null;
+        }
+
+        try {
+            const repositoryGit = this.getRepositoryGit(localPath);
+            const remote = (await repositoryGit.raw(['config', '--get', `branch.${branch}.remote`])).trim();
+            const mergeRef = (await repositoryGit.raw(['config', '--get', `branch.${branch}.merge`])).trim();
+            return buildTrackingRef(remote, mergeRef);
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * @param {string} localPath
+     * @returns {Promise<GitRemote[]>}
+     */
+    async listRemotes(localPath) {
+        const remotes = await this.getRepositoryGit(localPath).getRemotes(true);
+        return remotes.map(remote => ({
+            name: remote.name,
+            url: remote.refs?.fetch || '',
+        }));
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitIsDescendentOptions} options
+     * @returns {Promise<boolean>}
+     */
+    async isDescendent(localPath, options = {}) {
+        assertAllowedOptions('isDescendent', options, IS_DESCENDENT_OPTION_KEYS);
+        const oid = getRequiredStringOption('isDescendent', options, 'oid');
+        const ancestor = getRequiredStringOption('isDescendent', options, 'ancestor');
+        const repositoryGit = this.getRepositoryGit(localPath);
+
+        if (oid === ancestor) {
+            return true;
+        }
+
+        try {
+            await repositoryGit.raw(['merge-base', '--is-ancestor', ancestor, oid]);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitPullOptions} options
+     * @returns {Promise<void>}
+     */
+    async pull(localPath, options = {}) {
+        assertAllowedOptions('pull', options, PULL_OPTION_KEYS);
+        const remote = getRequiredStringOption('pull', options, 'remote');
+        const branch = getRequiredStringOption('pull', options, 'branch');
+        await this.getRepositoryGit(localPath).pull(remote, branch);
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitCheckoutOptions} options
+     * @returns {Promise<void>}
+     */
+    async checkout(localPath, options = {}) {
+        assertAllowedOptions('checkout', options, CHECKOUT_OPTION_KEYS);
+        const repositoryGit = this.getRepositoryGit(localPath);
+        const branch = getRequiredStringOption('checkout', options, 'branch');
+        const create = Boolean(options.create);
+        const remote = normalizeRemote(options.remote);
+
+        if (create) {
+            if (remote) {
+                await repositoryGit.checkoutBranch(branch, `${remote}/${branch}`);
+                return;
+            }
+
+            await repositoryGit.checkoutLocalBranch(branch);
+            return;
+        }
+
+        await repositoryGit.checkout(branch);
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitSetRemoteBranchesOptions} options
+     * @returns {Promise<void>}
+     */
+    async setRemoteBranches(localPath, options = {}) {
+        assertAllowedOptions('setRemoteBranches', options, SET_REMOTE_BRANCHES_OPTION_KEYS);
+        const remote = getRequiredStringOption('setRemoteBranches', options, 'remote');
+        await this.getRepositoryGit(localPath).remote(['set-branches', remote, '*']);
+    }
+
+    /**
+     * @param {string} localPath
+     * @returns {Promise<boolean>}
+     */
+    async isShallowRepository(localPath) {
+        return isShallowRepository(localPath);
     }
 }
 
@@ -360,5 +681,159 @@ class IsomorphicGitClient {
         }));
 
         return createBranchSummary(entries, currentBranch);
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {string} ref
+     * @returns {Promise<string>}
+     */
+    async resolveRef(localPath, ref) {
+        return git.resolveRef({ fs, dir: localPath, ref });
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {string} ref
+     * @returns {Promise<GitCommitInfo>}
+     */
+    async getCommitInfo(localPath, ref) {
+        const oid = await git.resolveRef({ fs, dir: localPath, ref });
+        const { commit } = await git.readCommit({ fs, dir: localPath, oid });
+
+        return {
+            oid,
+            shortOid: oid.slice(0, SHORT_COMMIT_LENGTH),
+            commitDate: new Date(commit.committer.timestamp * 1000).toISOString(),
+        };
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {string} branch
+     * @returns {Promise<string | null>}
+     */
+    async getTrackingRef(localPath, branch) {
+        if (typeof branch !== 'string' || !branch) {
+            return null;
+        }
+
+        try {
+            const remote = await git.getConfig({ fs, dir: localPath, path: `branch.${branch}.remote` });
+            const mergeRef = await git.getConfig({ fs, dir: localPath, path: `branch.${branch}.merge` });
+            return buildTrackingRef(remote, mergeRef);
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * @param {string} localPath
+     * @returns {Promise<GitRemote[]>}
+     */
+    async listRemotes(localPath) {
+        const remotes = await git.listRemotes({ fs, dir: localPath });
+        return remotes.map(remote => ({
+            name: remote.remote,
+            url: remote.url,
+        }));
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitIsDescendentOptions} options
+     * @returns {Promise<boolean>}
+     */
+    async isDescendent(localPath, options = {}) {
+        assertAllowedOptions('isDescendent', options, IS_DESCENDENT_OPTION_KEYS);
+        const oid = getRequiredStringOption('isDescendent', options, 'oid');
+        const ancestor = getRequiredStringOption('isDescendent', options, 'ancestor');
+
+        if (oid === ancestor) {
+            return true;
+        }
+
+        return git.isDescendent({ fs, dir: localPath, oid, ancestor });
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitPullOptions} options
+     * @returns {Promise<void>}
+     */
+    async pull(localPath, options = {}) {
+        assertAllowedOptions('pull', options, PULL_OPTION_KEYS);
+        const remote = getRequiredStringOption('pull', options, 'remote');
+        const branch = getRequiredStringOption('pull', options, 'branch');
+        await git.pull({
+            fs,
+            http,
+            dir: localPath,
+            remote,
+            ref: branch,
+            singleBranch: true,
+        });
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitCheckoutOptions} options
+     * @returns {Promise<void>}
+     */
+    async checkout(localPath, options = {}) {
+        assertAllowedOptions('checkout', options, CHECKOUT_OPTION_KEYS);
+        const branch = getRequiredStringOption('checkout', options, 'branch');
+        const create = Boolean(options.create);
+        const remote = normalizeRemote(options.remote);
+
+        if (create && remote) {
+            await git.checkout({
+                fs,
+                dir: localPath,
+                ref: branch,
+                remote,
+            });
+            return;
+        }
+
+        if (create) {
+            await git.branch({
+                fs,
+                dir: localPath,
+                ref: branch,
+                checkout: true,
+            });
+            return;
+        }
+
+        await git.checkout({
+            fs,
+            dir: localPath,
+            ref: branch,
+        });
+    }
+
+    /**
+     * @param {string} localPath
+     * @param {GitSetRemoteBranchesOptions} options
+     * @returns {Promise<void>}
+     */
+    async setRemoteBranches(localPath, options = {}) {
+        assertAllowedOptions('setRemoteBranches', options, SET_REMOTE_BRANCHES_OPTION_KEYS);
+        const remote = getRequiredStringOption('setRemoteBranches', options, 'remote');
+        await git.setConfig({
+            fs,
+            dir: localPath,
+            path: `remote.${remote}.fetch`,
+            value: `+refs/heads/*:refs/remotes/${remote}/*`,
+        });
+    }
+
+    /**
+     * @param {string} localPath
+     * @returns {Promise<boolean>}
+     */
+    async isShallowRepository(localPath) {
+        return isShallowRepository(localPath);
     }
 }
