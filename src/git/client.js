@@ -514,7 +514,7 @@ class SimpleGitClient {
         assertAllowedOptions('pull', options, PULL_OPTION_KEYS);
         const remote = getRequiredStringOption('pull', options, 'remote');
         const branch = getRequiredStringOption('pull', options, 'branch');
-        await this.getRepositoryGit(localPath).pull(remote, branch);
+        await this.getRepositoryGit(localPath).raw(['pull', '--ff-only', remote, branch]);
     }
 
     /**
@@ -765,7 +765,7 @@ class IsomorphicGitClient {
         assertAllowedOptions('pull', options, PULL_OPTION_KEYS);
         const remote = getRequiredStringOption('pull', options, 'remote');
         const branch = getRequiredStringOption('pull', options, 'branch');
-        await git.pull({
+        await git.fastForward({
             fs,
             http,
             dir: localPath,
