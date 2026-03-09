@@ -14,7 +14,7 @@ import { getFileNameValidationFunction } from '../middleware/validateFileName.js
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
 const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
-const ENABLE_REQUEST_COMPRESSION = !!getConfigValue('performance.requestCompression.enabled', true, 'boolean');
+const ENABLE_REQUEST_COMPRESSION = !!getConfigValue('performance.requestCompression.enabled', false, 'boolean');
 const REQUEST_COMPRESSION_THRESHOLD = bytes.parse(getConfigValue('performance.requestCompression.threshold', '256kb'));
 const REQUEST_COMPRESSION_TIMEOUT = getConfigValue('performance.requestCompression.timeout', 3000, 'number');
 
