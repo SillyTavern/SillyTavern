@@ -103,6 +103,12 @@ class AccountStorage {
             console.warn(`AccountStorage not ready (trying to write to ${key})`);
         }
 
+        const hasPropertySet = Object.hasOwn(this.#state, key) && this.#state[key] === String(value);
+
+        if (hasPropertySet) {
+            return;
+        }
+
         this.#state[key] = String(value);
         saveSettingsDebounced();
     }

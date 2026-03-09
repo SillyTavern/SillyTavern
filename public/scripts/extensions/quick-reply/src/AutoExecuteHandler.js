@@ -8,8 +8,6 @@ export class AutoExecuteHandler {
     /** @type {Boolean[]}*/ preventAutoExecuteStack = [];
 
 
-
-
     constructor(/** @type {QuickReplySettings} */settings) {
         this.settings = settings;
     }
@@ -20,13 +18,11 @@ export class AutoExecuteHandler {
     }
 
 
-
-
     async performAutoExecute(/** @type {QuickReply[]} */qrList) {
         for (const qr of qrList) {
             this.preventAutoExecuteStack.push(qr.preventAutoExecute);
             try {
-                await qr.execute({ isAutoExecute:true });
+                await qr.execute({ isAutoExecute: true });
             } catch (ex) {
                 warn(ex);
             } finally {

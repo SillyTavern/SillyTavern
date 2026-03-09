@@ -318,7 +318,7 @@ input[type='checkbox']:focus-visible {
 .dragover {
     filter: brightness(1.1) saturate(1.0);
     outline: 3px dashed var(--SmartThemeBorderColor);
-    animation: pulse 0.5s infinite alternate;
+    animation: pulse var(--animation-duration-3x) infinite alternate;
 }
 
 .dragover.no_animation {
@@ -1654,6 +1654,13 @@ button {
             width: 50vw;
         }
 
+        /* Small style variant for macro autocomplete (33vw, max 700px) */
+        &[data-macros-autocomplete-style="small"] .autoComplete {
+            width: 33vw;
+            max-width: 700px;
+            min-width: 250px;
+        }
+
         &:after {
             content: "";
             flex: 1 1 0;
@@ -1704,6 +1711,38 @@ button {
         .autoComplete-details {
             max-height: unset;
             width: 25vw;
+        }
+
+        /* Small style variant for macro autocomplete (33vw, max 700px) */
+        &[data-macros-autocomplete-style="small"] .autoComplete-details {
+            width: 33vw;
+            max-width: 700px;
+            min-width: 250px;
+        }
+
+        &[data-macros-autocomplete-style="small"] {
+            &.left {
+                &:before {
+                    flex: 0 1 calc(var(--targetOffset) * 1px - 33vw);
+                }
+
+                &:after {
+                    flex: 1 0 auto;
+                    max-width: 33vw;
+                }
+            }
+
+            &.right {
+                &:before {
+                    flex: 0 0 calc(var(--targetOffset) * 1px + 33vw);
+                }
+            }
+
+            &.full {
+                .autoComplete-details {
+                    max-width: 33vw;
+                }
+            }
         }
 
         &.left {
@@ -6259,4 +6298,27 @@ body:not(.movingUI) .drawer-content.maximized {
 .info-block.error {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --interactable-outline-color: CanvasText;
+        --interactable-outline-color-faint: CanvasText;
+    }
+
+    .interactable:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+        outline-width: 2px;
+    }
+
+    .mes {
+        border: 2px solid var(--SmartThemeBorderColor);
+    }
+
+    .menu_button,
+    .popup {
+        border-width: 2px;
+    }
 }

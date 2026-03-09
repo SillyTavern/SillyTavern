@@ -13,25 +13,21 @@ export class QuickReplyConfig {
     /**@type {HTMLElement}*/ setListDom;
 
 
-
-
     static from(props) {
-        props.setList = props.setList?.map(it=>QuickReplySetLink.from(it))?.filter(it=>it.set) ?? [];
+        props.setList = props.setList?.map(it => QuickReplySetLink.from(it))?.filter(it => it.set) ?? [];
         const instance = Object.assign(new this(), props);
         instance.init();
         return instance;
     }
 
 
-
-
     init() {
-        this.setList.forEach(it=>this.hookQuickReplyLink(it));
+        this.setList.forEach(it => this.hookQuickReplyLink(it));
     }
 
 
     hasSet(qrs) {
-        return this.setList.find(it=>it.set == qrs) != null;
+        return this.setList.find(it => it.set == qrs) != null;
     }
     addSet(qrs, isVisible = true) {
         if (!this.hasSet(qrs)) {
@@ -45,7 +41,7 @@ export class QuickReplyConfig {
         }
     }
     removeSet(qrs) {
-        const idx = this.setList.findIndex(it=>it.set == qrs);
+        const idx = this.setList.findIndex(it => it.set == qrs);
         if (idx > -1) {
             this.setList.splice(idx, 1);
             this.update();
@@ -54,13 +50,11 @@ export class QuickReplyConfig {
     }
 
 
-
-
     renderSettingsInto(/**@type {HTMLElement}*/root) {
         /**@type {HTMLElement}*/
         this.setListDom = root.querySelector('.qr--setList');
-        root.querySelector('.qr--setListAdd').addEventListener('click', ()=>{
-            const newSet = QuickReplySet.list.find(qr=>!this.setList.find(qrl=>qrl.set == qr));
+        root.querySelector('.qr--setListAdd').addEventListener('click', () => {
+            const newSet = QuickReplySet.list.find(qr => !this.setList.find(qrl => qrl.set == qr));
             if (newSet) {
                 this.addSet(newSet);
             } else {
@@ -74,14 +68,14 @@ export class QuickReplyConfig {
         // @ts-ignore
         $(this.setListDom).sortable({
             delay: getSortableDelay(),
-            stop: ()=>this.onSetListSort(),
+            stop: () => this.onSetListSort(),
         });
-        this.setList.filter(it=>!it.set.isDeleted).forEach((qrl,idx)=>this.setListDom.append(qrl.renderSettings(idx)));
+        this.setList.filter(it => !it.set.isDeleted).forEach((qrl, idx) => this.setListDom.append(qrl.renderSettings(idx)));
     }
 
 
     onSetListSort() {
-        this.setList = Array.from(this.setListDom.children).map((it,idx)=>{
+        this.setList = Array.from(this.setListDom.children).map((it, idx) => {
             const qrl = this.setList[Number(it.getAttribute('data-order'))];
             qrl.index = idx;
             it.setAttribute('data-order', String(idx));
@@ -91,15 +85,13 @@ export class QuickReplyConfig {
     }
 
 
-
-
     /**
      * @param {QuickReplySetLink} qrl
      */
     hookQuickReplyLink(qrl) {
-        qrl.onDelete = ()=>this.deleteQuickReplyLink(qrl);
-        qrl.onUpdate = ()=>this.update();
-        qrl.onRequestEditSet = ()=>this.requestEditSet(qrl.set);
+        qrl.onDelete = () => this.deleteQuickReplyLink(qrl);
+        qrl.onUpdate = () => this.update();
+        qrl.onRequestEditSet = () => this.requestEditSet(qrl.set);
     }
 
     deleteQuickReplyLink(qrl) {

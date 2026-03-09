@@ -237,6 +237,11 @@ async function getMissingTranslations() {
     toastr.success(`Found ${uniqueMissingData.length} missing translations. See browser console for details.`);
 }
 
+/**
+ * Applies localization to a given root element or HTML string.
+ * @param {Document|string} root The root element or HTML string to apply localization to
+ * @returns {Document|string} Translated root, in the same format as the input (Document or HTML string)
+ */
 export function applyLocale(root = document) {
     if (!localeData || Object.keys(localeData).length === 0) {
         return root;
@@ -272,6 +277,7 @@ function addLanguagesToDropdown() {
 export async function initLocales() {
     langs = await fetch('/locales/lang.json').then(response => response.json());
     localeData = await getLocaleData(localeFile);
+    document.documentElement.lang = localeFile;
     applyLocale();
     addLanguagesToDropdown();
     updateSecretDisplay();

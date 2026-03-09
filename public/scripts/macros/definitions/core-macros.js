@@ -1,5 +1,5 @@
 import { seedrandom, droll } from '../../../lib.js';
-import { chat_metadata, main_api, getMaxContextSize, extension_prompts, getCurrentChatId } from '../../../script.js';
+import { chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMaxResponseTokens, extension_prompts, getCurrentChatId } from '../../../script.js';
 import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
@@ -232,13 +232,34 @@ export function registerCoreMacros() {
         handler: () => (/** @type {HTMLTextAreaElement} */(document.querySelector('#send_textarea')))?.value ?? '',
     });
 
-    // {{maxPrompt}} -> max context size
+    // {{maxPrompt}} -> max context size (context minus response)
     MacroRegistry.registerMacro('maxPrompt', {
+        aliases: [{ alias: 'maxPromptTokens', visible: true }],
         category: MacroCategory.STATE,
         description: 'Maximum prompt context size.',
         returns: 'Maximum prompt context size.',
         returnType: MacroValueType.INTEGER,
-        handler: () => String(getMaxContextSize()),
+        handler: () => String(getMaxPromptTokens()),
+    });
+
+    // {{maxContext}} -> max context token limit
+    MacroRegistry.registerMacro('maxContext', {
+        aliases: [{ alias: 'maxContextTokens', visible: true }],
+        category: MacroCategory.STATE,
+        description: 'Maximum context token limit.',
+        returns: 'Maximum context token limit.',
+        returnType: MacroValueType.INTEGER,
+        handler: () => String(getMaxContextTokens()),
+    });
+
+    // {{maxResponse}} -> max response token limit
+    MacroRegistry.registerMacro('maxResponse', {
+        aliases: [{ alias: 'maxResponseTokens', visible: true }],
+        category: MacroCategory.STATE,
+        description: 'Maximum response token limit.',
+        returns: 'Maximum response token limit.',
+        returnType: MacroValueType.INTEGER,
+        handler: () => String(getMaxResponseTokens()),
     });
 
     // String utilities
@@ -342,7 +363,12 @@ export function registerCoreMacros() {
     MacroRegistry.registerMacro('pick', {
         category: MacroCategory.RANDOM,
         list: true,
-        description: 'Picks a random item from a list, but keeps the choice stable for a given chat and macro position.',
+        description: 'Picks a random item from a list, but keeps the choice stable for a given chat and macro position. Can be rerolled via /reroll-pick slash command.',
+        // TODO: add expanded documentation once HTML details are supported
+        // descriptionDetails: `
+        //     <p>Picks a random item from a list, but keeps the choice stable for a given chat and macro position.</p>
+        //     <p>The choice can be reset per chat using the <code>/reroll-pick</code> slash command.</p>
+        // `,
         returns: 'Stable randomly selected item from the list.',
         exampleUsage: ['{{pick::blonde::brown::red::black::blue}}'],
         handler: ({ list, globalOffset, env }) => {
@@ -369,7 +395,10 @@ export function registerCoreMacros() {
             // nested inside arguments or scoped content
             const offset = globalOffset;
 
-            const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
+            // Reroll seed allows users to reset all picks in the chat via /reroll-pick command
+            const rerollSeed = chat_metadata.pick_reroll_seed || null;
+
+            const combinedSeedString = [chatIdHash, rawContentHash, offset, rerollSeed].filter(it => it !== null).join('-');
             const finalSeed = getStringHash(combinedSeedString);
             const rng = seedrandom(String(finalSeed));
             const randomIndex = Math.floor(rng() * list.length);
@@ -379,7 +408,7 @@ export function registerCoreMacros() {
 
     /** @param {string} listString @return {string[]} */
     function readSingleArgsRandomList(listString) {
-        // If it contains double colons, those will have precedence over comma-seperated lists.
+        // If it contains double colons, those will have precedence over comma-separated lists.
         // This can only happen if the macro only had a single colon to introduce the list...
         // like, {{random:a::b::c}}
         if (listString.includes('::')) {

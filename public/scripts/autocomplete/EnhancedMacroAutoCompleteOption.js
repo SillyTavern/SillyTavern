@@ -31,15 +31,19 @@ import { onboardingExperimentalMacroEngine } from '../macros/engine/MacroDiagnos
  * @property {string[]} args - Array of arguments typed so far.
  * @property {number} currentArgIndex - Index of the argument being typed (-1 if on identifier).
  * @property {boolean} isTypingSeparator - Whether cursor is on a partial separator (single ':').
+ * @property {boolean} isTypingClosingBrace - Whether cursor is typing the first closing brace on a standalone macro.
  * @property {boolean} hasSpaceAfterIdentifier - Whether there's a space after the identifier (for space-separated args).
  * @property {boolean} hasSpaceArgContent - Whether there's actual content after the space (not just whitespace).
  * @property {number} separatorCount - Number of '::' separators found.
  * @property {boolean} [isInScopedContent] - Whether cursor is in scoped content (after }} but before closing tag).
+ * @property {boolean} [isScopedContentOptional] - Whether the scoped content is optional (for display purposes).
  * @property {string} [scopedMacroName] - Name of the scoped macro if in scoped content.
  * @property {boolean} isVariableShorthand - Whether this is a variable shorthand (starts with . or $).
  * @property {'.'|'$'|null} variablePrefix - The variable prefix (. for local, $ for global), or null.
  * @property {string} variableName - The variable name being typed (after the prefix).
+ * @property {number} variableNameEnd - The end of the variable name (for partial matches).
  * @property {string|null} variableOperator - The operator typed (=, ++, --, +=), or null.
+ * @property {number} variableOperatorEnd - The end of the variable operator (for partial matches).
  * @property {string} variableValue - The value after the operator (for = and +=).
  * @property {boolean} isTypingVariableName - Whether cursor is in the variable name area.
  * @property {boolean} isTypingOperator - Whether cursor is at/after variable name, ready for operator.
@@ -219,15 +223,20 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // Determine current argument index for highlighting
         const currentArgIndex = this.#context?.currentArgIndex ?? -1;
 
-        // Render argument hint banner if we're typing an argument (and no warning)
-        if (!warning && currentArgIndex >= 0) {
+        // For most warnings, we can still highlight which argument we are currently at.
+        // This even goes for "too many arguments" when navigating the cursor back to
+        // a valid argument.
+        // Extend this in the future, if *some* warnings don't make sense to still highlight args.
+        const hightlightArgsHint = currentArgIndex >= 0;
+
+        // Render argument hint banner if we're typing an argument
+        if (hightlightArgsHint && currentArgIndex >= 0) {
             const hint = this.#renderArgumentHint();
             if (hint) frag.append(hint);
         }
 
         // Reuse MacroBrowser's renderMacroDetails with options
-        // Don't highlight args if there's a warning
-        const details = renderMacroDetails(this.#macro, { currentArgIndex: warning ? -1 : currentArgIndex });
+        const details = renderMacroDetails(this.#macro, { currentArgIndex: hightlightArgsHint ? currentArgIndex : -1 });
 
         // Add class for autocomplete-specific styling overrides
         details.classList.add('macro-ac-details');
@@ -257,7 +266,7 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         // Space-separated syntax provides 1 arg; with scoped content you can provide a 2nd arg
         // So it's valid for macros with maxArgs <= 2 (or with list args)
         if (this.#context.hasSpaceArgContent) {
-            if (maxArgs === 0) {
+            if (maxArgs === 0 && !hasList) {
                 return 'This macro does not accept any arguments. Remove the space or use a different macro.';
             }
             if (!hasList && maxArgs > 2) {
@@ -266,8 +275,25 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         }
 
         // Check if trying to add args to a no-arg macro via ::
-        if (this.#context.separatorCount > 0 && maxArgs === 0) {
+        // List-arg macros can accept args even if maxArgs === 0
+        if (this.#context.separatorCount > 0 && maxArgs === 0 && !hasList) {
             return 'This macro does not accept any arguments.';
+        }
+
+        // Check list bounds (min/max) if the macro has a list with constraints
+        if (hasList && typeof this.#macro.list === 'object') {
+            const listItemCount = Math.max(0, argCount - maxArgs);
+            const listMin = this.#macro.list.min ?? 0;
+            const listMax = this.#macro.list.max ?? null;
+
+            if (listItemCount < listMin) {
+                const needed = listMin - listItemCount;
+                return `Not enough list items yet: this macro requires at least ${listMin} item${listMin === 1 ? '' : 's'}, but only ${listItemCount} provided. Add ${needed} more.`;
+            }
+
+            if (listMax !== null && listItemCount > listMax) {
+                return `Too many list items: this macro accepts at most ${listMax} item${listMax === 1 ? '' : 's'}, but ${listItemCount} provided.`;
+            }
         }
 
         return null;
@@ -304,12 +330,23 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         const info = document.createElement('div');
         info.classList.add('macro-ac-scoped-info');
 
+        // If the scoped content is optional, show a prominent OPTIONAL badge
+        if (this.#context.isScopedContentOptional) {
+            const optionalBadge = document.createElement('span');
+            optionalBadge.classList.add('macro-ac-optional-badge');
+            optionalBadge.textContent = 'OPTIONAL';
+            info.append(optionalBadge);
+        }
+
         const icon = document.createElement('i');
         icon.classList.add('fa-solid', 'fa-layer-group');
         info.append(icon);
 
         const text = document.createElement('span');
-        text.innerHTML = `Typing <strong>scoped content</strong> for <code>{{${this.#context.scopedMacroName}}}</code>. Close with <code>{{/${this.#context.scopedMacroName}}}</code>`;
+        const closingHint = this.#context.isScopedContentOptional
+            ? `Can optionally close with <code>{{/${this.#context.scopedMacroName}}}</code>`
+            : `Close with <code>{{/${this.#context.scopedMacroName}}}</code>`;
+        text.innerHTML = `Typing <strong>scoped content</strong> for <code>{{${this.#context.scopedMacroName}}}</code>. ${closingHint}`;
         info.append(text);
 
         return info;
@@ -338,8 +375,23 @@ export class EnhancedMacroAutoCompleteOption extends AutoCompleteOption {
         if (isListArg) {
             // List argument hint
             const listIndex = argIndex - this.#macro.maxArgs + 1;
+            const totalListItems = this.#context.args.length - this.#macro.maxArgs;
+
             const text = document.createElement('span');
-            text.innerHTML = `<strong>List item ${listIndex}</strong>`;
+            text.innerHTML = `<strong>List item ${listIndex}</strong>${(listIndex < totalListItems ? ` (of ${totalListItems})` : '')}`;
+
+            const listInfo = document.createElement('span');
+            listInfo.classList.add('macro-ac-arg-hint-small');
+            const minMax = [];
+            if (this.#macro.list.min > 0) minMax.push(`min: ${this.#macro.list.min}`);
+            if (this.#macro.list.max !== null) minMax.push(`max: ${this.#macro.list.max}`);
+            if (minMax.length > 0) {
+                listInfo.textContent = ` (list, ${minMax.join(', ')})`;
+            } else {
+                listInfo.textContent = ' (variable-length list)';
+            }
+            text.appendChild(listInfo);
+
             hint.append(text);
         } else {
             // Unnamed argument hint (required or optional)
@@ -499,13 +551,13 @@ export const VariableShorthandDefinitions = new Map([
         type: VariableShorthandType.LOCAL,
         name: 'Local Variable',
         description: 'Access or modify a local variable (scoped to current chat).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)', 'greater than (>)', 'greater than or equal (>=)', 'less than (<)', 'less than or equal (<=)'],
     }],
     [VariableShorthandType.GLOBAL, {
         type: VariableShorthandType.GLOBAL,
         name: 'Global Variable',
         description: 'Access or modify a global variable (shared across all chats).',
-        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)'],
+        operations: ['get', 'set (=)', 'increment (++)', 'decrement (--)', 'add (+=)', 'subtract (-=)', 'logical or (||)', 'nullish coalescing (??)', 'logical or assign (||=)', 'nullish coalescing assign (??=)', 'equals (==)', 'not equals (!=)', 'greater than (>)', 'greater than or equal (>=)', 'less than (<)', 'less than or equal (<=)'],
     }],
 ]);
 
@@ -633,6 +685,10 @@ export class VariableShorthandAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}myvar ??= value}} - Set if undefined, get value`,
             `{{${prefix}myvar == test}} - Compare (returns true/false)`,
             `{{${prefix}myvar != test}} - Compare not equal (returns true/false)`,
+            `{{${prefix}score > 10}} - Greater than (numeric, returns true/false)`,
+            `{{${prefix}score >= 10}} - Greater than or equal (numeric)`,
+            `{{${prefix}score < 10}} - Less than (numeric, returns true/false)`,
+            `{{${prefix}score <= 10}} - Less than or equal (numeric)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -810,6 +866,10 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
             `{{${prefix}${this.#varName} ??= value}} - Set if undefined, get value`,
             `{{${prefix}${this.#varName} == test}} - Compare (returns true/false)`,
             `{{${prefix}${this.#varName} != test}} - Compare not equal (returns true/false)`,
+            `{{${prefix}${this.#varName} > 10}} - Greater than (numeric)`,
+            `{{${prefix}${this.#varName} >= 10}} - Greater than or equal (numeric)`,
+            `{{${prefix}${this.#varName} < 10}} - Less than (numeric)`,
+            `{{${prefix}${this.#varName} <= 10}} - Less than or equal (numeric)`,
         ];
         for (const ex of examples) {
             const li = document.createElement('li');
@@ -821,6 +881,18 @@ export class VariableNameAutoCompleteOption extends AutoCompleteOption {
         frag.append(details);
         return frag;
     }
+}
+
+/**
+ * Checks if an operator is a short one that could be a prefix of a longer operator.
+ * For example, '>' is a prefix of '>=', '<' is a prefix of '<='.
+ * @param {string} op - The operator to check.
+ * @returns {boolean} True if the operator could be a prefix of a longer operator.
+ */
+function isShortOperatorPrefix(op) {
+    // These operators could have longer variants typed after them
+    const shortPrefixes = ['>', '<', '=', '|', '?', '+', '-', '!'];
+    return shortPrefixes.includes(op);
 }
 
 /**
@@ -892,6 +964,30 @@ export const VariableOperatorDefinitions = new Map([
         symbol: '!=',
         name: 'Not Equals',
         description: 'Compare the variable value to another value. Returns "true" if not equal, "false" if equal.',
+        needsValue: true,
+    }],
+    ['>', {
+        symbol: '>',
+        name: 'Greater Than',
+        description: 'Numeric comparison. Returns "true" if variable is greater than value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['>=', {
+        symbol: '>=',
+        name: 'Greater Than or Equal',
+        description: 'Numeric comparison. Returns "true" if variable is greater than or equal to value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['<', {
+        symbol: '<',
+        name: 'Less Than',
+        description: 'Numeric comparison. Returns "true" if variable is less than value, "false" otherwise.',
+        needsValue: true,
+    }],
+    ['<=', {
+        symbol: '<=',
+        name: 'Less Than or Equal',
+        description: 'Numeric comparison. Returns "true" if variable is less than or equal to value, "false" otherwise.',
         needsValue: true,
     }],
 ]);
@@ -969,6 +1065,90 @@ export class VariableOperatorAutoCompleteOption extends AutoCompleteOption {
 }
 
 /**
+ * Non-selectable autocomplete option that shows context about the value being typed.
+ * Displays info about what value is expected based on the operator.
+ */
+export class VariableValueContextAutoCompleteOption extends AutoCompleteOption {
+    /** @type {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    #operatorDef;
+
+    /** @type {string} */
+    #currentValue;
+
+    /**
+     * @param {{ symbol: string, name: string, description: string, needsValue: boolean }} operatorDef - The operator definition.
+     * @param {string} [currentValue=''] - The value currently being typed.
+     */
+    constructor(operatorDef, currentValue = '') {
+        super('value', '📝');
+        this.#operatorDef = operatorDef;
+        this.#currentValue = currentValue;
+        this.forceFullNameMatch = true;
+    }
+
+    /** @returns {{ symbol: string, name: string, description: string, needsValue: boolean }} */
+    get operatorDefinition() {
+        return this.#operatorDef;
+    }
+
+    /**
+     * Renders the autocomplete list item for this value context.
+     * @returns {HTMLElement}
+     */
+    renderItem() {
+        const li = this.makeItem(
+            '<value>',
+            '📝',
+            true, // noSlash
+            [], // namedArguments
+            [], // unnamedArguments
+            'any', // returnType
+            `${this.#operatorDef.name} (${this.#operatorDef.symbol}) expects a value`,
+        );
+        li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable-value-context');
+        return li;
+    }
+
+    /**
+     * Renders the details panel for this value context.
+     * @returns {DocumentFragment}
+     */
+    renderDetails() {
+        const frag = document.createDocumentFragment();
+
+        const details = document.createElement('div');
+        details.classList.add('macro-variable-value-context-details');
+
+        // Header
+        const header = document.createElement('h3');
+        header.innerHTML = `Value for <code>${this.#operatorDef.symbol}</code> (${this.#operatorDef.name})`;
+        details.append(header);
+
+        // Description of what value is expected
+        const desc = document.createElement('p');
+        desc.textContent = this.#operatorDef.description;
+        details.append(desc);
+
+        // Current value being typed
+        if (this.#currentValue) {
+            const currentNote = document.createElement('p');
+            currentNote.innerHTML = `<em>Currently typing:</em> <code>${this.#currentValue}</code>`;
+            details.append(currentNote);
+        }
+
+        // Hint
+        const hint = document.createElement('p');
+        hint.classList.add('hint');
+        hint.innerHTML = '<em>Type your value and close with <code>}}</code> to complete the macro.</em>';
+        details.append(hint);
+
+        frag.append(details);
+        return frag;
+    }
+}
+
+/**
  * Autocomplete option for closing a scoped macro.
  * Suggests {{/macroName}} to close an unclosed scoped macro.
  */
@@ -982,12 +1162,20 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
     /** @type {string} */
     #paddingAfter;
 
+    /** @type {boolean} */
+    #isOptional;
+
+    /** @type {number} */
+    #nestingLevel;
+
     /**
      * @param {string} macroName - The name of the macro to close.
      * @param {Object} [options] - Optional configuration.
      * @param {string} [options.paddingBefore=''] - Whitespace after {{ in opening tag (target padding).
      * @param {string} [options.paddingAfter=''] - Whitespace before }} in opening tag (target padding).
      * @param {string} [options.currentPadding=''] - Whitespace the user has already typed after {{.
+     * @param {boolean} [options.isOptional=false] - Whether this closing tag is for an optional scope.
+     * @param {number} [options.nestingLevel=0] - Nesting level (0 = innermost).
      */
     constructor(macroName, options = {}) {
         // The closing tag is what we're suggesting - use /macroName as the name for matching
@@ -996,6 +1184,8 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         this.#macroName = macroName;
         this.#paddingBefore = options.paddingBefore ?? '';
         this.#paddingAfter = options.paddingAfter ?? '';
+        this.#isOptional = options.isOptional ?? false;
+        this.#nestingLevel = options.nestingLevel ?? 0;
 
         // Calculate the replacement offset to replace any existing whitespace the user typed
         // This allows us to normalize the whitespace to match the opening tag's style
@@ -1012,6 +1202,10 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
 
         // Make selectable so TAB completion works (valueProvider alone makes it non-selectable)
         this.makeSelectable = true;
+
+        // nameOffset = 2 to skip the {{ prefix in the display for fuzzy highlighting
+        // The name is /macroName but display shows {{/macroName}}
+        this.nameOffset = 2;
 
         // Highest priority - closing tags should always appear at the very top
         this.sortPriority = 1;
@@ -1064,7 +1258,21 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         help.classList.add('help');
         const content = document.createElement('span');
         content.classList.add('helpContent');
-        content.textContent = `Close the {{${this.#macroName}}} scoped macro.`;
+
+        // Build description based on optional status and nesting
+        if (this.#isOptional) {
+            const optionalBadge = document.createElement('span');
+            optionalBadge.classList.add('macro-ac-optional-badge', 'macro-ac-optional-badge-small');
+            optionalBadge.textContent = 'OPTIONAL';
+            content.append(optionalBadge);
+            content.append(' ');
+
+            const nestingInfo = this.#nestingLevel > 0 ? ` (nested ${this.#nestingLevel} level${this.#nestingLevel > 1 ? 's' : ''} deep)` : '';
+            content.append(document.createTextNode(`Optionally close {{${this.#macroName}}}${nestingInfo}`));
+        } else {
+            content.textContent = `Close the {{${this.#macroName}}} scoped macro.`;
+        }
+
         help.append(content);
         li.append(help);
 
@@ -1081,6 +1289,14 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
         const details = document.createElement('div');
         details.classList.add('macro-closing-tag-details');
 
+        // If optional, show badge at the top
+        if (this.#isOptional) {
+            const optionalBadge = document.createElement('span');
+            optionalBadge.classList.add('macro-ac-optional-badge');
+            optionalBadge.textContent = 'OPTIONAL';
+            details.append(optionalBadge);
+        }
+
         // Header
         const header = document.createElement('h3');
         header.innerHTML = `Close <code>{{${this.#macroName}}}</code>`;
@@ -1088,7 +1304,12 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
 
         // Description
         const desc = document.createElement('p');
-        desc.textContent = `Inserts the closing tag {{/${this.#macroName}}} to complete the scoped macro. The content between the opening and closing tags will be passed as the last argument.`;
+        if (this.#isOptional) {
+            const nestingInfo = this.#nestingLevel > 0 ? ` This scope is nested ${this.#nestingLevel} level${this.#nestingLevel > 1 ? 's' : ''} deep.` : '';
+            desc.textContent = `Optionally inserts the closing tag {{/${this.#macroName}}}. The scoped content for this macro is optional - you can close it or leave it open.${nestingInfo}`;
+        } else {
+            desc.textContent = `Inserts the closing tag {{/${this.#macroName}}} to complete the scoped macro. The content between the opening and closing tags will be passed as the last argument.`;
+        }
         details.append(desc);
 
         frag.append(details);
@@ -1107,8 +1328,8 @@ export class MacroClosingTagAutoCompleteOption extends AutoCompleteOption {
 export function parseMacroContext(macroText, cursorOffset) {
     let i = 0;
 
-    // Skip leading whitespace
-    while (i < macroText.length && /\s/.test(macroText[i])) {
+    // Skip leading whitespace (but NOT newlines - those stop macro parsing for autocomplete)
+    while (i < macroText.length && /[ \t]/.test(macroText[i])) {
         i++;
     }
 
@@ -1128,8 +1349,8 @@ export function parseMacroContext(macroText, cursorOffset) {
             flags.push(char);
             i++;
             flagEndPositions.push(i); // Position right after this flag
-            // Skip whitespace between flags
-            while (i < macroText.length && /\s/.test(macroText[i])) {
+            // Skip whitespace between flags (but NOT newlines - those stop macro parsing for autocomplete)
+            while (i < macroText.length && /[ \t]/.test(macroText[i])) {
                 i++;
             }
         } else {
@@ -1224,43 +1445,98 @@ export function parseMacroContext(macroText, cursorOffset) {
         } else if (operatorText.startsWith('!=')) {
             variableOperator = '!=';
             i += 2;
+        } else if (operatorText.startsWith('>=')) {
+            variableOperator = '>=';
+            i += 2;
+        } else if (operatorText.startsWith('>')) {
+            variableOperator = '>';
+            i += 1;
+        } else if (operatorText.startsWith('<=')) {
+            variableOperator = '<=';
+            i += 2;
+        } else if (operatorText.startsWith('<')) {
+            variableOperator = '<';
+            i += 1;
         } else if (operatorText.startsWith('=')) {
             variableOperator = '=';
             i += 1;
-        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!')) {
+        } else if (operatorText.startsWith('+') || operatorText.startsWith('-') || operatorText.startsWith('|') || operatorText.startsWith('?') || operatorText.startsWith('!') || operatorText.startsWith('>') || operatorText.startsWith('<')) {
             // Partial operator prefix - user is typing an operator
             partialOperator = operatorText[0];
-        } else if (operatorText.length > 0 && !/^\s/.test(operatorText)) {
+        } else if (operatorText.length > 0 && !/^\s/.test(operatorText) && !operatorText.startsWith('}')) {
             // There's non-whitespace after the variable name that isn't a valid operator
             // This is an invalid trailing character (e.g., $my$ or .var@test)
+            // Exception: } is the closing brace, not an invalid char
             hasInvalidTrailingChars = true;
             invalidTrailingChars = operatorText.trim();
         }
+
+        // Track where the operator ends (for cursor position checks)
+        const variableOperatorEnd = i;
 
         // Check if operator requires a value
         const operatorDef = variableOperator ? VariableOperatorDefinitions.get(variableOperator) : null;
         const operatorNeedsValue = operatorDef?.needsValue ?? false;
 
         // If operator requires a value, parse the value
+        // Do this BEFORE isTypingClosingBrace detection so we can check for } in value area
+        // let valueStartPos = i;
         if (operatorNeedsValue) {
             // Skip whitespace after operator
             while (i < macroText.length && /\s/.test(macroText[i])) {
                 i++;
             }
+            // valueStartPos = i;
             variableValue = macroText.slice(i).trimEnd();
         }
 
+        // Detect if typing first closing brace on a variable shorthand
+        // This happens when operatorText is just "}" or when cursor is beyond content (after }})
+        let isTypingClosingBrace = false;
+        if (operatorText.startsWith('}') && !variableOperator) {
+            // Typing first } on a standalone variable shorthand like {{.Lila}
+            isTypingClosingBrace = true;
+        } else if (cursorOffset > macroText.length && !variableOperator) {
+            // Cursor is after }} on a standalone variable shorthand like {{.Lila}}|
+            isTypingClosingBrace = true;
+        } else if (cursorOffset > macroText.length && variableOperator) {
+            // Cursor is after }} on any operator shorthand like {{.Lila++}}| or {{.Lila+=4}}|
+            isTypingClosingBrace = true;
+        } else if (cursorOffset >= macroText.length && variableOperator && !operatorNeedsValue) {
+            // Cursor at end of complete operator (++ or --) like {{.Lila++ or {{.Lila++  (with trailing space)
+            isTypingClosingBrace = true;
+        } else if (cursorOffset >= macroText.length && !variableOperator && variableName.length > 0) {
+            // Cursor at end of standalone variable (with or without trailing whitespace) like {{.Lila or {{ .Lila
+            isTypingClosingBrace = true;
+        } else if (operatorNeedsValue && variableValue.length > 0 && variableValue.endsWith('}')) {
+            // Typing first } after a value like {{.Lila+=4}
+            isTypingClosingBrace = true;
+            // Strip the } from the value
+            variableValue = variableValue.slice(0, -1);
+        } else if (operatorNeedsValue && cursorOffset >= macroText.length && variableValue.length > 0) {
+            // Cursor at end after typing a value (including trailing whitespace) like {{.Lila+=4
+            // This means the shorthand is "complete" and ready to close
+            isTypingClosingBrace = true;
+        }
+
         // Determine cursor position context for autocomplete
+        // Note: isTypingClosingBrace takes precedence - if we're typing a closing brace,
+        // we don't want to show operator suggestions, just the current state
         const prefixEnd = (macroText.indexOf(variablePrefix) ?? 0) + 1;
         if (cursorOffset < prefixEnd) {
             // Cursor is before the prefix - still in flags area conceptually
             isTypingVariableName = false;
         } else if (cursorOffset <= variableNameEnd) {
-            // Cursor is in the variable name
+            // Cursor is in the variable name area (including at the end)
             isTypingVariableName = true;
-        } else if (!variableOperator && !hasInvalidTrailingChars) {
+        } else if (variableName.length > 0 && !variableOperator && !hasInvalidTrailingChars && !isTypingClosingBrace) {
             // Cursor is after variable name but no operator yet (and no invalid chars)
-            // This includes partial operator prefixes like '+', '-', '|', '?'
+            // This includes partial operator prefixes like '+', '-', '|', '?', '>', '<'
+            // But NOT when typing a closing brace - that takes precedence
+            isTypingOperator = true;
+        } else if (variableName.length > 0 && variableOperator && isShortOperatorPrefix(variableOperator) && cursorOffset <= variableOperatorEnd) {
+            // Short operator that could be prefix of longer one (e.g., > could become >=)
+            // But ONLY if cursor is still in the operator area, not past it into value
             isTypingOperator = true;
         } else if (operatorNeedsValue) {
             // Operator that requires value - cursor is in value area
@@ -1285,6 +1561,7 @@ export function parseMacroContext(macroText, cursorOffset) {
             args: [],
             currentArgIndex: -1,
             isTypingSeparator: false,
+            isTypingClosingBrace,
             hasSpaceAfterIdentifier: false,
             hasSpaceArgContent: false,
             separatorCount: 0,
@@ -1292,7 +1569,9 @@ export function parseMacroContext(macroText, cursorOffset) {
             isVariableShorthand,
             variablePrefix,
             variableName,
+            variableNameEnd,
             variableOperator,
+            variableOperatorEnd,
             variableValue,
             isTypingVariableName,
             isTypingOperator,
@@ -1314,20 +1593,55 @@ export function parseMacroContext(macroText, cursorOffset) {
     let partStart = i;
     let j = 0;
 
+    // Track nesting depth to skip :: inside nested macros
+    let nestedDepth = 0;
+    // Track if we've seen a :: separator - newlines before first :: should stop parsing
+    let hasSeenSeparator = false;
+    // Track if we broke early (e.g., at a newline)
+    let brokeEarly = false;
     while (j < remainingText.length) {
-        if (remainingText[j] === ':' && remainingText[j + 1] === ':') {
+        // Before the first :: separator, newlines should stop parsing
+        // This prevents text on the next line from being considered part of the identifier/space-arg
+        if (!hasSeenSeparator && nestedDepth === 0 && (remainingText[j] === '\n' || remainingText[j] === '\r')) {
+            // Stop parsing here - don't include the newline or anything after
+            brokeEarly = true;
+            break;
+        }
+        // Track nested macro braces
+        if (remainingText[j] === '{' && remainingText[j + 1] === '{') {
+            nestedDepth++;
+            currentPart += '{{';
+            j += 2;
+            continue;
+        }
+        if (remainingText[j] === '}' && remainingText[j + 1] === '}') {
+            nestedDepth = Math.max(0, nestedDepth - 1);
+            currentPart += '}}';
+            j += 2;
+            continue;
+        }
+        // Only count :: as separator when not inside nested macros
+        if (nestedDepth === 0 && remainingText[j] === ':' && remainingText[j + 1] === ':') {
             parts.push({ text: currentPart, start: partStart, end: i + j });
             separatorPositions.push({ start: i + j, end: i + j + 2 });
             currentPart = '';
             j += 2;
             partStart = i + j;
+            hasSeenSeparator = true;
         } else {
             currentPart += remainingText[j];
             j++;
         }
     }
-    // Push the last part
-    parts.push({ text: currentPart, start: partStart, end: macroText.length });
+    // Push the last part - use correct end position if we broke early.
+    // If we broke early (at a newline) AND cursor is past that point, don't push -
+    // this filters out text on the next line from being considered part of this macro.
+    // But if we didn't break early (cursor at end of closed macro), always push.
+    const lastPartEnd = brokeEarly ? i + j : macroText.length;
+    const shouldPushLastPart = !brokeEarly || cursorOffset <= lastPartEnd;
+    if (shouldPushLastPart) {
+        parts.push({ text: currentPart, start: partStart, end: lastPartEnd });
+    }
 
     // Determine if cursor is in the flags area (at or before identifier starts)
     const identifierStartPos = parts[0]?.start ?? i;
@@ -1402,7 +1716,14 @@ export function parseMacroContext(macroText, cursorOffset) {
     }
 
     // Clean identifier: strip trailing colons (for partial :: typing)
+    // Also strip trailing single } (for partial }} typing) - but only if no separators/args
     let cleanIdentifier = identifierOnly.replace(/:+$/, '');
+    let isTypingClosingBrace = false;
+    if (separatorPositions.length === 0 && !hasSpaceAfterIdentifier && cleanIdentifier.endsWith('}')) {
+        // Typing first closing brace on a standalone macro like {{char}
+        cleanIdentifier = cleanIdentifier.slice(0, -1);
+        isTypingClosingBrace = true;
+    }
 
     // Build args array - include space-separated arg if present
     // Trim args like the macro engine does
@@ -1423,6 +1744,7 @@ export function parseMacroContext(macroText, cursorOffset) {
         args,
         currentArgIndex,
         isTypingSeparator,
+        isTypingClosingBrace,
         hasSpaceAfterIdentifier,
         hasSpaceArgContent: spaceArgText.length > 0,
         separatorCount: separatorPositions.length,
@@ -1430,7 +1752,9 @@ export function parseMacroContext(macroText, cursorOffset) {
         isVariableShorthand: false,
         variablePrefix: null,
         variableName: '',
+        variableNameEnd: null,
         variableOperator: null,
+        variableOperatorEnd: null,
         variableValue: '',
         isTypingVariableName: false,
         isTypingOperator: false,

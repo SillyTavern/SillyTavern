@@ -9,8 +9,6 @@ export class QuickReplySetLink {
     }
 
 
-
-
     /**@type {QuickReplySet}*/ set;
     /**@type {Boolean}*/ isVisible = true;
 
@@ -21,8 +19,6 @@ export class QuickReplySetLink {
     /**@type {Function}*/ onDelete;
 
     /**@type {HTMLElement}*/ settingsDom;
-
-
 
 
     renderSettings(idx) {
@@ -40,12 +36,12 @@ export class QuickReplySetLink {
             const set = document.createElement('select'); {
                 set.classList.add('qr--set');
                 // fix for jQuery sortable breaking childrens' touch events
-                set.addEventListener('touchstart', (evt)=>evt.stopPropagation());
-                set.addEventListener('change', ()=>{
+                set.addEventListener('touchstart', (evt) => evt.stopPropagation());
+                set.addEventListener('change', () => {
                     this.set = QuickReplySet.get(set.value);
                     this.update();
                 });
-                QuickReplySet.list.toSorted((a,b)=>a.name.toLowerCase().localeCompare(b.name.toLowerCase())).forEach(qrs=>{
+                QuickReplySet.list.toSorted((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())).forEach(qrs => {
                     const opt = document.createElement('option'); {
                         opt.value = qrs.name;
                         opt.textContent = qrs.name;
@@ -61,7 +57,7 @@ export class QuickReplySetLink {
                 const cb = document.createElement('input'); {
                     cb.type = 'checkbox';
                     cb.checked = this.isVisible;
-                    cb.addEventListener('click', ()=>{
+                    cb.addEventListener('click', () => {
                         this.isVisible = cb.checked;
                         this.update();
                     });
@@ -76,7 +72,7 @@ export class QuickReplySetLink {
                 edit.classList.add('fa-solid');
                 edit.classList.add('fa-pencil');
                 edit.title = 'Edit quick reply set';
-                edit.addEventListener('click', ()=>this.requestEditSet());
+                edit.addEventListener('click', () => this.requestEditSet());
                 item.append(edit);
             }
             const del = document.createElement('div'); {
@@ -86,7 +82,7 @@ export class QuickReplySetLink {
                 del.classList.add('fa-solid');
                 del.classList.add('fa-trash-can');
                 del.title = 'Remove quick reply set';
-                del.addEventListener('click', ()=>this.delete());
+                del.addEventListener('click', () => this.delete());
                 item.append(del);
             }
         }
@@ -96,8 +92,6 @@ export class QuickReplySetLink {
         this.settingsDom?.remove();
         this.settingsDom = null;
     }
-
-
 
 
     update() {
@@ -116,8 +110,6 @@ export class QuickReplySetLink {
             this.onDelete();
         }
     }
-
-
 
 
     toJSON() {

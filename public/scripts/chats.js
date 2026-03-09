@@ -832,11 +832,9 @@ async function openExternalMediaOverridesDialog() {
 
     if (power_user.external_media_allowed_overrides.includes(entityId)) {
         template.find('#forbid_media_override_allowed').prop('checked', true);
-    }
-    else if (power_user.external_media_forbidden_overrides.includes(entityId)) {
+    } else if (power_user.external_media_forbidden_overrides.includes(entityId)) {
         template.find('#forbid_media_override_forbidden').prop('checked', true);
-    }
-    else {
+    } else {
         template.find('#forbid_media_override_global').prop('checked', true);
     }
 
@@ -1678,8 +1676,7 @@ async function runScraper(scraperId, target, callback) {
 
         toastr.success(t`Scraped ${files.length} files from ${scraperId} to ${target}.`, t`Data Bank`);
         callback();
-    }
-    catch (error) {
+    } catch (error) {
         console.error('Scraping failed', error);
         toastr.error(t`Check browser console for details.`, t`Scraping failed`);
     }
@@ -2239,6 +2236,11 @@ export function initChatUtilities() {
         wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
         textarea.dataset.for = broId;
+        if (bro[0].dataset.macros !== undefined) {
+            textarea.dataset.macros = bro[0].dataset.macros;
+            textarea.dataset.macrosAutocomplete = 'always'; // Always show autocomplete in expanded editor
+            textarea.dataset.macrosAutocompleteStyle = 'expanded'; // Use expanded autocomplete style
+        }
         textarea.value = String(contentEditable ? bro[0].innerText : bro.val());
         textarea.classList.add('height100p', 'wide100p', 'maximized_textarea');
         bro.hasClass('monospace') && textarea.classList.add('monospace');

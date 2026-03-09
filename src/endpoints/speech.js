@@ -89,7 +89,7 @@ pollinations.post('/voices', async (req, res) => {
     try {
         const model = req.body.model || 'openai-audio';
 
-        const response = await fetch('https://text.pollinations.ai/models');
+        const response = await fetch('https://gen.pollinations.ai/text/models');
 
         if (!response.ok) {
             throw new Error('Failed to fetch Pollinations models');
@@ -116,25 +116,56 @@ pollinations.post('/voices', async (req, res) => {
 
 pollinations.post('/generate', async (req, res) => {
     try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.POLLINATIONS);
+        if (!key) {
+            console.warn('No API key saved for Pollinations TTS.');
+            return res.sendStatus(400);
+        }
+
         const text = req.body.text;
         const model = req.body.model || 'openai-audio';
         const voice = req.body.voice || 'alloy';
 
-        const url = new URL(`https://text.pollinations.ai/generate/${encodeURIComponent(text)}`);
-        url.searchParams.append('model', model);
-        url.searchParams.append('voice', voice);
-        url.searchParams.append('referrer', 'sillytavern');
-        console.info('Pollinations request URL:', url.toString());
+        console.debug('Pollinations TTS request', { text, model, voice });
 
-        const response = await fetch(url);
+        const response = await fetch('https://gen.pollinations.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: model,
+                stream: false,
+                modalities: ['text', 'audio'],
+                seed: Math.floor(Math.random() * Math.pow(2, 32)),
+                audio: {
+                    format: 'mp3',
+                    voice: voice,
+                },
+                messages: [{
+                    role: 'user',
+                    content: text,
+                }],
+            }),
+        });
 
         if (!response.ok) {
             const text = await response.text();
             throw new Error(`Failed to generate audio from Pollinations: ${text}`);
         }
 
+        /** @type {any} */
+        const data = await response.json();
+        const audioData = data?.choices?.[0]?.message?.audio?.data;
+
+        if (!audioData) {
+            console.warn('Pollinations TTS audio data is missing from the response');
+            return res.sendStatus(500);
+        }
+
         res.set('Content-Type', 'audio/mpeg');
-        forwardFetchResponse(response, res);
+        return res.send(Buffer.from(audioData, 'base64'));
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);

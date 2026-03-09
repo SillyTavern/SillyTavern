@@ -837,7 +837,6 @@ class MiniMaxTtsProvider {
             // Backend handles all the complex processing and returns audio data directly
             console.debug('MiniMax TTS: Audio response received from backend');
             return response;
-
         } catch (error) {
             console.error('Error in MiniMax TTS generation:', error);
             throw error;
@@ -954,7 +953,6 @@ class MiniMaxTtsProvider {
                 this.audioElement.onended = null;
                 this.audioElement.onerror = null;
             };
-
         } catch (error) {
             console.error('MiniMax TTS Preview Error:', error);
             toastr.error(`Could not generate preview: ${error.message}`);

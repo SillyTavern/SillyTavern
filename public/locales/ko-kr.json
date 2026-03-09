@@ -337,6 +337,8 @@
     "koboldcpp API key (optional)": "koboldcpp API 키(선택사항)",
     "Example: http://127.0.0.1:5001": "예: http://127.0.0.1:5001",
     "Authorize": "승인하기",
+    "OpenRouter API key already exists": "OpenRouter API 키가 이미 존재합니다",
+    "Do you really wish to create a new OpenRouter key? Your existing key will not be deleted.": "정말 새로운 OpenRouter 키를 만들기를 원하십니까? 기존 키는 삭제되지 않습니다.",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "OAuth 플로우를 사용하여 OpenRouter API 토큰을 가져옵니다. openrouter.ai로 리디렉션됩니다.",
     "Legacy API (pre-OAI, no streaming)": "레거시 API (OAI 이전, 스트리밍 없음)",
     "Bypass status check": "상태 확인 우회",
@@ -1617,5 +1619,9 @@
     "to install additional features.": "으로 가세요.",
     "Master Import": "마스터 불러오기",
     "Master Export": "마스터 내보내기",
-    "Chat Quick Reply Sets": "채팅 빠른 답장 세트들"
+    "Chat Quick Reply Sets": "채팅 빠른 답장 세트들",
+    "Interleaved Thinking": "인터리브드 사고",
+    "Since Last User Message": "마지막 사용자 메시지 이후",
+    "Active Tool Chain": "활성 도구 체인",
+    "openrouter_interleaved_thinking_hint": "인터리브드 사고 컨텍스트를 유지하기 위해 이전 어시스턴트 턴의 추론을 도구 호출 요청과 함께 전송합니다."
 }

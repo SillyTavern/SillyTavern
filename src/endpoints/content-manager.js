@@ -872,7 +872,7 @@ function getUuidFromUrl(url) {
  * @param {String} url URL to strip
  * @returns {String} Domain name
  */
-function getHostFromUrl(url) {
+export function getHostFromUrl(url) {
     try {
         const urlObj = new URL(url);
         return urlObj.hostname;
@@ -886,7 +886,7 @@ function getHostFromUrl(url) {
  * @param {String} host Host to check
  * @returns {boolean} If the host is on the whitelist.
  */
-function isHostWhitelisted(host) {
+export function isHostWhitelisted(host) {
     return WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES.includes(host);
 }
 
@@ -941,12 +941,10 @@ router.post('/importURL', async (request, response) => {
             if (chubParsed?.type === 'character') {
                 console.info('Downloading chub character:', chubParsed.id);
                 result = await downloadChubCharacter(chubParsed.id);
-            }
-            else if (chubParsed?.type === 'lorebook') {
+            } else if (chubParsed?.type === 'lorebook') {
                 console.info('Downloading chub lorebook:', chubParsed.id);
                 result = await downloadChubLorebook(chubParsed.id);
-            }
-            else {
+            } else {
                 return response.sendStatus(404);
             }
         } else if (isRisu) {
@@ -1020,12 +1018,10 @@ router.post('/importUUID', async (request, response) => {
             if (uuidType === 'character') {
                 console.info('Downloading chub character:', uuid);
                 result = await downloadChubCharacter(uuid);
-            }
-            else if (uuidType === 'lorebook') {
+            } else if (uuidType === 'lorebook') {
                 console.info('Downloading chub lorebook:', uuid);
                 result = await downloadChubLorebook(uuid);
-            }
-            else {
+            } else {
                 return response.sendStatus(404);
             }
         }

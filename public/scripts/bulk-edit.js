@@ -55,7 +55,7 @@ function onSelectAllButtonClick() {
 
     if (!atLeastOneSelected) {
         // If none was selected, trigger click on all to deselect all of them
-        for(const character of characters) {
+        for (const character of characters) {
             const checked = $(character).find('.bulk_select_checkbox:checked') ?? false;
             if (checked && character instanceof HTMLElement) {
                 characterGroupOverlay.toggleSingleCharacter(character);

@@ -21,6 +21,7 @@ import {
     tryDeleteFile,
     ensureAccess,
     pickFirstObjectFromJsonFile,
+    isPathUnderParent,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
@@ -78,13 +79,12 @@ function getBackupFunction(handle) {
 }
 
 /**
- * Gets a preview message from an array of chat messages
- * @param {Array<Object>} messages - Array of chat messages, each with a 'mes' property
+ * Gets a preview message from a chat message string.
+ * @param {string} [lastMessage] - The message to truncate
  * @returns {string} A truncated preview of the last message or empty string if no messages
  */
-function getPreviewMessage(messages) {
+function getPreviewMessage(lastMessage) {
     const strlen = 400;
-    const lastMessage = messages[messages.length - 1]?.mes;
 
     if (!lastMessage) {
         return '';
@@ -351,8 +351,9 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * @property {string} [file_size] - The size of the chat file in a human-readable format
  * @property {number} [chat_items] - The number of chat items in the file
  * @property {string} [mes] - The last message in the chat
- * @property {number} [last_mes] - The timestamp of the last message
+ * @property {number|string} [last_mes] - The timestamp of the last message
  * @property {object} [chat_metadata] - Additional chat metadata
+ * @property {boolean} [match] - Whether the chat matches the search criteria
  */
 
 /**
@@ -360,14 +361,19 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * @param {string} pathToFile - Path to the chat file
  * @param {object} additionalData - Additional data to include in the result
  * @param {boolean} withMetadata - Whether to read chat metadata
+ * @param {ChatMatchFunction|null} matcher - Optional function to match messages
  * @returns {Promise<ChatInfo>}
+ *
+ * @typedef {(textArray: string[]) => boolean} ChatMatchFunction
  */
-export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false) {
+export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false, matcher = null) {
     return new Promise(async (res) => {
         const parsedPath = path.parse(pathToFile);
         const stats = await fs.promises.stat(pathToFile);
+        const hasMatcher = (typeof matcher === 'function');
 
         const chatData = {
+            match: false,
             file_id: parsedPath.name,
             file_name: parsedPath.base,
             file_size: formatBytes(stats.size),
@@ -390,11 +396,24 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
 
         let lastLine;
         let itemCounter = 0;
+        let hasAnyMatch = false;
+        let matchBuffer = [];
         rl.on('line', (line) => {
             if (withMetadata && itemCounter === 0) {
                 const jsonData = tryParse(line);
                 if (jsonData && _.isObjectLike(jsonData.chat_metadata)) {
                     chatData.chat_metadata = jsonData.chat_metadata;
+                }
+            }
+            // Skip matching if any match was already found
+            if (hasMatcher && !hasAnyMatch && itemCounter > 0) {
+                const jsonData = tryParse(line);
+                if (jsonData) {
+                    matchBuffer.push(jsonData.mes || '');
+                    if (matcher(matchBuffer)) {
+                        hasAnyMatch = true;
+                        matchBuffer = [];
+                    }
                 }
             }
             itemCounter++;
@@ -409,6 +428,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                     chatData.chat_items = (itemCounter - 1);
                     chatData.mes = jsonData.mes || '[The message is empty]';
                     chatData.last_mes = jsonData.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
+                    chatData.match = hasMatcher ? hasAnyMatch : true;
 
                     res(chatData);
                 } else {
@@ -464,6 +484,9 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         const chatData = request.body.chat;
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(request.user.directories.chats, cardName, sanitize(chatFileName));
+        if (!isPathUnderParent(request.user.directories.chats, chatFilePath)) {
+            return response.sendStatus(400);
+        }
 
         if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
@@ -505,6 +528,9 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const directoryPath = path.join(request.user.directories.chats, dirName);
+        if (!isPathUnderParent(request.user.directories.chats, directoryPath)) {
+            return response.sendStatus(400);
+        }
         const chatDirExists = fs.existsSync(directoryPath);
 
         //if no chat dir for the character is found, make one with the character name
@@ -536,6 +562,9 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         const pathToFolder = request.body.is_group
             ? request.user.directories.groupChats
             : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
+        if (!request.body.is_group && !isPathUnderParent(request.user.directories.chats, pathToFolder)) {
+            return response.sendStatus(400);
+        }
         const pathToOriginalFile = path.join(pathToFolder, sanitize(request.body.original_file));
         const pathToRenamedFile = path.join(pathToFolder, sanitize(request.body.renamed_file));
         const sanitizedFileName = path.parse(pathToRenamedFile).name;
@@ -566,6 +595,9 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const chatFileName = String(request.body.chatfile);
         const chatFilePath = path.join(request.user.directories.chats, dirName, sanitize(chatFileName));
+        if (!isPathUnderParent(request.user.directories.chats, chatFilePath)) {
+            return response.sendStatus(400);
+        }
         //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
             return response.send({ ok: true });
@@ -586,7 +618,10 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
     const pathToFolder = request.body.is_group
         ? request.user.directories.groupChats
         : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
-    let filename = path.join(pathToFolder, request.body.file);
+    const filename = path.join(pathToFolder, sanitize(request.body.file));
+    if (!request.body.is_group && !isPathUnderParent(request.user.directories.chats, filename)) {
+        return response.sendStatus(400);
+    }
     let exportfilename = request.body.exportfilename;
     if (!fs.existsSync(filename)) {
         const errorMessage = {
@@ -673,11 +708,16 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
 
     const format = request.body.file_type;
     const avatarUrl = (request.body.avatar_url).replace('.png', '');
-    const characterName = request.body.character_name;
-    const userName = request.body.user_name || 'User';
+    const characterName = sanitize(request.body.character_name) || 'Character';
+    const userName = sanitize(request.body.user_name) || 'User';
     const fileNames = [];
 
     if (!request.file) {
+        return response.sendStatus(400);
+    }
+
+    const directoryPath = path.join(request.user.directories.chats, avatarUrl);
+    if (!isPathUnderParent(request.user.directories.chats, directoryPath)) {
         return response.sendStatus(400);
     }
 
@@ -709,7 +749,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
 
             const handleChat = (chat) => {
                 const fileName = `${characterName} - ${humanizedDateTime()} imported.jsonl`;
-                const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+                const filePath = path.join(directoryPath, fileName);
                 fileNames.push(fileName);
                 writeFileAtomicSync(filePath, chat, 'utf8');
             };
@@ -748,7 +788,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
             }
 
             const fileName = `${characterName} - ${humanizedDateTime()} imported.jsonl`;
-            const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+            const filePath = path.join(directoryPath, fileName);
             fileNames.push(fileName);
             if (flattenedChat !== data) {
                 writeFileAtomicSync(filePath, flattenedChat, 'utf8');
@@ -828,8 +868,7 @@ router.post('/group/save', async function (request, response) {
         if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
             return response.send({ ok: true });
-        }
-        else {
+        } else {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
         }
     } catch (error) {
@@ -842,16 +881,18 @@ router.post('/group/save', async function (request, response) {
     }
 });
 
-router.post('/search', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/search', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const { query, avatar_url, group_id } = request.body;
+
+        /** @type {string[]} */
         let chatFiles = [];
 
         if (group_id) {
             // Find group's chat IDs first
             const groupDir = path.join(request.user.directories.groups);
             const groupFiles = fs.readdirSync(groupDir)
-                .filter(file => file.endsWith('.json'));
+                .filter(file => path.extname(file) === '.json');
 
             let targetGroup;
             for (const groupFile of groupFiles) {
@@ -866,24 +907,15 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
                 }
             }
 
-            if (!targetGroup?.chats) {
+            if (!Array.isArray(targetGroup?.chats)) {
                 return response.send([]);
             }
 
             // Find group chat files for given group ID
             const groupChatsDir = path.join(request.user.directories.groupChats);
             chatFiles = targetGroup.chats
-                .map(chatId => {
-                    const filePath = path.join(groupChatsDir, `${chatId}.jsonl`);
-                    if (!fs.existsSync(filePath)) return null;
-                    const stats = fs.statSync(filePath);
-                    return {
-                        file_name: chatId,
-                        file_size: formatBytes(stats.size),
-                        path: filePath,
-                    };
-                })
-                .filter(x => x);
+                .map(chatId => path.join(groupChatsDir, `${chatId}.jsonl`))
+                .filter(fileName => fs.existsSync(fileName));
         } else {
             // Regular character chat directory
             const character_name = avatar_url.replace('.png', '');
@@ -894,64 +926,60 @@ router.post('/search', validateAvatarUrlMiddleware, function (request, response)
             }
 
             chatFiles = fs.readdirSync(directoryPath)
-                .filter(file => file.endsWith('.jsonl'))
-                .map(fileName => {
-                    const filePath = path.join(directoryPath, fileName);
-                    const stats = fs.statSync(filePath);
-                    return {
-                        file_name: fileName,
-                        file_size: formatBytes(stats.size),
-                        path: filePath,
-                    };
-                });
+                .filter(file => path.extname(file) === '.jsonl')
+                .map(fileName => path.join(directoryPath, fileName));
         }
 
+        /**
+         * @type {SearchChatResult[]}
+         * @typedef {object} SearchChatResult
+         * @property {string} [file_name] - The name of the chat file
+         * @property {string} [file_size] - The size of the chat file in a human-readable format
+         * @property {number} [message_count] - The number of messages in the chat
+         * @property {number|string} [last_mes] - The timestamp of the last message
+         * @property {string} [preview_message] - A preview of the last message
+         */
         const results = [];
 
-        // Search logic
+        /** @type {string[]} */
+        const fragments = query ? query.trim().toLowerCase().split(/\s+/).filter(x => x) : [];
+
+        /** @type {ChatMatchFunction} */
+        const hasTextMatch = (textArray) => {
+            if (fragments.length === 0) {
+                return true;
+            }
+            return fragments.every(fragment => textArray.some(text => String(text ?? '').toLowerCase().includes(fragment)));
+        };
+
         for (const chatFile of chatFiles) {
-            const data = getChatData(chatFile.path);
-            const messages = data.filter(x => x && typeof x.mes === 'string');
+            const matcher = query ? hasTextMatch : null;
+            const chatInfo = await getChatInfo(chatFile, {}, false, matcher);
+            const hasMatch = chatInfo.match || hasTextMatch([chatInfo.file_id ?? '']);
 
-            if (query && messages.length === 0) {
+            // Skip corrupted or invalid chat files
+            if (!chatInfo.file_name) {
                 continue;
             }
 
-            const lastMessage = messages[messages.length - 1];
-            const lastMesDate = lastMessage?.send_date || new Date(fs.statSync(chatFile.path).mtimeMs).toISOString();
-
-            // If no search query, just return metadata
-            if (!query) {
-                results.push({
-                    file_name: chatFile.file_name,
-                    file_size: chatFile.file_size,
-                    message_count: messages.length,
-                    last_mes: lastMesDate,
-                    preview_message: getPreviewMessage(messages),
-                });
+            // Empty chats without a file name match are skipped when searching with a query
+            if (query && chatInfo.chat_items === 0 && !hasMatch) {
                 continue;
             }
 
-            // Search through title and messages of the chat
-            const fragments = query.trim().toLowerCase().split(/\s+/).filter(x => x);
-            const text = [path.parse(chatFile.path).name, ...messages.map(message => message?.mes)].join('\n').toLowerCase();
-            const hasMatch = fragments.every(fragment => text.includes(fragment));
-
-            if (hasMatch) {
+            // If no search query or a match was found, include the chat in results
+            if (!query || hasMatch) {
                 results.push({
-                    file_name: chatFile.file_name,
-                    file_size: chatFile.file_size,
-                    message_count: messages.length,
-                    last_mes: lastMesDate,
-                    preview_message: getPreviewMessage(messages),
+                    file_name: chatInfo.file_id,
+                    file_size: chatInfo.file_size,
+                    message_count: chatInfo.chat_items,
+                    last_mes: chatInfo.last_mes,
+                    preview_message: getPreviewMessage(chatInfo.mes),
                 });
             }
         }
 
-        // Sort by last message date descending
-        results.sort((a, b) => new Date(b.last_mes).getTime() - new Date(a.last_mes).getTime());
         return response.send(results);
-
     } catch (error) {
         console.error('Chat search error:', error);
         return response.status(500).json({ error: 'Search failed' });

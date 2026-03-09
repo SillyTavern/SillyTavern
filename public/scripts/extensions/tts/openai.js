@@ -146,7 +146,6 @@ class OpenAITtsProvider {
     }
 
     populateCharacterInstructions() {
-
         const currentCharacters = $('.tts_voicemap_block_char span').map((i, el) => $(el).text()).get();
 
         $('#openai-character-instructions').empty();

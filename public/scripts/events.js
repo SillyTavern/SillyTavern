@@ -1,6 +1,7 @@
 import { EventEmitter } from '../lib/eventemitter.js';
 
 export const event_types = {
+    APP_INITIALIZED: 'app_initialized',
     APP_READY: 'app_ready',
     EXTRAS_CONNECTED: 'extras_connected',
     MESSAGE_SWIPED: 'message_swiped',
@@ -95,6 +96,7 @@ export const event_types = {
     WORLDINFO_ENTRIES_LOADED: 'worldinfo_entries_loaded',
     WORLDINFO_SCAN_DONE: 'worldinfo_scan_done',
     MEDIA_ATTACHMENT_DELETED: 'media_attachment_deleted',
+    PERSONA_CHANGED: 'persona_changed',
 };
 
-export const eventSource = new EventEmitter([event_types.APP_READY]);
+export const eventSource = new EventEmitter([event_types.APP_READY, event_types.APP_INITIALIZED]);

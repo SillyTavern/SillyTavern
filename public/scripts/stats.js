@@ -209,8 +209,7 @@ async function recreateStats() {
     if (!response.ok) {
         toastr.error('Stats could not be loaded. Try reloading the page.');
         throw new Error('Error getting stats');
-    }
-    else {
+    } else {
         toastr.success('Stats file recreated successfully!');
     }
 }

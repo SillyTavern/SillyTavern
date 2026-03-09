@@ -166,8 +166,7 @@ export async function getVersion() {
             const remoteLatest = await git.revparse([trackingBranch]);
             isLatest = localLatest === remoteLatest;
         }
-    }
-    catch {
+    } catch {
         // suppress exception
     }
 
@@ -830,8 +829,7 @@ export function mergeObjectWithYaml(obj, yamlString) {
                     Object.assign(obj, item);
                 }
             }
-        }
-        else if (parsedObject && typeof parsedObject === 'object') {
+        } else if (parsedObject && typeof parsedObject === 'object') {
             Object.assign(obj, parsedObject);
         }
     } catch {
@@ -1021,7 +1019,6 @@ export async function canResolve(name, useIPv6 = true, useIPv4 = true) {
         }
 
         return v6Resolved || v4Resolved;
-
     } catch (error) {
         return false;
     }
@@ -1317,8 +1314,7 @@ export function safeReadFileSync(filePath, options = { encoding: 'utf-8' }) {
 export function setWindowTitle(title) {
     if (process.platform === 'win32') {
         process.title = title;
-    }
-    else {
+    } else {
         process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
     }
 }

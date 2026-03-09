@@ -115,7 +115,9 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.XAI:
                     return data?.choices?.[0]?.message?.reasoning_content ?? '';
                 case chat_completion_sources.OPENROUTER:
-                    return data?.choices?.[0]?.message?.reasoning ?? '';
+                    return data?.choices?.[0]?.message?.reasoning
+                        ?? data?.choices?.[0]?.message?.reasoning_content
+                        ?? '';
                 case chat_completion_sources.MAKERSUITE:
                 case chat_completion_sources.VERTEXAI:
                     return data?.responseContent?.parts?.filter(part => part.thought)?.map(part => part.text)?.join('\n\n') ?? '';
@@ -865,7 +867,6 @@ function selectReasoningTemplateCallback(args, name) {
     UI.$select.val(foundName).trigger('change');
     !quiet && toastr.success(`Reasoning template "${foundName}" selected`);
     return foundName;
-
 }
 
 function registerReasoningSlashCommands() {
@@ -1163,7 +1164,8 @@ function setReasoningEventHandlers() {
         }
 
         const textarea = messageBlock.find('.reasoning_edit_textarea');
-        const newReasoning = String(textarea.val());
+        let newReasoning = String(textarea.val());
+        newReasoning = substituteParams(newReasoning);
         textarea.remove();
         if (newReasoning === message.extra.reasoning) {
             return;

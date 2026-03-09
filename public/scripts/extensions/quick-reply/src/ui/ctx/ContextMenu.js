@@ -11,8 +11,6 @@ export class ContextMenu {
     /**@type {HTMLElement}*/ menu;
 
 
-
-
     constructor(/**@type {QuickReply}*/qr) {
         // this.itemList = items;
         this.itemList = this.build(qr).children;
@@ -102,8 +100,6 @@ export class ContextMenu {
         }
         return this.root;
     }
-
-
 
 
     show({ clientX, clientY }) {

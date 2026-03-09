@@ -17,10 +17,10 @@ export class SlashCommandExecutor {
     get source() { return this.#source; }
     set source(value) {
         this.#source = value;
-        for (const arg of this.namedArgumentList.filter(it=>it.value instanceof SlashCommandClosure)) {
+        for (const arg of this.namedArgumentList.filter(it => it.value instanceof SlashCommandClosure)) {
             arg.value.source = value;
         }
-        for (const arg of this.unnamedArgumentList.filter(it=>it.value instanceof SlashCommandClosure)) {
+        for (const arg of this.unnamedArgumentList.filter(it => it.value instanceof SlashCommandClosure)) {
             arg.value.source = value;
         }
     }
@@ -31,15 +31,15 @@ export class SlashCommandExecutor {
 
     get commandCount() {
         return 1
-            + this.namedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum)=>cur + sum, 0)
-            + this.unnamedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum)=>cur + sum, 0)
+            + this.namedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it =>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum) => cur + sum, 0)
+            + this.unnamedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it =>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum) => cur + sum, 0)
         ;
     }
 
     set onProgress(value) {
         const closures = /**@type {SlashCommandClosure[]}*/([
-            ...this.namedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>it.value),
-            ...this.unnamedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>it.value),
+            ...this.namedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it => it.value),
+            ...this.unnamedArgumentList.filter(it => it.value instanceof SlashCommandClosure).map(it => it.value),
         ]);
         for (const closure of closures) {
             closure.onProgress = value;

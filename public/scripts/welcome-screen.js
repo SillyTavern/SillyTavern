@@ -35,7 +35,7 @@ import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { flashHighlight, sortMoments, timestampToMoment } from './utils.js';
+import { flashHighlight, isElementInViewport, sortMoments, timestampToMoment } from './utils.js';
 
 const assistantAvatarKey = 'assistant';
 const pinnedChatsKey = 'pinnedChats';
@@ -223,7 +223,7 @@ function getAssistantGreeting(character) {
         return defaultGreeting;
     }
 
-    return getRegexedString(character.first_mes || '', regex_placement.AI_OUTPUT) || defaultGreeting;
+    return getRegexedString(character.first_mes || '', regex_placement.AI_OUTPUT, { depth: 0 }) || defaultGreeting;
 }
 
 function sendAssistantMessage() {
@@ -616,7 +616,9 @@ async function refreshWelcomeScreen({ flashChat = null } = {}) {
                 ((flashChat.is_group && group === flashChat.group) || (!flashChat.is_group && avatar === flashChat.avatar));
         });
         if (chatToFlash instanceof HTMLElement) {
-            chatElement.scrollTop = chatToFlash.offsetTop - chatElement.offsetTop - (chatToFlash.clientHeight / 2);
+            if (!isElementInViewport(chatToFlash)) {
+                chatElement.scrollTop = chatToFlash.offsetTop - chatElement.offsetTop - (chatToFlash.clientHeight / 2);
+            }
             flashHighlight($(chatToFlash), 1000);
         }
     } else {
@@ -714,8 +716,7 @@ export async function openPermanentAssistantChat({ tryCreate = true, created = f
             console.log(`Character not found for avatar ID: ${avatar}. Creating new assistant.`);
             await createPermanentAssistant();
             return openPermanentAssistantChat({ tryCreate: false, created: true });
-        }
-        catch (error) {
+        } catch (error) {
             console.error('Error creating permanent assistant:', error);
             toastr.error(t`Failed to create ${neutralCharacterName}. See console for details.`);
             return;

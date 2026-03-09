@@ -568,3 +568,9 @@ label[for="bind_preset_to_connection"]:has(input:checked) {
 #adaptive_p_block:has([data-tg-samplers="adaptive_target"][style*="display: none"]):has([data-tg-samplers="adaptive_decay"][style*="display: none"]) {
     display: none;
 }
+
+#openrouter_provider_warning_text,
+#openrouter_provider_warning_chat {
+    color: var(--warning);
+    margin-left: 5px;
+}

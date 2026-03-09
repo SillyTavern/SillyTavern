@@ -91,7 +91,7 @@ jobs:
   label-by-size:
     name: 🏷️ Label PR by Size
     # This job should run after all others, to prevent possible concurrency issues
-    needs: [label-by-branches, label-by-files, remove-stale-label, check-merge-blocking-labels, write-auto-comments]
+    needs: [label-by-branches, label-by-files, label-copilot-prs, remove-stale-label, check-merge-blocking-labels, write-auto-comments]
     runs-on: ubuntu-latest
     # Only needs to run when code is changed
     if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
@@ -196,9 +196,38 @@ jobs:
           configuration-path: .github/pr-auto-labels-by-files.yml
           repo-token: ${{ steps.app.outputs.token }}
 
+  label-copilot-prs:
+    name: 🏷️ Label Copilot PRs as Vibe Coded
+    runs-on: ubuntu-latest
+    # Only label once when PR is created by Copilot
+    if: >
+      github.event.action == 'opened' &&
+      github.event.pull_request.user.login == 'Copilot'
+
+    steps:
+      - name: Mint App Token
+        id: app
+        # Create a GitHub App token
+        # https://github.com/marketplace/actions/create-github-app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ST_BOT_APP_ID }}
+          private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+
+      - name: Add Vibe Coded Label
+        # 🤖 Issues Helper
+        # https://github.com/marketplace/actions/issues-helper
+        uses: actions-cool/issues-helper@v3.6.0
+        with:
+          actions: 'add-labels'
+          token: ${{ steps.app.outputs.token }}
+          issue-number: ${{ github.event.pull_request.number }}
+          labels: '✨ Vibe Coded'
+
   remove-stale-label:
     name: 🗑️ Remove Stale Label on Comment
-    needs: [label-by-branches, label-by-files]
+    needs: [label-by-branches, label-by-files, label-copilot-prs]
     runs-on: ubuntu-latest
     # Only runs on comments not done by the github actions bot
     if: always() && (github.event_name == 'pull_request_review_comment' && github.event.sender.type != 'Bot')
@@ -236,7 +265,7 @@ jobs:
 
   check-merge-blocking-labels:
     name: 🚫 Check Merge Blocking Labels
-    needs: [label-by-branches, label-by-files, remove-stale-label]
+    needs: [label-by-branches, label-by-files, label-copilot-prs, remove-stale-label]
     runs-on: ubuntu-latest
     # Run, even if the previous jobs were skipped/failed
     if: always()
@@ -286,7 +315,7 @@ jobs:
 
   write-auto-comments:
     name: 💬 Post PR Comments Based on Labels
-    needs: [label-by-branches, label-by-files, remove-stale-label, check-merge-blocking-labels]
+    needs: [label-by-branches, label-by-files, label-copilot-prs, remove-stale-label, check-merge-blocking-labels]
     runs-on: ubuntu-latest
     # Run, even if the previous jobs were skipped/failed
     if: always() && (github.event_name == 'pull_request_target')

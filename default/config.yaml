@@ -71,6 +71,25 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
+# CORS settings (applied to all routes)
+cors:
+  # Enable or disable CORS middleware
+  enabled: true
+  # Allowed origins. Use "null" to match the default browser file origin.
+  # You can set "*" to allow any origin, or a list of allowed origins.
+  origin:
+    - "null"
+  # Allowed methods
+  methods:
+    - "OPTIONS"
+  # Allowed request headers (optional)
+  allowedHeaders: []
+  # Exposed response headers (optional)
+  exposedHeaders: []
+  # Allow credentials (cookies, authorization headers)
+  credentials: false
+  # Preflight cache max age in seconds (optional)
+  maxAge: null
 # -- REQUEST PROXY CONFIGURATION --
 requestProxy:
   # If a proxy is enabled, all outgoing HTTP/HTTPS requests will be routed through it.
@@ -203,7 +222,6 @@ whitelistImportDomains:
   - cdn.discordapp.com
   - files.catbox.moe
   - raw.githubusercontent.com
-  - char-archive.evulid.cc
 # API request overrides (for KoboldAI and Text Completion APIs)
 ## Note: host includes the port number if it's not the default (80 or 443)
 ## Format is an array of objects:
@@ -231,6 +249,13 @@ extensions:
     embedding: Cohee/jina-embeddings-v2-base-en
     speechToText: Xenova/whisper-small
     textToSpeech: Xenova/speecht5_tts
+
+# Git backend for plugin/extension repository operations.
+# - Use "auto" to prefer system git, falling back to the integrated backend
+# - Use "system" to force system backend
+# - Use "builtin" to force integrated backend
+git:
+  backend: auto
 
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.
@@ -275,7 +300,7 @@ claude:
   # Otherwise, you'll just waste money on cache misses.
   enableSystemPromptCache: false
   # Enables caching of the message history at depth (if supported).
-  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # https://platform.claude.com/docs/en/build-with-claude/prompt-caching
   # -- IMPORTANT! --
   # Use with caution. Behavior may be unpredictable and no guarantees can or will be made.
   # Set to an integer to specify the desired depth. 0 (which does NOT include the prefill)
@@ -286,6 +311,10 @@ claude:
   ## 5m: base price x 1.25
   ## 1h: base price x 2
   extendedTTL: false
+  # Enables adaptive thinking for supported models (Opus 4.6+).
+  # Disable to enforce legacy thinking mode (with thinking budget).
+  # https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
+  enableAdaptiveThinking: true
 # -- GOOGLE GEMINI API CONFIGURATION --
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")

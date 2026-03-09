@@ -35,7 +35,7 @@
         "bowser": "^2.12.1",
         "bytes": "^3.1.2",
         "chalk": "^5.6.0",
-        "chevrotain": "^11.0.3",
+        "chevrotain": "^11.1.1",
         "command-exists": "^1.2.9",
         "compression": "^1.8.1",
         "cookie-parser": "^1.4.6",
@@ -57,9 +57,11 @@
         "host-validation-middleware": "^0.1.1",
         "html-entities": "^2.6.0",
         "iconv-lite": "^0.6.3",
+        "image-size": "^2.0.2",
         "ip-matching": "^2.1.2",
         "ip-regex": "^5.0.0",
         "ipaddr.js": "^2.2.0",
+        "isomorphic-git": "^1.36.3",
         "is-docker": "^3.0.0",
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",
@@ -94,14 +96,11 @@
         "yauzl": "^3.2.0"
     },
     "engines": {
-        "node": ">= 18"
+        "node": ">= 20"
     },
     "overrides": {
         "vectra": {
             "openai": "^4.17.0"
-        },
-        "axios": {
-            "follow-redirects": "^1.15.4"
         },
         "node-fetch": {
             "whatwg-url": "^14.0.0"
@@ -114,7 +113,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.15.0",
+    "version": "1.16.0",
     "scripts": {
         "start": "node server.js",
         "debug": "node --inspect server.js",
