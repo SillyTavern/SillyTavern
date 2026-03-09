@@ -285,7 +285,7 @@ import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
-import { compressRequest, setSaveUploadCompressionEnabled } from './scripts/save-upload.js';
+import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -7211,6 +7211,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     try {
         const saveChatRequest = await compressRequest({
             method: 'POST',
+            cache: 'no-cache',
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 ch_name: characters[this_chid].name,
@@ -7219,7 +7220,6 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
                 avatar_url: characters[this_chid].avatar,
                 force: force,
             }),
-            cache: 'no-cache',
         });
         const result = await fetch('/api/chats/save', saveChatRequest);
 
@@ -7706,7 +7706,6 @@ export async function getSettings() {
     }
 
     const data = await response.json();
-    setSaveUploadCompressionEnabled(data.enable_save_upload_compression);
     if (data.result != 'file not find' && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined && settings.username !== '') {
@@ -7716,6 +7715,7 @@ export async function getSettings() {
 
         accountStorage.init(settings?.accountStorage);
         await setUserControls(data.enable_accounts);
+        setRequestCompressionConfig(data.request_compression);
 
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
