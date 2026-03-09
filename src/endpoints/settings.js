@@ -16,7 +16,7 @@ const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', 
 const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
 const ENABLE_REQUEST_COMPRESSION = !!getConfigValue('performance.requestCompression.enabled', false, 'boolean');
 const REQUEST_COMPRESSION_THRESHOLD = bytes.parse(getConfigValue('performance.requestCompression.threshold', '256kb'));
-const REQUEST_COMPRESSION_TIMEOUT = getConfigValue('performance.requestCompression.timeout', 3000, 'number');
+const REQUEST_COMPRESSION_TIMEOUT = Number(getConfigValue('performance.requestCompression.timeout', 3000, 'number'));
 
 // 10 minutes
 const AUTOSAVE_INTERVAL = 10 * 60 * 1000;
@@ -288,8 +288,8 @@ router.post('/get', (request, response) => {
         enable_accounts: ENABLE_ACCOUNTS,
         request_compression: {
             enabled: ENABLE_REQUEST_COMPRESSION,
-            threshold: REQUEST_COMPRESSION_THRESHOLD,
-            timeout: REQUEST_COMPRESSION_TIMEOUT,
+            threshold: REQUEST_COMPRESSION_THRESHOLD || 0,
+            timeout: REQUEST_COMPRESSION_TIMEOUT || 0,
         },
     });
 });
