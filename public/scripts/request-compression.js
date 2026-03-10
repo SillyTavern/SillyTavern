@@ -27,12 +27,13 @@ export function setRequestCompressionConfig(config) {
 /**
  * Compresses a Uint8Array using gzip.
  * @param {Uint8Array<ArrayBuffer>} input Uint8Array to compress
- * @returns {Promise<Uint8Array<ArrayBuffer>>} Gzip-compressed Uint8Array.
+ * @returns {{ promise: Promise<Uint8Array<ArrayBuffer>>, terminate: () => void }} Gzip-compressed Uint8Array promise and a terminate function.
  */
-async function gzipBuffer(input) {
-    return new Promise((resolve, reject) => {
+function gzipBuffer(input) {
+    let terminate = () => {};
+    const promise = new Promise((resolve, reject) => {
         try {
-            gzip(input, (error, compressed) => {
+            terminate = gzip(input, (error, compressed) => {
                 if (error) {
                     reject(error);
                     return;
@@ -44,6 +45,7 @@ async function gzipBuffer(input) {
             reject(error);
         }
     });
+    return { promise, terminate };
 }
 
 /**
@@ -100,9 +102,11 @@ export async function compressRequest(request) {
         return plainRequest;
     }
 
+    const { promise, terminate } = gzipBuffer(encodedBody);
+
     try {
         const compressedBody = await withTimeout(
-            gzipBuffer(encodedBody),
+            promise,
             requestCompressionConfig.timeout,
             'compress_fflate_gzip',
         );
@@ -120,6 +124,7 @@ export async function compressRequest(request) {
             body: compressedBody,
         };
     } catch (error) {
+        terminate();
         console.warn('Failed to compress request body, using plain request.', error);
         return plainRequest;
     }
