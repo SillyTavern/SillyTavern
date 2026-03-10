@@ -86,6 +86,7 @@ import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { compressRequest } from './request-compression.js';
 
 export {
     selected_group,
@@ -633,11 +634,12 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
         user_name: 'unused',
         character_name: 'unused',
     };
-    const response = await fetch('/api/chats/group/save', {
+    const saveGroupChatRequest = await compressRequest({
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force }),
     });
+    const response = await fetch('/api/chats/group/save', saveGroupChatRequest);
 
     if (!response.ok) {
         const errorData = await response.json();
@@ -728,11 +730,12 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                     if (hadChanges) {
                         await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, messages, oldAvatar, newAvatar);
 
-                        const saveChatResponse = await fetch('/api/chats/group/save', {
+                        const saveChatRequest = await compressRequest({
                             method: 'POST',
                             headers: getRequestHeaders(),
                             body: JSON.stringify({ id: chatId, chat: [...messages] }),
                         });
+                        const saveChatResponse = await fetch('/api/chats/group/save', saveChatRequest);
 
                         if (!saveChatResponse.ok) {
                             throw new Error('Group member could not be renamed');
@@ -2374,11 +2377,12 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
 
     await editGroup(groupId, true, false);
 
-    const response = await fetch('/api/chats/group/save', {
+    const saveChatRequest = await compressRequest({
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: name, chat: [chatHeader, ...trimmedChat] }),
     });
+    const response = await fetch('/api/chats/group/save', saveChatRequest);
 
     if (!response.ok) {
         toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group chat could not be saved`);
