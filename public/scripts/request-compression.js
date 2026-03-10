@@ -5,14 +5,14 @@ import { gzip } from '/lib.js';
  *
  * @typedef {Object} RequestCompressionConfig
  * @property {boolean} enabled Whether request compression is enabled.
- * @property {number} threshold Minimum payload size in bytes to trigger compression.
- * @property {number} maxBytes Hard upper size limit for compression. 0 disables the limit.
+ * @property {number} minPayloadSize Minimum payload size in bytes to trigger compression.
+ * @property {number} maxPayloadSize Hard upper payload size limit for compression.
  * @property {number} timeout Timeout for request compression in milliseconds.
  */
 const requestCompressionConfig = {
     enabled: false,
-    threshold: 0,
-    maxBytes: 0,
+    minPayloadSize: 0,
+    maxPayloadSize: 0,
     timeout: 0,
 };
 
@@ -93,12 +93,10 @@ export async function compressRequest(request) {
     const textEncoder = new TextEncoder();
     const encodedBody = textEncoder.encode(requestBody);
     const bodySize = encodedBody.byteLength;
-    if (bodySize < requestCompressionConfig.threshold) {
-        return plainRequest;
-    }
+    const minBytes = Number(requestCompressionConfig.minPayloadSize) || 0;
+    const maxBytes = Number(requestCompressionConfig.maxPayloadSize) || 0;
 
-    const maxBytes = Number(requestCompressionConfig.maxBytes) || 0;
-    if (maxBytes > 0 && bodySize > maxBytes) {
+    if (bodySize < minBytes || (maxBytes > 0 && bodySize > maxBytes)) {
         return plainRequest;
     }
 
