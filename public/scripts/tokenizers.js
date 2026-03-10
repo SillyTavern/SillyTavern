@@ -162,7 +162,8 @@ let tokenCache = {};
  * @returns {number} Token count.
  */
 export function guesstimate(str) {
-    return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO);
+    const encodedString = new TextEncoder().encode(str);
+    return Math.ceil(encodedString.byteLength / CHARACTERS_PER_TOKEN_RATIO);
 }
 
 async function loadTokenCache() {
