@@ -264,7 +264,7 @@ async function updatePlugins(pluginsPath) {
             }
 
             pluginsToUpdate++;
-            await gitClient.pull(pluginPath, { remote: 'origin', branch: updateState.branch });
+            await gitClient.pull(pluginPath, { remote: updateState.remote, branch: updateState.remoteBranch });
             const latestCommit = await gitClient.resolveRef(pluginPath, 'HEAD');
             console.log(`Plugin ${color.green(directory)} updated to commit ${color.cyan(latestCommit)}`);
         } catch (error) {

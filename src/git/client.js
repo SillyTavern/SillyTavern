@@ -81,10 +81,17 @@ const SHORT_COMMIT_LENGTH = 7;
  * @typedef {object} GitRepoUpdateState
  * @property {boolean} isRepo
  * @property {string} branch
+ * @property {string} remote
+ * @property {string} remoteBranch
  * @property {string} currentCommit
  * @property {string} remoteCommit
  * @property {boolean} isUpToDate
  * @property {string} remoteUrl
+ */
+
+/**
+ * @typedef {object} GitRepoUpdateStateOptions
+ * @property {string} [remote]
  */
 
 /**
@@ -97,6 +104,7 @@ const SHORT_COMMIT_LENGTH = 7;
  * @property {(localPath: string, ref: string) => Promise<string>} resolveRef
  * @property {(localPath: string, ref: string) => Promise<GitCommitInfo>} getCommitInfo
  * @property {(localPath: string, branch: string) => Promise<string | null>} getTrackingRef
+ * @property {(localPath: string, branch: string) => Promise<{ remote: string, branch: string } | null>} getTrackingInfo
  * @property {(localPath: string) => Promise<GitRemote[]>} listRemotes
  * @property {(localPath: string, options: GitIsDescendentOptions) => Promise<boolean>} isDescendent
  * @property {(localPath: string, options: GitPullOptions) => Promise<void>} pull
@@ -292,16 +300,18 @@ export function createGitClient(options = {}) {
  * Determine whether a repository has updates available on a remote for its current branch.
  * @param {GitClient} gitClient
  * @param {string} localPath
- * @param {{ remote?: string }} [options]
+ * @param {GitRepoUpdateStateOptions} [options]
  * @returns {Promise<GitRepoUpdateState>}
  */
 export async function getRepoUpdateState(gitClient, localPath, options = {}) {
-    const remote = typeof options.remote === 'string' && options.remote ? options.remote : 'origin';
+    const defaultRemote = typeof options.remote === 'string' && options.remote ? options.remote : 'origin';
     const isRepo = await gitClient.checkIsRepo(localPath);
     if (!isRepo) {
         return {
             isRepo: false,
             branch: '',
+            remote: '',
+            remoteBranch: '',
             currentCommit: '',
             remoteCommit: '',
             isUpToDate: true,
@@ -309,18 +319,22 @@ export async function getRepoUpdateState(gitClient, localPath, options = {}) {
         };
     }
 
-    await gitClient.fetch(localPath, { remote });
-
-    const remotes = await gitClient.listRemotes(localPath);
-    const remoteUrl = remotes.find(entry => entry.name === remote)?.url ?? '';
     const branchInfo = await gitClient.branch(localPath);
     const branch = branchInfo.current;
     if (!branch) {
         throw new Error(`No current branch found for repository at ${localPath}`);
     }
 
+    const trackingInfo = await gitClient.getTrackingInfo(localPath, branch);
+    const remote = trackingInfo?.remote ?? defaultRemote;
+    const remoteBranch = trackingInfo?.branch ?? branch;
+
+    await gitClient.fetch(localPath, { remote });
+
+    const remotes = await gitClient.listRemotes(localPath);
+    const remoteUrl = remotes.find(entry => entry.name === remote)?.url ?? '';
     const currentCommit = await gitClient.resolveRef(localPath, 'HEAD');
-    const remoteCommit = await gitClient.resolveRef(localPath, `refs/remotes/${remote}/${branch}`);
+    const remoteCommit = await gitClient.resolveRef(localPath, `refs/remotes/${remote}/${remoteBranch}`);
     const isUpToDate = await gitClient.isDescendent(localPath, {
         oid: currentCommit,
         ancestor: remoteCommit,
@@ -329,6 +343,8 @@ export async function getRepoUpdateState(gitClient, localPath, options = {}) {
     return {
         isRepo: true,
         branch,
+        remote,
+        remoteBranch,
         currentCommit,
         remoteCommit,
         isUpToDate,
@@ -472,6 +488,30 @@ class SimpleGitClient {
 
     /**
      * @param {string} localPath
+     * @param {string} branch
+     * @returns {Promise<{ remote: string, branch: string } | null>}
+     */
+    async getTrackingInfo(localPath, branch) {
+        if (typeof branch !== 'string' || !branch) {
+            return null;
+        }
+
+        try {
+            const repositoryGit = this.getRepositoryGit(localPath);
+            const remote = (await repositoryGit.raw(['config', '--get', `branch.${branch}.remote`])).trim();
+            const mergeRef = (await repositoryGit.raw(['config', '--get', `branch.${branch}.merge`])).trim();
+            if (!remote || !mergeRef) {
+                return null;
+            }
+            const remoteBranch = mergeRef.startsWith('refs/heads/') ? mergeRef.slice('refs/heads/'.length) : mergeRef;
+            return { remote, branch: remoteBranch };
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * @param {string} localPath
      * @returns {Promise<GitRemote[]>}
      */
     async listRemotes(localPath) {
@@ -514,7 +554,7 @@ class SimpleGitClient {
         assertAllowedOptions('pull', options, PULL_OPTION_KEYS);
         const remote = getRequiredStringOption('pull', options, 'remote');
         const branch = getRequiredStringOption('pull', options, 'branch');
-        await this.getRepositoryGit(localPath).raw(['pull', '--ff-only', remote, branch]);
+        await this.getRepositoryGit(localPath).pull(remote, branch);
     }
 
     /**
@@ -633,24 +673,27 @@ class IsomorphicGitClient {
         const remote = getRequiredFetchRemote(options);
         const unshallow = Boolean(options.unshallow);
 
-        if (unshallow) {
-            await git.fetch({
-                fs,
-                http,
-                dir: localPath,
-                remote,
-                depth: UNSHALLOW_DEPTH,
-                relative: true,
-            });
-            return;
-        }
-
-        await git.fetch({
+        const fetchOptions = {
             fs,
             http,
             dir: localPath,
             remote,
-        });
+        };
+
+        if (unshallow) {
+            fetchOptions.depth = UNSHALLOW_DEPTH;
+            fetchOptions.relative = true;
+        }
+
+        try {
+            await git.fetch(fetchOptions);
+        } catch (error) {
+            if (error?.code === 'NotFoundError') {
+                await git.fetch({ ...fetchOptions, ref: 'HEAD' });
+                return;
+            }
+            throw error;
+        }
     }
 
     /**
@@ -729,6 +772,29 @@ class IsomorphicGitClient {
 
     /**
      * @param {string} localPath
+     * @param {string} branch
+     * @returns {Promise<{ remote: string, branch: string } | null>}
+     */
+    async getTrackingInfo(localPath, branch) {
+        if (typeof branch !== 'string' || !branch) {
+            return null;
+        }
+
+        try {
+            const remote = await git.getConfig({ fs, dir: localPath, path: `branch.${branch}.remote` });
+            const mergeRef = await git.getConfig({ fs, dir: localPath, path: `branch.${branch}.merge` });
+            if (!remote || !mergeRef) {
+                return null;
+            }
+            const remoteBranch = mergeRef.startsWith('refs/heads/') ? mergeRef.slice('refs/heads/'.length) : mergeRef;
+            return { remote, branch: remoteBranch };
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * @param {string} localPath
      * @returns {Promise<GitRemote[]>}
      */
     async listRemotes(localPath) {
@@ -765,13 +831,14 @@ class IsomorphicGitClient {
         assertAllowedOptions('pull', options, PULL_OPTION_KEYS);
         const remote = getRequiredStringOption('pull', options, 'remote');
         const branch = getRequiredStringOption('pull', options, 'branch');
-        await git.fastForward({
+        await git.pull({
             fs,
             http,
             dir: localPath,
             remote,
             ref: branch,
             singleBranch: true,
+            author: { name: 'SillyTavern', email: 'sillytavern@localhost' },
         });
     }
 

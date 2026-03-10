@@ -152,10 +152,6 @@ router.post('/update', async (request, response) => {
         return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
     } catch (error) {
         console.error('Updating extension failed', error);
-        if (error?.code === 'FastForwardError') {
-            return response.status(409).send('Extension update requires a fast-forward-only pull, but the local branch has diverged from the remote.');
-        }
-
         return response.status(500).send('Internal Server Error. Check the server logs for more details.');
     }
 });
