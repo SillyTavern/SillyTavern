@@ -57,7 +57,7 @@ export const TEXT_COMPLETION_MODELS = [
     'code-search-ada-code-001',
 ];
 
-const CHARS_PER_TOKEN = 3.35;
+const BYTES_PER_TOKEN = 3.35;
 const IS_DOWNLOAD_ALLOWED = getConfigValue('enableDownloadableTokenizers', true, 'boolean');
 const gunzip = promisify(zlib.gunzip);
 
@@ -67,8 +67,8 @@ const gunzip = promisify(zlib.gunzip);
  * @returns {number} Token count.
  */
 function guesstimate(str) {
-    const encodedString = new TextEncoder().encode(str);
-    return Math.ceil(encodedString.byteLength / CHARS_PER_TOKEN);
+    const byteLength = Buffer.byteLength(str, 'utf8');
+    return Math.ceil(byteLength / BYTES_PER_TOKEN);
 }
 
 /**
