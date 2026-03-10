@@ -6,11 +6,13 @@ import { gzip } from '/lib.js';
  * @typedef {Object} RequestCompressionConfig
  * @property {boolean} enabled Whether request compression is enabled.
  * @property {number} threshold Minimum payload size in bytes to trigger compression.
+ * @property {number} maxBytes Hard upper size limit for compression. 0 disables the limit.
  * @property {number} timeout Timeout for request compression in milliseconds.
  */
 const requestCompressionConfig = {
     enabled: false,
     threshold: 0,
+    maxBytes: 0,
     timeout: 0,
 };
 
@@ -46,6 +48,7 @@ async function gzipBuffer(input) {
 
 /**
  * Wraps a promise with a timeout, rejecting if the promise does not settle within the specified time.
+ * Note: timeout does not cancel the underlying compression task; it only stops waiting for it.
  * @param {Promise<T>} promise Promise to wrap with a timeout
  * @param {number} timeoutMs Timeout in milliseconds
  * @param {string} label Used for error message if timeout occurs
@@ -94,11 +97,16 @@ export async function compressRequest(request) {
         return plainRequest;
     }
 
+    const maxBytes = Number(requestCompressionConfig.maxBytes) || 0;
+    if (maxBytes > 0 && bodySize > maxBytes) {
+        return plainRequest;
+    }
+
     try {
         const compressedBody = await withTimeout(
             gzipBuffer(encodedBody),
             requestCompressionConfig.timeout,
-            'compress_native_gzip',
+            'compress_fflate_gzip',
         );
 
         if (!compressedBody || compressedBody.byteLength >= bodySize) {

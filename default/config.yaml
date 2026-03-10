@@ -208,6 +208,8 @@ performance:
     enabled: false
     # Minimum payload size to trigger compression. Set to 0 to compress all requests regardless of size.
     threshold: '256kb'
+    # Hard upper limit for payload compression. Set to 0 to disable this limit.
+    maxBytes: '8mb'
     # Timeout for request compression in milliseconds.
     timeout: 4000
 
