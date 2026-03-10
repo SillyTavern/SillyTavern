@@ -1,3 +1,5 @@
+import { gzip } from '/lib.js';
+
 /**
  * @type {RequestCompressionConfig}
  *
@@ -21,21 +23,25 @@ export function setRequestCompressionConfig(config) {
 }
 
 /**
- * Compresses a Uint8Array using gzip if supported by the browser.
+ * Compresses a Uint8Array using gzip.
  * @param {Uint8Array<ArrayBuffer>} input Uint8Array to compress
- * @returns {Promise<Uint8Array<ArrayBuffer>|null>} Gzip-compressed Uint8Array, or null if compression is not supported/failed.
+ * @returns {Promise<Uint8Array<ArrayBuffer>>} Gzip-compressed Uint8Array.
  */
 async function gzipBuffer(input) {
-    if (typeof CompressionStream !== 'function') {
-        return null;
-    }
+    return new Promise((resolve, reject) => {
+        try {
+            gzip(input, (error, compressed) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
 
-    const compressionStream = new CompressionStream('gzip');
-    const writer = compressionStream.writable.getWriter();
-    await writer.write(input);
-    await writer.close();
-    const compressed = await new Response(compressionStream.readable).arrayBuffer();
-    return new Uint8Array(compressed);
+                resolve(new Uint8Array(compressed));
+            });
+        } catch (error) {
+            reject(error);
+        }
+    });
 }
 
 /**
@@ -64,7 +70,7 @@ async function withTimeout(promise, timeoutMs, label) {
 /**
  * Compresses a fetch request using gzip when supported and worthwhile.
  * Compression is skipped when feature-toggle is disabled, body is too small,
- * body is not a string, CompressionStream is unavailable, or compression fails/timeouts.
+ * body is not a string, or compression fails/timeouts.
  *
  * @param {RequestInit} request fetch request parameters
  * @returns {Promise<RequestInit>} A request init object that may include gzip-compressed body
@@ -73,7 +79,7 @@ export async function compressRequest(request) {
     const plainRequest = { ...request };
     const requestBody = plainRequest?.body;
 
-    if (!requestCompressionConfig.enabled || typeof CompressionStream !== 'function') {
+    if (!requestCompressionConfig.enabled) {
         return plainRequest;
     }
 
