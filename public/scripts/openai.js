@@ -79,6 +79,7 @@ import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
+import { syncOpenRouterProvidersForModel, updateOpenRouterProvidersWarning } from './textgen-models.js';
 
 export {
     openai_messages_count,
@@ -132,8 +133,6 @@ const max_256k = 256 * 1000;
 const max_400k = 400 * 1000;
 const max_1mil = 1000 * 1000;
 const max_2mil = 2000 * 1000;
-const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
-const claude_100k_max = 99000;
 const unlocked_max = max_2mil;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
@@ -248,6 +247,17 @@ export const verbosity_levels = {
     high: 'high',
 };
 
+export const tool_reasoning_modes = {
+    DISABLED: 'disabled',
+    SINCE_LAST_USER: 'since_last_user',
+    ACTIVE_CHAIN: 'active_chain',
+};
+
+// Providers that support interleaved reasoning forwarding in tool-call chains.
+const interleaved_reasoning_providers = [
+    chat_completion_sources.OPENROUTER,
+];
+
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
@@ -291,6 +301,7 @@ export const settingsToUpdate = {
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
+    tool_reasoning_mode: ['#tool_reasoning_mode', 'tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
     cohere_model: ['#model_cohere_select', 'cohere_model', false, true],
@@ -438,6 +449,7 @@ const default_settings = {
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
+    tool_reasoning_mode: tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
@@ -495,8 +507,7 @@ async function validateReverseProxy() {
 
     try {
         new URL(oai_settings.reverse_proxy);
-    }
-    catch (err) {
+    } catch (err) {
         toastr.error(t`Entered reverse proxy address is not a valid URL`);
         setOnlineStatus('no_connection');
         resultCheckStatus();
@@ -580,19 +591,21 @@ function setOpenAIMessages(chat) {
         const originModel = chat[j]?.extra?.model;
         const isSameModel = originApi === currentApi && originModel === currentModel;
         const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
+        const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
 
-        // Remove signatures from invocations if the API/model don't match
+        // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
             invocations.forEach((invocation, index) => {
-                if (invocation.signature && !isSameModel) {
+                if (!isSameModel && (invocation.signature || invocation.reasoning)) {
                     const cloneInvocation = structuredClone(invocation);
                     delete cloneInvocation.signature;
+                    delete cloneInvocation.reasoning;
                     invocations[index] = cloneInvocation;
                 }
             });
         }
 
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature };
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning };
         j++;
     }
 
@@ -888,6 +901,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     const audioInlining = isAudioInliningSupported();
     const canUseTools = ToolManager.isToolCallingSupported();
     const includeSignature = isReasoningSignatureSupported();
+    const isToolReasoningProvider = interleaved_reasoning_providers.includes(oai_settings.chat_completion_source);
+    const toolReasoningMode = isToolReasoningProvider
+        ? getEffectiveToolReasoningMode()
+        : tool_reasoning_modes.DISABLED;
+    const includeToolReasoning = toolReasoningMode !== tool_reasoning_modes.DISABLED;
+    const lastUserIdx = messages.findLastIndex(x => x.role === 'user');
 
     // Insert chat messages as long as there is budget available
     const chatPool = [...messages].reverse();
@@ -939,11 +958,63 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
         }
 
         if (canUseTools && Array.isArray(chatPrompt.invocations)) {
+            const promptIdx = messages.indexOf(chatPrompt);
+            const reasoningIsEligible = toolReasoningMode !== tool_reasoning_modes.DISABLED
+                && promptIdx > lastUserIdx;
+            let previousAssistantReasoning = '';
+            if (reasoningIsEligible) {
+                if (toolReasoningMode === tool_reasoning_modes.ACTIVE_CHAIN) {
+                    // Strict chain mode: skip tool/tool-call messages, then use only the first assistant text boundary.
+                    for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
+                        const candidate = messages[idx];
+                        if (candidate?.role === 'tool') {
+                            continue;
+                        }
+                        if (candidate?.role === 'assistant' && Array.isArray(candidate.invocations)) {
+                            continue;
+                        }
+                        const hasAssistantText = candidate?.role === 'assistant'
+                            && !Array.isArray(candidate.invocations)
+                            && typeof candidate.content === 'string'
+                            && candidate.content.trim().length > 0;
+                        if (hasAssistantText) {
+                            previousAssistantReasoning = String(candidate.reasoning ?? '');
+                        }
+                        break;
+                    }
+                } else if (toolReasoningMode === tool_reasoning_modes.SINCE_LAST_USER) {
+                    // Broad mode: use the latest assistant text reasoning anywhere since the last user.
+                    for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
+                        const candidate = messages[idx];
+                        const hasAssistantText = candidate?.role === 'assistant'
+                            && !Array.isArray(candidate.invocations)
+                            && typeof candidate.content === 'string'
+                            && candidate.content.trim().length > 0;
+                        if (!hasAssistantText) {
+                            continue;
+                        }
+                        const candidateReasoning = String(candidate.reasoning ?? '');
+                        if (candidateReasoning) {
+                            previousAssistantReasoning = candidateReasoning;
+                            break;
+                        }
+                    }
+                }
+            }
             /** @type {import('./tool-calling.js').ToolInvocation[]} */
-            const invocations = chatPrompt.invocations;
+            const invocations = chatPrompt.invocations.map(invocation => {
+                const clone = structuredClone(invocation);
+                if (!reasoningIsEligible) {
+                    delete clone.reasoning;
+                } else if (previousAssistantReasoning) {
+                    // Prefer currently editable assistant-text reasoning based on forwarding mode over invocation snapshot.
+                    clone.reasoning = previousAssistantReasoning;
+                }
+                return clone;
+            });
             const toolCallMessage = await Message.createAsync(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
             const toolResultMessages = await Promise.all(invocations.slice().reverse().map((invocation) => Message.createAsync('tool', invocation.result || '[No content]', invocation.id)));
-            await toolCallMessage.setToolCalls(invocations, includeSignature);
+            await toolCallMessage.setToolCalls(invocations, includeSignature, includeToolReasoning);
             if (chatCompletion.canAffordAll([toolCallMessage, ...toolResultMessages])) {
                 for (const resultMessage of toolResultMessages) {
                     chatCompletion.insertAtStart(resultMessage, 'chatHistory');
@@ -1551,8 +1622,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
             !quiet && toastr.error(data.detail?.error?.message || response.statusText, 'Chat Completion API');
             throw new Error(data);
         }
-    }
-    catch {
+    } catch {
         // No JSON. Do nothing.
     }
 }
@@ -2279,7 +2349,6 @@ function appendElectronHubOptions(model_list, groupModels = false) {
             appendOption(model);
         });
     }
-
 }
 
 function electronHubSortBy(data, property = 'alphabetically') {
@@ -2394,6 +2463,10 @@ function getReasoningEffort(settings = null, model = null) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
+                if (chat_completion_sources.OPENROUTER === settings.chat_completion_source && !settings.show_thoughts) {
+                    return 'none';
+                }
+
                 return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(model)
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
@@ -2786,7 +2859,7 @@ export async function createGenerationParameters(settings, model, type, messages
         if (/gpt-5-chat-latest/.test(model)) {
             delete generate_data.tools;
             delete generate_data.tool_choice;
-        } else if (/gpt-5.(1|2)/.test(model) && !/chat-latest/.test(model)) {
+        } else if (/gpt-5\.(1|2|3|4)/.test(model) && !/chat-latest/.test(model)) {
             delete generate_data.frequency_penalty;
             delete generate_data.presence_penalty;
             delete generate_data.logit_bias;
@@ -2869,8 +2942,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
             }
         };
-    }
-    else {
+    } else {
         const data = await response.json();
 
         checkQuotaError(data);
@@ -2945,15 +3017,25 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.images.push(...imageUrls.filter(isDataURL));
         }
         if (show_thoughts) {
-            state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning || '');
+            state.reasoning +=
+                data.choices?.filter(x => x?.delta?.reasoning)?.[0]?.delta?.reasoning ??
+                data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
+                data.choices?.filter(x => x?.message?.reasoning)?.[0]?.message?.reasoning ??
+                data.choices?.filter(x => x?.message?.reasoning_content)?.[0]?.message?.reasoning_content ??
+                '';
         }
-        // Extract thought signatures from OpenRouter streaming (reasoning_details in delta)
-        const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details || [];
+        // Extract thought signatures from OpenRouter streaming.
+        const reasoningDetails = [
+            ...(data?.choices?.[0]?.delta?.reasoning_details || []),
+            ...(data?.choices?.[0]?.message?.reasoning_details || []),
+        ];
         reasoningDetails.forEach((detail) => {
             if (detail.type === 'reasoning.encrypted' && detail.data) {
-                if (/^tool_/.test(detail.id)) {
+                const isToolLikeId = typeof detail.id === 'string' && /^(tool_|call_)/.test(detail.id);
+                if (typeof detail.id === 'string' && detail.id.length > 0) {
                     state.toolSignatures[detail.id] = detail.data;
-                } else {
+                }
+                if (!isToolLikeId) {
                     state.signature = detail.data;
                 }
             }
@@ -3082,8 +3164,7 @@ async function calculateLogitBias() {
         });
 
         result = await reply.json();
-    }
-    catch (err) {
+    } catch (err) {
         result = {};
         console.error(err);
     }
@@ -3198,6 +3279,8 @@ class Message {
     tool_call = null;
     /** @type {string?} */
     signature = null;
+    /** @type {string?} */
+    reasoning = null;
 
     /**
      * @constructor
@@ -3240,9 +3323,10 @@ class Message {
      * Reconstruct the message from a tool invocation.
      * @param {import('./tool-calling.js').ToolInvocation[]} invocations - The tool invocations to reconstruct the message from.
      * @param {boolean} includeSignature Whether to include the signature in the tool calls.
+     * @param {boolean} includeReasoning Whether to include plaintext reasoning fallback.
      * @returns {Promise<void>}
      */
-    async setToolCalls(invocations, includeSignature) {
+    async setToolCalls(invocations, includeSignature, includeReasoning = false) {
         this.tool_calls = invocations.map(i => ({
             id: i.id,
             type: 'function',
@@ -3252,7 +3336,13 @@ class Message {
             },
             ...(includeSignature && i.signature ? { signature: i.signature } : {}),
         }));
-        this.tokens = await tokenHandler.countAsync({ role: this.role, tool_calls: JSON.stringify(this.tool_calls) });
+        const fallbackReasoning = invocations.find(i => typeof i.reasoning === 'string' && i.reasoning.length > 0)?.reasoning || null;
+        this.reasoning = includeReasoning ? fallbackReasoning : null;
+        this.tokens = await tokenHandler.countAsync({
+            role: this.role,
+            tool_calls: JSON.stringify(this.tool_calls),
+            ...(this.reasoning ? { reasoning: this.reasoning } : {}),
+        });
     }
 
     /**
@@ -3503,6 +3593,7 @@ class MessageCollection {
                     ...(message.tool_calls && { tool_calls: message.tool_calls }),
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
                     ...(message.signature && { signature: message.signature }),
+                    ...(message.reasoning && { reasoning: message.reasoning }),
                 });
             }
             return acc;
@@ -3603,13 +3694,11 @@ export class ChatCompletion {
                 if (lastMessage && shouldSquash(lastMessage)) {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = await tokenHandler.countAsync({ role: lastMessage.role, content: lastMessage.content });
-                }
-                else {
+                } else {
                     squashedMessages.push(message);
                     lastMessage = message;
                 }
-            }
-            else {
+            } else {
                 squashedMessages.push(message);
                 lastMessage = message;
             }
@@ -3795,6 +3884,7 @@ export class ChatCompletion {
                     ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
                     ...(item.signature ? { signature: item.signature } : {}),
+                    ...(item.reasoning ? { reasoning: item.reasoning } : {}),
                 };
                 chat.push(message);
             } else {
@@ -3985,7 +4075,6 @@ function loadOpenAISettings(data, settings) {
         option.value = i;
         option.text = item;
         $('#settings_preset_openai').append(option);
-
     });
     openai_setting_names = settingNames;
 
@@ -4049,6 +4138,7 @@ function loadOpenAISettings(data, settings) {
 
     setNamesBehaviorControls();
     setContinuePostfixControls();
+    setToolReasoningControls();
 
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
@@ -4099,6 +4189,12 @@ function setContinuePostfixControls() {
     $('#continue_postfix').val(oai_settings.continue_postfix);
     const checkedItemText = $('input[name="continue_postfix"]:checked ~ span').text().trim();
     $('#continue_postfix_display').text(checkedItemText);
+}
+
+function setToolReasoningControls() {
+    const isEnabled = oai_settings.show_thoughts;
+    $('#tool_reasoning_mode').prop('disabled', !isEnabled);
+    $('#openrouter_interleaved_thinking_disabled_hint').toggle(!isEnabled);
 }
 
 async function getStatusOpen() {
@@ -4244,8 +4340,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             Object.assign(openai_settings[value], presetBody);
             $(`#settings_preset_openai option[value="${value}"]`).prop('selected', true);
             if (triggerUi) $('#settings_preset_openai').trigger('change');
-        }
-        else {
+        } else {
             openai_settings.push(presetBody);
             openai_setting_names[data.name] = openai_settings.length - 1;
             const option = document.createElement('option');
@@ -4694,47 +4789,35 @@ function onSettingsPresetChange() {
 function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
-    }
-    else if (value.startsWith('gpt-5')) {
-        return max_400k;
-    }
-    else if (value.includes('gpt-4.1')) {
+    } else if (value.startsWith('gpt-5.4')) {
         return max_1mil;
-    }
-    else if (value.includes('gpt-audio')) {
+    } else if (value.startsWith('gpt-5')) {
+        return max_400k;
+    } else if (value.includes('gpt-4.1')) {
+        return max_1mil;
+    } else if (value.includes('gpt-audio')) {
         return max_128k;
-    }
-    else if (value.startsWith('o1')) {
+    } else if (value.startsWith('o1')) {
         return max_128k;
-    }
-    else if (value.startsWith('o4') || value.startsWith('o3')) {
+    } else if (value.startsWith('o4') || value.startsWith('o3')) {
         return max_200k;
-    }
-    else if (value.includes('chatgpt-4o-latest') || value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
+    } else if (value.includes('chatgpt-4o-latest') || value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
         return max_128k;
-    }
-    else if (value.includes('gpt-3.5-turbo-1106')) {
+    } else if (value.includes('gpt-3.5-turbo-1106')) {
         return max_16k;
-    }
-    else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
+    } else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
         return max_8k;
-    }
-    else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
+    } else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
         return max_32k;
-    }
-    else if (value.includes('gpt-realtime')) {
+    } else if (value.includes('gpt-realtime')) {
         return max_32k;
-    }
-    else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
+    } else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
         return max_16k;
-    }
-    else if (value == 'code-davinci-002') {
+    } else if (value == 'code-davinci-002') {
         return max_8k;
-    }
-    else if (['text-curie-001', 'text-babbage-001', 'text-ada-001'].includes(value)) {
+    } else if (['text-curie-001', 'text-babbage-001', 'text-ada-001'].includes(value)) {
         return max_2k;
-    }
-    else {
+    } else {
         // default to gpt-3 (4095 tokens)
         return max_4k;
     }
@@ -4896,7 +4979,6 @@ function getSiliconflowMaxContext(model, isUnlocked) {
 
     // Return context size if model found, otherwise default to 32k
     return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_32k;
-
 }
 
 /**
@@ -5041,7 +5123,6 @@ async function onModelChange() {
         console.log('Claude model changed to', value);
         oai_settings.claude_model = value;
         $('#model_claude_select').val(oai_settings.claude_model);
-
     }
 
     if ($(this).is('#model_openai_select')) {
@@ -5057,6 +5138,7 @@ async function onModelChange() {
 
         console.log('OpenRouter model changed to', value);
         oai_settings.openrouter_model = value;
+        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat');
     }
 
     if ($(this).is('#model_ai21_select')) {
@@ -5236,7 +5318,7 @@ async function onModelChange() {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value.includes('gemini-3-pro-image')) {
             $('#openai_max_context').attr('max', max_64k);
-        } else if (/gemini-3-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
+        } else if (/gemini-3[.\d]*-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value.includes('gemini-exp') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
             $('#openai_max_context').attr('max', max_1mil);
@@ -5273,8 +5355,7 @@ async function onModelChange() {
         if (value && (value.includes('claude') || value.includes('palm-2'))) {
             oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
             $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
-        }
-        else {
+        } else {
             oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
             $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
         }
@@ -5285,18 +5366,12 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        }
-        else if (value.startsWith('claude-sonnet-4-5') || value.startsWith('claude-opus-4-6')) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
-        }
-        else if (value == 'claude-2.1' || value.startsWith('claude-3') || value.startsWith('claude-opus') || value.startsWith('claude-haiku') || value.startsWith('claude-sonnet')) {
+        } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
-        }
-        else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
-            $('#openai_max_context').attr('max', claude_100k_max);
-        }
-        else {
-            $('#openai_max_context').attr('max', claude_max);
+        } else {
+            $('#openai_max_context').attr('max', max_200k);
         }
 
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
@@ -5331,23 +5406,17 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.COHERE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        }
-        else if (['command-light-nightly', 'command-light', 'command'].includes(oai_settings.cohere_model)) {
+        } else if (['command-light-nightly', 'command-light', 'command'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_4k);
-        }
-        else if (oai_settings.cohere_model.includes('command-r') || ['c4ai-aya-23', 'c4ai-aya-expanse-32b', 'command-nightly', 'command-a-vision-07-2025'].includes(oai_settings.cohere_model)) {
+        } else if (oai_settings.cohere_model.includes('command-r') || ['c4ai-aya-23', 'c4ai-aya-expanse-32b', 'command-nightly', 'command-a-vision-07-2025'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
-        }
-        else if (['command-a-03-2025'].includes(oai_settings.cohere_model)) {
+        } else if (['command-a-03-2025'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_256k);
-        }
-        else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
+        } else if (['c4ai-aya-23-8b', 'c4ai-aya-expanse-8b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
-        }
-        else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
+        } else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_16k);
-        }
-        else {
+        } else {
             $('#openai_max_context').attr('max', max_4k);
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -5358,19 +5427,15 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        }
-        else if (['sonar', 'sonar-reasoning', 'sonar-reasoning-pro', 'r1-1776'].includes(oai_settings.perplexity_model)) {
+        } else if (['sonar', 'sonar-reasoning', 'sonar-reasoning-pro', 'r1-1776'].includes(oai_settings.perplexity_model)) {
             $('#openai_max_context').attr('max', 127000);
-        }
-        else if (['sonar-pro'].includes(oai_settings.perplexity_model)) {
+        } else if (['sonar-pro'].includes(oai_settings.perplexity_model)) {
             $('#openai_max_context').attr('max', 200000);
-        }
-        else if (oai_settings.perplexity_model.includes('llama-3.1')) {
+        } else if (oai_settings.perplexity_model.includes('llama-3.1')) {
             const isOnline = oai_settings.perplexity_model.includes('online');
             const contextSize = isOnline ? 128 * 1024 - 4000 : 128 * 1024;
             $('#openai_max_context').attr('max', contextSize);
-        }
-        else {
+        } else {
             $('#openai_max_context').attr('max', max_128k);
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -5664,81 +5729,57 @@ async function onConnectButtonClick(e) {
 function toggleChatCompletionForms() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         $('#model_claude_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         if (oai_settings.show_external_models && (!Array.isArray(model_list) || model_list.length == 0)) {
             // Wait until the models list is loaded so that we could show a proper saved model
-        }
-        else {
+        } else {
             $('#model_openai_select').trigger('change');
         }
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         $('#model_google_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.VERTEXAI) {
         $('#model_vertexai_select').trigger('change');
         // Update UI based on authentication mode
         onVertexAIAuthModeChange.call($('#vertexai_auth_mode')[0]);
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         $('#model_ai21_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
         $('#model_mistralai_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         $('#model_cohere_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
         $('#model_perplexity_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         $('#model_groq_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
         $('#model_chutes_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
         $('#model_siliconflow_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
         $('#model_nanogpt_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
         $('#model_custom_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
         $('#model_aimlapi_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
         $('#model_xai_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
         $('#model_pollinations_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         $('#azure_openai_model').trigger('change');
-    }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         $('#model_zai_select').trigger('change');
     }
 
@@ -5748,6 +5789,8 @@ function toggleChatCompletionForms() {
         const matchesSource = validSources.includes(oai_settings.chat_completion_source);
         $(this).toggle(mode !== 'except' ? matchesSource : !matchesSource);
     });
+
+    setToolReasoningControls();
 }
 
 async function testApiConnection() {
@@ -5761,8 +5804,7 @@ async function testApiConnection() {
         const reply = await sendOpenAIRequest('quiet', [{ 'role': 'user', 'content': 'Hi' }], new AbortController().signal);
         console.log(reply);
         toastr.success(t`API connection successful!`);
-    }
-    catch (err) {
+    } catch (err) {
         toastr.error(t`Could not get a reply from API. Check your connection settings / API key and try again.`);
     }
 }
@@ -6002,6 +6044,33 @@ export function isAudioInliningSupported() {
         default:
             return false;
     }
+}
+
+/**
+ * Gets the tool-call reasoning forwarding mode.
+ * @param {ChatCompletionSettings} settings Settings object to use
+ * @returns {string} Reasoning forwarding mode
+ */
+function getToolReasoningMode(settings = oai_settings) {
+    const mode = String(settings.tool_reasoning_mode ?? '');
+    if (Object.values(tool_reasoning_modes).includes(mode)) {
+        return mode;
+    }
+    return tool_reasoning_modes.DISABLED;
+}
+
+/**
+ * Gets the effective tool-call reasoning forwarding mode.
+ * Interleaved thinking requires explicit reasoning requests.
+ * @param {ChatCompletionSettings} settings Settings object to use
+ * @returns {string} Effective reasoning forwarding mode
+ */
+function getEffectiveToolReasoningMode(settings = oai_settings) {
+    if (!settings.show_thoughts) {
+        return tool_reasoning_modes.DISABLED;
+    }
+
+    return getToolReasoningMode(settings);
 }
 
 /**
@@ -6558,6 +6627,7 @@ export function initOpenAI() {
 
     $('#openrouter_allow_fallbacks').on('input', function () {
         oai_settings.openrouter_allow_fallbacks = !!$(this).prop('checked');
+        updateOpenRouterProvidersWarning('#openrouter_providers_chat');
         saveSettingsDebounced();
     });
 
@@ -6605,6 +6675,14 @@ export function initOpenAI() {
     $('#openai_function_calling').on('input', function () {
         oai_settings.function_calling = !!$(this).prop('checked');
         updateFeatureSupportFlags();
+        saveSettingsDebounced();
+    });
+
+    $('#tool_reasoning_mode').on('input', function () {
+        oai_settings.tool_reasoning_mode = getToolReasoningMode({
+            ...oai_settings,
+            tool_reasoning_mode: String($(this).val()),
+        });
         saveSettingsDebounced();
     });
 
@@ -6711,6 +6789,7 @@ export function initOpenAI() {
 
     $('#openai_show_thoughts').on('input', function () {
         oai_settings.show_thoughts = !!$(this).prop('checked');
+        setToolReasoningControls();
         saveSettingsDebounced();
     });
 
@@ -6808,6 +6887,7 @@ export function initOpenAI() {
 
         oai_settings.openrouter_providers = selectedProviders;
 
+        updateOpenRouterProvidersWarning('#openrouter_providers_chat');
         saveSettingsDebounced();
     });
 

@@ -1031,7 +1031,6 @@ function executeRegexScriptForDebugging(script, text) {
         const trailingText = text.substring(lastIndex);
         outputText += trailingText;
         highlightedOutput += escapeHtml(trailingText);
-
     } catch (e) {
         err = (err ? err + '; ' : '') + `Replace error: ${e.message}`;
         outputText = text; // Fallback

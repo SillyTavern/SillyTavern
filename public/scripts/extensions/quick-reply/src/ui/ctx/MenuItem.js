@@ -15,8 +15,6 @@ export class MenuItem {
     /**@type {function}*/ onExpand;
 
 
-
-
     /**
      *
      * @param {?string} icon
@@ -80,7 +78,6 @@ export class MenuItem {
                     }
                     item.addEventListener('mouseover', () => sub.show(item));
                     item.addEventListener('mouseleave', () => sub.hide());
-
                 }
             }
         }

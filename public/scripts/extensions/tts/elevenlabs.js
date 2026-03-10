@@ -132,7 +132,7 @@ class ElevenLabsTtsProvider {
         }
 
         if (Object.hasOwn(settings, 'apiKey')) {
-            if (settings.apiKey && !secret_state[SECRET_KEYS.ELEVENLABS]){
+            if (settings.apiKey && !secret_state[SECRET_KEYS.ELEVENLABS]) {
                 await writeSecret(SECRET_KEYS.ELEVENLABS, settings.apiKey);
             }
             delete settings.apiKey;

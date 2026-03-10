@@ -68,8 +68,7 @@ async function setImageIcon() {
         const sendButton = $('#send_picture .extensionsMenuExtensionButton');
         sendButton.addClass('fa-image');
         sendButton.removeClass('fa-hourglass-half');
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
     }
 }
@@ -82,8 +81,7 @@ async function setSpinnerIcon() {
         const sendButton = $('#send_picture .extensionsMenuExtensionButton');
         sendButton.removeClass('fa-image');
         sendButton.addClass('fa-hourglass-half');
-    }
-    catch (error) {
+    } catch (error) {
         console.log(error);
     }
 }
@@ -376,14 +374,12 @@ async function getCaptionForFile(file, prompt, quiet) {
             await sendCaptionedMessage(caption, imagePath, file.type);
         }
         return caption;
-    }
-    catch (error) {
+    } catch (error) {
         const errorMessage = error.message || 'Unknown error';
         toastr.error(errorMessage, 'Failed to caption');
         console.error(error);
         return '';
-    }
-    finally {
+    } finally {
         setImageIcon();
     }
 }

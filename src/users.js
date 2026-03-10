@@ -16,7 +16,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
@@ -680,8 +680,7 @@ export async function getUserAvatar(handle) {
         const mimeType = mime.lookup(avatarPath);
         const base64Content = fs.readFileSync(avatarPath, 'base64');
         return `data:${mimeType};base64,${base64Content}`;
-    }
-    catch {
+    } catch {
         // Ignore errors
         return PUBLIC_USER_AVATAR;
     }
@@ -949,7 +948,11 @@ function createRouteHandler(directoryFn) {
         try {
             const directory = directoryFn(req);
             const filePath = decodeURIComponent(req.params[0]);
-            const exists = fs.existsSync(path.join(directory, filePath));
+            const fullPath = path.join(directory, filePath);
+            if (!isPathUnderParent(directory, path.resolve(fullPath))) {
+                return res.sendStatus(403);
+            }
+            const exists = fs.existsSync(fullPath);
             if (!exists) {
                 return res.sendStatus(404);
             }
@@ -972,13 +975,20 @@ function createExtensionsRouteHandler(directoryFn) {
         try {
             const directory = directoryFn(req);
             const filePath = decodeURIComponent(req.params[0]);
-
-            const existsLocal = fs.existsSync(path.join(directory, filePath));
+            const localPath = path.join(directory, filePath);
+            if (!isPathUnderParent(directory, path.resolve(localPath))) {
+                return res.sendStatus(403);
+            }
+            const existsLocal = fs.existsSync(localPath);
             if (existsLocal) {
                 return res.sendFile(filePath, { root: directory });
             }
 
-            const existsGlobal = fs.existsSync(path.join(PUBLIC_DIRECTORIES.globalExtensions, filePath));
+            const globalPath = path.join(PUBLIC_DIRECTORIES.globalExtensions, filePath);
+            if (!isPathUnderParent(PUBLIC_DIRECTORIES.globalExtensions, path.resolve(globalPath))) {
+                return res.sendStatus(403);
+            }
+            const existsGlobal = fs.existsSync(globalPath);
             if (existsGlobal) {
                 return res.sendFile(filePath, { root: PUBLIC_DIRECTORIES.globalExtensions });
             }

@@ -59,7 +59,8 @@ export function initInputMarkdown() {
         let cursorShift = charsToAdd.length;
         let selectedTextandPossibleFormatting = textarea.value.substring(start - possiblePreviousFormattingMargin, end + possiblePreviousFormattingMargin).trim();
 
-        if (isTextSelected) { //if text is selected
+        if (isTextSelected) {
+            //if text is selected
             selectedText = textarea.value.substring(start, end);
             if (selectedTextandPossibleFormatting === charsToAdd + selectedText + charsToAdd) {
                 // If the selected text is already formatted, remove the formatting
@@ -90,7 +91,8 @@ export function initInputMarkdown() {
                 textarea.focus();
                 document.execCommand('insertText', false, charsToAdd + selectedText + charsToAdd + possibleAddedSpace);
             }
-        } else {// No text is selected
+        } else {
+            // No text is selected
             //check 1 character before and after the cursor for non-space characters
 
             if (beforeCaret !== ' ' && afterCaret !== ' ' && afterCaret !== '' && beforeCaret !== '') { //look for caret in the middle of a word
@@ -116,7 +118,6 @@ export function initInputMarkdown() {
                 }
 
                 if (charsToAdd + discoveredWord + charsToAdd === discoveredWordWithPossibleFormatting) {
-
                     // Replace the expanded selection with the original discovered word
                     textarea.focus();
                     document.execCommand('insertText', false, discoveredWord);
@@ -126,8 +127,6 @@ export function initInputMarkdown() {
                     textarea.focus();
                     document.execCommand('insertText', false, charsToAdd + discoveredWord + charsToAdd);
                 }
-
-
             } else { //caret is not inside a word, so just add the formatting
                 textarea.focus();
                 textarea.setSelectionRange(start, end);

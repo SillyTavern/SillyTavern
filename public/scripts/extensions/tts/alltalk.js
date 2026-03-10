@@ -1043,7 +1043,6 @@ class AllTalkTtsProvider {
                 // V2: Combine the endpoint with the relative path
                 return `${this.settings.provider_endpoint}${data.output_file_url}`;
             }
-
         } catch (error) {
             console.error('[fetchTtsGeneration] Exception caught:', error);
             throw error;

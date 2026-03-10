@@ -1,6 +1,3 @@
-
-
-
 export class AutoCompleteFuzzyScore {
     /**@type {number}*/ start;
     /**@type {number}*/ longestConsecutive;

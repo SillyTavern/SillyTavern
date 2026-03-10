@@ -109,10 +109,19 @@ class MacroEnvBuilder {
                     ['version', 'version'],
                     ['charDepthPrompt', 'charDepthPrompt'],
                     ['creatorNotes', 'creatorNotes'],
+                    ['firstMessage', 'firstMessage'],
+                    ['alternateGreetings', 'alternateGreetings'],
                 ]);
                 for (const [envKey, fieldKey] of fieldMappings) {
                     Object.defineProperty(env.character, envKey, {
-                        get() { return fields[fieldKey] || ''; },
+                        get() {
+                            const value = fields[fieldKey];
+                            // alternateGreetings should default to [] instead of ''
+                            if (envKey === 'alternateGreetings') {
+                                return Array.isArray(value) ? value : [];
+                            }
+                            return value || '';
+                        },
                         enumerable: true,
                         configurable: true,
                     });

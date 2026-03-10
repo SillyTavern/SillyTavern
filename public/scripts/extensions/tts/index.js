@@ -37,6 +37,7 @@ import { MiniMaxTtsProvider } from './minimax.js';
 import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
+import { applyLocale, t } from '/scripts/i18n.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -346,8 +347,7 @@ globalThis.tts_preview = function (id) {
 
     if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
         audio.play();
-    }
-    else {
+    } else {
         ttsProvider.previewTtsVoice(id);
     }
 };
@@ -406,18 +406,18 @@ function onAudioControlClicked() {
 }
 
 function addAudioControl() {
-    $('#tts_wand_container').append(`
+    $('#tts_wand_container').append(applyLocale(`
         <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
-            TTS Playback
-        </div>`);
-    $('#tts_wand_container').append(`
+            <span data-i18n="TTS Playback">TTS Playback</span>
+        </div>`));
+    $('#tts_wand_container').append(applyLocale(`
         <div id="ttsExtensionNarrateAll" class="list-group-item flex-container flexGap5">
             <div class="extensionsMenuExtensionButton fa-solid fa-radio"></div>
-            Narrate All Chat
-        </div>`);
-    $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked);
-    $('#ttsExtensionNarrateAll').attr('title', 'Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').on('click', playFullConversation);
+            <span data-i18n="Narrate All Chat">Narrate All Chat</span>
+        </div>`));
+    $('#ttsExtensionMenuItem').attr('title', t`TTS play/pause`).attr('data-i18n', '[title]TTS play/pause').on('click', onAudioControlClicked);
+    $('#ttsExtensionNarrateAll').attr('title', t`Narrate all messages in the current chat. Includes user messages, excludes hidden comments.`).attr('data-i18n', '[title]Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').on('click', playFullConversation);
     updateUiAudioPlayState();
 }
 
@@ -611,7 +611,6 @@ async function processTtsQueue() {
 
             // Pass the full voiceMapKey (e.g., "User ("Quotes")") as well with character name
             await tts(segmentText, voiceId, char, voiceMapKey);
-
         } catch (error) {
             toastr.error(error.toString());
             console.error(error);
@@ -707,7 +706,6 @@ async function processTtsQueue() {
 
         // Clear current job so the segmented jobs can be processed
         currentTtsJob = null;
-
     } catch (error) {
         toastr.error(error.toString());
         console.error(error);
@@ -1286,7 +1284,6 @@ export function getCharacters(unrestricted) {
     }
 
     return characters;
-
 }
 
 export function sanitizeId(input) {
@@ -1312,7 +1309,6 @@ function parseVoiceMap(voiceMapString) {
     }
     return parsedVoiceMap;
 }
-
 
 
 /**
@@ -1456,8 +1452,7 @@ async function initVoiceMapInternal(unrestricted) {
     let voiceIdsFromProvider;
     try {
         voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceObjects();
-    }
-    catch {
+    } catch {
         toastr.error('TTS Provider failed to return voice ids.');
     }
 

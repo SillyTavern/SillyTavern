@@ -124,7 +124,6 @@ export class GoogleNativeTtsProvider {
             console.info(`Google TTS: Loaded ${this.voices.length} voices`);
 
             return this.voices;
-
         } catch (error) {
             console.error('Failed to fetch Google TTS voices:', error);
             throw error;
@@ -151,7 +150,6 @@ export class GoogleNativeTtsProvider {
             this.audioElement.src = url;
             this.audioElement.play();
             this.audioElement.onended = () => URL.revokeObjectURL(url);
-
         } catch (error) {
             console.error('TTS Preview Error:', error);
             toastr.error(`Could not generate preview: ${error.message}`);

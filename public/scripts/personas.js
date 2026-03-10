@@ -124,6 +124,7 @@ export async function setUserAvatar(imgfile, { toastPersonaNameChange = true, na
     await retriggerFirstMessageOnEmptyChat();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
+    await eventSource.emit(event_types.PERSONA_CHANGED, user_avatar);
 }
 
 function reloadUserAvatar(force = false) {
@@ -1552,9 +1553,8 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
             }
             toastr.success(message, t`Persona Auto Selected`, { escapeHtml: false });
         }
-    }
-    // Even if it's the same persona, we still might need to auto-lock to chat if that's enabled
-    else if (chatPersona && power_user.persona_auto_lock && !chat_metadata.persona) {
+    } else if (chatPersona && power_user.persona_auto_lock && !chat_metadata.persona) {
+        // Even if it's the same persona, we still might need to auto-lock to chat if that's enabled
         await lockPersona('chat');
     }
 
@@ -1593,7 +1593,6 @@ export async function showCharConnections() {
         highlightPersonas: true,
         targetedChar: getCurrentConnectionObj(),
         shiftClickHandler: (element, ev) => {
-
             const personaId = $(element).attr('data-pid');
 
             /** @type {PersonaConnection[]} */
@@ -1845,7 +1844,6 @@ async function lockPersonaCallback(_args, value) {
     if (isFalseBoolean(value)) {
         await setPersonaLockState(false, type);
         return 'false';
-
     }
 
     return '';
