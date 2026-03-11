@@ -1109,8 +1109,8 @@ jQuery(async function () {
 
     const summaryMacroHandler = () => {
         // Checking content of the UI summary box first
-        const uiSummary = $('#memory_contents').val().toString().trim();
-        if (uiSummary.length > 0) {
+        const uiSummary = $('#memory_contents').val().toString();
+        if (uiSummary.trim().length > 0) {
             return uiSummary;
         }
         // Fallback to scanning the chat for the latest summary if the UI summary box is empty
