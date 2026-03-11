@@ -1111,7 +1111,15 @@ jQuery(async function () {
         macros.register('summary', {
             category: MacroCategory.CHAT,
             description: 'Returns the latest memory/summary from the current chat.',
-            handler: () => getLatestMemoryFromChat(getContext().chat),
+            handler: () => {
+                // Checking content of the UI summary box first
+                const uiSummary = $('#memory_contents').val();
+                if (uiSummary && uiSummary.trim() !== '') {
+                    return uiSummary;
+                }
+                // Fallback to scanning the chat for the latest summary if the UI summary box is empty
+                return getLatestMemoryFromChat(getContext().chat);
+            },
         });
     } else {
         // TODO: Remove this when the experimental macro engine is replacing the old macro engine
