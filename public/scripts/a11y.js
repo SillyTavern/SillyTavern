@@ -812,19 +812,44 @@ const SpecificProcessors = {
             const timestamp = $mes.find('.timestamp').text().trim();
             const isLast = $mes.is(':last-child');
 
+            let headingId = $nameText.attr('id');
+            if (!headingId && $nameText.length) {
+                headingId = 'mes-heading-' + Math.random().toString(36).substr(2, 5);
+                $nameText.attr('id', headingId);
+            }
+
+            const $mesText = $mes.find('.mes_text');
+            let textId = $mesText.attr('id');
+            if (!textId && $mesText.length) {
+                textId = 'mes-text-' + Math.random().toString(36).substr(2, 5);
+                $mesText.attr('id', textId);
+            }
+
+            let labelledby = [];
+            if (headingId) labelledby.push(headingId);
+            if (textId) labelledby.push(textId);
+
             $mes.attr({
                 'role': 'article',
                 'tabindex': isLast ? '0' : '-1',
+                'aria-labelledby': labelledby.length > 0 ? labelledby.join(' ') : undefined,
             }).addClass('a11y-refactored');
 
             if ($nameText.length) {
+                const youStr = t`You`;
                 $nameText.attr({
                     'role': 'heading',
                     'aria-level': '3',
-                    'aria-label': `${isUser ? 'You' : charName} ${timestamp ? ', ' + timestamp : ''}`,
+                    'aria-label': `${isUser ? youStr : charName} ${timestamp ? ', ' + timestamp : ''}`,
                 });
             }
-            $mes.find('.mesIDDisplay, .extraMesButtons, .drag-handle, .swipes-counter, .mes_timer, .timestamp').attr('aria-hidden', 'true');
+            
+            // Labels for swipe buttons
+            $mes.find('.swipe_left').attr('aria-label', t`Swipe Left`);
+            $mes.find('.swipe_right').attr('aria-label', t`Swipe Right`);
+
+            // Do not hide .extraMesButtons so message actions remain accessible to screen readers
+            $mes.find('.mesIDDisplay, .drag-handle, .swipes-counter, .mes_timer, .timestamp').attr('aria-hidden', 'true');
         });
     },
 
@@ -1298,7 +1323,50 @@ const SpecificProcessors = {
         }
     },
 
-    // --- 8. Popups & Menus ---
+    // --- 8. Pagination ---
+    pagination: (root) => {
+        const $root = $(root);
+        $root.find('.paginationjs-pages li').addBack('.paginationjs-pages li').each(function () {
+            const $li = $(this);
+            const $a = $li.find('a');
+            if (!$a.length) return;
+            
+            const text = $a.text().trim();
+            let label = text;
+            if (text === '«') label = t`First Page`;
+            else if (text === '»') label = t`Last Page`;
+            else if (text === '‹' || text === '<') label = t`Previous Page`;
+            else if (text === '›' || text === '>') label = t`Next Page`;
+            else if (!isNaN(parseInt(text, 10))) label = t`Page ${text}`;
+
+            $a.attr('aria-label', label);
+            
+            if ($li.hasClass('disabled')) {
+                $a.attr('aria-disabled', 'true');
+                $a.removeAttr('tabindex');
+            } else if ($li.hasClass('active')) {
+                $a.attr('aria-current', 'page');
+            } else {
+                $a.attr('aria-disabled', 'false');
+            }
+        });
+    },
+
+    // --- 9. Generic Elements with Titles ---
+    titlesToLabels: (root) => {
+        const $root = $(root);
+        // Any element that has a title but lacks an aria-label should use the title as aria-label
+        $root.find('[title]:not([aria-label])').addBack('[title]:not([aria-label])').each(function () {
+            const $el = $(this);
+            const title = $el.attr('title') || $el.attr('data-i18n-title');
+            if (title) {
+                // Use only the first line of the title to keep it concise for screen readers
+                $el.attr('aria-label', title.split('\n')[0].trim());
+            }
+        });
+    },
+
+    // --- 10. Popups & Menus ---
     popupsAndMenus: (root) => {
         const $root = $(root);
 
@@ -2177,6 +2245,8 @@ export function initAccessibility() {
     $(document).on('keydown', '#chat .mes', function (e) {
         if (!isA11yEnabled) return;
 
+        if (e.target !== this) return;
+
         const $this = $(this);
         const $allMessages = $('#chat .mes:visible');
         const index = $allMessages.index($this);
@@ -2377,19 +2447,40 @@ export function initAccessibility() {
             $exportFormat.hide();
             return;
         }
+
+        // 6. Message Actions (Mobile/Touch)
+        const $activeExtraButtons = $('.extraMesButtons.mobile-active');
+        if ($activeExtraButtons.length) {
+            e.preventDefault();
+            e.stopPropagation();
+            $activeExtraButtons.removeClass('mobile-active');
+            $activeExtraButtons.closest('.mes').trigger('focus');
+            announceA11y(t`Message actions closed.`);
+            return;
+        }
     });
 
     // --- F. Application Event Integration ---
 
     // 1. Generation Started
-    eventSource.on(event_types.GENERATION_STARTED, (type) => {
-        if (!isA11yEnabled || type === 'quiet') return;
-        isAiGenerating = true;
-        announceA11y(t`AI is generating response...`);
-        // Focus Stop button so user can easily cancel
-        setTimeout(() => {
-            document.getElementById('mes_stop')?.focus();
-        }, 50);
+    eventSource.on(event_types.GENERATION_STARTED, (context) => {
+        if (!isA11yEnabled) return;
+        
+        // Prevent spurious announcements for quiet generations or background tasks (like summarization)
+        const typeStr = typeof context === 'string' ? context : (context?.type || 'normal');
+        const isQuiet = typeof context === 'string' ? context === 'quiet' : (context?.quiet || false);
+        
+        if (isQuiet || typeStr === 'quiet' || typeStr === 'summarize' || typeStr === 'classify') return;
+
+        if (!isAiGenerating) {
+            isAiGenerating = true;
+            announceA11y(t`AI is generating response...`);
+            // Focus Stop button so user can easily cancel
+            setTimeout(() => {
+                const stopBtn = document.getElementById('mes_stop');
+                if (stopBtn && stopBtn.offsetParent !== null) stopBtn.focus();
+            }, 50);
+        }
     });
 
     // 2. Message Rendered (Generation Finished/Updated)
