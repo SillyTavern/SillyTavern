@@ -88,6 +88,9 @@ const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_PLAYER2 = 'https://api.player2.game/v1';
+const API_PLAYER2_LOCAL = 'http://127.0.0.1:4315';
+const PLAYER2_CLIENT_ID = '019cd909-6767-76b5-8a6c-98630fa8e17f';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -1828,6 +1831,40 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_SILICONFLOW;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PLAYER2) {
+            const p2Key = readSecret(request.user.directories, SECRET_KEYS.PLAYER2);
+
+            if (!p2Key) {
+                console.warn('Player2 API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+
+            try {
+                const healthResponse = await fetch(`${API_PLAYER2}/health`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${p2Key}` },
+                    signal: AbortSignal.timeout(5000),
+                });
+
+                if (healthResponse.ok) {
+                    // Player2 does not expose a /models endpoint; return a stable placeholder.
+                    return statusResponse.send({ data: [{ id: 'player2' }] });
+                }
+
+                if (healthResponse.status === 402) {
+                    console.warn('Player2: insufficient joules (credits).');
+                    return statusResponse.status(402).send({
+                        error: true,
+                        message: 'Insufficient joules. Recharge at https://player2.game/profile/ai-power',
+                    });
+                }
+
+                console.warn('Player2 health check returned:', healthResponse.status);
+                return statusResponse.send({ error: true, data: { data: [] } });
+            } catch (error) {
+                console.error('Player2 health check failed:', error);
+                return statusResponse.send({ error: true, data: { data: [] } });
+            }
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2308,6 +2345,11 @@ router.post('/generate', async function (request, response) {
             if (request.body.json_schema) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PLAYER2) {
+            apiUrl = API_PLAYER2;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.PLAYER2);
+            headers = {};
+            bodyParams = {};
         } else {
             console.warn('This chat completion source is not supported yet.');
             return response.status(400).send({ error: true });
@@ -2439,6 +2481,38 @@ router.post('/generate', async function (request, response) {
         } else {
             response.end();
         }
+    }
+});
+
+router.post('/player2/login', async (request, response) => {
+    try {
+        const authResponse = await fetch(`${API_PLAYER2_LOCAL}/v1/login/web/${PLAYER2_CLIENT_ID}`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(5000),
+        });
+
+        if (!authResponse.ok) {
+            return response.status(authResponse.status).send({ error: true });
+        }
+
+        /** @type {any} */
+        const data = await authResponse.json();
+
+        if (!data?.p2Key) {
+            console.warn('Player2 local auth: missing p2Key in response');
+            return response.status(500).send({ error: true });
+        }
+
+        return response.send({ p2Key: data.p2Key });
+    } catch (error) {
+        if (error.code === 'ECONNREFUSED' || error.name === 'TimeoutError') {
+            return response.status(503).send({
+                error: true,
+                message: 'Player2 desktop app is not running. Download it at https://player2.game',
+            });
+        }
+        console.error('Player2 local auth error:', error);
+        return response.status(500).send({ error: true });
     }
 });
 
