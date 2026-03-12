@@ -843,7 +843,7 @@ const SpecificProcessors = {
                     'aria-label': `${isUser ? youStr : charName} ${timestamp ? ', ' + timestamp : ''}`,
                 });
             }
-            
+
             // Labels for swipe buttons
             $mes.find('.swipe_left').attr('aria-label', t`Swipe Left`);
             $mes.find('.swipe_right').attr('aria-label', t`Swipe Right`);
@@ -1330,7 +1330,7 @@ const SpecificProcessors = {
             const $li = $(this);
             const $a = $li.find('a');
             if (!$a.length) return;
-            
+
             const text = $a.text().trim();
             let label = text;
             if (text === '«') label = t`First Page`;
@@ -1340,7 +1340,7 @@ const SpecificProcessors = {
             else if (!isNaN(parseInt(text, 10))) label = t`Page ${text}`;
 
             $a.attr('aria-label', label);
-            
+
             if ($li.hasClass('disabled')) {
                 $a.attr('aria-disabled', 'true');
                 $a.removeAttr('tabindex');
@@ -2465,11 +2465,11 @@ export function initAccessibility() {
     // 1. Generation Started
     eventSource.on(event_types.GENERATION_STARTED, (context) => {
         if (!isA11yEnabled) return;
-        
+
         // Prevent spurious announcements for quiet generations or background tasks (like summarization)
         const typeStr = typeof context === 'string' ? context : (context?.type || 'normal');
         const isQuiet = typeof context === 'string' ? context === 'quiet' : (context?.quiet || false);
-        
+
         if (isQuiet || typeStr === 'quiet' || typeStr === 'summarize' || typeStr === 'classify') return;
 
         if (!isAiGenerating) {
