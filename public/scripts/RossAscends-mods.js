@@ -1225,6 +1225,16 @@ export function initRossMods() {
                 return;
             }
 
+            if ($('#logprobsViewer').is(':visible')) {
+                $('#logprobsViewerClose').trigger('click');
+                return;
+            }
+
+            if ($('#cfgConfig').is(':visible')) {
+                $('#CFGClose').trigger('click');
+                return;
+            }
+
             if ($('#floatingPrompt').is(':visible')) {
                 $('#ANClose').trigger('click');
                 return;
@@ -1235,22 +1245,13 @@ export function initRossMods() {
                 return;
             }
 
-            if ($('#cfgConfig').is(':visible')) {
-                $('#CFGClose').trigger('click');
-                return;
-            }
-
-            if ($('#logprobsViewer').is(':visible')) {
-                $('#logprobsViewerClose').trigger('click');
-                return;
-            }
-
-            $('#movingDivs > div').each(function () {
-                if ($(this).is(':visible')) {
-                    $('#movingDivs > div .floating_panel_close').trigger('click');
+            const movingDivs = $('#movingDivs > div').toArray().reverse();
+            for (const div of movingDivs) {
+                if ($(div).is(':visible')) {
+                    $(div).find('.floating_panel_close, .dragClose').trigger('click');
                     return;
                 }
-            });
+            }
 
             if ($('#left-nav-panel').is(':visible') &&
                 $(LPanelPin).prop('checked') === false) {

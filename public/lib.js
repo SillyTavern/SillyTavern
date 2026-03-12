@@ -24,6 +24,7 @@ import chalk from 'chalk';
 import yaml from 'yaml';
 import * as chevrotain from 'chevrotain';
 import * as focusTrap from 'focus-trap';
+import { gzipSync, gzip } from 'fflate';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -104,6 +105,8 @@ export default {
     yaml,
     chevrotain,
     focusTrap,
+    gzipSync,
+    gzip,
 };
 
 export {
@@ -130,4 +133,6 @@ export {
     yaml,
     chevrotain,
     focusTrap,
+    gzipSync,
+    gzip,
 };

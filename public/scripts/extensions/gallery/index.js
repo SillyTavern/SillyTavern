@@ -797,6 +797,26 @@ async function listGalleryCommand(args) {
     return JSON.stringify([]);
 }
 
+function addGalleryWandButton() {
+    const showGalleryContainer = document.getElementById('gallery_wand_container') || document.getElementById('extensionsMenu');
+    if (!(showGalleryContainer instanceof HTMLElement)) {
+        return;
+    }
+    const showGalleryButton = document.createElement('div');
+    showGalleryButton.id = 'show_gallery_wand_button';
+    showGalleryButton.classList.add('list-group-item', 'flex-container', 'flexGap5');
+    const showGalleryIcon = document.createElement('div');
+    showGalleryIcon.classList.add('fa-solid', 'fa-sd-card', 'extensionsMenuExtensionButton');
+    const showGalleryText = document.createElement('span');
+    showGalleryText.textContent = translate('Show Gallery');
+    showGalleryButton.appendChild(showGalleryIcon);
+    showGalleryButton.appendChild(showGalleryText);
+    showGalleryButton.addEventListener('click', () => {
+        showCharGallery();
+    });
+    showGalleryContainer.appendChild(showGalleryButton);
+}
+
 // On extension load, ensure the settings are initialized
 (function () {
     initSettings();
@@ -829,4 +849,5 @@ async function listGalleryCommand(args) {
             text: translate('Show Gallery'),
         }),
     );
+    addGalleryWandButton();
 })();

@@ -356,11 +356,82 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
 }
 
 /**
+ * Calls a manifest hook for an extension.
+ * Hooks are optional function names exported from the extension's JS entry point module.
+ * The hook function can optionally return a Promise that will be awaited.
+ * @param {string} name Extension name
+ * @param {'install' | 'update' | 'delete' | 'enable' | 'disable' | 'activate'} hookName The hook to call
+ * @returns {Promise<void>}
+ */
+async function callExtensionHook(name, hookName) {
+    const manifest = manifests[name];
+
+    if (!manifest) {
+        console.debug(`callExtensionHook: Extension "${name}" has no manifest, skipping hook "${hookName}"`);
+        return;
+    }
+
+    if (!manifest.hooks || typeof manifest.hooks !== 'object') {
+        return;
+    }
+
+    if (!Object.hasOwn(manifest.hooks, hookName)) {
+        return;
+    }
+
+    const hookFunctionName = manifest.hooks[hookName];
+
+    if (typeof hookFunctionName !== 'string' || !hookFunctionName) {
+        console.warn(`callExtensionHook: Extension "${name}" hook "${hookName}" is not a valid string`);
+        return;
+    }
+
+    if (!manifest.js) {
+        console.warn(`callExtensionHook: Extension "${name}" has hook "${hookName}" but no JS entry point defined in manifest`);
+        return;
+    }
+
+    const url = `/scripts/extensions/${name}/${manifest.js}`;
+    console.debug(`callExtensionHook: Calling hook "${hookName}" (function "${hookFunctionName}") for extension "${name}"`);
+
+    try {
+        const module = await import(url);
+
+        if (typeof module[hookFunctionName] !== 'function') {
+            console.warn(`callExtensionHook: Extension "${name}" hook "${hookName}" references "${hookFunctionName}" which is not an exported function`);
+            return;
+        }
+
+        const hookCallResult = module[hookFunctionName]();
+
+        const HOOK_TIMEOUT = 5000;
+        const HOOK_RESULT = {
+            OK: 'ok',
+            TIMEOUT: 'timeout',
+        };
+
+        const result = await Promise.race([
+            (hookCallResult instanceof Promise ? hookCallResult : Promise.resolve(hookCallResult)).then(() => HOOK_RESULT.OK),
+            delay(HOOK_TIMEOUT).then(() => HOOK_RESULT.TIMEOUT),
+        ]);
+
+        if (result === HOOK_RESULT.TIMEOUT) {
+            console.warn(`callExtensionHook: Hook "${hookName}" for extension "${name}" timed out after ${HOOK_TIMEOUT}ms`);
+        } else {
+            console.debug(`callExtensionHook: Hook "${hookName}" completed for extension "${name}"`);
+        }
+    } catch (error) {
+        console.error(`callExtensionHook: Error calling hook "${hookName}" for extension "${name}":`, error);
+    }
+}
+
+/**
  * Enables an extension by name.
  * @param {string} name Extension name
  * @param {boolean} [reload=true] If true, reload the page after enabling the extension
  */
 export async function enableExtension(name, reload = true) {
+    await callExtensionHook(name, 'enable');
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
     stateChanged = true;
     await saveSettings();
@@ -377,6 +448,7 @@ export async function enableExtension(name, reload = true) {
  * @param {boolean} [reload=true] If true, reload the page after disabling the extension
  */
 export async function disableExtension(name, reload = true) {
+    await callExtensionHook(name, 'disable');
     extension_settings.disabledExtensions.push(name);
     stateChanged = true;
     await saveSettings();
@@ -505,7 +577,10 @@ async function activateExtensions() {
                     Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
                 );
                 await promise
-                    .then(() => activeExtensions.add(name))
+                    .then(() => {
+                        activeExtensions.add(name);
+                        return callExtensionHook(name, 'activate');
+                    })
                     .catch(err => {
                         console.log('Could not activate extension', name, err);
                         extensionLoadErrors.add(t`Extension "${displayName}" failed to load: ${err}`);
@@ -1147,6 +1222,8 @@ async function updateExtension(extensionName, quiet, timeout = null) {
                 toastr.success('Extension is already up to date');
             }
         } else {
+            const fullExtensionName = extensionName.startsWith('third-party') ? extensionName : `third-party${extensionName}`;
+            await callExtensionHook(fullExtensionName, 'update');
             toastr.success(t`Extension ${extensionName} updated to ${data.shortCommitHash}`, t`Reload the page to apply updates`);
         }
     } catch (error) {
@@ -1280,6 +1357,8 @@ async function moveExtension(extensionName, source, destination) {
  * @param {string} extensionName Extension name to delete
  */
 export async function deleteExtension(extensionName) {
+    await callExtensionHook(extensionName, 'delete');
+
     try {
         await fetch('/api/extensions/delete', {
             method: 'POST',
@@ -1387,7 +1466,7 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
             return;
         }
 
-        toastr.success(t`Extension ${extensionName} switched to ${branch}`);
+        toastr.success(t`Extension ${extensionName} switched to ${branch}`, t`Reload the page to apply updates`);
         await loadExtensionSettings({}, false, false);
         void showExtensionsDetails();
     } catch (error) {
@@ -1428,6 +1507,11 @@ export async function installExtension(url, global, branch = '') {
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
     await loadExtensionSettings({}, false, false);
     await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
+
+    if (response.folderName) {
+        const extensionName = `third-party/${response.folderName}`;
+        await callExtensionHook(extensionName, 'install');
+    }
 }
 
 /**

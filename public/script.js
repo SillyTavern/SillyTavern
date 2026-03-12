@@ -285,6 +285,7 @@ import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
+import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -326,6 +327,8 @@ export {
     setCharacterSettingsOverrides as setScenarioOverride,
     /** @deprecated Use appendMediaToMessage instead. */
     appendMediaToMessage as appendImageToMessage,
+    /** @deprecated Use getMaxPromptTokens instead. */
+    getMaxPromptTokens as getMaxContextSize,
 };
 
 /**
@@ -2733,6 +2736,7 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
         else if (/{{\s*[!?~#/]/.test(content)) feature = 'macro flags';
         else if (/{{\s*[.$]/.test(content)) feature = 'variable shorthands';
         else if (/\{\{(?:(?!\}\}).)*\{\{(?=[\s\S]*?\}\}[\s\S]*?\}\})/.test(content)) feature = 'nested macro';
+        else if (/{{(?:greeting|charFirstMessage)(?:::\d+)?}}/i.test(content)) feature = 'greeting macro';
 
         if (feature) void onboardingExperimentalMacroEngine(feature);
     }
@@ -3228,11 +3232,13 @@ export function baseChatReplace(value, name1Override = null, name2Override = nul
  * @property {string} version Character version
  * @property {string} charDepthPrompt Character depth note
  * @property {string} creatorNotes Character creator notes
+ * @property {string} firstMessage Character first message / greeting
+ * @property {string[]} alternateGreetings Character alternate greetings
  */
 
 /**
  * Helper to create an object with lazy, memoized getters from a map of field resolvers.
- * @param {Record<string, () => string>} resolvers Map of field names to resolver functions
+ * @param {Record<string, () => string|string[]>} resolvers Map of field names to resolver functions
  * @returns {CharacterCardFields} Object with lazy getters
  */
 export function createLazyFields(resolvers) {
@@ -3270,7 +3276,7 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
     const useGroupCards = selected_group && character;
     const groupCardsLazy = useGroupCards ? getGroupCharacterCardsLazy(selected_group, Number(currentChid)) : null;
 
-    /** @type {Record<string, () => string>} */
+    /** @type {Record<string, () => string|string[]>} */
     const resolvers = {
         persona: () => baseChatReplace(power_user.persona_description?.trim()),
         system: () => {
@@ -3314,6 +3320,17 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
             const exampleDialog = chat_metadata.mes_example || character.mes_example || '';
             return baseChatReplace(exampleDialog.trim());
         },
+        firstMessage: () => {
+            if (!character) return '';
+            const firstMes = character.first_mes?.trim() || '';
+            return baseChatReplace(firstMes);
+        },
+        alternateGreetings: () => {
+            if (!character) return [];
+            const altGreetings = character.data?.alternate_greetings;
+            if (!Array.isArray(altGreetings)) return [];
+            return altGreetings.map(greeting => baseChatReplace(greeting?.trim()));
+        },
     };
 
     return createLazyFields(resolvers);
@@ -3340,6 +3357,8 @@ export function getCharacterCardFields({ chid = undefined } = {}) {
         version: lazy.version,
         charDepthPrompt: lazy.charDepthPrompt,
         creatorNotes: lazy.creatorNotes,
+        firstMessage: lazy.firstMessage,
+        alternateGreetings: lazy.alternateGreetings,
     };
 }
 
@@ -3813,8 +3832,6 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 }
 
 /**
- * Generates a message using the provided prompt.
- * If the prompt is an array of chat-style messages and not using chat completion, it will be converted to a text prompt.
  * @typedef {object} GenerateRawParams
  * @prop {string | object[]} [prompt] Prompt to generate a message from. Can be a string or an array of chat-style messages, i.e. [{role: '', content: ''}, ...]
  * @prop {string} [api] API to use. Main API is used if not specified.
@@ -3825,15 +3842,15 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
  * @prop {string} [prefill] An optional prefill for the prompt.
  * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
- * @param {GenerateRawParams} params Parameters for generating a message
- * @returns {Promise<string>} Generated message
  */
-export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
-    if (arguments.length > 0 && typeof arguments[0] !== 'object') {
-        console.trace('generateRaw called with positional arguments. Please use an object instead.');
-        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
-    }
 
+/**
+ * Generates a raw data object using the provided prompt.
+ * This used to be part of `generateRaw`, but separating it out allows extensions to access other data such as reasoning message.
+ * @param {GenerateRawParams} params Parameters for generating a message
+ * @returns {Promise<object | string>} Raw API response data, or a JSON string extracted from the response when `jsonSchema` is provided.
+ */
+export async function generateRawData({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, prefill = '', jsonSchema = null } = {}) {
     if (!api) {
         api = main_api;
     }
@@ -3936,22 +3953,7 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
             return extractJsonFromData(data, { mainApi: api });
         }
 
-        // format result, exclude user prompt bias
-        const message = cleanUpMessage({
-            getMessage: extractMessageFromData(data),
-            isImpersonate: false,
-            isContinue: false,
-            displayIncompleteSentences: true,
-            includeUserPromptBias: false,
-            trimNames: trimNames,
-            trimWrongNames: trimNames,
-        });
-
-        if (!message) {
-            throw new Error('No message generated');
-        }
-
-        return message;
+        return data;
     } finally {
         eventSource.removeListener(event_types.GENERATION_STOPPED, abortHook);
         if (responseLengthCustomized && TempResponseLength.isCustomized()) {
@@ -3959,6 +3961,43 @@ export async function generateRaw({ prompt = '', api = null, instructOverride = 
             TempResponseLength.removeEventHook(api, eventHook);
         }
     }
+}
+
+/**
+ * Generates a message using the provided prompt.
+ * If the prompt is an array of chat-style messages and not using chat completion, it will be converted to a text prompt.
+ * @param {GenerateRawParams} params Parameters for generating a message
+ * @returns {Promise<string>} Generated output: a cleaned-up message string when `jsonSchema` is not provided, or an extracted JSON string conforming to `jsonSchema` when it is.
+ */
+export async function generateRaw({ prompt = '', api = null, instructOverride = false, quietToLoud = false, systemPrompt = '', responseLength = null, trimNames = true, prefill = '', jsonSchema = null } = {}) {
+    if (arguments.length > 0 && typeof arguments[0] !== 'object') {
+        console.trace('generateRaw called with positional arguments. Please use an object instead.');
+        [prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, trimNames, prefill, jsonSchema] = arguments;
+    }
+
+    const data = await generateRawData({ prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength, prefill, jsonSchema });
+
+    // JSON string (matching the provided schema) will already be extracted.
+    if (jsonSchema) {
+        return data;
+    }
+
+    // format result, exclude user prompt bias
+    const message = cleanUpMessage({
+        getMessage: extractMessageFromData(data, api),
+        isImpersonate: false,
+        isContinue: false,
+        displayIncompleteSentences: true,
+        includeUserPromptBias: false,
+        trimNames: trimNames,
+        trimWrongNames: trimNames,
+    });
+
+    if (!message) {
+        throw new Error('No message generated');
+    }
+
+    return message;
 }
 
 class TempResponseLength {
@@ -4371,7 +4410,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // Determine token limit
-    let this_max_context = getMaxContextSize();
+    let this_max_context = getMaxPromptTokens();
 
     if (!dryRun) {
         console.debug('Running extension interceptors');
@@ -5226,7 +5265,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 const hasToolCalls = ToolManager.hasToolCalls(streamingProcessor.toolCalls);
                 const shouldDeleteMessage = type !== 'swipe' && ['', '...'].includes(lastMessage?.mes) && !lastMessage?.extra?.reasoning && ['', '...'].includes(streamingProcessor?.result);
                 hasToolCalls && shouldDeleteMessage && await deleteLastMessage();
-                const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls);
+                const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls, {
+                    reasoningText: streamingProcessor.reasoningHandler.reasoning,
+                });
                 const shouldStopGeneration = (!invocationResult.invocations.length && shouldDeleteMessage) || invocationResult.stealthCalls.length;
                 if (hasToolCalls) {
                     if (shouldStopGeneration) {
@@ -5351,7 +5392,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             const hasToolCalls = ToolManager.hasToolCalls(data);
             const shouldDeleteMessage = type !== 'swipe' && ['', '...'].includes(getMessage) && !reasoning;
             hasToolCalls && shouldDeleteMessage && await deleteLastMessage();
-            const invocationResult = await ToolManager.invokeFunctionTools(data);
+            const invocationResult = await ToolManager.invokeFunctionTools(data, { reasoningText: reasoning });
             const shouldStopGeneration = (!invocationResult.invocations.length && shouldDeleteMessage) || invocationResult.stealthCalls.length;
             if (hasToolCalls) {
                 if (shouldStopGeneration) {
@@ -5732,21 +5773,15 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
 }
 
 /**
- * Gets the maximum usable context size for the current API.
- * @param {number|null} overrideResponseLength Optional override for the response length.
- * @returns {number} Maximum usable context size.
+ * Gets the maximum context token limit (the full context window size before subtracting response length).
+ * @returns {number} The maximum context token limit for the current API.
  */
-export function getMaxContextSize(overrideResponseLength = null) {
-    if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
-        overrideResponseLength = null;
-    }
-
-    let this_max_context = 1487;
+export function getMaxContextTokens() {
     if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
-        this_max_context = (max_context - (overrideResponseLength || amount_gen));
+        return max_context;
     }
     if (main_api == 'novel') {
-        this_max_context = Number(max_context);
+        let this_max_context = Number(max_context);
         if (nai_settings.model_novel.includes('clio')) {
             this_max_context = Math.min(max_context, 8192);
         }
@@ -5766,13 +5801,39 @@ export function getMaxContextSize(overrideResponseLength = null) {
             // Added special tokens and whatnot
             this_max_context -= 10;
         }
-
-        this_max_context = this_max_context - (overrideResponseLength || amount_gen);
+        return this_max_context;
     }
     if (main_api == 'openai') {
-        this_max_context = oai_settings.openai_max_context - (overrideResponseLength || oai_settings.openai_max_tokens);
+        return oai_settings.openai_max_context;
     }
-    return this_max_context;
+    return 1487;
+}
+
+/**
+ * Gets the maximum response token limit (the max generation/reply length).
+ * @returns {number} The maximum response token limit for the current API.
+ */
+export function getMaxResponseTokens() {
+    if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui' || main_api == 'novel') {
+        return amount_gen;
+    }
+    if (main_api == 'openai') {
+        return oai_settings.openai_max_tokens;
+    }
+    return 0;
+}
+
+/**
+ * Gets the maximum usable prompt size for the current API.
+ * @param {number|null} overrideResponseLength Optional override for the response length.
+ * @returns {number} Maximum usable prompt size.
+ */
+export function getMaxPromptTokens(overrideResponseLength = null) {
+    if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
+        overrideResponseLength = null;
+    }
+
+    return getMaxContextTokens() - (overrideResponseLength || getMaxResponseTokens());
 }
 
 function parseTokenCounts(counts, thisPromptBits) {
@@ -7083,7 +7144,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
-                const saveChatResponse = await fetch('/api/chats/save', {
+                const saveChatRequest = await compressRequest({
                     method: 'POST',
                     headers: getRequestHeaders(),
                     body: JSON.stringify({
@@ -7094,6 +7155,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                     }),
                     cache: 'no-cache',
                 });
+                const saveChatResponse = await fetch('/api/chats/save', saveChatRequest);
 
                 if (!saveChatResponse.ok) {
                     throw new Error('Could not save chat');
@@ -7177,7 +7239,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     };
 
     try {
-        const result = await fetch('/api/chats/save', {
+        const saveChatRequest = await compressRequest({
             method: 'POST',
             cache: 'no-cache',
             headers: getRequestHeaders(),
@@ -7189,6 +7251,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
                 force: force,
             }),
         });
+        const result = await fetch('/api/chats/save', saveChatRequest);
 
         if (result.ok) {
             return;
@@ -7681,6 +7744,7 @@ export async function getSettings() {
 
         accountStorage.init(settings?.accountStorage);
         await setUserControls(data.enable_accounts);
+        setRequestCompressionConfig(data.request_compression);
 
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
@@ -7833,12 +7897,13 @@ export async function saveSettings(loopCounter = 0) {
     };
 
     try {
-        const result = await fetch('/api/settings/save', {
+        const saveSettingsRequest = await compressRequest({
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(payload),
             cache: 'no-cache',
         });
+        const result = await fetch('/api/settings/save', saveSettingsRequest);
 
         if (!result.ok) {
             throw new Error(`Failed to save settings: ${result.statusText}`);
@@ -9666,7 +9731,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
     const mesId = Number(forceMesId ?? event?.currentTarget?.closest('.mes')?.getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    if (source === SWIPE_SOURCE.DELETE || source === SWIPE_SOURCE.BACK || source === SWIPE_SOURCE.AUTO_SWIPE) {
+    if ([SWIPE_SOURCE.DELETE, SWIPE_SOURCE.BACK, SWIPE_SOURCE.AUTO_SWIPE, SWIPE_SOURCE.SLASH_COMMAND].includes(source)) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
     } else {
         //Only show an error if swipes are not hidden and a message is generating.

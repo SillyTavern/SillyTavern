@@ -281,8 +281,12 @@ export class CommandLineParser {
         const dataRoot = isGlobal
             ? defaultConfig.dataRoot
             : (cliArguments.dataRoot ?? getConfigValue('dataRoot', defaultConfig.dataRoot));
-        if (isGlobal && !fs.existsSync(dataRoot)) {
-            fs.mkdirSync(dataRoot, { recursive: true });
+        try {
+            if (!fs.existsSync(dataRoot)) {
+                fs.mkdirSync(dataRoot, { recursive: true });
+            }
+        } catch (err) {
+            console.warn(color.yellow(`Warning: Failed to create data root directory at ${dataRoot}. Please make sure the path is correct and writable.`), err);
         }
 
         /** @type {CommandLineArguments} */

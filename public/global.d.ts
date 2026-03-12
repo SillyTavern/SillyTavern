@@ -1,6 +1,6 @@
 import libs from './lib';
 import getContext from './scripts/st-context';
-import { power_user } from './scripts/power-user';
+import { power_user, getThemeObject } from './scripts/power-user';
 import { QuickReplyApi } from './scripts/extensions/quick-reply/api/QuickReplyApi';
 import { oai_settings } from './scripts/openai';
 import { textgenerationwebui_settings } from './scripts/textgen-settings';
@@ -21,6 +21,7 @@ declare global {
     type MessageTimestamp = string | number | Date;
     type Character = import('./scripts/char-data').v1CharData;
     type ChatMessageExtra = BaseMessageExtra & Partial<ReasoningMessageExtra> & Record<string, any>;
+    type Theme = ReturnType<typeof getThemeObject>;
 
     interface Group {
         id: string;
@@ -138,6 +139,8 @@ declare global {
     interface ImageGenerationAttachmentProps {
         generation_type?: number;
         negative?: string;
+        width?: number;
+        height?: number;
     }
 
     interface ImageCaptionAttachmentProps {

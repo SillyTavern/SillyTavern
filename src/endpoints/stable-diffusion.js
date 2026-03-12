@@ -1723,6 +1723,8 @@ xai.post('/generate', async (request, response) => {
         const requestBody = {
             prompt: request.body.prompt,
             model: request.body.model,
+            aspect_ratio: request.body.aspect_ratio,
+            resolution: request.body.resolution,
             response_format: 'b64_json',
         };
 
@@ -1746,13 +1748,19 @@ xai.post('/generate', async (request, response) => {
         /** @type {any} */
         const data = await result.json();
 
-        const image = data?.data?.[0]?.b64_json;
-        if (!image) {
+        // Can either be a base64 buffer (always JPEG) or a data URL (with MIME type)
+        const encodedImage = String(data?.data?.[0]?.b64_json || '');
+        if (!encodedImage) {
             console.warn('xAI returned invalid data.');
             return response.sendStatus(500);
         }
 
-        return response.send({ image });
+        const dataUrlMatch = encodedImage.match(/^data:(.+);base64,(.+)$/);
+        const mimeType = dataUrlMatch?.[1] || 'image/jpeg';
+        const format = mime.extension(mimeType) || 'jpg';
+        const image = dataUrlMatch?.[2] || encodedImage;
+
+        return response.send({ image, format });
     } catch (error) {
         console.error('Error communicating with xAI', error);
         return response.sendStatus(500);

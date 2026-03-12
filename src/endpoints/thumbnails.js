@@ -8,7 +8,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { imageSize as sizeOf } from 'image-size';
 
 import { getConfigValue, invalidateFirefoxCache } from '../util.js';
-import { getThumbnailResolution, isAnimatedWebP, thumbnailDimensions as dimensions, isAnimatedApng } from './image-metadata.js';
+import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, thumbnailDimensions as dimensions } from './image-metadata.js';
 import { ResizeStrategy } from '@jimp/plugin-resize';
 
 export const publicRouter = express.Router();

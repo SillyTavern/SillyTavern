@@ -23,7 +23,7 @@ We have a [Documentation website](https://docs.sillytavern.app/) to answer most 
 
 SillyTavern (or ST for short) is a locally installed user interface that allows you to interact with text generation LLMs, image generation engines, and TTS voice models.
 
-Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over 200 contributors and 2 years of independent development under its belt, and continues to serve as a leading software for savvy AI hobbyists.
+Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over 300 contributors and 3 years of independent development under its belt, and continues to serve as a leading software for savvy AI hobbyists.
 
 ## Our Vision
 
@@ -33,7 +33,7 @@ Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over
 
 ## Do I need a powerful PC to run SillyTavern?
 
-The hardware requirements are minimal: it will run on anything that can run NodeJS 18 or higher. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM, but actual requirements may vary depending on the model and backend you choose to use.
+The hardware requirements are minimal: it will run on anything that can run NodeJS 20 or higher. If you intend to do LLM inference on your local machine, we recommend a 3000-series NVIDIA graphics card with at least 6GB of VRAM, but actual requirements may vary depending on the model and backend you choose to use.
 
 ## Questions or suggestions?
 

@@ -318,7 +318,7 @@ input[type='checkbox']:focus-visible {
 .dragover {
     filter: brightness(1.1) saturate(1.0);
     outline: 3px dashed var(--SmartThemeBorderColor);
-    animation: pulse 0.5s infinite alternate;
+    animation: pulse var(--animation-duration-3x) infinite alternate;
 }
 
 .dragover.no_animation {
@@ -6298,4 +6298,27 @@ body:not(.movingUI) .drawer-content.maximized {
 .info-block.error {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --interactable-outline-color: CanvasText;
+        --interactable-outline-color-faint: CanvasText;
+    }
+
+    .interactable:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+        outline-width: 2px;
+    }
+
+    .mes {
+        border: 2px solid var(--SmartThemeBorderColor);
+    }
+
+    .menu_button,
+    .popup {
+        border-width: 2px;
+    }
 }

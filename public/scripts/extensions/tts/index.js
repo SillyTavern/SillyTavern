@@ -37,6 +37,7 @@ import { MiniMaxTtsProvider } from './minimax.js';
 import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
+import { applyLocale, t } from '/scripts/i18n.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -405,18 +406,18 @@ function onAudioControlClicked() {
 }
 
 function addAudioControl() {
-    $('#tts_wand_container').append(`
+    $('#tts_wand_container').append(applyLocale(`
         <div id="ttsExtensionMenuItem" class="list-group-item flex-container flexGap5">
             <div id="tts_media_control" class="extensionsMenuExtensionButton "/></div>
-            TTS Playback
-        </div>`);
-    $('#tts_wand_container').append(`
+            <span data-i18n="TTS Playback">TTS Playback</span>
+        </div>`));
+    $('#tts_wand_container').append(applyLocale(`
         <div id="ttsExtensionNarrateAll" class="list-group-item flex-container flexGap5">
             <div class="extensionsMenuExtensionButton fa-solid fa-radio"></div>
-            Narrate All Chat
-        </div>`);
-    $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked);
-    $('#ttsExtensionNarrateAll').attr('title', 'Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').on('click', playFullConversation);
+            <span data-i18n="Narrate All Chat">Narrate All Chat</span>
+        </div>`));
+    $('#ttsExtensionMenuItem').attr('title', t`TTS play/pause`).attr('data-i18n', '[title]TTS play/pause').on('click', onAudioControlClicked);
+    $('#ttsExtensionNarrateAll').attr('title', t`Narrate all messages in the current chat. Includes user messages, excludes hidden comments.`).attr('data-i18n', '[title]Narrate all messages in the current chat. Includes user messages, excludes hidden comments.').on('click', playFullConversation);
     updateUiAudioPlayState();
 }
 
