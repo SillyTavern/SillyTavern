@@ -3233,9 +3233,9 @@ export function initDefaultSlashCommands() {
                 throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-wrap. Did you forget to call the closure with parentheses?`);
             }
 
-            // Get only strings from an argument array
+            // Value is already an array - return as-is (just JSON-stringify)
             if (Array.isArray(value)) {
-                return JSON.stringify(value.filter(x => typeof x === 'string'));
+                return JSON.stringify(value);
             }
 
             // Empty string - empty arrays
