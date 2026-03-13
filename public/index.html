@@ -2908,6 +2908,7 @@
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="perplexity">Perplexity</option>
+                                <option value="player2">Player2</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="siliconflow">SiliconFlow</option>
                                 <option value="xai">xAI (Grok)</option>
@@ -3852,6 +3853,26 @@
                             <h4 data-i18n="AI/ML Model">AI/ML Model</h4>
                             <select id="model_aimlapi_select">
                             </select>
+                        </div>
+                        <div id="player2_form" data-source="player2">
+                            <h4>
+                                <a href="https://player2.game" target="_blank" rel="noopener noreferrer" data-i18n="Player2 API Key">
+                                    Player2 API Key
+                                </a>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_player2" name="api_key_player2" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_player2"></div>
+                            </div>
+                            <div data-for="api_key_player2" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div class="flex-container marginTop10">
+                                <input id="player2_auto_login" type="button" class="menu_button flex1" data-i18n="[value]Get Key from Player2 App" value="Get Key from Player2 App">
+                            </div>
+                            <div class="neutral_warning" data-i18n="Requires the Player2 desktop app to be running.">
+                                Requires the <a href="https://player2.game" target="_blank" rel="noopener noreferrer">Player2 desktop app</a> to be running. Alternatively, paste your key manually above.
+                            </div>
                         </div>
                         <div id="pollinations_form" data-source="pollinations">
                             <h4>
