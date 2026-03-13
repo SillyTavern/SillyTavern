@@ -3216,6 +3216,7 @@ export function initDefaultSlashCommands() {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'array-wrap',
+        aliases: ['list-wrap'],
         returns: t`unnamed argument value wrapped into an array`,
         helpString: t`Wraps a single unnamed argument into an array if it's not already an array. If the value is an empty string, returns an empty array.`,
         unnamedArgumentList: [
@@ -3258,6 +3259,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'array-unwrap',
+        aliases: ['list-unwrap'],
         returns: t`unnamed argument value unwrapped from an array`,
         helpString: t`Unwraps the first element of an array provided as an unnamed argument. If the value is not an array, returns the value as-is. If the array is empty, returns an empty string.`,
         unnamedArgumentList: [
