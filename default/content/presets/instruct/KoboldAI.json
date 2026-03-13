@@ -1,6 +1,6 @@
 {
     "input_sequence": "{{[INPUT]}}",
-    "output_sequence": "{{[OUPUT]}}",
+    "output_sequence": "{{[OUTPUT]}}",
     "last_output_sequence": "",
     "system_sequence": "{{[SYSTEM]}}",
     "stop_sequence": "",
