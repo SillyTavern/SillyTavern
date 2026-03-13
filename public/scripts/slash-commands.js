@@ -3244,15 +3244,23 @@ export function initDefaultSlashCommands() {
             }
 
             try {
+                // If the value is a valid JSON string, parse it
+                const parsedValue = JSON.parse(value);
+
                 // Already an array - return as-is
-                if (Array.isArray(JSON.parse(value))) {
+                if (Array.isArray(parsedValue)) {
                     return value;
                 }
 
-                // Wrap the value (string, number, object) into an array
+                // If it's an object, wrap it into an array and stringify
+                if (typeof parsedValue === 'object' && parsedValue !== null) {
+                    return JSON.stringify([parsedValue]);
+                }
+
+                // Wrap the original value (string, number, object) into an array, preserving quotes for strings
                 return JSON.stringify([value]);
             } catch {
-                // Not a valid JSON - wrap as a string
+                // Not a valid JSON string - wrap the original value
                 return JSON.stringify([value]);
             }
         },
