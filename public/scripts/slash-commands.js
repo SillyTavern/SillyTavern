@@ -3271,7 +3271,7 @@ export function initDefaultSlashCommands() {
         callback: (_args, value) => {
             // Closures are not supported
             if (value instanceof SlashCommandClosure) {
-                return '';
+                throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-unwrap. Did you forget to call the closure with parentheses?`);
             }
 
             // Get only strings from an argument array
