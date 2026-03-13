@@ -3284,8 +3284,22 @@ export function initDefaultSlashCommands() {
             try {
                 // If the value is a JSON array, get the first element
                 const parsed = JSON.parse(value);
+
                 if (Array.isArray(parsed)) {
-                    return JSON.stringify(parsed?.[0] ?? '');
+                    const unwrappedValue = parsed?.[0] ?? '';
+
+                    // If the first element is null or undefined, return an empty string
+                    if (unwrappedValue === null || unwrappedValue === undefined) {
+                        return '';
+                    }
+
+                    // If the first element is an object, stringify it.
+                    if (typeof unwrappedValue === 'object') {
+                        return JSON.stringify(unwrappedValue);
+                    }
+
+                    // Otherwise, return it as a string.
+                    return String(unwrappedValue);
                 }
                 return value;
             } catch {
