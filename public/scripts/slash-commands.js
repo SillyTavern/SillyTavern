@@ -3233,9 +3233,9 @@ export function initDefaultSlashCommands() {
                 throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-wrap. Did you forget to call the closure with parentheses?`);
             }
 
-            // Value is already an array - return as-is (just JSON-stringify)
+            // Multiple unnamed arguments are not supported since acceptsMultiple is false, but check just in case
             if (Array.isArray(value)) {
-                return JSON.stringify(value);
+                throw new SlashCommandExecutionError(t`/array-wrap does not support multiple unnamed arguments.`);
             }
 
             // Empty string - empty arrays
@@ -3276,9 +3276,9 @@ export function initDefaultSlashCommands() {
                 throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-unwrap. Did you forget to call the closure with parentheses?`);
             }
 
-            // Get only strings from an argument array
+            // Multiple unnamed arguments are not supported since acceptsMultiple is false, but check just in case
             if (Array.isArray(value)) {
-                return JSON.stringify(value.filter(x => typeof x === 'string')?.[0] ?? '');
+                throw new SlashCommandExecutionError(t`/array-unwrap does not support multiple unnamed arguments.`);
             }
 
             try {
