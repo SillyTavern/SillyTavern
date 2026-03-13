@@ -3257,7 +3257,7 @@ export function initDefaultSlashCommands() {
                     return JSON.stringify([parsedValue]);
                 }
 
-                // Wrap the original value (string, number, object) into an array, preserving quotes for strings
+                // Wrap the original value (string, number, boolean) into an array, preserving quotes for strings
                 return JSON.stringify([value]);
             } catch {
                 // Not a valid JSON string - wrap the original value
