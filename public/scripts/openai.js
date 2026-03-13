@@ -1014,7 +1014,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             });
             const toolCallMessage = await Message.createAsync(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
             const toolResultMessages = await Promise.all(invocations.slice().reverse().map((invocation) => Message.createAsync('tool', invocation.result || '[No content]', invocation.id)));
-            await toolCallMessage.setToolCalls(invocations, includeSignature, includeToolReasoning);
+            await toolCallMessage.setToolCalls(invocations, includeSignature, includeToolReasoning, 'conversation');
             if (chatCompletion.canAffordAll([toolCallMessage, ...toolResultMessages])) {
                 for (const resultMessage of toolResultMessages) {
                     chatCompletion.insertAtStart(resultMessage, 'chatHistory');
@@ -3324,9 +3324,10 @@ class Message {
      * @param {import('./tool-calling.js').ToolInvocation[]} invocations - The tool invocations to reconstruct the message from.
      * @param {boolean} includeSignature Whether to include the signature in the tool calls.
      * @param {boolean} includeReasoning Whether to include plaintext reasoning fallback.
+     * @param {string} [type] Identifier for the token count category.
      * @returns {Promise<void>}
      */
-    async setToolCalls(invocations, includeSignature, includeReasoning = false) {
+    async setToolCalls(invocations, includeSignature, includeReasoning = false, type) {
         this.tool_calls = invocations.map(i => ({
             id: i.id,
             type: 'function',
@@ -3342,7 +3343,7 @@ class Message {
             role: this.role,
             tool_calls: JSON.stringify(this.tool_calls),
             ...(this.reasoning ? { reasoning: this.reasoning } : {}),
-        });
+        }, false, type);
     }
 
     /**
