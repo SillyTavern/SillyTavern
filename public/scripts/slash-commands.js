@@ -3214,6 +3214,85 @@ export function initDefaultSlashCommands() {
         helpString: t`Plays the message received sound effect.`,
     }));
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'array-wrap',
+        returns: t`unnamed argument value wrapped into an array`,
+        helpString: t`Wraps a single unnamed argument into an array if it's not already an array. If the value is an empty string, returns an empty array.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER],
+            }),
+        ],
+        callback: (_args, value) => {
+            // Closures are not supported
+            if (value instanceof SlashCommandClosure) {
+                return '';
+            }
+
+            // Get only strings from an argument array
+            if (Array.isArray(value)) {
+                return JSON.stringify(value.filter(x => typeof x === 'string'));
+            }
+
+            // Empty string - empty arrays
+            if (value === '') {
+                return JSON.stringify([]);
+            }
+
+            try {
+                // Already an array - return as-is
+                if (Array.isArray(JSON.parse(value))) {
+                    return value;
+                }
+
+                // Wrap the value (string, number, object) into an array
+                return JSON.stringify([value]);
+            } catch {
+                // Not a valid JSON - wrap as a string
+                return JSON.stringify([value]);
+            }
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'array-unwrap',
+        returns: t`unnamed argument value unwrapped from an array`,
+        helpString: t`Unwraps the first element of an array provided as an unnamed argument. If the value is not an array, returns the value as-is. If the array is empty, returns an empty string.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.LIST],
+            }),
+        ],
+        callback: (_args, value) => {
+            // Closures are not supported
+            if (value instanceof SlashCommandClosure) {
+                return '';
+            }
+
+            // Get only strings from an argument array
+            if (Array.isArray(value)) {
+                return JSON.stringify(value.filter(x => typeof x === 'string')?.[0] ?? '');
+            }
+
+            try {
+                // If the value is a JSON array, get the first element
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) {
+                    return JSON.stringify(parsed?.[0] ?? '');
+                }
+                return value;
+            } catch {
+                // Not a valid JSON - return as-is
+                return value;
+            }
+        },
+    }));
+
     registerVariableCommands();
 }
 
