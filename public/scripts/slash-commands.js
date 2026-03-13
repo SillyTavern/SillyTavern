@@ -3223,7 +3223,7 @@ export function initDefaultSlashCommands() {
                 description: t`value`,
                 acceptsMultiple: false,
                 isRequired: true,
-                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER],
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST],
             }),
         ],
         callback: (_args, value) => {
