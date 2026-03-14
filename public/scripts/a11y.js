@@ -231,6 +231,218 @@ function applyGenericA11yRules(rootElement) {
 }
 
 /**
+ * Registry of specific, complex DOM processors.
+ * Each function accepts a `root` element to support incremental DOM updates
+ * when UI sections are dynamically injected via AJAX or React.
+ */
+const SpecificProcessors = {
+    /**
+     * Dynamically finds and links form inputs (range sliders, textboxes, dropdowns)
+     * with their visible textual labels using `aria-labelledby` and `aria-describedby`.
+     *
+     * SillyTavern's UI relies heavily on structure rather than explicit `<label for="...">`
+     * tags. This function crawls the DOM adjacent to inputs to find appropriate headings
+     * (e.g., <h4>, <b>, .range-block-title), generates unique IDs for them, and maps
+     * them to the input elements.
+     *
+     * @param {Element|Document} root - The root container to process.
+     */
+    inputs: (root) => {
+        const $root = $(root);
+        // Target all inputs (including range sliders), textareas, and dropdowns.
+        const $inputs = $root
+            .find('input, textarea, select')
+            .addBack('input, textarea, select');
+
+        $inputs.each(function () {
+            const $el = $(this);
+            // Ignore hidden inputs entirely.
+            if ($el.is('[type="hidden"]')) return;
+            // Skip if the element already has a valid aria-labelledby pointing to an existing DOM node.
+            if (
+                $el.attr('aria-labelledby') &&
+                document.getElementById($el.attr('aria-labelledby'))
+            )
+                return;
+
+            // Step 1: Ensure the input itself has an ID.
+            let id = $el.attr('id');
+            if (!id) {
+                id = 'st-a11y-' + Math.random().toString(36).substr(2, 5);
+                $el.attr('id', id);
+            }
+
+            let $label = null;
+
+            // Step 2: Try to find a standard <label> associated with this input's ID.
+            if ($el.attr('id')) {
+                const $forLabel = $(`label[for="${$el.attr('id')}"]`);
+                if ($forLabel.length) $label = $forLabel;
+            }
+
+            // Step 3: If no standard label exists, crawl DOM structure backwards/upwards to find one.
+            if (!$label || !$label.length) {
+                let $curr = $el;
+
+                // Try jumping back up to 4 siblings/wrappers.
+                for (let i = 0; i < 4; i++) {
+                    let $prev = $curr.prev();
+                    let attempts = 0;
+
+                    // Traverse previous siblings up to 5 times looking for heading tags or bold text.
+                    while ($prev.length && attempts < 5) {
+                        if (
+                            $prev.is(
+                                '.range-block-title, h4, h3, h5, label, strong, b',
+                            )
+                        ) {
+                            $label = $prev;
+                            break;
+                        }
+
+                        // Check if the heading is nested immediately inside the sibling.
+                        const $nestedTitle = $prev
+                            .find(
+                                '.range-block-title, h4, h3, h5, label, strong, b',
+                            )
+                            .first();
+                        if ($nestedTitle.length) {
+                            $label = $nestedTitle;
+                            break;
+                        }
+
+                        // Skip layout fluff like dividers, tooltips, or empty spans.
+                        if (
+                            $prev.is(
+                                '.toggle-description, .neutral_warning, small, hr, .inline-drawer-toggle, .notes-link, .fa-circle-info',
+                            ) ||
+                            $prev.hasClass('notes-link') ||
+                            $prev.text().trim() === ''
+                        ) {
+                            $prev = $prev.prev();
+                            attempts++;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if ($label && $label.length) break;
+
+                    // If not found in siblings, step out to the parent container and try again.
+                    const $parent = $curr.parent();
+                    if (
+                        $parent.length &&
+                        ($parent.hasClass('range-block-range') ||
+                            $parent.hasClass('range-block-range-and-counter') ||
+                            $parent.hasClass('range-block') ||
+                            $parent.hasClass('wide100p') ||
+                            $parent.hasClass('flex-container') ||
+                            $parent.hasClass('oneline-dropdown') ||
+                            $parent.is('div'))
+                    ) {
+                        $curr = $parent;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            // Step 4: Fallback for specific UI structures like .range-block wrappers.
+            if (!$label || !$label.length) {
+                const $container = $el.closest('.range-block');
+                if ($container.length) {
+                    $label = $container
+                        .find('.range-block-title, h4, h3, label')
+                        .first();
+                }
+            }
+
+            // Step 5: Assign the found label via aria-labelledby.
+            if ($label && $label.length) {
+                if ($label.is($el)) return; // Prevent infinite self-referencing.
+                if ($label.closest('.neutral_warning').length) return; // Avoid reading warning banners as labels.
+
+                // If label wraps a span/b instead of pure text, point to the child element for cleaner reading.
+                if (
+                    $label.children().length > 0 &&
+                    !$label.text().trim() &&
+                    $label.find('span, b, strong').length
+                ) {
+                    $label = $label.find('span, b, strong').first();
+                }
+
+                const titleId = $label.attr('id') || 'label-' + id;
+                $label.attr('id', titleId);
+                $el.attr('aria-labelledby', titleId);
+            }
+
+            // Step 6: Find and associate helper text/descriptions using aria-describedby.
+            const $descContainer = $el.closest(
+                '.range-block, .wide100p, .flex-container',
+            );
+            if ($descContainer.length) {
+                const $desc = $descContainer
+                    .find(
+                        '.text_muted, .toggle-description, small.flexBasis100p',
+                    )
+                    .filter(function () {
+                        return $(this).text().trim().length > 0;
+                    })
+                    .first();
+
+                if ($desc.length && !$el.attr('aria-describedby')) {
+                    const descId = $desc.attr('id') || 'desc-' + id;
+                    $desc.attr('id', descId);
+                    $el.attr('aria-describedby', descId);
+                }
+            }
+
+            // Step 7: Apply specific roles and boundary attributes for number inputs.
+            if ($el.is('[type="number"]')) {
+                $el.attr('role', 'spinbutton');
+                const min = $el.attr('min'),
+                    max = $el.attr('max');
+                if (min !== undefined) $el.attr('aria-valuemin', min);
+                if (max !== undefined) $el.attr('aria-valuemax', max);
+            }
+        });
+
+        // Step 8: Make 'Remove' buttons inside Select2 multi-select boxes accessible.
+        $root
+            .find('.select2-selection__choice__remove')
+            .addBack('.select2-selection__choice__remove')
+            .each(function () {
+                const $btn = $(this);
+                if ($btn.attr('tabindex')) return;
+                $btn.attr('tabindex', '0');
+                const $item = $btn.closest('.select2-selection__choice');
+                const title =
+                    $item.attr('title') ||
+                    $item.find('.select2-selection__choice__display').text();
+                if (title) $btn.attr('aria-label', `Remove ${title}`);
+            });
+    },
+};
+
+/**
+ * Main entry point to apply specific accessibility enhancements.
+ * Iterates through all modular processors defined in SpecificProcessors.
+ *
+ * @param {Element|Document} rootElement - The root element to scan (default: document).
+ */
+const enhanceSpecificA11y = (rootElement = document) => {
+    if (!isA11yEnabled) return;
+
+    Object.values(SpecificProcessors).forEach((process) => {
+        try {
+            process(rootElement);
+        } catch (e) {
+            console.warn('[A11y] Processor error:', e);
+        }
+    });
+};
+
+/**
  * Logs a message with a timestamp and prefix for filtering.
  * Used primarily for debugging focus transitions and trap activations.
  *
@@ -328,6 +540,9 @@ function cleanupA11y() {
         'role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby aria-haspopup aria-checked aria-level',
     );
 
+    $('[id^="st-a11y-"]').removeAttr('id');
+    $('[id^="label-st-a11y-"]').removeAttr('id');
+
     logDebug('cleanupA11y', 'Accessibility features cleaned up.');
 }
 
@@ -345,6 +560,7 @@ export function setAccessibilityEnabled(enabled) {
     }
 
     applyGenericA11yRules(document.body);
+    enhanceSpecificA11y(document.body);
 
     logDebug('setAccessibilityEnabled', 'Accessibility features enabled.');
 }
@@ -354,6 +570,7 @@ export function setAccessibilityEnabled(enabled) {
  */
 export function initAccessibility() {
     applyGenericA11yRules(document.body);
+    enhanceSpecificA11y(document.body);
 
     logDebug('initAccessibility', 'Accessibility module initialized.');
 }
