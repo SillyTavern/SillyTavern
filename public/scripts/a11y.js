@@ -1,5 +1,6 @@
 import { chat } from '../script.js';
 import { t } from './i18n.js';
+import { debounce } from './utils.js';
 import { eventSource, event_types } from './events.js';
 import { extension_settings } from './extensions.js';
 import { focusTrap } from '../lib.js';
@@ -16,6 +17,12 @@ let currentFocusTrap = null;
 const DEBUG_A11Y = new URLSearchParams(window.location.search).has(
     'debug_a11y',
 );
+
+// Focus trap references for various modal popups
+let activePopupTrap = null;
+let previousFocusBeforePopup = null;
+let optionsMenuTrap = null;
+let extensionsMenuTrap = null;
 
 /** Selectors for elements that function as buttons but might be <div> or <span> tags. */
 const buttonSelectors = [
@@ -929,6 +936,138 @@ export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
 }
 
 /**
+ * Safely creates or updates a focus trap for a specific popup.
+ *
+ * @param {any} trapRef - Existing trap reference (if any)
+ * @param {string} selector - CSS selector for the popup
+ * @param {Object} options - FocusTrap options
+ * @returns {any} The updated trap reference
+ */
+function setupTrapForPopup(trapRef, selector, options = {}) {
+    const el = /** @type {HTMLElement} */ (document.querySelector(selector));
+    if (!el) return trapRef;
+
+    const isVisible = $(el).is(':visible') && $(el).css('opacity') !== '0';
+
+    if (isVisible && !trapRef) {
+        try {
+            trapRef = focusTrap.createFocusTrap(el, {
+                escapeDeactivates: false,
+                clickOutsideDeactivates: false,
+                allowOutsideClick: true,
+                fallbackFocus: el,
+                ...options,
+            });
+            trapRef.activate();
+            logDebug('FocusTrap', `Activated trap for ${selector}`);
+        } catch (e) {
+            console.warn(`[A11y] Failed to activate trap for ${selector}`, e);
+        }
+    } else if (!isVisible && trapRef) {
+        try {
+            trapRef.deactivate();
+            logDebug('FocusTrap', `Deactivated trap for ${selector}`);
+        } catch (e) {
+            logDebug(
+                'FocusTrap',
+                `Failed to deactivate trap for ${selector}`,
+                e,
+            );
+        }
+        trapRef = null;
+    }
+    return trapRef;
+}
+
+/**
+ * Manages keyboard focus traps for all major dialogs.
+ * Ensures users cannot accidentally tab into the background while a popup is open.
+ * Evaluates popups based on their z-index/priority hierarchy.
+ */
+export const managePopupTraps = () => {
+    if (!isA11yEnabled || !focusTrap) return;
+
+    // Native <dialog> elements have their own supreme focus trapping mechanism.
+    // If an inline-drawer or menu trap is active in the background, its global 'keydown'
+    // listener will intercept Tab/Enter keys, effectively freezing the native dialog.
+    // We PAUSE all our custom traps temporarily if any native dialog is open.
+    const isNativeModalOpen =
+        document.querySelectorAll('dialog[open]').length > 0;
+
+    if (isNativeModalOpen) {
+        if (currentFocusTrap && !currentFocusTrap.paused)
+            currentFocusTrap.pause();
+        if (optionsMenuTrap && !optionsMenuTrap.paused) optionsMenuTrap.pause();
+        if (extensionsMenuTrap && !extensionsMenuTrap.paused)
+            extensionsMenuTrap.pause();
+        return; // Exit early. Let the browser's native modal handle all keyboard events.
+    } else {
+        // Restore background traps if the native modal was just closed
+        if (currentFocusTrap && currentFocusTrap.paused)
+            currentFocusTrap.unpause();
+        if (optionsMenuTrap && optionsMenuTrap.paused)
+            optionsMenuTrap.unpause();
+        if (extensionsMenuTrap && extensionsMenuTrap.paused)
+            extensionsMenuTrap.unpause();
+    }
+
+    // Define trap hierarchy.
+    // NOTE: Native <dialog> elements (like #dialogue_popup, #custom_popup, #character_popup)
+    // are EXCLUDED because the browser natively traps focus for them.
+    // We only apply manual focus traps to custom floating <div> menus.
+    const popups = [
+        {
+            id: '#options',
+            ref: optionsMenuTrap,
+            setRef: (val) => (optionsMenuTrap = val),
+        },
+        {
+            id: '#extensionsMenu',
+            ref: extensionsMenuTrap,
+            setRef: (val) => (extensionsMenuTrap = val),
+        },
+    ];
+
+    let foundActive = false;
+    for (const p of popups) {
+        const el = document.querySelector(p.id);
+        const isVisible =
+            el && $(el).is(':visible') && $(el).css('opacity') !== '0';
+
+        if (isVisible && !foundActive) {
+            foundActive = true;
+            // Only save previous focus if we weren't already inside a popup
+            if (
+                !activePopupTrap &&
+                document.activeElement &&
+                document.activeElement !== document.body
+            ) {
+                previousFocusBeforePopup = document.activeElement;
+            }
+            activePopupTrap = p.id;
+            p.setRef(setupTrapForPopup(p.ref, p.id));
+        } else {
+            // Deactivate others
+            p.setRef(setupTrapForPopup(p.ref, p.id));
+        }
+    }
+
+    if (!foundActive && activePopupTrap) {
+        // All popups are closed, restore focus safely
+        activePopupTrap = null;
+        if (
+            previousFocusBeforePopup &&
+            document.body.contains(previousFocusBeforePopup)
+        ) {
+            $(previousFocusBeforePopup).trigger('focus');
+        } else {
+            $('#send_textarea').trigger('focus');
+        }
+        previousFocusBeforePopup = null;
+    }
+};
+
+/**
  * Removes all accessibility enhancements, attributes, and listeners.
  */
 function cleanupA11y() {
@@ -956,6 +1095,26 @@ function cleanupA11y() {
     $('#autoComplete').removeAttr('role');
     $('.autoCompleteItem').removeAttr('role aria-selected id');
     $('.autoCompleteDetailsWrap').removeAttr('aria-live aria-atomic');
+
+    // Cleanup focus traps
+    const traps = [optionsMenuTrap, extensionsMenuTrap];
+    traps.forEach((trap) => {
+        if (trap) {
+            try {
+                trap.deactivate();
+            } catch (e) {
+                logDebug(
+                    'cleanupA11y',
+                    'Trap deactivation failed during cleanup',
+                    e,
+                );
+            }
+        }
+    });
+
+    optionsMenuTrap = null;
+    extensionsMenuTrap = null;
+    activePopupTrap = null;
 
     logDebug('cleanupA11y', 'Accessibility features cleaned up.');
 }
@@ -1201,6 +1360,51 @@ export function initAccessibility() {
             attributeFilter: ['class'],
         });
     }
+
+    /**
+     * Debounced observer to manage focus traps whenever modals/popups appear or disappear.
+     * Watches the body for style changes on modal wrappers.
+     */
+    const debouncedTrapManager = debounce(() => managePopupTraps(), 100);
+    const bodyObserver = new MutationObserver((mutations) => {
+        if (!isA11yEnabled) return;
+
+        let shouldCheckTraps = false;
+        for (const m of mutations) {
+            // ST creates and destroys dialogs dynamically, so we must watch childList
+            if (m.type === 'childList') {
+                shouldCheckTraps = true;
+                break;
+            }
+            // Watch 'open' attribute for native dialog toggles
+            if (
+                m.type === 'attributes' &&
+                (m.attributeName === 'style' ||
+                    m.attributeName === 'class' ||
+                    m.attributeName === 'open')
+            ) {
+                const target = /** @type {HTMLElement} */ (m.target);
+                if (
+                    target.id !== 'send_textarea' &&
+                    !target.classList.contains('mes')
+                ) {
+                    shouldCheckTraps = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldCheckTraps) {
+            debouncedTrapManager();
+        }
+    });
+
+    bodyObserver.observe(document.body, {
+        childList: true, // Crucial for detecting dynamically injected <dialog> popups
+        attributes: true,
+        subtree: true,
+        attributeFilter: ['style', 'class', 'open'],
+    });
 
     logDebug('initAccessibility', 'Accessibility module initialized.');
 }
