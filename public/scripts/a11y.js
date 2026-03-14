@@ -614,6 +614,64 @@ const SpecificProcessors = {
                 }
             });
     },
+
+    /**
+     * Enhances the Slash Command Autocomplete dropdown and Details panel.
+     * Manages `aria-activedescendant` on the chat textarea to read out
+     * the currently highlighted slash command as the user arrows up/down.
+     */
+    autoComplete: (root) => {
+        const $root = $(root);
+
+        // Process the main autocomplete listbox
+        const $ac = $root.find('#autoComplete').addBack('#autoComplete');
+        if ($ac.length) {
+            $ac.attr('role', 'listbox');
+
+            const $items = $ac.find('.autoCompleteItem');
+            let hasSelection = false;
+
+            $items.each(function (index) {
+                const $item = $(this);
+                if (!$item.attr('id')) {
+                    $item.attr('id', 'ac-item-' + index);
+                }
+
+                const isSelected = $item.hasClass('selected');
+                $item.attr({
+                    role: 'option',
+                    'aria-selected': isSelected ? 'true' : 'false',
+                });
+
+                if (isSelected) {
+                    hasSelection = true;
+                    // Point the text area's active descendant to the selected option
+                    $('#send_textarea').attr(
+                        'aria-activedescendant',
+                        $item.attr('id'),
+                    );
+                }
+            });
+
+            // If nothing is selected or list is hidden, clear the active descendant
+            if (!hasSelection || !$ac.is(':visible')) {
+                $('#send_textarea').removeAttr('aria-activedescendant');
+            }
+        }
+
+        // Process the details panel (Macro parameter descriptions)
+        const $details = $root
+            .find('.autoCompleteDetailsWrap')
+            .addBack('.autoCompleteDetailsWrap');
+        if ($details.length) {
+            if (!$details.attr('aria-live')) {
+                $details.attr({
+                    'aria-live': 'polite',
+                    'aria-atomic': 'true',
+                });
+            }
+        }
+    },
 };
 
 /**
@@ -795,6 +853,12 @@ function cleanupA11y() {
 
     // Remove chat message specific classes
     $('.a11y-refactored').removeClass('a11y-refactored');
+
+    // Remove autocomplete properties
+    $('#send_textarea').removeAttr('aria-activedescendant');
+    $('#autoComplete').removeAttr('role');
+    $('.autoCompleteItem').removeAttr('role aria-selected id');
+    $('.autoCompleteDetailsWrap').removeAttr('aria-live aria-atomic');
 
     logDebug('cleanupA11y', 'Accessibility features cleaned up.');
 }
@@ -1017,6 +1081,29 @@ export function initAccessibility() {
             return;
         }
     });
+
+    /**
+     * Set up a MutationObserver specifically for the Autocomplete UI.
+     * The autocomplete list updates very fast on keystrokes, so we observe
+     * class changes (for the '.selected' state) and child nodes.
+     */
+    const acContainer = document.getElementById('autoComplete');
+    if (acContainer) {
+        const acObserver = new MutationObserver(() => {
+            if (isA11yEnabled) {
+                SpecificProcessors.autoComplete(acContainer);
+                SpecificProcessors.autoComplete(
+                    document.querySelector('.autoCompleteDetailsWrap'),
+                );
+            }
+        });
+        acObserver.observe(acContainer, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class'],
+        });
+    }
 
     logDebug('initAccessibility', 'Accessibility module initialized.');
 }
