@@ -130,17 +130,12 @@ router.post('/update', async (request, response) => {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
         }
 
-        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
-        const isRepo = await gitClient.checkIsRepo(extensionPath);
-        if (!isRepo) {
+        const updateState = await getRepoUpdateState(gitClient, extensionPath);
+        if (!updateState.isRepo) {
             throw new Error(`Directory is not a Git repository at ${extensionPath}`);
         }
-        const currentBranch = await gitClient.branch(extensionPath);
-        if (!currentBranch.current) {
-            throw new Error(`No current branch found for repository at ${extensionPath}`);
-        }
-        if (!isUpToDate) {
-            await gitClient.pull(extensionPath, { remote: 'origin', branch: currentBranch.current });
+        if (!updateState.isUpToDate) {
+            await gitClient.pull(extensionPath, { remote: updateState.remote, branch: updateState.remoteBranch });
             console.info(`Extension has been updated at ${extensionPath}`);
         } else {
             console.info(`Extension is up to date at ${extensionPath}`);
@@ -149,7 +144,12 @@ router.post('/update', async (request, response) => {
         const fullCommitHash = await gitClient.resolveRef(extensionPath, 'HEAD');
         const shortCommitHash = fullCommitHash.slice(0, 7);
 
-        return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
+        return response.send({
+            shortCommitHash,
+            extensionPath,
+            isUpToDate: updateState.isUpToDate,
+            remoteUrl: updateState.remoteUrl,
+        });
     } catch (error) {
         console.error('Updating extension failed', error);
         return response.status(500).send('Internal Server Error. Check the server logs for more details.');

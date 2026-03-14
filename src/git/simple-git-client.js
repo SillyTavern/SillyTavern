@@ -12,10 +12,8 @@ import {
     SHORT_COMMIT_LENGTH,
     assertAllowedOptions,
     buildTrackingRef,
-    getRequiredFetchRemote,
     getRequiredStringOption,
     isShallowRepository,
-    normalizeRemote,
 } from './git-common.js';
 
 /**
@@ -29,7 +27,6 @@ export class SimpleGitClient {
         this.backend = GIT_BACKENDS.SYSTEM;
         /** @type {Partial<import('simple-git').SimpleGitOptions>} */
         this.repoOptions = timeout ? { timeout: { block: timeout } } : {};
-        this.git = simpleGit();
     }
 
     /**
@@ -59,7 +56,8 @@ export class SimpleGitClient {
             cloneOptions['--branch'] = options.branch;
         }
 
-        await this.git.clone(url, localPath, cloneOptions);
+        // Called directly to bypass timeout for clone
+        await simpleGit().clone(url, localPath, cloneOptions);
     }
 
     /**
@@ -78,7 +76,7 @@ export class SimpleGitClient {
     async fetch(localPath, options = {}) {
         assertAllowedOptions('fetch', options, FETCH_OPTION_KEYS);
         const repositoryGit = this.getRepositoryGit(localPath);
-        const remote = getRequiredFetchRemote(options);
+        const remote = getRequiredStringOption('fetch', options, 'remote', 'e.g. { remote: "origin" }');
         const unshallow = Boolean(options.unshallow);
 
         if (unshallow) {
@@ -97,7 +95,7 @@ export class SimpleGitClient {
     async branch(localPath, options = {}) {
         assertAllowedOptions('branch', options, BRANCH_OPTION_KEYS);
         const repositoryGit = this.getRepositoryGit(localPath);
-        const remote = normalizeRemote(options.remote);
+        const remote = options.remote;
 
         if (remote) {
             return repositoryGit.branch(['-r', '--list', `${remote}/*`]);
@@ -147,30 +145,6 @@ export class SimpleGitClient {
             const remote = (await repositoryGit.raw(['config', '--get', `branch.${branch}.remote`])).trim();
             const mergeRef = (await repositoryGit.raw(['config', '--get', `branch.${branch}.merge`])).trim();
             return buildTrackingRef(remote, mergeRef);
-        } catch {
-            return null;
-        }
-    }
-
-    /**
-     * @param {string} localPath
-     * @param {string} branch
-     * @returns {Promise<{ remote: string, branch: string } | null>}
-     */
-    async getTrackingInfo(localPath, branch) {
-        if (typeof branch !== 'string' || !branch) {
-            return null;
-        }
-
-        try {
-            const repositoryGit = this.getRepositoryGit(localPath);
-            const remote = (await repositoryGit.raw(['config', '--get', `branch.${branch}.remote`])).trim();
-            const mergeRef = (await repositoryGit.raw(['config', '--get', `branch.${branch}.merge`])).trim();
-            if (!remote || !mergeRef) {
-                return null;
-            }
-            const remoteBranch = mergeRef.startsWith('refs/heads/') ? mergeRef.slice('refs/heads/'.length) : mergeRef;
-            return { remote, branch: remoteBranch };
         } catch {
             return null;
         }
@@ -233,7 +207,7 @@ export class SimpleGitClient {
         const repositoryGit = this.getRepositoryGit(localPath);
         const branch = getRequiredStringOption('checkout', options, 'branch');
         const create = Boolean(options.create);
-        const remote = normalizeRemote(options.remote);
+        const remote = options.remote;
 
         if (create) {
             if (remote) {

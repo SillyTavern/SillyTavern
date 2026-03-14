@@ -18,10 +18,8 @@ import {
     assertAllowedOptions,
     buildTrackingRef,
     createBranchSummary,
-    getRequiredFetchRemote,
     getRequiredStringOption,
     isShallowRepository,
-    normalizeRemote,
 } from './git-common.js';
 
 /**
@@ -92,7 +90,7 @@ export class IsomorphicGitClient {
      */
     async fetch(localPath, options = {}) {
         assertAllowedOptions('fetch', options, FETCH_OPTION_KEYS);
-        const remote = getRequiredFetchRemote(options);
+        const remote = getRequiredStringOption('fetch', options, 'remote', 'e.g. { remote: "origin" }');
         const unshallow = Boolean(options.unshallow);
 
         const fetchOptions = {
@@ -125,7 +123,7 @@ export class IsomorphicGitClient {
      */
     async branch(localPath, options = {}) {
         assertAllowedOptions('branch', options, BRANCH_OPTION_KEYS);
-        const remote = normalizeRemote(options.remote);
+        const remote = options.remote;
 
         if (remote) {
             const remoteBranchNames = (await git.listBranches({ fs, dir: localPath, remote }))
@@ -194,29 +192,6 @@ export class IsomorphicGitClient {
 
     /**
      * @param {string} localPath
-     * @param {string} branch
-     * @returns {Promise<{ remote: string, branch: string } | null>}
-     */
-    async getTrackingInfo(localPath, branch) {
-        if (typeof branch !== 'string' || !branch) {
-            return null;
-        }
-
-        try {
-            const remote = await git.getConfig({ fs, dir: localPath, path: `branch.${branch}.remote` });
-            const mergeRef = await git.getConfig({ fs, dir: localPath, path: `branch.${branch}.merge` });
-            if (!remote || !mergeRef) {
-                return null;
-            }
-            const remoteBranch = mergeRef.startsWith('refs/heads/') ? mergeRef.slice('refs/heads/'.length) : mergeRef;
-            return { remote, branch: remoteBranch };
-        } catch {
-            return null;
-        }
-    }
-
-    /**
-     * @param {string} localPath
      * @returns {Promise<import('./git-common.js').GitRemote[]>}
      */
     async listRemotes(localPath) {
@@ -273,7 +248,7 @@ export class IsomorphicGitClient {
         assertAllowedOptions('checkout', options, CHECKOUT_OPTION_KEYS);
         const branch = getRequiredStringOption('checkout', options, 'branch');
         const create = Boolean(options.create);
-        const remote = normalizeRemote(options.remote);
+        const remote = options.remote;
 
         if (create && remote) {
             await git.checkout({

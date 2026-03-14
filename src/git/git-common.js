@@ -32,7 +32,7 @@ export const SHORT_COMMIT_LENGTH = 7;
 
 /**
  * @typedef {object} GitBranchOptions
- * @property {boolean | string} [remote]
+ * @property {string} [remote]
  */
 
 /**
@@ -45,7 +45,7 @@ export const SHORT_COMMIT_LENGTH = 7;
  * @typedef {object} GitCheckoutOptions
  * @property {string} branch
  * @property {boolean} [create]
- * @property {boolean | string} [remote]
+ * @property {string} [remote]
  */
 
 /**
@@ -85,11 +85,6 @@ export const SHORT_COMMIT_LENGTH = 7;
  */
 
 /**
- * @typedef {object} GitRepoUpdateStateOptions
- * @property {string} [remote]
- */
-
-/**
  * @typedef {object} GitClient
  * @property {'system' | 'builtin'} backend
  * @property {(url: string, localPath: string, options?: GitCloneOptions) => Promise<void>} clone
@@ -99,7 +94,6 @@ export const SHORT_COMMIT_LENGTH = 7;
  * @property {(localPath: string, ref: string) => Promise<string>} resolveRef
  * @property {(localPath: string, ref: string) => Promise<GitCommitInfo>} getCommitInfo
  * @property {(localPath: string, branch: string) => Promise<string | null>} getTrackingRef
- * @property {(localPath: string, branch: string) => Promise<{ remote: string, branch: string } | null>} getTrackingInfo
  * @property {(localPath: string) => Promise<GitRemote[]>} listRemotes
  * @property {(localPath: string, options: GitIsDescendentOptions) => Promise<boolean>} isDescendent
  * @property {(localPath: string, options: GitPullOptions) => Promise<void>} pull
@@ -120,23 +114,6 @@ export function assertAllowedOptions(method, options, allowedKeys) {
             throw new Error(`Unsupported ${method} option: ${key}`);
         }
     }
-}
-
-/**
- * @param {boolean | string | undefined} remote
- * @param {string | undefined} [fallback]
- * @returns {string | undefined}
- */
-export function normalizeRemote(remote, fallback = undefined) {
-    if (remote === true) {
-        return 'origin';
-    }
-
-    if (typeof remote === 'string' && remote) {
-        return remote;
-    }
-
-    return fallback;
 }
 
 /**
@@ -174,14 +151,6 @@ export function getRequiredStringOption(method, options, option, hint = '') {
 
     const hintSuffix = hint ? `, ${hint}` : '';
     throw new Error(`${method}() requires a non-empty "${option}" option${hintSuffix}.`);
-}
-
-/**
- * @param {GitFetchOptions} options
- * @returns {string}
- */
-export function getRequiredFetchRemote(options) {
-    return getRequiredStringOption('fetch', options, 'remote', 'e.g. { remote: "origin" }');
 }
 
 /**
@@ -228,20 +197,13 @@ export function isShallowRepository(localPath) {
 }
 
 /**
- * @param {Array<{name: string, commit: string, label: string, current: boolean}>} entries
- * @param {string} [current]
- * @param {boolean} [detached]
- * @returns {{all: string[], branches: Record<string, {current: boolean, linkedWorkTree: boolean, name: string, commit: string, label: string}>, current: string, detached: boolean}}
- */
-/**
  * Determine whether a repository has updates available on a remote for its current branch.
  * @param {GitClient} gitClient
  * @param {string} localPath
- * @param {GitRepoUpdateStateOptions} [options]
  * @returns {Promise<GitRepoUpdateState>}
  */
-export async function getRepoUpdateState(gitClient, localPath, options = {}) {
-    const defaultRemote = typeof options.remote === 'string' && options.remote ? options.remote : 'origin';
+export async function getRepoUpdateState(gitClient, localPath) {
+    const remote = 'origin';
     const isRepo = await gitClient.checkIsRepo(localPath);
     if (!isRepo) {
         return {
@@ -262,9 +224,7 @@ export async function getRepoUpdateState(gitClient, localPath, options = {}) {
         throw new Error(`No current branch found for repository at ${localPath}`);
     }
 
-    const trackingInfo = await gitClient.getTrackingInfo(localPath, branch);
-    const remote = trackingInfo?.remote ?? defaultRemote;
-    const remoteBranch = trackingInfo?.branch ?? branch;
+    const remoteBranch = branch;
 
     await gitClient.fetch(localPath, { remote });
 
@@ -289,6 +249,12 @@ export async function getRepoUpdateState(gitClient, localPath, options = {}) {
     };
 }
 
+/**
+ * @param {Array<{name: string, commit: string, label: string, current: boolean}>} entries
+ * @param {string} [current]
+ * @param {boolean} [detached]
+ * @returns {{all: string[], branches: Record<string, {current: boolean, linkedWorkTree: boolean, name: string, commit: string, label: string}>, current: string, detached: boolean}}
+ */
 export function createBranchSummary(entries, current = '', detached = !current) {
     const branches = entries.reduce((result, entry) => {
         result[entry.name] = {
