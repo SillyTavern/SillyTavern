@@ -672,6 +672,102 @@ const SpecificProcessors = {
             }
         }
     },
+
+    /**
+     * Fixes specific static HTML panels (e.g., TTS, SD, API settings) that lack proper structure.
+     */
+    staticFixes: (root) => {
+        const $root = $(root);
+
+        // Ensure API/URL inputs have explicit labels where layout structure fails standard rules
+        $root
+            .find('#api_url_text, #api_key_text, #textgenerationwebui_api_url')
+            .addBack(
+                '#api_url_text, #api_key_text, #textgenerationwebui_api_url',
+            )
+            .each(function () {
+                const $el = $(this);
+                if (!$el.attr('aria-label') && !$el.attr('aria-labelledby')) {
+                    const text = $el
+                        .closest('.api-settings-block, .wide100p')
+                        .find('h3, h4, span, label')
+                        .first()
+                        .text();
+                    if (text) $el.attr('aria-label', text.trim());
+                }
+            });
+    },
+
+    /**
+     * Adds dialog and menu semantics to modal wrappers.
+     */
+    popupsAndMenus: (root) => {
+        const $root = $(root);
+
+        // Generic Popups
+        $root
+            .find('#dialogue_popup, #custom_popup, .popup, #shadow_popup')
+            .addBack('#dialogue_popup, #custom_popup, .popup, #shadow_popup')
+            .each(function () {
+                const $popup = $(this);
+                if (!$popup.attr('role')) {
+                    $popup.attr({
+                        role: 'dialog',
+                        'aria-modal': 'true',
+                    });
+                }
+
+                // Try to find a header to label the dialog
+                const $header = $popup.find('h3, h4, .popup-title').first();
+                if ($header.length && !$popup.attr('aria-labelledby')) {
+                    let id = $header.attr('id');
+                    if (!id) {
+                        id =
+                            'dialog-title-' +
+                            Math.random().toString(36).substr(2, 5);
+                        $header.attr('id', id);
+                    }
+                    $popup.attr('aria-labelledby', id);
+                }
+            });
+
+        // Context Menus
+        $root
+            .find('.menu_popup')
+            .addBack('.menu_popup')
+            .each(function () {
+                if (!$(this).attr('role')) {
+                    $(this).attr('role', 'menu');
+                    $(this).find('.menu_item').attr('role', 'menuitem');
+                }
+            });
+    },
+
+    /**
+     * Enhances pagination controls to read out page numbers clearly.
+     */
+    pagination: (root) => {
+        const $root = $(root);
+        $root
+            .find('.paginationjs-pages li')
+            .addBack('.paginationjs-pages li')
+            .each(function () {
+                const $li = $(this);
+                const $a = $li.find('a');
+                if ($a.length && !$a.attr('aria-label')) {
+                    const pageText = $a.text().trim();
+                    // Avoid replacing next/prev symbols, target only raw numbers
+                    if (/^\d+$/.test(pageText)) {
+                        $a.attr('aria-label', t`Page ${pageText}`);
+                    }
+                    if ($li.hasClass('active')) {
+                        $a.attr('aria-current', 'page');
+                    } else {
+                        $a.removeAttr('aria-current');
+                    }
+                }
+            });
+    },
 };
 
 /**
@@ -841,15 +937,16 @@ function cleanupA11y() {
 
     $(`[${GENERIC_ATTR}]`).removeAttr(GENERIC_ATTR);
     $(
-        '[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"]',
+        '[role="button"], [role="list"], [role="listitem"], [role="toolbar"], [role="tablist"], [role="tab"], [role="status"], [role="dialog"], [role="menu"], [role="menuitem"]',
     ).removeAttr(
-        'role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby aria-haspopup aria-checked aria-level',
+        'role tabindex aria-label aria-hidden aria-expanded aria-controls aria-pressed aria-valuemin aria-valuemax aria-describedby aria-labelledby aria-haspopup aria-checked aria-level aria-modal aria-current',
     );
 
     $('[id^="st-a11y-"]').removeAttr('id');
     $('[id^="label-st-a11y-"]').removeAttr('id');
     $('[id^="drawer-"]').removeAttr('id');
     $('[id^="title-drawer-"]').removeAttr('id');
+    $('[id^="dialog-title-"]').removeAttr('id');
 
     // Remove chat message specific classes
     $('.a11y-refactored').removeClass('a11y-refactored');
