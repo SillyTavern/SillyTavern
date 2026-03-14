@@ -2,12 +2,16 @@ import { chat } from '../script.js';
 import { t } from './i18n.js';
 import { eventSource, event_types } from './events.js';
 import { extension_settings } from './extensions.js';
+import { focusTrap } from '../lib.js';
 
 /** @type {boolean} Global flag indicating if accessibility enhancements are active. */
 let isA11yEnabled = false;
 
 /** @type {boolean} Tracks if the AI is currently generating a response to prevent duplicate announcements. */
 let isAiGenerating = false;
+
+/** @type {any} Tracks the currently active focus trap for drawers/popups. */
+let currentFocusTrap = null;
 
 const DEBUG_A11Y = new URLSearchParams(window.location.search).has(
     'debug_a11y',
@@ -501,6 +505,115 @@ const SpecificProcessors = {
                 if (title) $btn.attr('aria-label', `Remove ${title}`);
             });
     },
+
+    /**
+     * Processes inline collapsible drawers (accordions).
+     * Adds `aria-expanded` and links the toggle button to the content via `aria-controls`.
+     */
+    drawers: (root) => {
+        const $root = $(root);
+        $root
+            .find('.inline-drawer')
+            .addBack('.inline-drawer')
+            .each(function () {
+                const $drawer = $(this);
+                const $header = $drawer.children('.inline-drawer-toggle');
+                if ($header.attr('aria-controls')) return;
+
+                const $content = $drawer.children('.inline-drawer-content');
+                const $icon = $header.find('.inline-drawer-icon');
+                if (!$content.length || !$header.length) return;
+
+                let contentId = $content.attr('id');
+                if (!contentId) {
+                    contentId =
+                        'drawer-' + Math.random().toString(36).substr(2, 6);
+                    $content.attr('id', contentId);
+                }
+                const isExpanded = $content.is(':visible');
+
+                $header.attr({
+                    role: 'button',
+                    tabindex: '0',
+                    'aria-expanded': isExpanded ? 'true' : 'false',
+                    'aria-controls': contentId,
+                });
+
+                $icon
+                    .attr({ 'aria-hidden': 'true', tabindex: '-1' })
+                    .removeAttr('role');
+
+                const $title = $header.find('b, strong, span').first();
+                if ($title.length) {
+                    const titleId = $title.attr('id') || 'title-' + contentId;
+                    $title.attr('id', titleId);
+                    $header.attr('aria-labelledby', titleId);
+                }
+            });
+    },
+
+    /**
+     * Enhances side navigation panels and character setting specific UI elements.
+     */
+    navAndCharPanel: (root) => {
+        const $root = $(root);
+
+        // Pin/Unpin Panel Buttons
+        $root
+            .find('#lm_button_panel_pin_div, #rm_button_panel_pin_div')
+            .addBack('#lm_button_panel_pin_div, #rm_button_panel_pin_div')
+            .each(function () {
+                const $container = $(this);
+                const $btnDiv = $container.find('.right_menu_button');
+                if ($btnDiv.attr('aria-pressed')) return;
+
+                const $checkbox = $container.find('input[type="checkbox"]');
+                const title = $container.attr('title') || 'Pin Panel';
+                const isChecked = $checkbox.prop('checked');
+                $btnDiv
+                    .attr('aria-label', title)
+                    .attr('aria-pressed', isChecked ? 'true' : 'false');
+            });
+
+        // Add aria-labels to right menu buttons that only have titles
+        const charPanelSelectors =
+            '#rm_button_bar .menu_button, #rm_button_bar .right_menu_button, #HotSwapWrapper .hotswap, #rm_button_characters';
+        $root
+            .find(charPanelSelectors)
+            .addBack(charPanelSelectors)
+            .each(function () {
+                const $btn = $(this);
+                if ($btn.attr('aria-label')) return;
+                const title =
+                    $btn.attr('title') ||
+                    $btn.attr('data-i18n-title') ||
+                    $btn.attr('data-original-title');
+                if (title) $btn.attr('aria-label', title.split('\n')[0].trim());
+            });
+
+        // World Info / Lorebook Selectors
+        $root
+            .find('.character_world_info_selector, .chat_world_info_selector')
+            .addBack(
+                '.character_world_info_selector, .chat_world_info_selector',
+            )
+            .each(function () {
+                const $el = $(this);
+                if ($el.attr('aria-labelledby')) return;
+
+                const $container = $el.closest('.range-block');
+                const $label = $container
+                    .find('.range-block-title h3, .range-block-title h4')
+                    .first();
+                if ($label.length) {
+                    const labelId =
+                        $label.attr('id') ||
+                        'lbl-wi-' + Math.random().toString(36).substr(2, 5);
+                    $label.attr('id', labelId);
+                    $el.attr('aria-labelledby', labelId);
+                }
+            });
+    },
 };
 
 /**
@@ -606,6 +719,62 @@ export function announceA11y(text, force = false) {
 }
 
 /**
+ * Manages focus when expanding/collapsing side drawers (Inline Drawers).
+ * Ensures keyboard focus doesn't get lost or trapped incorrectly.
+ *
+ * @param {JQuery} triggerButton - The button user clicked to toggle drawer.
+ * @param {HTMLElement} drawerElement - The content element of the drawer.
+ * @param {boolean} isOpening - Whether the drawer is opening or closing.
+ */
+export function handleDrawerFocus(triggerButton, drawerElement, isOpening) {
+    if (!isA11yEnabled) return;
+
+    if (isOpening) {
+        triggerButton.attr('aria-expanded', 'true');
+
+        if (currentFocusTrap) {
+            try {
+                currentFocusTrap.deactivate();
+            } catch (e) {
+                console.warn('Focus trap error', e);
+            }
+        }
+
+        if (focusTrap && drawerElement) {
+            currentFocusTrap = focusTrap.createFocusTrap(drawerElement, {
+                initialFocus: false,
+                fallbackFocus: drawerElement,
+                escapeDeactivates: false,
+                clickOutsideDeactivates: true,
+                returnFocusOnDeactivate: false,
+            });
+            setTimeout(() => {
+                try {
+                    currentFocusTrap.activate();
+                } catch (e) {
+                    console.warn('Trap activate failed', e);
+                }
+            }, 100);
+        }
+    } else {
+        triggerButton.attr('aria-expanded', 'false');
+        if (currentFocusTrap) {
+            try {
+                currentFocusTrap.deactivate();
+            } catch (e) {
+                logDebug(
+                    'handleDrawerFocus',
+                    'Focus trap deactivation failed',
+                    e,
+                );
+            }
+            currentFocusTrap = null;
+        }
+        triggerButton.trigger('focus');
+    }
+}
+
+/**
  * Removes all accessibility enhancements, attributes, and listeners.
  */
 function cleanupA11y() {
@@ -621,6 +790,8 @@ function cleanupA11y() {
 
     $('[id^="st-a11y-"]').removeAttr('id');
     $('[id^="label-st-a11y-"]').removeAttr('id');
+    $('[id^="drawer-"]').removeAttr('id');
+    $('[id^="title-drawer-"]').removeAttr('id');
 
     // Remove chat message specific classes
     $('.a11y-refactored').removeClass('a11y-refactored');
@@ -764,6 +935,87 @@ export function initAccessibility() {
         isAiGenerating = false;
         announceA11y(t`AI generation stopped.`);
         $('#send_textarea').trigger('focus');
+    });
+
+    // Announce when left/right panels are pinned or unpinned
+    $(document).on(
+        'change',
+        '#lm_button_panel_pin, #rm_button_panel_pin',
+        function () {
+            if (!isA11yEnabled) return;
+            const $checkbox = $(this);
+            const $container = $checkbox.parent();
+            const $btnDiv = $container.find('.right_menu_button');
+            const isChecked = $checkbox.prop('checked');
+
+            $btnDiv.attr('aria-pressed', isChecked ? 'true' : 'false');
+
+            const panelName =
+                $checkbox.attr('id') === 'lm_button_panel_pin'
+                    ? t`AI Configuration`
+                    : t`Character Management`;
+            const status = isChecked ? t`Locked open` : t`Unlocked`;
+            announceA11y(`${panelName} panel ${status}`);
+        },
+    );
+
+    /**
+     * Defines ARIA landmarks to allow screen reader users to quickly jump
+     * between major sections of the app using shortcut keys.
+     */
+    const setupLandmarks = () => {
+        $('#top-settings-holder').attr({
+            role: 'banner',
+            'aria-label': 'Main Navigation',
+        });
+        $('#left-nav-panel').attr({
+            role: 'region',
+            'aria-label': 'AI Configuration',
+        });
+        $('#right-nav-panel').attr({
+            role: 'region',
+            'aria-label': 'Character Management',
+        });
+        $('#sheld').attr({ role: 'main', 'aria-label': 'Chat Log' });
+        $('#send_form').attr({ role: 'form', 'aria-label': 'Message Input' });
+    };
+    setupLandmarks();
+
+    // Global keyboard shortcuts for layout navigation
+    $(document).on('keydown', function (e) {
+        if (!isA11yEnabled || e.key !== 'Escape') return;
+
+        // If in text area, Escape jumps to the left navigation panel
+        if ($(e.target).is('#send_textarea')) {
+            e.preventDefault();
+            $('#leftNavDrawerIcon').trigger('focus');
+            announceA11y(t`Focus moved to Navigation Bar`);
+            return;
+        }
+
+        // If inside left nav, Escape jumps to Chat Input (or closes nav if unpinned)
+        if ($(e.target).closest('#left-nav-panel').length) {
+            if ($('#lm_button_panel_pin').is(':checked')) {
+                e.preventDefault();
+                $('#send_textarea').trigger('focus');
+                announceA11y(t`Focus moved to Chat Input`);
+            } else {
+                setTimeout(() => $('#leftNavDrawerIcon').trigger('focus'), 50);
+            }
+            return;
+        }
+
+        // If inside right nav, Escape jumps to Chat Input (or closes nav if unpinned)
+        if ($(e.target).closest('#right-nav-panel').length) {
+            if ($('#rm_button_panel_pin').is(':checked')) {
+                e.preventDefault();
+                $('#send_textarea').trigger('focus');
+                announceA11y(t`Focus moved to Chat Input`);
+            } else {
+                setTimeout(() => $('#rightNavDrawerIcon').trigger('focus'), 50);
+            }
+            return;
+        }
     });
 
     logDebug('initAccessibility', 'Accessibility module initialized.');
