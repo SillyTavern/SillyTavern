@@ -2521,6 +2521,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
     const messageHTML = getMessageTextHTML(mes, { messageId });
     const bookmarkLink = mes?.extra?.bookmark_link;
+    const hasBranches = Array.isArray(mes?.extra?.branches) && mes.extra.branches.length > 0;
     const tokenCount = mes.extra?.token_count;
     const { timerValue, timerTitle } = formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count, mes.extra?.reasoning_duration, mes.extra?.time_to_first_token);
 
@@ -2531,6 +2532,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
         'is_user': mes.is_user,
         'is_system': !!mes.is_system,
         'bookmark_link': bookmarkLink,
+        'has_branches': hasBranches ? 'true' : '',
         'force_avatar': !!mes.force_avatar,
         'timestamp': timestamp,
         // ...(type ?? { type }),
