@@ -2,7 +2,7 @@ import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
-import { focusTrap } from '../lib.js';
+
 /** @readonly */
 /** @enum {Number} */
 export const POPUP_TYPE = {
@@ -65,7 +65,6 @@ export const POPUP_RESULT = {
  * @property {string[]|string?} [classes] - Optional custom CSS classes applied to the button
  * @property {()=>void?} [action] - Optional action to perform when the button is clicked
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
- * @property {boolean?} [preventClose] - Whether to prevent the popup from closing when this button is clicked
  */
 
 /**
@@ -240,14 +239,10 @@ export class Popup {
             /** @type {CustomPopupButton} */
             const button = typeof x === 'string' ? { text: x, result: index + 2 } : x;
 
-            const buttonElement = document.createElement('button');
-            buttonElement.type = 'button';
+            const buttonElement = document.createElement('div');
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
-            if (button.preventClose) {
-                buttonElement.setAttribute('data-prevent-close', 'true');
-            }
             buttonElement.textContent = button.text;
             buttonElement.dataset.i18n = buttonElement.textContent;
             buttonElement.tabIndex = 0;
@@ -465,19 +460,10 @@ export class Popup {
 
         const keyListener = async (evt) => {
             switch (evt.key) {
-                case 'Escape': {
-                    // Handle ESC key to close the popup
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    await this.complete(POPUP_RESULT.CANCELLED);
-                    break;
-                }
                 case 'Enter': {
                     // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
                     if (evt.altKey || evt.shiftKey)
                         return;
-
-                    if (document.activeElement?.tagName === 'BUTTON') return;
 
                     // Check if we are the currently active popup
                     if (this.dlg != document.activeElement?.closest('.popup'))
@@ -503,9 +489,6 @@ export class Popup {
                         return;
                     }
 
-                    if (document.activeElement.hasAttribute('data-prevent-close')) {
-                        return;
-                    }
                     evt.preventDefault();
                     evt.stopPropagation();
                     const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
@@ -527,28 +510,12 @@ export class Popup {
      * @returns {Promise<string|number|boolean?>} A promise that resolves with the value of the popup when it is completed.
      */
     async show() {
-        // Capture the element that triggered the popup (if any) to restore focus later
-        if (document.activeElement instanceof HTMLElement) {
-            this.openerElement = document.activeElement;
-        }
-
         document.body.append(this.dlg);
 
         // Run opening animation
         this.dlg.setAttribute('opening', '');
 
         this.dlg.showModal();
-
-        try {
-            /** @type {import('focus-trap').FocusTrap} */
-            this.trap = focusTrap.createFocusTrap(this.dlg, {
-                initialFocus: () => this.dlg.querySelector('.result-control:not([style*="display: none"])') || this.dlg,
-                fallbackFocus: this.dlg,
-                allowOutsideClick: true,
-                returnFocusOnDeactivate: false, // Fix: Prevent conflict with manual focus restoration
-            });
-            this.trap.activate();
-        } catch (e) { console.warn('Focus trap failed', e); }
 
         // We need to fix the toastr to be present inside this dialog
         fixToastrForDialogs();
@@ -615,13 +582,6 @@ export class Popup {
      * @returns {Promise<string|number|boolean|undefined?>} A promise that resolves with the value of the popup when it is completed. <b>Returns `undefined` if the closing action was cancelled.</b>
      */
     async complete(result) {
-        if (result === null) return;
-
-        // Check if the currently focused element (the button clicked) has the preventClose attribute
-        if (document.activeElement?.hasAttribute('data-prevent-close')) {
-            return;
-        }
-
         // In all cases besides INPUT the popup value should be the result
         /** @type {POPUP_RESULT|number|boolean|string?} */
         let value = result;
@@ -692,12 +652,6 @@ export class Popup {
 
         // After the dialog is actually completely closed, remove it from the DOM
         runAfterAnimation(this.dlg, async () => {
-            // Fix: Deactivate the trap immediately to prevent focus locking
-            if (this.trap) {
-                try { this.trap.deactivate(); } catch (e) { /* ignore error */ }
-                this.trap = null;
-            }
-
             // Call the close on the dialog
             this.dlg.close();
 
@@ -712,21 +666,16 @@ export class Popup {
             // Remove it from the popup references
             removeFromArray(Popup.util.popups, this);
 
-            // Fix: Use setTimeout to prevent the Enter key from re-triggering the restored button (Double Popup Fix)
-            setTimeout(() => {
-                // If there is any popup below this one, see if we can set the focus
-                if (Popup.util.popups.length > 0) {
-                    const activeDialog = document.activeElement?.closest('.popup');
-                    const id = activeDialog?.getAttribute('data-id');
-                    const popup = Popup.util.popups.find(x => x.id == id);
-                    if (popup) {
-                        if (popup.lastFocus) popup.lastFocus.focus();
-                        else popup.setAutoFocus();
-                    }
-                } else if (this.openerElement instanceof HTMLElement && document.body.contains(this.openerElement)) {   // If no other popups are open, restore focus to the original trigger element
-                    this.openerElement.focus();
+            // If there is any popup below this one, see if we can set the focus
+            if (Popup.util.popups.length > 0) {
+                const activeDialog = document.activeElement?.closest('.popup');
+                const id = activeDialog?.getAttribute('data-id');
+                const popup = Popup.util.popups.find(x => x.id == id);
+                if (popup) {
+                    if (popup.lastFocus) popup.lastFocus.focus();
+                    else popup.setAutoFocus();
                 }
-            }, 50);
+            }
 
             this.#resolver(this.value);
         });

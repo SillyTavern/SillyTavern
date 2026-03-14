@@ -38,6 +38,9 @@ import {
     resetSelectedGroup,
 } from './group-chats.js';
 import {
+    setAccessibilityEnabled,
+} from './a11y.js';
+import {
     instruct_presets,
     loadInstructMode,
     names_behavior_types,
@@ -349,7 +352,7 @@ export const power_user = {
     click_to_edit: false,
     media_display: MEDIA_DISPLAY.LIST,
     image_overswipe: IMAGE_OVERSWIPE.GENERATE,
-    accessibility_mode: true,
+    accessibility_mode: false,
 };
 
 let themes = [];
@@ -1574,6 +1577,27 @@ export async function loadPowerUserSettings(settings, data) {
             delete settings.power_user.auto_sort_tags;
         }
         Object.assign(power_user, settings.power_user);
+    }
+
+    // A11y: Allow enabling accessibility mode via URL parameter (e.g., ?a11y=true)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasA11y = urlParams.has('a11y');
+    const hasDebugA11y = urlParams.has('debug_a11y');
+
+    if (hasA11y || hasDebugA11y) {
+        const urlA11yValue = hasDebugA11y ? true : String(urlParams.get('a11y')).toLowerCase() === 'true';
+        
+        if (power_user.accessibility_mode !== urlA11yValue) {
+            power_user.accessibility_mode = urlA11yValue;
+            saveSettingsDebounced();
+            
+            const stateText = urlA11yValue ? t`Enabled` : t`Disabled`;
+            toastr.success(t`Accessibility Mode: ${stateText} (Forced via URL)`, t`Settings Updated`);
+        }
+
+        if (hasDebugA11y) {
+            toastr.warning(t`A11y Debug Console Logs: Enabled`, t`Developer Mode`);
+        }
     }
 
     if (power_user.stscript === undefined) {
@@ -4094,6 +4118,12 @@ jQuery(() => {
 
     $('#image_overswipe').on('input', function () {
         power_user.image_overswipe = $(this).val().toString();
+        saveSettingsDebounced();
+    });
+
+    $('#accessibility_mode').on('change', function () {
+        power_user.accessibility_mode = !!$(this).prop('checked');
+        setAccessibilityEnabled(power_user.accessibility_mode);
         saveSettingsDebounced();
     });
 

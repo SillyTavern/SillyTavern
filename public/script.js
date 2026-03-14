@@ -3614,10 +3614,10 @@ class StreamingProcessor {
 
     async onFinishStreaming(messageId, text) {
         await this.onProgressStreaming(messageId, text, true);
-        // A11y: Announce full response
-        announceA11y(t`AI response complete: ${text}`);
         const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
         const message = chat[messageId];
+        // A11y: Announce full response with character name
+        announceA11y(t`${message.name} replied: ${text}`);
         addCopyToCodeBlocks(messageElement);
 
         await this.reasoningHandler.finish(messageId);
@@ -4279,14 +4279,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (!dryRun) {
         deactivateSendButtons();
         announceA11y(t`AI is generating...`);
-        if (power_user.accessibility_mode) {
-            setTimeout(() => {
-                const stopBtn = document.getElementById('mes_stop');
-                if (stopBtn && stopBtn.offsetParent !== null) {
-                    stopBtn.focus();
-                }
-            }, 100);
-        }
+        // Focus stop button so it can be easily activated with Enter/Space/Escape
+        setTimeout(() => {
+            const stopBtn = document.getElementById('mes_stop');
+            if (stopBtn && stopBtn.offsetParent !== null) {
+                stopBtn.focus();
+            }
+        }, 100);
     }
 
     let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
@@ -7779,7 +7778,7 @@ export async function getSettings() {
         // Apply theme toggles from power user settings
         applyPowerUserSettings();
 
-        setAccessibilityEnabled(power_user.accessibility_mode ?? true);
+        setAccessibilityEnabled(power_user.accessibility_mode ?? false);
 
         // Load character tags
         loadTagsSettings(settings);
@@ -10901,11 +10900,6 @@ jQuery(async function () {
     $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
     $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
 
-    $('#accessibility_mode').on('change', function () {
-        power_user.accessibility_mode = !!$(this).prop('checked');
-        setAccessibilityEnabled(power_user.accessibility_mode);
-        saveSettingsDebounced();
-    });
 
     initCharacterSearch();
 
@@ -11900,6 +11894,8 @@ jQuery(async function () {
     const $navButtons = $('#top-settings-holder .drawer-icon');
 
     $navButtons.on('keydown', function (e) {
+        if (!power_user.accessibility_mode) return;
+
         // 1. Activate on Enter/Space
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
