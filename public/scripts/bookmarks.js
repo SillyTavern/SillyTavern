@@ -196,7 +196,22 @@ export async function createBranch(mesId) {
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
     } else {
+        // Temporarily strip branches from messages so the branch chat
+        // doesn't inherit the parent's branch references in its .jsonl file
+        const branchBackups = [];
+        for (let i = 0; i <= mesId; i++) {
+            if (chat[i]?.extra?.branches) {
+                branchBackups.push({ index: i, branches: chat[i].extra.branches });
+                delete chat[i].extra.branches;
+            }
+        }
+
         await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
+
+        // Restore branches on the in-memory messages
+        for (const { index, branches } of branchBackups) {
+            chat[index].extra.branches = branches;
+        }
     }
     // append to branches list if it exists
     // otherwise create it
@@ -928,16 +943,17 @@ async function showBranchGraph() {
             return;
         }
 
-        // Remove duplicate nodes from the tree
+        // Remove duplicate nodes from the tree (keep first occurrence only)
         function removeDuplicates(node, seen = new Set()) {
             if (seen.has(node.name)) {
                 return null;
             }
             seen.add(node.name);
 
-            // Recursively process children
+            // Recursively process children, sharing the same seen set
+            // so a node only appears once across the entire tree
             node.children = node.children
-                .map(child => removeDuplicates(child, new Set(seen)))
+                .map(child => removeDuplicates(child, seen))
                 .filter(Boolean);
 
             return node;
