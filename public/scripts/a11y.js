@@ -1,5 +1,13 @@
+import { chat } from '../script.js';
+import { t } from './i18n.js';
+import { eventSource, event_types } from './events.js';
+import { extension_settings } from './extensions.js';
+
 /** @type {boolean} Global flag indicating if accessibility enhancements are active. */
 let isA11yEnabled = false;
+
+/** @type {boolean} Tracks if the AI is currently generating a response to prevent duplicate announcements. */
+let isAiGenerating = false;
 
 const DEBUG_A11Y = new URLSearchParams(window.location.search).has(
     'debug_a11y',
@@ -236,6 +244,77 @@ function applyGenericA11yRules(rootElement) {
  * when UI sections are dynamically injected via AJAX or React.
  */
 const SpecificProcessors = {
+    /**
+     * Enhances chat messages by turning them into semantic `<article>` elements.
+     * Links character names and message text via `aria-labelledby`.
+     * Hides redundant visual elements (drag handles, timers) from screen readers.
+     *
+     * @param {Element|Document} root - The root container to process.
+     */
+    chat: (root) => {
+        const $root = $(root);
+        const $messages = $root.find('#chat .mes').addBack('#chat .mes');
+
+        $messages.each(function () {
+            const $mes = $(this);
+            // Skip messages that have already been processed
+            if ($mes.hasClass('a11y-refactored')) return;
+
+            const $nameText = $mes.find('.name_text');
+            const charName = $nameText.text() || 'System';
+            const isUser = $mes.attr('is_user') === 'true';
+            const timestamp = $mes.find('.timestamp').text().trim();
+            const isLast = $mes.is(':last-child');
+
+            // Generate unique IDs for the heading (name) and the message body
+            let headingId = $nameText.attr('id');
+            if (!headingId && $nameText.length) {
+                headingId =
+                    'mes-heading-' + Math.random().toString(36).substr(2, 5);
+                $nameText.attr('id', headingId);
+            }
+
+            const $mesText = $mes.find('.mes_text');
+            let textId = $mesText.attr('id');
+            if (!textId && $mesText.length) {
+                textId = 'mes-text-' + Math.random().toString(36).substr(2, 5);
+                $mesText.attr('id', textId);
+            }
+
+            // Bind the heading and text to the article wrapper so screen readers read them together
+            let labelledby = [];
+            if (headingId) labelledby.push(headingId);
+            if (textId) labelledby.push(textId);
+
+            $mes.attr({
+                role: 'article',
+                // Only make the last message initially focusable to implement "Roving Tabindex"
+                tabindex: isLast ? '0' : '-1',
+                'aria-labelledby':
+                    labelledby.length > 0 ? labelledby.join(' ') : undefined,
+            }).addClass('a11y-refactored');
+
+            // Make the character name a semantic heading
+            if ($nameText.length) {
+                const youStr = t`You`;
+                $nameText.attr({
+                    role: 'heading',
+                    'aria-level': '3',
+                    'aria-label': `${isUser ? youStr : charName} ${timestamp ? ', ' + timestamp : ''}`,
+                });
+            }
+
+            // Label the swipe buttons for alternative greetings/swipes
+            $mes.find('.swipe_left').attr('aria-label', t`Swipe Left`);
+            $mes.find('.swipe_right').attr('aria-label', t`Swipe Right`);
+
+            // Hide visual clutter from screen readers (they don't need to read the drag handle or internal IDs)
+            $mes.find(
+                '.mesIDDisplay, .drag-handle, .swipes-counter, .mes_timer, .timestamp',
+            ).attr('aria-hidden', 'true');
+        });
+    },
+
     /**
      * Dynamically finds and links form inputs (range sliders, textboxes, dropdowns)
      * with their visible textual labels using `aria-labelledby` and `aria-describedby`.
@@ -543,6 +622,9 @@ function cleanupA11y() {
     $('[id^="st-a11y-"]').removeAttr('id');
     $('[id^="label-st-a11y-"]').removeAttr('id');
 
+    // Remove chat message specific classes
+    $('.a11y-refactored').removeClass('a11y-refactored');
+
     logDebug('cleanupA11y', 'Accessibility features cleaned up.');
 }
 
@@ -572,9 +654,117 @@ export function initAccessibility() {
     applyGenericA11yRules(document.body);
     enhanceSpecificA11y(document.body);
 
-    logDebug('initAccessibility', 'Accessibility module initialized.');
-}
+    /**
+     * Helper to move keyboard focus between chat messages.
+     * Implements the "Roving Tabindex" pattern manually.
+     */
+    const moveMessageFocus = ($current, $target) => {
+        if ($target.length) {
+            $current.attr('tabindex', '-1');
+            $target.attr('tabindex', '0').trigger('focus');
+            $target[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    };
 
-export function handleDrawerFocus(container, drawer, isOpening) {
-    if (!isA11yEnabled) return;
+    // Chat messages keyboard navigation (Up/Down arrows to move between messages)
+    $(document).on('keydown', '#chat .mes', function (e) {
+        if (!isA11yEnabled) return;
+        if (e.target !== this) return; // Ignore events bubbling up from inputs inside the message
+
+        const $this = $(this);
+        const $allMessages = $('#chat .mes:visible');
+        const index = $allMessages.index($this);
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (index < $allMessages.length - 1) {
+                    moveMessageFocus($this, $allMessages.eq(index + 1));
+                }
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                if (index > 0) {
+                    moveMessageFocus($this, $allMessages.eq(index - 1));
+                }
+                break;
+            case 'Escape':
+                e.preventDefault();
+                $('#send_textarea').trigger('focus');
+                announceA11y(t`Returned to text input`);
+                break;
+        }
+    });
+
+    // Announce when AI starts generating a response
+    eventSource.on(event_types.GENERATION_STARTED, (context) => {
+        if (!isA11yEnabled) return;
+
+        const typeStr =
+            typeof context === 'string' ? context : context?.type || 'normal';
+        const isQuiet =
+            typeof context === 'string'
+                ? context === 'quiet'
+                : context?.quiet || false;
+
+        // Skip quiet generations (e.g., summarize, classify) so we don't spam the user
+        if (
+            isQuiet ||
+            typeStr === 'quiet' ||
+            typeStr === 'summarize' ||
+            typeStr === 'classify'
+        )
+            return;
+
+        if (!isAiGenerating) {
+            isAiGenerating = true;
+            announceA11y(t`AI is generating response...`);
+            // Attempt to move focus to the Stop button
+            setTimeout(() => {
+                const stopBtn = document.getElementById('mes_stop');
+                if (stopBtn && stopBtn.offsetParent !== null) stopBtn.focus();
+            }, 50);
+        }
+    });
+
+    // Announce when the AI has finished rendering the message (Works for both streaming and non-streaming APIs)
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mid) => {
+        if (!isA11yEnabled) return;
+        isAiGenerating = false;
+
+        const msg = /** @type {any} */ (chat[mid]);
+        if (msg) {
+            // TTS Overlap Avoidance: Check if the user has ST's native TTS extension enabled.
+            // If TTS is enabled, it takes over the reading. We skip the screen reader aria-live
+            // announcement here to prevent two voices talking over each other.
+            const isTtsEnabled = extension_settings?.tts?.enabled;
+
+            if (!isTtsEnabled) {
+                const charName = msg.name || 'System';
+                // Announce character name + full text
+                announceA11y(t`${charName} replied: ${msg.mes}`);
+            } else {
+                console.log(
+                    '[A11y] Skipped message announcement to prevent overlap with TTS extension.',
+                );
+            }
+        }
+
+        // Update Roving Tabindex so the newest message is focusable
+        $('#chat .mes').attr('tabindex', '-1');
+        $('#chat .mes').last().attr('tabindex', '0');
+
+        // Return focus to the input box ready for the user's next reply
+        $('#send_textarea').trigger('focus');
+    });
+
+    // Announce if generation is manually stopped
+    eventSource.on(event_types.GENERATION_STOPPED, () => {
+        if (!isA11yEnabled) return;
+        isAiGenerating = false;
+        announceA11y(t`AI generation stopped.`);
+        $('#send_textarea').trigger('focus');
+    });
+
+    logDebug('initAccessibility', 'Accessibility module initialized.');
 }
