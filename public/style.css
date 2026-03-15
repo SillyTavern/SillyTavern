@@ -3683,11 +3683,6 @@ grammarly-extension {
     max-width: 90dvw !important;
 }
 
-.large_dialogue_popup:has(.branch-graph-container) {
-    width: 90vw !important;
-    width: 90dvw !important;
-}
-
 .wide_dialogue_popup {
     /* FIXME: Chrome 129 broke max-height for aspect-ratio sized elements */
     /* aspect-ratio: 1 / 1; */
@@ -4537,7 +4532,8 @@ input[type="range"]::-webkit-slider-thumb {
     overflow: auto;
     max-width: 100%;
     max-height: 100%;
-    width: fit-content;
+    width: 90vw;
+    width: 90dvw;
     height: fit-content;
 }
 

@@ -9,6 +9,7 @@
         <div class="branch-graph-node {{#if isCurrentChat}}current-chat{{/if}}"
              data-file-name=""
              data-node-index="{{@index}}"
+             {{#unless isCurrentChat}}data-result="{{@index}}"{{/unless}}
              style="position: absolute; left: {{x}}px; top: {{y}}px; width: {{width}}px;">
             <div class="branch-graph-node-name">
                 <i class="fa-solid fa-{{#if isCurrentChat}}circle-dot{{else}}circle{{/if}}"></i>
