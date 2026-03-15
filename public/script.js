@@ -5862,34 +5862,60 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-export async function duplicateCharacter() {
-    if (this_chid === undefined || !characters[this_chid]) {
-        toastr.warning(t`You must first select a character to duplicate!`);
-        return '';
+/**
+ * Duplicates a character.
+ * @param {object} [options={}] - Options
+ * @param {string} [options.avatar] - Avatar key of the character to duplicate. Uses current character if not provided.
+ * @param {boolean} [options.silent=false] - Whether to skip the confirmation popup
+ * @returns {Promise<string>} The avatar key of the duplicated character, or empty string if cancelled/failed
+ */
+export async function duplicateCharacter({ avatar = null, silent = false } = {}) {
+    // Determine the character to duplicate
+    let targetAvatar;
+    if (avatar) {
+        const character = characters.find(c => c.avatar === avatar);
+        if (!character) {
+            toastr.warning(t`Character not found: ${avatar}`);
+            return '';
+        }
+        targetAvatar = avatar;
+    } else {
+        if (this_chid === undefined || !characters[this_chid]) {
+            toastr.warning(t`You must first select a character to duplicate!`);
+            return '';
+        }
+        targetAvatar = characters[this_chid].avatar;
     }
 
-    const confirmMessage = $(await renderTemplateAsync('duplicateConfirm'));
-    const confirm = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
+    // Show confirmation unless silent
+    if (!silent) {
+        const confirmMessage = $(await renderTemplateAsync('duplicateConfirm'));
+        const confirm = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
 
-    if (!confirm) {
-        console.log('User cancelled duplication');
-        return '';
+        if (!confirm) {
+            console.log('User cancelled duplication');
+            return '';
+        }
     }
 
-    const body = { avatar_url: characters[this_chid].avatar };
+    const body = { avatar_url: targetAvatar };
     const response = await fetch('/api/characters/duplicate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(body),
     });
-    if (response.ok) {
-        toastr.success(t`Character Duplicated`);
-        const data = await response.json();
-        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
-        await getCharacters();
+
+    if (!response.ok) {
+        toastr.error(t`Failed to duplicate character`);
+        return '';
     }
 
-    return '';
+    toastr.success(t`Character Duplicated`);
+    const data = await response.json();
+    await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: targetAvatar, newAvatar: data.path });
+    await getCharacters();
+
+    return data.path;
 }
 
 function setInContextMessages(msgInContextCount, type) {

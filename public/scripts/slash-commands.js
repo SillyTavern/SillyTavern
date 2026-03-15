@@ -885,6 +885,13 @@ export function initDefaultSlashCommands() {
             ],
         }),
         SlashCommandNamedArgument.fromProps({
+            name: 'avatarPromptResize',
+            description: t`Whether to show the avatar resize/crop dialog when uploading (default: true). Ignored if "Never resize avatars" is enabled in settings.`,
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'true',
+            enumProvider: commonEnumProviders.boolean('trueFalse'),
+        }),
+        SlashCommandNamedArgument.fromProps({
             name: 'talkativeness',
             description: t`How often the character speaks in group chats (0.0 to 1.0)`,
             typeList: [ARGUMENT_TYPE.NUMBER],
@@ -1007,6 +1014,51 @@ export function initDefaultSlashCommands() {
                 <li>
                     <pre><code>/char-update avatar="{{pipe}}" | /imagine full body portrait</code></pre>
                     ${t`Generates an image and sets it as the current character's avatar.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-duplicate',
+        callback: duplicateCharacterCallback,
+        returns: t`the avatar key (unique identifier) of the duplicated character`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key to duplicate. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'select',
+                description: t`Whether to select/open the duplicated character after creation (default: false)`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Duplicates a character. Returns the avatar key of the duplicated character.`}
+        </div>
+        <div>
+            ${t`Use <code>/char-update</code> afterwards to modify the duplicated character's fields.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-duplicate</code></pre>
+                    ${t`Duplicates the currently selected character.`}
+                </li>
+                <li>
+                    <pre><code>/char-duplicate char="Alice" select=true</code></pre>
+                    ${t`Duplicates Alice and selects the new character.`}
+                </li>
+                <li>
+                    <pre><code>/char-duplicate | /setvar key=newChar | /char-update char="{{getvar::newChar}}" name="Clone"</code></pre>
+                    ${t`Duplicates the current character and renames the clone.`}
                 </li>
             </ul>
         </div>
@@ -5131,16 +5183,36 @@ async function resolveAvatarData(input) {
  * Uploads an avatar image to a character.
  * @param {string} avatarKey - The character's avatar filename (e.g., "name.png")
  * @param {string} base64Data - Base64 data URL of the image
- * @returns {Promise<void>}
+ * @param {object} [options={}] - Options
+ * @param {boolean} [options.resizePrompt=false] - Whether to show the resize/crop prompt
+ * @returns {Promise<boolean>} True if upload was successful, false if cancelled or failed
  */
-async function uploadCharacterAvatar(avatarKey, base64Data) {
+async function uploadCharacterAvatar(avatarKey, base64Data, { resizePrompt = false } = {}) {
     if (!base64Data || !avatarKey) {
-        return;
+        return false;
+    }
+
+    let finalImageData = base64Data;
+
+    // Handle resize prompt
+    if (resizePrompt) {
+        if (power_user.never_resize_avatars) {
+            toastr.warning(t`Avatar resizing is disabled in settings. The image will be uploaded as-is.`);
+        } else {
+            const dlg = new Popup(t`Set the crop position of the avatar image`, POPUP_TYPE.CROP, '', { cropImage: base64Data });
+            const croppedImage = await dlg.show();
+            if (!croppedImage) {
+                // User cancelled the crop dialog
+                return false;
+            }
+            // The dialog returns the already-cropped image
+            finalImageData = String(croppedImage);
+        }
     }
 
     try {
         // Convert base64 to blob
-        const response = await fetch(base64Data);
+        const response = await fetch(finalImageData);
         const blob = await response.blob();
 
         // Create form data for upload
@@ -5156,15 +5228,31 @@ async function uploadCharacterAvatar(avatarKey, base64Data) {
 
         if (!uploadResponse.ok) {
             const errorText = await uploadResponse.text();
-            throw new Error(`Failed to upload avatar: ${errorText}`);
+            throw new Error(errorText); // Will be caught and logged below
         }
 
         // Bust cache for the avatar thumbnail and character image
-        await fetch(getThumbnailUrl('avatar', avatarKey), { cache: 'reload' });
-        await fetch(`/characters/${avatarKey}`, { cache: 'reload' });
+        const thumbnailUrl = getThumbnailUrl('avatar', avatarKey);
+        await fetch(thumbnailUrl, { method: 'GET', cache: 'reload' });
+        await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
+
+        // Refresh all visible avatar images that use this thumbnail URL
+        // This handles messages, character list, and any other place using the thumbnail
+        const avatarImages = document.querySelectorAll(`img[src^="${thumbnailUrl}"]`);
+        for (const img of avatarImages) {
+            if (img instanceof HTMLImageElement) {
+                const originalSrc = img.src;
+                img.src = '';
+                img.src = originalSrc;
+            }
+        }
+        console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
+
+        return true;
     } catch (error) {
         console.error('Error uploading character avatar:', error);
         toastr.warning(t`Failed to upload avatar: ${error.message}`);
+        return false;
     }
 }
 
@@ -5179,13 +5267,16 @@ async function createCharacterCallback(args) {
     const firstMessage = args.firstMessage;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
-        throw new Error('Character name is required');
+        toastr.warning('Character name is required');
+        return '';
     }
     if (!description || typeof description !== 'string') {
-        throw new Error('Character description is required');
+        toastr.warning('Character description is required');
+        return '';
     }
     if (!firstMessage || typeof firstMessage !== 'string') {
-        throw new Error('Character first message is required');
+        toastr.warning('Character first message is required');
+        return '';
     }
 
     // Build the character data object matching the server's expected format
@@ -5224,14 +5315,19 @@ async function createCharacterCallback(args) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Failed to create character: ${errorText}`);
+            throw new Error(errorText); // Will be caught and logged below
         }
 
         const avatarKey = await response.text();
 
         // Upload avatar if provided
         if (avatarData) {
-            await uploadCharacterAvatar(avatarKey, avatarData);
+            const resizePrompt = !isFalseBoolean(args.avatarPromptResize);
+            const uploaded = await uploadCharacterAvatar(avatarKey, avatarData, { resizePrompt });
+            if (!uploaded && resizePrompt) {
+                // User cancelled the resize dialog, but character was still created
+                toastr.info(t`Character created without avatar (resize cancelled)`);
+            }
         }
 
         // Refresh the character list
@@ -5268,13 +5364,15 @@ async function updateCharacterCallback(args) {
     if (args.char) {
         character = findChar({ name: args.char });
         if (!character) {
-            throw new Error(`Character "${args.char}" not found`);
+            toastr.warning(`Character "${args.char}" not found`);
+            return '';
         }
         characterIndex = characters.indexOf(character);
     } else {
         // Use currently selected character
         if (this_chid === undefined || !characters[this_chid]) {
-            throw new Error('No character selected and no char argument provided');
+            toastr.warning('No character selected and no char argument provided');
+            return '';
         }
         character = characters[this_chid];
         characterIndex = this_chid;
@@ -5381,12 +5479,17 @@ async function updateCharacterCallback(args) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Server returned ${response.status}`);
+            throw new Error(errorData.message || `Server returned ${response.status}`); // Will be caught and logged below
         }
 
         // Upload avatar if provided
         if (avatarData) {
-            await uploadCharacterAvatar(character.avatar, avatarData);
+            const resizePrompt = !isFalseBoolean(args.avatarPromptResize);
+            const uploaded = await uploadCharacterAvatar(character.avatar, avatarData, { resizePrompt });
+            if (!uploaded && resizePrompt) {
+                // User cancelled the resize dialog
+                toastr.warning(t`Avatar update cancelled`);
+            }
         }
 
         // Refresh the character data
@@ -5409,6 +5512,42 @@ async function updateCharacterCallback(args) {
 }
 
 /**
+ * Duplicates a character via the slash command.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} The avatar key of the duplicated character
+ */
+async function duplicateCharacterCallback(args) {
+    // Find the target character if specified
+    let targetAvatar = null;
+    if (args.char) {
+        const character = findChar({ name: args.char });
+        if (!character) {
+            toastr.warning(t`Character "${args.char}" not found`);
+            return '';
+        }
+        targetAvatar = character.avatar;
+    }
+
+    // Call the duplicateCharacter utility with silent mode (no popup)
+    const newAvatarKey = await duplicateCharacter({ avatar: targetAvatar, silent: true });
+    if (!newAvatarKey) {
+        toastr.error(t`Failed to duplicate character`);
+        return '';
+    }
+
+    // Select the character if requested (default: false)
+    const shouldSelect = isTrueBoolean(args.select);
+    if (shouldSelect) {
+        const characterIndex = characters.findIndex(c => c.avatar === newAvatarKey);
+        if (characterIndex !== -1) {
+            await selectCharacterById(characterIndex);
+        }
+    }
+
+    return newAvatarKey;
+}
+
+/**
  * Gets character data or a specific field.
  * @param {object} args Named arguments
  * @returns {Promise<string>} Character data or field value
@@ -5419,12 +5558,14 @@ async function getCharacterDataCallback(args) {
     if (args.char) {
         character = findChar({ name: args.char });
         if (!character) {
-            throw new Error(`Character "${args.char}" not found`);
+            toastr.warning(t`Character "${args.char}" not found`);
+            return '';
         }
     } else {
         // Use currently selected character
         if (this_chid === undefined || !characters[this_chid]) {
-            throw new Error('No character selected and no char argument provided');
+            toastr.warning(t`No character selected and no char argument provided`);
+            return '';
         }
         character = characters[this_chid];
     }
@@ -5489,12 +5630,14 @@ async function deleteCharacterCallback(args) {
     if (args.char) {
         character = findChar({ name: args.char });
         if (!character) {
-            throw new Error(`Character "${args.char}" not found`);
+            toastr.warning(t`Character "${args.char}" not found`);
+            return 'false';
         }
     } else {
         // Use currently selected character
         if (this_chid === undefined || !characters[this_chid]) {
-            throw new Error('No character selected and no char argument provided');
+            toastr.warning(t`No character selected and no char argument provided`);
+            return 'false';
         }
         character = characters[this_chid];
     }
