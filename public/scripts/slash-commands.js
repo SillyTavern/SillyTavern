@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, getBase64Async, ensureImageFormatSupported } from './utils.js';
 
 import {
     Generate,
@@ -45,6 +45,7 @@ import {
     saveSettings,
     saveSettingsDebounced,
     selectCharacterById,
+    select_selected_character,
     sendMessageAsUser,
     sendSystemMessage,
     setActiveCharacter,
@@ -984,6 +985,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'char-get',
+        aliases: ['char-get2'],
         callback: getCharacterDataCallback,
         returns: t`character data as JSON or a specific field value`,
         namedArgumentList: [
@@ -5002,6 +5004,107 @@ async function openChat(chid) {
 }
 
 /**
+ * Resolves avatar data from various input formats (URL, base64, local path).
+ * @param {string} input - URL, base64 data URL, or local file path
+ * @returns {Promise<string|null>} Base64 data URL or null if invalid
+ */
+async function resolveAvatarData(input) {
+    if (!input || typeof input !== 'string') {
+        return null;
+    }
+
+    const trimmed = input.trim();
+
+    // Already a base64 data URL
+    if (trimmed.startsWith('data:image/')) {
+        return trimmed;
+    }
+
+    // HTTP/HTTPS URL - fetch and convert to base64
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        try {
+            const response = await fetch(trimmed);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
+            return await getBase64Async(converted);
+        } catch (error) {
+            console.error('Error fetching avatar URL:', error);
+            toastr.warning(t`Failed to fetch avatar from URL: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Local path (e.g., characters/name.png) - fetch from ST server
+    if (trimmed.includes('/') || trimmed.endsWith('.png')) {
+        try {
+            // Construct the URL to fetch the local file
+            let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+            // If there is no subfolder, we guess this should be a character image
+            if (!trimmed.includes('/', 1)) {
+                url = '/characters' + url;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch local image: ${response.status}`);
+            }
+            const blob = await response.blob();
+            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
+            return await getBase64Async(converted);
+        } catch (error) {
+            console.error('Error fetching local avatar:', error);
+            toastr.warning(t`Failed to fetch avatar from path: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Unknown format
+    console.warn('Unknown avatar format:', trimmed.substring(0, 50));
+    toastr.warning(t`Unknown avatar format. Must be a valid URL, base64 or a local path.`);
+    return null;
+}
+
+/**
+ * Uploads an avatar image to a character.
+ * @param {string} avatarKey - The character's avatar filename (e.g., "name.png")
+ * @param {string} base64Data - Base64 data URL of the image
+ * @returns {Promise<void>}
+ */
+async function uploadCharacterAvatar(avatarKey, base64Data) {
+    if (!base64Data || !avatarKey) {
+        return;
+    }
+
+    try {
+        // Convert base64 to blob
+        const response = await fetch(base64Data);
+        const blob = await response.blob();
+
+        // Create form data for upload
+        const formData = new FormData();
+        formData.append('avatar', blob, 'avatar.png');
+        formData.append('avatar_url', avatarKey);
+
+        const uploadResponse = await fetch('/api/characters/edit-avatar', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            throw new Error(`Failed to upload avatar: ${errorText}`);
+        }
+    } catch (error) {
+        console.error('Error uploading character avatar:', error);
+        toastr.warning(t`Failed to upload avatar: ${error.message}`);
+    }
+}
+
+/**
  * Creates a new character via the API.
  * @param {object} args Named arguments
  * @returns {Promise<string>} The avatar key of the created character
@@ -5034,7 +5137,7 @@ async function createCharacterCallback(args) {
         post_history_instructions: args.postHistoryInstructions ?? '',
         creator: args.creator ?? '',
         character_version: args.characterVersion ?? '',
-        tags: args.tags ?? '',
+        tags: args.tags ? args.tags.split(',').map(t => t.trim()).filter(t => t) : [],
         talkativeness: args.talkativeness ?? '0.5',
         world: args.world ?? '',
         depth_prompt_prompt: args.depthPrompt ?? '',
@@ -5045,10 +5148,8 @@ async function createCharacterCallback(args) {
         extensions: '{}',
     };
 
-    // Handle avatar URL if provided
-    if (args.avatar) {
-        characterData.avatar_url = args.avatar;
-    }
+    // Handle avatar if provided (URL or base64)
+    const avatarData = args.avatar ? await resolveAvatarData(args.avatar) : null;
 
     try {
         const response = await fetch('/api/characters/create', {
@@ -5063,6 +5164,11 @@ async function createCharacterCallback(args) {
         }
 
         const avatarKey = await response.text();
+
+        // Upload avatar if provided
+        if (avatarData) {
+            await uploadCharacterAvatar(avatarKey, avatarData);
+        }
 
         // Refresh the character list
         await getCharacters();
@@ -5136,10 +5242,15 @@ async function updateCharacterCallback(args) {
     let hasUpdates = false;
     for (const [argName, fieldName] of Object.entries(fieldMappings)) {
         if (args[argName] !== undefined) {
-            updateData[fieldName] = args[argName];
+            let value = args[argName];
+            // Handle tags as comma-separated array
+            if (fieldName === 'tags' && typeof value === 'string') {
+                value = value.split(',').map(t => t.trim()).filter(t => t);
+            }
+            updateData[fieldName] = value;
             // Also set in data object for V2 spec compliance
             if (!updateData.data) updateData.data = {};
-            updateData.data[fieldName] = args[argName];
+            updateData.data[fieldName] = value;
             hasUpdates = true;
         }
     }
@@ -5166,9 +5277,9 @@ async function updateCharacterCallback(args) {
         hasUpdates = true;
     }
 
-    // Handle avatar URL
-    if (args.avatar !== undefined) {
-        updateData.avatar_url = args.avatar;
+    // Handle avatar (resolve URL/base64, upload separately after merge)
+    const avatarData = args.avatar ? await resolveAvatarData(args.avatar) : null;
+    if (avatarData) {
         hasUpdates = true;
     }
 
@@ -5209,10 +5320,20 @@ async function updateCharacterCallback(args) {
             throw new Error(errorData.message || `Server returned ${response.status}`);
         }
 
+        // Upload avatar if provided
+        if (avatarData) {
+            await uploadCharacterAvatar(character.avatar, avatarData);
+        }
+
         // Refresh the character data
         await getOneCharacter(character.avatar);
 
         await eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: characterIndex, character: characters[characterIndex] } });
+
+        // Update the side panel if this is the currently selected character
+        if (characterIndex === this_chid) {
+            select_selected_character(this_chid, { switchMenu: false });
+        }
 
         toastr.success(t`Character "${character.name}" updated successfully`);
         return character.avatar;
