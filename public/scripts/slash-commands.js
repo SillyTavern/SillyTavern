@@ -771,7 +771,7 @@ export function initDefaultSlashCommands() {
         `,
     }));
 
-    // Shared character field definitions for char-create and char-update commands
+    // Shared character field definitions for char CRUD commands
     const getCharacterFieldArgs = ({ requiredFields = [] } = {}) => [
         SlashCommandNamedArgument.fromProps({
             name: 'name',
@@ -841,9 +841,22 @@ export function initDefaultSlashCommands() {
         }),
         SlashCommandNamedArgument.fromProps({
             name: 'tags',
-            description: t`Comma-separated list of tags`,
+            description: t`Comma-separated list of character card tags (embedded in the card, not ST's folder/filter tags). Use /tag-add for ST tags or /tag-import to import card tags as ST tags.`,
             typeList: [ARGUMENT_TYPE.STRING],
             isRequired: requiredFields.includes('tags'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'favorite',
+            description: t`Whether this character is a favorite`,
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            enumProvider: commonEnumProviders.boolean('trueFalse'),
+            isRequired: requiredFields.includes('favorite'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'avatar',
+            description: t`Avatar image URL. Can be a web URL, another character's avatar path, or output from /imagine command.`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('avatar'),
         }),
         SlashCommandNamedArgument.fromProps({
             name: 'talkativeness',
@@ -906,13 +919,19 @@ export function initDefaultSlashCommands() {
             </ul>
         </div>
         <div>
+            <strong>${t`Note on tags:`}</strong> ${t`The <code>tags</code> argument sets character card tags (embedded in the character file), not SillyTavern's folder/filter tags. To add ST tags after creation, use <code>/tag-add</code>. To import card tags as ST tags, use <code>/tag-import</code>.`}
+        </div>
+        <div>
+            <strong>${t`Note on avatar:`}</strong> ${t`The <code>avatar</code> argument accepts a URL to an image. This can be a web URL, a path to another character's avatar (e.g., from <code>/char-get field=avatar</code>), or the output of <code>/imagine</code> if image generation is enabled.`}
+        </div>
+        <div>
             <strong>${t`Example:`}</strong>
             <ul>
                 <li>
                     <pre><code>/char-create name="Alice" description="A friendly AI assistant" firstMessage="Hello! How can I help you today?"</code></pre>
                 </li>
                 <li>
-                    <pre><code>/char-create name="Bob" description="A wise wizard" firstMessage="Greetings, traveler." personality="Wise, patient" scenario="A magical library" tags="fantasy,wizard"</code></pre>
+                    <pre><code>/char-create name="Bob" description="A wise wizard" firstMessage="Greetings, traveler." personality="Wise, patient" scenario="A magical library" favorite=true</code></pre>
                 </li>
             </ul>
         </div>
@@ -939,6 +958,12 @@ export function initDefaultSlashCommands() {
             ${t`If no <code>char</code> argument is provided, updates the currently selected character.`}
         </div>
         <div>
+            <strong>${t`Note on tags:`}</strong> ${t`The <code>tags</code> argument sets character card tags (embedded in the PNG), not SillyTavern's folder/filter tags. To add ST tags, use <code>/tag-add</code>. To import card tags as ST tags, use <code>/tag-import</code>.`}
+        </div>
+        <div>
+            <strong>${t`Note on avatar:`}</strong> ${t`The <code>avatar</code> argument accepts a URL to an image. This can be a web URL, a path to another character's avatar, or the output of <code>/imagine</code>.`}
+        </div>
+        <div>
             <strong>${t`Example:`}</strong>
             <ul>
                 <li>
@@ -946,8 +971,12 @@ export function initDefaultSlashCommands() {
                     ${t`Updates the currently selected character's description.`}
                 </li>
                 <li>
-                    <pre><code>/char-update char="Alice" personality="Cheerful and energetic" scenario="At a coffee shop"</code></pre>
-                    ${t`Updates Alice's personality and scenario without needing to select her first.`}
+                    <pre><code>/char-update char="Alice" personality="Cheerful and energetic" favorite=true</code></pre>
+                    ${t`Updates Alice's personality and marks her as a favorite.`}
+                </li>
+                <li>
+                    <pre><code>/char-update avatar="{{pipe}}" | /imagine full body portrait</code></pre>
+                    ${t`Generates an image and sets it as the current character's avatar.`}
                 </li>
             </ul>
         </div>
@@ -983,6 +1012,7 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('tags', t`Character tags`, enumTypes.enum),
                     new SlashCommandEnumValue('talkativeness', t`Talkativeness`, enumTypes.enum),
                     new SlashCommandEnumValue('avatar', t`Avatar filename`, enumTypes.enum),
+                    new SlashCommandEnumValue('fav', t`Favorite status`, enumTypes.enum),
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
@@ -1023,9 +1053,8 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'char',
-                description: t`Character name or avatar key`,
+                description: t`Character name or avatar key. If not provided, uses the currently selected character.`,
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
                 enumProvider: commonEnumProviders.characters('character'),
             }),
             SlashCommandNamedArgument.fromProps({
@@ -1048,14 +1077,17 @@ export function initDefaultSlashCommands() {
             ${t`Deletes a character from the system.`}
         </div>
         <div>
+            ${t`If no <code>char</code> argument is provided, deletes the currently selected character.`}
+        </div>
+        <div>
             <strong>${t`Warning:`}</strong> ${t`This action is irreversible!`}
         </div>
         <div>
             <strong>${t`Example:`}</strong>
             <ul>
                 <li>
-                    <pre><code>/char-delete char="Alice"</code></pre>
-                    ${t`Deletes Alice (will show confirmation popup).`}
+                    <pre><code>/char-delete</code></pre>
+                    ${t`Deletes the currently selected character (will show confirmation popup).`}
                 </li>
                 <li>
                     <pre><code>/char-delete char="Bob" deleteChats=true silent=true</code></pre>
@@ -5008,10 +5040,15 @@ async function createCharacterCallback(args) {
         depth_prompt_prompt: args.depthPrompt ?? '',
         depth_prompt_depth: args.depthPromptDepth ?? '4',
         depth_prompt_role: args.depthPromptRole ?? 'system',
-        fav: 'false',
+        fav: isTrueBoolean(args.favorite) ? 'true' : 'false',
         alternate_greetings: [],
         extensions: '{}',
     };
+
+    // Handle avatar URL if provided
+    if (args.avatar) {
+        characterData.avatar_url = args.avatar;
+    }
 
     try {
         const response = await fetch('/api/characters/create', {
@@ -5117,6 +5154,22 @@ async function updateCharacterCallback(args) {
             updateData.data.extensions.talkativeness = talkValue;
             hasUpdates = true;
         }
+    }
+
+    // Handle favorite
+    if (args.favorite !== undefined) {
+        const favValue = isTrueBoolean(args.favorite);
+        updateData.fav = favValue;
+        if (!updateData.data) updateData.data = {};
+        if (!updateData.data.extensions) updateData.data.extensions = {};
+        updateData.data.extensions.fav = favValue;
+        hasUpdates = true;
+    }
+
+    // Handle avatar URL
+    if (args.avatar !== undefined) {
+        updateData.avatar_url = args.avatar;
+        hasUpdates = true;
     }
 
     // Handle depth prompt fields
@@ -5246,14 +5299,19 @@ async function getCharacterDataCallback(args) {
  * @returns {Promise<string>} 'true' if deleted, 'false' otherwise
  */
 async function deleteCharacterCallback(args) {
-    const charArg = args.char;
-    if (!charArg) {
-        throw new Error('Character name or avatar key is required');
-    }
-
-    const character = findChar({ name: charArg });
-    if (!character) {
-        throw new Error(`Character "${charArg}" not found`);
+    // Find the target character
+    let character;
+    if (args.char) {
+        character = findChar({ name: args.char });
+        if (!character) {
+            throw new Error(`Character "${args.char}" not found`);
+        }
+    } else {
+        // Use currently selected character
+        if (this_chid === undefined || !characters[this_chid]) {
+            throw new Error('No character selected and no char argument provided');
+        }
+        character = characters[this_chid];
     }
 
     const deleteChats = isTrueBoolean(args.deleteChats);
