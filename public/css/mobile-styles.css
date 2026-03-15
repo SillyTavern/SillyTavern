@@ -38,6 +38,56 @@
         grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
     }
 
+    .bg_folder_grid {
+        grid-template-columns: repeat(var(--bg-thumb-columns, 3), 1fr);
+    }
+
+    .bg_folder_tile .bg_folder_tile_menu {
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.9);
+    }
+
+    .bg_folder_tile:hover .bg_folder_tile_menu,
+    .bg_folder_tile:focus-within .bg_folder_tile_menu {
+        display: none;
+    }
+
+    .bg_folder_tile.mobile-menu-open .bg_folder_tile_menu {
+        display: flex;
+        opacity: 1;
+        visibility: visible;
+        transform: scale(1);
+        z-index: 4;
+    }
+
+    .bg_folder_tile.mobile-menu-open .mobile-only-menu-toggle {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .bg_folder_tile .mobile-only-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 30px;
+        height: 30px;
+        background-color: rgba(0, 0, 0, 0.4);
+        color: white;
+        border-radius: 6px;
+        z-index: 3;
+        cursor: pointer;
+        backdrop-filter: blur(2px);
+    }
+
+    .bg_folder_tile .jg-button {
+        width: 30px;
+        height: 30px;
+    }
+
     .bg_list {
         width: unset;
     }
@@ -102,8 +152,29 @@
     }
 
     #add_background_button_top>span,
-    #auto_background>span {
+    #auto_background>span,
+    #bg_add_folder_button>span,
+    #bg_selection_mode_button>span:not(#bg_group_select_count),
+    #bg_group_add_to_folder_button>span,
+    #bg_folder_remove_selected_button>span {
         display: none;
+    }
+
+    #bg_group_select_count:not(:empty) {
+        display: inline !important;
+    }
+
+    .bg_folder_breadcrumb {
+        gap: 5px;
+    }
+
+    .bg_folder_breadcrumb .expander {
+        min-width: 0;
+    }
+
+    #bg_current_folder_name {
+        min-width: 0;
+        flex: 1 1 auto;
     }
 
     #extensions_settings,

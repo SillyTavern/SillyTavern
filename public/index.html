@@ -1982,7 +1982,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,xai,electronhub,chutes,nanogpt">
+                                    <div class="range-block" data-source="makersuite,vertexai,aimlapi,openrouter,claude,electronhub,chutes,nanogpt">
                                         <label for="openai_enable_web_search" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_enable_web_search" type="checkbox" />
                                             <span data-i18n="Enable web search">Enable web search</span>
@@ -2009,6 +2009,30 @@
                                             <span data-i18n="enable_functions_desc_1">Allows using </span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" data-i18n="enable_functions_desc_2">function tools</a>.
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="openrouter">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10">
+                                            <div class="flex-container oneline-dropdown">
+                                                <label for="tool_reasoning_mode" data-i18n="Interleaved Thinking">
+                                                    Interleaved Thinking
+                                                </label>
+                                                <select id="tool_reasoning_mode">
+                                                    <option data-i18n="Disabled" value="disabled">Disabled</option>
+                                                    <option data-i18n="Since Last User Message" value="since_last_user">Since Last User Message</option>
+                                                    <option data-i18n="Active Tool Chain" value="active_chain">Active Tool Chain</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="openrouter_interleaved_thinking_hint">
+                                                Sends reasoning from preceding assistant turns with tool-call requests to maintain interleaved thinking context.
+                                            </span>
+                                        </div>
+                                        <div id="openrouter_interleaved_thinking_disabled_hint" class="toggle-description justifyLeft" style="display:none;">
+                                            <em data-i18n="Enable &quot;Request model reasoning&quot; to use Interleaved Thinking.">
+                                                Enable "Request model reasoning" to use Interleaved Thinking.
+                                            </em>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes">
@@ -2105,7 +2129,7 @@
                                             <span data-i18n="Allows the model to return its thinking process.">
                                                 Allows the model to return its thinking process.
                                             </span>
-                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai,moonshot">
+                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai,moonshot,openrouter">
                                                 This setting affects visibility only.
                                             </strong>
                                         </div>
@@ -2127,6 +2151,9 @@
                                             <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
                                                 OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
                                             </div>
+                                            <strong class="toggle-description justifyLeft marginBot5" data-source="openrouter">
+                                                Request model reasoning = Off with Reasoning Effort = Minimum disables reasoning entirely on models that support that, but can cause errors with some models.
+                                            </strong>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
                                                 Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.
                                             </div>
@@ -2155,6 +2182,9 @@
                                             <div class="toggle-description justifyLeft marginBot5" data-i18n="Constrains the verbosity of the model's response.">
                                                 Constrains the verbosity of the model's response.
                                             </div>
+                                            <strong class="toggle-description justifyLeft marginBot5" data-source="claude">
+                                                On Opus 4.6 / Sonnet 4.6, a non-automatic Reasoning Effort takes precedence over Verbosity.
+                                            </strong>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="claude">
@@ -2433,10 +2463,13 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <h4 data-i18n="Model Providers">Model Providers</h4>
+                                    <h4>
+                                        <span data-i18n="Model Providers">Model Providers</span>
+                                        <i id="openrouter_provider_warning_text" class="fa-solid fa-circle-exclamation displayNone" title="Deselect inapplicable provider(s) or select an applicable provider to avoid a 404 error."></i>
+                                    </h4>
                                     <select id="openrouter_providers_text" class="openrouter_providers" multiple>
                                     </select>
-                                    <label class="checkbox_label" data-tg-samplers="openrouter_allow_fallbacks" data-i18n="[title]Automatically chooses an alternative provider if chosen providers can't serve your request." for="openrouter_allow_fallbacks_textgenerationwebui" title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
+                                    <label class="checkbox_label" data-i18n="[title]Automatically chooses an alternative provider if chosen providers can't serve your request." for="openrouter_allow_fallbacks_textgenerationwebui" title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
                                         <input id="openrouter_allow_fallbacks_textgenerationwebui" type="checkbox" />
                                         <span data-i18n="Allow fallback providers">Allow fallback providers</span>
                                     </label>
@@ -2995,6 +3028,12 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
+                                    <optgroup label="GPT-5.4">
+                                        <option value="gpt-5.4">gpt-5.4</option>
+                                    </optgroup>
+                                    <optgroup label="GPT-5.3">
+                                        <option value="gpt-5.3-chat-latest">gpt-5.3-chat-latest</option>
+                                    </optgroup>
                                     <optgroup label="GPT-5.2">
                                         <option value="gpt-5.2">gpt-5.2</option>
                                         <option value="gpt-5.2-2025-12-11">gpt-5.2-2025-12-11</option>
@@ -3107,6 +3146,7 @@
                                         <option value="claude-opus-4-6">claude-opus-4-6</option>
                                         <option value="claude-opus-4-5">claude-opus-4-5</option>
                                         <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
+                                        <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
                                         <option value="claude-sonnet-4-5">claude-sonnet-4-5</option>
                                         <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929</option>
                                         <option value="claude-haiku-4-5">claude-haiku-4-5</option>
@@ -3186,7 +3226,10 @@
                                 </div>
                             </div>
                             <div>
-                                <h4 data-i18n="Model Providers">Model Providers</h4>
+                                <h4>
+                                    <span data-i18n="Model Providers">Model Providers</span>
+                                    <i id="openrouter_provider_warning_chat" class="fa-solid fa-circle-exclamation displayNone" title="Deselect inapplicable provider(s) or select an applicable provider to avoid a 404 error."></i>
+                                </h4>
                                 <select id="openrouter_providers_chat" class="openrouter_providers" multiple>
                                 </select>
                                 <label class="checkbox_label marginTopBot5" for="openrouter_allow_fallbacks" data-i18n="[title]Automatically chooses an alternative provider if chosen providers can't serve your request." title="Automatically chooses an alternative provider if chosen providers can't serve your request.">
@@ -3259,6 +3302,11 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
+                                    <optgroup label="Gemini 3.1">
+                                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+                                        <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+                                        <option value="gemini-3.1-flash-image-preview">gemini-3.1-flash-image-preview</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
@@ -3432,6 +3480,11 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
+                                    <optgroup label="Gemini 3.1">
+                                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
+                                        <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+                                        <option value="gemini-3.1-flash-image-preview">gemini-3.1-flash-image-preview</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.0">
                                         <option value="gemini-3-pro-preview">gemini-3-pro-preview</option>
                                         <option value="gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
@@ -5557,6 +5610,10 @@
                             <i class="fa-solid fa-wand-magic"></i>
                             <span data-i18n="Auto-select">Auto-select</span>
                         </div>
+                        <button id="bg_add_folder_button" class="menu_button menu_button_icon" data-i18n="[title]New Folder" title="New Folder">
+                            <i class="fa-solid fa-folder-plus"></i>
+                            <span data-i18n="New Folder">New Folder</span>
+                        </button>
                         <label for="add_bg_button" id="add_background_button_top" class="menu_button menu_button_icon" data-i18n="[title]Add a new background" title="Add a new background">
                             <i class="fa-solid fa-upload"></i>
                             <span data-i18n="Add Background">Add Background</span>
@@ -5581,6 +5638,14 @@
                             <a href="#bg_chat_tab" data-i18n="Chat">Chat</a>
                         </li>
                         <div class="heading-controls">
+                            <button id="bg_group_add_to_folder_button" class="menu_button menu_button_icon" style="display:none;" data-i18n="[title]Add selected backgrounds to folder" title="Add selected backgrounds to folder">
+                                <i class="fa-solid fa-folder-tree"></i>
+                                <span data-i18n="Add to Folder">Add to Folder</span>
+                            </button>
+                            <button id="bg_selection_mode_button" class="menu_button menu_button_icon" data-i18n="[title]Select backgrounds for bulk folder actions" title="Select backgrounds for bulk folder actions">
+                                <i class="fa-solid fa-edit"></i>
+                                <span id="bg_group_select_count" style="display:none;"></span>
+                            </button>
                             <button id="bg_thumb_zoom_out" class="menu_button menu_button_icon" title="Make thumbnails smaller" data-i18n="[title]Make thumbnails smaller">
                                 <i class="fa-solid fa-minus"></i>
                             </button>
@@ -5590,6 +5655,19 @@
                         </div>
                     </ul>
                     <div id="bg_global_tab" class="bg_tab_panel">
+                        <div id="bg_folder_breadcrumb" class="bg_folder_breadcrumb" style="display:none;">
+                            <button id="bg_back_to_folders" class="menu_button menu_button_icon">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                <span data-i18n="Back">Back</span>
+                            </button>
+                            <span id="bg_current_folder_name" class="bg_current_folder_name"></span>
+                            <span class="expander"></span>
+                            <button id="bg_folder_remove_selected_button" class="menu_button menu_button_icon" style="display:none;" data-i18n="[title]Remove selected backgrounds from this folder" title="Remove selected backgrounds from this folder">
+                                <i class="fa-solid fa-folder-minus"></i>
+                                <span data-i18n="Remove from Folder">Remove from Folder</span>
+                            </button>
+                        </div>
+                        <div id="bg_folder_grid" class="bg_list bg_folder_grid"></div>
                         <div id="bg_menu_content" class="bg_list"></div>
                     </div>
                     <div id="bg_chat_tab" class="bg_tab_panel">
@@ -5754,12 +5832,18 @@
                                     <div class="persona_controls_buttons_block buttons_block">
                                         <div id="persona_rename_button" class="menu_button fa-solid fa-pencil" title="Rename Persona" data-i18n="[title]Rename Persona"></div>
                                         <div id="sync_name_button" class="menu_button fa-solid fa-sync" title="Click to set user name for all messages" data-i18n="[title]Click to set user name for all messages"></div>
-                                        <div id="persona_lore_button" class="menu_button fa-solid fa-globe" title="Persona Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Persona Lore Alt+Click to open the lorebook"></div>
+                                        <div id="persona_lore_button" class="menu_button fa-solid fa-globe" title="Persona Lore&#10;&#10;Click to load&#10;Shift/Alt-click or long-press to open 'Link to Persona Lorebook' popup" data-i18n="[title]persona_lore_button_title"></div>
 
                                         <div id="persona_set_image_button" class="menu_button fa-solid fa-image" title="Change Persona Image" data-i18n="[title]Change Persona Image"></div>
                                         <div id="persona_duplicate_button" class="menu_button fa-solid fa-clone" title="Duplicate Persona" data-i18n="[title]Duplicate Persona"></div>
                                         <div id="persona_delete_button" class="menu_button fa-solid fa-skull red_button" title="Delete Persona" data-i18n="[title]Delete Persona"></div>
                                     </div>
+                                    <label class="flex1 height100p" for="persona-management-dropdown">
+                                        <select id="persona-management-dropdown" class="text_pole">
+                                            <option value="default" disabled selected data-i18n="More...">More...</option>
+                                            <option id="persona_lorebook_link" data-i18n="Link to Persona Lorebook">Link to Persona Lorebook</option>
+                                        </select>
+                                    </label>
                                 </div>
 
                                 <h4 class="flex-container alignItemsBaseline">
@@ -5925,8 +6009,8 @@
                                                 <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                                 <input type="hidden" id="fav_checkbox" name="fav" />
                                                 <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
-                                                <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift-click to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
-                                                <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;Alt+Click to open the lorebook" data-i18n="[title]Chat Lore Alt+Click to open the lorebook"></div>
+                                                <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore&#10;&#10;Click to load&#10;Shift/Alt-click or long-press to open 'Link to World Info' popup" data-i18n="[title]world_button_title"></div>
+                                                <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;&#10;Click to load&#10;Shift/Alt-click or long-press to open 'Link to Chat Lorebook' popup" data-i18n="[title]chat_lorebook_button_title"></div>
                                                 <div id="char_connections_button" class="menu_button fa-solid fa-face-smile" title="Connected Personas" data-i18n="[title]Connected Personas"></div>
                                                 <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
                                                 <!-- <div id="set_chat_character_settings" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
@@ -6077,8 +6161,14 @@
                                 <div id="group-metadata-controls" class="marginTopBot5">
                                     <div class="flex-container wide100p">
                                         <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" />
-                                        <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
+                                        <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore&#10;&#10;Click to load&#10;Shift/Alt-click or long-press to open 'Link to Chat Lorebook' popup" data-i18n="[title]chat_lorebook_button_title"></div>
                                     </div>
+                                    <label class="flex1 height100p" for="group-chat-lorebook-dropdown">
+                                        <select id="group-chat-lorebook-dropdown" class="text_pole">
+                                            <option value="default" disabled selected data-i18n="More...">More...</option>
+                                            <option id="group_chat_lorebook_link" data-i18n="Link to Chat Lorebook">Link to Chat Lorebook</option>
+                                        </select>
+                                    </label>
                                     <div id="group_tags_div" class="wide100p">
                                         <div class="tag_controls">
                                             <input id="groupTagInput" class="text_pole textarea_compact tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" />
@@ -6558,8 +6648,32 @@
                     <div data-action="copy" class="jg-button jg-copy fa-solid fa-file-arrow-up" data-i18n="[title]Copy to global backgrounds" title="Copy to global backgrounds"></div>
                     <div data-action="edit" class="jg-button jg-edit fa-solid fa-pen-to-square fa-fw pointer" data-i18n="[title]Rename Background" title="Rename Background"></div>
                     <div data-action="delete" class="jg-button jg-delete fa-solid fa-trash-can fa-fw pointer" data-i18n="[title]Delete Background" title="Delete Background"></div>
+                    <div data-action="folder" class="jg-button jg-folder fa-solid fa-folder fa-fw pointer" data-i18n="[title]Add to folder" title="Add to folder"></div>
+                    <div data-action="set-cover" class="jg-button jg-set-cover fa-solid fa-image fa-fw pointer" data-i18n="[title]Set as folder cover" title="Set as folder cover"></div>
                 </div>
                 <div class="BGSampleTitle"></div>
+            </div>
+        </div>
+        <div id="bg_folder_tile_template" class="template_element">
+            <div class="bg_folder_tile" data-folder-id="">
+                <div class="bg_folder_tile_cover"></div>
+                <div class="bg_folder_tile_overlay">
+                    <i class="fa-solid fa-folder"></i>
+                    <span class="bg_folder_tile_name"></span>
+                </div>
+                <div class="mobile-only-menu-toggle">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </div>
+                <div class="bg_folder_tile_menu jg-menu">
+                    <div data-action="rename-folder" class="jg-button fa-solid fa-pen-to-square fa-fw pointer" data-i18n="[title]Rename folder" title="Rename folder"></div>
+                    <div data-action="delete-folder" class="jg-button fa-solid fa-trash-can fa-fw pointer" data-i18n="[title]Delete folder" title="Delete folder"></div>
+                </div>
+            </div>
+        </div>
+        <div id="bg_new_folder_template" class="template_element">
+            <div class="bg_folder_tile bg_new_folder_tile">
+                <i class="fa-solid fa-folder-plus fa-2x"></i>
+                <span data-i18n="New Folder">New Folder</span>
             </div>
         </div>
         <!-- templates for JS to reuse when needed -->

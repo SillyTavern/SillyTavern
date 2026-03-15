@@ -10,8 +10,6 @@ export class SlashCommandCommandAutoCompleteOption extends AutoCompleteOption {
     }
 
 
-
-
     /**
      * @param {SlashCommand} command
      * @param {string} name

@@ -62,10 +62,12 @@ import { POPUP_TYPE, callGenericPopup, fixToastrForDialogs } from './popup.js';
 import { loadSystemPrompts } from './sysprompt.js';
 import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { extractDominantColor, generateThemePalette, deriveBackgroundName } from './util/ThemeGenerator.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
 import { IMAGE_OVERSWIPE, MEDIA_DISPLAY } from './constants.js';
 import { t } from './i18n.js';
+import { getBackgroundPath, isCustomBackgroundUrl } from './backgrounds.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -284,9 +286,9 @@ export const power_user = {
         add_to_prompts: false,
         auto_expand: false,
         show_hidden: false,
-        prefix: '<think>\n',
-        suffix: '\n</think>',
-        separator: '\n\n',
+        prefix: '<think>',
+        suffix: '</think>',
+        separator: '\n',
         max_additions: 1,
     },
 
@@ -306,7 +308,7 @@ export const power_user = {
     custom_stopping_strings_macro: true,
     fuzzy_search: false,
     encode_tags: false,
-    experimental_macro_engine: false,
+    experimental_macro_engine: true,
     servers: [],
     bogus_folders: false,
     zoomed_avatar_magnification: false,
@@ -516,10 +518,20 @@ function switchMessageActions() {
 }
 
 function switchReducedMotion() {
+    const osReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (osReduced) {
+        power_user.reduced_motion = true;
+    }
     jQuery.fx.off = power_user.reduced_motion;
     const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
     setAnimationDuration(overrideDuration);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
+    $('#reduced_motion').prop('disabled', osReduced);
+    $('#reduced_motion').closest('label').attr('title',
+        osReduced
+            ? t`Controlled by your operating system's reduced motion setting`
+            : t`Disable animations and transitions`,
+    );
     $('body').toggleClass('reduced-motion', power_user.reduced_motion);
 }
 
@@ -536,7 +548,6 @@ function switchSwipeNumAllMessages() {
 var originalSliderValues = [];
 
 async function switchLabMode({ noReset = false } = {}) {
-
     /*     if (power_user.enableZenSliders && power_user.enableLabMode) {
             toastr.warning("Can't start Lab Mode while Zen Sliders are active")
             return
@@ -571,8 +582,6 @@ async function switchLabMode({ noReset = false } = {}) {
         $('#amount_gen').attr('min', '1')
             .attr('max', '99999')
             .attr('step', '1');
-
-
     } else if (!noReset) {
         //re apply the original sliders values to each input
         originalSliderValues.forEach(function (slider) {
@@ -628,7 +637,6 @@ async function switchZenSliders() {
         });
         $('div[id$="_zenslider"]').remove();
     }
-
 }
 async function CreateZenSliders(elmnt) {
     var originalSlider = elmnt;
@@ -814,9 +822,8 @@ async function CreateZenSliders(elmnt) {
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`);
                 //console.log(`${newSlider.attr('id')} initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
-            }
-            //handling creation of rep_pen_range for ooba
-            else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+            } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+                //handling creation of rep_pen_range for ooba
                 if ($('#rep_pen_range_textgenerationwebui_zensliders').length !== 0) {
                     $('#rep_pen_range_textgenerationwebui_zensliders').remove();
                 }
@@ -825,22 +832,19 @@ async function CreateZenSliders(elmnt) {
                 leftMargin = ((stepNumber) / numSteps) * 50 * -1;
                 if (sliderValue === offVal) {
                     handleText = 'Off';
-                    handle.css('color', 'rgba(128,128,128,0.5');
-                }
-                else if (sliderValue === allVal) { handleText = 'All'; }
-                else { handle.css('color', ''); }
+                    handle.css('color', 'rgba(128,128,128,0.5)');
+                } else if (sliderValue === allVal) { handleText = 'All'; } else { handle.css('color', ''); }
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`);
                 //console.log(sliderValue, handleText, offVal, allVal)
                 //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 originalSlider.val(steps[sliderValue]);
-            }
-            //create all other sliders
-            else {
+            } else {
+                //create all other sliders
                 var numVal = Number(sliderValue).toFixed(decimals);
                 offVal = Number(offVal).toFixed(decimals);
                 if (numVal === offVal) {
-                    handle.text('Off').css('color', 'rgba(128,128,128,0.5');
+                    handle.text('Off').css('color', 'rgba(128,128,128,0.5)');
                 } else {
                     handle.text(numVal).css('color', '');
                 }
@@ -932,29 +936,24 @@ async function CreateZenSliders(elmnt) {
                 width: ${newSlider.width()}
                 percent of max: ${percentOfMax}
                 left: ${leftPos}`) */
-        //special handling for response length slider, pulls text aliases for step values from an array
         if (newSlider.attr('id') == 'amount_gen_zenslider') {
+            //special handling for response length slider, pulls text aliases for step values from an array
             handleText = steps[stepNumber];
             handle.text(handleText);
             newSlider.val(stepNumber);
             numVal = steps[stepNumber];
-        }
-        //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
-        else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+        } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+            //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
             handleText = steps[stepNumber];
             handle.text(handleText);
             newSlider.val(stepNumber);
-            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
-            else if (numVal === allVal) { handle.text('All'); }
-            else { handle.css('color', ''); }
+            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5)'); } else if (numVal === allVal) { handle.text('All'); } else { handle.css('color', ''); }
             numVal = steps[stepNumber];
-        }
-        //everything else uses the flat slider value
-        //also note: the above sliders are not custom inputtable due to the array aliasing
-        else {
+        } else {
+            //everything else uses the flat slider value
+            //also note: the above sliders are not custom inputtable due to the array aliasing
             //show 'off' if disabled value is set
-            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
-            else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
+            if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5)'); } else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
             newSlider.val(handleText);
         }
         //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
@@ -995,8 +994,7 @@ function switchSpoilerMode() {
         $('#firstMessageWrapper').hide();
         $('#spoiler_free_desc').addClass('flex1');
         $('#creators_note_desc_hidden').show();
-    }
-    else {
+    } else {
         $('#descriptionWrapper').show();
         $('#firstMessageWrapper').show();
         $('#spoiler_free_desc').removeClass('flex1');
@@ -1178,7 +1176,6 @@ function applyShadowWidth() {
     document.documentElement.style.setProperty('--shadowWidth', String(power_user.shadow_width));
     $('#shadow_width_counter').val(power_user.shadow_width);
     $('#shadow_width').val(power_user.shadow_width);
-
 }
 
 function applyFontScale(type) {
@@ -2529,8 +2526,7 @@ async function saveTheme(name = undefined, theme = undefined) {
         option.value = name;
         option.innerText = name;
         $('#themes').append(option);
-    }
-    else {
+    } else {
         themes[themeIndex] = theme;
         $(`#themes option[value="${name}"]`).prop('selected', true);
     }
@@ -2544,9 +2540,8 @@ async function saveTheme(name = undefined, theme = undefined) {
 /**
  * Gets a snapshot of the current theme settings.
  * @param {string} name Name of the theme
- * @returns {object} Theme object
  */
-function getThemeObject(name) {
+export function getThemeObject(name) {
     return {
         name,
         blur_strength: power_user.blur_strength,
@@ -2594,7 +2589,7 @@ function getThemeObject(name) {
 /**
  * Applies imported theme properties to the theme object.
  * @param {object} parsed Parsed object to get the theme from.
- * @returns {object} Theme assigned to the parsed object.
+ * @returns {Theme} Theme assigned to the parsed object.
  */
 function getNewTheme(parsed) {
     const theme = getThemeObject(parsed.name);
@@ -2637,8 +2632,7 @@ async function saveMovingUI() {
             option.value = name;
             option.innerText = name;
             $('#movingUIPresets').append(option);
-        }
-        else {
+        } else {
             movingUIPresets[movingUIPresetIndex] = movingUIPreset;
             $(`#movingUIPresets option[value="${name}"]`).prop('selected', true);
         }
@@ -2902,210 +2896,64 @@ function doResetPanels() {
     return '';
 }
 
-function setAvgBG() {
-    const bgimg = new Image();
-    bgimg.src = $('#bg1')
-        .css('background-image')
-        .replace(/^url\(['"]?/, '')
-        .replace(/['"]?\)$/, '');
+async function setAvgBG(args) {
+    const nameOverride = args?.name ? String(args.name).trim() : '';
+    const bgOverride = args?.bg ? String(args.bg).trim() : '';
+    const force = isTrueBoolean(args?.force?.toString());
 
-    /*     const charAvatar = new Image()
-        charAvatar.src = $("#avatar_load_preview")
-            .attr('src')
+    let bgUrl;
+
+    if (bgOverride) {
+        // Use the specified background file
+        const isCustom = isCustomBackgroundUrl(bgOverride);
+        bgUrl = isCustom ? bgOverride : getBackgroundPath(bgOverride);
+    } else {
+        // Use the currently active background
+        bgUrl = $('#bg1')
+            .css('background-image')
             .replace(/^url\(['"]?/, '')
             .replace(/['"]?\)$/, '');
-
-        const userAvatar = new Image()
-        userAvatar.src = $("#user_avatar_block .avatar.selected img")
-            .attr('src')
-            .replace(/^url\(['"]?/, '')
-            .replace(/['"]?\)$/, ''); */
-
-
-    bgimg.onload = function () {
-        var rgb = getAverageRGB(bgimg);
-        //console.log(`average color of the bg is:`)
-        //console.log(rgb);
-        $('#blur-tint-color-picker').attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
-
-        const backgroundColorString = $('#blur-tint-color-picker').attr('color')
-            .replace('rgba', '')
-            .replace('rgb', '')
-            .replace('(', '[')
-            .replace(')', ']');   //[50, 120, 200, 1]; // Example background color
-        const backgroundColorArray = JSON.parse(backgroundColorString); //[200, 200, 200, 1]
-        console.log(backgroundColorArray);
-        $('#main-text-color-picker').attr('color', getReadableTextColor(backgroundColorArray));
-        console.log($('#main-text-color-picker').attr('color')); // Output: 'rgba(0, 47, 126, 1)'
-    };
-
-    /*     charAvatar.onload = function () {
-            var rgb = getAverageRGB(charAvatar);
-            //console.log(`average color of the AI avatar is:`);
-            //console.log(rgb);
-            $("#bot-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
-        }
-
-        userAvatar.onload = function () {
-            var rgb = getAverageRGB(userAvatar);
-            //console.log(`average color of the user avatar is:`);
-            //console.log(rgb);
-            $("#user-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
-        } */
-
-    function getAverageRGB(imgEl) {
-
-        var blockSize = 5, // only visit every 5 pixels
-            defaultRGB = { r: 0, g: 0, b: 0 }, // for non-supporting envs
-            canvas = document.createElement('canvas'),
-            context = canvas.getContext && canvas.getContext('2d'),
-            data, width, height,
-            i = -4,
-            length,
-            rgb = { r: 0, g: 0, b: 0 },
-            count = 0;
-
-        if (!context) {
-            return defaultRGB;
-        }
-
-        height = canvas.height = imgEl.naturalHeight || imgEl.offsetHeight || imgEl.height;
-        width = canvas.width = imgEl.naturalWidth || imgEl.offsetWidth || imgEl.width;
-        context.drawImage(imgEl, 0, 0);
-
-        try {
-            data = context.getImageData(0, 0, width, height);
-        } catch (e) {
-            /* security error, img on diff domain */alert('x');
-            return defaultRGB;
-        }
-
-        length = data.data.length;
-        while ((i += blockSize * 4) < length) {
-            ++count;
-            rgb.r += data.data[i];
-            rgb.g += data.data[i + 1];
-            rgb.b += data.data[i + 2];
-        }
-
-        // ~~ used to floor values
-        rgb.r = ~~(rgb.r / count);
-        rgb.g = ~~(rgb.g / count);
-        rgb.b = ~~(rgb.b / count);
-
-        return rgb;
-
     }
 
-    /**
-     * Converts an HSL color value to RGB.
-     * @param {number} h Hue value
-     * @param {number} s Saturation value
-     * @param {number} l Luminance value
-     * @return {Array} The RGB representation
-     */
-    function hslToRgb(h, s, l) {
-        const hueToRgb = (p, q, t) => {
-            if (t < 0) t += 1;
-            if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-            return p;
-        };
-
-        if (s === 0) {
-            return [l, l, l];
-        }
-
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        const r = hueToRgb(p, q, h + 1 / 3);
-        const g = hueToRgb(p, q, h);
-        const b = hueToRgb(p, q, h - 1 / 3);
-
-        return [r * 255, g * 255, b * 255];
+    if (!bgUrl || bgUrl === 'none') {
+        toastr.warning('No background image set.');
+        return '';
     }
 
-    //this version keeps BG and main text in same hue
-    /* function getReadableTextColor(rgb) {
-         const [r, g, b] = rgb;
+    // Build theme name from background filename or use override
+    const bgName = deriveBackgroundName(bgUrl);
+    const themeName = nameOverride || `bgcol - ${bgName}`;
 
-         // Convert RGB to HSL
-         const rgbToHsl = (r, g, b) => {
-             const max = Math.max(r, g, b);
-             const min = Math.min(r, g, b);
-             const d = max - min;
-             const l = (max + min) / 2;
-
-             if (d === 0) return [0, 0, l];
-
-             const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-             const h = (() => {
-                 switch (max) {
-                     case r:
-                         return (g - b) / d + (g < b ? 6 : 0);
-                     case g:
-                         return (b - r) / d + 2;
-                     case b:
-                         return (r - g) / d + 4;
-                 }
-             })() / 6;
-
-             return [h, s, l];
-         };
-         const [h, s, l] = rgbToHsl(r / 255, g / 255, b / 255);
-
-         // Calculate appropriate text color based on background color
-         const targetLuminance = l > 0.5 ? 0.2 : 0.8;
-         const targetSaturation = s > 0.5 ? s - 0.2 : s + 0.2;
-         const [rNew, gNew, bNew] = hslToRgb(h, targetSaturation, targetLuminance);
-
-         // Return the text color in RGBA format
-         return `rgba(${rNew.toFixed(0)}, ${gNew.toFixed(0)}, ${bNew.toFixed(0)}, 1)`;
-     }*/
-
-    //this version makes main text complimentary color to BG color
-    function getReadableTextColor(rgb) {
-        const [r, g, b] = rgb;
-
-        // Convert RGB to HSL
-        const rgbToHsl = (r, g, b) => {
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            const d = max - min;
-            const l = (max + min) / 2;
-
-            if (d === 0) return [0, 0, l];
-
-            const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            const h = (() => {
-                switch (max) {
-                    case r:
-                        return (g - b) / d + (g < b ? 6 : 0);
-                    case g:
-                        return (b - r) / d + 2;
-                    case b:
-                        return (r - g) / d + 4;
-                }
-            })() / 6;
-
-            return [h, s, l];
-        };
-        const [h, s, l] = rgbToHsl(r / 255, g / 255, b / 255);
-
-        // Calculate complementary color based on background color
-        const complementaryHue = (h + 0.5) % 1;
-        const complementarySaturation = s > 0.5 ? s - 0.6 : s + 0.6;
-        const complementaryLuminance = l > 0.5 ? 0.2 : 0.8;
-
-        // Convert complementary color back to RGB
-        const [rNew, gNew, bNew] = hslToRgb(complementaryHue, complementarySaturation, complementaryLuminance);
-
-        // Return the text color in RGBA format
-        return `rgba(${rNew.toFixed(0)}, ${gNew.toFixed(0)}, ${bNew.toFixed(0)}, 1)`;
+    // Check if a theme with the same name already exists
+    if (themes.some(t => t.name === themeName) && !force) {
+        toastr.warning('Pass "force=true" to overwrite.', `A theme named "${themeName}" already exists.`);
+        return '';
     }
 
+    const bgimg = new Image();
+    bgimg.crossOrigin = 'anonymous';
+    bgimg.src = bgUrl;
+
+    await new Promise((resolve, reject) => {
+        bgimg.onload = resolve;
+        bgimg.onerror = () => reject(new Error('Failed to load background image'));
+    });
+
+    // Extract dominant vivid color using Oklch-weighted sampling
+    const dominantRgb = extractDominantColor(bgimg);
+
+    // Generate a full theme palette from the dominant color
+    const palette = generateThemePalette(dominantRgb);
+
+    // Create theme object from current settings, then override colors
+    const theme = getThemeObject(themeName);
+    Object.assign(theme, palette);
+
+    // Save as a new theme
+    await saveTheme(themeName, theme);
+    applyTheme(themeName);
+
+    toastr.success(`Theme "${themeName}" generated and applied.`);
     return '';
 }
 
@@ -4035,7 +3883,7 @@ jQuery(() => {
             return;
         }
 
-        eventSource.once(event_types.SETTINGS_UPDATED, function() {
+        eventSource.once(event_types.SETTINGS_UPDATED, function () {
             toastr.warning(
                 t`Click here to reload.`,
                 t`Toggling the Experimental Macro Engine requires a reload.`,
@@ -4354,7 +4202,27 @@ jQuery(() => {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'bgcol',
         callback: setAvgBG,
-        helpString: '– WIP test of auto-bg avg coloring',
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'force',
+                description: 'force generation even if a theme with the same name already exists',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'override the generated theme name',
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'bg',
+                description: 'background image filename to use instead of the current one',
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.backgrounds,
+            }),
+        ],
+        helpString: 'Generates a new theme based on a dominant color of the specified background image. Saves as "bgcol - background name".',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'theme',

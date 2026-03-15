@@ -220,8 +220,7 @@ function tryParseStreamingError(response, decoded) {
             toastr.error(data.error.message || response.statusText, 'KoboldAI API');
             throw new Error(data);
         }
-    }
-    catch {
+    } catch {
         // No JSON. Do nothing.
     }
 }

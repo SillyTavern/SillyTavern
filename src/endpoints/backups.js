@@ -11,7 +11,7 @@ router.post('/chat/get', async (request, response) => {
         const backupModels = [];
         const backupFiles = await fsPromises
             .readdir(request.user.directories.backups, { withFileTypes: true })
-            .then(d => d .filter(d => d.isFile() && path.extname(d.name) === '.jsonl' && d.name.startsWith(CHAT_BACKUPS_PREFIX)).map(d => d.name));
+            .then(d => d.filter(d => d.isFile() && path.extname(d.name) === '.jsonl' && d.name.startsWith(CHAT_BACKUPS_PREFIX)).map(d => d.name));
 
         for (const name of backupFiles) {
             const filePath = path.join(request.user.directories.backups, name);
@@ -45,8 +45,7 @@ router.post('/chat/delete', async (request, response) => {
 
         await fsPromises.unlink(filePath);
         return response.sendStatus(200);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -67,8 +66,7 @@ router.post('/chat/download', async (request, response) => {
         }
 
         return response.download(filePath);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }

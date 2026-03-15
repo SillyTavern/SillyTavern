@@ -143,8 +143,7 @@ router.get('/get', function (request, response) {
                     };
                 });
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.error(err);
     }
     return response.send(sprites);

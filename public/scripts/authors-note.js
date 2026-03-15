@@ -231,11 +231,9 @@ function onExtensionFloatingCharaPromptInput() {
         !existingCharaNote.useChara
     ) {
         extension_settings.note.chara.splice(existingCharaNoteIndex, 1);
-    }
-    else if (extension_settings.note.chara && existingCharaNote) {
+    } else if (extension_settings.note.chara && existingCharaNote) {
         Object.assign(existingCharaNote, tempCharaNote);
-    }
-    else if (avatarName && tempPrompt.length > 0) {
+    } else if (avatarName && tempPrompt.length > 0) {
         if (!extension_settings.note.chara) {
             extension_settings.note.chara = [];
         }

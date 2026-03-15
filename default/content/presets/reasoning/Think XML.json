@@ -1,0 +1,6 @@
+{
+    "name": "Think XML",
+    "prefix": "<think>",
+    "suffix": "</think>",
+    "separator": "\n"
+}

@@ -8,7 +8,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { imageSize as sizeOf } from 'image-size';
 
 import { getConfigValue, invalidateFirefoxCache } from '../util.js';
-import { getThumbnailResolution, isAnimatedWebP, thumbnailDimensions as dimensions, isAnimatedApng } from './image-metadata.js';
+import { getThumbnailResolution, isAnimatedWebP, isAnimatedApng, thumbnailDimensions as dimensions } from './image-metadata.js';
 import { ResizeStrategy } from '@jimp/plugin-resize';
 
 export const publicRouter = express.Router();
@@ -301,7 +301,6 @@ publicRouter.get('/', async function (request, response) {
 
         // Send a 404 so the frontend can display a placeholder
         return response.sendStatus(404);
-
     } catch (error) {
         console.error('Failed getting thumbnail', error);
         return response.sendStatus(500);

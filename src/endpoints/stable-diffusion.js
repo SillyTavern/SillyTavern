@@ -158,7 +158,6 @@ router.post('/samplers', async (request, response) => {
         const data = await result.json();
         const names = data.map(x => x.name);
         return response.send(names);
-
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -1317,8 +1316,7 @@ chutes.post('/models', async (request, response) => {
         const chutesData = /** @type {{items: Array<{name: string}>}} */ (data);
         const models = chutesData.items.map(x => ({ value: x.name, text: x.name })).sort((a, b) => a?.text?.localeCompare(b?.text));
         return response.send(models);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1364,8 +1362,7 @@ chutes.post('/generate', async (request, response) => {
         const base64 = Buffer.from(buffer).toString('base64');
 
         return response.send({ image: base64 });
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1406,8 +1403,7 @@ nanogpt.post('/models', async (request, response) => {
 
         const models = Object.values(imageModels).map(x => ({ value: x.model, text: x.name }));
         return response.send(models);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1448,8 +1444,7 @@ nanogpt.post('/generate', async (request, response) => {
         }
 
         return response.send({ image });
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -1728,6 +1723,8 @@ xai.post('/generate', async (request, response) => {
         const requestBody = {
             prompt: request.body.prompt,
             model: request.body.model,
+            aspect_ratio: request.body.aspect_ratio,
+            resolution: request.body.resolution,
             response_format: 'b64_json',
         };
 
@@ -1751,13 +1748,19 @@ xai.post('/generate', async (request, response) => {
         /** @type {any} */
         const data = await result.json();
 
-        const image = data?.data?.[0]?.b64_json;
-        if (!image) {
+        // Can either be a base64 buffer (always JPEG) or a data URL (with MIME type)
+        const encodedImage = String(data?.data?.[0]?.b64_json || '');
+        if (!encodedImage) {
             console.warn('xAI returned invalid data.');
             return response.sendStatus(500);
         }
 
-        return response.send({ image });
+        const dataUrlMatch = encodedImage.match(/^data:(.+);base64,(.+)$/);
+        const mimeType = dataUrlMatch?.[1] || 'image/jpeg';
+        const format = mime.extension(mimeType) || 'jpg';
+        const image = dataUrlMatch?.[2] || encodedImage;
+
+        return response.send({ image, format });
     } catch (error) {
         console.error('Error communicating with xAI', error);
         return response.sendStatus(500);

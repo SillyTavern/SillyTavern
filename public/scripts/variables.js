@@ -388,8 +388,7 @@ async function timesCallback(args, value) {
             command.breakController = new SlashCommandBreakController();
             command.scope.setMacro('timesIndex', i);
             result = await command.execute();
-        }
-        else {
+        } else {
             result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
         }
         if (result.isAborted) break;
