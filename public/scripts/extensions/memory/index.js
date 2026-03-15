@@ -1107,16 +1107,25 @@ jQuery(async function () {
         returns: ARGUMENT_TYPE.STRING,
     }));
 
+    const summaryMacroHandler = () => {
+        // Checking content of the UI summary box first
+        const uiSummary = $('#memory_contents').val().toString();
+        if (uiSummary.trim().length > 0) {
+            return uiSummary;
+        }
+        // Fallback to scanning the chat for the latest summary if the UI summary box is empty
+        return getLatestMemoryFromChat(getContext().chat);
+    };
     if (power_user.experimental_macro_engine) {
         macros.register('summary', {
             category: MacroCategory.CHAT,
             description: 'Returns the latest memory/summary from the current chat.',
-            handler: () => getLatestMemoryFromChat(getContext().chat),
+            handler: () => summaryMacroHandler(),
         });
     } else {
         // TODO: Remove this when the experimental macro engine is replacing the old macro engine
         MacrosParser.registerMacro('summary',
-            () => getLatestMemoryFromChat(getContext().chat),
+            () => summaryMacroHandler(),
             'Returns the latest memory/summary from the current chat.');
     }
 });

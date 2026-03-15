@@ -202,6 +202,16 @@ performance:
   memoryCacheCapacity: '100mb'
   # Enables disk caching for character cards. Improves performances with large card libraries.
   useDiskCache: true
+  # Configures gzip compression for client requests with large payloads (e.g. settings or chat saves).
+  requestCompression:
+    # Enable request compression.
+    enabled: false
+    # Minimum payload size to trigger compression. Set to 0 to compress all requests regardless of size.
+    minPayloadSize: '256kb'
+    # Hard upper payload size limit for compression. Set to 0 to allow compression of any size.
+    maxPayloadSize: '8mb'
+    # Timeout for request compression in milliseconds.
+    timeout: 4000
 
 # CACHE BUSTER CONFIGURATION
 # IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
@@ -314,7 +324,7 @@ claude:
   # Enables adaptive thinking for supported models (Opus 4.6+).
   # Disable to enforce legacy thinking mode (with thinking budget).
   # https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
-  enableAdaptiveThinking: true
+  enableAdaptiveThinking: false
 # -- GOOGLE GEMINI API CONFIGURATION --
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")

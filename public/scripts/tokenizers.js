@@ -7,8 +7,9 @@ import { getStringHash } from './utils.js';
 import { kai_flags, kai_settings } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
+export { BYTES_PER_TOKEN as CHARACTERS_PER_TOKEN_RATIO };
 
-export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
+export const BYTES_PER_TOKEN = 3.35;
 export const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
 export const TOKENIZER_SUPPORTED_KEY = 'tokenizationSupported';
 
@@ -152,6 +153,7 @@ const TOKENIZER_URLS = {
     },
 };
 
+const textEncoder = new TextEncoder();
 const objectStore = localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
 
 let tokenCache = {};
@@ -162,7 +164,8 @@ let tokenCache = {};
  * @returns {number} Token count.
  */
 export function guesstimate(str) {
-    return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO);
+    const byteLength = textEncoder.encode(str).length;
+    return Math.ceil(byteLength / BYTES_PER_TOKEN);
 }
 
 async function loadTokenCache() {

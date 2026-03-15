@@ -653,6 +653,7 @@ export function evaluateMacros(content, env, postProcessFn) {
         { regex: /{{firstDisplayedMessageId}}/gi, replace: () => String(getFirstDisplayedMessageId() ?? '') },
         { regex: /{{lastSwipeId}}/gi, replace: () => String(getLastSwipeId() ?? '') },
         { regex: /{{currentSwipeId}}/gi, replace: () => String(getCurrentSwipeId() ?? '') },
+        { regex: /{{allChatRange}}/gi, replace: () => chat.length === 0 ? '' : `0-${chat.length - 1}` },
         { regex: /{{reverse:(.+?)}}/gi, replace: (_, str) => Array.from(str).reverse().join('') },
         { regex: /\{\{\/\/([\s\S]*?)\}\}/gm, replace: () => '' },
         { regex: /{{time}}/gi, replace: () => moment().format('LT') },

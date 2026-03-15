@@ -57,9 +57,19 @@ export const TEXT_COMPLETION_MODELS = [
     'code-search-ada-code-001',
 ];
 
-const CHARS_PER_TOKEN = 3.35;
+const BYTES_PER_TOKEN = 3.35;
 const IS_DOWNLOAD_ALLOWED = getConfigValue('enableDownloadableTokenizers', true, 'boolean');
 const gunzip = promisify(zlib.gunzip);
+
+/**
+ * Guesstimates the token count for a string.
+ * @param {string} str String to tokenize.
+ * @returns {number} Token count.
+ */
+function guesstimate(str) {
+    const byteLength = Buffer.byteLength(str, 'utf8');
+    return Math.ceil(byteLength / BYTES_PER_TOKEN);
+}
 
 /**
  * Gets a path to the tokenizer model. Downloads the model if it's a URL.
@@ -361,7 +371,7 @@ async function countSentencepieceTokens(tokenizer, text) {
     if (!instance) {
         return {
             ids: [],
-            count: Math.ceil(text.length / CHARS_PER_TOKEN),
+            count: guesstimate(text),
         };
     }
 
@@ -540,7 +550,7 @@ export function countWebTokenizerTokens(tokenizer, messages) {
 
     // Fallback to strlen estimation
     if (!tokenizer) {
-        return Math.ceil(convertedPrompt.length / CHARS_PER_TOKEN);
+        return guesstimate(convertedPrompt);
     }
 
     const count = tokenizer.encode(convertedPrompt).length;
@@ -1021,7 +1031,7 @@ router.post('/openai/count', async function (req, res) {
     } catch (error) {
         console.error('An error counting tokens, using fallback estimation method', error);
         const jsonBody = JSON.stringify(req.body);
-        const num_tokens = Math.ceil(jsonBody.length / CHARS_PER_TOKEN);
+        const num_tokens = guesstimate(jsonBody);
         res.send({ 'token_count': num_tokens });
     }
 });

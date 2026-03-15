@@ -3214,6 +3214,109 @@ export function initDefaultSlashCommands() {
         helpString: t`Plays the message received sound effect.`,
     }));
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'array-wrap',
+        aliases: ['list-wrap'],
+        returns: t`unnamed argument value wrapped into an array`,
+        helpString: t`Wraps a single unnamed argument into an array if it's not already an array. If the value is an empty string, returns an empty array.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST],
+            }),
+        ],
+        callback: (_args, value) => {
+            // Closures are not supported
+            if (value instanceof SlashCommandClosure) {
+                throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-wrap. Did you forget to call the closure with parentheses?`);
+            }
+
+            // Multiple unnamed arguments are not supported since acceptsMultiple is false, but check just in case
+            if (Array.isArray(value)) {
+                throw new SlashCommandExecutionError(t`/array-wrap does not support multiple unnamed arguments.`);
+            }
+
+            // Empty string - empty arrays
+            if (value === '') {
+                return JSON.stringify([]);
+            }
+
+            try {
+                // If the value is a valid JSON string, parse it
+                const parsedValue = JSON.parse(value);
+
+                // Already an array - return as-is
+                if (Array.isArray(parsedValue)) {
+                    return value;
+                }
+
+                // If it's an object, wrap it into an array and stringify
+                if (typeof parsedValue === 'object' && parsedValue !== null) {
+                    return JSON.stringify([parsedValue]);
+                }
+
+                // Wrap the original value (string, number, boolean) into an array, preserving quotes for strings
+                return JSON.stringify([value]);
+            } catch {
+                // Not a valid JSON string - wrap the original value
+                return JSON.stringify([value]);
+            }
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'array-unwrap',
+        aliases: ['list-unwrap'],
+        returns: t`unnamed argument value unwrapped from an array`,
+        helpString: t`Unwraps the first element of an array provided as an unnamed argument. If the value is not an array, returns the value as-is. If the array is empty, returns an empty string.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST],
+            }),
+        ],
+        callback: (_args, value) => {
+            // Closures are not supported
+            if (value instanceof SlashCommandClosure) {
+                throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-unwrap. Did you forget to call the closure with parentheses?`);
+            }
+
+            // Multiple unnamed arguments are not supported since acceptsMultiple is false, but check just in case
+            if (Array.isArray(value)) {
+                throw new SlashCommandExecutionError(t`/array-unwrap does not support multiple unnamed arguments.`);
+            }
+
+            try {
+                // If the value is a JSON array, get the first element
+                const parsed = JSON.parse(value);
+
+                if (Array.isArray(parsed)) {
+                    const unwrappedValue = parsed?.[0] ?? '';
+
+                    // If the first element is null or undefined, return an empty string
+                    if (unwrappedValue === null || unwrappedValue === undefined) {
+                        return '';
+                    }
+
+                    // If the first element is an object, stringify it.
+                    if (typeof unwrappedValue === 'object') {
+                        return JSON.stringify(unwrappedValue);
+                    }
+
+                    // Otherwise, return it as a string.
+                    return String(unwrappedValue);
+                }
+                return value;
+            } catch {
+                // Not a valid JSON - return as-is
+                return value;
+            }
+        },
+    }));
+
     registerVariableCommands();
 }
 

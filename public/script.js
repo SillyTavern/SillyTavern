@@ -285,6 +285,7 @@ import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
+import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -6100,7 +6101,7 @@ export function extractMessageFromData(data, activeApi = null) {
             case 'novel':
                 return data.output;
             case 'openai':
-                return data?.content?.find(p => p.type === 'text')?.text ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? data?.message?.content?.[0]?.text ?? data?.message?.tool_plan ?? '';
+                return data?.content?.filter(p => p.type === 'text')?.map(p => p.text)?.join('\n\n') ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? data?.message?.content?.[0]?.text ?? data?.message?.tool_plan ?? '';
             default:
                 return '';
         }
@@ -7131,7 +7132,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 
                 await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
 
-                const saveChatResponse = await fetch('/api/chats/save', {
+                const saveChatRequest = await compressRequest({
                     method: 'POST',
                     headers: getRequestHeaders(),
                     body: JSON.stringify({
@@ -7142,6 +7143,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                     }),
                     cache: 'no-cache',
                 });
+                const saveChatResponse = await fetch('/api/chats/save', saveChatRequest);
 
                 if (!saveChatResponse.ok) {
                     throw new Error('Could not save chat');
@@ -7225,7 +7227,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
     };
 
     try {
-        const result = await fetch('/api/chats/save', {
+        const saveChatRequest = await compressRequest({
             method: 'POST',
             cache: 'no-cache',
             headers: getRequestHeaders(),
@@ -7237,6 +7239,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
                 force: force,
             }),
         });
+        const result = await fetch('/api/chats/save', saveChatRequest);
 
         if (result.ok) {
             return;
@@ -7729,6 +7732,7 @@ export async function getSettings() {
 
         accountStorage.init(settings?.accountStorage);
         await setUserControls(data.enable_accounts);
+        setRequestCompressionConfig(data.request_compression);
 
         // Allow subscribers to mutate settings
         await eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
@@ -7879,12 +7883,13 @@ export async function saveSettings(loopCounter = 0) {
     };
 
     try {
-        const result = await fetch('/api/settings/save', {
+        const saveSettingsRequest = await compressRequest({
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(payload),
             cache: 'no-cache',
         });
+        const result = await fetch('/api/settings/save', saveSettingsRequest);
 
         if (!result.ok) {
             throw new Error(`Failed to save settings: ${result.statusText}`);
