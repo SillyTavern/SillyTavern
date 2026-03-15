@@ -521,6 +521,7 @@ async function showGraphPopup(graphData) {
         wide: true,
         large: true,
         onOpen: () => {
+            popup.dlg.classList.add('branch-graph-popup');
             $('.branch-graph-node').each(function () {
                 const nodeIndex = parseInt($(this).attr('data-node-index'));
                 const node = nodes[nodeIndex];

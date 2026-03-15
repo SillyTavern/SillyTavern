@@ -4528,12 +4528,16 @@ input[type="range"]::-webkit-slider-thumb {
     white-space: nowrap;
 }
 
+.branch-graph-popup {
+    width: 90vw !important;
+    width: 90dvw !important;
+}
+
 .branch-graph-container {
     overflow: auto;
     max-width: 100%;
     max-height: 100%;
-    width: 90vw;
-    width: 90dvw;
+    width: fit-content;
     height: fit-content;
 }
 
