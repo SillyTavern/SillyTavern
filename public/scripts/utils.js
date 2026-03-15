@@ -1733,23 +1733,26 @@ export function loadFileToDocument(url, type) {
 }
 
 /**
+ *  An array of all supported image MIME types.
+ */
+export const supportedImageMimeTypes = Object.freeze([
+    'image/jpeg',
+    'image/png',
+    'image/bmp',
+    'image/tiff',
+    'image/gif',
+    'image/apng',
+    'image/webp',
+    'image/avif',
+]);
+
+/**
  * Ensure that we can import war crime image formats like WEBP and AVIF.
  * @param {File} file Input file
  * @returns {Promise<File>} A promise that resolves to the supported file.
  */
 export async function ensureImageFormatSupported(file) {
-    const supportedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/bmp',
-        'image/tiff',
-        'image/gif',
-        'image/apng',
-        'image/webp',
-        'image/avif',
-    ];
-
-    if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {
+    if (supportedImageMimeTypes.includes(file.type) || !file.type.startsWith('image/')) {
         return file;
     }
 
