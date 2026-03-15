@@ -632,7 +632,7 @@ function setOpenAIMessages(chat) {
             });
         }
 
-        messages[i] = {
+        const message = {
             'role': role,
             'content': content,
             name: name,
@@ -642,8 +642,11 @@ function setOpenAIMessages(chat) {
             'invocations': invocations,
             'signature': signature,
             'reasoning': reasoning,
-            ...(compactionBlocks.length > 0 ? { compactionBlocks } : {}),
         };
+        if (compactionBlocks.length > 0) {
+            message.compactionBlocks = compactionBlocks;
+        }
+        messages[i] = message;
         j++;
     }
 

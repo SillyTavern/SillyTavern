@@ -3639,14 +3639,6 @@ class StreamingProcessor {
             message.swipe_info.push(...swipeInfoArray);
         }
 
-        syncMesToSwipe(messageId);
-        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
-
-        if (Array.isArray(this.images) && this.images.length > 0) {
-            await processImageAttachment(message, { imageUrls: this.images });
-            appendMediaToMessage(message, $(this.messageDom));
-        }
-
         // Store reasoning signature for models that support multi-turn context
         if (this.reasoningSignature) {
             message.extra = message.extra || {};
@@ -3662,6 +3654,12 @@ class StreamingProcessor {
         }
 
         syncMesToSwipe(messageId);
+        saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
+
+        if (Array.isArray(this.images) && this.images.length > 0) {
+            await processImageAttachment(message, { imageUrls: this.images });
+            appendMediaToMessage(message, $(this.messageDom));
+        }
 
         this.markUIGenStopped();
 
@@ -6521,18 +6519,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         reasoning = '';
     }
 
-    const applyCompactionBlocks = (message) => {
-        if (!message.extra || typeof message.extra !== 'object') {
-            message.extra = {};
-        }
-
-        const sanitizedCompactionBlocks = sanitizeClaudeCompactionBlocks(compactionBlocks);
-        if (sanitizedCompactionBlocks.length > 0) {
-            message.extra.claude_compaction_blocks = structuredClone(sanitizedCompactionBlocks);
-        } else {
-            delete message.extra.claude_compaction_blocks;
-        }
-    };
+    const sanitizedCompactionBlocks = sanitizeClaudeCompactionBlocks(compactionBlocks);
 
     let oldMessage = '';
     const generationFinished = new Date();
@@ -6550,7 +6537,11 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             lastMessage.extra.reasoning = reasoning;
             lastMessage.extra.reasoning_duration = null;
             lastMessage.extra.reasoning_signature = reasoningSignature;
-            applyCompactionBlocks(lastMessage);
+            if (sanitizedCompactionBlocks.length > 0) {
+                lastMessage.extra.claude_compaction_blocks = structuredClone(sanitizedCompactionBlocks);
+            } else {
+                delete lastMessage.extra.claude_compaction_blocks;
+            }
             await processImageAttachment(lastMessage, { imageUrls });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + lastMessage.mes;
@@ -6576,7 +6567,11 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         lastMessage.extra.reasoning = reasoning;
         lastMessage.extra.reasoning_duration = null;
         lastMessage.extra.reasoning_signature = reasoningSignature;
-        applyCompactionBlocks(lastMessage);
+        if (sanitizedCompactionBlocks.length > 0) {
+            lastMessage.extra.claude_compaction_blocks = structuredClone(sanitizedCompactionBlocks);
+        } else {
+            delete lastMessage.extra.claude_compaction_blocks;
+        }
         await processImageAttachment(lastMessage, { imageUrls });
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + lastMessage.mes;
@@ -6598,7 +6593,11 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         lastMessage.extra.model = getGeneratingModel();
         lastMessage.extra.reasoning += reasoning;
         lastMessage.extra.reasoning_signature = reasoningSignature;
-        applyCompactionBlocks(lastMessage);
+        if (sanitizedCompactionBlocks.length > 0) {
+            lastMessage.extra.claude_compaction_blocks = structuredClone(sanitizedCompactionBlocks);
+        } else {
+            delete lastMessage.extra.claude_compaction_blocks;
+        }
         await processImageAttachment(lastMessage, { imageUrls });
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
@@ -6622,7 +6621,11 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         newMessage.extra.reasoning = reasoning;
         newMessage.extra.reasoning_duration = null;
         newMessage.extra.reasoning_signature = reasoningSignature;
-        applyCompactionBlocks(newMessage);
+        if (sanitizedCompactionBlocks.length > 0) {
+            newMessage.extra.claude_compaction_blocks = structuredClone(sanitizedCompactionBlocks);
+        } else {
+            delete newMessage.extra.claude_compaction_blocks;
+        }
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }
