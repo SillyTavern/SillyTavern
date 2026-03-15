@@ -23,6 +23,10 @@ function getWebpackCacheVersion() {
  * @param {string} currentCacheVersion The current cache version to keep.
  */
 function pruneWebpackCache(webpackRoot, currentCacheVersion) {
+    if (!fs.existsSync(webpackRoot)) {
+        return;
+    }
+
     const cacheDirectories = fs.readdirSync(webpackRoot, { withFileTypes: true })
         .filter(dirent => dirent.isDirectory())
         .map(dirent => dirent.name);
