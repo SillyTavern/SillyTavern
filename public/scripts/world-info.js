@@ -6099,8 +6099,7 @@ export function initWorldInfo() {
         }
     });
 
-    const $worldButton = $('#world_button');
-    $worldButton.on('click', async function (event) {
+    $('#world_button').on('click', async function (event) {
         const openSetWorldMenu = () => $('#char-management-dropdown').val($('#set_character_world').val()).trigger('change');
         const chid = $('#set_character_world').data('chid');
 
@@ -6120,7 +6119,7 @@ export function initWorldInfo() {
             openSetWorldMenu();
         }
     });
-    addLongPressEvent($worldButton, function () {
+    addLongPressEvent('#world_button', function () {
         $(this).trigger($.Event('click', { shiftKey: true }));
     });
 
@@ -6144,8 +6143,8 @@ export function initWorldInfo() {
     });
 
     $(document).on('click', '.chat_lorebook_button', assignLorebookToChat);
-    addLongPressEvent($('.chat_lorebook_button'), function () {
-        $(this).trigger($.Event('click', { shiftKey: true }));
+    addLongPressEvent('.chat_lorebook_button', function () {
+        assignLorebookToChat({ shiftKey: true, altKey: false });
     });
 
     $('#group-chat-lorebook-dropdown').on('change', async function () {

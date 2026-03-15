@@ -2002,10 +2002,9 @@ export async function initPersonas() {
     $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);
     $('#persona_depth_value').on('input', onPersonaDescriptionDepthValueInput);
     $('#persona_depth_role').on('input', onPersonaDescriptionDepthRoleInput);
-    const $personaLoreButton = $('#persona_lore_button');
-    $personaLoreButton.on('click', onPersonaLoreButtonClick);
-    addLongPressEvent($personaLoreButton, function () {
-        $(this).trigger($.Event('click', { shiftKey: true }));
+    $('#persona_lore_button').on('click', onPersonaLoreButtonClick);
+    addLongPressEvent('#persona_lore_button', function () {
+        onPersonaLoreButtonClick({ shiftKey: true, altKey: false });
     });
     $('#persona-management-dropdown').on('change', async function () {
         const target = $(this).find(':selected').attr('id');

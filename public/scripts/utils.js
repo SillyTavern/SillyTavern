@@ -2940,38 +2940,44 @@ export function createTimeout(ms, errorMessage = '') {
 }
 
 /**
- * Registers a long-press (touch hold) event on an element as an alternative to modifier+click.
- * On long-press, invokes the callback and suppresses the subsequent click event.
- * @param {JQuery} $element jQuery element
- * @param {function} callback Callback to invoke on long-press
+ * Registers a long-press (touch hold) event as an alternative to modifier+click.
+ * Supports event delegation for dynamically created elements.
+ * @param {string} selector CSS selector for target elements
+ * @param {function} callback Callback to invoke on long-press, `this` is the matched element
  * @param {number} [delay=500] Long-press duration in ms
  */
-export function addLongPressEvent($element, callback, delay = 500) {
+export function addLongPressEvent(selector, callback, delay = 500) {
     let timer = null;
     let fired = false;
+    let target = null;
 
-    // Must use native addEventListener with passive:false to allow preventDefault
-    $element.each(function () {
-        this.addEventListener('touchstart', function (event) {
-            fired = false;
-            timer = setTimeout(() => {
-                fired = true;
-                event.preventDefault();
-                callback.call(this, event);
-            }, delay);
-        }, { passive: false });
-    });
+    document.addEventListener('touchstart', function (event) {
+        const el = event.target.closest(selector);
+        if (!el) return;
+        target = el;
+        fired = false;
+        timer = setTimeout(() => {
+            fired = true;
+            event.preventDefault();
+            callback.call(el, event);
+        }, delay);
+    }, { passive: false });
 
-    $element.on('touchend touchmove touchcancel', function () {
-        clearTimeout(timer);
-        timer = null;
-    });
+    document.addEventListener('touchend', cancelTimer);
+    document.addEventListener('touchmove', cancelTimer);
+    document.addEventListener('touchcancel', cancelTimer);
 
-    $element.on('click', function (event) {
-        if (fired) {
+    document.addEventListener('click', function (event) {
+        if (fired && target && target.contains(event.target)) {
             event.preventDefault();
             event.stopImmediatePropagation();
             fired = false;
+            target = null;
         }
-    });
+    }, true);
+
+    function cancelTimer() {
+        clearTimeout(timer);
+        timer = null;
+    }
 }
