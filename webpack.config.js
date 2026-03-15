@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import isDocker from 'is-docker';
 import webpack from 'webpack';
 import { serverDirectory } from './src/server-directory.js';
-import { getVersion } from './src/util.js';
+import { getVersion, color } from './src/util.js';
 
 /**
  * Generate a cache version string based on the application version, Git revision, and Webpack version.
@@ -37,9 +37,9 @@ function pruneWebpackCache(webpackRoot, currentCacheVersion) {
             if (dir !== currentCacheVersion) {
                 try {
                     fs.rmSync(dirPath, { recursive: true, force: true });
-                    console.debug(`Pruned previous Webpack cache directory: ${dirPath}`);
+                    console.debug(`Removed outdated cache directory: ${color.yellow(dir)}`);
                 } catch (error) {
-                    console.error(`Failed to prune Webpack cache directory: ${dirPath}`, error);
+                    console.error(`Failed to remove Webpack cache directory: ${color.red(dir)}`, error);
                 }
             }
         }
