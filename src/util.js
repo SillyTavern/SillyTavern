@@ -1591,9 +1591,9 @@ export function readFirstLine(filePath) {
 /**
  * Reads a file until a 'stack' matches or the maxChunks limit or a newline.
  * This LLM written function serves the same purpose as `readFirstLine` in `checkChatIntegrity` for single line .json files.
- * This is only optimized to check the beginning the file.
- * If the json files has newlines (jsonl), only the first line will be read.
- * I cannot use the steam-json's jsonl parser because it reads the entire line.
+ * This is only optimized to check the beginning/header the file.
+ * If the JSON file has newlines (JSONL), only the first line will be read.
+ * I cannot use the stream-json's JSONL parser because it reads the entire line, which is what this function is meant to avoid.
  * https://github.com/uhop/stream-json/blob/07f034a6/src/jsonl/parser.js#L63
  * Thank you @God-damnit-all and @fathom0324!
  * https://github.com/SillyTavern/SillyTavern/pull/4573#issuecomment-3695128316
