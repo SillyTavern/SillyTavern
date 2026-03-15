@@ -7334,29 +7334,26 @@ async function read_avatar_load(input) {
         }
 
         await createOrEditCharacter();
-        await delay(DEFAULT_SAVE_EDIT_TIMEOUT);
 
         const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
-        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url').toString()), {
-            method: 'GET',
-            cache: 'reload',
-        });
+        const avatarKey = formData.get('avatar_url').toString();
 
-        const messages = $('.mes').toArray();
-        for (const el of messages) {
-            const $el = $(el);
-            const nameMatch = $el.attr('ch_name') == formData.get('ch_name');
-            if ($el.attr('is_system') == 'true' && !nameMatch) continue;
-            if ($el.attr('is_user') == 'true') continue;
+        // Bust cache for the avatar thumbnail and character image
+        const thumbnailUrl = getThumbnailUrl('avatar', avatarKey);
+        await fetch(thumbnailUrl, { method: 'GET', cache: 'reload' });
+        await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
 
-            if (nameMatch) {
-                const previewSrc = $('#avatar_load_preview').attr('src');
-                const avatar = $el.find('.avatar img');
-                avatar.attr('src', default_avatar);
-                await delay(1);
-                avatar.attr('src', previewSrc);
+        // Refresh all visible avatar images that use this thumbnail URL
+        // This handles messages, character list, and any other place using the thumbnail
+        const avatarImages = document.querySelectorAll(`img[src^="${thumbnailUrl}"]`);
+        for (const img of avatarImages) {
+            if (img instanceof HTMLImageElement) {
+                const originalSrc = img.src;
+                img.src = '';
+                img.src = originalSrc;
             }
         }
+        console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
 
         console.log('Avatar refreshed');
     }
