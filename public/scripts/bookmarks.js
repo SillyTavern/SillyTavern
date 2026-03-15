@@ -666,7 +666,7 @@ function registerBookmarksSlashCommands() {
 async function showBranchList(mesId) {
     const message = chat[mesId];
     if (!message?.extra?.branches || !Array.isArray(message.extra.branches) || message.extra.branches.length === 0) {
-        await Popup.show.text('No branches found', 'This message has no branch chats.');
+        toastr.info('This message has no branch chats.', 'No branches found');
         return;
     }
 
@@ -696,7 +696,15 @@ async function showBranchList(mesId) {
         const branchChats = allChats.filter(chat => branchNames.includes(chat.file_name));
 
         if (branchChats.length === 0) {
-            await Popup.show.text('No branches found', 'All branch chats appear to have been deleted.');
+            const result = await Popup.show.confirm(
+                'All branch chats appear to have been deleted.',
+                'Would you like to clean up the branch metadata from this message?'
+            );
+            if (result) {
+                // Clean up the branch metadata
+                delete message.extra.branches;
+                await saveChatConditional();
+            }
             return;
         }
 
@@ -758,7 +766,7 @@ async function showBranchList(mesId) {
         await popup.show();
     } catch (error) {
         console.error('Error showing branch list:', error);
-        await Popup.show.text('Error', 'Failed to load branch list. Please try again.');
+        toastr.error('Failed to load branch list. Please try again.', 'Error');
     } finally {
         await hideLoader();
     }
@@ -774,7 +782,7 @@ async function showBranchGraph() {
         const currentChatName = (getCurrentChatDetails()).sessionName;
 
         if (!currentChatName) {
-            await Popup.show.text('No chat loaded', 'Please open a chat first.');
+            toastr.info('Please open a chat first.', 'No chat loaded');
             return;
         }
 
@@ -939,7 +947,7 @@ async function showBranchGraph() {
         const tree = buildTree(rootChatName);
 
         if (!tree) {
-            await Popup.show.text('Error', 'Failed to build branch graph.');
+            toastr.error('Failed to build branch graph.', 'Error');
             return;
         }
 
@@ -1127,7 +1135,7 @@ async function showBranchGraph() {
         await popup.show();
     } catch (error) {
         console.error('[BranchGraph] Error showing branch graph:', error);
-        await Popup.show.text('Error', 'Failed to load branch graph. Please try again.');
+        toastr.error('Failed to load branch graph. Please try again.', 'Error');
     } finally {
         await hideLoader();
     }
