@@ -23,24 +23,28 @@ function getWebpackCacheVersion() {
  * @param {string} currentCacheVersion The current cache version to keep.
  */
 function pruneWebpackCache(webpackRoot, currentCacheVersion) {
-    if (!fs.existsSync(webpackRoot)) {
-        return;
-    }
+    try {
+        if (!fs.existsSync(webpackRoot)) {
+            return;
+        }
 
-    const cacheDirectories = fs.readdirSync(webpackRoot, { withFileTypes: true })
-        .filter(dirent => dirent.isDirectory())
-        .map(dirent => dirent.name);
+        const cacheDirectories = fs.readdirSync(webpackRoot, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
 
-    for (const dir of cacheDirectories) {
-        const dirPath = path.join(webpackRoot, dir);
-        if (dir !== currentCacheVersion) {
-            try {
-                fs.rmSync(dirPath, { recursive: true, force: true });
-                console.debug(`Pruned previous Webpack cache directory: ${dirPath}`);
-            } catch (error) {
-                console.error(`Failed to prune Webpack cache directory: ${dirPath}`, error);
+        for (const dir of cacheDirectories) {
+            const dirPath = path.join(webpackRoot, dir);
+            if (dir !== currentCacheVersion) {
+                try {
+                    fs.rmSync(dirPath, { recursive: true, force: true });
+                    console.debug(`Pruned previous Webpack cache directory: ${dirPath}`);
+                } catch (error) {
+                    console.error(`Failed to prune Webpack cache directory: ${dirPath}`, error);
+                }
             }
         }
+    } catch (error) {
+        console.error('Failed to read Webpack cache directories for pruning.', error);
     }
 }
 
