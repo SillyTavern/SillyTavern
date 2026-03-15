@@ -1045,6 +1045,70 @@ function registerReasoningSlashCommands() {
             </div>
             `,
     }));
+
+    /**
+     * Gets the reasoning details element for a message by value.
+     * @param {string} value Unnamed argument value (message ID)
+     * @returns {JQuery<HTMLElement>|null} The reasoning details element, or null if not found
+     */
+    function getReasoningDetailsElement(value) {
+        const messageId = !isNaN(parseInt(String(value))) ? parseInt(String(value)) : chat.length - 1;
+        const details = $(`#chat [mesid="${messageId}"] .mes_reasoning_details`);
+        if (details.length === 0) {
+            toastr.warning(t`No reasoning block found for message #${messageId}.`);
+            return null;
+        }
+        return details;
+    }
+
+    const reasoningVisibilityArgs = [
+        SlashCommandArgument.fromProps({
+            description: 'Message ID. If not provided, the message ID of the last message is used.',
+            typeList: ARGUMENT_TYPE.NUMBER,
+            enumProvider: commonEnumProviders.messages(),
+        }),
+    ];
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-collapse',
+        aliases: ['collapse-reasoning'],
+        helpString: t`Collapse the reasoning block of a message.`,
+        unnamedArgumentList: reasoningVisibilityArgs,
+        callback: (_args, value) => {
+            const details = getReasoningDetailsElement(value);
+            if (details) details.removeAttr('open');
+            return '';
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-expand',
+        aliases: ['expand-reasoning'],
+        helpString: t`Expand the reasoning block of a message.`,
+        unnamedArgumentList: reasoningVisibilityArgs,
+        callback: (_args, value) => {
+            const details = getReasoningDetailsElement(value);
+            if (details) details.attr('open', '');
+            return '';
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-toggle',
+        aliases: ['toggle-reasoning'],
+        helpString: t`Toggle the reasoning block of a message. If the reasoning block is expanded, it will be collapsed, and vice versa.`,
+        unnamedArgumentList: reasoningVisibilityArgs,
+        callback: (_args, value) => {
+            const details = getReasoningDetailsElement(value);
+            if (!details) return '';
+            if (details.attr('open') !== undefined) {
+                details.removeAttr('open');
+            } else {
+                details.attr('open', '');
+            }
+            return '';
+        },
+    }));
 }
 
 function registerReasoningMacros() {
