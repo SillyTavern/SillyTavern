@@ -297,7 +297,12 @@ export async function updateBranchMetadataAfterRename(oldFileName, newFileName) 
                 continue;
             }
 
-            const hadChanges = updateBranchReferencesInMessages(metadata.messages, oldFileName, newFileName);
+            let hadChanges = updateBranchReferencesInMessages(metadata.messages, oldFileName, newFileName);
+
+            if (metadata.main_chat === oldFileName) {
+                metadata.main_chat = newFileName;
+                hadChanges = true;
+            }
 
             if (hadChanges) {
                 const chatData = constructChatData(metadata);
@@ -508,6 +513,8 @@ async function showGraphPopup(graphData) {
     const { totalWidth, totalHeight, lines, nodes } = graphData;
     const graphHTML = await renderTemplateAsync('branchGraph', { totalWidth, totalHeight, lines, nodes });
 
+    let selectedName = null;
+
     const popup = new Popup(graphHTML, POPUP_TYPE.TEXT, '', {
         okButton: false,
         cancelButton: 'Close',
@@ -520,25 +527,24 @@ async function showGraphPopup(graphData) {
                 $(this).attr('data-file-name', node.name);
                 $(this).find('.branch-node-name-text').text(node.name);
                 $(this).find('.branch-node-preview-text').text(node.preview);
+
+                if (!node.isCurrentChat) {
+                    $(this).on('click', () => {
+                        selectedName = node.name;
+                        popup.completeAffirmative();
+                    });
+                }
             });
         },
     });
 
     const result = await popup.show();
 
-    // If user cancelled or closed the popup, do nothing
-    // Note: result can be 0 (first item), so we need to check for null/undefined explicitly
-    if (result === POPUP_RESULT.CANCELLED || result === null || result === undefined) {
+    if (result !== POPUP_RESULT.AFFIRMATIVE || !selectedName) {
         return null;
     }
 
-    const selectedNode = nodes[result];
-    if (!selectedNode) {
-        console.error('Invalid node selection:', result);
-        return null;
-    }
-
-    return selectedNode.name;
+    return selectedName;
 }
 
 /**
@@ -602,7 +608,7 @@ export async function showBranchGraph() {
 
         const selectedChatName = await showGraphPopup(graphData);
 
-        if (selectedChatName) {
+        if (selectedChatName && selectedChatName !== currentChatName) {
             await switchToChat(selectedChatName);
         }
     } catch (error) {
