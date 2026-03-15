@@ -130,6 +130,7 @@ import {
     initBookmarks,
     showBookmarksButtons,
     updateBookmarkDisplay,
+    updateBranchMetadataAfterRename,
 } from './scripts/bookmarks.js';
 
 import {
@@ -10452,6 +10453,8 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
             $('#selected_chat_pole').val(characters[characterId].chat);
             await createOrEditCharacter();
         }
+
+        await updateBranchMetadataAfterRename(oldFileName, newFileName);
 
         if (currentChatId) {
             await reloadCurrentChat();

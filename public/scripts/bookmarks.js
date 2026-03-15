@@ -699,7 +699,7 @@ async function showBranchList(mesId) {
         if (branchChats.length === 0) {
             const result = await Popup.show.confirm(
                 'All branch chats appear to have been deleted.',
-                'Would you like to clean up the branch metadata from this message?'
+                'Would you like to clean up the branch metadata from this message?',
             );
             if (result) {
                 // Clean up the branch metadata
@@ -731,7 +731,7 @@ async function showBranchList(mesId) {
             cancelButton: 'Close',
             onOpen: () => {
                 // Use .text() to safely set content after popup is in DOM (like "Manage chat files" does)
-                $('.branch-list-item').each(function() {
+                $('.branch-list-item').each(function () {
                     const branchIndex = parseInt($(this).attr('data-branch-index'));
                     const branch = branches[branchIndex];
                     $(this).attr('data-file-name', branch.file_name);
@@ -778,6 +778,230 @@ async function showBranchList(mesId) {
 /**
  * Builds a tree of all related chats (parents and children) and displays it in a graph.
  */
+/**
+ * Fetches chat metadata including parent and branch information.
+ * @param {string} chatName Chat filename (without .jsonl)
+ * @returns {Promise<{main_chat: string, branches: string[], messages: any[]}|null>}
+ */
+async function fetchChatMetadata(chatName) {
+    try {
+        const metaResponse = await fetch('/api/chats/get', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                ch_name: selected_group ? null : characters[this_chid]?.name,
+                file_name: chatName,
+                avatar_url: selected_group ? null : characters[this_chid]?.avatar,
+            }),
+        });
+
+        if (!metaResponse.ok) {
+            return null;
+        }
+
+        const chatData = await metaResponse.json();
+
+        let chat_metadata = null;
+        let messages = [];
+
+        if (Array.isArray(chatData)) {
+            if (chatData.length > 0) {
+                chat_metadata = chatData[0].chat_metadata;
+                messages = chatData.slice(1);
+            }
+        } else {
+            chat_metadata = chatData.chat_metadata;
+            messages = chatData.chat || [];
+        }
+
+        const branches = [];
+
+        if (Array.isArray(messages)) {
+            for (const message of messages) {
+                if (message?.extra?.branches && Array.isArray(message.extra.branches)) {
+                    branches.push(...message.extra.branches);
+                }
+            }
+        }
+
+        return {
+            main_chat: chat_metadata?.main_chat,
+            branches: [...new Set(branches)],
+            messages: messages,
+        };
+    } catch (err) {
+        console.error('[BranchMetadata] Error fetching metadata for', chatName, ':', err);
+        return null;
+    }
+}
+
+/**
+ * Traverses the branch tree starting from a chat to collect all related chats.
+ * @param {string} startChatName Starting chat filename
+ * @param {Map<string, any>} chatMap Map of all available chats
+ * @returns {Promise<{relatedChats: Set<string>, metadataCache: Map<string, any>}>}
+ */
+async function traverseBranchTree(startChatName, chatMap) {
+    const relatedChats = new Set([startChatName]);
+    const metadataCache = new Map();
+
+    // Find root by going up the parent chain
+    let rootChatName = startChatName;
+    let current = startChatName;
+    const visited = new Set();
+
+    while (current && !visited.has(current)) {
+        visited.add(current);
+        relatedChats.add(current);
+
+        const metadata = await fetchChatMetadata(current);
+        if (metadata) {
+            metadataCache.set(current, metadata);
+            const parent = metadata.main_chat;
+
+            if (parent && chatMap.has(parent)) {
+                rootChatName = parent;
+                current = parent;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    // Traverse down from root to collect all children
+    async function collectChildren(chatName, visitedInPath = new Set()) {
+        if (visitedInPath.has(chatName)) {
+            return;
+        }
+
+        visitedInPath.add(chatName);
+
+        if (!metadataCache.has(chatName)) {
+            const metadata = await fetchChatMetadata(chatName);
+            if (metadata) {
+                metadataCache.set(chatName, metadata);
+            }
+        }
+
+        const metadata = metadataCache.get(chatName);
+
+        if (metadata?.branches) {
+            for (const branchName of metadata.branches) {
+                if (chatMap.has(branchName) && !relatedChats.has(branchName)) {
+                    relatedChats.add(branchName);
+                    await collectChildren(branchName, new Set(visitedInPath));
+                }
+            }
+        }
+    }
+
+    await collectChildren(rootChatName);
+
+    return { relatedChats, metadataCache };
+}
+
+/**
+ * Updates branch metadata across the branch tree after a chat is renamed.
+ * @param {string} oldFileName Old chat filename (without .jsonl)
+ * @param {string} newFileName New chat filename (without .jsonl)
+ */
+export async function updateBranchMetadataAfterRename(oldFileName, newFileName) {
+    try {
+        // Fetch all chats to build the chat map
+        const response = await fetch('/api/chats/search', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                query: '',
+                avatar_url: selected_group ? null : characters[this_chid]?.avatar,
+                group_id: selected_group || null,
+            }),
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch chat list for branch metadata update');
+            return;
+        }
+
+        const allChats = await response.json();
+        const chatMap = new Map(allChats.map(chat => [chat.file_name, chat]));
+
+        // Use the new filename to traverse the tree (since the file has already been renamed)
+        if (!chatMap.has(newFileName)) {
+            console.warn(`Renamed chat ${newFileName} not found in chat list`);
+            return;
+        }
+
+        const { relatedChats, metadataCache } = await traverseBranchTree(newFileName, chatMap);
+
+        // Update branch references in all related chats
+        for (const chatName of relatedChats) {
+            const metadata = metadataCache.get(chatName);
+            if (!metadata?.messages) {
+                continue;
+            }
+
+            let hadChanges = false;
+
+            for (const message of metadata.messages) {
+                if (message?.extra?.branches && Array.isArray(message.extra.branches)) {
+                    const branchIndex = message.extra.branches.indexOf(oldFileName);
+                    if (branchIndex !== -1) {
+                        message.extra.branches[branchIndex] = newFileName;
+                        hadChanges = true;
+                    }
+                }
+            }
+
+            if (hadChanges) {
+                // Reconstruct the full chat data with header
+                const chatHeader = {
+                    chat_metadata: metadataCache.get(chatName)?.main_chat ? { main_chat: metadataCache.get(chatName).main_chat } : {},
+                    user_name: 'unused',
+                    character_name: 'unused',
+                };
+
+                if (selected_group) {
+                    const saveChatRequest = await compressRequest({
+                        method: 'POST',
+                        headers: getRequestHeaders(),
+                        body: JSON.stringify({ id: chatName, chat: [chatHeader, ...metadata.messages] }),
+                    });
+                    const saveChatResponse = await fetch('/api/chats/group/save', saveChatRequest);
+
+                    if (!saveChatResponse.ok) {
+                        console.error(`Failed to update branch metadata in group chat: ${chatName}`);
+                    } else {
+                        console.log(`Updated branch metadata in group chat: ${chatName}`);
+                    }
+                } else {
+                    const saveChatRequest = await compressRequest({
+                        method: 'POST',
+                        headers: getRequestHeaders(),
+                        body: JSON.stringify({
+                            ch_name: characters[this_chid]?.name,
+                            file_name: chatName,
+                            chat: [chatHeader, ...metadata.messages],
+                            avatar_url: characters[this_chid]?.avatar,
+                        }),
+                    });
+                    const saveChatResponse = await fetch('/api/chats/save', saveChatRequest);
+
+                    if (!saveChatResponse.ok) {
+                        console.error(`Failed to update branch metadata in chat: ${chatName}`);
+                    } else {
+                        console.log(`Updated branch metadata in chat: ${chatName}`);
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error updating branch metadata after rename:', error);
+    }
+}
+
 async function showBranchGraph() {
     try {
         showLoader();
@@ -807,124 +1031,18 @@ async function showBranchGraph() {
         const allChats = await response.json();
         const chatMap = new Map(allChats.map(chat => [chat.file_name, chat]));
 
-        // Helper to fetch chat metadata (parent and branches)
-        async function fetchChatMetadata(chatName) {
-            try {
-                const metaResponse = await fetch('/api/chats/get', {
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({
-                        ch_name: selected_group ? null : characters[this_chid]?.name,
-                        file_name: chatName,
-                        avatar_url: selected_group ? null : characters[this_chid]?.avatar,
-                    }),
-                });
+        // Use the shared traversal function
+        const { relatedChats, metadataCache } = await traverseBranchTree(currentChatName, chatMap);
 
-                if (!metaResponse.ok) {
-                    return null;
-                }
-
-                const chatData = await metaResponse.json();
-
-                // The API returns an array where the first element is metadata + user/character names
-                // and the rest are messages
-                let chat_metadata = null;
-                let messages = [];
-
-                if (Array.isArray(chatData)) {
-                    if (chatData.length > 0) {
-                        // First line contains chat_metadata
-                        chat_metadata = chatData[0].chat_metadata;
-                        // Rest are messages
-                        messages = chatData.slice(1);
-                    }
-                } else {
-                    // Fallback for different API response format
-                    chat_metadata = chatData.chat_metadata;
-                    messages = chatData.chat || [];
-                }
-
-                const branches = [];
-
-                // Extract branches from all messages
-                if (Array.isArray(messages)) {
-                    for (const message of messages) {
-                        if (message?.extra?.branches && Array.isArray(message.extra.branches)) {
-                            branches.push(...message.extra.branches);
-                        }
-                    }
-                }
-
-                const metadata = {
-                    main_chat: chat_metadata?.main_chat,
-                    branches: [...new Set(branches)], // Remove duplicates
-                };
-
-                return metadata;
-            } catch (err) {
-                console.error('[BranchGraph] Error fetching metadata for', chatName, ':', err);
-                return null;
-            }
-        }
-
-        // Traverse to find root and collect all related chats
-        const relatedChats = new Set([currentChatName]);
-        const metadataCache = new Map();
-
-        // Find root by going up the parent chain
+        // Find root chat
         let rootChatName = currentChatName;
-        let current = currentChatName;
-        const visited = new Set();
-
-        while (current && !visited.has(current)) {
-            visited.add(current);
-            relatedChats.add(current);
-
-            const metadata = await fetchChatMetadata(current);
-            if (metadata) {
-                metadataCache.set(current, metadata);
-                const parent = metadata.main_chat;
-
-                if (parent && chatMap.has(parent)) {
-                    rootChatName = parent;
-                    current = parent;
-                } else {
-                    break;
-                }
-            } else {
+        for (const chatName of relatedChats) {
+            const metadata = metadataCache.get(chatName);
+            if (metadata && !metadata.main_chat) {
+                rootChatName = chatName;
                 break;
             }
         }
-
-        // Now traverse down from root to collect all children
-        async function collectChildren(chatName, visitedInPath = new Set()) {
-            // Prevent circular references
-            if (visitedInPath.has(chatName)) {
-                return;
-            }
-
-            visitedInPath.add(chatName);
-
-            if (!metadataCache.has(chatName)) {
-                const metadata = await fetchChatMetadata(chatName);
-                if (metadata) {
-                    metadataCache.set(chatName, metadata);
-                }
-            }
-
-            const metadata = metadataCache.get(chatName);
-
-            if (metadata?.branches) {
-                for (const branchName of metadata.branches) {
-                    if (chatMap.has(branchName) && !relatedChats.has(branchName)) {
-                        relatedChats.add(branchName);
-                        await collectChildren(branchName, new Set(visitedInPath));
-                    }
-                }
-            }
-        }
-
-        await collectChildren(rootChatName);
 
         // Build tree structure
         function buildTree(chatName, depth = 0) {
@@ -1084,7 +1202,7 @@ async function showBranchGraph() {
             large: true,
             onOpen: () => {
                 // Use .text() to safely set content after popup is in DOM (like "Manage chat files" does)
-                $('.branch-graph-node').each(function() {
+                $('.branch-graph-node').each(function () {
                     const nodeIndex = parseInt($(this).attr('data-node-index'));
                     const node = nodes[nodeIndex];
                     $(this).attr('data-file-name', node.name);
