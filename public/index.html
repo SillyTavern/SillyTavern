@@ -2210,16 +2210,12 @@
                                             <input id="claude_compact_enabled" type="checkbox" />
                                             <span>Enable Claude auto-compact</span>
                                         </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            Configure Anthropic `context_management` with the native `compact_20260112` edit.
-                                            Returned compaction blocks are round-tripped on later Claude requests. Anthropic currently requires the trigger to be at least `50000`.
-                                        </div>
                                         <div class="wide100p marginBot5">
                                             <div class="flex-container alignItemsCenter">
                                                 <span>Compact Instructions</span>
                                                 <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_compact_instructions" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
                                             </div>
-                                            <textarea id="claude_compact_instructions" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="You have written a partial transcript for the initial task above. Please write a summary of the transcript. The purpose of this summary is to provide continuity so you can continue to make progress towards solving the task in a future context, where the raw history above may not be accessible and will be replaced with this summary. Write down anything that would be helpful, including the state, next steps, learnings etc. You must wrap your summary in a &lt;summary&gt;&lt;/summary&gt; block."></textarea>
+                                            <textarea id="claude_compact_instructions" class="text_pole textarea_compact autoSetHeight" rows="3"></textarea>
                                         </div>
                                         <div class="flex-container flexnowrap flexGap10 wide100p marginBot5">
                                             <label for="claude_compact_trigger_value" class="wide100p">
