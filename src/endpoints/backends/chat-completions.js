@@ -290,6 +290,23 @@ async function sendClaudeRequest(request, response) {
             requestBody.tools = [...webSearchTool, ...(requestBody.tools || [])];
         }
 
+        const hasCompactionBlocks = requestBody.messages.some(message =>
+            Array.isArray(message?.content) && message.content.some(block => block?.type === 'compaction'));
+        const hasCompactEdit = Array.isArray(request.body.context_management?.edits)
+            && request.body.context_management.edits.some(edit => edit?.type === 'compact_20260112');
+
+        if (request.body.context_management && typeof request.body.context_management === 'object') {
+            requestBody.context_management = request.body.context_management;
+        }
+
+        if (requestBody.context_management || hasCompactionBlocks) {
+            betaHeaders.push('context-management-2025-06-27');
+        }
+
+        if (hasCompactEdit || hasCompactionBlocks) {
+            betaHeaders.push('compact-2026-01-12');
+        }
+
         if (cachingAtDepth !== -1) {
             cachingAtDepthForClaude(convertedPrompt.messages, cachingAtDepth, cacheTTL);
         }
@@ -380,7 +397,7 @@ async function sendClaudeRequest(request, response) {
 
             /** @type {any} */
             const generateResponseJson = await generateResponse.json();
-            const responseText = generateResponseJson?.content?.[0]?.text || '';
+            const responseText = generateResponseJson?.content?.filter(part => part?.type === 'text')?.map(part => part.text)?.join('\n\n') || '';
             console.debug('Claude response:', generateResponseJson);
 
             // Wrap it back to OAI format + save the original content

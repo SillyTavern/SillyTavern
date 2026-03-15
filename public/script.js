@@ -3452,6 +3452,8 @@ class StreamingProcessor {
         this.images = [];
         /** @type {string?} */
         this.reasoningSignature = null;
+        /** @type {{type: 'compaction', content: string | null}[]} */
+        this.compactionBlocks = [];
     }
 
     /**
@@ -3651,6 +3653,16 @@ class StreamingProcessor {
             message.extra.reasoning_signature = this.reasoningSignature;
         }
 
+        const compactionBlocks = sanitizeClaudeCompactionBlocks(this.compactionBlocks);
+        if (compactionBlocks.length > 0) {
+            message.extra = message.extra || {};
+            message.extra.claude_compaction_blocks = structuredClone(compactionBlocks);
+        } else if (message.extra?.claude_compaction_blocks) {
+            delete message.extra.claude_compaction_blocks;
+        }
+
+        syncMesToSwipe(messageId);
+
         this.markUIGenStopped();
 
         if (this.type !== 'impersonate') {
@@ -3746,6 +3758,7 @@ class StreamingProcessor {
                 this.reasoningHandler.updateReasoning(this.messageId, state?.reasoning);
                 this.images = state?.images ?? [];
                 this.reasoningSignature = state?.signature ?? null;
+                this.compactionBlocks = sanitizeClaudeCompactionBlocks(state?.claudeCompactionBlocks);
                 await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(async () => await this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
@@ -5325,6 +5338,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let title = extractTitleFromData(data);
         let reasoning = extractReasoningFromData(data);
         let imageUrls = extractImagesFromData(data);
+        const compactionBlocks = extractCompactionBlocksFromData(data);
         const reasoningSignature = extractReasoningSignatureFromData(data);
         kobold_horde_model = title;
 
@@ -5367,9 +5381,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         } else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature, compactionBlocks }));
             } else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature, compactionBlocks }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6038,6 +6052,44 @@ function extractImagesFromData(data, { mainApi = null, chatCompletionSource = nu
 }
 
 /**
+ * Sanitizes Claude compaction blocks for storage and round-tripping.
+ * @param {unknown} blocks Candidate compaction blocks
+ * @returns {{type: 'compaction', content: string | null}[]} Sanitized compaction blocks
+ */
+function sanitizeClaudeCompactionBlocks(blocks) {
+    if (!Array.isArray(blocks)) {
+        return [];
+    }
+
+    return blocks
+        .filter(block => block?.type === 'compaction' && (block.content === null || (typeof block.content === 'string' && block.content.length > 0)))
+        .map(block => ({
+            type: 'compaction',
+            content: block.content === null ? null : String(block.content),
+        }));
+}
+
+/**
+ * Extracts Claude compaction blocks from the response data.
+ * @param {object} data Response data
+ * @param {object} [options] Extraction options
+ * @param {string} [options.mainApi] Main API to use
+ * @param {string} [options.chatCompletionSource] Chat completion source
+ * @returns {{type: 'compaction', content: string | null}[]} Extracted compaction blocks or empty array
+ */
+function extractCompactionBlocksFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
+    switch (mainApi ?? main_api) {
+        case 'openai':
+            if ((chatCompletionSource ?? oai_settings.chat_completion_source) === chat_completion_sources.CLAUDE) {
+                return sanitizeClaudeCompactionBlocks(data?.content);
+            }
+            break;
+    }
+
+    return [];
+}
+
+/**
  * parseAndSaveLogprobs receives the full data response for a non-streaming
  * generation, parses logprobs for all tokens in the message, and saves them
  * to the currently active message.
@@ -6436,16 +6488,17 @@ async function processImageAttachment(message, { imageUrls }) {
  * @property {string} [reasoning] Message reasoning
  * @property {string[]} [imageUrls] Links to images
  * @property {string?} [reasoningSignature] Encrypted signature of the reasoning text
+ * @property {{type: 'compaction', content: string | null}[]} [compactionBlocks] Claude compaction blocks
  *
  * @typedef {object} SaveReplyResult
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null, compactionBlocks = [] }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
-        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls, reasoningSignature] = arguments;
+        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls, reasoningSignature, compactionBlocks] = arguments;
     }
 
     const lastMessage = chat[chat.length - 1];
@@ -6468,6 +6521,19 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         reasoning = '';
     }
 
+    const applyCompactionBlocks = (message) => {
+        if (!message.extra || typeof message.extra !== 'object') {
+            message.extra = {};
+        }
+
+        const sanitizedCompactionBlocks = sanitizeClaudeCompactionBlocks(compactionBlocks);
+        if (sanitizedCompactionBlocks.length > 0) {
+            message.extra.claude_compaction_blocks = structuredClone(sanitizedCompactionBlocks);
+        } else {
+            delete message.extra.claude_compaction_blocks;
+        }
+    };
+
     let oldMessage = '';
     const generationFinished = new Date();
     if (type === 'swipe') {
@@ -6484,6 +6550,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             lastMessage.extra.reasoning = reasoning;
             lastMessage.extra.reasoning_duration = null;
             lastMessage.extra.reasoning_signature = reasoningSignature;
+            applyCompactionBlocks(lastMessage);
             await processImageAttachment(lastMessage, { imageUrls });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + lastMessage.mes;
@@ -6509,6 +6576,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         lastMessage.extra.reasoning = reasoning;
         lastMessage.extra.reasoning_duration = null;
         lastMessage.extra.reasoning_signature = reasoningSignature;
+        applyCompactionBlocks(lastMessage);
         await processImageAttachment(lastMessage, { imageUrls });
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + lastMessage.mes;
@@ -6530,6 +6598,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         lastMessage.extra.model = getGeneratingModel();
         lastMessage.extra.reasoning += reasoning;
         lastMessage.extra.reasoning_signature = reasoningSignature;
+        applyCompactionBlocks(lastMessage);
         await processImageAttachment(lastMessage, { imageUrls });
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
@@ -6553,6 +6622,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         newMessage.extra.reasoning = reasoning;
         newMessage.extra.reasoning_duration = null;
         newMessage.extra.reasoning_signature = reasoningSignature;
+        applyCompactionBlocks(newMessage);
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }

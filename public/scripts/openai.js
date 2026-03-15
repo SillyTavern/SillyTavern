@@ -231,6 +231,9 @@ const openrouter_middleout_types = {
     OFF: 'off',
 };
 
+const DEFAULT_CLAUDE_COMPACT_TRIGGER_VALUE = 150000;
+const MIN_CLAUDE_COMPACT_TRIGGER_VALUE = 50000;
+
 export const reasoning_effort_types = {
     auto: 'auto',
     low: 'low',
@@ -353,6 +356,10 @@ export const settingsToUpdate = {
     proxy_password: ['#openai_proxy_password', 'proxy_password', false, true],
     assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false, false],
     assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false, false],
+    claude_compact_enabled: ['#claude_compact_enabled', 'claude_compact_enabled', true, false],
+    claude_compact_instructions: ['#claude_compact_instructions', 'claude_compact_instructions', false, false],
+    claude_compact_pause_after_compaction: ['#claude_compact_pause_after_compaction', 'claude_compact_pause_after_compaction', true, false],
+    claude_compact_trigger_value: ['#claude_compact_trigger_value', 'claude_compact_trigger_value', false, false],
     use_sysprompt: ['#use_sysprompt', 'use_sysprompt', true, false],
     vertexai_auth_mode: ['#vertexai_auth_mode', 'vertexai_auth_mode', false, true],
     vertexai_region: ['#vertexai_region', 'vertexai_region', false, true],
@@ -457,6 +464,10 @@ const default_settings = {
     proxy_password: '',
     assistant_prefill: '',
     assistant_impersonation: '',
+    claude_compact_enabled: false,
+    claude_compact_instructions: '',
+    claude_compact_pause_after_compaction: false,
+    claude_compact_trigger_value: DEFAULT_CLAUDE_COMPACT_TRIGGER_VALUE,
     use_sysprompt: false,
     vertexai_auth_mode: 'express',
     vertexai_region: 'us-central1',
@@ -499,6 +510,19 @@ export let openai_settings;
 
 /** @type {import('./PromptManager.js').PromptManager} */
 export let promptManager = null;
+
+function sanitizeClaudeCompactionBlocks(blocks) {
+    if (!Array.isArray(blocks)) {
+        return [];
+    }
+
+    return blocks
+        .filter(block => block?.type === 'compaction' && (block.content === null || (typeof block.content === 'string' && block.content.length > 0)))
+        .map(block => ({
+            type: 'compaction',
+            content: block.content === null ? null : String(block.content),
+        }));
+}
 
 async function validateReverseProxy() {
     if (!oai_settings.reverse_proxy) {
@@ -592,6 +616,9 @@ function setOpenAIMessages(chat) {
         const isSameModel = originApi === currentApi && originModel === currentModel;
         const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
         const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
+        const compactionBlocks = oai_settings.chat_completion_source === chat_completion_sources.CLAUDE
+            ? sanitizeClaudeCompactionBlocks(chat[j]?.extra?.claude_compaction_blocks)
+            : [];
 
         // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
@@ -605,7 +632,18 @@ function setOpenAIMessages(chat) {
             });
         }
 
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning };
+        messages[i] = {
+            'role': role,
+            'content': content,
+            name: name,
+            'media': media,
+            'mediaDisplay': mediaDisplay,
+            'mediaIndex': mediaIndex,
+            'invocations': invocations,
+            'signature': signature,
+            'reasoning': reasoning,
+            ...(compactionBlocks.length > 0 ? { compactionBlocks } : {}),
+        };
         j++;
     }
 
@@ -954,6 +992,26 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             if (chatPrompt.mediaDisplay === MEDIA_DISPLAY.GALLERY) {
                 const media = chatPrompt.media[chatPrompt.mediaIndex];
                 await inlineMediaAttachment(media);
+            }
+        }
+
+        const compactionBlocks = sanitizeClaudeCompactionBlocks(chatPrompt.compactionBlocks);
+        if (chatMessage.role === 'assistant' && compactionBlocks.length > 0) {
+            const content = Array.isArray(chatMessage.content)
+                ? chatMessage.content
+                : (typeof chatMessage.content === 'string' && chatMessage.content.length > 0
+                    ? [{ type: 'text', text: chatMessage.content }]
+                    : []);
+            chatMessage.content = content;
+            content.unshift(...compactionBlocks.map(block => ({ type: 'compaction', content: block.content })));
+
+            const compactionText = compactionBlocks
+                .filter(block => typeof block.content === 'string')
+                .map(block => block.content)
+                .join('\n\n');
+
+            if (compactionText.length > 0) {
+                chatMessage.tokens += await tokenHandler.countAsync({ role: chatMessage.role, content: compactionText });
             }
         }
 
@@ -2510,6 +2568,39 @@ function getVerbosity(settings = null) {
     return settings.verbosity;
 }
 
+function normalizeClaudeCompactTriggerValue(value) {
+    const parsedValue = Number.parseInt(String(value ?? ''), 10);
+    if (!Number.isInteger(parsedValue)) {
+        return DEFAULT_CLAUDE_COMPACT_TRIGGER_VALUE;
+    }
+
+    return Math.max(parsedValue, MIN_CLAUDE_COMPACT_TRIGGER_VALUE);
+}
+
+function getClaudeContextManagement(settings = null) {
+    settings = settings ?? oai_settings;
+
+    if (!settings.claude_compact_enabled) {
+        return undefined;
+    }
+
+    const edit = {
+        type: 'compact_20260112',
+        pause_after_compaction: !!settings.claude_compact_pause_after_compaction,
+        trigger: {
+            type: 'input_tokens',
+            value: normalizeClaudeCompactTriggerValue(settings.claude_compact_trigger_value),
+        },
+    };
+
+    const instructions = substituteParams(String(settings.claude_compact_instructions ?? '')).trim();
+    if (instructions.length > 0) {
+        edit.instructions = instructions;
+    }
+
+    return { edits: [edit] };
+}
+
 /**
  * Build the generation parameter object for an OAI request.
  * @param {ChatCompletionSettings} settings Initial chat completion settings
@@ -2688,6 +2779,10 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.top_k = Number(settings.top_k_openai);
         generate_data.use_sysprompt = settings.use_sysprompt;
         generate_data.stop = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
+        const contextManagement = getClaudeContextManagement(settings);
+        if (contextManagement) {
+            generate_data.context_management = contextManagement;
+        }
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
         if (type !== 'quiet' && !(type === 'continue' && settings.continue_prefill)) {
             generate_data.assistant_prefill = type === 'impersonate'
@@ -2920,7 +3015,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
+            const state = { reasoning: '', images: [], signature: '', toolSignatures: {}, claudeCompactionBlocks: [] };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -2979,6 +3074,32 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
     const show_thoughts = overrideShowThoughts ?? oai_settings.show_thoughts;
 
     if (chat_completion_source === chat_completion_sources.CLAUDE) {
+        if (Array.isArray(state.claudeCompactionBlocks)) {
+            const index = Number.isInteger(data?.index) ? data.index : state.claudeCompactionBlocks.length;
+
+            if (data?.content_block?.type === 'compaction') {
+                state.claudeCompactionBlocks[index] = {
+                    type: 'compaction',
+                    content: data.content_block.content === null
+                        ? null
+                        : typeof data.content_block.content === 'string'
+                            ? data.content_block.content
+                            : '',
+                };
+            }
+
+            if (data?.delta?.type === 'compaction_delta') {
+                const block = state.claudeCompactionBlocks[index] ?? { type: 'compaction', content: '' };
+                if (block.content === null) {
+                    block.content = '';
+                }
+                if (typeof data.delta.content === 'string') {
+                    block.content += data.delta.content;
+                }
+                state.claudeCompactionBlocks[index] = block;
+            }
+        }
+
         if (show_thoughts) {
             state.reasoning += data?.delta?.thinking || '';
         }
@@ -6607,6 +6728,33 @@ export function initOpenAI() {
 
     $('#claude_assistant_impersonation').on('input', function () {
         oai_settings.assistant_impersonation = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#claude_compact_enabled').on('input', function () {
+        oai_settings.claude_compact_enabled = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#claude_compact_instructions').on('input', function () {
+        oai_settings.claude_compact_instructions = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#claude_compact_pause_after_compaction').on('input', function () {
+        oai_settings.claude_compact_pause_after_compaction = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#claude_compact_trigger_value').on('input', function () {
+        oai_settings.claude_compact_trigger_value = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#claude_compact_trigger_value').on('change', function () {
+        const normalizedValue = normalizeClaudeCompactTriggerValue($(this).val());
+        $(this).val(normalizedValue);
+        oai_settings.claude_compact_trigger_value = String(normalizedValue);
         saveSettingsDebounced();
     });
 
