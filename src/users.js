@@ -15,8 +15,9 @@ import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
+import { getStorageProvider } from './storage-provider.js';
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, clientRelativePath } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
@@ -949,6 +950,17 @@ function createRouteHandler(directoryFn) {
         try {
             const directory = directoryFn(req);
             const filePath = decodeURIComponent(req.params[0]);
+
+            const storageProvider = getStorageProvider();
+            if (storageProvider?.serveFile) {
+                const handle = req.user?.profile?.handle;
+                // Compute relative path including the route prefix (e.g., user/images/filename)
+                const root = req.user?.directories?.root;
+                const fullRelPath = root ? clientRelativePath(root, path.join(directory, filePath)).replace(/^\/+/, '') : filePath;
+                const served = await storageProvider.serveFile(handle, fullRelPath, res);
+                if (served) return;
+            }
+
             const exists = fs.existsSync(path.join(directory, filePath));
             if (!exists) {
                 return res.sendStatus(404);

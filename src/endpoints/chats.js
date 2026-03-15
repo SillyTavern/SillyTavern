@@ -8,6 +8,7 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
+import { getStorageProvider } from '../storage-provider.js';
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
 import {
     getConfigValue,
@@ -462,6 +463,12 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
         throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
     }
+    const storageProvider = getStorageProvider();
+    if (storageProvider?.saveChat) {
+        await storageProvider.saveChat(handle, cardName, path.basename(filePath), jsonlData);
+        return;
+    }
+
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
 }
@@ -495,7 +502,20 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
  * @param {string} chatFilePath The full chat file path.
  * @returns {Array}} If the chatFilePath cannot be read, this will return [].
  */
-export function getChatData(chatFilePath) {
+export async function getChatData(chatFilePath) {
+    const storageProvider = getStorageProvider();
+    if (storageProvider?.readChat) {
+        // Extract character name and file name from the path
+        const fileName = path.basename(chatFilePath);
+        const characterName = path.basename(path.dirname(chatFilePath));
+        // userHandle is not available here; pass characterName as context
+        const data = await storageProvider.readChat(null, characterName, fileName);
+        if (data !== null) {
+            const lines = data.split('\n');
+            return lines.map(line => tryParse(line)).filter(x => x);
+        }
+    }
+
     let chatData = [];
 
     const chatJSON = tryReadFileSync(chatFilePath) ?? '';
@@ -510,9 +530,23 @@ export function getChatData(chatFilePath) {
     return chatData;
 }
 
-router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/get', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
+
+        // If a storage provider is registered, read from it directly
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.readChat && request.body.file_name) {
+            const handle = request.user.profile.handle;
+            const chatFileName = `${String(request.body.file_name)}.jsonl`;
+            const data = await storageProvider.readChat(handle, dirName, chatFileName);
+            if (data !== null) {
+                const lines = data.split('\n');
+                return response.send(lines.map(line => tryParse(line)).filter(x => x));
+            }
+            return response.send({});
+        }
+
         const directoryPath = path.join(request.user.directories.chats, dirName);
         const chatDirExists = fs.existsSync(directoryPath);
 
@@ -529,7 +563,7 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(directoryPath, sanitize(chatFileName));
 
-        return response.send(getChatData(chatFilePath));
+        return response.send(await getChatData(chatFilePath));
     } catch (error) {
         console.error(error);
         return response.send({});
@@ -540,6 +574,15 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
     try {
         if (!request.body || !request.body.original_file || !request.body.renamed_file) {
             return response.sendStatus(400);
+        }
+
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.renameChat) {
+            const handle = request.user.profile.handle;
+            const characterName = request.body.is_group ? null : String(request.body.avatar_url).replace('.png', '');
+            await storageProvider.renameChat(handle, characterName, request.body.original_file, request.body.renamed_file);
+            const sanitizedFileName = path.parse(sanitize(request.body.renamed_file)).name;
+            return response.send({ ok: true, sanitizedFileName });
         }
 
         const pathToFolder = request.body.is_group
@@ -566,7 +609,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
     }
 });
 
-router.post('/delete', validateAvatarUrlMiddleware, function (request, response) {
+router.post('/delete', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         if (!path.extname(request.body.chatfile)) {
             request.body.chatfile += '.jsonl';
@@ -574,6 +617,14 @@ router.post('/delete', validateAvatarUrlMiddleware, function (request, response)
 
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const chatFileName = String(request.body.chatfile);
+
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.deleteChat) {
+            const handle = request.user.profile.handle;
+            await storageProvider.deleteChat(handle, dirName, chatFileName);
+            return response.send({ ok: true });
+        }
+
         const chatFilePath = path.join(request.user.directories.chats, dirName, sanitize(chatFileName));
         //Return success if the file was deleted.
         if (tryDeleteFile(chatFilePath)) {
@@ -773,7 +824,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
     }
 });
 
-router.post('/group/get', (request, response) => {
+router.post('/group/get', async (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -781,7 +832,7 @@ router.post('/group/get', (request, response) => {
     const id = request.body.id;
     const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
 
-    return response.send(getChatData(chatFilePath));
+    return response.send(await getChatData(chatFilePath));
 });
 
 router.post('/group/info', async (request, response) => {
@@ -854,6 +905,13 @@ router.post('/group/save', async function (request, response) {
 router.post('/search', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         const { query, avatar_url, group_id } = request.body;
+
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.searchChats) {
+            const handle = request.user.profile.handle;
+            const results = await storageProvider.searchChats(handle, query);
+            return response.send(results);
+        }
 
         /** @type {string[]} */
         let chatFiles = [];
@@ -958,6 +1016,13 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
 
 router.post('/recent', async function (request, response) {
     try {
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.listChats) {
+            const handle = request.user.profile.handle;
+            const results = await storageProvider.listChats(handle, null);
+            return response.send(results);
+        }
+
         /** @typedef {{pngFile?: string, groupId?: string, filePath: string, mtime: number}} ChatFile */
         /** @type {ChatFile[]} */
         const allChatFiles = [];

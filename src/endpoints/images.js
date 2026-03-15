@@ -5,6 +5,7 @@ import { Buffer } from 'node:buffer';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
+import { getStorageProvider } from '../storage-provider.js';
 import { clientRelativePath, removeFileExtension, getImages, isPathUnderParent } from '../util.js';
 import { MEDIA_EXTENSIONS, MEDIA_REQUEST_TYPE } from '../constants.js';
 
@@ -67,8 +68,16 @@ router.post('/upload', async (request, response) => {
             pathToNewFile = path.join(request.user.directories.userImages, sanitize(request.body.ch_name), sanitize(filename));
         }
 
-        ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(image, 'base64');
+
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.saveFile) {
+            const relativePath = clientRelativePath(request.user.directories.root, pathToNewFile);
+            const url = await storageProvider.saveFile(request.user.profile.handle, relativePath, imageBuffer);
+            return response.send({ path: url });
+        }
+
+        ensureDirectoryExistence(pathToNewFile);
         await fs.promises.writeFile(pathToNewFile, new Uint8Array(imageBuffer));
         response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
     } catch (error) {
@@ -77,7 +86,7 @@ router.post('/upload', async (request, response) => {
     }
 });
 
-router.post('/list/:folder?', (request, response) => {
+router.post('/list/:folder?', async (request, response) => {
     try {
         if (request.params.folder) {
             if (request.body.folder) {
@@ -96,6 +105,17 @@ router.post('/list/:folder?', (request, response) => {
         const type = Number(request.body.type ?? MEDIA_REQUEST_TYPE.IMAGE);
         const sort = request.body.sortField || 'date';
         const order = request.body.sortOrder || 'asc';
+
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.listFiles) {
+            const handle = request.user.profile.handle;
+            const folder = sanitize(request.body.folder);
+            const files = await storageProvider.listFiles(handle, folder, sort, type);
+            if (order === 'desc') {
+                files.reverse();
+            }
+            return response.send(files);
+        }
 
         if (!fs.existsSync(directoryPath)) {
             fs.mkdirSync(directoryPath, { recursive: true });
@@ -134,6 +154,12 @@ router.post('/delete', async (request, response) => {
     try {
         if (!request.body.path) {
             return response.status(400).send('No path specified');
+        }
+
+        const storageProvider = getStorageProvider();
+        if (storageProvider?.deleteFile) {
+            await storageProvider.deleteFile(request.user.profile.handle, request.body.path);
+            return response.sendStatus(200);
         }
 
         const pathToDelete = path.join(request.user.directories.root, request.body.path);
