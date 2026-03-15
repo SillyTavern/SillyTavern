@@ -130,7 +130,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.LINGVA_URL]: 'Lingva Endpoint (e.g. https://lingva.ml/api/v1)',
     [SECRET_KEYS.ONERING_URL]: 'OneRingTranslator Endpoint (e.g. http://127.0.0.1:4990/translate)',
     [SECRET_KEYS.DEEPLX_URL]: 'DeepLX Endpoint (e.g. http://127.0.0.1:1188/translate)',
-    [SECRET_KEYS.MINIMAX]: 'MiniMax TTS',
+    [SECRET_KEYS.MINIMAX]: 'MiniMax',
     [SECRET_KEYS.MINIMAX_GROUP_ID]: 'MiniMax Group ID',
     [SECRET_KEYS.MOONSHOT]: 'Moonshot AI',
     [SECRET_KEYS.COMETAPI]: 'CometAPI',
@@ -184,6 +184,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.AZURE_OPENAI]: '#api_key_azure_openai',
     [SECRET_KEYS.ZAI]: '#api_key_zai',
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
+    [SECRET_KEYS.MINIMAX]: '#api_key_minimax',
     [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
     [SECRET_KEYS.WORKERS_AI]: '#api_key_workers_ai',
 };
