@@ -1511,8 +1511,7 @@ export function tryWriteFileSync(filePath, data) {
         if (!fs.existsSync(directory)) {
             fs.mkdirSync(directory, { recursive: true });
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.log(`The directory at ${directory} is not readable and writable, please check it's permissions.`);
         throw new Error(error);
     }
@@ -1520,8 +1519,7 @@ export function tryWriteFileSync(filePath, data) {
     try {
         writeFileAtomicSync(filePath, data, 'utf8');
         return true;
-    }
-    catch (error) {
+    } catch (error) {
         console.log(`The file at ${filePath} is not readable and writable, please check it's permissions.`);
         throw new Error(error);
     }
