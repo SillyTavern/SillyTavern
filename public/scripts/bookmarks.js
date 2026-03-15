@@ -40,6 +40,7 @@ import { t } from './i18n.js';
 import {
     getUniqueName,
     isTrueBoolean,
+    sortMoments,
     timestampToMoment,
 } from './utils.js';
 
@@ -709,11 +710,7 @@ async function showBranchList(mesId) {
         }
 
         // Sort by last message date (most recent first)
-        branchChats.sort((a, b) => {
-            const momentA = timestampToMoment(a.last_mes);
-            const momentB = timestampToMoment(b.last_mes);
-            return momentB.valueOf() - momentA.valueOf();
-        });
+        branchChats.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
 
         // Build the HTML for the branch list
         let branchListHTML = '<div class="branch-list">';
