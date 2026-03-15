@@ -89,6 +89,7 @@ const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
+const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
@@ -1877,6 +1878,16 @@ router.post('/status', async function (request, statusResponse) {
                 console.error('Error fetching Cloudflare Workers AI models:', error);
                 return statusResponse.status(500).send({ error: true });
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
+            apiUrl = API_MINIMAX;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+            headers = {};
+            // MiniMax does not support the /models endpoint, return hardcoded model list
+            if (!apiKey) {
+                console.warn('Chat Completion API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+            return statusResponse.send({ data: [{ id: 'MiniMax-M2.5' }, { id: 'MiniMax-M2.5-highspeed' }] });
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2376,6 +2387,18 @@ router.post('/generate', async function (request, response) {
                     type: 'json_schema',
                     json_schema: request.body.json_schema.value,
                 };
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
+            apiUrl = API_MINIMAX;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+            headers = {};
+            bodyParams = {};
+            // MiniMax requires temperature in (0.0, 1.0], zero is not allowed
+            if (request.body.temperature !== undefined && request.body.temperature <= 0) {
+                request.body.temperature = 0.01;
+            }
+            if (request.body.temperature !== undefined && request.body.temperature > 1) {
+                request.body.temperature = 1.0;
             }
         } else {
             console.warn('This chat completion source is not supported yet.');
