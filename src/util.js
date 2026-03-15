@@ -1486,13 +1486,16 @@ export function flattenSchema(schema, api) {
  * https://nodejs.org/api/fs.html#fsstatpath-options-callback
  * Using fs.stat() to check for the existence of a file before calling fs.open(), fs.readFile(), or fs.writeFile() is not recommended. Instead, user code should open/read/write the file directly and handle the error raised if the file is not available.
  * @param {string} filePath Target filepath.
+ * @returns {boolean} true if the file is accessible.
  */
 export function ensureAccess(filePath) {
     try {
         accessSync(filePath, constants.F_OK | constants.R_OK | constants.W_OK);
+        return true;
     } catch (err) {
         console.log(err);
         console.log(`The file at ${filePath} is not readable and writable, please check it's permissions.`);
+        return false;
     }
 }
 
