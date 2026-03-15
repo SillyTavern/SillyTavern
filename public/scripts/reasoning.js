@@ -16,7 +16,7 @@ import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandE
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { applyStreamFadeIn } from './util/stream-fadein.js';
-import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
+import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, stringToRange, trimSpaces } from './utils.js';
 
 /**
  * @typedef {object} ReasoningTemplate
@@ -1047,15 +1047,22 @@ function registerReasoningSlashCommands() {
     }));
 
     /**
-     * Gets the reasoning details element for a message by value.
-     * @param {string} value Unnamed argument value (message ID)
-     * @returns {JQuery<HTMLElement>|null} The reasoning details element, or null if not found
+     * Gets the reasoning details elements for a message range.
+     * @param {string} value Unnamed argument value (message ID or range)
+     * @returns {JQuery<HTMLElement>|null} The reasoning details elements, or null if not found
      */
-    function getReasoningDetailsElement(value) {
-        const messageId = !isNaN(parseInt(String(value))) ? parseInt(String(value)) : chat.length - 1;
-        const details = $(`#chat [mesid="${messageId}"] .mes_reasoning_details`);
+    function getReasoningDetailsElements(value) {
+        const range = value ? stringToRange(String(value), 0, chat.length - 1) : { start: chat.length - 1, end: chat.length - 1 };
+        if (!range) {
+            toastr.warning(t`Invalid message ID or range: ${value}`);
+            return null;
+        }
+        const selector = Array.from({ length: range.end - range.start + 1 }, (_, i) =>
+            `#chat [mesid="${range.start + i}"] .mes_reasoning_details`,
+        ).join(',');
+        const details = $(selector);
         if (details.length === 0) {
-            toastr.warning(t`No reasoning block found for message #${messageId}.`);
+            toastr.warning(t`No reasoning blocks found for the specified messages.`);
             return null;
         }
         return details;
@@ -1063,8 +1070,8 @@ function registerReasoningSlashCommands() {
 
     const reasoningVisibilityArgs = [
         SlashCommandArgument.fromProps({
-            description: 'Message ID. If not provided, the message ID of the last message is used.',
-            typeList: ARGUMENT_TYPE.NUMBER,
+            description: 'Message ID or range (e.g. 0-10). If not provided, the last message is used.',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
             enumProvider: commonEnumProviders.messages(),
         }),
     ];
@@ -1072,10 +1079,10 @@ function registerReasoningSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'reasoning-collapse',
         aliases: ['collapse-reasoning'],
-        helpString: t`Collapse the reasoning block of a message.`,
+        helpString: t`Collapse the reasoning block of a message or range of messages.`,
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
-            const details = getReasoningDetailsElement(value);
+            const details = getReasoningDetailsElements(value);
             if (details) details.removeAttr('open');
             return '';
         },
@@ -1084,10 +1091,10 @@ function registerReasoningSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'reasoning-expand',
         aliases: ['expand-reasoning'],
-        helpString: t`Expand the reasoning block of a message.`,
+        helpString: t`Expand the reasoning block of a message or range of messages.`,
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
-            const details = getReasoningDetailsElement(value);
+            const details = getReasoningDetailsElements(value);
             if (details) details.attr('open', '');
             return '';
         },
@@ -1096,16 +1103,19 @@ function registerReasoningSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'reasoning-toggle',
         aliases: ['toggle-reasoning'],
-        helpString: t`Toggle the reasoning block of a message. If the reasoning block is expanded, it will be collapsed, and vice versa.`,
+        helpString: t`Toggle the reasoning block of a message or range of messages. Expanded blocks will be collapsed, and collapsed blocks will be expanded.`,
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
-            const details = getReasoningDetailsElement(value);
+            const details = getReasoningDetailsElements(value);
             if (!details) return '';
-            if (details.attr('open') !== undefined) {
-                details.removeAttr('open');
-            } else {
-                details.attr('open', '');
-            }
+            details.each(function () {
+                const $el = $(this);
+                if ($el.attr('open') !== undefined) {
+                    $el.removeAttr('open');
+                } else {
+                    $el.attr('open', '');
+                }
+            });
             return '';
         },
     }));
