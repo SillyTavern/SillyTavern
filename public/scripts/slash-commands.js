@@ -12,6 +12,7 @@ import {
     comment_avatar,
     deactivateSendButtons,
     default_avatar,
+    deleteCharacter,
     deleteSwipe,
     displayPastChats,
     duplicateCharacter,
@@ -22,9 +23,12 @@ import {
     extractMessageBias,
     generateQuietPrompt,
     generateRaw,
+    getCharacters,
     getCurrentChatDetails,
     getCurrentChatId,
     getFirstDisplayedMessageId,
+    getOneCharacter,
+    getRequestHeaders,
     getThumbnailUrl,
     is_send_press,
     main_api,
@@ -40,6 +44,7 @@ import {
     saveChatConditional,
     saveSettings,
     saveSettingsDebounced,
+    selectCharacterById,
     sendMessageAsUser,
     sendSystemMessage,
     setActiveCharacter,
@@ -760,6 +765,301 @@ export function initDefaultSlashCommands() {
                     <pre><code>/search name="Chloe" tag="friend"</code></pre>
                     ${t`Returns the avatar key for the character "Chloe" that is tagged with "friend".`}
                     ${t`This is useful if you for example have multiple characters named "Chloe", and the others are "foe", "goddess", or anything else, so you can actually select the character you are looking for.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    // Shared character field definitions for char-create and char-update commands
+    const getCharacterFieldArgs = ({ requiredFields = [] } = {}) => [
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: t`The name of the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('name'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'description',
+            description: t`The character's description/personality definition`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('description'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'firstMessage',
+            description: t`The character's first message/greeting`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('firstMessage'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'personality',
+            description: t`A brief description of the personality`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('personality'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'scenario',
+            description: t`The scenario or circumstances for the conversation`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('scenario'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'messageExamples',
+            description: t`Example messages for the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('messageExamples'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'creatorNotes',
+            description: t`Notes from the character creator`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('creatorNotes'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'systemPrompt',
+            description: t`The character's system prompt`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('systemPrompt'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'postHistoryInstructions',
+            description: t`Post-history instructions (jailbreak)`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('postHistoryInstructions'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'creator',
+            description: t`The creator of the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('creator'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'characterVersion',
+            description: t`The version of the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('characterVersion'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'tags',
+            description: t`Comma-separated list of tags`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('tags'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'talkativeness',
+            description: t`How often the character speaks in group chats (0.0 to 1.0)`,
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            isRequired: requiredFields.includes('talkativeness'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'world',
+            description: t`The name of the lorebook to attach`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumProvider: commonEnumProviders.worlds,
+            isRequired: requiredFields.includes('world'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'depthPrompt',
+            description: t`Character-specific depth prompt content`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('depthPrompt'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'depthPromptDepth',
+            description: t`Depth for the character-specific depth prompt`,
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            isRequired: requiredFields.includes('depthPromptDepth'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'depthPromptRole',
+            description: t`Role for the depth prompt`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: commonEnumProviders.messageRoles(),
+            isRequired: requiredFields.includes('depthPromptRole'),
+        }),
+    ];
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-create',
+        callback: createCharacterCallback,
+        returns: t`the avatar key (unique identifier) of the created character`,
+        namedArgumentList: [
+            ...getCharacterFieldArgs({ requiredFields: ['name', 'description', 'firstMessage'] }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'select',
+                description: t`Whether to select/open the character after creation (default: true)`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Creates a new character with the specified attributes. Returns the avatar key of the created character.`}
+        </div>
+        <div>
+            <strong>${t`Required arguments:`}</strong>
+            <ul>
+                <li><code>name</code> - ${t`The character's name`}</li>
+                <li><code>description</code> - ${t`The character's description/definition`}</li>
+                <li><code>firstMessage</code> - ${t`The character's first message/greeting`}</li>
+            </ul>
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-create name="Alice" description="A friendly AI assistant" firstMessage="Hello! How can I help you today?"</code></pre>
+                </li>
+                <li>
+                    <pre><code>/char-create name="Bob" description="A wise wizard" firstMessage="Greetings, traveler." personality="Wise, patient" scenario="A magical library" tags="fantasy,wizard"</code></pre>
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-update',
+        callback: updateCharacterCallback,
+        returns: t`the avatar key of the updated character`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            ...getCharacterFieldArgs(),
+        ],
+        helpString: `
+        <div>
+            ${t`Updates an existing character's attributes. The character does not need to be currently selected.`}
+        </div>
+        <div>
+            ${t`If no <code>char</code> argument is provided, updates the currently selected character.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-update description="An updated description for this character"</code></pre>
+                    ${t`Updates the currently selected character's description.`}
+                </li>
+                <li>
+                    <pre><code>/char-update char="Alice" personality="Cheerful and energetic" scenario="At a coffee shop"</code></pre>
+                    ${t`Updates Alice's personality and scenario without needing to select her first.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-get',
+        callback: getCharacterDataCallback,
+        returns: t`character data as JSON or a specific field value`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'field',
+                description: t`Specific field to retrieve. If not provided, returns the entire character data.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('name', t`Character name`, enumTypes.enum),
+                    new SlashCommandEnumValue('description', t`Character description`, enumTypes.enum),
+                    new SlashCommandEnumValue('personality', t`Character personality`, enumTypes.enum),
+                    new SlashCommandEnumValue('scenario', t`Character scenario`, enumTypes.enum),
+                    new SlashCommandEnumValue('first_mes', t`First message`, enumTypes.enum),
+                    new SlashCommandEnumValue('mes_example', t`Message examples`, enumTypes.enum),
+                    new SlashCommandEnumValue('creator_notes', t`Creator notes`, enumTypes.enum),
+                    new SlashCommandEnumValue('system_prompt', t`System prompt`, enumTypes.enum),
+                    new SlashCommandEnumValue('post_history_instructions', t`Post-history instructions`, enumTypes.enum),
+                    new SlashCommandEnumValue('creator', t`Creator name`, enumTypes.enum),
+                    new SlashCommandEnumValue('character_version', t`Character version`, enumTypes.enum),
+                    new SlashCommandEnumValue('tags', t`Character tags`, enumTypes.enum),
+                    new SlashCommandEnumValue('talkativeness', t`Talkativeness`, enumTypes.enum),
+                    new SlashCommandEnumValue('avatar', t`Avatar filename`, enumTypes.enum),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: t`The way to return the result`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'pipe',
+                enumList: slashCommandReturnHelper.enumList({ allowPipe: true, allowObject: true, allowChat: false, allowPopup: true, allowTextVersion: false }),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Retrieves character data. Can get all data or a specific field.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-get field=description | /echo</code></pre>
+                    ${t`Outputs the current character's description.`}
+                </li>
+                <li>
+                    <pre><code>/char-get char="Alice" field=personality</code></pre>
+                    ${t`Returns Alice's personality field.`}
+                </li>
+                <li>
+                    <pre><code>/char-get char="Bob" return=object</code></pre>
+                    ${t`Returns Bob's entire character data as an object.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-delete',
+        callback: deleteCharacterCallback,
+        returns: t`true if the character was deleted, false otherwise`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'deleteChats',
+                description: t`Whether to also delete all chats with this character`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'silent',
+                description: t`Skip the confirmation popup`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Deletes a character from the system.`}
+        </div>
+        <div>
+            <strong>${t`Warning:`}</strong> ${t`This action is irreversible!`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-delete char="Alice"</code></pre>
+                    ${t`Deletes Alice (will show confirmation popup).`}
+                </li>
+                <li>
+                    <pre><code>/char-delete char="Bob" deleteChats=true silent=true</code></pre>
+                    ${t`Deletes Bob and all associated chats without confirmation.`}
                 </li>
             </ul>
         </div>
@@ -4667,6 +4967,319 @@ async function openChat(chid) {
     setCharacterId(chid);
     await delay(1);
     await reloadCurrentChat();
+}
+
+/**
+ * Creates a new character via the API.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} The avatar key of the created character
+ */
+async function createCharacterCallback(args) {
+    const name = args.name;
+    const description = args.description;
+    const firstMessage = args.firstMessage;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+        throw new Error('Character name is required');
+    }
+    if (!description || typeof description !== 'string') {
+        throw new Error('Character description is required');
+    }
+    if (!firstMessage || typeof firstMessage !== 'string') {
+        throw new Error('Character first message is required');
+    }
+
+    // Build the character data object matching the server's expected format
+    const characterData = {
+        ch_name: name.trim(),
+        description: description,
+        first_mes: firstMessage,
+        personality: args.personality ?? '',
+        scenario: args.scenario ?? '',
+        mes_example: args.messageExamples ?? '',
+        creator_notes: args.creatorNotes ?? '',
+        system_prompt: args.systemPrompt ?? '',
+        post_history_instructions: args.postHistoryInstructions ?? '',
+        creator: args.creator ?? '',
+        character_version: args.characterVersion ?? '',
+        tags: args.tags ?? '',
+        talkativeness: args.talkativeness ?? '0.5',
+        world: args.world ?? '',
+        depth_prompt_prompt: args.depthPrompt ?? '',
+        depth_prompt_depth: args.depthPromptDepth ?? '4',
+        depth_prompt_role: args.depthPromptRole ?? 'system',
+        fav: 'false',
+        alternate_greetings: [],
+        extensions: '{}',
+    };
+
+    try {
+        const response = await fetch('/api/characters/create', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(characterData),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to create character: ${errorText}`);
+        }
+
+        const avatarKey = await response.text();
+
+        // Refresh the character list
+        await getCharacters();
+
+        // Select the character if requested (default: true)
+        const shouldSelect = !isFalseBoolean(args.select);
+        if (shouldSelect) {
+            const characterIndex = characters.findIndex(c => c.avatar === avatarKey);
+            if (characterIndex !== -1) {
+                // selectCharacterById handles group reset and active character setting
+                await selectCharacterById(characterIndex);
+            }
+        }
+
+        toastr.success(t`Character "${name}" created successfully`);
+        return avatarKey;
+    } catch (error) {
+        console.error('Error creating character:', error);
+        toastr.error(t`Failed to create character: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
+ * Updates an existing character via the merge-attributes API.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} The avatar key of the updated character
+ */
+async function updateCharacterCallback(args) {
+    // Find the target character
+    let character;
+    let characterIndex;
+    if (args.char) {
+        character = findChar({ name: args.char });
+        if (!character) {
+            throw new Error(`Character "${args.char}" not found`);
+        }
+        characterIndex = characters.indexOf(character);
+    } else {
+        // Use currently selected character
+        if (this_chid === undefined || !characters[this_chid]) {
+            throw new Error('No character selected and no char argument provided');
+        }
+        character = characters[this_chid];
+        characterIndex = this_chid;
+    }
+
+    // Build the update object with only provided fields
+    const updateData = {
+        avatar: character.avatar,
+    };
+
+    // Map argument names to character data field names
+    const fieldMappings = {
+        name: 'name',
+        description: 'description',
+        firstMessage: 'first_mes',
+        personality: 'personality',
+        scenario: 'scenario',
+        messageExamples: 'mes_example',
+        creatorNotes: 'creator_notes',
+        systemPrompt: 'system_prompt',
+        postHistoryInstructions: 'post_history_instructions',
+        creator: 'creator',
+        characterVersion: 'character_version',
+        tags: 'tags',
+        world: 'world',
+    };
+
+    // Add provided fields to update data
+    let hasUpdates = false;
+    for (const [argName, fieldName] of Object.entries(fieldMappings)) {
+        if (args[argName] !== undefined) {
+            updateData[fieldName] = args[argName];
+            // Also set in data object for V2 spec compliance
+            if (!updateData.data) updateData.data = {};
+            updateData.data[fieldName] = args[argName];
+            hasUpdates = true;
+        }
+    }
+
+    // Handle talkativeness (stored in extensions)
+    if (args.talkativeness !== undefined) {
+        const talkValue = parseFloat(args.talkativeness);
+        if (!isNaN(talkValue)) {
+            updateData.talkativeness = talkValue;
+            if (!updateData.data) updateData.data = {};
+            if (!updateData.data.extensions) updateData.data.extensions = {};
+            updateData.data.extensions.talkativeness = talkValue;
+            hasUpdates = true;
+        }
+    }
+
+    // Handle depth prompt fields
+    if (args.depthPrompt !== undefined || args.depthPromptDepth !== undefined || args.depthPromptRole !== undefined) {
+        if (!updateData.data) updateData.data = {};
+        if (!updateData.data.extensions) updateData.data.extensions = {};
+        if (!updateData.data.extensions.depth_prompt) updateData.data.extensions.depth_prompt = {};
+
+        if (args.depthPrompt !== undefined) {
+            updateData.data.extensions.depth_prompt.prompt = args.depthPrompt;
+            hasUpdates = true;
+        }
+        if (args.depthPromptDepth !== undefined) {
+            updateData.data.extensions.depth_prompt.depth = parseInt(args.depthPromptDepth);
+            hasUpdates = true;
+        }
+        if (args.depthPromptRole !== undefined) {
+            updateData.data.extensions.depth_prompt.role = args.depthPromptRole;
+            hasUpdates = true;
+        }
+    }
+
+    if (!hasUpdates) {
+        toastr.warning(t`No fields provided to update`);
+        return character.avatar;
+    }
+
+    try {
+        const response = await fetch('/api/characters/merge-attributes', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(updateData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Server returned ${response.status}`);
+        }
+
+        // Refresh the character data
+        await getOneCharacter(character.avatar);
+
+        await eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: characterIndex, character: characters[characterIndex] } });
+
+        toastr.success(t`Character "${character.name}" updated successfully`);
+        return character.avatar;
+    } catch (error) {
+        console.error('Error updating character:', error);
+        toastr.error(t`Failed to update character: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
+ * Gets character data or a specific field.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} Character data or field value
+ */
+async function getCharacterDataCallback(args) {
+    // Find the target character
+    let character;
+    if (args.char) {
+        character = findChar({ name: args.char });
+        if (!character) {
+            throw new Error(`Character "${args.char}" not found`);
+        }
+    } else {
+        // Use currently selected character
+        if (this_chid === undefined || !characters[this_chid]) {
+            throw new Error('No character selected and no char argument provided');
+        }
+        character = characters[this_chid];
+    }
+
+    // If a specific field is requested
+    if (args.field) {
+        const fieldName = args.field;
+
+        // Try to get from data object first (V2 spec), then fall back to root
+        let value = character.data?.[fieldName] ?? character[fieldName];
+
+        // Handle special cases for nested fields
+        if (fieldName === 'talkativeness') {
+            value = character.data?.extensions?.talkativeness ?? character.talkativeness ?? 0.5;
+        }
+        if (fieldName === 'tags') {
+            value = character.data?.tags ?? character.tags ?? [];
+            if (Array.isArray(value)) {
+                value = value.join(', ');
+            }
+        }
+
+        if (value === undefined) {
+            return '';
+        }
+
+        return await slashCommandReturnHelper.doReturn(args.return ?? 'pipe', value, { objectToStringFunc: x => String(x) });
+    }
+
+    // Return entire character data
+    const charData = {
+        avatar: character.avatar,
+        name: character.name,
+        description: character.description ?? character.data?.description ?? '',
+        personality: character.personality ?? character.data?.personality ?? '',
+        scenario: character.scenario ?? character.data?.scenario ?? '',
+        first_mes: character.first_mes ?? character.data?.first_mes ?? '',
+        mes_example: character.mes_example ?? character.data?.mes_example ?? '',
+        creator_notes: character.data?.creator_notes ?? '',
+        system_prompt: character.data?.system_prompt ?? '',
+        post_history_instructions: character.data?.post_history_instructions ?? '',
+        creator: character.data?.creator ?? '',
+        character_version: character.data?.character_version ?? '',
+        tags: character.data?.tags ?? character.tags ?? [],
+        talkativeness: character.data?.extensions?.talkativeness ?? character.talkativeness ?? 0.5,
+        fav: character.fav ?? character.data?.extensions?.fav ?? false,
+        chat: character.chat,
+        create_date: character.create_date,
+    };
+
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'pipe', charData, { objectToStringFunc: x => JSON.stringify(x, null, 2) });
+}
+
+/**
+ * Deletes a character using the core deleteCharacter function.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} 'true' if deleted, 'false' otherwise
+ */
+async function deleteCharacterCallback(args) {
+    const charArg = args.char;
+    if (!charArg) {
+        throw new Error('Character name or avatar key is required');
+    }
+
+    const character = findChar({ name: charArg });
+    if (!character) {
+        throw new Error(`Character "${charArg}" not found`);
+    }
+
+    const deleteChats = isTrueBoolean(args.deleteChats);
+    const silent = isTrueBoolean(args.silent);
+
+    // Show confirmation popup unless silent mode
+    if (!silent) {
+        const confirmMessage = deleteChats
+            ? t`Are you sure you want to delete "${character.name}" and all associated chats? This action cannot be undone.`
+            : t`Are you sure you want to delete "${character.name}"? This action cannot be undone.`;
+
+        const result = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            return 'false';
+        }
+    }
+
+    try {
+        // Use the core deleteCharacter function which handles all cleanup and events
+        await deleteCharacter(character.avatar, { deleteChats });
+        return 'true';
+    } catch (error) {
+        console.error('Error deleting character:', error);
+        toastr.error(t`Failed to delete character: ${error.message}`);
+        return 'false';
+    }
 }
 
 async function continueChatCallback(args, prompt) {
