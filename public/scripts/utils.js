@@ -2938,3 +2938,40 @@ export function createTimeout(ms, errorMessage = '') {
         setTimeout(() => reject(new Error(errorMessage)), ms);
     });
 }
+
+/**
+ * Registers a long-press (touch hold) event on an element as an alternative to modifier+click.
+ * On long-press, invokes the callback and suppresses the subsequent click event.
+ * @param {JQuery} $element jQuery element
+ * @param {function} callback Callback to invoke on long-press
+ * @param {number} [delay=500] Long-press duration in ms
+ */
+export function addLongPressEvent($element, callback, delay = 500) {
+    let timer = null;
+    let fired = false;
+
+    // Must use native addEventListener with passive:false to allow preventDefault
+    $element.each(function () {
+        this.addEventListener('touchstart', function (event) {
+            fired = false;
+            timer = setTimeout(() => {
+                fired = true;
+                event.preventDefault();
+                callback.call(this, event);
+            }, delay);
+        }, { passive: false });
+    });
+
+    $element.on('touchend touchmove touchcancel', function () {
+        clearTimeout(timer);
+        timer = null;
+    });
+
+    $element.on('click', function (event) {
+        if (fired) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            fired = false;
+        }
+    });
+}
