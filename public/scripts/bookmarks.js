@@ -712,28 +712,34 @@ async function showBranchList(mesId) {
         // Sort by last message date (most recent first)
         branchChats.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
 
-        // Build the HTML for the branch list
-        let branchListHTML = '<div class="branch-list">';
-        for (const branch of branchChats) {
+        // Prepare data for template (don't escape - we'll use .text() to set content safely)
+        const branches = branchChats.map(branch => {
             const momentDate = timestampToMoment(branch.last_mes);
-            const formattedDate = momentDate.isValid() ? momentDate.format('lll') : 'Unknown date';
-            const preview = branch.preview_message || '(No messages)';
-            const messageCount = branch.message_count || 0;
+            return {
+                file_name: branch.file_name,
+                formattedDate: momentDate.isValid() ? momentDate.format('lll') : 'Unknown date',
+                preview: branch.preview_message || '(No messages)',
+                message_count: branch.message_count || 0,
+            };
+        });
 
-            branchListHTML += `
-                <div class="branch-list-item" data-file-name="${branch.file_name}">
-                    <div class="branch-list-item-header">
-                        <span class="branch-list-item-name"><i class="fa-solid fa-code-branch"></i> ${branch.file_name}</span>
-                        <small class="branch-list-item-date">${formattedDate}</small>
-                    </div>
-                    <div class="branch-list-item-preview">${messageCount} messages • ${preview}</div>
-                </div>
-            `;
-        }
-        branchListHTML += '</div>';
+        const branchListHTML = await renderTemplateAsync('branchList', { branches });
 
         // Show the popup
-        const popup = new Popup(branchListHTML, POPUP_TYPE.TEXT, '', { okButton: false, cancelButton: 'Close' });
+        const popup = new Popup(branchListHTML, POPUP_TYPE.TEXT, '', {
+            okButton: false,
+            cancelButton: 'Close',
+            onOpen: () => {
+                // Use .text() to safely set content after popup is in DOM (like "Manage chat files" does)
+                $('.branch-list-item').each(function() {
+                    const branchIndex = parseInt($(this).attr('data-branch-index'));
+                    const branch = branches[branchIndex];
+                    $(this).attr('data-file-name', branch.file_name);
+                    $(this).find('.branch-name-text').text(branch.file_name);
+                    $(this).find('.branch-preview-text').text(branch.preview);
+                });
+            },
+        });
 
         // Add click handlers to the branch items (use one-time handler to avoid duplicates)
         const handleBranchClick = async function () {
@@ -1012,81 +1018,63 @@ async function showBranchGraph() {
 
         const levels = organizeByLevelsWithLayout(cleanTree);
 
-        // Render the tree as HTML with proper alignment and connections
-        function renderGraph(levels) {
-            const nodeWidth = 280;
-            const nodeHeight = 120;
-            const horizontalGap = 20;
-            const verticalGap = 60;
+        // Prepare data for template
+        const nodeWidth = 280;
+        const nodeHeight = 120;
+        const horizontalGap = 20;
+        const verticalGap = 60;
 
-            // Calculate total width needed
-            const maxWidth = Math.max(...levels.map(level =>
-                Math.max(...level.map(node => node.layout.x)),
-            )) + 1;
+        const maxWidth = Math.max(...levels.map(level =>
+            Math.max(...level.map(node => node.layout.x)),
+        )) + 1;
 
-            const totalWidth = maxWidth * (nodeWidth + horizontalGap);
-            const totalHeight = levels.length * (nodeHeight + verticalGap);
+        const totalWidth = maxWidth * (nodeWidth + horizontalGap);
+        const totalHeight = levels.length * (nodeHeight + verticalGap);
 
-            // Create a single container with relative positioning
-            let html = `<div style="position: relative; width: ${totalWidth}px; height: ${totalHeight}px;">`;
+        const lines = [];
+        const nodes = [];
 
-            // Draw SVG with connection lines (relative positioned, not absolute)
-            html += `<svg width="${totalWidth}" height="${totalHeight}" style="position: absolute; top: 0; left: 0; pointer-events: none;">`;
+        // Collect connection lines
+        for (const level of levels) {
+            for (const node of level) {
+                const parentX = node.layout.x * (nodeWidth + horizontalGap) + nodeWidth / 2;
+                const parentY = node.layout.depth * (nodeHeight + verticalGap) + nodeHeight;
 
-            // Draw connection lines
-            for (const level of levels) {
-                for (const node of level) {
-                    const parentX = node.layout.x * (nodeWidth + horizontalGap) + nodeWidth / 2;
-                    const parentY = node.layout.depth * (nodeHeight + verticalGap) + nodeHeight;
+                for (const child of node.children) {
+                    const childX = child.layout.x * (nodeWidth + horizontalGap) + nodeWidth / 2;
+                    const childY = child.layout.depth * (nodeHeight + verticalGap);
 
-                    for (const child of node.children) {
-                        const childX = child.layout.x * (nodeWidth + horizontalGap) + nodeWidth / 2;
-                        const childY = child.layout.depth * (nodeHeight + verticalGap);
-
-                        // Draw line from parent to child
-                        html += `<line x1="${parentX}" y1="${parentY}" x2="${childX}" y2="${childY}"
-                                 stroke="var(--SmartThemeBorderColor)" stroke-width="2"/>`;
-                    }
+                    lines.push({ x1: parentX, y1: parentY, x2: childX, y2: childY });
                 }
             }
-
-            html += '</svg>';
-
-            // Render nodes as HTML elements positioned absolutely within the same container
-            for (const level of levels) {
-                for (const node of level) {
-                    const isCurrentChat = node.name === currentChatName;
-                    const momentDate = timestampToMoment(node.chat.last_mes);
-                    const formattedDate = momentDate.isValid() ? momentDate.format('lll') : 'Unknown date';
-                    const messageCount = node.chat.message_count || 0;
-                    const preview = node.chat.preview_message || '(No messages)';
-
-                    const x = node.layout.x * (nodeWidth + horizontalGap);
-                    const y = node.layout.depth * (nodeHeight + verticalGap);
-
-                    html += `
-                        <div class="branch-graph-node ${isCurrentChat ? 'current-chat' : ''}"
-                             data-file-name="${node.name}"
-                             style="position: absolute; left: ${x}px; top: ${y}px; width: ${nodeWidth}px;">
-                            <div class="branch-graph-node-name">
-                                <i class="fa-solid fa-${isCurrentChat ? 'circle-dot' : 'circle'}"></i>
-                                ${node.name}
-                            </div>
-                            <div class="branch-graph-node-info">
-                                ${messageCount} messages • ${formattedDate}
-                            </div>
-                            <div class="branch-graph-node-preview">${preview}</div>
-                        </div>
-                    `;
-                }
-            }
-
-            html += '</div>';
-
-            return html;
         }
 
-        const graphHTML = `<div class="branch-graph-container">${renderGraph(levels)}</div>`;
+        // Collect nodes
+        for (const level of levels) {
+            for (const node of level) {
+                const isCurrentChat = node.name === currentChatName;
+                const momentDate = timestampToMoment(node.chat.last_mes);
+                const formattedDate = momentDate.isValid() ? momentDate.format('lll') : 'Unknown date';
+                const messageCount = node.chat.message_count || 0;
+                const preview = node.chat.preview_message || '(No messages)';
+
+                const x = node.layout.x * (nodeWidth + horizontalGap);
+                const y = node.layout.depth * (nodeHeight + verticalGap);
+
+                nodes.push({
+                    name: node.name,
+                    isCurrentChat,
+                    formattedDate,
+                    messageCount,
+                    preview,
+                    x,
+                    y,
+                    width: nodeWidth,
+                });
+            }
+        }
+
+        const graphHTML = await renderTemplateAsync('branchGraph', { totalWidth, totalHeight, lines, nodes });
 
         // Show the popup with large size
         const popup = new Popup(graphHTML, POPUP_TYPE.TEXT, '', {
@@ -1094,6 +1082,16 @@ async function showBranchGraph() {
             cancelButton: 'Close',
             wide: true,
             large: true,
+            onOpen: () => {
+                // Use .text() to safely set content after popup is in DOM (like "Manage chat files" does)
+                $('.branch-graph-node').each(function() {
+                    const nodeIndex = parseInt($(this).attr('data-node-index'));
+                    const node = nodes[nodeIndex];
+                    $(this).attr('data-file-name', node.name);
+                    $(this).find('.branch-node-name-text').text(node.name);
+                    $(this).find('.branch-node-preview-text').text(node.preview);
+                });
+            },
             onClose: () => {
                 // Clean up event handler when popup closes
                 $(document).off('click', '.branch-graph-node', handleNodeClick);

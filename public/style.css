@@ -4543,7 +4543,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .branch-graph-node {
     padding: 12px 16px;
-    border: 2px solid var(--SmartThemeBorderColor);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
@@ -4581,7 +4581,7 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--grey70);
     margin-top: 6px;
     padding-top: 6px;
-    border-top: 1px solid var(--SmartThemeBorderColor);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
