@@ -19,7 +19,23 @@ class GptSovitsV2Provider {
      * @returns {string} Processed text
      */
     processText(text) {
-        return text;
+        // Split into sentences, then rejoin any that are too short
+		text = text.replace(/\b[A-Z]{2,}\b/g, match => match.toLowerCase());
+		const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+		const merged = [];
+		let current = '';
+
+		for (const sentence of sentences) {
+			if ((current + sentence).length < 15) {
+				current += sentence + ' ';
+			} else {
+				if (current) merged.push(current.trim());
+				current = sentence + ' ';
+			}
+		}
+		if (current) merged.push(current.trim());
+
+		return merged.join('\n');
     }
 
     audioFormats = ['wav', 'ogg', 'silk', 'mp3', 'flac'];
@@ -40,7 +56,7 @@ class GptSovitsV2Provider {
         provider_endpoint: 'http://localhost:9880',
         format: 'wav',
         lang: 'auto',
-        streaming: false,
+        streaming: true,
         text_lang: 'zh',
         prompt_lang: 'zh',
 
@@ -173,46 +189,69 @@ class GptSovitsV2Provider {
 
 
 
-    async fetchTtsGeneration(inputText, voiceId, lang = null, forceNoStreaming = false) {
-        console.info(`Generating new TTS for voice_id ${voiceId}`);
+		async fetchTtsGeneration(inputText, voiceId, lang = null, forceNoStreaming = false) {
+			console.info(`Generating new TTS for voice_id ${voiceId}`);
 
-        function replaceSpeaker(text) {
-            return text.replace(/\[.*?\]/gu, '');
-        }
+			function replaceSpeaker(text) {
+				return text.replace(/\[.*?\]/gu, '');
+			}
 
-        let prompt_text = replaceSpeaker(voiceId);
+			let prompt_text = replaceSpeaker(voiceId);
 
-        const params = {
-            text: inputText,
-            prompt_text: prompt_text,
-            ref_audio_path: './参考音频/' + voiceId + '.wav',
-            text_lang: this.settings.text_lang,
-            prompt_lang: this.settings.prompt_lang,
-            text_split_method: 'cut5',
-            batch_size: 1,
-            media_type: 'ogg',
-            streaming_mode: 'true',
-        };
+			const params = {
+				text: inputText,
+				prompt_text: prompt_text,
+				ref_audio_path: './参考音频/' + voiceId + '.wav',
+				text_lang: this.settings.text_lang,
+				prompt_lang: this.settings.prompt_lang,
+				text_split_method: 'cut2',
+				batch_size: 1,
+				parallel_infer: true,
+				media_type: 'webm',
+				streaming_mode: true,
+			};
 
+			const url = `${this.settings.provider_endpoint}/`;
 
-        const url = `${this.settings.provider_endpoint}/`;
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(params),
+			});
 
-        const response = await fetch(
-            url,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(params), // Convert parameter objects to JSON strings
-            },
-        );
-        if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
-        return response;
-    }
+			if (!response.ok) {
+				toastr.error(response.statusText, 'TTS Generation Failed');
+				throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+			}
+
+			const mediaSource = new MediaSource();
+			this.audioElement.src = URL.createObjectURL(mediaSource);
+			this.audioElement.play();
+
+			mediaSource.addEventListener('sourceopen', async () => {
+				const sourceBuffer = mediaSource.addSourceBuffer('audio/webm; codecs=opus');
+				const reader = response.body.getReader();
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) {
+						mediaSource.endOfStream();
+						break;
+					}
+					// Wait for sourceBuffer to be ready before appending next chunk
+					await new Promise(resolve => {
+						if (!sourceBuffer.updating) return resolve();
+						sourceBuffer.addEventListener('updateend', resolve, { once: true });
+					});
+					sourceBuffer.appendBuffer(value);
+				}
+			});
+
+			// Return dummy response so SillyTavern pipeline doesn't break
+			return new Response(new Blob([], { type: 'audio/webm' }), {
+				headers: { 'Content-Type': 'audio/webm' }
+			});
+		}
 
 
 
