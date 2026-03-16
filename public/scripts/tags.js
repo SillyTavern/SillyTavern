@@ -2521,6 +2521,10 @@ function registerTagsSlashCommands() {
         name: 'tag-import',
         /** @param {{name: string, mode: 'all'|'existing'|'none'|'ask'}} namedArgs @returns {Promise<string>} */
         callback: async ({ name, mode }) => {
+            if (selected_group !== null) {
+                toastr.warning(t`Tag import does not support group chats.`);
+                return 'false';
+            }
             const key = searchCharByName(name);
             if (!key) return 'false';
 
