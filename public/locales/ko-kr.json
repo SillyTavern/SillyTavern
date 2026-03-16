@@ -1535,7 +1535,7 @@
     "Only apply color as accent": "색상은 오직 강조로써만 적용됩니다",
     "qr--colorClear": "색상 지우기",
     "Color": "색상",
-    "world_button_title": "캐릭터 로어. 클릭하여 로드하세요. Shift를 클릭하면 '월드 인포 링크' 팝업이 열립니다.",
+    "world_button_title": "캐릭터 로어. 클릭하여 로드하세요. Shift/Alt+클릭 또는 길게 누르면 '월드 인포 링크' 팝업이 열립니다.",
     "Select TTS Provider": "TTS 공급자 선택",
     "tts_enabled": "활성화",
     "Narrate user messages": "사용자 메시지 나레이션",

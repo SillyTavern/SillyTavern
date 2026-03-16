@@ -66,6 +66,18 @@ export function registerChatMacros() {
         returnType: MacroValueType.INTEGER,
         handler: () => String(getCurrentSwipeId() ?? ''),
     });
+
+    MacroRegistry.registerMacro('allChatRange', {
+        category: MacroCategory.CHAT,
+        description: 'Range of all message IDs in the chat (e.g. "0-10"). Empty string if the chat is empty.',
+        returns: 'Range string from 0 to last message ID, or empty string.',
+        handler: () => {
+            if (!Array.isArray(chat) || chat.length === 0) {
+                return '';
+            }
+            return `0-${chat.length - 1}`;
+        },
+    });
 }
 
 function getLastMessageId({ exclude_swipe_in_propress = true, filter = null } = {}) {
