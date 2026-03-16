@@ -5263,15 +5263,15 @@ async function createCharacterCallback(args) {
     const firstMessage = args.firstMessage;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
-        toastr.warning('Character name is required');
+        toastr.warning(t`Character name is required`);
         return '';
     }
     if (!description || typeof description !== 'string') {
-        toastr.warning('Character description is required');
+        toastr.warning(t`Character description is required`);
         return '';
     }
     if (!firstMessage || typeof firstMessage !== 'string') {
-        toastr.warning('Character first message is required');
+        toastr.warning(t`Character first message is required`);
         return '';
     }
 
@@ -5360,14 +5360,14 @@ async function updateCharacterCallback(args) {
     if (args.char) {
         character = findChar({ name: args.char });
         if (!character) {
-            toastr.warning(`Character "${args.char}" not found`);
+            toastr.warning(t`Character "${args.char}" not found`);
             return '';
         }
         characterIndex = String(characters.indexOf(character));
     } else {
         // Use currently selected character
         if (this_chid === undefined || !characters[this_chid]) {
-            toastr.warning('No character selected and no char argument provided');
+            toastr.warning(t`No character selected and no char argument provided`);
             return '';
         }
         character = characters[this_chid];
