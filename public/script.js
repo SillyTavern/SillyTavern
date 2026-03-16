@@ -8925,7 +8925,178 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
-    swipeCounter.text(swipeCounterText).prop('hidden', false);
+    const swipePickerButton = messageElement.find('.mes_swipe_picker');
+    const canOpenSwipePicker = Boolean(message?.swipes?.length > 1 && mesId === chat.length - 1 && !message?.is_user);
+
+    swipeCounter
+        .text(swipeCounterText)
+        .prop('hidden', false)
+        .toggleClass('swipe-picker-enabled', canOpenSwipePicker);
+    swipePickerButton.toggle(canOpenSwipePicker);
+
+    if (canOpenSwipePicker) {
+        swipeCounter.attr({
+            tabindex: '0',
+            role: 'button',
+            title: t`Click to jump to a swipe`,
+        });
+    } else {
+        swipeCounter.removeAttr('tabindex role title');
+    }
+}
+
+/**
+ * Builds a compact label for the swipe picker.
+ * @param {string} text Swipe text
+ * @param {number} index Swipe index
+ * @param {number} currentSwipeId Currently selected swipe index
+ * @returns {string}
+ */
+function formatSwipePickerOption(text, index, currentSwipeId) {
+    const normalizedText = String(text ?? '').replace(/\s+/g, ' ').trim();
+    const preview = normalizedText.length > 80 ? `${normalizedText.slice(0, 80).trimEnd()}...` : normalizedText;
+    const label = preview || t`(empty swipe)`;
+    const currentLabel = index === currentSwipeId ? ` ${t`[Current]`}` : '';
+    return `#${index + 1}${currentLabel} ${label}`;
+}
+
+/**
+ * Opens a popup for jumping to a specific swipe on the last message.
+ * @param {number} messageId
+ * @returns {Promise<void>}
+ */
+async function openSwipePicker(messageId) {
+    const message = chat[messageId];
+
+    if (!message || !Array.isArray(message.swipes) || message.swipes.length <= 1) {
+        toastr.info(t`This message has no alternate swipes yet.`, t`Jump to Swipe`);
+        return;
+    }
+
+    if (!isSwipingAllowed() || !isMessageSwipeable(messageId, message)) {
+        toastr.warning(t`Swipes are not available right now.`, t`Jump to Swipe`);
+        return;
+    }
+
+    let selectedSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('flex-container', 'flexFlowColumn', 'flexNoGap', 'wide100p', 'flex1');
+
+    const description = document.createElement('div');
+    description.classList.add('m-b-1');
+    description.textContent = t`Select which swipe to show for the latest message.`;
+    wrapper.appendChild(description);
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.classList.add('text_pole', 'wide100p');
+    searchInput.placeholder = t`Search...`;
+    searchInput.autocomplete = 'off';
+    wrapper.appendChild(searchInput);
+
+    const listContainer = document.createElement('div');
+    listContainer.classList.add('swipe_picker_div', 'flex1');
+    wrapper.appendChild(listContainer);
+
+    /** @type {Popup} */
+    let popup;
+
+    function setSelectedSwipe(nextSwipeId) {
+        selectedSwipeId = clamp(Number(nextSwipeId), 0, message.swipes.length - 1);
+        listContainer.querySelectorAll('.swipe_picker_block').forEach((element) => {
+            const isSelected = Number(element.getAttribute('data-swipe-id')) === selectedSwipeId;
+            if (isSelected) {
+                element.setAttribute('highlight', 'true');
+            } else {
+                element.removeAttribute('highlight');
+            }
+        });
+    }
+
+    function renderSwipeList(searchQuery = '') {
+        const normalizedQuery = String(searchQuery ?? '').trim().toLowerCase();
+        const swipeBlocks = [];
+
+        for (let index = 0; index < message.swipes.length; index++) {
+            const swipeText = String(message.swipes[index] ?? '');
+            const swipeLabel = formatSwipePickerOption(swipeText, index, Number(message.swipe_id ?? 0));
+            if (normalizedQuery && !swipeLabel.toLowerCase().includes(normalizedQuery)) {
+                continue;
+            }
+
+            const template = $('#past_chat_template .select_chat_block_wrapper').clone();
+            const block = template.find('.select_chat_block');
+            block.removeClass('select_chat_block').addClass('swipe_picker_block');
+            const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[index] : null;
+            const sendDate = swipeInfo?.send_date ? timestampToMoment(swipeInfo.send_date).format('lll') : '';
+            const previewText = swipeText.replace(/\s+/g, ' ').trim();
+            const tokenCount = swipeInfo?.extra?.token_count;
+
+            block.attr({
+                file_name: `swipe-${index + 1}`,
+                'data-swipe-id': index,
+            });
+
+            template.find('.renameChatButton, .exportRawChatButton, .exportChatButton, .PastChat_cross').remove();
+            template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
+            template.find('.chat_messages_date').text(sendDate);
+            template.find('.chat_file_size').text(previewText ? `${previewText.length} ${t`chars`}` : '');
+            template.find('.chat_messages_num').text(tokenCount ? `${tokenCount}t` : '');
+            template.find('.select_chat_block_mes').text(previewText || t`(empty swipe)`);
+
+            block.on('click', () => setSelectedSwipe(index));
+            block.on('dblclick', async () => {
+                setSelectedSwipe(index);
+                await popup.completeAffirmative();
+            });
+
+            swipeBlocks.push(template[0]);
+        }
+
+        listContainer.replaceChildren(...swipeBlocks);
+        setSelectedSwipe(selectedSwipeId);
+
+        if (swipeBlocks.length === 0) {
+            const empty = document.createElement('div');
+            empty.classList.add('textAlignCenter', 'opacity50p', 'padding10');
+            empty.textContent = t`No swipes match your search.`;
+            listContainer.replaceChildren(empty);
+        }
+    }
+
+    searchInput.addEventListener('input', function () {
+        renderSwipeList(this.value);
+    });
+
+    popup = new Popup(wrapper, POPUP_TYPE.CONFIRM, '', {
+        okButton: t`Go`,
+        cancelButton: t`Cancel`,
+        wider: true,
+        large: true,
+        allowVerticalScrolling: true,
+        onOpen: function () {
+            searchInput.focus();
+            searchInput.select();
+            renderSwipeList();
+        },
+    });
+
+    const popupResult = await popup.show();
+
+    if (popupResult !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    const targetSwipeId = clamp(selectedSwipeId, 0, message.swipes.length - 1);
+    const currentSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
+
+    if (targetSwipeId === currentSwipeId) {
+        toastr.info(t`Already showing swipe #${targetSwipeId + 1}.`, t`Jump to Swipe`);
+        return;
+    }
+
+    const direction = targetSwipeId > currentSwipeId ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+    await swipe(null, direction, { source: SWIPE_SOURCE.SLASH_COMMAND, forceMesId: messageId, forceSwipeId: targetSwipeId });
 }
 
 /**
@@ -10881,6 +11052,22 @@ jQuery(async function () {
     //limit swiping to only last message clicks
     $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
     $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
+    $(document).on('click', '.last_mes .swipes-counter.swipe-picker-enabled', async function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const mesId = Number($(this).closest('.mes').attr('mesid'));
+        await openSwipePicker(mesId);
+    });
+    $(document).on('keydown', '.last_mes .swipes-counter.swipe-picker-enabled', async function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') {
+            return;
+        }
+
+        e.preventDefault();
+        const mesId = Number($(this).closest('.mes').attr('mesid'));
+        await openSwipePicker(mesId);
+    });
 
     initCharacterSearch();
 
@@ -11544,6 +11731,14 @@ jQuery(async function () {
                 console.error('Failed to copy: ', err);
             }
         }
+    });
+
+    $(document).on('click', '.mes_swipe_picker', async function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const mesId = Number($(this).closest('.mes').attr('mesid'));
+        await openSwipePicker(mesId);
     });
 
     //********************

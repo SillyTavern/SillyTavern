@@ -1278,6 +1278,23 @@ body .panelControlBar {
     pointer-events: auto;
 }
 
+.swipes-counter.swipe-picker-enabled {
+    cursor: pointer;
+}
+
+.swipes-counter.swipe-picker-enabled:hover,
+.swipes-counter.swipe-picker-enabled:focus-visible {
+    opacity: 0.7;
+}
+
+.swipe_picker_div {
+    padding: 0;
+    margin-top: 10px;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+}
+
 
 body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
@@ -4742,12 +4759,22 @@ h5 {
     padding: 5px 7px;
 }
 
-.select_chat_block:hover {
+.select_chat_block:hover,
+.swipe_picker_block:hover {
     background-color: var(--white30a);
 }
 
-.select_chat_block[highlight] {
+.select_chat_block[highlight],
+.swipe_picker_block[highlight] {
     background-color: var(--cobalt30a);
+}
+
+.swipe_picker_block {
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 5px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px 7px;
 }
 
 .select_chat_block .avatar {
