@@ -2585,7 +2585,7 @@ function registerTagsSlashCommands() {
                     ${t`Imports tags for the current character using your default setting.`}
                 </li>
                 <li>
-                    <pre><code>/tag-import char="Alice" mode=all</code></pre>
+                    <pre><code>/tag-import name="Alice" mode=all</code></pre>
                     ${t`Imports all of Alice's card tags, creating new ST tags if needed.`}
                 </li>
             </ul>
