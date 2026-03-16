@@ -236,11 +236,6 @@ export function initDefaultSlashCommands() {
     }
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dupe',
-        callback: duplicateCharacter,
-        helpString: t`Duplicates the currently selected character.`,
-    }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: async function (args, text) {
             if (!text?.toString()?.trim()) {
@@ -1021,6 +1016,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'char-duplicate',
+        aliases: ['dupe'],
         callback: duplicateCharacterCallback,
         returns: t`the avatar key (unique identifier) of the duplicated character`,
         namedArgumentList: [
@@ -5367,7 +5363,7 @@ async function updateCharacterCallback(args) {
             toastr.warning(`Character "${args.char}" not found`);
             return '';
         }
-        characterIndex = characters.indexOf(character);
+        characterIndex = String(characters.indexOf(character));
     } else {
         // Use currently selected character
         if (this_chid === undefined || !characters[this_chid]) {
