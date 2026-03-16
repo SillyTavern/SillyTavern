@@ -1066,7 +1066,7 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'char-get',
-        aliases: ['char-get2'],
+        aliases: ['char-data'],
         callback: getCharacterDataCallback,
         returns: t`character data as JSON or a specific field value`,
         namedArgumentList: [
