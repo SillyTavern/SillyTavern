@@ -5393,7 +5393,6 @@ async function updateCharacterCallback(args) {
         creator: 'creator',
         characterVersion: 'character_version',
         tags: 'tags',
-        world: 'world',
     };
 
     // Add provided fields to update data
@@ -5411,6 +5410,19 @@ async function updateCharacterCallback(args) {
             updateData.data[fieldName] = value;
             hasUpdates = true;
         }
+    }
+
+    // Special handling for world / lorebook: store under data.extensions.world
+    if (args.world !== undefined) {
+        const value = args.world;
+        if (!updateData.data) {
+            updateData.data = {};
+        }
+        if (!updateData.data.extensions) {
+            updateData.data.extensions = {};
+        }
+        updateData.data.extensions.world = value;
+        hasUpdates = true;
     }
 
     // Handle talkativeness (stored in extensions)
