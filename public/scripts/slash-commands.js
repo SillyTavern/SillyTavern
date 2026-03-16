@@ -5344,7 +5344,7 @@ async function createCharacterCallback(args) {
     } catch (error) {
         console.error('Error creating character:', error);
         toastr.error(t`Failed to create character: ${error.message}`);
-        throw error;
+        return '';
     }
 }
 
@@ -5515,7 +5515,7 @@ async function updateCharacterCallback(args) {
     } catch (error) {
         console.error('Error updating character:', error);
         toastr.error(t`Failed to update character: ${error.message}`);
-        throw error;
+        return '';
     }
 }
 
