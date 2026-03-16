@@ -1287,12 +1287,13 @@ body .panelControlBar {
     opacity: 0.7;
 }
 
-.swipe_picker_div {
-    padding: 0;
-    margin-top: 10px;
-    min-height: 0;
-    height: 100%;
-    overflow-y: auto;
+.swipe_picker_header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding-bottom: 10px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
 }
 
 
@@ -4738,13 +4739,15 @@ h5 {
     cursor: pointer;
 }
 
-#select_chat_div {
+#select_chat_div,
+.swipe_picker_div {
     padding: 0;
     height: 100%;
     overflow-y: auto;
 }
 
-#select_chat_div hr {
+#select_chat_div hr,
+.swipe_picker_div hr {
     margin: 0;
 }
 
@@ -4752,7 +4755,8 @@ h5 {
     cursor: pointer;
 }
 
-.select_chat_block {
+.select_chat_block,
+.swipe_picker_block {
     border-radius: 5px;
     margin-top: 5px;
     border: 1px solid var(--SmartThemeBorderColor);
@@ -4771,10 +4775,6 @@ h5 {
 
 .swipe_picker_block {
     cursor: pointer;
-    border-radius: 5px;
-    margin-top: 5px;
-    border: 1px solid var(--SmartThemeBorderColor);
-    padding: 5px 7px;
 }
 
 .select_chat_block .avatar {

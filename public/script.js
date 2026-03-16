@@ -8946,21 +8946,6 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 }
 
 /**
- * Builds a compact label for the swipe picker.
- * @param {string} text Swipe text
- * @param {number} index Swipe index
- * @param {number} currentSwipeId Currently selected swipe index
- * @returns {string}
- */
-function formatSwipePickerOption(text, index, currentSwipeId) {
-    const normalizedText = String(text ?? '').replace(/\s+/g, ' ').trim();
-    const preview = normalizedText.length > 80 ? `${normalizedText.slice(0, 80).trimEnd()}...` : normalizedText;
-    const label = preview || t`(empty swipe)`;
-    const currentLabel = index === currentSwipeId ? ` ${t`[Current]`}` : '';
-    return `#${index + 1}${currentLabel} ${label}`;
-}
-
-/**
  * Opens a popup for jumping to a specific swipe on the last message.
  * @param {number} messageId
  * @returns {Promise<void>}
@@ -8979,27 +8964,33 @@ async function openSwipePicker(messageId) {
     }
 
     let selectedSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
+    const swipeIdInputId = `swipe_picker_id_${messageId}`;
     const wrapper = document.createElement('div');
-    wrapper.classList.add('flex-container', 'flexFlowColumn', 'flexNoGap', 'wide100p', 'flex1');
+    wrapper.classList.add('flex-container', 'flexFlowColumn', 'flexNoGap', 'wide100p', 'flex1', 'height100p', 'overflowHidden');
 
-    const description = document.createElement('div');
-    description.classList.add('m-b-1');
-    description.textContent = t`Select which swipe to show for the latest message.`;
-    wrapper.appendChild(description);
+    const header = document.createElement('div');
+    header.classList.add('swipe_picker_header', 'flex-container', 'alignItemsCenter', 'justifySpaceBetween', 'gap10px');
 
-    const searchInput = document.createElement('input');
-    searchInput.type = 'search';
-    searchInput.classList.add('text_pole', 'wide100p');
-    searchInput.placeholder = t`Search...`;
-    searchInput.autocomplete = 'off';
-    wrapper.appendChild(searchInput);
+    const description = document.createElement('h3');
+    description.classList.add('margin0', 'justifyLeft');
+    description.textContent = t`Swipe Selection`;
+    header.appendChild(description);
+    wrapper.appendChild(header);
 
     const listContainer = document.createElement('div');
-    listContainer.classList.add('swipe_picker_div', 'flex1');
+    listContainer.classList.add('swipe_picker_div', 'flex1', 'marginTop10');
     wrapper.appendChild(listContainer);
 
     /** @type {Popup} */
     let popup;
+    /** @type {HTMLInputElement} */
+    let swipeIdInput;
+
+    function syncSwipeIdInput() {
+        if (swipeIdInput) {
+            swipeIdInput.value = String(selectedSwipeId + 1);
+        }
+    }
 
     function setSelectedSwipe(nextSwipeId) {
         selectedSwipeId = clamp(Number(nextSwipeId), 0, message.swipes.length - 1);
@@ -9011,19 +9002,14 @@ async function openSwipePicker(messageId) {
                 element.removeAttribute('highlight');
             }
         });
+        syncSwipeIdInput();
     }
 
-    function renderSwipeList(searchQuery = '') {
-        const normalizedQuery = String(searchQuery ?? '').trim().toLowerCase();
+    function renderSwipeList() {
         const swipeBlocks = [];
 
         for (let index = 0; index < message.swipes.length; index++) {
             const swipeText = String(message.swipes[index] ?? '');
-            const swipeLabel = formatSwipePickerOption(swipeText, index, Number(message.swipe_id ?? 0));
-            if (normalizedQuery && !swipeLabel.toLowerCase().includes(normalizedQuery)) {
-                continue;
-            }
-
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             const block = template.find('.select_chat_block');
             block.removeClass('select_chat_block').addClass('swipe_picker_block');
@@ -9059,25 +9045,88 @@ async function openSwipePicker(messageId) {
         if (swipeBlocks.length === 0) {
             const empty = document.createElement('div');
             empty.classList.add('textAlignCenter', 'opacity50p', 'padding10');
-            empty.textContent = t`No swipes match your search.`;
+            empty.textContent = t`No swipes available.`;
             listContainer.replaceChildren(empty);
         }
     }
 
-    searchInput.addEventListener('input', function () {
-        renderSwipeList(this.value);
-    });
-
     popup = new Popup(wrapper, POPUP_TYPE.CONFIRM, '', {
         okButton: t`Go`,
-        cancelButton: t`Cancel`,
+        cancelButton: false,
+        customInputs: [{
+            id: swipeIdInputId,
+            label: t`Swipe ID`,
+            type: 'text',
+            defaultState: String(selectedSwipeId + 1),
+            tooltip: `1-${message.swipes.length}`,
+        }],
         wider: true,
         large: true,
         allowVerticalScrolling: true,
-        onOpen: function () {
-            searchInput.focus();
-            searchInput.select();
+        onOpen: function (popup) {
             renderSwipeList();
+            popup.closeButton.style.display = 'block';
+            popup.closeButton.classList.add('opacity50p', 'hoverglow', 'fontsize120p');
+            popup.closeButton.style.position = 'static';
+            popup.closeButton.style.top = 'auto';
+            popup.closeButton.style.right = 'auto';
+            popup.closeButton.style.width = 'auto';
+            popup.closeButton.style.height = 'auto';
+            popup.closeButton.style.padding = '0';
+            popup.closeButton.style.filter = 'none';
+            header.appendChild(popup.closeButton);
+            swipeIdInput = popup.dlg.querySelector(`#${swipeIdInputId}`);
+            const swipeIdLabel = popup.dlg.querySelector(`label[for="${swipeIdInputId}"]`);
+
+            if (swipeIdLabel instanceof HTMLLabelElement) {
+                swipeIdLabel.classList.add('flex-container', 'alignItemsCenter', 'justifyCenter', 'gap10px', 'margin0');
+                popup.buttonControls.insertBefore(swipeIdLabel, popup.okButton);
+                popup.inputControls.style.display = 'none';
+            }
+
+            if (swipeIdInput instanceof HTMLInputElement) {
+                swipeIdInput.type = 'number';
+                swipeIdInput.min = '1';
+                swipeIdInput.max = String(message.swipes.length);
+                swipeIdInput.step = '1';
+                swipeIdInput.inputMode = 'numeric';
+                swipeIdInput.classList.add('flex1', 'width100px', 'textAlignCenter');
+                syncSwipeIdInput();
+
+                swipeIdInput.addEventListener('input', function () {
+                    const nextSwipeId = Number.parseInt(this.value, 10);
+                    if (!Number.isInteger(nextSwipeId) || nextSwipeId < 1 || nextSwipeId > message.swipes.length) {
+                        return;
+                    }
+
+                    setSelectedSwipe(nextSwipeId - 1);
+                    listContainer.querySelector(`.swipe_picker_block[data-swipe-id="${selectedSwipeId}"]`)?.scrollIntoView({ block: 'nearest' });
+                });
+
+                swipeIdInput.addEventListener('blur', function () {
+                    syncSwipeIdInput();
+                });
+            }
+        },
+        onClosing: function (popup) {
+            if (popup.result !== POPUP_RESULT.AFFIRMATIVE) {
+                return true;
+            }
+
+            const swipeIdInput = popup.dlg.querySelector(`#${swipeIdInputId}`);
+            const targetSwipeNumber = Number.parseInt(String(swipeIdInput instanceof HTMLInputElement ? swipeIdInput.value : '').trim(), 10);
+
+            if (!Number.isInteger(targetSwipeNumber) || targetSwipeNumber < 1 || targetSwipeNumber > message.swipes.length) {
+                toastr.warning(t`Enter a swipe ID between 1 and ${message.swipes.length}.`, t`Jump to Swipe`);
+                if (swipeIdInput instanceof HTMLInputElement) {
+                    swipeIdInput.focus();
+                    swipeIdInput.select();
+                }
+                return false;
+            }
+
+            setSelectedSwipe(targetSwipeNumber - 1);
+            return true;
         },
     });
 
