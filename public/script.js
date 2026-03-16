@@ -10586,7 +10586,7 @@ export async function handleDeleteCharacter(this_chid, delete_chats) {
  * @param {string|string[]} characterKey - The key (avatar) of the character to be deleted
  * @param {Object} [options] - Optional parameters for the deletion
  * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
- * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
+ * @return {Promise<boolean>} - A promise that resolves when the character is successfully deleted
  */
 export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
     if (!Array.isArray(characterKey)) {
@@ -10600,14 +10600,16 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
             t`Deleting this character will close the chat and you will lose any unsaved messages. Do you want to proceed?`,
         );
         if (!confirmClose) {
-            return;
+            return false;
         }
     }
 
     const closeChatResult = await closeCurrentChat();
     if (!closeChatResult) {
-        return;
+        return false;
     }
+
+    let deleted = false;
 
     for (const key of characterKey) {
         const character = characters.find(x => x.avatar == key);
@@ -10647,9 +10649,11 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
         }
 
         await eventSource.emit(event_types.CHARACTER_DELETED, { id: chid, character: character });
+        deleted = true;
     }
 
     await removeCharacterFromUI();
+    return deleted;
 }
 
 /**

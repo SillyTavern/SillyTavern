@@ -5667,8 +5667,8 @@ async function deleteCharacterCallback(args) {
 
     try {
         // Use the core deleteCharacter function which handles all cleanup and events
-        await deleteCharacter(character.avatar, { deleteChats });
-        return 'true';
+        const success = await deleteCharacter(character.avatar, { deleteChats });
+        return success ? 'true' : 'false';
     } catch (error) {
         console.error('Error deleting character:', error);
         toastr.error(t`Failed to delete character: ${error.message}`);
