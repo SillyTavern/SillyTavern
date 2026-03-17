@@ -585,7 +585,7 @@ async function downloadAICCCharacter(id) {
  */
 function parseAICC(url) {
     try {
-        if (url.startsWith('http')) {
+        if (isValidUrl(url)) {
             const urlObj = new URL(url);
             // Split the path and remove empty strings caused by trailing slashes
             const parts = urlObj.pathname.split('/').filter(Boolean);
