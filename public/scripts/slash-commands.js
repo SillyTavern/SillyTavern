@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, getBase64Async, ensureImageFormatSupported, supportedImageMimeTypes } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, getBase64Async, ensureImageFormatSupported, supportedImageMimeTypes, isExternalUrl } from './utils.js';
 
 import {
     Generate,
@@ -5134,17 +5134,21 @@ async function resolveAvatarData(input) {
     }
 
     // External URLs are not supported
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (isExternalUrl(trimmed)) {
         toastr.warning(t`External URLs are not supported for avatars. Use a local file path or "prompt" to select a file.`);
         return null;
     }
-
-    // Local path (e.g., characters/name.png) - fetch from ST server
+    // Local path or URL (e.g., characters/name.png) - fetch from ST server or same origin
     // Supported paths: /characters/*, /backgrounds/*, /User Avatars/*, /assets/*, /user/images/*
+    // Also supports same-origin URLs (e.g., https://localhost:8000/characters/name.png)
     if (trimmed.includes('/') || trimmed.endsWith('.png')) {
         try {
             // Construct the URL to fetch the local file
             let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+            // Handle same-origin URLs
+            if (trimmed.startsWith(window.location.origin)) {
+                url = new URL(trimmed).pathname;
+            }
             // If there is no subfolder, we guess this should be a character image
             if (!url.includes('/', 1)) {
                 url = '/characters/' + trimmed;

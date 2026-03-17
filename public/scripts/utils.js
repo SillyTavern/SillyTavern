@@ -180,6 +180,15 @@ export function isValidUrl(value) {
 }
 
 /**
+ * Checks if a URL is external to the current domain.
+ * @param {string} url URL to check
+ * @returns {boolean} True if the URL is external, false otherwise
+ */
+export function isExternalUrl(url) {
+    return (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
+}
+
+/**
  * Checks if a string is a valid UUID (version 1-5).
  * @param {string} value String to check
  * @returns {boolean} True if the string is a valid UUID, false otherwise.
