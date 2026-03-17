@@ -39,6 +39,13 @@ import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
 import { applyLocale, t } from '/scripts/i18n.js';
 
+// FORK: TTS event types for third-party integrations
+export const tts_event_types = {
+    TTS_JOB_STARTED: 'tts_job_started',
+    TTS_AUDIO_READY: 'tts_audio_ready',
+    TTS_JOB_COMPLETE: 'tts_job_complete',
+};
+
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
 
@@ -158,12 +165,13 @@ async function onNarrateOneMessage() {
     audioElement.src = '/sounds/silence.mp3';
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
-    const message = context.chat[id];
+    const message = structuredClone(context.chat[id]);
 
     if (!message) {
         return;
     }
 
+    message._ttsMessageId = Number(id);
     resetTtsPlayback();
     processAndQueueTtsMessage(message);
     moduleWorker();
@@ -192,7 +200,7 @@ async function onNarrateText(args, text) {
     }
 
     resetTtsPlayback();
-    processAndQueueTtsMessage({ mes: text, name: name });
+    processAndQueueTtsMessage({ mes: text, name: name, _ttsMessageId: null });
     await moduleWorker();
 
     // Return back to the chat voices
@@ -433,16 +441,20 @@ function completeCurrentAudioJob() {
  * @param {Response} response
  */
 async function addAudioJob(response, char) {
+    let audioBlob, mimeType;
     if (typeof response === 'string') {
-        audioJobQueue.push({ audioBlob: response, char: char });
+        audioBlob = response;
+        mimeType = '';
     } else {
-        const audioData = await response.blob();
-        if (!audioData.type.startsWith('audio/')) {
-            throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
+        audioBlob = await response.blob();
+        if (!audioBlob.type.startsWith('audio/')) {
+            throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioBlob.type}`;
         }
-        audioJobQueue.push({ audioBlob: audioData, char: char });
+        mimeType = audioBlob.type;
     }
+    audioJobQueue.push({ audioBlob, char });
     console.debug('Pushed audio job to queue.');
+    return { audioBlob, mimeType };
 }
 
 async function processAudioJobQueue() {
@@ -474,12 +486,20 @@ function completeTtsJob() {
 }
 
 async function tts(text, voiceId, char, voiceMapKey = null) {
+    const messageId = currentTtsJob?._ttsMessageId ?? null;
+
+    await eventSource.emit(tts_event_types.TTS_JOB_STARTED, { messageId, characterName: char, text, voiceId });
+
     async function processResponse(response) {
         // RVC injection
         if (typeof globalThis.rvcVoiceConversion === 'function' && extension_settings.rvc.enabled)
             response = await globalThis.rvcVoiceConversion(response, char, text);
 
-        await addAudioJob(response, char);
+        const audioResult = await addAudioJob(response, char);
+
+        // FORK: Emit audio ready event
+        const eventData = { messageId, characterName: char, text, audio: audioResult.audioBlob, mimeType: audioResult.mimeType };
+        await eventSource.emit(tts_event_types.TTS_AUDIO_READY, eventData);
     }
 
     // voiceMapKey can also include segment qualifiers, e.g. '{char} ("Quotes")'
@@ -494,6 +514,7 @@ async function tts(text, voiceId, char, voiceMapKey = null) {
         await processResponse(response);
     }
 
+    await eventSource.emit(tts_event_types.TTS_JOB_COMPLETE, { messageId, characterName: char });
     completeTtsJob();
 }
 
@@ -700,6 +721,7 @@ async function processTtsQueue() {
                 is_user: currentTtsJob.is_user,
                 mes: currentTtsJob.mes,
                 extra: currentTtsJob.extra,
+                _ttsMessageId: currentTtsJob._ttsMessageId,
             };
             ttsJobQueue.unshift(segmentJob);
         }
@@ -797,7 +819,9 @@ async function playFullConversation() {
     }
 
     const context = getContext();
-    const chat = context.chat.filter(x => !x.is_system && x.mes !== '...' && x.mes !== '');
+    const chat = context.chat
+        .map((msg, idx) => Object.assign(structuredClone(msg), { _ttsMessageId: idx }))
+        .filter(x => !x.is_system && x.mes !== '...' && x.mes !== '');
 
     if (chat.length === 0) {
         return toastr.info('No messages to narrate.');
@@ -1077,6 +1101,7 @@ async function onMessageEvent(messageId, lastCharIndex) {
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
     const message = structuredClone(context.chat[messageId]);
+    message._ttsMessageId = messageId;
     const hashNew = getStringHash(message?.mes ?? '');
 
     // Ignore prompt-hidden messages
