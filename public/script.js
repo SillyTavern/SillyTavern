@@ -5253,6 +5253,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 const hasToolCalls = ToolManager.hasToolCalls(streamingProcessor.toolCalls);
                 const shouldDeleteMessage = type !== 'swipe' && ['', '...'].includes(lastMessage?.mes) && !lastMessage?.extra?.reasoning && ['', '...'].includes(streamingProcessor?.result);
                 hasToolCalls && shouldDeleteMessage && await deleteLastMessage();
+                // Finalize the streamed text message before tool invocation so that
+                // MESSAGE_RECEIVED and CHARACTER_MESSAGE_RENDERED fire for it.
+                // Without this, extensions (TTS, bridges, etc.) never learn about the
+                // text the AI produced before calling a tool.
+                if (!shouldDeleteMessage && streamingProcessor) {
+                    await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                }
                 const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls, {
                     reasoningText: streamingProcessor.reasoningHandler.reasoning,
                 });
