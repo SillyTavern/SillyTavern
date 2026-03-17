@@ -10,7 +10,7 @@
 
 import { t } from './i18n.js';
 import { stopGeneration } from '../script.js';
-import { showLoader, hideLoader } from './loader.js';
+import { showLoader, hideLoader, isLoaderDisplayed } from './loader.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -96,7 +96,7 @@ export class ActionLoaderHandle {
         this.#onHide = onHide;
 
         // Show the blocking loader overlay if this is the first active handle
-        if (activeHandles.size === 0) {
+        if (activeHandles.size === 0 && !isLoaderDisplayed()) {
             showLoader();
         }
 
@@ -153,7 +153,7 @@ export class ActionLoaderHandle {
         if (this.#toast) {
             toastr.clear(this.#toast);
             const toast = this.#toast;
-            setTimeout(() => toast.remove(), 250);
+            setTimeout(() => toast.remove(), toastr.options.hideDuration ?? 250);
             this.#toast = null;
         }
     }
@@ -280,14 +280,11 @@ export async function hideActionLoader(handle = null) {
     }
 
     // No handle provided - hide all active loaders
-    if (activeHandles.size === 0) {
-        return false;
-    }
-    const handles = Array.from(activeHandles);
+    const handles = getActiveLoaderHandles();
     for (const h of handles) {
         await h.hide();
     }
-    return true;
+    return handles.length > 0;
 }
 
 /**
@@ -328,7 +325,8 @@ export function registerActionLoaderSlashCommands() {
     function createClosureHandler(closure, { argName = 'onStop', throwInvalid = true } = {}) {
         if (!(closure instanceof SlashCommandClosure)) {
             if (closure && throwInvalid) {
-                throw new Error(t`Invalid argument for ${argName ?? 'onStop'} provided. This is not a closure.`);
+                // Throw error on purpose. This is defined as a syntax error.
+                throw new Error(t`Invalid argument for ${argName} provided. This is not a closure.`);
             }
             return null;
         }
@@ -602,7 +600,7 @@ export function registerActionLoaderSlashCommands() {
             const handleId = args.handle ? String(args.handle) : null;
 
             if (!handleId) {
-                toastr.warning(t`No handle provided for /loader-stop. You must specify which loader to stop.`);
+                toastr.warning(t`No handle provided. You must specify which loader to stop.`);
                 return 'false';
             }
 
