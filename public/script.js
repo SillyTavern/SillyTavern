@@ -128,6 +128,7 @@ import {
 
 import {
     initBookmarks,
+    branchChat,
     showBookmarksButtons,
     updateBookmarkDisplay,
 } from './scripts/bookmarks.js';
@@ -7186,10 +7187,11 @@ export function saveChatDebounced() {
  * @param {object} [options.withMetadata] Additional metadata to save with the chat
  * @param {number} [options.mesId] The message ID to save the chat up to
  * @param {boolean} [options.force] Force the saving despite the integrity check result
+ * @param {ChatMessage[]} [options.chatData] Chat snapshot to save instead of the current in-memory chat
  *
  * @returns {Promise<void>}
  */
-export async function saveChat({ chatName, withMetadata, mesId, force = false } = {}) {
+export async function saveChat({ chatName, withMetadata, mesId, force = false, chatData = undefined } = {}) {
     if (selected_group) {
         toastr.error(t`Operation was aborted to prevent data corruption.`, t`saveChat called for a group chat`);
         throw new Error('saveChat called for a group chat');
@@ -7215,9 +7217,11 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
 
     characters[this_chid].date_last_chat = Date.now();
 
-    const trimmedChat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
-        ? chat.slice(0, Number(mesId) + 1)
-        : chat.slice();
+    const trimmedChat = Array.isArray(chatData)
+        ? chatData
+        : (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+            ? chat.slice(0, Number(mesId) + 1)
+            : chat.slice();
 
     /** @type {ChatHeader} */
     const chatHeader = {
@@ -8926,15 +8930,16 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
     const swipePickerButton = messageElement.find('.mes_swipe_picker');
-    const canOpenSwipePicker = Boolean(message?.swipes?.length > 1 && mesId === chat.length - 1 && !message?.is_user);
+    const canOpenSwipePicker = canOpenSwipePickerForMessage(mesId, message);
+    const canJumpToSwipe = canJumpToSwipeForMessage(mesId, message);
 
     swipeCounter
         .text(swipeCounterText)
         .prop('hidden', false)
-        .toggleClass('swipe-picker-enabled', canOpenSwipePicker);
+        .toggleClass('swipe-picker-enabled', canJumpToSwipe);
     swipePickerButton.toggle(canOpenSwipePicker);
 
-    if (canOpenSwipePicker) {
+    if (canJumpToSwipe) {
         swipeCounter.attr({
             tabindex: '0',
             role: 'button',
@@ -8946,6 +8951,43 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 }
 
 /**
+ * Returns whether a swipe picker can be opened for the message.
+ * Unlike message swiping, this supports historical AI messages for inspection and branching.
+ * @param {number} messageId
+ * @param {ChatMessage} [message=undefined]
+ * @returns {boolean}
+ */
+function canOpenSwipePickerForMessage(messageId, message = undefined) {
+    message ??= chat[messageId];
+
+    if (!message) {
+        return false;
+    }
+
+    if (ensureSwipes(message)) {
+        syncMesToSwipe(messageId);
+    }
+
+    return Boolean(
+        message?.swipes?.length > 1 &&
+        !message?.is_user &&
+        !(message?.extra?.isSmallSys) &&
+        !(message?.extra?.swipeable === false),
+    );
+}
+
+/**
+ * Returns whether the picker can actively jump to a different swipe.
+ * Historical AI messages can open the picker, but only the currently swipeable message may jump.
+ * @param {number} messageId
+ * @param {ChatMessage} [message=undefined]
+ * @returns {boolean}
+ */
+function canJumpToSwipeForMessage(messageId, message = undefined) {
+    return canOpenSwipePickerForMessage(messageId, message) && isSwipingAllowed() && isMessageSwipeable(messageId, message);
+}
+
+/**
  * Opens a popup for jumping to a specific swipe on the last message.
  * @param {number} messageId
  * @returns {Promise<void>}
@@ -8953,20 +8995,16 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 async function openSwipePicker(messageId) {
     const message = chat[messageId];
 
-    if (!message || !Array.isArray(message.swipes) || message.swipes.length <= 1) {
+    if (!canOpenSwipePickerForMessage(messageId, message)) {
         toastr.info(t`This message has no alternate swipes yet.`, t`Jump to Swipe`);
         return;
     }
 
-    if (!isSwipingAllowed() || !isMessageSwipeable(messageId, message)) {
-        toastr.warning(t`Swipes are not available right now.`, t`Jump to Swipe`);
-        return;
-    }
-
+    const canJumpToSwipe = canJumpToSwipeForMessage(messageId, message);
     let selectedSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
     const swipeIdInputId = `swipe_picker_id_${messageId}`;
     const wrapper = document.createElement('div');
-    wrapper.classList.add('flex-container', 'flexFlowColumn', 'flexNoGap', 'wide100p', 'flex1', 'height100p', 'overflowHidden');
+    wrapper.classList.add('flex-container', 'flexFlowColumn', 'flexNoGap', 'wide100p', 'flex1', 'overflowHidden');
 
     const header = document.createElement('div');
     header.classList.add('swipe_picker_header', 'flex-container', 'alignItemsCenter', 'justifySpaceBetween', 'gap10px');
@@ -8985,6 +9023,8 @@ async function openSwipePicker(messageId) {
     let popup;
     /** @type {HTMLInputElement} */
     let swipeIdInput;
+    /** @type {number|null} */
+    let branchActionSwipeId = null;
 
     function syncSwipeIdInput() {
         if (swipeIdInput) {
@@ -9013,6 +9053,7 @@ async function openSwipePicker(messageId) {
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             const block = template.find('.select_chat_block');
             block.removeClass('select_chat_block').addClass('swipe_picker_block');
+            const branchButton = template.find('.exportRawChatButton');
             const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[index] : null;
             const sendDate = swipeInfo?.send_date ? timestampToMoment(swipeInfo.send_date).format('lll') : '';
             const previewText = swipeText.replace(/\s+/g, ' ').trim();
@@ -9023,7 +9064,22 @@ async function openSwipePicker(messageId) {
                 'data-swipe-id': index,
             });
 
-            template.find('.renameChatButton, .exportRawChatButton, .exportChatButton, .PastChat_cross').remove();
+            template.find('.renameChatButton, .exportChatButton, .PastChat_cross').remove();
+            branchButton
+                .removeAttr('data-format')
+                .attr({
+                    title: t`Create Branch`,
+                    'data-i18n': '[title]Create Branch',
+                })
+                .removeClass('exportRawChatButton fa-solid fa-file-export')
+                .addClass('swipe_picker_branch mes_button fa-regular fa-code-branch')
+                .on('click', async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSelectedSwipe(index);
+                    branchActionSwipeId = index;
+                    await popup.completeCancelled();
+                });
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
             template.find('.chat_file_size').text(previewText ? `${previewText.length} ${t`chars`}` : '');
@@ -9032,6 +9088,10 @@ async function openSwipePicker(messageId) {
 
             block.on('click', () => setSelectedSwipe(index));
             block.on('dblclick', async () => {
+                if (!canJumpToSwipe) {
+                    return;
+                }
+
                 setSelectedSwipe(index);
                 await popup.completeAffirmative();
             });
@@ -9051,7 +9111,7 @@ async function openSwipePicker(messageId) {
     }
 
     popup = new Popup(wrapper, POPUP_TYPE.CONFIRM, '', {
-        okButton: t`Go`,
+        okButton: canJumpToSwipe ? t`Go` : false,
         cancelButton: false,
         customInputs: [{
             id: swipeIdInputId,
@@ -9061,9 +9121,9 @@ async function openSwipePicker(messageId) {
             tooltip: `1-${message.swipes.length}`,
         }],
         wider: true,
-        large: true,
         allowVerticalScrolling: true,
         onOpen: function (popup) {
+            popup.dlg.classList.add('swipe_picker_popup');
             renderSwipeList();
             popup.closeButton.style.display = 'block';
             popup.closeButton.classList.add('opacity50p', 'hoverglow', 'fontsize120p');
@@ -9080,7 +9140,7 @@ async function openSwipePicker(messageId) {
 
             if (swipeIdLabel instanceof HTMLLabelElement) {
                 swipeIdLabel.classList.add('flex-container', 'alignItemsCenter', 'justifyCenter', 'gap10px', 'margin0');
-                popup.buttonControls.insertBefore(swipeIdLabel, popup.okButton);
+                popup.buttonControls.insertBefore(swipeIdLabel, canJumpToSwipe ? popup.okButton : popup.buttonControls.firstChild);
                 popup.inputControls.style.display = 'none';
             }
 
@@ -9131,6 +9191,11 @@ async function openSwipePicker(messageId) {
     });
 
     const popupResult = await popup.show();
+
+    if (branchActionSwipeId !== null) {
+        await branchChat(messageId, { swipeId: branchActionSwipeId });
+        return;
+    }
 
     if (popupResult !== POPUP_RESULT.AFFIRMATIVE) {
         return;
@@ -9275,6 +9340,7 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
             const hasSwipes = (message?.swipes?.length > 1);
             const overswipe = getOverswipeBehavior(messageId, message);
             const swipePickerButton = $(div).find('.mes_swipe_picker');
+            const canOpenSwipePicker = canOpenSwipePickerForMessage(messageId, message);
 
             // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
             const pristineGreeting = overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING;
@@ -9288,14 +9354,14 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
 
             //If there's only one swipe, the left arrow should not be shown.
             div.classList.toggle('swipes_visible', hasSwipes || pristineGreeting);
-            swipePickerButton.toggle(hasSwipes);
+            swipePickerButton.toggle(canOpenSwipePicker);
 
             //updateSwipeCounter does not need to be awaited, It can run a bit later.
             if (updateCounters) updateSwipeCounter(messageId, { message, messageElement: $(div) });
         } else {
             //Hide all messages that are not swipeable.
             div.classList.remove('swipes_visible', 'last_swipe');
-            $(div).find('.mes_swipe_picker').hide();
+            $(div).find('.mes_swipe_picker').toggle(canOpenSwipePickerForMessage(messageId, message));
         }
     });
 }

@@ -1296,6 +1296,14 @@ body .panelControlBar {
     border-bottom: 1px solid var(--SmartThemeBorderColor);
 }
 
+.swipe_picker_popup .popup-body,
+.swipe_picker_popup .popup-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
 
 body.swipeAllMessages .mes:not(.last_mes) .swipes-counter {
     /* Avoid expensive DOM queries */
