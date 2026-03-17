@@ -6751,20 +6751,24 @@ export function syncMesToSwipe(messageId = null) {
  * If the swipe data is invalid in some way, this function will exit out without doing anything.
  * @param {number?} [messageId=null] - The ID of the message to sync with the swipe data. If no ID is given, the last message is used.
  * @param {number?} [swipeId=null] - The ID of the swipe to sync. If no ID is given, the current swipe ID in the message object is used.
+ * @param {ChatMessage?} [targetMessage=null] - The message object to sync instead of resolving one from `chat`.
  * @returns {boolean} Whether the swipe data was successfully synced to the message
  */
-export function syncSwipeToMes(messageId = null, swipeId = null) {
-    if (!chat.length) {
+export function syncSwipeToMes(messageId = null, swipeId = null, targetMessage = null) {
+    if (!targetMessage && !chat.length) {
         return false;
     }
 
-    const targetMessageId = messageId ?? chat.length - 1;
-    if (targetMessageId >= chat.length || targetMessageId < 0) {
-        console.warn(`[syncSwipeToMes] Invalid message ID: ${messageId}`);
-        return false;
+    if (!targetMessage) {
+        const targetMessageId = messageId ?? chat.length - 1;
+        if (targetMessageId >= chat.length || targetMessageId < 0) {
+            console.warn(`[syncSwipeToMes] Invalid message ID: ${messageId}`);
+            return false;
+        }
+
+        targetMessage = chat[targetMessageId];
     }
 
-    const targetMessage = chat[targetMessageId];
     if (!targetMessage) {
         return false;
     }
@@ -8930,8 +8934,8 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
     const swipePickerButton = messageElement.find('.mes_swipe_picker');
-    const canOpenSwipePicker = canOpenSwipePickerForMessage(mesId, message);
-    const canJumpToSwipe = canJumpToSwipeForMessage(mesId, message);
+    const canOpenSwipePicker = canOpenSwipePickerForMessage(mesId);
+    const canJumpToSwipe = canJumpToSwipeForMessage(mesId);
 
     swipeCounter
         .text(swipeCounterText)
@@ -8954,11 +8958,10 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
  * Returns whether a swipe picker can be opened for the message.
  * Unlike message swiping, this supports historical AI messages for inspection and branching.
  * @param {number} messageId
- * @param {ChatMessage} [message=undefined]
  * @returns {boolean}
  */
-function canOpenSwipePickerForMessage(messageId, message = undefined) {
-    message ??= chat[messageId];
+function canOpenSwipePickerForMessage(messageId) {
+    const message = chat[messageId];
 
     if (!message) {
         return false;
@@ -8980,11 +8983,11 @@ function canOpenSwipePickerForMessage(messageId, message = undefined) {
  * Returns whether the picker can actively jump to a different swipe.
  * Historical AI messages can open the picker, but only the currently swipeable message may jump.
  * @param {number} messageId
- * @param {ChatMessage} [message=undefined]
  * @returns {boolean}
  */
-function canJumpToSwipeForMessage(messageId, message = undefined) {
-    return canOpenSwipePickerForMessage(messageId, message) && isSwipingAllowed() && isMessageSwipeable(messageId, message);
+function canJumpToSwipeForMessage(messageId) {
+    const message = chat[messageId];
+    return canOpenSwipePickerForMessage(messageId) && isSwipingAllowed() && isMessageSwipeable(messageId, message);
 }
 
 /**
@@ -8995,12 +8998,12 @@ function canJumpToSwipeForMessage(messageId, message = undefined) {
 async function openSwipePicker(messageId) {
     const message = chat[messageId];
 
-    if (!canOpenSwipePickerForMessage(messageId, message)) {
+    if (!canOpenSwipePickerForMessage(messageId)) {
         toastr.info(t`This message has no alternate swipes yet.`, t`Jump to Swipe`);
         return;
     }
 
-    const canJumpToSwipe = canJumpToSwipeForMessage(messageId, message);
+    const canJumpToSwipe = canJumpToSwipeForMessage(messageId);
     let selectedSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
     const swipeIdInputId = `swipe_picker_id_${messageId}`;
     const wrapper = document.createElement('div');
@@ -9340,7 +9343,7 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
             const hasSwipes = (message?.swipes?.length > 1);
             const overswipe = getOverswipeBehavior(messageId, message);
             const swipePickerButton = $(div).find('.mes_swipe_picker');
-            const canOpenSwipePicker = canOpenSwipePickerForMessage(messageId, message);
+            const canOpenSwipePicker = canOpenSwipePickerForMessage(messageId);
 
             // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
             const pristineGreeting = overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING;
@@ -9361,7 +9364,7 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
         } else {
             //Hide all messages that are not swipeable.
             div.classList.remove('swipes_visible', 'last_swipe');
-            $(div).find('.mes_swipe_picker').toggle(canOpenSwipePickerForMessage(messageId, message));
+            $(div).find('.mes_swipe_picker').toggle(canOpenSwipePickerForMessage(messageId));
         }
     });
 }

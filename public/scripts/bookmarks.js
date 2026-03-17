@@ -2,6 +2,7 @@ import {
     characters,
     saveChat,
     system_message_types,
+    syncSwipeToMes,
     this_chid,
     openCharacterChat,
     chat_metadata,
@@ -162,45 +163,6 @@ async function saveBookmarkMenu() {
 }
 
 /**
- * Applies a swipe from the message snapshot back onto the top-level message fields.
- * @param {ChatMessage} message
- * @param {number} swipeId
- * @returns {boolean}
- */
-function applySwipeToSnapshot(message, swipeId) {
-    if (!message || !Array.isArray(message.swipes) || typeof message.swipes[swipeId] !== 'string') {
-        return false;
-    }
-
-    message.swipe_id = swipeId;
-    message.mes = message.swipes[swipeId];
-
-    const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[swipeId] : null;
-    if (!swipeInfo || typeof swipeInfo !== 'object') {
-        return true;
-    }
-
-    if ('send_date' in swipeInfo) {
-        message.send_date = swipeInfo.send_date;
-    }
-
-    if ('gen_started' in swipeInfo) {
-        message.gen_started = swipeInfo.gen_started;
-    } else {
-        delete message.gen_started;
-    }
-
-    if ('gen_finished' in swipeInfo) {
-        message.gen_finished = swipeInfo.gen_finished;
-    } else {
-        delete message.gen_finished;
-    }
-
-    message.extra = typeof swipeInfo.extra === 'object' && swipeInfo.extra !== null ? structuredClone(swipeInfo.extra) : {};
-    return true;
-}
-
-/**
  * Builds the branch chat snapshot, optionally selecting a specific swipe for the target message.
  * @param {number} mesId
  * @param {number|null} swipeId
@@ -213,7 +175,7 @@ function getBranchChatSnapshot(mesId, swipeId = null) {
         return snapshot;
     }
 
-    if (!applySwipeToSnapshot(snapshot[mesId], swipeId)) {
+    if (!syncSwipeToMes(null, swipeId, snapshot[mesId])) {
         return null;
     }
 
