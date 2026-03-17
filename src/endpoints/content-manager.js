@@ -589,7 +589,6 @@ function parseAICC(url) {
             const urlObj = new URL(url);
             // Split the path and remove empty strings caused by trailing slashes
             const parts = urlObj.pathname.split('/').filter(Boolean);
-            
             if (parts.length >= 2) {
                 // Always grab the last two segments (author/character)
                 return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
