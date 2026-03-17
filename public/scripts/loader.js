@@ -5,6 +5,10 @@ let loaderPopup;
 
 let preloaderYoinked = false;
 
+export function isLoaderDisplayed() {
+    return loaderPopup !== null;
+}
+
 export function showLoader() {
     // Two loaders don't make sense. Don't await, we can overlay the old loader while it closes
     if (loaderPopup) loaderPopup.complete(POPUP_RESULT.CANCELLED);

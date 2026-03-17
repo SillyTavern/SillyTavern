@@ -29,3 +29,27 @@
     align-items: center;
     justify-content: center;
 }
+
+/* Action loader toast styles */
+.action-loader-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-loader-message {
+    flex: 1;
+}
+
+.action-loader-stop {
+    cursor: pointer;
+    font-size: 1.2em;
+    opacity: 0.8;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.action-loader-stop:hover {
+    opacity: 1;
+    color: color-mix(in srgb, currentColor 40%, #e74c3c 60%);
+}
