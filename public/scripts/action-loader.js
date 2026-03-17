@@ -151,9 +151,7 @@ export class ActionLoaderHandle {
      */
     #clearToast() {
         if (this.#toast) {
-            toastr.clear(this.#toast);
-            const toast = this.#toast;
-            setTimeout(() => toast.remove(), toastr.options.hideDuration ?? 250);
+            toastr.clear(this.#toast, { force: true });
             this.#toast = null;
         }
     }
