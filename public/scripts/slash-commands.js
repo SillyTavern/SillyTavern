@@ -925,7 +925,7 @@ export function initDefaultSlashCommands() {
         callback: createCharacterCallback,
         returns: t`the avatar key (unique identifier) of the created character`,
         namedArgumentList: [
-            ...getCharacterFieldArgs({ requiredFields: ['name', 'description', 'firstMessage'] }),
+            ...getCharacterFieldArgs({ requiredFields: ['name'] }),
             SlashCommandNamedArgument.fromProps({
                 name: 'select',
                 description: t`Whether to select/open the character after creation (default: true)`,
@@ -942,8 +942,6 @@ export function initDefaultSlashCommands() {
             <strong>${t`Required arguments:`}</strong>
             <ul>
                 <li><code>name</code> - ${t`The character's name`}</li>
-                <li><code>description</code> - ${t`The character's description/definition`}</li>
-                <li><code>firstMessage</code> - ${t`The character's first message/greeting`}</li>
             </ul>
         </div>
         <div>
