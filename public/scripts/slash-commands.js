@@ -2530,19 +2530,6 @@ export function initDefaultSlashCommands() {
                 enumList: slashCommandReturnHelper.enumList({ allowPipe: false, allowObject: true, allowChat: true, allowPopup: true, allowTextVersion: false }),
                 forceEnum: true,
             }),
-            // TODO remove some day
-            SlashCommandNamedArgument.fromProps({
-                name: 'format',
-                description: t`!!! DEPRECATED - use "return" instead !!! output format`,
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                forceEnum: true,
-                enumList: [
-                    new SlashCommandEnumValue('popup', t`Show injects in a popup.`, enumTypes.enum, enumIcons.default),
-                    new SlashCommandEnumValue('chat', t`Post a system message to the chat.`, enumTypes.enum, enumIcons.default),
-                    new SlashCommandEnumValue('none', t`Just return the injects as a JSON object.`, enumTypes.enum, enumIcons.default),
-                ],
-            }),
         ],
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -3400,27 +3387,6 @@ function injectCallback(args, value) {
 async function listInjectsCallback(args) {
     /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
     let returnType = args.return;
-
-    // Old legacy return type handling
-    if (args.format) {
-        toastr.warning(t`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, t`Deprecation warning`);
-        const type = String(args?.format).toLowerCase().trim();
-        if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
-            type !== 'none' && toastr.info(t`No script injections for the current chat`);
-        }
-        switch (type) {
-            case 'none':
-                returnType = 'none';
-                break;
-            case 'chat':
-                returnType = 'chat-html';
-                break;
-            case 'popup':
-            default:
-                returnType = 'popup-html';
-                break;
-        }
-    }
 
     // Now the actual new return type handling
     const buildTextValue = (injects) => {
