@@ -6,7 +6,7 @@ let loaderPopup;
 let preloaderYoinked = false;
 
 export function isLoaderDisplayed() {
-    return loaderPopup !== null;
+    return !!loaderPopup;
 }
 
 export function showLoader() {
