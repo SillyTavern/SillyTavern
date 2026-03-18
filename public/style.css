@@ -4828,6 +4828,11 @@ h5 {
     animation: infinite-spinning 1s ease-out 0s infinite normal;
 }
 
+.swipe_picker_delete.disabled {
+    cursor: not-allowed;
+    opacity: 0.2;
+}
+
 #export_character_div {
     display: grid;
     grid-template-columns: 340px auto;

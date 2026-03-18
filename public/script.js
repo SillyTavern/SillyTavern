@@ -9044,6 +9044,52 @@ async function openSwipePicker(messageId) {
         syncSwipeIdInput();
     }
 
+    function canDeleteSwipeFromPicker(swipeId) {
+        if ((message?.swipes?.length ?? 0) <= 1) {
+            return false;
+        }
+
+        const currentSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
+        return canJumpToSwipe || swipeId !== currentSwipeId;
+    }
+
+    async function deleteSwipeFromPicker(swipeId) {
+        if (!canDeleteSwipeFromPicker(swipeId)) {
+            toastr.info(t`Cannot delete the currently displayed swipe on a historical message.`, t`Delete Swipe`);
+            return;
+        }
+
+        const nextSelectedSwipeId = swipeId < selectedSwipeId
+            ? selectedSwipeId - 1
+            : swipeId > selectedSwipeId
+                ? selectedSwipeId
+                : Math.min(selectedSwipeId, message.swipes.length - 2);
+
+        if (power_user.confirm_message_delete) {
+            const result = await callGenericPopup(t`Are you sure you want to delete swipe #${swipeId + 1}?`, POPUP_TYPE.CONFIRM, null, {
+                okButton: t`Delete Swipe`,
+                cancelButton: t`Cancel`,
+            });
+
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                return;
+            }
+        }
+
+        const newSwipeId = await deleteSwipe(swipeId, messageId);
+        if (!Number.isInteger(newSwipeId)) {
+            return;
+        }
+
+        selectedSwipeId = clamp(nextSelectedSwipeId, 0, message.swipes.length - 1);
+
+        if (swipeIdInput instanceof HTMLInputElement) {
+            swipeIdInput.max = String(message.swipes.length);
+        }
+
+        await renderSwipeList();
+    }
+
     async function renderSwipeList() {
         const swipeBlocks = [];
 
@@ -9053,17 +9099,19 @@ async function openSwipePicker(messageId) {
             const block = template.find('.select_chat_block');
             block.removeClass('select_chat_block').addClass('swipe_picker_block');
             const branchButton = template.find('.exportRawChatButton');
+            const deleteButton = template.find('.PastChat_cross');
             const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[index] : null;
             const sendDate = swipeInfo?.send_date ? timestampToMoment(swipeInfo.send_date).format('lll') : '';
             const previewText = swipeText.replace(/\s+/g, ' ').trim();
             const tokenCount = swipeInfo?.extra?.token_count ?? await getTokenCountAsync(swipeText, 0);
+            const canDeleteSwipe = canDeleteSwipeFromPicker(index);
 
             block.attr({
                 file_name: `swipe-${index + 1}`,
                 'data-swipe-id': index,
             });
 
-            template.find('.renameChatButton, .exportChatButton, .PastChat_cross').remove();
+            template.find('.renameChatButton, .exportChatButton').remove();
             branchButton
                 .removeAttr('data-format')
                 .attr({
@@ -9078,6 +9126,23 @@ async function openSwipePicker(messageId) {
                     setSelectedSwipe(index);
                     branchActionSwipeId = index;
                     await popup.completeCancelled();
+                });
+            deleteButton
+                .removeAttr('file_name')
+                .attr('title', canDeleteSwipe ? t`Delete Swipe` : t`Cannot delete the currently displayed swipe on historical messages`)
+                .removeClass('fa-skull')
+                .addClass('swipe_picker_delete fa-trash-can')
+                .toggleClass('disabled', !canDeleteSwipe)
+                .off('click')
+                .on('click', async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (!canDeleteSwipe) {
+                        return;
+                    }
+
+                    await deleteSwipeFromPicker(index);
                 });
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
@@ -9151,6 +9216,8 @@ async function openSwipePicker(messageId) {
                 swipeIdInput.inputMode = 'numeric';
                 swipeIdInput.classList.add('flex1', 'width100px', 'textAlignCenter');
                 syncSwipeIdInput();
+                swipeIdInput.focus();
+                swipeIdInput.select();
 
                 swipeIdInput.addEventListener('input', function () {
                     const nextSwipeId = Number.parseInt(this.value, 10);
@@ -9394,9 +9461,12 @@ export function hideSwipeButtons({ hideCounters = false } = {}) {
  * @returns {Promise<number>|undefined} - The ID of the new swipe after deletion.
  */
 export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
-    if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
-        toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
-        return;
+    if (swipeId != null) {
+        swipeId = Number(swipeId);
+        if (!Number.isInteger(swipeId) || swipeId < 0) {
+            toastr.warning(t`Invalid swipe ID.`);
+            return;
+        }
     }
 
     const message = chat[messageId];
@@ -9410,7 +9480,8 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
         return;
     }
 
-    swipeId = swipeId ?? message.swipe_id;
+    swipeId = Number(swipeId ?? message.swipe_id);
+    const currentSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
 
     if (swipeId < 0 || swipeId >= message.swipes.length) {
         toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
@@ -9423,17 +9494,34 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
         message.swipe_info.splice(swipeId, 1);
     }
 
-    // Select the next swipe, or the one before if it was the last one
-    const newSwipeId = Math.min(swipeId, message.swipes.length - 1);
+    let newSwipeId;
+    if (swipeId < currentSwipeId) {
+        newSwipeId = currentSwipeId - 1;
+    } else if (swipeId > currentSwipeId) {
+        newSwipeId = currentSwipeId;
+    } else {
+        // Select the next swipe, or the one before if it was the last one.
+        newSwipeId = Math.min(swipeId, message.swipes.length - 1);
+    }
 
     chat_metadata.tainted = true;
 
     messageId = Number(messageId);
     swipeId = Number(swipeId);
+    message.swipe_id = newSwipeId;
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
-    let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
-    //Animate swipe and swap dispayed message.
-    await swipe(null, direction, { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+
+    if (swipeId === currentSwipeId) {
+        const direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+        // Animate swipe and swap displayed message when the currently visible swipe was deleted.
+        await swipe(null, direction, { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+    } else {
+        await updateSwipeCounter(messageId);
+        if (messageId !== chat.length - 1) {
+            await updateSwipeCounter(chat.length - 1);
+        }
+        saveChatDebounced();
+    }
 
     await saveChatConditional();
 
