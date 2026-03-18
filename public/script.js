@@ -9053,43 +9053,6 @@ async function openSwipePicker(messageId) {
         return canJumpToSwipe || swipeId !== currentSwipeId;
     }
 
-    async function deleteSwipeFromPicker(swipeId) {
-        if (!canDeleteSwipeFromPicker(swipeId)) {
-            toastr.info(t`Cannot delete the currently displayed swipe on a historical message.`, t`Delete Swipe`);
-            return;
-        }
-
-        const nextSelectedSwipeId = swipeId < selectedSwipeId
-            ? selectedSwipeId - 1
-            : swipeId > selectedSwipeId
-                ? selectedSwipeId
-                : Math.min(selectedSwipeId, message.swipes.length - 2);
-
-        if (power_user.confirm_message_delete) {
-            const result = await callGenericPopup(t`Are you sure you want to delete swipe #${swipeId + 1}?`, POPUP_TYPE.CONFIRM, null, {
-                okButton: t`Delete Swipe`,
-                cancelButton: t`Cancel`,
-            });
-
-            if (result !== POPUP_RESULT.AFFIRMATIVE) {
-                return;
-            }
-        }
-
-        const newSwipeId = await deleteSwipe(swipeId, messageId);
-        if (!Number.isInteger(newSwipeId)) {
-            return;
-        }
-
-        selectedSwipeId = clamp(nextSelectedSwipeId, 0, message.swipes.length - 1);
-
-        if (swipeIdInput instanceof HTMLInputElement) {
-            swipeIdInput.max = String(message.swipes.length);
-        }
-
-        await renderSwipeList();
-    }
-
     async function renderSwipeList() {
         const swipeBlocks = [];
 
@@ -9142,7 +9105,35 @@ async function openSwipePicker(messageId) {
                         return;
                     }
 
-                    await deleteSwipeFromPicker(index);
+                    const nextSelectedSwipeId = index < selectedSwipeId
+                        ? selectedSwipeId - 1
+                        : index > selectedSwipeId
+                            ? selectedSwipeId
+                            : Math.min(selectedSwipeId, message.swipes.length - 2);
+
+                    if (power_user.confirm_message_delete) {
+                        const result = await callGenericPopup(t`Are you sure you want to delete swipe #${index + 1}?`, POPUP_TYPE.CONFIRM, null, {
+                            okButton: t`Delete Swipe`,
+                            cancelButton: t`Cancel`,
+                        });
+
+                        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                            return;
+                        }
+                    }
+
+                    const newSwipeId = await deleteSwipe(index, messageId);
+                    if (!Number.isInteger(newSwipeId)) {
+                        return;
+                    }
+
+                    selectedSwipeId = clamp(nextSelectedSwipeId, 0, message.swipes.length - 1);
+
+                    if (swipeIdInput instanceof HTMLInputElement) {
+                        swipeIdInput.max = String(message.swipes.length);
+                    }
+
+                    await renderSwipeList();
                 });
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
