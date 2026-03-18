@@ -1897,7 +1897,7 @@ function syncCallback() {
 function registerPersonaSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona-lock',
-        aliases: ['lock'],
+        aliases: ['lock', 'bind'],
         callback: lockPersonaCallback,
         returns: 'The current lock state for the given type',
         helpString: 'Locks/unlocks a persona (name and avatar) to the current chat. Gets the current lock state for the given type if no state is provided.',
