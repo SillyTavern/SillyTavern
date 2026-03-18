@@ -39,13 +39,6 @@ import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
 import { applyLocale, t } from '/scripts/i18n.js';
 
-// FORK: TTS event types for third-party integrations
-export const tts_event_types = {
-    TTS_JOB_STARTED: 'tts_job_started',
-    TTS_AUDIO_READY: 'tts_audio_ready',
-    TTS_JOB_COMPLETE: 'tts_job_complete',
-};
-
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
 
@@ -165,15 +158,14 @@ async function onNarrateOneMessage() {
     audioElement.src = '/sounds/silence.mp3';
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
-    const message = structuredClone(context.chat[id]);
+    const message = context.chat[id];
 
     if (!message) {
         return;
     }
 
-    message._ttsMessageId = Number(id);
     resetTtsPlayback();
-    processAndQueueTtsMessage(message);
+    processAndQueueTtsMessage(message, Number(id));
     moduleWorker();
 }
 
@@ -200,7 +192,7 @@ async function onNarrateText(args, text) {
     }
 
     resetTtsPlayback();
-    processAndQueueTtsMessage({ mes: text, name: name, _ttsMessageId: null });
+    processAndQueueTtsMessage({ mes: text, name: name });
     await moduleWorker();
 
     // Return back to the chat voices
@@ -253,17 +245,27 @@ function isTtsProcessing() {
 }
 
 /**
- * Splits a message into lines and adds each non-empty line to the TTS job queue.
+ * @typedef {ChatMessage & { id?: number }} TtsMessage
+ */
+
+/**
+ * Clones a message, attaches the given message ID, then splits by paragraphs
+ * (if enabled) and adds each part to the TTS job queue.
  * @param {ChatMessage} message - The message object to be processed.
+ * @param {number|null} [messageId=null] - The chat message index to associate with TTS events.
  * @returns {void}
  */
-function processAndQueueTtsMessage(message) {
+function processAndQueueTtsMessage(message, messageId = null) {
+    /** @type {TtsMessage} */
+    const clone = structuredClone(message);
+    clone.id = messageId ?? undefined;
+
     if (!extension_settings.tts.narrate_by_paragraphs) {
-        ttsJobQueue.push(message);
+        ttsJobQueue.push(clone);
         return;
     }
 
-    const lines = message.mes.split('\n');
+    const lines = clone.mes.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -273,7 +275,7 @@ function processAndQueueTtsMessage(message) {
         }
 
         ttsJobQueue.push(
-            Object.assign({}, message, {
+            Object.assign({}, clone, {
                 mes: line,
             }),
         );
@@ -439,6 +441,8 @@ function completeCurrentAudioJob() {
 /**
  * Accepts an HTTP response containing audio/mpeg data, and puts the data as a Blob() on the queue for playback
  * @param {Response} response
+ * @param {string} char
+ * @returns {Promise<{audioBlob: Blob|string, mimeType: string}>}
  */
 async function addAudioJob(response, char) {
     let audioBlob, mimeType;
@@ -486,9 +490,9 @@ function completeTtsJob() {
 }
 
 async function tts(text, voiceId, char, voiceMapKey = null) {
-    const messageId = currentTtsJob?._ttsMessageId ?? null;
+    const messageId = currentTtsJob?.id ?? null;
 
-    await eventSource.emit(tts_event_types.TTS_JOB_STARTED, { messageId, characterName: char, text, voiceId });
+    await eventSource.emit(event_types.TTS_JOB_STARTED, { messageId, characterName: char, text, voiceId });
 
     async function processResponse(response) {
         // RVC injection
@@ -496,10 +500,8 @@ async function tts(text, voiceId, char, voiceMapKey = null) {
             response = await globalThis.rvcVoiceConversion(response, char, text);
 
         const audioResult = await addAudioJob(response, char);
-
-        // FORK: Emit audio ready event
         const eventData = { messageId, characterName: char, text, audio: audioResult.audioBlob, mimeType: audioResult.mimeType };
-        await eventSource.emit(tts_event_types.TTS_AUDIO_READY, eventData);
+        await eventSource.emit(event_types.TTS_AUDIO_READY, eventData);
     }
 
     // voiceMapKey can also include segment qualifiers, e.g. '{char} ("Quotes")'
@@ -514,7 +516,7 @@ async function tts(text, voiceId, char, voiceMapKey = null) {
         await processResponse(response);
     }
 
-    await eventSource.emit(tts_event_types.TTS_JOB_COMPLETE, { messageId, characterName: char });
+    await eventSource.emit(event_types.TTS_JOB_COMPLETE, { messageId, characterName: char });
     completeTtsJob();
 }
 
@@ -721,7 +723,7 @@ async function processTtsQueue() {
                 is_user: currentTtsJob.is_user,
                 mes: currentTtsJob.mes,
                 extra: currentTtsJob.extra,
-                _ttsMessageId: currentTtsJob._ttsMessageId,
+                id: currentTtsJob.id,
             };
             ttsJobQueue.unshift(segmentJob);
         }
@@ -819,15 +821,16 @@ async function playFullConversation() {
     }
 
     const context = getContext();
-    const chat = context.chat
-        .map((msg, idx) => Object.assign(structuredClone(msg), { _ttsMessageId: idx }))
-        .filter(x => !x.is_system && x.mes !== '...' && x.mes !== '');
 
-    if (chat.length === 0) {
+    context.chat.forEach((msg, i) => {
+        if (!msg.is_system && msg.mes !== '...' && msg.mes !== '') {
+            processAndQueueTtsMessage(msg, i);
+        }
+    });
+
+    if (ttsJobQueue.length === 0) {
         return toastr.info('No messages to narrate.');
     }
-
-    ttsJobQueue = chat;
 }
 
 globalThis.playFullConversation = playFullConversation;
@@ -1101,7 +1104,6 @@ async function onMessageEvent(messageId, lastCharIndex) {
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
     const message = structuredClone(context.chat[messageId]);
-    message._ttsMessageId = messageId;
     const hashNew = getStringHash(message?.mes ?? '');
 
     // Ignore prompt-hidden messages
@@ -1158,9 +1160,10 @@ async function onMessageEvent(messageId, lastCharIndex) {
     console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
 
     if (extension_settings.tts.periodic_auto_generation && isStreamingEnabled()) {
+        /** @type {TtsMessage} */ (message).id = messageId;
         ttsJobQueue.push(message);
     } else {
-        processAndQueueTtsMessage(message);
+        processAndQueueTtsMessage(message, messageId);
     }
 }
 
