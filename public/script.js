@@ -8940,17 +8940,13 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     swipeCounter
         .text(swipeCounterText)
         .prop('hidden', false)
-        .toggleClass('swipe-picker-enabled', canJumpToSwipe);
+        .toggleClass('swipe-picker-enabled', canJumpToSwipe)
+        .toggleClass(INTERACTABLE_CONTROL_CLASS, canJumpToSwipe)
+        .attr('title', canJumpToSwipe ? t`Click to jump to a swipe` : null);
     swipePickerButton.toggle(canOpenSwipePicker);
 
-    if (canJumpToSwipe) {
-        swipeCounter.attr({
-            tabindex: '0',
-            role: 'button',
-            title: t`Click to jump to a swipe`,
-        });
-    } else {
-        swipeCounter.removeAttr('tabindex role title');
+    if (!canJumpToSwipe) {
+        swipeCounter.removeAttr('tabindex');
     }
 }
 
@@ -11181,7 +11177,7 @@ jQuery(async function () {
         await openSwipePicker(mesId);
     });
     $(document).on('keydown', '.last_mes .swipes-counter.swipe-picker-enabled', async function (e) {
-        if (e.key !== 'Enter' && e.key !== ' ') {
+        if (e.key !== ' ') {
             return;
         }
 

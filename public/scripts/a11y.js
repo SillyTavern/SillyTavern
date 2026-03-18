@@ -3,6 +3,20 @@
  * Be careful what you import!
  */
 
+const MANAGED_ROLE_ATTRIBUTE = 'data-a11y-role';
+
+function setManagedRole(element, role) {
+    element.setAttribute('role', role);
+    element.setAttribute(MANAGED_ROLE_ATTRIBUTE, role);
+}
+
+function clearManagedRole(element) {
+    if (element.hasAttribute(MANAGED_ROLE_ATTRIBUTE)) {
+        element.removeAttribute('role');
+        element.removeAttribute(MANAGED_ROLE_ATTRIBUTE);
+    }
+}
+
 const buttonSelectors = [
     '.menu_button',
     '.right_menu_button',
@@ -14,6 +28,7 @@ const buttonSelectors = [
     '.character_select',
     '.tags .tag',
     '.jg-menu .jg-button',
+    '.swipes-counter.interactable',
     '.bg_example .mobile-only-menu-toggle',
     '.paginationjs-pages li a',
 ].join(', ');
@@ -61,25 +76,25 @@ const tabItemSelectors = [
 /** @type {Record<string, (element: Element) => void>} */
 const a11yRules = {
     [buttonSelectors]: (element) => {
-        element.setAttribute('role', 'button');
+        setManagedRole(element, 'button');
     },
     [listSelectors]: (element) => {
-        element.setAttribute('role', 'list');
+        setManagedRole(element, 'list');
     },
     [listItemSelectors]: (element) => {
-        element.setAttribute('role', 'listitem');
+        setManagedRole(element, 'listitem');
     },
     [toolbarSelectors]: (element) => {
-        element.setAttribute('role', 'toolbar');
+        setManagedRole(element, 'toolbar');
     },
     [tabListSelectors]: (element) => {
-        element.setAttribute('role', 'tablist');
+        setManagedRole(element, 'tablist');
     },
     [tabItemSelectors]: (element) => {
-        element.setAttribute('role', 'tab');
+        setManagedRole(element, 'tab');
     },
     '#toast-container .toast': (element) => {
-        element.setAttribute('role', 'status');
+        setManagedRole(element, 'status');
     },
 };
 
@@ -89,6 +104,11 @@ const a11yRules = {
  */
 function applyA11yRules(element) {
     try {
+        if (element.hasAttribute(MANAGED_ROLE_ATTRIBUTE)) {
+            clearManagedRole(element);
+        }
+        element.querySelectorAll(`[${MANAGED_ROLE_ATTRIBUTE}]`).forEach(clearManagedRole);
+
         for (const [selector, rule] of Object.entries(a11yRules)) {
             // Apply if the element directly matches the selector
             if (element.matches(selector)) {
@@ -116,12 +136,17 @@ function setAccessibilityObserver() {
                     }
                 }
             }
+            if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+                applyA11yRules(mutation.target);
+            }
         }
     });
 
     observer.observe(document.body, {
         childList: true,
         subtree: true,
+        attributes: true,
+        attributeFilter: ['class'],
     });
 }
 
