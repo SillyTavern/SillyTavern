@@ -9044,7 +9044,7 @@ async function openSwipePicker(messageId) {
         syncSwipeIdInput();
     }
 
-    function renderSwipeList() {
+    async function renderSwipeList() {
         const swipeBlocks = [];
 
         for (let index = 0; index < message.swipes.length; index++) {
@@ -9056,7 +9056,7 @@ async function openSwipePicker(messageId) {
             const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[index] : null;
             const sendDate = swipeInfo?.send_date ? timestampToMoment(swipeInfo.send_date).format('lll') : '';
             const previewText = swipeText.replace(/\s+/g, ' ').trim();
-            const tokenCount = swipeInfo?.extra?.token_count;
+            const tokenCount = swipeInfo?.extra?.token_count ?? await getTokenCountAsync(swipeText, 0);
 
             block.attr({
                 file_name: `swipe-${index + 1}`,
@@ -9121,9 +9121,9 @@ async function openSwipePicker(messageId) {
         }],
         wider: true,
         allowVerticalScrolling: true,
-        onOpen: function (popup) {
+        onOpen: async function (popup) {
             popup.dlg.classList.add('swipe_picker_popup');
-            renderSwipeList();
+            await renderSwipeList();
             popup.closeButton.style.display = 'block';
             popup.closeButton.classList.add('opacity50p', 'hoverglow', 'fontsize120p');
             popup.closeButton.style.position = 'static';
@@ -9209,7 +9209,7 @@ async function openSwipePicker(messageId) {
     }
 
     const direction = targetSwipeId > currentSwipeId ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
-    await swipe(null, direction, { source: SWIPE_SOURCE.SLASH_COMMAND, forceMesId: messageId, forceSwipeId: targetSwipeId });
+    await swipe(null, direction, { source: SWIPE_SOURCE.SWIPE_PICKER, forceMesId: messageId, forceSwipeId: targetSwipeId });
 }
 
 /**
@@ -9979,7 +9979,7 @@ function formatSwipeCounter(current, total) {
  * @param {SwipeEvent} event Event.
  * @param {SWIPE_DIRECTION} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {ChatMessage} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {number} [params.forceMesId] The message id to swipe.
@@ -10005,7 +10005,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
     const mesId = Number(forceMesId ?? event?.currentTarget?.closest('.mes')?.getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    if ([SWIPE_SOURCE.DELETE, SWIPE_SOURCE.BACK, SWIPE_SOURCE.AUTO_SWIPE, SWIPE_SOURCE.SLASH_COMMAND].includes(source)) {
+    if ([SWIPE_SOURCE.DELETE, SWIPE_SOURCE.BACK, SWIPE_SOURCE.AUTO_SWIPE, SWIPE_SOURCE.SLASH_COMMAND, SWIPE_SOURCE.SWIPE_PICKER].includes(source)) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
     } else {
         //Only show an error if swipes are not hidden and a message is generating.
@@ -10465,7 +10465,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
  * Handles the swipe to the left event.
  * @param {SwipeEvent} [event] Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -10478,7 +10478,7 @@ export async function swipe_left(event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {SwipeEvent} [event] Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
