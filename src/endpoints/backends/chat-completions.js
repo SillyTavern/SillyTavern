@@ -89,6 +89,152 @@ const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
+const CHAT_COMPLETION_ERROR_MESSAGE_LIMIT = 500;
+
+function normalizeUpstreamErrorValue(value) {
+    if (value === undefined || value === null) {
+        return '';
+    }
+
+    return String(value).replace(/\s+/g, ' ').trim();
+}
+
+function truncateUpstreamErrorMessage(message) {
+    if (!message) {
+        return '';
+    }
+
+    if (message.length <= CHAT_COMPLETION_ERROR_MESSAGE_LIMIT) {
+        return message;
+    }
+
+    return `${message.slice(0, CHAT_COMPLETION_ERROR_MESSAGE_LIMIT - 1).trimEnd()}…`;
+}
+
+function decodeHtmlEntities(value) {
+    return value
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'");
+}
+
+function looksLikeHtmlError(value) {
+    return typeof value === 'string' && /<(?:!doctype|html|head|body|title|h1|div|p)\b/i.test(value);
+}
+
+function extractHtmlErrorMessage(value) {
+    if (typeof value !== 'string' || !value) {
+        return '';
+    }
+
+    const withoutScripts = value
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ');
+    const getTagContent = (pattern) => {
+        const match = withoutScripts.match(pattern);
+        return truncateUpstreamErrorMessage(normalizeUpstreamErrorValue(decodeHtmlEntities(match?.[1] ?? '')));
+    };
+
+    const title = getTagContent(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const heading = getTagContent(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+    const bodyText = truncateUpstreamErrorMessage(normalizeUpstreamErrorValue(
+        decodeHtmlEntities(withoutScripts.replace(/<[^>]+>/g, ' ')),
+    ));
+    const segments = [];
+
+    if (title) {
+        segments.push(title);
+    }
+
+    if (heading) {
+        const normalizedHeading = heading.toLowerCase();
+        const hasSimilarSegment = segments.some(segment => {
+            const normalizedSegment = segment.toLowerCase();
+            return normalizedSegment.includes(normalizedHeading) || normalizedHeading.includes(normalizedSegment);
+        });
+
+        if (!hasSimilarSegment) {
+            segments.push(heading);
+        }
+    }
+
+    if (!segments.length && bodyText) {
+        segments.push(bodyText);
+    }
+
+    return truncateUpstreamErrorMessage(segments.join(': '));
+}
+
+function getStructuredUpstreamErrorMessage(errorData) {
+    if (typeof errorData === 'string' || typeof errorData === 'number' || typeof errorData === 'boolean') {
+        return truncateUpstreamErrorMessage(normalizeUpstreamErrorValue(errorData));
+    }
+
+    if (typeof errorData !== 'object' || errorData === null || Array.isArray(errorData)) {
+        return '';
+    }
+
+    const detail = errorData.detail;
+    const message = errorData?.error?.message
+        || (typeof errorData?.message === 'string' ? errorData.message : '')
+        || (typeof detail === 'string' ? detail : '')
+        || (typeof detail?.error?.message === 'string' ? detail.error.message : '')
+        || (typeof errorData?.error === 'string' ? errorData.error : '');
+
+    return truncateUpstreamErrorMessage(normalizeUpstreamErrorValue(message));
+}
+
+function getUpstreamErrorMessage(fetchResponse, responseText, errorData = tryParse(responseText)) {
+    const structuredMessage = getStructuredUpstreamErrorMessage(errorData);
+
+    if (structuredMessage) {
+        return structuredMessage;
+    }
+
+    if (looksLikeHtmlError(responseText)) {
+        const htmlMessage = extractHtmlErrorMessage(responseText);
+
+        if (htmlMessage) {
+            return htmlMessage;
+        }
+    }
+
+    const textMessage = truncateUpstreamErrorMessage(normalizeUpstreamErrorValue(responseText));
+
+    if (textMessage) {
+        return textMessage;
+    }
+
+    const statusText = normalizeUpstreamErrorValue(fetchResponse.statusText);
+
+    if (statusText) {
+        return statusText;
+    }
+
+    return fetchResponse.status ? `HTTP ${fetchResponse.status}` : 'Unknown error occurred';
+}
+
+function buildUpstreamErrorPayload(errorData, message) {
+    if (typeof errorData === 'object' && errorData !== null && !Array.isArray(errorData)) {
+        const errorObject = typeof errorData.error === 'object' && errorData.error !== null && !Array.isArray(errorData.error)
+            ? errorData.error
+            : {};
+
+        return {
+            ...errorData,
+            error: {
+                ...errorObject,
+                message,
+            },
+        };
+    }
+
+    return { error: { message } };
+}
+
 /**
  * Module-scoped Claude caching configuration values.
  */
@@ -1621,8 +1767,10 @@ async function sendAzureOpenAIRequest(request, response) {
         }
 
         const text = await fetchResponse.text();
-        const data = tryParse(text) || { error: { message: fetchResponse.statusText || 'Unknown error occurred' } };
-        return response.status(500).send(data);
+        const errorData = tryParse(text);
+        const message = getUpstreamErrorMessage(fetchResponse, text, errorData);
+        const errorPayload = buildUpstreamErrorPayload(errorData, message);
+        return response.status(500).send(errorPayload);
     } catch (error) {
         const message = error.name === 'AbortError'
             ? 'Request was aborted by the client.'
@@ -2403,7 +2551,6 @@ router.post('/generate', async function (request, response) {
         const fetchResponse = await fetch(endpointUrl, config);
 
         if (request.body.stream) {
-            console.info('Streaming request in progress');
             return forwardFetchResponse(fetchResponse, response);
         }
 
@@ -2415,8 +2562,7 @@ router.post('/generate', async function (request, response) {
         } else {
             const responseText = await fetchResponse.text();
             const errorData = tryParse(responseText);
-
-            const message = fetchResponse.statusText || 'Unknown error occurred';
+            const message = getUpstreamErrorMessage(fetchResponse, responseText, errorData);
             const quota_error = fetchResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
             console.error('Chat completion request error: ', message, responseText);
 

@@ -153,9 +153,9 @@ export class TextCompletionService {
 
         if (!response.ok) {
             const text = await response.text();
-            tryParseStreamingError(response, text, { quiet: true });
+            const message = tryParseStreamingError(response, text, { quiet: true });
 
-            throw new Error(`Got response status ${response.status}`);
+            throw new Error(message || `Got response status ${response.status}`);
         }
 
         const eventStream = new EventSourceStream();
@@ -170,7 +170,11 @@ export class TextCompletionService {
                 if (done) return;
                 if (value.data === '[DONE]') return;
 
-                tryParseStreamingError(response, value.data, { quiet: true });
+                const message = tryParseStreamingError(response, value.data, { quiet: true });
+
+                if (message) {
+                    throw new Error(message);
+                }
 
                 let data = JSON.parse(value.data);
 
@@ -494,9 +498,9 @@ export class ChatCompletionService {
 
         if (!response.ok) {
             const text = await response.text();
-            tryParseStreamingError(response, text, { quiet: true });
+            const message = tryParseStreamingError(response, text, { quiet: true });
 
-            throw new Error(`Got response status ${response.status}`);
+            throw new Error(message || `Got response status ${response.status}`);
         }
 
         const eventStream = new EventSourceStream();
@@ -511,7 +515,12 @@ export class ChatCompletionService {
                 if (done) return;
                 const rawData = value.data;
                 if (rawData === '[DONE]') return;
-                tryParseStreamingError(response, rawData, { quiet: true });
+                const message = tryParseStreamingError(response, rawData, { quiet: true });
+
+                if (message) {
+                    throw new Error(message);
+                }
+
                 const parsed = JSON.parse(rawData);
 
                 const reply = getStreamingReply(parsed, state, {
