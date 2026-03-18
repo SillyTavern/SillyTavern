@@ -1425,7 +1425,9 @@ export function addOpenRouterSignatures(messages, model) {
             details.push(detail);
         };
         if (typeof message.signature === 'string') {
-            addDetail(message.signature);
+            if (enableThoughtSignatures) {
+                addDetail(message.signature);
+            }
             delete message.signature;
         }
         if (Array.isArray(message.tool_calls)) {
