@@ -40,6 +40,8 @@ export const POPUP_RESULT = {
  * @property {string|boolean?} [okButton=null] - Custom text for the OK button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
  * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
  * @property {number?} [rows=1] - The number of rows for the input field
+ * @property {string?} [placeholder=null] - Placeholder text for the main interactive element (input field for INPUT type; use tooltip for additional hinter or content element hints for other)
+ * @property {string?} [tooltip=null] - Tooltip text shown on hover for the main interactive element or content area
  * @property {boolean?} [wide=false] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
  * @property {boolean?} [wider=false] - Whether to display the popup in wider mode (just wider, no height scaling)
  * @property {boolean?} [large=false] - Whether to display the popup in large mode (90% of screen)
@@ -61,8 +63,10 @@ export const POPUP_RESULT = {
 /**
  * @typedef {object} CustomPopupButton
  * @property {string} text - The text of the button
+ * @property {string?} [tooltip] - Optional tooltip text displayed when hovering over the button
  * @property {POPUP_RESULT|number?} [result] - The result of the button - can also be a custom result value to make be able to find out that this button was clicked. If no result is specified, this button will **not** close the popup.
  * @property {string[]|string?} [classes] - Optional custom CSS classes applied to the button
+ * @property {string?} [icon] - Optional Font Awesome icon class (e.g. 'fa-wand-magic-sparkles') to display before the text
  * @property {()=>void?} [action] - Optional action to perform when the button is clicked
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
  */
@@ -71,7 +75,7 @@ export const POPUP_RESULT = {
  * @typedef {object} CustomPopupInput
  * @property {string} id - The id for the html element
  * @property {string} label - The label text for the input
- * @property {string?} [tooltip=null] - Optional tooltip icon displayed behind the label
+ * @property {string?} [tooltip=null] - Optional tooltip to be displayed. Default placeholder in input controls, tooltip icon behind the checkbox for those.
  * @property {boolean|string|undefined} [defaultState=false] - The default state when opening the popup (false if not set)
  * @property {('checkbox'|'text'|'textarea')?} [type='checkbox'] - The type of the input (default is checkbox)
  * @property {number?} [rows=1] - The number of rows for the input field, if the input is 'textarea'
@@ -178,7 +182,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, onOpen = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, placeholder = null, tooltip = null, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, onOpen = null, cropAspect = null, cropImage = null } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
@@ -233,6 +237,15 @@ export class Popup {
         this.cancelButton.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
         this.cancelButton.dataset.i18n = this.cancelButton.textContent;
 
+        /** @param {HTMLElement} control @param {string} text Sets the title attribute and translation, if text is provided  */
+        function setTitleFromTooltip(control, text) {
+            if (!text) return;
+            control.title = text;
+            if (!control.dataset.i18n) {
+                control.dataset.i18n = '[title]' + text; // Don't override an existing translation of main text with title translation
+            }
+        }
+
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
         this.customButtons?.forEach((x, index) => {
@@ -243,9 +256,22 @@ export class Popup {
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
-            buttonElement.textContent = button.text;
-            buttonElement.dataset.i18n = buttonElement.textContent;
             buttonElement.tabIndex = 0;
+
+            if (button.icon) {
+                const icon = document.createElement('i');
+                icon.className = `fa-solid ${button.icon}`;
+                buttonElement.appendChild(icon);
+                const textSpan = document.createElement('span');
+                textSpan.textContent = button.text;
+                textSpan.dataset.i18n = button.text;
+                buttonElement.classList.add('menu_button_icon');
+                buttonElement.appendChild(textSpan);
+            } else {
+                buttonElement.textContent = button.text;
+                buttonElement.dataset.i18n = buttonElement.textContent;
+            }
+            setTitleFromTooltip(buttonElement, button.tooltip);
 
             if (button.appendAtEnd) {
                 this.buttonControls.appendChild(buttonElement);
@@ -282,8 +308,7 @@ export class Popup {
                 if (input.tooltip) {
                     const tooltip = document.createElement('div');
                     tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
-                    tooltip.title = input.tooltip;
-                    tooltip.dataset.i18n = '[title]' + input.tooltip;
+                    setTitleFromTooltip(tooltip, input.tooltip);
                     label.appendChild(tooltip);
                 }
 
@@ -299,6 +324,7 @@ export class Popup {
                 inputElement.id = input.id;
                 inputElement.value = String(input.defaultState ?? '');
                 inputElement.placeholder = input.tooltip ?? '';
+                setTitleFromTooltip(inputElement, input.tooltip);
 
                 const labelText = document.createElement('span');
                 labelText.innerText = input.label;
@@ -317,8 +343,9 @@ export class Popup {
                 inputElement.classList.add('text_pole', 'result-control');
                 inputElement.id = input.id;
                 inputElement.value = String(input.defaultState ?? '');
-                inputElement.placeholder = input.tooltip ?? '';
                 inputElement.rows = input.rows ?? 1;
+                inputElement.placeholder = input.tooltip ?? '';
+                setTitleFromTooltip(inputElement, input.tooltip);
 
                 const labelText = document.createElement('span');
                 labelText.innerText = input.label;
@@ -404,6 +431,16 @@ export class Popup {
 
         this.mainInput.value = inputValue;
         this.mainInput.rows = rows ?? 1;
+
+        // Apply placeholder and tooltip based on popup type
+        if (type === POPUP_TYPE.INPUT) {
+            // For INPUT type, apply to the main input element
+            this.mainInput.placeholder = placeholder ?? '';
+            setTitleFromTooltip(this.mainInput, tooltip);
+        } else {
+            // For other types, apply tooltip to the content area
+            setTitleFromTooltip(this.content, tooltip);
+        }
 
         this.content.innerHTML = '';
         if (content instanceof jQuery) {
