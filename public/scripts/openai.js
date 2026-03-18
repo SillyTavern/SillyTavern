@@ -432,7 +432,7 @@ const default_settings = {
     chutes_sort_models: 'alphabetically',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
-    minimax_model: 'MiniMax-M2.5',
+    minimax_model: 'MiniMax-M2.7',
     electronhub_model: 'gpt-4o-mini',
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,

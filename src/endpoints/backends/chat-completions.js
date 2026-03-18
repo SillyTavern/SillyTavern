@@ -1887,7 +1887,7 @@ router.post('/status', async function (request, statusResponse) {
                 console.warn('Chat Completion API key is missing.');
                 return statusResponse.status(400).send({ error: true });
             }
-            return statusResponse.send({ data: [{ id: 'MiniMax-M2.5' }, { id: 'MiniMax-M2.5-highspeed' }] });
+            return statusResponse.send({ data: [{ id: 'MiniMax-M2.7' }, { id: 'MiniMax-M2.7-highspeed' }, { id: 'MiniMax-M2.5' }, { id: 'MiniMax-M2.5-highspeed' }] });
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
