@@ -2699,7 +2699,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'popup',
         callback: popupCallback,
-        returns: t`popup text`,
+        returns: t`Popup text`,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'scroll',
@@ -4009,6 +4009,12 @@ async function buttonsCallback(args, text) {
         // Normalize buttons to ButtonLabel format for consistent handling
         /** @type {ButtonLabel[]} */
         const buttons = rawButtons.map(btn => typeof btn === 'string' ? { text: btn } : btn);
+
+        // Validate raw buttons: each entry must be a string or a non-null object with a string `text` field that has content
+        if (!buttons.every(btn => typeof btn === 'object' && btn !== null && typeof btn.text === 'string' && btn.text)) {
+            console.warn('WARN: Invalid button label entry provided for /buttons command: each entry must be a string or an object with a "text" property');
+            return '';
+        }
 
         /** @type {Set<number>} */
         const multipleToggledState = new Set();
