@@ -258,7 +258,7 @@ function isTtsProcessing() {
 function processAndQueueTtsMessage(message, messageId = null) {
     /** @type {TtsMessage} */
     const clone = structuredClone(message);
-    clone.id = messageId ?? undefined;
+    clone.id = messageId ?? null;
 
     if (!extension_settings.tts.narrate_by_paragraphs) {
         ttsJobQueue.push(clone);
@@ -311,7 +311,7 @@ audioElement.autoplay = true;
  * @type AudioJob[] Audio job queue
  * @typedef {{audioBlob: Blob | string, char: string}} AudioJob Audio job object
  */
-let audioJobQueue = [];
+const audioJobQueue = [];
 /**
  * @type AudioJob Current audio job
  */
@@ -481,7 +481,7 @@ async function processAudioJobQueue() {
 //  TTS Control   //
 //################//
 
-let ttsJobQueue = [];
+const ttsJobQueue = [];
 let currentTtsJob; // Null if nothing is currently being processed
 
 function completeTtsJob() {
@@ -1103,6 +1103,7 @@ async function onMessageEvent(messageId, lastCharIndex) {
     }
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
+    /** @type {TtsMessage} */
     const message = structuredClone(context.chat[messageId]);
     const hashNew = getStringHash(message?.mes ?? '');
 
@@ -1160,7 +1161,7 @@ async function onMessageEvent(messageId, lastCharIndex) {
     console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
 
     if (extension_settings.tts.periodic_auto_generation && isStreamingEnabled()) {
-        /** @type {TtsMessage} */ (message).id = messageId;
+        message.id = messageId;
         ttsJobQueue.push(message);
     } else {
         processAndQueueTtsMessage(message, messageId);
