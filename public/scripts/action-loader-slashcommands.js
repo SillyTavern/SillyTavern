@@ -275,7 +275,7 @@ export function registerActionLoaderSlashCommands() {
     // /loader-hide command - manually hide a loader by handle ID
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'loader-hide',
-        returns: '<code>true</code> if an active loader was hidden, otherwise <code>false</code>',
+        returns: 'true if an active loader was hidden, otherwise false',
         helpString: `
             <div>
                 Hides an action loader that was shown with <code>/loader-show</code>.
@@ -315,7 +315,7 @@ export function registerActionLoaderSlashCommands() {
     // /loader-stop command - trigger the stop action on a loader
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'loader-stop',
-        returns: '<code>true</code> if an active loader was stopped, otherwise <code>false</code>',
+        returns: 'true if an active loader was stopped, otherwise false',
         helpString: `
             <div>
                 Triggers the stop action on a specific action loader, as if the user clicked the stop button.
