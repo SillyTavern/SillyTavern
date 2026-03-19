@@ -624,8 +624,7 @@ export let recentSwipes = 0;
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
-/** @type {AbortController} */
-let abortController;
+let abortController = new AbortController();
 
 //css
 var css_send_form_display = $('<div id=send_form></div>').css('display');
