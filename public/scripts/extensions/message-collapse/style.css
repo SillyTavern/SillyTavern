@@ -1,0 +1,125 @@
+/**
+ * Message Collapser Extension Styles
+ * Styles for the long message collapse feature
+ */
+
+/* Main wrapper for collapsed message */
+.message-collapser-wrapper {
+    position: relative;
+    margin: 0.5em 0;
+    padding: 0.5em;
+    background: var(--SmartThemeBlurTintColor, rgba(0, 0, 0, 0.1));
+    border-radius: 8px;
+    border-left: 3px solid var(--SmartThemeAccentColor, #4a9eff);
+}
+
+/* Preview container (visible when collapsed) */
+.message-collapser-preview {
+    font-family: inherit;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+/* Full content container (visible when expanded) */
+.message-collapser-full {
+    font-family: inherit;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Toggle button */
+.collapse-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 0.5em;
+    padding: 0.4em 0.8em;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--SmartThemeTextColor, #666);
+    background: var(--SmartThemeBlurTintColor, rgba(0, 0, 0, 0.05));
+    border: 1px solid var(--SmartThemeBorderColor, #ddd);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.collapse-toggle:hover {
+    background: var(--SmartThemeAccentColor, #4a9eff);
+    color: white;
+    border-color: var(--SmartThemeAccentColor, #4a9eff);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+}
+
+.collapse-toggle:active {
+    transform: translateY(0);
+}
+
+/* Dark theme adjustments */
+.dark-theme .message-collapser-wrapper {
+    background: rgba(255, 255, 255, 0.05);
+    border-left-color: #4a9eff;
+}
+
+.dark-theme .collapse-toggle {
+    color: #aaa;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #444;
+}
+
+.dark-theme .collapse-toggle:hover {
+    background: #4a9eff;
+    color: white;
+    border-color: #4a9eff;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .message-collapser-wrapper {
+        padding: 0.4em;
+        border-radius: 6px;
+    }
+    
+    .collapse-toggle {
+        font-size: 0.8em;
+        padding: 0.3em 0.6em;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Animation for expand/collapse */
+.message-collapser-full,
+.message-collapser-preview {
+    transition: opacity 0.2s ease;
+}
+
+/* Fade effect at bottom of preview */
+.message-collapser-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--SmartThemeBlurTintColor, rgba(0, 0, 0, 0.1))
+    );
+    pointer-events: none;
+}
+
+.dark-theme .message-collapser-preview::after {
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.05)
+    );
+}

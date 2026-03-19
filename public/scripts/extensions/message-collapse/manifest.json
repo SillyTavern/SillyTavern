@@ -1,0 +1,12 @@
+{
+    "display_name": "Message Collapser",
+    "loading_order": 5,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Xiao Zhua (小爪)",
+    "version": "1.0.4",
+    "homePage": "https://github.com/SillyTavern/SillyTavern",
+    "description": "Automatically collapse long messages with expand button. Configurable threshold and toggle."
+}
