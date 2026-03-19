@@ -1,16 +1,19 @@
 /**
- * Action loader utility - shows loader overlay with stoppable toast notification.
+ * Unified action loader system - shows loader overlay with optional toast notifications.
  * Designed to be flexible and reusable for various long-running operations.
- * Supports stacking multiple loaders - overlay stays single, but toasts can stack.
  *
- * With default arguments, will function as a generation loader / wrapper.
+ * Features:
+ * - Stacking multiple loaders - overlay stays single, but toasts can stack
+ * - Blocking and non-blocking modes
+ * - Stoppable or static toasts
+ * - Class-based handle system for fine-grained control
  *
  * @module action-loader
  */
 
 import { t } from './i18n.js';
 import { stopGeneration } from '../script.js';
-import { showLoader, hideLoader, isLoaderDisplayed } from './loader.js';
+import { Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 
 /**
  * Enum representing the toast display mode for the action loader.
@@ -118,8 +121,8 @@ export class ActionLoaderHandle {
         }
 
         // Show the blocking loader overlay if this is the first blocking handle
-        if (blocking && !hasBlockingLoaders() && !isLoaderDisplayed()) {
-            showLoader();
+        if (blocking && !hasBlockingLoaders() && !isOverlayDisplayed()) {
+            showOverlay();
         }
 
         // Register this handle
@@ -191,7 +194,7 @@ export class ActionLoaderHandle {
 
         // Hide the overlay if this was the last blocking handle
         if (this.#blocking && !hasBlockingLoaders()) {
-            await hideLoader();
+            await hideOverlay();
         }
     }
 
@@ -301,6 +304,12 @@ export const loader = {
     get: getLoaderHandleById,
 
     /**
+     * Checks if any blocking loader overlay is currently displayed.
+     * @returns {boolean} True if a blocking overlay is shown
+     */
+    isBlocking: isOverlayDisplayed,
+
+    /**
      * Toast display mode constants.
      * @type {typeof ActionLoaderToastMode}
      */
@@ -404,3 +413,107 @@ export function getLoaderHandleById(id) {
     }
     return undefined;
 }
+
+// ============================================================================
+// Internal overlay management
+// ============================================================================
+
+/** @type {Popup|null} The current loader overlay popup */
+let loaderPopup = null;
+
+/** Whether the initial HTML preloader has been removed */
+let preloaderYoinked = false;
+
+/**
+ * Checks if the loader overlay is currently displayed.
+ * @returns {boolean} True if overlay is shown
+ */
+function isOverlayDisplayed() {
+    return !!loaderPopup;
+}
+
+/**
+ * Shows the blocking loader overlay.
+ * Internal function - use showActionLoader() instead.
+ */
+function showOverlay() {
+    // Two loaders don't make sense. Don't await, we can overlay the old loader while it closes
+    if (loaderPopup) loaderPopup.complete(POPUP_RESULT.CANCELLED);
+
+    loaderPopup = new Popup(`
+        <div id="loader">
+            <div id="load-spinner" class="fa-solid fa-gear fa-spin fa-3x"></div>
+        </div>`, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'none', wide: true, large: true });
+
+    // No close button, loaders are not closable
+    loaderPopup.closeButton.style.display = 'none';
+
+    loaderPopup.show();
+}
+
+/**
+ * Hides the blocking loader overlay with animation.
+ * Internal function - use hideActionLoader() instead.
+ * @returns {Promise<void>}
+ */
+async function hideOverlay() {
+    if (!loaderPopup) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+        const spinner = $('#load-spinner');
+        if (!spinner.length) {
+            console.warn('Spinner element not found, skipping animation');
+            cleanup();
+            return;
+        }
+
+        // Check if transitions are enabled
+        const transitionDuration = spinner[0] ? getComputedStyle(spinner[0]).transitionDuration : '0s';
+        const hasTransitions = parseFloat(transitionDuration) > 0;
+
+        if (hasTransitions) {
+            Promise.race([
+                new Promise((r) => setTimeout(r, 500)), // Fallback timeout
+                new Promise((r) => spinner.one('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', r)),
+            ]).finally(cleanup);
+        } else {
+            cleanup();
+        }
+
+        function cleanup() {
+            $('#loader').remove();
+            // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
+            // If it's present, we remove it once and then it's gone.
+            yoinkPreloader();
+
+            loaderPopup.complete(POPUP_RESULT.AFFIRMATIVE)
+                .catch((err) => console.error('Error completing loaderPopup:', err))
+                .finally(() => {
+                    loaderPopup = null;
+                    resolve();
+                });
+        }
+
+        // Apply the styles
+        spinner.css({
+            'filter': 'blur(15px)',
+            'opacity': '0',
+        });
+    });
+}
+
+/**
+ * Removes the initial HTML preloader element.
+ * Called once after the first loader hide.
+ */
+function yoinkPreloader() {
+    if (preloaderYoinked) return;
+    document.getElementById('preloader')?.remove();
+    preloaderYoinked = true;
+}
+
+// ============================================================================
+// End internal overlay management
+// ============================================================================
