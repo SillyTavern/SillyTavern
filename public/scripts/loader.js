@@ -1,4 +1,4 @@
-import { showActionLoader, ActionLoaderToastMode } from './action-loader.js';
+import { loader } from './action-loader.js';
 
 /**
  * Handle for the legacy loader created by showLoader().
@@ -27,9 +27,9 @@ export function showLoader() {
     }
 
     // Create a blocking loader with no toast (matches old behavior)
-    legacyLoaderHandle = showActionLoader({
+    legacyLoaderHandle = loader.show({
         blocking: true,
-        toastMode: ActionLoaderToastMode.NONE,
+        toastMode: loader.ToastMode.NONE,
     });
 }
 

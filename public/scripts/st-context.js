@@ -189,7 +189,9 @@ export function getContext() {
         /** @deprecated Use callGenericPopup or Popup instead. */
         callPopup,
         callGenericPopup,
+        /** @deprecated Use loader.show instead. */
         showLoader,
+        /** @deprecated Use loader.hide instead. */
         hideLoader,
         mainApi: main_api,
         extensionSettings: extension_settings,

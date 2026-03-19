@@ -244,7 +244,7 @@ import {
     isPersonaPanelOpen,
 } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
-import { hideLoader, showLoader } from './scripts/loader.js';
+import { loader } from './scripts/action-loader.js';
 import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
@@ -698,7 +698,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    showLoader();
+    const initLoaderHandle = loader.show({
+        title: t`SillyTavern`,
+        message: t`Initializing...`,
+        toastMode: loader.ToastMode.STATIC,
+    });
+
     registerPromptManagerMigration();
     initDomHandlers();
     initStandaloneMode();
@@ -724,7 +729,7 @@ async function firstLoadInit() {
     ToolManager.initToolSlashCommands();
     await initPresetManager();
     await initSystemMessages();
-    await getSettings();
+    await getSettings(initLoaderHandle);
     initKeyboard();
     initDynamicStyles();
     initTags();
@@ -758,7 +763,7 @@ async function firstLoadInit() {
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await eventSource.emit(event_types.APP_INITIALIZED);
-    await hideLoader();
+    await initLoaderHandle.hide();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
 }
@@ -7757,7 +7762,7 @@ function reloadLoop() {
 
 //MARK: getSettings()
 ///////////////////////////////////////////
-export async function getSettings() {
+export async function getSettings(initLoaderHandle = null) {
     const response = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -7875,7 +7880,7 @@ export async function getSettings() {
         firstRun = !!settings.firstRun;
 
         if (firstRun) {
-            hideLoader();
+            await initLoaderHandle?.hide();
             await doOnboarding(user_avatar);
             firstRun = false;
         }
@@ -10451,7 +10456,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
  * @param {string} param.newFileName New name for the chat (no JSONL extension)
  * @param {boolean} [param.loader=true] Whether to show loader during the operation
  */
-export async function renameGroupOrCharacterChat({ characterId, groupId, oldFileName, newFileName, loader }) {
+export async function renameGroupOrCharacterChat({ characterId, groupId, oldFileName, newFileName, loader: showLoader }) {
     const currentChatId = getCurrentChatId();
     const body = {
         is_group: !!groupId,
@@ -10469,9 +10474,13 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
         return;
     }
 
-    try {
-        loader && showLoader();
+    const loaderHandle = showLoader ? loader.show({
+        title: t`Rename Chat`,
+        message: t`Renaming chat...`,
+        toastMode: loader.ToastMode.STATIC,
+    }) : null;
 
+    try {
         const response = await fetch('/api/chats/rename', {
             method: 'POST',
             body: JSON.stringify(body),
@@ -10504,11 +10513,10 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
             await reloadCurrentChat();
         }
     } catch {
-        loader && hideLoader();
         await delay(500);
         await callGenericPopup('An error has occurred. Chat was not renamed.', POPUP_TYPE.TEXT);
     } finally {
-        loader && hideLoader();
+        await loaderHandle?.hide();
     }
 }
 
@@ -11066,21 +11074,32 @@ jQuery(async function () {
     async function handleDeleteChat(chatFile, group, fromSlashCommand = false) {
         // Close past chat popup.
         $('#select_chat_cross').trigger('click');
-        showLoader();
-        if (group) {
-            await deleteGroupChat(group, chatFile);
-        } else {
-            await delChat(`${chatFile}.jsonl`);
+
+        const loaderHandle = loader.show({
+            title: t`Delete Chat`,
+            message: t`Deleting chat...`,
+            toastMode: loader.ToastMode.STATIC,
+        });
+
+        try {
+            if (group) {
+                await deleteGroupChat(group, chatFile);
+            } else {
+                await delChat(`${chatFile}.jsonl`);
+            }
+        } catch (error) {
+            loaderHandle.hide();
+            throw error;
         }
 
         if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
             $('#options').hide();  // Hide option popup menu.
-            hideLoader();
+            await loaderHandle.hide();
         } else {  // Open the history view again after 2 seconds (delay to avoid edge cases for deleting last chat).
-            setTimeout(function () {
+            setTimeout(async function () {
                 $('#option_select_chat').trigger('click');
                 $('#options').hide();  // Hide option popup menu.
-                hideLoader();
+                await loaderHandle.hide();
             }, 2000);
         }
     }
