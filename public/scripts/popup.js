@@ -476,6 +476,17 @@ export class Popup {
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = async (evt) => {
+            // If neither cancel button nor close button is visible or present, don't allow escape to close the popup
+            const hasCancelButton = this.cancelButton?.offsetParent !== null && this.buttonControls?.offsetParent !== null;
+            const hasCloseButton = this.closeButton?.offsetParent !== null;
+            if (!hasCancelButton && !hasCloseButton) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                // Set flag so closeListener also blocks the close event (browser may fire it after multiple Escape presses)
+                this.#isClosingPrevented = true;
+                return;
+            }
+
             evt.preventDefault();
             evt.stopPropagation();
             await this.complete(POPUP_RESULT.CANCELLED);
