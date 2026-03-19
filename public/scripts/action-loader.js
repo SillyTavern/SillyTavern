@@ -14,9 +14,10 @@ import { showLoader, hideLoader, isLoaderDisplayed } from './loader.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
-import { enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { isFalseBoolean } from './utils.js';
 
 /**
  * Enum representing the toast display mode for the action loader.
@@ -37,6 +38,7 @@ export const ActionLoaderToastMode = {
  * @property {string} [message='Generating...'] - The message to display in the toast
  * @property {ActionLoaderToastMode} [toastMode='stoppable'] - Toast display mode
  * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
+ * @property {boolean} [blocking=true] - Whether to show the blocking overlay. Set to false for non-blocking toast-only loaders.
  * @property {(() => void)|null} [onStop=null] - Custom stop handler. If null, calls `stopGeneration()`
  * @property {(() => void)|null} [onHide=null] - Custom hide handler. Called when the loader is hidden (not stopped).
  */
@@ -56,6 +58,19 @@ function generateLoaderId() {
 }
 
 /**
+ * Checks if there are any active blocking loaders.
+ * @returns {boolean} True if at least one blocking loader is active
+ */
+function hasBlockingLoaders() {
+    for (const handle of activeHandles) {
+        if (handle.isBlocking && handle.isActive) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Class representing an action loader handle.
  * Manages its own toast, stop handler, and lifecycle.
  */
@@ -72,6 +87,9 @@ export class ActionLoaderHandle {
     /** @type {(() => void)|null} Custom hide handler */
     #onHide = null;
 
+    /** @type {boolean} Whether this loader blocks the UI with an overlay */
+    #blocking = true;
+
     /** @type {boolean} Whether this handle has been disposed */
     #disposed = false;
 
@@ -81,6 +99,7 @@ export class ActionLoaderHandle {
      * @param {string} [options.message] - Message to display in the toast
      * @param {ActionLoaderToastMode} [options.toastMode] - Toast display mode
      * @param {string} [options.stopTooltip] - Tooltip for the stop button
+     * @param {boolean} [options.blocking] - Whether to show blocking overlay
      * @param {(() => void)|null} [options.onStop] - Custom stop handler
      * @param {(() => void)|null} [options.onHide] - Custom hide handler
      */
@@ -88,15 +107,17 @@ export class ActionLoaderHandle {
         message = t`Generating...`,
         toastMode = ActionLoaderToastMode.STOPPABLE,
         stopTooltip = t`Stop`,
+        blocking = true,
         onStop = null,
         onHide = null,
     } = {}) {
         this.id = generateLoaderId();
+        this.#blocking = blocking;
         this.#onStop = onStop;
         this.#onHide = onHide;
 
-        // Show the blocking loader overlay if this is the first active handle
-        if (activeHandles.size === 0 && !isLoaderDisplayed()) {
+        // Show the blocking loader overlay if this is the first blocking handle
+        if (blocking && !hasBlockingLoaders() && !isLoaderDisplayed()) {
             showLoader();
         }
 
@@ -166,8 +187,8 @@ export class ActionLoaderHandle {
         this.#clearToast();
         activeHandles.delete(this);
 
-        // Hide the overlay if this was the last active handle
-        if (activeHandles.size === 0) {
+        // Hide the overlay if this was the last blocking handle
+        if (this.#blocking && !hasBlockingLoaders()) {
             await hideLoader();
         }
     }
@@ -178,6 +199,14 @@ export class ActionLoaderHandle {
      */
     get isActive() {
         return !this.#disposed;
+    }
+
+    /**
+     * Whether this loader blocks the UI with an overlay.
+     * @returns {boolean}
+     */
+    get isBlocking() {
+        return this.#blocking;
     }
 
     /**
@@ -258,6 +287,14 @@ export class ActionLoaderHandle {
  * const loader2 = showActionLoader({ message: 'Task 2...' });
  * await loader1.hide(); // Overlay stays, loader2 still active
  * await loader2.hide(); // Now overlay hides
+ *
+ * @example
+ * // Non-blocking loader (toast only, no overlay)
+ * const loader = showActionLoader({
+ *     message: 'Captioning image...',
+ *     blocking: false,
+ *     onStop: () => abortCaptioning(),
+ * });
  */
 export function showActionLoader(options = {}) {
     return new ActionLoaderHandle(options);
@@ -360,7 +397,7 @@ export function registerActionLoaderSlashCommands() {
         helpString: `
             <div>
                 Wraps a closure execution with an action loader overlay and optional toast notification.
-                The loader blocks UI interaction until the closure completes.
+                By default, the loader blocks UI interaction until the closure completes.
                 Multiple loaders can be stacked - each gets its own toast, but the overlay stays single.
             </div>
             <div>
@@ -372,6 +409,10 @@ export function registerActionLoaderSlashCommands() {
                 </ul>
             </div>
             <div>
+                Set <code>blocking=false</code> to show only a toast without blocking the UI.
+                Useful for background operations like image captioning or generation.
+            </div>
+            <div>
                 The default stop behavior is calling <code>stopGeneration()</code>.
                 If the wrapped action is doing something different than generating, a custom stop closure can be provided.
             </div>
@@ -379,7 +420,7 @@ export function registerActionLoaderSlashCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li><pre><code class="language-stscript">/loader-wrap message="Generating summary..." {: /gen Summary of the last message | /echo Done :}</code></pre></li>
-                    <li><pre><code class="language-stscript">/loader-wrap toast=static message="Loading data..." {: /fetch "https://..." :}</code></pre></li>
+                    <li><pre><code class="language-stscript">/loader-wrap blocking=false message="Captioning..." {: /caption :}</code></pre></li>
                     <li><pre><code class="language-stscript">/loader-wrap toast=stoppable onStop={: /echo "Stopped by user" :} {: /delay 10000 :}</code></pre></li>
                 </ul>
             </div>
@@ -397,6 +438,13 @@ export function registerActionLoaderSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: ActionLoaderToastMode.STOPPABLE,
                 enumList: loaderEnumProviders.toastModeEnumProvider(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'blocking',
+                description: 'Whether to show blocking overlay. Set to false for non-blocking toast-only loaders.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean()(),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'stopTooltip',
@@ -428,11 +476,13 @@ export function registerActionLoaderSlashCommands() {
                 ? String(args.toast)
                 : ActionLoaderToastMode.STOPPABLE;
             const stopTooltip = String(args.stopTooltip ?? t`Stop`);
+            const blocking = !isFalseBoolean(String(args.blocking));
 
             const loader = showActionLoader({
                 message,
                 toastMode,
                 stopTooltip,
+                blocking,
                 onStop: createClosureHandler(args.onStop),
             });
 
@@ -465,6 +515,10 @@ export function registerActionLoaderSlashCommands() {
                 </ul>
             </div>
             <div>
+                Set <code>blocking=false</code> to show only a toast without blocking the UI.
+                Useful for background operations like image captioning or generation.
+            </div>
+            <div>
                 The default stop behavior is calling <code>stopGeneration()</code>.
                 If the wrapped action is doing something different than generating, a custom stop closure can be provided.
             </div>
@@ -495,6 +549,13 @@ export function registerActionLoaderSlashCommands() {
                 enumList: loaderEnumProviders.toastModeEnumProvider(),
             }),
             SlashCommandNamedArgument.fromProps({
+                name: 'blocking',
+                description: 'Whether to show blocking overlay. Set to false for non-blocking toast-only loaders.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean()(),
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'stopTooltip',
                 description: 'Tooltip text for the stop button (only used when toast=stoppable)',
                 typeList: [ARGUMENT_TYPE.STRING],
@@ -518,11 +579,13 @@ export function registerActionLoaderSlashCommands() {
                 ? String(args.toast)
                 : ActionLoaderToastMode.STOPPABLE;
             const stopTooltip = String(args.stopTooltip ?? t`Stop`);
+            const blocking = !isFalseBoolean(String(args.blocking));
 
             const handle = showActionLoader({
                 message,
                 toastMode,
                 stopTooltip,
+                blocking,
                 onStop: createClosureHandler(args.onStop),
                 onHide: createClosureHandler(args.onHide, { argName: 'onHide' }),
             });
