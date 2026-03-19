@@ -262,6 +262,65 @@ export class ActionLoaderHandle {
 }
 
 /**
+ * Action loader utility API.
+ * Provides a convenient interface for showing and managing loading indicators.
+ *
+ * Read the functions documentation for more details.
+ *
+ * @example
+ * // Basic usage
+ * const handle = loader.show({ message: 'Loading...' });
+ * await someOperation();
+ * handle.hide();
+ *
+ * @example
+ * // Non-blocking background task
+ * const handle = loader.show({ blocking: false, message: 'Processing...' });
+ *
+ * @example
+ * // Hide all active loaders
+ * loader.hide();
+ */
+export const loader = {
+    /**
+     * Shows an action loader with optional toast notification.
+     * Returns a handle to control the loader.
+     * @type {typeof showActionLoader}
+     */
+    show: showActionLoader,
+
+    /**
+     * Hides a specific loader by handle, or all loaders if no handle provided.
+     * @type {typeof hideActionLoader}
+     */
+    hide: hideActionLoader,
+
+    /**
+     * Gets all currently active loader handles.
+     * @type {typeof getActiveLoaderHandles}
+     */
+    active: getActiveLoaderHandles,
+
+    /**
+     * Gets a loader handle by its ID.
+     * @type {typeof getLoaderHandleById}
+     */
+    get: getLoaderHandleById,
+
+    /**
+     * Toast display mode constants.
+     * @type {typeof ActionLoaderToastMode}
+     */
+    ToastMode: ActionLoaderToastMode,
+
+    /**
+     * The ActionLoaderHandle class.
+     * @type {typeof ActionLoaderHandle}
+     */
+    Handle: ActionLoaderHandle,
+};
+
+/**
  * Shows an action loader with an optional stoppable toast notification.
  * Multiple loaders can be stacked - the overlay stays single, but each gets its own toast.
  * When the last loader is hidden, the overlay is removed.
