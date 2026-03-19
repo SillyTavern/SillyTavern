@@ -662,7 +662,7 @@ export function initBookmarks() {
         }
 
         const loaderHandle = loader.show({
-            title: t`Bookmark`,
+            title: t`Chat History`,
             message: t`Loading chat...`,
             toastMode: loader.ToastMode.STATIC,
         });

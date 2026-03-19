@@ -1158,11 +1158,6 @@ async function showExtensionsDetails() {
         abortController.abort();
     }
     if (requiresReload) {
-        loader.show({
-            title: t`Extensions`,
-            message: t`Reloading to apply changes...`,
-            toastMode: loader.ToastMode.STATIC,
-        });
         location.reload();
     }
 }
