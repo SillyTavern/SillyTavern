@@ -35,10 +35,11 @@ export const ActionLoaderToastMode = {
 
 /**
  * @typedef {object} ActionLoaderOptions
- * @property {string} [message='Generating...'] - The message to display in the toast
- * @property {ActionLoaderToastMode} [toastMode='stoppable'] - Toast display mode
- * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
  * @property {boolean} [blocking=true] - Whether to show the blocking overlay. Set to false for non-blocking toast-only loaders.
+ * @property {ActionLoaderToastMode} [toastMode='stoppable'] - Toast display mode
+ * @property {string} [message='Generating...'] - The message to display in the toast
+ * @property {string} [title] - Optional title for the toast notification
+ * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
  * @property {(() => void)|null} [onStop=null] - Custom stop handler. If null, calls `stopGeneration()`
  * @property {(() => void)|null} [onHide=null] - Custom hide handler. Called when the loader is hidden (not stopped).
  */
@@ -96,18 +97,20 @@ export class ActionLoaderHandle {
     /**
      * Creates a new ActionLoaderHandle.
      * @param {object} options - Configuration options
-     * @param {string} [options.message] - Message to display in the toast
+     * @param {boolean} [options.blocking=true] - Whether to show blocking overlay
      * @param {ActionLoaderToastMode} [options.toastMode] - Toast display mode
-     * @param {string} [options.stopTooltip] - Tooltip for the stop button
-     * @param {boolean} [options.blocking] - Whether to show blocking overlay
+     * @param {string} [options.message='Generating...'] - Message to display in the toast
+     * @param {string} [options.title] - Title for the toast notification
+     * @param {string} [options.stopTooltip='Stop'] - Tooltip for the stop button
      * @param {(() => void)|null} [options.onStop] - Custom stop handler
      * @param {(() => void)|null} [options.onHide] - Custom hide handler
      */
     constructor({
-        message = t`Generating...`,
-        toastMode = ActionLoaderToastMode.STOPPABLE,
-        stopTooltip = t`Stop`,
         blocking = true,
+        toastMode = ActionLoaderToastMode.STOPPABLE,
+        message = t`Generating...`,
+        title = '',
+        stopTooltip = t`Stop`,
         onStop = null,
         onHide = null,
     } = {}) {
@@ -115,6 +118,11 @@ export class ActionLoaderHandle {
         this.#blocking = blocking;
         this.#onStop = onStop;
         this.#onHide = onHide;
+
+        // Warn if non-blocking loader has no toast - it won't be visible to the user
+        if (!blocking && toastMode === ActionLoaderToastMode.NONE) {
+            console.warn('[ActionLoader] Non-blocking loader created without a toast. This loader will not be visible to the user.');
+        }
 
         // Show the blocking loader overlay if this is the first blocking handle
         if (blocking && !hasBlockingLoaders() && !isLoaderDisplayed()) {
@@ -126,17 +134,18 @@ export class ActionLoaderHandle {
 
         // Create toast if needed
         if (toastMode !== ActionLoaderToastMode.NONE) {
-            this.#createToast(message, toastMode, stopTooltip);
+            this.#createToast(message, title, toastMode, stopTooltip);
         }
     }
 
     /**
      * Creates the toast element for this loader.
      * @param {string} message - Message to display
+     * @param {string} title - Title for the toast
      * @param {ActionLoaderToastMode} toastMode - Toast mode
      * @param {string} stopTooltip - Tooltip for stop button
      */
-    #createToast(message, toastMode, stopTooltip) {
+    #createToast(message, title, toastMode, stopTooltip) {
         const toastContent = document.createElement('div');
         toastContent.className = 'action-loader-toast';
 
@@ -159,7 +168,7 @@ export class ActionLoaderHandle {
         }
 
         // Show toast with no timeout (sticky)
-        this.#toast = toastr.info($(toastContent), '', {
+        this.#toast = toastr.info($(toastContent), title, {
             timeOut: 0,
             extendedTimeOut: 0,
             tapToDismiss: false,
@@ -172,7 +181,7 @@ export class ActionLoaderHandle {
      */
     #clearToast() {
         if (this.#toast) {
-            toastr.clear(this.#toast, { force: true });
+            toastr.clear(this.#toast, { force: true }); // Need to force as the toast might have focus/hover
             this.#toast = null;
         }
     }
@@ -427,10 +436,11 @@ export function registerActionLoaderSlashCommands() {
         `,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
-                name: 'message',
-                description: 'Message to display in the toast notification',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'Generating...',
+                name: 'blocking',
+                description: 'Whether to show blocking overlay. Set to false for non-blocking toast-only loaders.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean()(),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'toast',
@@ -440,11 +450,15 @@ export function registerActionLoaderSlashCommands() {
                 enumList: loaderEnumProviders.toastModeEnumProvider(),
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'blocking',
-                description: 'Whether to show blocking overlay. Set to false for non-blocking toast-only loaders.',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'true',
-                enumList: commonEnumProviders.boolean()(),
+                name: 'message',
+                description: 'Message to display in the toast notification',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'Generating...',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'title',
+                description: 'Optional title for the toast notification',
+                typeList: [ARGUMENT_TYPE.STRING],
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'stopTooltip',
@@ -471,18 +485,20 @@ export function registerActionLoaderSlashCommands() {
                 throw new Error(t`Invalid argument for unnamed argument provided. This is not a closure.`);
             }
 
-            const message = String(args.message ?? t`Generating...`);
+            const blocking = !isFalseBoolean(String(args.blocking));
             const toastMode = Object.values(ActionLoaderToastMode).includes(String(args.toast))
                 ? String(args.toast)
                 : ActionLoaderToastMode.STOPPABLE;
+            const message = String(args.message ?? t`Generating...`);
+            const title = args.title ? String(args.title) : '';
             const stopTooltip = String(args.stopTooltip ?? t`Stop`);
-            const blocking = !isFalseBoolean(String(args.blocking));
 
             const loader = showActionLoader({
-                message,
-                toastMode,
-                stopTooltip,
                 blocking,
+                toastMode,
+                message,
+                title,
+                stopTooltip,
                 onStop: createClosureHandler(args.onStop),
             });
 
@@ -536,10 +552,11 @@ export function registerActionLoaderSlashCommands() {
         `,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
-                name: 'message',
-                description: 'Message to display in the toast notification',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'Generating...',
+                name: 'blocking',
+                description: 'Whether to show blocking overlay. Set to false for non-blocking toast-only loaders.',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean()(),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'toast',
@@ -549,11 +566,15 @@ export function registerActionLoaderSlashCommands() {
                 enumList: loaderEnumProviders.toastModeEnumProvider(),
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'blocking',
-                description: 'Whether to show blocking overlay. Set to false for non-blocking toast-only loaders.',
-                typeList: [ARGUMENT_TYPE.BOOLEAN],
-                defaultValue: 'true',
-                enumList: commonEnumProviders.boolean()(),
+                name: 'message',
+                description: 'Message to display in the toast notification',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'Generating...',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'title',
+                description: 'Optional title for the toast notification',
+                typeList: [ARGUMENT_TYPE.STRING],
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'stopTooltip',
@@ -574,18 +595,20 @@ export function registerActionLoaderSlashCommands() {
         ],
         unnamedArgumentList: [],
         callback: async (args) => {
-            const message = String(args.message ?? t`Generating...`);
+            const blocking = !isFalseBoolean(String(args.blocking));
             const toastMode = Object.values(ActionLoaderToastMode).includes(String(args.toast))
                 ? String(args.toast)
                 : ActionLoaderToastMode.STOPPABLE;
+            const message = String(args.message ?? t`Generating...`);
+            const title = args.title ? String(args.title) : '';
             const stopTooltip = String(args.stopTooltip ?? t`Stop`);
-            const blocking = !isFalseBoolean(String(args.blocking));
 
             const handle = showActionLoader({
-                message,
-                toastMode,
-                stopTooltip,
                 blocking,
+                toastMode,
+                message,
+                title,
+                stopTooltip,
                 onStop: createClosureHandler(args.onStop),
                 onHide: createClosureHandler(args.onHide, { argName: 'onHide' }),
             });
