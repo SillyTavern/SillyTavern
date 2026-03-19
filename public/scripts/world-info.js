@@ -1,6 +1,6 @@
 import { Fuse } from '../lib.js';
 
-import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1 } from '../script.js';
+import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1, select_selected_character } from '../script.js';
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
@@ -837,7 +837,7 @@ export function updateWorldInfoSettings(settings, activeWorldInfo) {
         world_info_use_group_scoring: (value) => world_info_use_group_scoring = Boolean(value),
         world_info_max_recursion_steps: (value) => world_info_max_recursion_steps = Number(value),
         // Unused
-        world_info: (_value) => {},
+        world_info: (_value) => { },
     };
 
     for (const [key, setter] of Object.entries(fields)) {
@@ -4081,6 +4081,7 @@ async function _save(name, data) {
  * @return {Promise<void>} A promise that resolves when the world info is saved
  */
 export async function saveWorldInfo(name, data, immediately = false) {
+    console.debug(`saveWorldInfo: name=${name}, data=${JSON.stringify(data)}, immediately=${immediately}`);
     if (!name || !data) {
         return;
     }
@@ -4123,6 +4124,45 @@ async function renameWorldInfo(name, data) {
         saveSettingsDebounced();
     }
 
+    // find all characters using the old lorebook name as their primary world
+    const linkedChIDs = [];
+    characters.forEach((character, chid) => {
+        if (character.data?.extensions?.world === oldName) {
+            linkedChIDs.push(String(chid));
+        }
+    });
+    if (linkedChIDs.length > 0) {
+        // Trigger the confirmation popup
+        const updatePastLinksConfirm = await Popup.show.confirm(
+            t`World/Lorebook renamed!`,
+            `<p>${t`Auxillary Lorebook links have been updated. Would you like to update primary lorebook links for ${linkedChIDs.length} character(s) as well?`}</p>
+            <i><b>${t`This process is a bit more resource-intensive.`}</b></i>`,
+        ) == POPUP_RESULT.AFFIRMATIVE;
+
+        if (updatePastLinksConfirm) {
+            // get current character id to switch back to after updates
+            const currentChID = this_chid;
+
+            for (const chid of linkedChIDs) {
+                try {
+                    // Select the character with the API
+                    select_selected_character(chid, { switchMenu: false });
+
+                    // An extra check just to be safe
+                    if ($('#character_world').val() === oldName) {
+                        await charUpdatePrimaryWorld(newName);
+                    }
+
+                    toastr.success(`Successfully updated link for ${characters[this_chid].name}.`);
+                } catch (e) {
+                    toastr.error(`Failed to update link for ${characters[this_chid].name}.`);
+                    console.error(`updatePrimaryWorld for character ${characters[this_chid].name} failed:`, e);
+                }
+            }
+            select_selected_character(currentChID);
+        }
+    }
+
     if (entryPreviouslySelected !== -1) {
         const wiElement = getWIElement(newName);
         wiElement.prop('selected', true);
@@ -4142,6 +4182,7 @@ async function renameWorldInfo(name, data) {
  * @returns {Promise<boolean>} A promise that resolves to true if the world info was successfully deleted, false otherwise
  */
 export async function deleteWorldInfo(worldInfoName) {
+    console.debug(`deleteWorldInfo: worldInfoName=${worldInfoName}`);
     if (!world_names.includes(worldInfoName)) {
         return false;
     }
