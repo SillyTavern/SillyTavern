@@ -36,7 +36,7 @@ export const ActionLoaderToastMode = {
  * @property {string} [message='Generating...'] - The message to display in the toast
  * @property {string} [title] - Optional title for the toast notification
  * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
- * @property {string|null} [overlayContent=null] - Custom HTML content for the overlay (replaces default spinner)
+ * @property {HTMLElement|string|null} [overlayContent=null] - Custom content for the overlay (replaces default spinner)
  * @property {(() => void)|null} [onStop=null] - Custom stop handler. If null, calls `stopGeneration()`
  * @property {(() => void)|null} [onHide=null] - Custom hide handler. Called when the loader is hidden (not stopped).
  */
@@ -99,7 +99,7 @@ export class ActionLoaderHandle {
      * @param {string} [options.message='Generating...'] - Message to display in the toast
      * @param {string} [options.title] - Title for the toast notification
      * @param {string} [options.stopTooltip='Stop'] - Tooltip for the stop button
-     * @param {string|null} [options.overlayContent] - Custom HTML content for the overlay (replaces default spinner)
+     * @param {HTMLElement|string|null} [options.overlayContent] - Custom content for the overlay (replaces default spinner)
      * @param {(() => void)|null} [options.onStop] - Custom stop handler
      * @param {(() => void)|null} [options.onHide] - Custom hide handler
      */
@@ -323,6 +323,12 @@ export const loader = {
      * @type {typeof ActionLoaderHandle}
      */
     Handle: ActionLoaderHandle,
+
+    /**
+     * Creates a fresh default loader overlay element.
+     * @type {typeof createDefaultLoaderOverlay}
+     */
+    createOverlay: createDefaultLoaderOverlay,
 };
 
 /**
@@ -428,6 +434,42 @@ let loaderPopup = null;
 let preloaderYoinked = false;
 
 /**
+ * Creates the default loader overlay element.
+ * Always returns a fresh element instance.
+ *
+ * @returns {HTMLDivElement} A new loader overlay element
+ */
+export function createDefaultLoaderOverlay() {
+    const loaderElement = document.createElement('div');
+    loaderElement.id = 'loader';
+
+    const spinnerElement = document.createElement('div');
+    spinnerElement.id = 'load-spinner';
+    spinnerElement.className = 'fa-solid fa-gear fa-spin fa-3x';
+
+    loaderElement.appendChild(spinnerElement);
+
+    return loaderElement;
+}
+
+/**
+ * Normalizes custom overlay content into a value supported by Popup.
+ * @param {string|HTMLElement|null} customContent - Custom overlay content
+ * @returns {string|HTMLElement} Content for Popup
+ */
+function getOverlayContent(customContent) {
+    if (typeof customContent === 'string') {
+        return customContent;
+    }
+
+    if (customContent instanceof HTMLElement) {
+        return customContent;
+    }
+
+    return createDefaultLoaderOverlay();
+}
+
+/**
  * Checks if the loader overlay is currently displayed.
  * @returns {boolean} True if overlay is shown
  */
@@ -438,16 +480,13 @@ function isOverlayDisplayed() {
 /**
  * Shows the blocking loader overlay.
  * Internal function - use showActionLoader() instead.
- * @param {string|null} [customContent] - Custom HTML content for the overlay
+ * @param {HTMLElement|string|null} [customContent] - Custom content for the overlay
  */
 function showOverlay(customContent = null) {
     // Two loaders don't make sense. Don't await, we can overlay the old loader while it closes
     if (loaderPopup) loaderPopup.complete(POPUP_RESULT.CANCELLED);
 
-    const content = customContent ?? `
-        <div id="loader">
-            <div id="load-spinner" class="fa-solid fa-gear fa-spin fa-3x"></div>
-        </div>`;
+    const content = getOverlayContent(customContent);
 
     loaderPopup = new Popup(content, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'none', wide: true, large: true });
 

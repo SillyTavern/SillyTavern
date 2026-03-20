@@ -698,14 +698,25 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    const initLoaderOverlay = loader.createOverlay();
+    initLoaderOverlay.classList.add('splash-screen');
+
+    const splashLogo = document.createElement('img');
+    splashLogo.src = '/img/logo.png';
+    splashLogo.alt = 'SillyTavern';
+    splashLogo.className = 'splash-logo';
+    splashLogo.ariaLabel = t`SillyTavern Logo`;
+
+    const splashMessage = document.createElement('h2');
+    splashMessage.className = 'splash-message';
+    splashMessage.textContent = t`Initializing...`;
+
+    initLoaderOverlay.prepend(splashLogo);
+    initLoaderOverlay.appendChild(splashMessage);
+
     const initLoaderHandle = loader.show({
         toastMode: loader.ToastMode.NONE,
-        overlayContent: `
-            <div id="loader" class="splash-screen">
-                <img src="/img/logo.png" alt="SillyTavern" class="splash-logo" />
-                <div id="load-spinner" class="fa-solid fa-gear fa-spin fa-3x"></div>
-                <h2 class="splash-message">${t`Initializing...`}</h2>
-            </div>`,
+        overlayContent: initLoaderOverlay,
     });
 
     registerPromptManagerMigration();
