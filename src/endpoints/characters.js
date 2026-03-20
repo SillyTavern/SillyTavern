@@ -389,6 +389,7 @@ const toShallow = (character) => {
             tags: _.get(character, 'data.tags', []),
             extensions: {
                 fav: _.get(character, 'data.extensions.fav', false),
+                world: _.get(character, 'data.extensions.world', ''),
             },
         },
     };
