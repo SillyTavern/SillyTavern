@@ -36,6 +36,7 @@ export const ActionLoaderToastMode = {
  * @property {string} [message='Generating...'] - The message to display in the toast
  * @property {string} [title] - Optional title for the toast notification
  * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
+ * @property {string|null} [overlayContent=null] - Custom HTML content for the overlay (replaces default spinner)
  * @property {(() => void)|null} [onStop=null] - Custom stop handler. If null, calls `stopGeneration()`
  * @property {(() => void)|null} [onHide=null] - Custom hide handler. Called when the loader is hidden (not stopped).
  */
@@ -98,6 +99,7 @@ export class ActionLoaderHandle {
      * @param {string} [options.message='Generating...'] - Message to display in the toast
      * @param {string} [options.title] - Title for the toast notification
      * @param {string} [options.stopTooltip='Stop'] - Tooltip for the stop button
+     * @param {string|null} [options.overlayContent] - Custom HTML content for the overlay (replaces default spinner)
      * @param {(() => void)|null} [options.onStop] - Custom stop handler
      * @param {(() => void)|null} [options.onHide] - Custom hide handler
      */
@@ -107,6 +109,7 @@ export class ActionLoaderHandle {
         message = t`Generating...`,
         title = '',
         stopTooltip = t`Stop`,
+        overlayContent = null,
         onStop = null,
         onHide = null,
     } = {}) {
@@ -116,13 +119,13 @@ export class ActionLoaderHandle {
         this.#onHide = onHide;
 
         // Warn if non-blocking loader has no toast - it won't be visible to the user
-        if (!blocking && toastMode === ActionLoaderToastMode.NONE) {
+        if (!blocking && toastMode === ActionLoaderToastMode.NONE && !overlayContent) {
             console.warn('[ActionLoader] Non-blocking loader created without a toast. This loader will not be visible to the user.');
         }
 
         // Show the blocking loader overlay if this is the first blocking handle
         if (blocking && !hasBlockingLoaders() && !isOverlayDisplayed()) {
-            showOverlay();
+            showOverlay(overlayContent);
         }
 
         // Register this handle
@@ -435,15 +438,18 @@ function isOverlayDisplayed() {
 /**
  * Shows the blocking loader overlay.
  * Internal function - use showActionLoader() instead.
+ * @param {string|null} [customContent] - Custom HTML content for the overlay
  */
-function showOverlay() {
+function showOverlay(customContent = null) {
     // Two loaders don't make sense. Don't await, we can overlay the old loader while it closes
     if (loaderPopup) loaderPopup.complete(POPUP_RESULT.CANCELLED);
 
-    loaderPopup = new Popup(`
+    const content = customContent ?? `
         <div id="loader">
             <div id="load-spinner" class="fa-solid fa-gear fa-spin fa-3x"></div>
-        </div>`, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'none', wide: true, large: true });
+        </div>`;
+
+    loaderPopup = new Popup(content, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'none', wide: true, large: true });
 
     // No close button, loaders are not closable
     loaderPopup.closeButton.style.display = 'none';

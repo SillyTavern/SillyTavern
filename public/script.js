@@ -699,9 +699,13 @@ async function firstLoadInit() {
     }
 
     const initLoaderHandle = loader.show({
-        title: t`SillyTavern`,
-        message: t`Initializing...`,
-        toastMode: loader.ToastMode.STATIC,
+        toastMode: loader.ToastMode.NONE,
+        overlayContent: `
+            <div id="loader" class="splash-screen">
+                <img src="/img/logo.png" alt="SillyTavern" class="splash-logo" />
+                <div id="load-spinner" class="fa-solid fa-gear fa-spin fa-3x"></div>
+                <h2 class="splash-message">${t`Initializing...`}</h2>
+            </div>`,
     });
 
     registerPromptManagerMigration();
