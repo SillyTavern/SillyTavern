@@ -1,6 +1,6 @@
 import { Fuse } from '../lib.js';
 
-import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1, select_selected_character } from '../script.js';
+import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1, select_selected_character, getOneCharacter } from '../script.js';
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
@@ -4128,38 +4128,63 @@ async function renameWorldInfo(name, data) {
     const linkedChIDs = [];
     characters.forEach((character, chid) => {
         if (character.data?.extensions?.world === oldName) {
-            linkedChIDs.push(String(chid));
+            linkedChIDs.push(chid);
         }
     });
+
     if (linkedChIDs.length > 0) {
         // Trigger the confirmation popup
         const updatePastLinksConfirm = await Popup.show.confirm(
             t`World/Lorebook renamed!`,
-            `<p>${t`Auxillary Lorebook links have been updated. Would you like to update primary lorebook links for ${linkedChIDs.length} character(s) as well?`}</p>
-            <i><b>${t`This process is a bit more resource-intensive.`}</b></i>`,
+            `<p>${t`Auxiliary Lorebook links have been updated. Would you like to update primary lorebook links for ${linkedChIDs.length} character(s) as well?`}</p>`,
         ) == POPUP_RESULT.AFFIRMATIVE;
 
         if (updatePastLinksConfirm) {
-            // get current character id to switch back to after updates
-            const currentChID = this_chid;
+            let activeCharacterUpdated = false;
 
             for (const chid of linkedChIDs) {
-                try {
-                    // Select the character with the API
-                    select_selected_character(chid, { switchMenu: false });
+                const character = characters[chid];
 
-                    // An extra check just to be safe
-                    if ($('#character_world').val() === oldName) {
-                        await charUpdatePrimaryWorld(newName);
+                try {
+                    // /merge-attributes API call to update the file on the backend silently
+                    const response = await fetch('/api/characters/merge-attributes', {
+                        method: 'POST',
+                        headers: getRequestHeaders(),
+                        body: JSON.stringify({
+                            avatar: character.avatar,
+                            data: {
+                                extensions: {
+                                    world: newName
+                                }
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Merge API returned ${response.status}`);
                     }
 
-                    toastr.success(`Successfully updated link for ${characters[this_chid].name}.`);
+                    // used to update the data in the browser's memory
+                    await getOneCharacter(character.avatar);
+
+                    // Flag if the currently open character was affected
+                    if (chid === this_chid) {
+                        activeCharacterUpdated = true;
+                    }
+
+                    toastr.success(`Successfully updated link for ${character.name}.`);
                 } catch (e) {
-                    toastr.error(`Failed to update link for ${characters[this_chid].name}.`);
-                    console.error(`updatePrimaryWorld for character ${characters[this_chid].name} failed:`, e);
+                    toastr.error(`Failed to update link for ${character.name}.`);
+                    console.error(`Backend update for character ${character.name} failed:`, e);
                 }
             }
-            select_selected_character(currentChID);
+
+            // update the UI fields
+            // only required if the currently selected character was changed
+            if (activeCharacterUpdated) {
+                select_selected_character(this_chid, { switchMenu: false });
+                setWorldInfoButtonClass(this_chid, true);
+            }
         }
     }
 
