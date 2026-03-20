@@ -9099,10 +9099,24 @@ async function openSwipePicker(messageId) {
                 });
             deleteButton
                 .removeAttr('file_name')
-                .attr('title', canDeleteSwipe ? t`Delete Swipe` : t`Cannot delete the currently displayed swipe on historical messages`)
+                .attr('aria-disabled', String(!canDeleteSwipe))
                 .removeClass('fa-skull')
                 .addClass('swipe_picker_delete fa-trash-can')
+                .toggleClass('hoverglow', canDeleteSwipe)
                 .toggleClass('disabled', !canDeleteSwipe)
+                .each(function () {
+                    if (canDeleteSwipe) {
+                        $(this)
+                            .attr({
+                                title: t`Delete Swipe`,
+                                'data-i18n': '[title]Delete Swipe',
+                            });
+                    } else {
+                        $(this)
+                            .removeAttr('title')
+                            .removeAttr('data-i18n');
+                    }
+                })
                 .off('click')
                 .on('click', async (event) => {
                     event.preventDefault();

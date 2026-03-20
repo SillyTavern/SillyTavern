@@ -4829,8 +4829,17 @@ h5 {
 }
 
 .swipe_picker_delete.disabled {
-    cursor: not-allowed;
+    cursor: default !important;
     opacity: 0.2;
+}
+
+.swipe_picker_delete.disabled:hover {
+    cursor: default !important;
+    color: inherit;
+    filter: none;
+    -webkit-animation: none;
+    animation: none;
+    opacity: 0.2 !important;
 }
 
 #export_character_div {
