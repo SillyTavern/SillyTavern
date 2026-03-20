@@ -165,10 +165,10 @@ async function saveBookmarkMenu() {
 /**
  * Builds the branch chat snapshot, optionally selecting a specific swipe for the target message.
  * @param {number} mesId
- * @param {number|null} swipeId
+ * @param {{swipeId?: number|null}} [options={}]
  * @returns {ChatMessage[]|null}
  */
-function getBranchChatSnapshot(mesId, swipeId = null) {
+function getBranchChatSnapshot(mesId, { swipeId = null } = {}) {
     const snapshot = structuredClone(chat.slice(0, Number(mesId) + 1));
 
     if (swipeId === null) {
@@ -219,7 +219,7 @@ export async function createBranch(mesId, { swipeId = null } = {}) {
         return;
     }
 
-    const branchChatSnapshot = getBranchChatSnapshot(mesId, selectedSwipeId);
+    const branchChatSnapshot = getBranchChatSnapshot(mesId, { swipeId: selectedSwipeId });
     if (!branchChatSnapshot) {
         toastr.warning('Could not prepare the selected swipe for branching.', 'Branch creation failed');
         return;

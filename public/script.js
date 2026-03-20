@@ -8940,12 +8940,12 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
     swipeCounter
         .text(swipeCounterText)
         .prop('hidden', false)
-        .toggleClass('swipe-picker-enabled', canJumpToSwipe)
-        .toggleClass(INTERACTABLE_CONTROL_CLASS, canJumpToSwipe)
-        .attr('title', canJumpToSwipe ? t`Click to jump to a swipe` : null);
+        .toggleClass('swipe-picker-enabled', canOpenSwipePicker)
+        .toggleClass(INTERACTABLE_CONTROL_CLASS, canOpenSwipePicker)
+        .attr('title', canJumpToSwipe ? t`Click to jump to a swipe` : canOpenSwipePicker ? t`Click to view swipe history` : null);
     swipePickerButton.toggle(canOpenSwipePicker);
 
-    if (!canJumpToSwipe) {
+    if (!canOpenSwipePicker) {
         swipeCounter.removeAttr('tabindex');
     }
 }
@@ -8987,7 +8987,7 @@ function canJumpToSwipeForMessage(messageId) {
 }
 
 /**
- * Opens a popup for jumping to a specific swipe on the last message.
+ * Opens a popup for viewing or jumping to a specific swipe on a message.
  * @param {number} messageId
  * @returns {Promise<void>}
  */
@@ -9054,10 +9054,8 @@ async function openSwipePicker(messageId) {
     }
 
     async function renderSwipeList() {
-        const swipeBlocks = [];
-
-        for (let index = 0; index < message.swipes.length; index++) {
-            const swipeText = String(message.swipes[index] ?? '');
+        const swipeBlocks = await Promise.all(message.swipes.map(async (swipe, index) => {
+            const swipeText = String(swipe ?? '');
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             const block = template.find('.select_chat_block');
             block.removeClass('select_chat_block').addClass('swipe_picker_block');
@@ -9068,6 +9066,15 @@ async function openSwipePicker(messageId) {
             const previewText = swipeText.replace(/\s+/g, ' ').trim();
             const tokenCount = swipeInfo?.extra?.token_count ?? await getTokenCountAsync(swipeText, 0);
             const canDeleteSwipe = canDeleteSwipeFromPicker(index);
+            const swipeDetails = [];
+
+            if (previewText) {
+                swipeDetails.push(`${previewText.length} ${t`chars`}`);
+            }
+
+            if (tokenCount) {
+                swipeDetails.push(`${tokenCount}t`);
+            }
 
             block.attr({
                 file_name: `swipe-${index + 1}`,
@@ -9137,8 +9144,8 @@ async function openSwipePicker(messageId) {
                 });
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
-            template.find('.chat_file_size').text(previewText ? `${previewText.length} ${t`chars`}` : '');
-            template.find('.chat_messages_num').text(tokenCount ? `${tokenCount}t` : '');
+            template.find('.chat_file_size').text(swipeDetails.length ? `(${swipeDetails[0]}${swipeDetails.length > 1 ? ',' : ')'}` : '');
+            template.find('.chat_messages_num').text(swipeDetails.length > 1 ? `${swipeDetails.slice(1).join(', ')})` : '');
             template.find('.select_chat_block_mes').text(previewText || t`(empty swipe)`);
 
             block.on('click', () => setSelectedSwipe(index));
@@ -9151,8 +9158,8 @@ async function openSwipePicker(messageId) {
                 await popup.completeAffirmative();
             });
 
-            swipeBlocks.push(template[0]);
-        }
+            return template[0];
+        }));
 
         listContainer.replaceChildren(...swipeBlocks);
         setSelectedSwipe(selectedSwipeId);
@@ -9177,52 +9184,10 @@ async function openSwipePicker(messageId) {
         }],
         wider: true,
         allowVerticalScrolling: true,
-        onOpen: async function (popup) {
-            popup.dlg.classList.add('swipe_picker_popup');
-            await renderSwipeList();
-            popup.closeButton.style.display = 'block';
-            popup.closeButton.classList.add('opacity50p', 'hoverglow', 'fontsize120p');
-            popup.closeButton.style.position = 'static';
-            popup.closeButton.style.top = 'auto';
-            popup.closeButton.style.right = 'auto';
-            popup.closeButton.style.width = 'auto';
-            popup.closeButton.style.height = 'auto';
-            popup.closeButton.style.padding = '0';
-            popup.closeButton.style.filter = 'none';
-            header.appendChild(popup.closeButton);
-            swipeIdInput = popup.dlg.querySelector(`#${swipeIdInputId}`);
-            const swipeIdLabel = popup.dlg.querySelector(`label[for="${swipeIdInputId}"]`);
-
-            if (swipeIdLabel instanceof HTMLLabelElement) {
-                swipeIdLabel.classList.add('flex-container', 'alignItemsCenter', 'justifyCenter', 'gap10px', 'margin0');
-                popup.buttonControls.insertBefore(swipeIdLabel, canJumpToSwipe ? popup.okButton : popup.buttonControls.firstChild);
-                popup.inputControls.style.display = 'none';
-            }
-
+        onOpen: function () {
             if (swipeIdInput instanceof HTMLInputElement) {
-                swipeIdInput.type = 'number';
-                swipeIdInput.min = '1';
-                swipeIdInput.max = String(message.swipes.length);
-                swipeIdInput.step = '1';
-                swipeIdInput.inputMode = 'numeric';
-                swipeIdInput.classList.add('flex1', 'width100px', 'textAlignCenter');
-                syncSwipeIdInput();
                 swipeIdInput.focus();
                 swipeIdInput.select();
-
-                swipeIdInput.addEventListener('input', function () {
-                    const nextSwipeId = Number.parseInt(this.value, 10);
-                    if (!Number.isInteger(nextSwipeId) || nextSwipeId < 1 || nextSwipeId > message.swipes.length) {
-                        return;
-                    }
-
-                    setSelectedSwipe(nextSwipeId - 1);
-                    listContainer.querySelector(`.swipe_picker_block[data-swipe-id="${selectedSwipeId}"]`)?.scrollIntoView({ block: 'nearest' });
-                });
-
-                swipeIdInput.addEventListener('blur', function () {
-                    syncSwipeIdInput();
-                });
             }
         },
         onClosing: function (popup) {
@@ -9247,6 +9212,54 @@ async function openSwipePicker(messageId) {
         },
     });
 
+    popup.dlg.classList.add('swipe_picker_popup');
+    popup.closeButton.style.display = 'block';
+    popup.closeButton.classList.add('opacity50p', 'hoverglow', 'fontsize120p');
+    popup.closeButton.style.position = 'static';
+    popup.closeButton.style.top = 'auto';
+    popup.closeButton.style.right = 'auto';
+    popup.closeButton.style.width = 'auto';
+    popup.closeButton.style.height = 'auto';
+    popup.closeButton.style.padding = '0';
+    popup.closeButton.style.filter = 'none';
+    header.appendChild(popup.closeButton);
+
+    swipeIdInput = popup.dlg.querySelector(`#${swipeIdInputId}`);
+    const swipeIdLabel = popup.dlg.querySelector(`label[for="${swipeIdInputId}"]`);
+
+    if (swipeIdLabel instanceof HTMLLabelElement) {
+        swipeIdLabel.classList.add('flex-container', 'alignItemsCenter', 'justifyCenter', 'gap10px', 'margin0');
+        popup.buttonControls.insertBefore(swipeIdLabel, canJumpToSwipe ? popup.okButton : popup.buttonControls.firstChild);
+        popup.inputControls.style.display = 'none';
+    }
+
+    if (swipeIdInput instanceof HTMLInputElement) {
+        swipeIdInput.type = 'number';
+        swipeIdInput.min = '1';
+        swipeIdInput.max = String(message.swipes.length);
+        swipeIdInput.step = '1';
+        swipeIdInput.inputMode = 'numeric';
+        swipeIdInput.classList.add('flex1', 'width100px', 'textAlignCenter');
+        swipeIdInput.setAttribute('autofocus', '');
+        syncSwipeIdInput();
+
+        swipeIdInput.addEventListener('input', function () {
+            const nextSwipeId = Number.parseInt(this.value, 10);
+            if (!Number.isInteger(nextSwipeId) || nextSwipeId < 1 || nextSwipeId > message.swipes.length) {
+                return;
+            }
+
+            setSelectedSwipe(nextSwipeId - 1);
+            listContainer.querySelector(`.swipe_picker_block[data-swipe-id="${selectedSwipeId}"]`)?.scrollIntoView({ block: 'nearest' });
+        });
+
+        swipeIdInput.addEventListener('blur', function () {
+            syncSwipeIdInput();
+        });
+    }
+
+    await renderSwipeList();
+
     const popupResult = await popup.show();
 
     if (branchActionSwipeId !== null) {
@@ -9255,6 +9268,10 @@ async function openSwipePicker(messageId) {
     }
 
     if (popupResult !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    if (!canJumpToSwipe) {
         return;
     }
 
@@ -11248,19 +11265,20 @@ jQuery(async function () {
     //limit swiping to only last message clicks
     $(document).on('click', '.last_mes .swipe_right', async (e, data) => await swipe(e, SWIPE_DIRECTION.RIGHT, data));
     $(document).on('click', '.last_mes .swipe_left', async (e, data) => await swipe(e, SWIPE_DIRECTION.LEFT, data));
-    $(document).on('click', '.last_mes .swipes-counter.swipe-picker-enabled', async function (e) {
+    $(document).on('click', '.swipes-counter.swipe-picker-enabled', async function (e) {
         e.preventDefault();
         e.stopPropagation();
 
         const mesId = Number($(this).closest('.mes').attr('mesid'));
         await openSwipePicker(mesId);
     });
-    $(document).on('keydown', '.last_mes .swipes-counter.swipe-picker-enabled', async function (e) {
+    $(document).on('keydown', '.swipes-counter.swipe-picker-enabled', async function (e) {
         if (e.key !== ' ') {
             return;
         }
 
         e.preventDefault();
+        e.stopPropagation();
         const mesId = Number($(this).closest('.mes').attr('mesid'));
         await openSwipePicker(mesId);
     });

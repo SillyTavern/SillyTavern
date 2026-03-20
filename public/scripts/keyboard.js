@@ -8,6 +8,7 @@ const interactableSelectors = [
     '.inline-drawer-icon', // Buttons/icons inside the drawer menus
     '.paginationjs-pages li a', // Pagination buttons
     '.group_select, .character_select, .bogus_folder_select', // Cards to select char, group or folder in character list and other places
+    '.swipe_picker_block', // Swipe picker entries in the swipe history popup
     '.avatar-container', // Persona list blocks
     '.tag .tag_remove', // Remove button in removable tags
     '.bg_example', // Background elements in the background menu

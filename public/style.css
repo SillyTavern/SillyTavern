@@ -4783,6 +4783,8 @@ h5 {
 
 .swipe_picker_block {
     cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .select_chat_block .avatar {
@@ -4821,7 +4823,7 @@ h5 {
 }
 
 
-.PastChat_cross:hover {
+.PastChat_cross:not(.disabled):hover {
     color: red;
     filter: drop-shadow(0 0 2px red);
     -webkit-animation: infinite-spinning 1s ease-out 0s infinite normal;
