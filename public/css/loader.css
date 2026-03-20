@@ -53,35 +53,3 @@
     opacity: 1;
     color: color-mix(in srgb, currentColor 40%, #e74c3c 60%);
 }
-
-/* Splash screen styles for branded loading */
-#loader.splash-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2.5rem;
-    width: 100%;
-    height: 100%;
-}
-
-#loader.splash-screen #load-spinner {
-    position: static;
-    top: unset;
-    left: unset;
-}
-
-.splash-logo {
-    /* max original px, or 50% on mobile */
-    width: min(330px, 50%);
-    height: auto;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
-}
-
-.splash-message {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    opacity: 0.9;
-    letter-spacing: 0.02em;
-}

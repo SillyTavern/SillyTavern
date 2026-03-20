@@ -245,6 +245,7 @@ import {
 } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { loader } from './scripts/action-loader.js';
+import { splashScreen, createSplashScreen, destroySplashScreen } from './scripts/splashscreen.js';
 import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
@@ -698,27 +699,14 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    const initLoaderOverlay = loader.createOverlay();
-    initLoaderOverlay.classList.add('splash-screen');
-
-    const splashLogo = document.createElement('img');
-    splashLogo.src = '/img/logo.png';
-    splashLogo.alt = 'SillyTavern';
-    splashLogo.className = 'splash-logo';
-    splashLogo.ariaLabel = t`SillyTavern Logo`;
-
-    const splashMessage = document.createElement('h2');
-    splashMessage.className = 'splash-message';
-    splashMessage.textContent = t`Initializing...`;
-
-    initLoaderOverlay.prepend(splashLogo);
-    initLoaderOverlay.appendChild(splashMessage);
+    const initLoaderOverlay = createSplashScreen('/img/logo.png', t`Initializing...`);
 
     const initLoaderHandle = loader.show({
         toastMode: loader.ToastMode.NONE,
         overlayContent: initLoaderOverlay,
     });
 
+    splashScreen.setStatus(t`Preparing core systems...`);
     registerPromptManagerMigration();
     initDomHandlers();
     initStandaloneMode();
@@ -731,24 +719,35 @@ async function firstLoadInit() {
     await initSecrets();
     await readSecretState();
     await initLocales();
+    splashScreen.setStatus(t`Loading chat utilities...`);
     initChatUtilities();
     initDefaultSlashCommands();
+
+    splashScreen.setStatus(t`Configuring AI backends...`);
     initTextGenModels();
     initOpenAI();
     initTextGenSettings();
     initKoboldSettings();
     initNovelAISettings();
     initSystemPrompts();
+
+    splashScreen.setStatus(t`Loading extensions...`);
     initExtensions();
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
+
+    splashScreen.setStatus(t`Loading presets...`);
     await initPresetManager();
     await initSystemMessages();
+
+    splashScreen.setStatus(t`Loading settings...`);
     await getSettings(initLoaderHandle);
     initKeyboard();
     initDynamicStyles();
     initTags();
     initBookmarks();
+
+    splashScreen.setStatus(t`Loading user data...`);
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -756,6 +755,8 @@ async function firstLoadInit() {
     initBackgrounds();
     initAuthorsNote();
     await initPersonas();
+
+    splashScreen.setStatus(t`Preparing UI components...`);
     await initSlashCommandAutoComplete();
     initMacroAutoComplete();
     initWorldInfo();
@@ -776,8 +777,12 @@ async function firstLoadInit() {
     initItemizedPrompts();
     initAccessibility();
     addDebugFunctions();
+
+    splashScreen.setStatus(t`Finalizing...`);
     doDailyExtensionUpdatesCheck();
     await eventSource.emit(event_types.APP_INITIALIZED);
+
+    destroySplashScreen();
     await initLoaderHandle.hide();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);

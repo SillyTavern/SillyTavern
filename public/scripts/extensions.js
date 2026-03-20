@@ -1,6 +1,7 @@
 import { DOMPurify, Popper } from '../lib.js';
 
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
+import { registerExtension } from './splashscreen.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { delay, equalsIgnoreCaseAndAccents, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
@@ -572,6 +573,7 @@ async function activateExtensions() {
         if (meetsModuleRequirements && meetsExtensionDeps && meetsClientMinimumVersion && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
+                registerExtension(name, displayName, name.startsWith('third-party') ? 'third-party' : 'built-in');
                 const promise = addExtensionLocale(name, manifest).finally(() =>
                     Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
                 );

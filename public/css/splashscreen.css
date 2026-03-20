@@ -1,0 +1,82 @@
+/* Splash screen styles for branded loading */
+#loader.splash-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    width: 100%;
+    height: 100%;
+}
+
+#loader.splash-screen #load-spinner {
+    position: static;
+    top: unset;
+    left: unset;
+}
+
+.splash-logo {
+    /* max original px, or 50% on mobile */
+    width: min(330px, 50%);
+    height: auto;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.splash-message {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    opacity: 0.9;
+    letter-spacing: 0.02em;
+}
+
+/* Splash status lines for detailed progress */
+.splash-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 4.5rem;
+    text-align: center;
+}
+
+.splash-status-section {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 0.75;
+}
+
+.splash-status-extension {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    opacity: 0.6;
+    min-height: 1.25em;
+}
+
+.splash-status-tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background-color: color-mix(in srgb, currentColor 15%, transparent);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.splash-status-extension-name {
+    font-weight: 500;
+}
+
+.splash-status-extension-status {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.5;
+    font-style: italic;
+    min-height: 1em;
+}
