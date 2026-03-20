@@ -17,15 +17,15 @@ import { t } from './i18n.js';
  * Splash screen public API.
  *
  * @example
- * import { splashScreen } from './splashscreen.js';
+ * import { splashscreen } from './splashscreen.js';
  *
  * // Update section status during init
- * splashScreen.setStatus('Loading extensions...');
+ * splashscreen.setStatus('Loading extensions...');
  *
  * // Extension updates its status (auto-detects extension name/type)
- * splashScreen.setExtensionStatus('Loading models...');
+ * splashscreen.setExtensionStatus('Loading models...');
  */
-export const splashScreen = {
+export const splashscreen = {
     /** Whether the splash screen is currently active */
     get isOpen() {
         return splashContainer !== null;
@@ -132,10 +132,21 @@ export function destroySplashScreen() {
  * @param {string} folderName - Extension folder name (e.g., "third-party/SillyTavern-GreetingTools")
  * @param {string} displayName - Extension display name
  * @param {'built-in'|'third-party'} type - Extension type
+ * @param {Object} options - Configuration options
+ * @param {boolean} [options.showNow=false] - If true, immediately display this extension on line 3
  */
-export function registerExtension(folderName, displayName, type) {
+export function registerExtension(folderName, displayName, type, { showNow = false } = {}) {
     const normalizedFolder = folderName.replace(/\\/g, '/');
     extensionRegistry.set(normalizedFolder, { displayName, type });
+
+    if (showNow && splashContainer) {
+        // Clear previous extension's status when switching
+        if (extensionStatusElement) {
+            extensionStatusElement.textContent = '';
+        }
+        displayExtensionInfo(displayName, type);
+        currentDisplayedExtension = normalizedFolder;
+    }
 }
 
 // ============================================================================
@@ -192,6 +203,12 @@ function setExtensionStatus(text) {
     // Look up extension info from registry
     const extensionInfo = extensionRegistry.get(callerFolder);
     if (!extensionInfo) return;
+
+    // If being called and the section is not during loading extensions, it might be called
+    // from the APP_INITIALIZED event or similar. We treat this as a different section then, and explicitly override it.
+    if (sectionElement && sectionElement.textContent !== t`Loading extensions...`) {
+        sectionElement.textContent = t`Initializing extensions...`;
+    }
 
     // If a different extension is calling, update the display
     if (currentDisplayedExtension !== callerFolder) {

@@ -245,7 +245,7 @@ import {
 } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { loader } from './scripts/action-loader.js';
-import { splashScreen, createSplashScreen, destroySplashScreen } from './scripts/splashscreen.js';
+import { splashscreen, createSplashScreen, destroySplashScreen } from './scripts/splashscreen.js';
 import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
@@ -706,7 +706,7 @@ async function firstLoadInit() {
         overlayContent: initLoaderOverlay,
     });
 
-    splashScreen.setStatus(t`Preparing core systems...`);
+    splashscreen.setStatus(t`Preparing core systems...`);
     registerPromptManagerMigration();
     initDomHandlers();
     initStandaloneMode();
@@ -719,11 +719,11 @@ async function firstLoadInit() {
     await initSecrets();
     await readSecretState();
     await initLocales();
-    splashScreen.setStatus(t`Loading chat utilities...`);
+    splashscreen.setStatus(t`Loading chat utilities...`);
     initChatUtilities();
     initDefaultSlashCommands();
 
-    splashScreen.setStatus(t`Configuring AI backends...`);
+    splashscreen.setStatus(t`Configuring AI backends...`);
     initTextGenModels();
     initOpenAI();
     initTextGenSettings();
@@ -731,32 +731,34 @@ async function firstLoadInit() {
     initNovelAISettings();
     initSystemPrompts();
 
-    splashScreen.setStatus(t`Loading extensions...`);
-    initExtensions();
+    splashscreen.setStatus(t`Initializing extensions...`);
+    await initExtensions();
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
 
-    splashScreen.setStatus(t`Loading presets...`);
+    splashscreen.setStatus(t`Loading presets...`);
     await initPresetManager();
     await initSystemMessages();
 
-    splashScreen.setStatus(t`Loading settings...`);
+    splashscreen.setStatus(t`Loading settings...`);
     await getSettings(initLoaderHandle);
-    initKeyboard();
-    initDynamicStyles();
-    initTags();
-    initBookmarks();
 
-    splashScreen.setStatus(t`Loading user data...`);
-    await getUserAvatars(true, user_avatar);
+    splashscreen.setStatus(t`Loading characters...`);
     await getCharacters();
+
+    splashscreen.setStatus(t`Loading user data...`);
+    await getUserAvatars(true, user_avatar);
     await getBackgrounds();
     await initTokenizers();
     initBackgrounds();
     initAuthorsNote();
     await initPersonas();
 
-    splashScreen.setStatus(t`Preparing UI components...`);
+    splashscreen.setStatus(t`Preparing UI components...`);
+    initKeyboard();
+    initDynamicStyles();
+    initTags();
+    initBookmarks();
     await initSlashCommandAutoComplete();
     initMacroAutoComplete();
     initWorldInfo();
@@ -778,8 +780,10 @@ async function firstLoadInit() {
     initAccessibility();
     addDebugFunctions();
 
-    splashScreen.setStatus(t`Finalizing...`);
+    splashscreen.setStatus(t`Checking extension updates...`);
     doDailyExtensionUpdatesCheck();
+
+    splashscreen.setStatus(t`Finalizing...`);
     await eventSource.emit(event_types.APP_INITIALIZED);
 
     destroySplashScreen();
@@ -7891,6 +7895,7 @@ export async function getSettings(initLoaderHandle = null) {
         initMacros();
 
         if (data.enable_extensions) {
+            splashscreen.setStatus(t`Loading extensions...`);
             const enableAutoUpdate = Boolean(data.enable_extensions_auto_update);
             const isVersionChanged = settings.currentVersion !== currentVersion;
             await loadExtensionSettings(settings, isVersionChanged, enableAutoUpdate);

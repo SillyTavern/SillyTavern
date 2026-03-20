@@ -573,7 +573,7 @@ async function activateExtensions() {
         if (meetsModuleRequirements && meetsExtensionDeps && meetsClientMinimumVersion && !isDisabled) {
             try {
                 console.debug('Activating extension', name);
-                registerExtension(name, displayName, name.startsWith('third-party') ? 'third-party' : 'built-in');
+                registerExtension(name, displayName, name.startsWith('third-party') ? 'third-party' : 'built-in', { showNow: true });
                 const promise = addExtensionLocale(name, manifest).finally(() =>
                     Promise.all([addExtensionScript(name, manifest), addExtensionStyle(name, manifest)]),
                 );
