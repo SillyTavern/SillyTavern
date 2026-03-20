@@ -143,6 +143,7 @@ export function registerExtension(folderName, displayName, type, { showNow = fal
         // Clear previous extension's status when switching
         if (extensionStatusElement) {
             extensionStatusElement.textContent = '';
+            extensionStatusElement.classList.remove('has-content');
         }
         displayExtensionInfo(displayName, type);
         currentDisplayedExtension = normalizedFolder;
@@ -219,6 +220,7 @@ function setExtensionStatus(text) {
     // Update the status text
     if (extensionStatusElement) {
         extensionStatusElement.textContent = text;
+        extensionStatusElement.classList.toggle('has-content', !!text);
     }
 }
 
@@ -232,7 +234,10 @@ function displayExtensionInfo(name, type) {
 
     extensionElement.innerHTML = '';
 
-    if (!name) return;
+    if (!name) {
+        extensionElement.classList.remove('has-content');
+        return;
+    }
 
     const tagSpan = document.createElement('span');
     tagSpan.className = 'splash-status-tag';
@@ -244,6 +249,7 @@ function displayExtensionInfo(name, type) {
 
     extensionElement.appendChild(tagSpan);
     extensionElement.appendChild(nameSpan);
+    extensionElement.classList.add('has-content');
 }
 
 /**
@@ -258,8 +264,14 @@ function clear() {
  * Clears extension-related lines (3 and 4).
  */
 function clearExtension() {
-    if (extensionElement) extensionElement.innerHTML = '';
-    if (extensionStatusElement) extensionStatusElement.textContent = '';
+    if (extensionElement) {
+        extensionElement.innerHTML = '';
+        extensionElement.classList.remove('has-content');
+    }
+    if (extensionStatusElement) {
+        extensionStatusElement.textContent = '';
+        extensionStatusElement.classList.remove('has-content');
+    }
     currentDisplayedExtension = null;
 }
 
