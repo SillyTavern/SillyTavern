@@ -5208,6 +5208,15 @@
                                 <input id="play_sound_unfocused" type="checkbox" />
                                 <small data-i18n="Background Sound Only">Background Sound Only</small>
                             </label>
+                            <label for="desktop_notifications">
+                                <small data-i18n="Desktop Notifications">Desktop Notifications</small>
+                                <i class="fa-solid fa-desktop" title="Works best on desktop. Requires a secure context (HTTPS or localhost)." data-i18n="[title]Works best on desktop. Requires a secure context (HTTPS or localhost)."></i>
+                            </label>
+                            <select id="desktop_notifications" class="text_pole">
+                                <option value="off" data-i18n="Disabled">Disabled</option>
+                                <option value="background" data-i18n="Background Only">Background Only</option>
+                                <option value="always" data-i18n="Always">Always</option>
+                            </select>
                             <label class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs." data-i18n="[title]Reduce the formatting requirements on API URLs">
                                 <input id="relaxed_api_urls" type="checkbox" />
                                 <small data-i18n="Relaxed API URLS">Relaxed API URLs</small>

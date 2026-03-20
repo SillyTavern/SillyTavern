@@ -2993,3 +2993,25 @@ export function addLongPressEvent(selector, callback, delay = 500) {
         timer = null;
     }
 }
+
+/**
+ * Fetches an image URL and returns it as a square data URL, padded with
+ * transparent pixels. Falls back to the original URL on failure.
+ * @param {string} url
+ * @returns {Promise<string>}
+ */
+export async function fetchAsSquareDataUrl(url) {
+    try {
+        const blob = await fetch(url).then(r => r.blob());
+        const bitmap = await createImageBitmap(blob);
+        const size = Math.max(bitmap.width, bitmap.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        canvas.getContext('2d').drawImage(bitmap, (size - bitmap.width) / 2, (size - bitmap.height) / 2);
+        return canvas.toDataURL();
+    } catch {
+        return url;
+    }
+}
+

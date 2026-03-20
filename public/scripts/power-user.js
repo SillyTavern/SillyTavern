@@ -31,6 +31,8 @@ import {
     extension_prompt_roles,
     deleteMessage,
     settingsReady,
+    getThumbnailUrl,
+    this_chid,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -50,7 +52,7 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, getSanitizedFilename, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, fetchAsSquareDataUrl, getFileText, getSanitizedFilename, getStringHash, isOdd, isTrueBoolean, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -155,6 +157,7 @@ export const power_user = {
     show_card_avatar_urls: false,
     play_message_sound: false,
     play_sound_unfocused: true,
+    desktop_notifications: 'off',
     auto_save_msg_edits: false,
     confirm_message_delete: true,
 
@@ -404,6 +407,53 @@ export function playMessageSound({ force } = {}) {
         audio.pause();
         audio.currentTime = 0;
         audio.play();
+    }
+}
+
+/**
+ * Returns the thumbnail URL for the notification icon of the current chat.
+ * Looks up the character by message name first (correct for group chats),
+ * then falls back to the currently selected character.
+ * @param {string} [characterName] Name of the character who sent the message.
+ * @returns {string | undefined}
+ */
+export function getChatNotificationIcon(characterName) {
+    const character = (characterName ? characters.find(c => c.name === characterName) : undefined)
+        ?? (this_chid !== undefined ? characters[this_chid] : undefined);
+    return character ? getThumbnailUrl('avatar', character.avatar) : undefined;
+}
+
+/**
+ * Sends a desktop notification if enabled in power user settings.
+ * @param {object} [param] Arguments object.
+ * @param {string} [param.title] Notification title.
+ * @param {string} [param.body] Notification body text.
+ * @param {string} [param.icon] Notification icon URL.
+ * @param {boolean} [param.force] Whether to force send regardless of settings.
+ * @returns {Promise<void>}
+ */
+export async function sendDesktopNotification({ title = 'SillyTavern', body = '', icon = 'img/logo.png', force = false } = {}) {
+    if (power_user.desktop_notifications === 'off' && !force) {
+        return;
+    }
+
+    if (power_user.desktop_notifications === 'background' && browser_has_focus && !force) {
+        return;
+    }
+
+    if (!('Notification' in window)) {
+        return;
+    }
+
+    const resolvedIcon = await fetchAsSquareDataUrl(icon);
+
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: resolvedIcon });
+    } else if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            new Notification(title, { body, icon: resolvedIcon });
+        }
     }
 }
 
@@ -1710,6 +1760,7 @@ export async function loadPowerUserSettings(settings, data) {
     $('#auto_continue_target_length').val(power_user.auto_continue.target_length);
     $('#play_message_sound').prop('checked', power_user.play_message_sound);
     $('#play_sound_unfocused').prop('checked', power_user.play_sound_unfocused);
+    $('#desktop_notifications').val(power_user.desktop_notifications);
     $('#never_resize_avatars').prop('checked', power_user.never_resize_avatars);
     $('#show_card_avatar_urls').prop('checked', power_user.show_card_avatar_urls);
     $('#auto_save_msg_edits').prop('checked', power_user.auto_save_msg_edits);
@@ -3552,6 +3603,19 @@ jQuery(() => {
 
     $('#play_sound_unfocused').on('input', function () {
         power_user.play_sound_unfocused = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#desktop_notifications').on('change', async function () {
+        const value = String($(this).val());
+        if (value !== 'off' && 'Notification' in window && Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                $(this).val('off');
+                return;
+            }
+        }
+        power_user.desktop_notifications = value;
         saveSettingsDebounced();
     });
 

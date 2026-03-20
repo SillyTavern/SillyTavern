@@ -76,8 +76,10 @@ import {
 
 import {
     collapseNewlines,
+    getChatNotificationIcon,
     loadPowerUserSettings,
     playMessageSound,
+    sendDesktopNotification,
     fixMarkdown,
     power_user,
     persona_description_positions,
@@ -3692,6 +3694,10 @@ class StreamingProcessor {
         await saveChatConditional();
 
         playMessageSound();
+        const lastMessage = chat[chat.length - 1];
+        if (lastMessage) {
+            sendDesktopNotification({ title: lastMessage.name, body: lastMessage.mes.length > 100 ? lastMessage.mes.substring(0, 100) + '…' : lastMessage.mes, icon: getChatNotificationIcon(lastMessage.name) });
+        }
     }
 
     onErrorStreaming() {
@@ -5425,6 +5431,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (type !== 'quiet') {
             playMessageSound();
+            const lastMessage = chat[chat.length - 1];
+            if (lastMessage) {
+                sendDesktopNotification({ title: lastMessage.name, body: lastMessage.mes.length > 100 ? lastMessage.mes.substring(0, 100) + '…' : lastMessage.mes, icon: getChatNotificationIcon(lastMessage.name) });
+            }
         }
 
         const isAborted = abortController && abortController.signal.aborted;
@@ -5455,6 +5465,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // if the response JSON was thrown (novel|textgenerationwebui|kobold), show the error message
         if (typeof exception?.error?.message === 'string') {
             toastr.error(exception.error.message, t`Text generation error`, { timeOut: 10000, extendedTimeOut: 20000 });
+            sendDesktopNotification({ title: t`Text generation error`, body: exception.error.message, icon: getChatNotificationIcon() });
         }
 
         unblockGeneration(type);
