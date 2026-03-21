@@ -72,6 +72,7 @@ const settings = {
     google_model: 'text-embedding-005',
     chutes_model: 'chutes-qwen-qwen3-embedding-8b',
     nanogpt_model: 'text-embedding-3-small',
+    meganova_model: 'Qwen/Qwen3-Embedding-8B',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -837,6 +838,9 @@ function getVectorsRequestBody(args = {}) {
         case 'nanogpt':
             body.model = extension_settings.vectors.nanogpt_model;
             break;
+        case 'meganova':
+            body.model = extension_settings.vectors.meganova_model;
+            break;
         default:
             break;
     }
@@ -1138,6 +1142,7 @@ function toggleSettings() {
     $('#electronhub_vectorsModel').toggle(settings.source === 'electronhub');
     $('#chutes_vectorsModel').toggle(settings.source === 'chutes');
     $('#nanogpt_vectorsModel').toggle(settings.source === 'nanogpt');
+    $('#meganova_vectorsModel').toggle(settings.source === 'meganova');
     $('#openrouter_vectorsModel').toggle(settings.source === 'openrouter');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
@@ -1721,6 +1726,11 @@ jQuery(async () => {
     });
     $('#vectors_nanogpt_model').val(settings.nanogpt_model).on('change', () => {
         settings.nanogpt_model = String($('#vectors_nanogpt_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_meganova_model').val(settings.meganova_model).on('change', () => {
+        settings.meganova_model = String($('#vectors_meganova_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

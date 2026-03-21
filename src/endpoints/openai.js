@@ -89,6 +89,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
         }
 
+        if (request.body.api === 'meganova') {
+            key = readSecret(request.user.directories, SECRET_KEYS.MEGANOVA);
+        }
+
         if (request.body.api === 'zai' && !request.body.reverse_proxy) {
             key = readSecret(request.user.directories, SECRET_KEYS.ZAI);
         }
@@ -195,6 +199,10 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'electronhub') {
             apiUrl = 'https://api.electronhub.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'meganova') {
+            apiUrl = 'https://api.meganova.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'zai' && !request.body.reverse_proxy) {

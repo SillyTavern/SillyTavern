@@ -38,6 +38,7 @@ const SOURCES = [
     'openrouter',
     'chutes',
     'nanogpt',
+    'meganova',
 ];
 
 /**
@@ -84,6 +85,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'chutes':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'nanogpt':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'meganova':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
     }
 
@@ -154,6 +157,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'nanogpt':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'meganova':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             default:
@@ -247,6 +253,10 @@ function getSourceSettings(source, request) {
         case 'nanogpt':
             return {
                 model: String(request.body.model || 'text-embedding-3-small'),
+            };
+        case 'meganova':
+            return {
+                model: String(request.body.model || 'Qwen/Qwen3-Embedding-8B'),
             };
         default:
             return {};

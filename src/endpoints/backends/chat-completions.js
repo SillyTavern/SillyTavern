@@ -87,6 +87,7 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_MEGANOVA = 'https://api.meganova.ai/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
 /**
@@ -1828,6 +1829,36 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_SILICONFLOW;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVA) {
+            const meganovaApiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVA);
+            if (!meganovaApiKey) {
+                console.warn('MegaNova AI API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+            try {
+                const modelsResponse = await fetch('https://api.meganova.ai/api/v1/serverless/models', {
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + meganovaApiKey },
+                });
+                if (!modelsResponse.ok) {
+                    throw new Error(`MegaNova AI models request failed with status ${modelsResponse.status}`);
+                }
+                /** @type {any} */
+                const modelsData = await modelsResponse.json();
+                const allModels = modelsData?.data?.models ?? [];
+                const excludedTypes = ['Embedding', 'Image', 'Video', 'Reranking'];
+                const chatModels = allModels.filter(m => !excludedTypes.includes(m.model_type));
+                return statusResponse.send({
+                    data: chatModels.map(m => ({
+                        id: m.model_name,
+                        context_length: m.context_length,
+                        model_type: m.model_type,
+                    })),
+                });
+            } catch (error) {
+                console.error('MegaNova AI status check error:', error);
+                return statusResponse.status(500).send({ error: true, message: 'Failed to fetch MegaNova AI models.' });
+            }
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2308,6 +2339,14 @@ router.post('/generate', async function (request, response) {
             if (request.body.json_schema) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MEGANOVA) {
+            apiUrl = API_MEGANOVA;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.MEGANOVA);
+            headers = {};
+            bodyParams = {};
+            if (request.body.json_schema) {
+                setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+            }
         } else {
             console.warn('This chat completion source is not supported yet.');
             return response.status(400).send({ error: true });
@@ -2648,6 +2687,38 @@ multimodalModels.post('/moonshot', async (req, res) => {
         const data = await response.json();
 
         const multimodalModels = data.data.filter(m => m.supports_image_in).map(m => m.id);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/meganova', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.MEGANOVA);
+
+        if (!key) {
+            return res.json([]);
+        }
+
+        const response = await fetch('https://api.meganova.ai/api/v1/serverless/models', {
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const allModels = data?.data?.models ?? [];
+        const visionTypes = ['multimodal', 'Vision'];
+        const multimodalModels = allModels
+            .filter(m => visionTypes.includes(m.model_type))
+            .map(m => m.model_name);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
