@@ -1291,7 +1291,6 @@ body .panelControlBar {
     position: sticky;
     top: 0;
     z-index: 1;
-    background-color: var(--SmartThemeBlurTintColor);
 }
 
 .swipe_picker_popup .popup-body,
