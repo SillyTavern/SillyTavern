@@ -1,5 +1,6 @@
 import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
+import { t } from './i18n.js';
 import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
@@ -173,6 +174,8 @@ export class Popup {
     /** @type {Promise<any>} */ #promise;
     /** @type {(result: any) => any} */ #resolver;
     /** @type {boolean} */ #isClosingPrevented;
+    /** @type {number} */ #lastEscapePress = 0;
+    /** @type {boolean} */ #isShowingForceCloseConfirm = false;
 
     /**
      * Constructs a new Popup object with the given text content, type, inputValue, and options
@@ -476,6 +479,56 @@ export class Popup {
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = async (evt) => {
+            // If neither cancel button nor close button is visible or present, don't allow escape to close the popup
+            const hasCancelButton = this.cancelButton?.offsetParent !== null && this.buttonControls?.offsetParent !== null;
+            const hasCloseButton = this.closeButton?.offsetParent !== null;
+            if (!hasCancelButton && !hasCloseButton) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                // Set flag so closeListener also blocks the close event (browser may fire it after multiple Escape presses)
+                this.#isClosingPrevented = true;
+
+                // Check for double-escape within 500ms to allow force-closing
+                const now = Date.now();
+                const timeSinceLastEscape = now - this.#lastEscapePress;
+                this.#lastEscapePress = now;
+
+                if (timeSinceLastEscape < 500 && !this.#isShowingForceCloseConfirm) {
+                    this.#isShowingForceCloseConfirm = true;
+
+                    // Defer to next frame to escape the current event context,
+                    // allowing the confirmation popup to stack properly on top
+                    requestAnimationFrame(async () => {
+                        const confirmPopup = new Popup(
+                            PopupUtils.BuildTextWithHeader(
+                                t`Force-close Blocking Popup`, `
+                                <p>${t`This action is blocking and not meant to be closed manually.`}</p>
+                                <p>${t`Force-closing may leave the application in an inconsistent state.`}</p>
+                                <p><strong>${t`Are you sure you want to force-close?`}</strong></p>`),
+                            POPUP_TYPE.CONFIRM,
+                            '',
+                            { okButton: t`Force Close`, cancelButton: t`Cancel` });
+
+                        // If the the main popup closes while the force-close popup is still being displayed, we gracefully cancel that.
+                        const originalOnClose = this.onClose;
+                        this.onClose = async (x) => {
+                            if (originalOnClose) await originalOnClose;
+                            await confirmPopup.completeCancelled();
+                        };
+
+
+                        const result = await confirmPopup.show();
+                        this.#isShowingForceCloseConfirm = false;
+                        if (result === POPUP_RESULT.AFFIRMATIVE) {
+                            // Force-close by bypassing the normal close prevention
+                            this.#isClosingPrevented = false;
+                            await this.complete(POPUP_RESULT.CANCELLED);
+                        }
+                    });
+                }
+                return;
+            }
+
             evt.preventDefault();
             evt.stopPropagation();
             await this.complete(POPUP_RESULT.CANCELLED);
