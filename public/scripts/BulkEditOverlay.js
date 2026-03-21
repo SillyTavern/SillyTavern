@@ -849,7 +849,7 @@ class BulkEditOverlay {
 
                 const loaderHandle = loader.show({
                     title: t`Bulk Delete`,
-                    message: t`Deleting ${characterIds.length} character(s)...`,
+                    message: t`Deleting ${characterIds.length} character(s)…`,
                     toastMode: loader.ToastMode.STATIC,
                 });
                 const avatarList = characterIds.map(id => characters[id]?.avatar).filter(a => a);

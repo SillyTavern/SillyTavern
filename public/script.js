@@ -10491,7 +10491,7 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
 
     const loaderHandle = showLoader ? loader.show({
         title: t`Rename Chat`,
-        message: t`Renaming chat...`,
+        message: t`Renaming chat…`,
         toastMode: loader.ToastMode.STATIC,
     }) : null;
 
@@ -11092,7 +11092,7 @@ jQuery(async function () {
 
         const loaderHandle = loader.show({
             title: t`Delete Chat`,
-            message: t`Deleting chat...`,
+            message: t`Deleting chat…`,
             toastMode: loader.ToastMode.STATIC,
         });
 
