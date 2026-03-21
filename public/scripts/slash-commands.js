@@ -2706,8 +2706,9 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
                     new SlashCommandEnumValue('zai', 'Z.AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'zai')), 'Z'),
                     new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
+                    new SlashCommandEnumValue('siliconflow', 'SiliconFlow', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'siliconflow')), 'S'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
-                    ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
+                    ...Object.values(textgen_types).filter(api => Object.keys(SERVER_INPUTS).includes(api)).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
@@ -2739,7 +2740,7 @@ export function initDefaultSlashCommands() {
                 ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, SiliconFlow, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
