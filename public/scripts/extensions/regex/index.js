@@ -2123,4 +2123,4 @@ export async function init() {
 
     presetManager.setupEventListeners();
     presetManager.registerSlashCommands();
-};
+}

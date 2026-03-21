@@ -1130,4 +1130,4 @@ export async function init() {
             () => summaryMacroHandler(),
             'Returns the latest memory/summary from the current chat.');
     }
-};
+}
