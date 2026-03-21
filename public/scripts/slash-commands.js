@@ -72,7 +72,7 @@ import { getRegexedString, regex_placement } from './extensions/regex/engine.js'
 import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
 import { chat_completion_sources, oai_settings, promptManager, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
-import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
+import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, getChatNotificationIcon, playMessageSound, power_user, sendDesktopNotification } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
@@ -3756,6 +3756,41 @@ export function initDefaultSlashCommands() {
                 return value;
             }
         },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'notify',
+        returns: t`an empty string`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`notification body text`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+        ],
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'title',
+                description: t`notification title`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'avatar',
+                description: t`character avatar to use as the notification icon (avatar key or character name)`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+        ],
+        callback: async (args, body) => {
+            const avatarArg = args.avatar ? String(args.avatar) : null;
+            const character = avatarArg ? findChar({ name: avatarArg }) : null;
+            const icon = character ? getThumbnailUrl('avatar', character.avatar) : getChatNotificationIcon();
+            await sendDesktopNotification({ title: String(args.title || 'SillyTavern'), body: String(body || ''), icon, force: true });
+            return '';
+        },
+        helpString: t`Sends a desktop notification. Use <code>title=</code> to set the title, <code>avatar=</code> to set the icon from a character, and the unnamed argument as the body text.`,
     }));
 
     registerVariableCommands();
