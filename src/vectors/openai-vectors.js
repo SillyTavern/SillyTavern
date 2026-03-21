@@ -54,6 +54,13 @@ const SOURCES = {
         headers: {},
         processBody: () => {},
     },
+    'siliconflow': {
+        secretKey: SECRET_KEYS.SILICONFLOW,
+        url: 'https://api.siliconflow.com/v1',
+        model: 'Qwen/Qwen3-Embedding-0.6B',
+        headers: {},
+        processBody: () => {},
+    },
 };
 
 /**
@@ -62,9 +69,10 @@ const SOURCES = {
  * @param {string} source - The source of the vector
  * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @param {string} model - The model to use for the embedding
+ * @param {string|null} urlOverride - Optional URL override for the API endpoint
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-export async function getOpenAIBatchVector(texts, source, directories, model = '') {
+export async function getOpenAIBatchVector(texts, source, directories, model = '', urlOverride = null) {
     const config = SOURCES[source];
 
     if (!config) {
@@ -80,7 +88,7 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
     }
 
     const modelName = model || config.model;
-    const url = config.url.replace('{{MODEL}}', modelName);
+    const url = urlOverride || config.url.replace('{{MODEL}}', modelName);
     const body = {
         input: texts,
         model: modelName,
@@ -127,9 +135,10 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
  * @param {string} source - The source of the vector
  * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @param {string} model - The model to use for the embedding
+ * @param {string|null} urlOverride - Optional URL override for the API endpoint
  * @returns {Promise<number[]>} - The vector for the text
  */
-export async function getOpenAIVector(text, source, directories, model = '') {
-    const vectors = await getOpenAIBatchVector([text], source, directories, model);
+export async function getOpenAIVector(text, source, directories, model = '', urlOverride = null) {
+    const vectors = await getOpenAIBatchVector([text], source, directories, model, urlOverride);
     return vectors[0];
 }
