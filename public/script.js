@@ -744,6 +744,7 @@ async function firstLoadInit() {
     await getSettings(initLoaderHandle);
 
     splashscreen.setStatus(t`Loading characters...`);
+    initTags();
     await getCharacters();
 
     splashscreen.setStatus(t`Loading user data...`);
@@ -757,7 +758,6 @@ async function firstLoadInit() {
     splashscreen.setStatus(t`Preparing UI components...`);
     initKeyboard();
     initDynamicStyles();
-    initTags();
     initBookmarks();
     await initSlashCommandAutoComplete();
     initMacroAutoComplete();
