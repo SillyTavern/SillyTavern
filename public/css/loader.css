@@ -60,7 +60,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2.5rem;
+    gap: 4rem;
     width: 100%;
     height: 100%;
 }
@@ -73,7 +73,7 @@
 
 .splash-logo {
     /* max original px, or 50% on mobile */
-    width: min(330px, 50%);
+    width: min(150px, 50%);
     height: auto;
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
