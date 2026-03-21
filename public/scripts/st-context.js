@@ -107,6 +107,7 @@ import { ConnectionManagerRequestService } from './extensions/shared.js';
 import { updateReasoningUI, parseReasoningFromString, getReasoningTemplateByName } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
 import { macros } from './macros/macro-system.js';
+import { splashscreen } from './splashscreen.js';
 
 export function getContext() {
     return {
@@ -239,6 +240,7 @@ export function getContext() {
         scrollOnMediaLoad,
         macros,
         loader,
+        splashscreen,
         swipe: {
             left: swipe_left,
             right: swipe_right,
