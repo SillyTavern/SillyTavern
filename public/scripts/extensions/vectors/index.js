@@ -1171,6 +1171,9 @@ function toggleSettings() {
         case 'nanogpt':
             loadNanoGPTModels();
             break;
+        case 'siliconflow':
+            loadSiliconFlowModels();
+            break;
     }
 }
 
@@ -1317,6 +1320,45 @@ function populateOpenRouterModelSelect(models) {
         settings.openrouter_model = models[0].id;
     }
     $('#vectors_openrouter_model').val(settings.openrouter_model);
+}
+
+async function loadSiliconFlowModels() {
+    try {
+        const response = await fetch('/api/openai/siliconflow/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                siliconflow_endpoint: oai_settings.siliconflow_endpoint,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateSiliconFlowModelSelect(models);
+    } catch (err) {
+        console.warn('SiliconFlow models fetch failed', err);
+        populateSiliconFlowModelSelect([]);
+    }
+}
+
+function populateSiliconFlowModelSelect(models) {
+    const select = $('#vectors_siliconflow_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.id;
+        select.append(option);
+    }
+    if (!settings.siliconflow_model && models.length) {
+        settings.siliconflow_model = models[0].id;
+    }
+    $('#vectors_siliconflow_model').val(settings.siliconflow_model);
 }
 
 /**
