@@ -1832,6 +1832,7 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = defaultApiUrl;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
+            queryParams = { type: 'text', sub_type: 'chat' };
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
