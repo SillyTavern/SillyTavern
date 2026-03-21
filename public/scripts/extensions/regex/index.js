@@ -11,6 +11,7 @@ import { download, equalsIgnoreCaseAndAccents, escapeHtml, getFileText, getSorta
 import { allowPresetScripts, allowScopedScripts, disallowPresetScripts, disallowScopedScripts, getCurrentPresetAPI, getCurrentPresetName, getRegexScripts, getScriptsByType, isPresetScriptsAllowed, isScopedScriptsAllowed, regex_placement, RegexProvider, runRegexScript, saveScriptsByType, SCRIPT_TYPE_UNKNOWN, SCRIPT_TYPES, substitute_find_regex } from './engine.js';
 import { t } from '../../i18n.js';
 import { accountStorage } from '../../util/AccountStorage.js';
+import { splashscreen } from '../../splashscreen.js';
 import { getPresetManager } from '../../preset-manager.js';
 
 // Re-exports for legacy extensions
@@ -1707,9 +1708,8 @@ function onPresetRenamed({ apiId, oldName, newName }) {
     }
 }
 
-// Workaround for loading in sequence with other extensions
-// NOTE: Always puts extension at the top of the list, but this is fine since it's static
-jQuery(async () => {
+export async function init() {
+    splashscreen.setExtensionStatus('Loading regex scripts...');
     if (!Array.isArray(extension_settings.regex)) {
         extension_settings.regex = [];
     }
@@ -2123,4 +2123,4 @@ jQuery(async () => {
 
     presetManager.setupEventListeners();
     presetManager.registerSlashCommands();
-});
+};

@@ -18,6 +18,7 @@ import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { Popup, POPUP_RESULT } from '../../popup.js';
 import { t } from '../../i18n.js';
 import { removeReasoningFromString } from '../../reasoning.js';
+import { splashscreen } from '../../splashscreen.js';
 export { MODULE_NAME };
 
 /**
@@ -2140,7 +2141,8 @@ function migrateSettings() {
     }
 }
 
-(async function () {
+export async function init() {
+    splashscreen.setExtensionStatus('Loading expression sprites...');
     function addExpressionImage() {
         const html = `
         <div id="expression-wrapper">
@@ -2224,6 +2226,7 @@ function migrateSettings() {
 
     addExpressionImage();
     addVisualNovelMode();
+    splashscreen.setExtensionStatus('Initializing settings...');
     migrateSettings();
     await addSettings();
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -2283,6 +2286,7 @@ function migrateSettings() {
         },
     };
 
+    splashscreen.setExtensionStatus('Registering slash commands...');
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-set',
         aliases: ['sprite', 'emote'],
@@ -2511,4 +2515,4 @@ function migrateSettings() {
             </div>
         `,
     }));
-})();
+}

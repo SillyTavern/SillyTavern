@@ -62,6 +62,7 @@ import { t, translate } from '../../i18n.js';
 import { oai_settings } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
+import { splashscreen } from '/scripts/splashscreen.js';
 
 export { MODULE_NAME };
 
@@ -5442,11 +5443,13 @@ function registerFunctionTool() {
     });
 }
 
-jQuery(async () => {
+export async function init() {
+    splashscreen.setExtensionStatus('Configuring image generation...');
     await addSDGenButtons();
 
     const getSelectEnumProvider = (id, text) => () => Array.from(document.querySelectorAll(`#${id} > [value]`)).map(x => new SlashCommandEnumValue(x.getAttribute('value'), text ? x.textContent : null));
 
+    splashscreen.setExtensionStatus('Registering slash commands...');
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'imagine',
         returns: 'URL of the generated image, or an empty string if the generation failed',
@@ -5757,7 +5760,7 @@ jQuery(async () => {
         helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
     }));
 
-
+    splashscreen.setExtensionStatus('Loading settings...');
     const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
     $('#sd_container').append(template);
     $('#sd_source').on('change', onSourceChange);
@@ -5949,4 +5952,4 @@ jQuery(async () => {
             t`Character's negative Image Generation prompt prefix`,
         );
     }
-});
+}

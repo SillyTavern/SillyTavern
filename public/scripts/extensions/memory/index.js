@@ -28,6 +28,7 @@ import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { macros, MacroCategory } from '../../macros/macro-system.js';
 import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
+import { splashscreen } from '../../splashscreen.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { removeReasoningFromString } from '../../reasoning.js';
 import { MacrosParser } from '/scripts/macros.js';
@@ -1063,7 +1064,8 @@ function setupListeners() {
     });
 }
 
-jQuery(async function () {
+export async function init() {
+    splashscreen.setExtensionStatus('Loading summarization settings...');
     async function addExtensionControls() {
         const settingsHtml = await renderExtensionTemplateAsync('memory', 'settings', { defaultSettings });
         $('#summarize_container').append(settingsHtml);
@@ -1128,4 +1130,4 @@ jQuery(async function () {
             () => summaryMacroHandler(),
             'Returns the latest memory/summary from the current chat.');
     }
-});
+};

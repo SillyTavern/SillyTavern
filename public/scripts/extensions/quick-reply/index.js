@@ -1,5 +1,6 @@
 import { chat, chat_metadata, eventSource, event_types, getRequestHeaders, this_chid, characters } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { splashscreen } from '../../splashscreen.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
 import { QuickReply } from './src/QuickReply.js';
@@ -169,7 +170,8 @@ const handleCharChange = () => {
     settings.charConfig = charConfig;
 };
 
-const init = async () => {
+export async function init() {
+    splashscreen.setExtensionStatus('Loading quick reply sets...');
     await loadSets();
     await loadSettings();
     log('settings: ', settings);
@@ -229,7 +231,6 @@ const finalizeInit = async () => {
     isReady = true;
     debug('READY');
 };
-await init();
 
 const purgeCharacterQuickReplySets = ({ character }) => {
     // Remove the character's Quick Reply Sets from the settings.

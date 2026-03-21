@@ -19,6 +19,7 @@ import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
+import { splashscreen } from '../../splashscreen.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -707,7 +708,8 @@ const handleMessageReasoningDelete = createEventHandler(removeReasoningDisplayTe
 
 globalThis.translate = translate;
 
-jQuery(async () => {
+export async function init() {
+    splashscreen.setExtensionStatus('Loading translation settings...');
     const html = await renderExtensionTemplateAsync('translate', 'index');
     const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
 
@@ -801,4 +803,4 @@ jQuery(async () => {
         },
         returns: ARGUMENT_TYPE.STRING,
     }));
-});
+}

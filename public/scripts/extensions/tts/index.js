@@ -38,6 +38,7 @@ import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
 import { applyLocale, t } from '/scripts/i18n.js';
+import { splashscreen } from '/scripts/splashscreen.js';
 
 const UPDATE_INTERVAL = 1000;
 const wrapper = new ModuleWorkerWrapper(moduleWorker);
@@ -1506,7 +1507,8 @@ async function initVoiceMapInternal(unrestricted) {
     updateVoiceMap();
 }
 
-jQuery(async function () {
+export async function init() {
+    splashscreen.setExtensionStatus('Loading TTS providers...');
     async function addExtensionControls() {
         const settingsHtml = $(await renderExtensionTemplateAsync('tts', 'settings'));
         $('#tts_container').append(settingsHtml);
@@ -1594,4 +1596,4 @@ jQuery(async function () {
     }));
 
     document.body.appendChild(audioElement);
-});
+}

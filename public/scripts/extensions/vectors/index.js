@@ -38,6 +38,7 @@ import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { WebLlmVectorProvider } from './webllm.js';
 import { removeReasoningFromString } from '../../reasoning.js';
 import { oai_settings } from '../../openai.js';
+import { splashscreen } from '../../splashscreen.js';
 
 /**
  * @typedef {object} HashedMessage
@@ -1655,7 +1656,8 @@ async function activateWorldInfo(chat) {
     await eventSource.emit(event_types.WORLDINFO_FORCE_ACTIVATE, activatedEntries);
 }
 
-jQuery(async () => {
+export async function init() {
+    splashscreen.setExtensionStatus('Configuring vector storage...');
     if (!extension_settings.vectors) {
         extension_settings.vectors = settings;
     }
@@ -2256,4 +2258,4 @@ jQuery(async () => {
         }
         await purgeAllVectorIndexes();
     });
-});
+}
