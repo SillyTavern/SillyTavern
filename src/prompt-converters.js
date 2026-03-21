@@ -1339,7 +1339,7 @@ export function embedOpenRouterMedia(messages, { audio = true, video = true } = 
 
         for (const contentPart of message.content) {
             if (video && contentPart?.type === 'video_url' && contentPart.video_url?.url?.startsWith('data:')) {
-                contentPart.type = 'input_video';
+                contentPart.type = 'video_url';
             }
 
             if (audio && contentPart?.type === 'audio_url' && contentPart.audio_url?.url?.startsWith('data:')) {
