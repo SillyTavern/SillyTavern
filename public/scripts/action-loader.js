@@ -508,14 +508,16 @@ async function hideOverlay() {
 
     return new Promise((resolve) => {
         const loaderElement = $('#loader');
+        const spinner = $('#load-spinner');
+
         if (!loaderElement.length) {
             console.warn('Loader element not found, skipping animation');
             cleanup();
             return;
         }
 
-        // Check if transitions are enabled
-        const transitionDuration = loaderElement[0] ? getComputedStyle(loaderElement[0]).transitionDuration : '0s';
+        // Check if transitions are enabled on spinner (which has the transition property)
+        const transitionDuration = spinner.length && spinner[0] ? getComputedStyle(spinner[0]).transitionDuration : '0s';
         const hasTransitions = parseFloat(transitionDuration) > 0;
 
         if (hasTransitions) {
