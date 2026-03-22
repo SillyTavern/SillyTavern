@@ -507,28 +507,30 @@ async function hideOverlay() {
     }
 
     return new Promise((resolve) => {
+        const loaderElement = $('#loader');
         const spinner = $('#load-spinner');
-        if (!spinner.length) {
-            console.warn('Spinner element not found, skipping animation');
+
+        if (!loaderElement.length) {
+            console.warn('Loader element not found, skipping animation');
             cleanup();
             return;
         }
 
-        // Check if transitions are enabled
-        const transitionDuration = spinner[0] ? getComputedStyle(spinner[0]).transitionDuration : '0s';
+        // Check if transitions are enabled on spinner (which has the transition property)
+        const transitionDuration = spinner.length && spinner[0] ? getComputedStyle(spinner[0]).transitionDuration : '0s';
         const hasTransitions = parseFloat(transitionDuration) > 0;
 
         if (hasTransitions) {
             Promise.race([
                 new Promise((r) => setTimeout(r, 500)), // Fallback timeout
-                new Promise((r) => spinner.one('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', r)),
+                new Promise((r) => loaderElement.one('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', r)),
             ]).finally(cleanup);
         } else {
             cleanup();
         }
 
         function cleanup() {
-            $('#loader').remove();
+            loaderElement.remove();
             // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
             // If it's present, we remove it once and then it's gone.
             yoinkPreloader();
@@ -541,8 +543,8 @@ async function hideOverlay() {
                 });
         }
 
-        // Apply the styles
-        spinner.css({
+        // Apply the blur styles to the entire loader element
+        loaderElement.css({
             'filter': 'blur(15px)',
             'opacity': '0',
         });
