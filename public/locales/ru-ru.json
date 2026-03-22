@@ -2744,5 +2744,15 @@
     "Interleaved Thinking": "Чередующееся рассуждение",
     "Since Last User Message": "С момента последнего сообщения пользователя",
     "Active Tool Chain": "Активная цепочка инструментов",
-    "openrouter_interleaved_thinking_hint": "Отправляет рассуждение из предыдущих ходов ассистента вместе с запросами вызова инструментов, чтобы сохранять контекст чередующегося рассуждения."
+    "openrouter_interleaved_thinking_hint": "Отправляет рассуждение из предыдущих ходов ассистента вместе с запросами вызова инструментов, чтобы сохранять контекст чередующегося рассуждения.",
+    "SillyTavern Logo": "Логотип SillyTavern",
+    "Initializing…": "Инициализация…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Имя не принято, так как оно совпадает с предыдущим (игнорируя регистр и акценты).",
+    "Rename Chat": "Переименовать чат",
+    "Renaming chat…": "Переименование чата…",
+    "Delete Chat": "Удалить чат",
+    "Deleting chat…": "Удаление чата…",
+    "Loading chat…": "Загрузка чата…",
+    "Bulk Delete": "Массовое удаление",
+    "Deleting ${0} character(s)…": "Удаление ${0} персонажа(ей)…"
 }

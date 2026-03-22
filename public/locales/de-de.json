@@ -1444,5 +1444,15 @@
     "Interleaved Thinking": "Verschränktes Denken",
     "Since Last User Message": "Seit letzter Nutzernachricht",
     "Active Tool Chain": "Aktive Tool-Kette",
-    "openrouter_interleaved_thinking_hint": "Sendet Begründungen aus vorherigen Assistentennachrichten mit Tool-Aufrufen, um den Kontext für verschränktes Denken zu erhalten."
+    "openrouter_interleaved_thinking_hint": "Sendet Begründungen aus vorherigen Assistentennachrichten mit Tool-Aufrufen, um den Kontext für verschränktes Denken zu erhalten.",
+    "SillyTavern Logo": "SillyTavern-Logo",
+    "Initializing…": "Initialisierung…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Name nicht akzeptiert, da er derselbe wie zuvor ist (Groß-/Kleinschreibung und Akzente ignoriert).",
+    "Rename Chat": "Chat umbenennen",
+    "Renaming chat…": "Chat wird umbenannt…",
+    "Delete Chat": "Chat löschen",
+    "Deleting chat…": "Chat wird gelöscht…",
+    "Loading chat…": "Chat wird geladen…",
+    "Bulk Delete": "Massenlöschung",
+    "Deleting ${0} character(s)…": "${0} Charakter(e) werden gelöscht…"
 }

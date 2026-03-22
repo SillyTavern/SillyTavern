@@ -710,6 +710,7 @@ async function firstLoadInit() {
     const splashMessage = document.createElement('h2');
     splashMessage.className = 'splash-message';
     splashMessage.textContent = t`Initializing…`;
+    splashMessage.dataset.i18n = 'Initializing…';
 
     initLoaderOverlay.prepend(splashLogo);
     initLoaderOverlay.appendChild(splashMessage);

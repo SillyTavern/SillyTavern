@@ -3635,5 +3635,13 @@
     "sd_prompt_9": "你的人设 (多模态模式)",
     "Show only favorites": "仅显示收藏",
     "Show only groups": "仅显示群聊",
-    "Show Tag List": "显示标签列表"
+    "Show Tag List": "显示标签列表",
+    "SillyTavern Logo": "SillyTavern 徽标",
+    "Initializing…": "正在初始化…",
+    "Renaming chat…": "正在重命名聊天…",
+    "Delete Chat": "删除聊天",
+    "Deleting chat…": "正在删除聊天…",
+    "Loading chat…": "正在加载聊天…",
+    "Bulk Delete": "批量删除",
+    "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…"
 }
