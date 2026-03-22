@@ -1215,7 +1215,7 @@
     "Important to set the character's writing style.": "设置角色的写作风格，很重要！",
     "(Examples of chat dialog. Begin each example with START on a new line.)": "（聊天对话的示例，每个示例都另起一行并以 <START> 开头。）",
     "Save": "保存",
-    "Chat History": "聊天记录",
+    "Chat History": "聊天历史",
     "Import Chat": "导入聊天",
     "Lock": "锁定",
     "Unlock": "解锁",
@@ -1566,7 +1566,7 @@
     "Character Replaced: ${0}": "角色已替换：${0}",
     "The file is likely invalid or corrupted.": "文件可能无效或已损坏。",
     "Could not import character": "无法导入角色",
-    "Name not accepted, as it is the same as before (ignoring case and accents).": "名称不可用，因为它与之前相同（忽略大小写和变音符号）。",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "名称不被接受，因为它与之前相同（忽略大小写和重音）。",
     "Rename Chat": "重命名聊天",
     "Please stop the message generation first.": "请先停止消息生成。",
     "You are currently in a temporary chat.": "您当前处于临时聊天中。",
@@ -3635,5 +3635,13 @@
     "sd_prompt_9": "你的人设 (多模态模式)",
     "Show only favorites": "仅显示收藏",
     "Show only groups": "仅显示群聊",
-    "Show Tag List": "显示标签列表"
+    "Show Tag List": "显示标签列表",
+    "SillyTavern Logo": "SillyTavern 徽标",
+    "Initializing…": "正在初始化…",
+    "Renaming chat…": "正在重命名聊天…",
+    "Delete Chat": "删除聊天",
+    "Deleting chat…": "正在删除聊天…",
+    "Loading chat…": "正在加载聊天…",
+    "Bulk Delete": "批量删除",
+    "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…"
 }

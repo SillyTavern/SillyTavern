@@ -911,7 +911,7 @@
     "Important to set the character's writing style.": "Quan trọng là phải thiết lập phong cách viết của nhân vật.",
     "(Examples of chat dialog. Begin each example with START on a new line.)": "(Các ví dụ về đoạn hội thoại trò chuyện. Bắt đầu mỗi ví dụ với START trên một dòng mới.)",
     "Save": "Lưu",
-    "Chat History": "Lịch sử Trò chuyện",
+    "Chat History": "Lịch sử trò chuyện",
     "Import Chat": "Nhập trò chuyện",
     "Copy to global backgrounds": "Sao chép vào nền toàn cầu",
     "Rename background": "Đổi tên nền background",
@@ -1442,5 +1442,15 @@
     "Interleaved Thinking": "Lập luận xen kẽ",
     "Since Last User Message": "Kể từ tin nhắn người dùng gần nhất",
     "Active Tool Chain": "Chuỗi công cụ đang hoạt động",
-    "openrouter_interleaved_thinking_hint": "Gửi lập luận từ các lượt trợ lý trước đó cùng với yêu cầu gọi công cụ để duy trì ngữ cảnh lập luận xen kẽ."
+    "openrouter_interleaved_thinking_hint": "Gửi lập luận từ các lượt trợ lý trước đó cùng với yêu cầu gọi công cụ để duy trì ngữ cảnh lập luận xen kẽ.",
+    "SillyTavern Logo": "Logo SillyTavern",
+    "Initializing…": "Đang khởi tạo…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Tên không được chấp nhận vì giống như trước đó (bỏ qua chữ hoa/thường và dấu).",
+    "Rename Chat": "Đổi tên cuộc trò chuyện",
+    "Renaming chat…": "Đang đổi tên cuộc trò chuyện…",
+    "Delete Chat": "Xóa cuộc trò chuyện",
+    "Deleting chat…": "Đang xóa cuộc trò chuyện…",
+    "Loading chat…": "Đang tải cuộc trò chuyện…",
+    "Bulk Delete": "Xóa hàng loạt",
+    "Deleting ${0} character(s)…": "Đang xóa ${0} nhân vật…"
 }
