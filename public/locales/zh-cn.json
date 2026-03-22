@@ -1215,7 +1215,7 @@
     "Important to set the character's writing style.": "设置角色的写作风格，很重要！",
     "(Examples of chat dialog. Begin each example with START on a new line.)": "（聊天对话的示例，每个示例都另起一行并以 <START> 开头。）",
     "Save": "保存",
-    "Chat History": "聊天历史",
+    "Chat History": "聊天记录",
     "Import Chat": "导入聊天",
     "Lock": "锁定",
     "Unlock": "解锁",
