@@ -4612,7 +4612,7 @@ async function onExportPresetClick() {
     }
 
     const exportConnectionTemplate = $(await renderTemplateAsync('exportPreset'));
-    await new Popup(exportConnectionTemplate, POPUP_TYPE.TEXT).show();
+    await new Popup(exportConnectionTemplate, POPUP_TYPE.TEXT, '', { allowEscapeClose: true }).show();
 
     const removeConnectionData = exportConnectionTemplate.find('input[name="export_connection_data"]:checked').val() === 'false';
     if (removeConnectionData) {

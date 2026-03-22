@@ -5771,7 +5771,7 @@ export async function assignLorebookToChat(event) {
         saveMetadata();
     });
 
-    await callGenericPopup(template, POPUP_TYPE.TEXT);
+    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { allowEscapeClose: true });
 }
 
 /**
