@@ -800,7 +800,9 @@ export class ToolManager {
             // Handle tool errors — still create an invocation so the LLM sees the failure
             if (toolResult instanceof Error) {
                 result.errors.push(toolResult);
-                if (!isStealth) {
+                if (isStealth) {
+                    result.stealthCalls.push(name);
+                } else {
                     result.invocations.push({
                         id,
                         displayName,
@@ -808,8 +810,8 @@ export class ToolManager {
                         parameters: stringify(parameters),
                         result: `Error: ${toolResult.message}`,
                         error: true,
-                        signature: null,
-                        reasoning: null,
+                        signature: toolCall.signature || null,
+                        reasoning: reasoningText || null,
                     });
                 }
                 continue;
