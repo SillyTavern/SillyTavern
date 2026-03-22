@@ -3750,7 +3750,6 @@ class StreamingProcessor {
         // when streaming, we cache the result of getStoppingStrings instead of calling it once per token.
         const isImpersonate = this.type == 'impersonate';
         const isContinue = this.type == 'continue';
-        // Only custom stop strings apply to Chat Completion
         this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue, main_api);
 
         try {
