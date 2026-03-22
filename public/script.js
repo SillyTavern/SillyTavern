@@ -3744,7 +3744,8 @@ class StreamingProcessor {
         // when streaming, we cache the result of getStoppingStrings instead of calling it once per token.
         const isImpersonate = this.type == 'impersonate';
         const isContinue = this.type == 'continue';
-        this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
+        //Stopping strings should only apply to Text Completions.
+        if (main_api !== 'openai') this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
 
         try {
             const sw = new Stopwatch(1000 / power_user.streaming_fps);
