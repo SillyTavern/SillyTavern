@@ -29,6 +29,7 @@ import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsPro
 import { renderTemplateAsync } from './templates.js';
 import { t, translate } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -2514,6 +2515,82 @@ function registerTagsSlashCommands() {
             </ul>
         </div>
     `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tag-import',
+        /** @param {{name: string, mode: 'all'|'existing'|'none'|'ask'}} namedArgs @returns {Promise<string>} */
+        callback: async ({ name, mode }) => {
+            if (selected_group !== null) {
+                toastr.warning(t`Tag import does not support group chats.`);
+                return 'false';
+            }
+            const key = searchCharByName(name);
+            if (!key) return 'false';
+
+            // Map mode argument to tag_import_setting
+            const modeMap = {
+                'all': tag_import_setting.ALL,
+                'existing': tag_import_setting.ONLY_EXISTING,
+                'none': tag_import_setting.NONE,
+                'ask': tag_import_setting.ASK,
+            };
+            if (mode && !modeMap[mode]) {
+                toastr.warning(`Invalid tag import mode: ${mode}. Valid modes are: ${Object.keys(modeMap).join(', ')}`);
+                return 'false';
+            }
+
+            const importSetting = mode ? modeMap[mode] : null;
+            const character = findChar({ name: key });
+
+            const result = await importTags(character, { importSetting });
+            return result ? 'true' : 'false';
+        },
+        returns: t`true if any tags were imported, false otherwise`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'name',
+                description: 'Character name - or unique character identifier (avatar key)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: '{{char}}',
+                enumProvider: commonEnumProviders.characters(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'mode',
+                description: t`Import mode: "all" imports all tags, "existing" imports only existing ST tags, "none" skips import, "ask" shows the import popup (default: uses your saved setting)`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('all', t`Import all tags (create new ones if needed)`, enumTypes.enum),
+                    new SlashCommandEnumValue('existing', t`Import only existing ST tags`, enumTypes.enum),
+                    new SlashCommandEnumValue('none', t`Skip import`, enumTypes.enum),
+                    new SlashCommandEnumValue('ask', t`Show the import popup`, enumTypes.enum),
+                ],
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Imports character card tags as SillyTavern tags for folder/filter use.`}
+        </div>
+        <div>
+            ${t`Character cards can have embedded tags (set via <code>tags</code> argument in <code>/char-create</code> or <code>/char-update</code>). This command imports those embedded tags as ST tags that can be used for filtering and organizing characters.`}
+        </div>
+        <div>
+            ${t`If no mode is specified, uses your saved tag import setting from preferences.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/tag-import</code></pre>
+                    ${t`Imports tags for the current character using your default setting.`}
+                </li>
+                <li>
+                    <pre><code>/tag-import name="Alice" mode=all</code></pre>
+                    ${t`Imports all of Alice's card tags, creating new ST tags if needed.`}
+                </li>
+            </ul>
+        </div>
+        `,
     }));
 }
 

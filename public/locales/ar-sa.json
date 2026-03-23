@@ -1444,5 +1444,15 @@
     "Interleaved Thinking": "التفكير المتداخل",
     "Since Last User Message": "منذ آخر رسالة من المستخدم",
     "Active Tool Chain": "سلسلة الأدوات النشطة",
-    "openrouter_interleaved_thinking_hint": "يرسل الاستدلال من رسائل المساعد السابقة مع طلبات استدعاء الأدوات للحفاظ على سياق التفكير المتداخل."
+    "openrouter_interleaved_thinking_hint": "يرسل الاستدلال من رسائل المساعد السابقة مع طلبات استدعاء الأدوات للحفاظ على سياق التفكير المتداخل.",
+    "SillyTavern Logo": "شعار SillyTavern",
+    "Initializing…": "جارٍ التهيئة…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "الاسم غير مقبول، لأنه نفسه كما كان من قبل (تجاهل حالة الأحرف والنبرات).",
+    "Rename Chat": "إعادة تسمية المحادثة",
+    "Renaming chat…": "جارٍ إعادة تسمية المحادثة…",
+    "Delete Chat": "حذف المحادثة",
+    "Deleting chat…": "جارٍ حذف المحادثة…",
+    "Loading chat…": "جارٍ تحميل المحادثة…",
+    "Bulk Delete": "حذف جماعي",
+    "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…"
 }

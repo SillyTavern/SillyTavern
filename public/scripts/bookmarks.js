@@ -25,7 +25,7 @@ import {
     saveGroupBookmarkChat,
     selected_group,
 } from './group-chats.js';
-import { hideLoader, showLoader } from './loader.js';
+import { loader } from './action-loader.js';
 import { getLastMessageId } from './macros.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -661,15 +661,20 @@ export function initBookmarks() {
             return;
         }
 
+        const loaderHandle = loader.show({
+            title: t`Chat History`,
+            message: t`Loading chat…`,
+            toastMode: loader.ToastMode.STATIC,
+        });
+
         try {
-            showLoader();
             if (selected_group) {
                 await openGroupChat(selected_group, fileName);
             } else {
                 await openCharacterChat(fileName);
             }
         } finally {
-            await hideLoader();
+            await loaderHandle.hide();
         }
 
         $('#shadow_select_chat_popup').css('display', 'none');

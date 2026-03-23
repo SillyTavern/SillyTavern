@@ -81,6 +81,7 @@ import {
 import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
 import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
+import { loader } from './action-loader.js';
 import { MacrosParser } from './macros.js';
 import { getChatCompletionModel, oai_settings } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
@@ -188,7 +189,9 @@ export function getContext() {
         /** @deprecated Use callGenericPopup or Popup instead. */
         callPopup,
         callGenericPopup,
+        /** @deprecated Use loader.show instead. */
         showLoader,
+        /** @deprecated Use loader.hide instead. */
         hideLoader,
         mainApi: main_api,
         extensionSettings: extension_settings,
@@ -235,6 +238,7 @@ export function getContext() {
         scrollChatToBottom,
         scrollOnMediaLoad,
         macros,
+        loader,
         swipe: {
             left: swipe_left,
             right: swipe_right,

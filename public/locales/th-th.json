@@ -1461,5 +1461,15 @@
     "Interleaved Thinking": "การคิดแบบสลับขั้น",
     "Since Last User Message": "ตั้งแต่ข้อความล่าสุดของผู้ใช้",
     "Active Tool Chain": "สายโซ่เครื่องมือที่ใช้งานอยู่",
-    "openrouter_interleaved_thinking_hint": "ส่งเหตุผลจากเทิร์นก่อนหน้าของผู้ช่วยไปพร้อมกับคำขอเรียกใช้เครื่องมือ เพื่อคงบริบทการคิดแบบสลับขั้นไว้"
+    "openrouter_interleaved_thinking_hint": "ส่งเหตุผลจากเทิร์นก่อนหน้าของผู้ช่วยไปพร้อมกับคำขอเรียกใช้เครื่องมือ เพื่อคงบริบทการคิดแบบสลับขั้นไว้",
+    "SillyTavern Logo": "โลโก้ SillyTavern",
+    "Initializing…": "กำลังเริ่มต้น…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "ชื่อไม่ได้รับการยอมรับ เนื่องจากเหมือนกับก่อนหน้านี้ (ไม่สนใจตัวพิมพ์ใหญ่เล็กและเครื่องหมายเสียง)",
+    "Rename Chat": "เปลี่ยนชื่อแชท",
+    "Renaming chat…": "กำลังเปลี่ยนชื่อแชท…",
+    "Delete Chat": "ลบแชท",
+    "Deleting chat…": "กำลังลบแชท…",
+    "Loading chat…": "กำลังโหลดแชท…",
+    "Bulk Delete": "ลบจำนวนมาก",
+    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…"
 }
