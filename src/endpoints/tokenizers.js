@@ -1078,8 +1078,6 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
     const text = String(request.body.text) || '';
     const baseUrl = String(request.body.url);
     const model = String(request.body.model) || '';
-    const vllmModel = String(request.body.vllm_model) || '';
-    const aphroditeModel = String(request.body.aphrodite_model) || '';
 
     try {
         const args = {
@@ -1107,11 +1105,11 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
                 break;
             case TEXTGEN_TYPES.VLLM:
                 url += '/tokenize';
-                args.body = JSON.stringify({ 'model': vllmModel, 'prompt': text });
+                args.body = JSON.stringify({ 'model': model, 'prompt': text });
                 break;
             case TEXTGEN_TYPES.APHRODITE:
                 url += '/v1/tokenize';
-                args.body = JSON.stringify({ 'model': aphroditeModel, 'prompt': text });
+                args.body = JSON.stringify({ 'model': model, 'prompt': text });
                 break;
             default:
                 url += '/v1/internal/encode';
