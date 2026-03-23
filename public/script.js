@@ -3663,7 +3663,7 @@ class StreamingProcessor {
     }
 
     /**
-     * Finalizes an intermediary message during a tool call chain.
+     * Finalizes an intermediary message after generation is complete, or a tool call is performed.
      * Performs essential message processing (code blocks, reasoning, swipes, attachments, events)
      * without the heavier finish operations (UI unlock, auto-swipe, sound, save chat).
      * @param {number} messageId - The message ID to finalize.
@@ -3702,6 +3702,7 @@ class StreamingProcessor {
             appendMediaToMessage(message, $(this.messageDom));
         }
 
+        // Store reasoning signature for models that support multi-turn context
         if (this.reasoningSignature) {
             message.extra = message.extra || {};
             message.extra.reasoning_signature = this.reasoningSignature;
