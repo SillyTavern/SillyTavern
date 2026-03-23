@@ -54,7 +54,7 @@ export const POPUP_RESULT = {
  * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
- * @property {boolean} [allowEscapeClose=true] - If true, allows closing the popup with the Escape key, returning either `POPUP_RESULT.CANCELLED` or `POPUP_RESULT.AFFIRMATIVE` depending on the presence of cancel or close buttons. If false, requires double-escape to force close with a confirmation to prevent accidental closure.
+ * @property {boolean} [allowEscapeClose=true] - If true, allows closing the popup with the Escape key, returning either `POPUP_RESULT.CANCELLED`. If false, requires double-escape to force close with a confirmation to prevent accidental closure.
  * @property {(popup: Popup) => Promise<boolean?>|boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => Promise<void?>|void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
  * @property {(popup: Popup) => Promise<void?>|void?} [onOpen=null] - Handler called after the popup opens
@@ -508,13 +508,7 @@ export class Popup {
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = async (evt) => {
-            // If no cancel or close button, pretend an OK button was pressed
-            const hasCancelButton = this.cancelButton?.offsetParent !== null && this.buttonControls?.offsetParent !== null;
-            const hasCloseButton = this.closeButton?.offsetParent !== null;
-            const popupResult = (hasCancelButton || hasCloseButton) ? POPUP_RESULT.CANCELLED : POPUP_RESULT.AFFIRMATIVE;
-            const shouldAllowEscape = this.#allowEscapeClose;
-
-            if (!shouldAllowEscape) {
+            if (!this.#allowEscapeClose) {
                 evt.preventDefault();
                 evt.stopPropagation();
                 // Set flag so closeListener also blocks the close event (browser may fire it after multiple Escape presses)
@@ -563,7 +557,7 @@ export class Popup {
 
             evt.preventDefault();
             evt.stopPropagation();
-            await this.complete(popupResult);
+            await this.complete(POPUP_RESULT.CANCELLED);
         };
         this.dlg.addEventListener('cancel', cancelListener.bind(this));
 
