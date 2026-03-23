@@ -3722,8 +3722,6 @@ class StreamingProcessor {
         }
 
         updateSwipeCounter(messageId, { message, messageElement });
-
-        return { messageElement, message };
     }
 
     async onFinishStreaming(messageId, text) {
