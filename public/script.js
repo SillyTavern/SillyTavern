@@ -3668,8 +3668,10 @@ class StreamingProcessor {
      * without the heavier finish operations (UI unlock, auto-swipe, sound, save chat).
      * @param {number} messageId - The message ID to finalize.
      * @param {string} text - The message text.
+     * @param {Object} options - Additional options for finalization.
+     * @param {boolean} [options.unlockUI=true] - Whether to unlock the generation UI.
      */
-    async finalizeIntermediaryMessage(messageId, text) {
+    async finalizeIntermediaryMessage(messageId, text, { unlockUI = true } = { unlockUI: true }) {
         await this.onProgressStreaming(messageId, text, true);
         const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
         const message = chat[messageId];
@@ -3708,24 +3710,24 @@ class StreamingProcessor {
             message.extra.reasoning_signature = this.reasoningSignature;
         }
 
+        if (unlockUI) {
+            this.markUIGenStopped();
+        }
+
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId, this.type);
+        } else {
+            await eventSource.emit(event_types.IMPERSONATE_READY, text);
         }
+
+        updateSwipeCounter(messageId, { message, messageElement });
 
         return { messageElement, message };
     }
 
     async onFinishStreaming(messageId, text) {
-        const { messageElement, message } = await this.finalizeIntermediaryMessage(messageId, text);
-
-        this.markUIGenStopped();
-
-        if (this.type === 'impersonate') {
-            await eventSource.emit(event_types.IMPERSONATE_READY, text);
-        }
-
-        updateSwipeCounter(messageId, { message, messageElement });
+        await this.finalizeIntermediaryMessage(messageId, text);
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
@@ -5322,7 +5324,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 const shouldDeleteMessage = type !== 'swipe' && ['', '...'].includes(lastMessage?.mes) && !lastMessage?.extra?.reasoning && ['', '...'].includes(streamingProcessor?.result);
                 hasToolCalls && shouldDeleteMessage && await deleteLastMessage();
                 if (hasToolCalls && !shouldDeleteMessage) {
-                    await streamingProcessor.finalizeIntermediaryMessage(streamingProcessor.messageId, getMessage);
+                    await streamingProcessor.finalizeIntermediaryMessage(streamingProcessor.messageId, getMessage, { unlockUI: false });
                 }
                 const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls, {
                     reasoningText: streamingProcessor.reasoningHandler.reasoning,
