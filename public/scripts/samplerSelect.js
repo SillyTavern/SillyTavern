@@ -34,7 +34,7 @@ async function showSamplerSelectPopup() {
     listContainer.append(APISamplers.toString());
     html.append(listContainer);
 
-    const showPromise = new Popup(html, POPUP_TYPE.TEXT, null, { wide: true, large: true, allowVerticalScrolling: true, allowEscapeClose: true }).show();
+    const showPromise = new Popup(html, POPUP_TYPE.TEXT, null, { wide: true, large: true, allowVerticalScrolling: true }).show();
 
     setSamplerListListeners();
 

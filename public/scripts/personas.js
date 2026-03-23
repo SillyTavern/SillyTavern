@@ -1212,7 +1212,7 @@ async function onPersonaLoreButtonClick(event) {
         saveSettingsDebounced();
     });
 
-    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { allowEscapeClose: true });
+    await callGenericPopup(template, POPUP_TYPE.TEXT);
 }
 
 function onPersonaDescriptionPositionInput() {

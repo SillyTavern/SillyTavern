@@ -126,7 +126,7 @@ function createHtml(statsType, stats) {
     html += createStatBlock(t`Character Words`, stats.non_user_word_count);
     html += createStatBlock(t`Swipes`, stats.total_swipe_count);
 
-    return callGenericPopup(html, POPUP_TYPE.TEXT, '', { allowEscapeClose: true });
+    return callGenericPopup(html, POPUP_TYPE.TEXT);
 }
 
 /**

@@ -175,7 +175,7 @@ export class Popup {
     /** @type {Promise<any>} */ #promise;
     /** @type {(result: any) => any} */ #resolver;
 
-    /** @type {boolean|null} */ #allowEscapeClose;
+    /** @type {boolean} */ #allowEscapeClose;
     /** @type {boolean} */ #isClosingPrevented;
     /** @type {number} */ #lastEscapePress = 0;
     /** @type {boolean} */ #isShowingForceCloseConfirm = false;
@@ -205,7 +205,7 @@ export class Popup {
         defaultResult = POPUP_RESULT.AFFIRMATIVE,
         customButtons = null,
         customInputs = null,
-        allowEscapeClose = null,
+        allowEscapeClose = true,
         onClosing = null,
         onClose = null,
         onOpen = null,
@@ -508,12 +508,11 @@ export class Popup {
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = async (evt) => {
-            // Check if escape should be allowed to close the popup
+            // If no cancel or close button, pretend an OK button was pressed
             const hasCancelButton = this.cancelButton?.offsetParent !== null && this.buttonControls?.offsetParent !== null;
             const hasCloseButton = this.closeButton?.offsetParent !== null;
-
-            // Use allowEscapeClose to override default behavior if specified
-            const shouldAllowEscape = this.#allowEscapeClose ?? (hasCancelButton || hasCloseButton);
+            const popupResult = (hasCancelButton || hasCloseButton) ? POPUP_RESULT.CANCELLED : POPUP_RESULT.AFFIRMATIVE;
+            const shouldAllowEscape = this.#allowEscapeClose;
 
             if (!shouldAllowEscape) {
                 evt.preventDefault();
@@ -564,7 +563,7 @@ export class Popup {
 
             evt.preventDefault();
             evt.stopPropagation();
-            await this.complete(POPUP_RESULT.CANCELLED);
+            await this.complete(popupResult);
         };
         this.dlg.addEventListener('cancel', cancelListener.bind(this));
 
