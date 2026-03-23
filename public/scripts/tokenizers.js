@@ -954,6 +954,7 @@ function getTextgenAPITokenizationParams(str) {
         text: str,
         api_type: textgen_settings.type,
         url: getTextGenServer(),
+        model: getTextGenModel(),
         vllm_model: textgen_settings.vllm_model,
         aphrodite_model: textgen_settings.aphrodite_model,
     };
