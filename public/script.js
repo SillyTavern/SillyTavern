@@ -3665,13 +3665,13 @@ class StreamingProcessor {
     /**
      * Finalizes an intermediary message after generation is complete, or a tool call is performed.
      * Performs essential message processing (code blocks, reasoning, swipes, attachments, events)
-     * without the heavier finish operations (UI unlock, auto-swipe, sound, save chat).
+     * without the heavier finish operations (UI unlock - optional, auto-swipe, sound, save chat).
      * @param {number} messageId - The message ID to finalize.
      * @param {string} text - The message text.
      * @param {Object} options - Additional options for finalization.
-     * @param {boolean} [options.unlockUI=true] - Whether to unlock the generation UI.
+     * @param {boolean} options.unlockUI - Whether to unlock the generation UI.
      */
-    async finalizeIntermediaryMessage(messageId, text, { unlockUI = true } = { unlockUI: true }) {
+    async finalizeIntermediaryMessage(messageId, text, { unlockUI = true }) {
         await this.onProgressStreaming(messageId, text, true);
         const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
         const message = chat[messageId];
@@ -3727,7 +3727,7 @@ class StreamingProcessor {
     }
 
     async onFinishStreaming(messageId, text) {
-        await this.finalizeIntermediaryMessage(messageId, text);
+        await this.finalizeIntermediaryMessage(messageId, text, { unlockUI: true });
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
