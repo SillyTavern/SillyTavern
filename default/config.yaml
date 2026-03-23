@@ -324,7 +324,7 @@ claude:
   # Enables adaptive thinking for supported models (Opus 4.6+).
   # Disable to enforce legacy thinking mode (with thinking budget).
   # https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
-  enableAdaptiveThinking: true
+  enableAdaptiveThinking: false
 # -- GOOGLE GEMINI API CONFIGURATION --
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")

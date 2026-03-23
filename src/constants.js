@@ -552,3 +552,8 @@ export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
 };
+
+export const SILICONFLOW_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
+};

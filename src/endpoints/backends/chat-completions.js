@@ -17,6 +17,7 @@ import {
     OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
+    SILICONFLOW_ENDPOINT,
     ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
@@ -87,6 +88,7 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_PLAYER2 = 'https://api.player2.game/v1';
 const API_PLAYER2_LOCAL = 'http://127.0.0.1:4315';
@@ -1828,43 +1830,12 @@ router.post('/status', async function (request, statusResponse) {
                 return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
-            apiUrl = API_SILICONFLOW;
+            const defaultApiUrl = request.body.siliconflow_endpoint === SILICONFLOW_ENDPOINT.CN
+                ? API_SILICONFLOW_CN : API_SILICONFLOW;
+            apiUrl = defaultApiUrl;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
-        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PLAYER2) {
-            const p2Key = readSecret(request.user.directories, SECRET_KEYS.PLAYER2);
-
-            if (!p2Key) {
-                console.warn('Player2 API key is missing.');
-                return statusResponse.status(400).send({ error: true });
-            }
-
-            try {
-                const healthResponse = await fetch(`${API_PLAYER2}/health`, {
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${p2Key}` },
-                    signal: AbortSignal.timeout(5000),
-                });
-
-                if (healthResponse.ok) {
-                    // Player2 does not expose a /models endpoint; return a stable placeholder.
-                    return statusResponse.send({ data: [{ id: 'player2' }] });
-                }
-
-                if (healthResponse.status === 402) {
-                    console.warn('Player2: insufficient joules (credits).');
-                    return statusResponse.status(402).send({
-                        error: true,
-                        message: 'Insufficient joules. Recharge at https://player2.game/profile/ai-power',
-                    });
-                }
-
-                console.warn('Player2 health check returned:', healthResponse.status);
-                return statusResponse.send({ error: true, data: { data: [] } });
-            } catch (error) {
-                console.error('Player2 health check failed:', error);
-                return statusResponse.send({ error: true, data: { data: [] } });
-            }
+            queryParams = { type: 'text', sub_type: 'chat' };
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2338,7 +2309,9 @@ router.post('/generate', async function (request, response) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
-            apiUrl = API_SILICONFLOW;
+            const defaultApiUrl = request.body.siliconflow_endpoint === SILICONFLOW_ENDPOINT.CN
+                ? API_SILICONFLOW_CN : API_SILICONFLOW;
+            apiUrl = defaultApiUrl;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
             bodyParams = {};

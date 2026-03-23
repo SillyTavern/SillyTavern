@@ -3973,7 +3973,7 @@ grammarly-extension {
 
 
 /* Override toastr default styles */
-body>#toast-container {
+body #toast-container {
     margin-top: var(--topBarBlockSize);
 }
 
@@ -3984,6 +3984,10 @@ body #toast-container>div {
     padding: 10px 10px 10px 50px;
     font-size: calc(var(--mainFontSize) * 0.95);
     width: 300px;
+}
+
+body #toast-container .toast.toast-non-interactable {
+    cursor: default;
 }
 
 body #toast-container .toast-success {

@@ -11,6 +11,7 @@
 /docker/extensions
 /docker/data
 /docker/plugins
+/docker/dist
 /public/scripts/extensions/third-party
 
 # --- Plugins (keep only package files) ---

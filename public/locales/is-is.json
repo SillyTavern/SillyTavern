@@ -1442,5 +1442,15 @@
     "Interleaved Thinking": "Fléttuð hugsun",
     "Since Last User Message": "Frá síðustu notandaskilaboðum",
     "Active Tool Chain": "Virk verkfærakeðja",
-    "openrouter_interleaved_thinking_hint": "Sendir röksemdir úr fyrri aðstoðarskilaboðum með verkfæraköllum til að viðhalda samhengi fléttaðrar hugsunar."
+    "openrouter_interleaved_thinking_hint": "Sendir röksemdir úr fyrri aðstoðarskilaboðum með verkfæraköllum til að viðhalda samhengi fléttaðrar hugsunar.",
+    "SillyTavern Logo": "SillyTavern merki",
+    "Initializing…": "Ræsir…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Nafn ekki samþykkt, því það er það sama og áður (hunsar há-/lágstafi og brottmerki).",
+    "Rename Chat": "Endurnefna spjall",
+    "Renaming chat…": "Endurnefni spjall…",
+    "Delete Chat": "Eyða spjalli",
+    "Deleting chat…": "Eyði spjalli…",
+    "Loading chat…": "Hleð spjalli…",
+    "Bulk Delete": "Fjöldaeyðing",
+    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…"
 }
