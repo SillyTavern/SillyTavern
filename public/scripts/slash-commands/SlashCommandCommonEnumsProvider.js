@@ -42,6 +42,8 @@ export const enumIcons = {
     image: '🖼️',
     video: '🎥',
     key: '🔑',
+    spinner: '♻️',
+    stop: '🛑',
 
     true: '✔️',
     false: '❌',

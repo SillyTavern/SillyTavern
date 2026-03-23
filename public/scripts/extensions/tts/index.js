@@ -165,7 +165,7 @@ async function onNarrateOneMessage() {
     }
 
     resetTtsPlayback();
-    processAndQueueTtsMessage(message);
+    processAndQueueTtsMessage(message, Number(id));
     moduleWorker();
 }
 
@@ -245,17 +245,27 @@ function isTtsProcessing() {
 }
 
 /**
- * Splits a message into lines and adds each non-empty line to the TTS job queue.
+ * @typedef {ChatMessage & { id?: number }} TtsMessage
+ */
+
+/**
+ * Clones a message, attaches the given message ID, then splits by paragraphs
+ * (if enabled) and adds each part to the TTS job queue.
  * @param {ChatMessage} message - The message object to be processed.
+ * @param {number|null} [messageId=null] - The chat message index to associate with TTS events.
  * @returns {void}
  */
-function processAndQueueTtsMessage(message) {
+function processAndQueueTtsMessage(message, messageId = null) {
+    /** @type {TtsMessage} */
+    const clone = structuredClone(message);
+    clone.id = messageId ?? null;
+
     if (!extension_settings.tts.narrate_by_paragraphs) {
-        ttsJobQueue.push(message);
+        ttsJobQueue.push(clone);
         return;
     }
 
-    const lines = message.mes.split('\n');
+    const lines = clone.mes.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -265,7 +275,7 @@ function processAndQueueTtsMessage(message) {
         }
 
         ttsJobQueue.push(
-            Object.assign({}, message, {
+            Object.assign({}, clone, {
                 mes: line,
             }),
         );
@@ -301,7 +311,7 @@ audioElement.autoplay = true;
  * @type AudioJob[] Audio job queue
  * @typedef {{audioBlob: Blob | string, char: string}} AudioJob Audio job object
  */
-let audioJobQueue = [];
+const audioJobQueue = [];
 /**
  * @type AudioJob Current audio job
  */
@@ -431,18 +441,24 @@ function completeCurrentAudioJob() {
 /**
  * Accepts an HTTP response containing audio/mpeg data, and puts the data as a Blob() on the queue for playback
  * @param {Response} response
+ * @param {string} char
+ * @returns {Promise<{audioBlob: Blob|string, mimeType: string}>}
  */
 async function addAudioJob(response, char) {
+    let audioBlob, mimeType;
     if (typeof response === 'string') {
-        audioJobQueue.push({ audioBlob: response, char: char });
+        audioBlob = response;
+        mimeType = '';
     } else {
-        const audioData = await response.blob();
-        if (!audioData.type.startsWith('audio/')) {
-            throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
+        audioBlob = await response.blob();
+        if (!audioBlob.type.startsWith('audio/')) {
+            throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioBlob.type}`;
         }
-        audioJobQueue.push({ audioBlob: audioData, char: char });
+        mimeType = audioBlob.type;
     }
+    audioJobQueue.push({ audioBlob, char });
     console.debug('Pushed audio job to queue.');
+    return { audioBlob, mimeType };
 }
 
 async function processAudioJobQueue() {
@@ -465,7 +481,7 @@ async function processAudioJobQueue() {
 //  TTS Control   //
 //################//
 
-let ttsJobQueue = [];
+const ttsJobQueue = [];
 let currentTtsJob; // Null if nothing is currently being processed
 
 function completeTtsJob() {
@@ -474,12 +490,18 @@ function completeTtsJob() {
 }
 
 async function tts(text, voiceId, char, voiceMapKey = null) {
+    const messageId = currentTtsJob?.id ?? null;
+
+    await eventSource.emit(event_types.TTS_JOB_STARTED, { messageId, characterName: char, text, voiceId });
+
     async function processResponse(response) {
         // RVC injection
         if (typeof globalThis.rvcVoiceConversion === 'function' && extension_settings.rvc.enabled)
             response = await globalThis.rvcVoiceConversion(response, char, text);
 
-        await addAudioJob(response, char);
+        const audioResult = await addAudioJob(response, char);
+        const eventData = { messageId, characterName: char, text, audio: audioResult.audioBlob, mimeType: audioResult.mimeType };
+        await eventSource.emit(event_types.TTS_AUDIO_READY, eventData);
     }
 
     // voiceMapKey can also include segment qualifiers, e.g. '{char} ("Quotes")'
@@ -494,6 +516,7 @@ async function tts(text, voiceId, char, voiceMapKey = null) {
         await processResponse(response);
     }
 
+    await eventSource.emit(event_types.TTS_JOB_COMPLETE, { messageId, characterName: char });
     completeTtsJob();
 }
 
@@ -700,6 +723,7 @@ async function processTtsQueue() {
                 is_user: currentTtsJob.is_user,
                 mes: currentTtsJob.mes,
                 extra: currentTtsJob.extra,
+                id: currentTtsJob.id,
             };
             ttsJobQueue.unshift(segmentJob);
         }
@@ -797,13 +821,16 @@ async function playFullConversation() {
     }
 
     const context = getContext();
-    const chat = context.chat.filter(x => !x.is_system && x.mes !== '...' && x.mes !== '');
 
-    if (chat.length === 0) {
+    context.chat.forEach((msg, i) => {
+        if (!msg.is_system && msg.mes !== '...' && msg.mes !== '') {
+            processAndQueueTtsMessage(msg, i);
+        }
+    });
+
+    if (ttsJobQueue.length === 0) {
         return toastr.info('No messages to narrate.');
     }
-
-    ttsJobQueue = chat;
 }
 
 globalThis.playFullConversation = playFullConversation;
@@ -1076,6 +1103,7 @@ async function onMessageEvent(messageId, lastCharIndex) {
     }
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
+    /** @type {TtsMessage} */
     const message = structuredClone(context.chat[messageId]);
     const hashNew = getStringHash(message?.mes ?? '');
 
@@ -1133,9 +1161,10 @@ async function onMessageEvent(messageId, lastCharIndex) {
     console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
 
     if (extension_settings.tts.periodic_auto_generation && isStreamingEnabled()) {
+        message.id = messageId;
         ttsJobQueue.push(message);
     } else {
-        processAndQueueTtsMessage(message);
+        processAndQueueTtsMessage(message, messageId);
     }
 }
 

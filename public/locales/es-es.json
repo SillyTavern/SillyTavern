@@ -1551,5 +1551,15 @@
     "Interleaved Thinking": "Razonamiento intercalado",
     "Since Last User Message": "Desde el último mensaje del usuario",
     "Active Tool Chain": "Cadena de herramientas activa",
-    "openrouter_interleaved_thinking_hint": "Envía razonamiento de turnos anteriores del asistente junto con solicitudes de herramientas para mantener el contexto del razonamiento intercalado."
+    "openrouter_interleaved_thinking_hint": "Envía razonamiento de turnos anteriores del asistente junto con solicitudes de herramientas para mantener el contexto del razonamiento intercalado.",
+    "SillyTavern Logo": "Logo de SillyTavern",
+    "Initializing…": "Inicializando…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Nombre no aceptado, ya que es el mismo que antes (ignorando mayúsculas y acentos).",
+    "Rename Chat": "Renombrar chat",
+    "Renaming chat…": "Renombrando chat…",
+    "Delete Chat": "Eliminar chat",
+    "Deleting chat…": "Eliminando chat…",
+    "Loading chat…": "Cargando chat…",
+    "Bulk Delete": "Eliminación masiva",
+    "Deleting ${0} character(s)…": "Eliminando ${0} personaje(s)…"
 }

@@ -584,11 +584,24 @@ async function downloadAICCCharacter(id) {
  * @returns {string | null} AICC path
  */
 function parseAICC(url) {
-    const pattern = /^https?:\/\/aicharactercards\.com\/character-cards\/([^/]+)\/([^/]+)\/?$|([^/]+)\/([^/]+)$/;
-    const match = url.match(pattern);
-    if (match) {
-        // Match group 1 & 2 for full URL, 3 & 4 for relative path
-        return match[1] && match[2] ? `${match[1]}/${match[2]}` : `${match[3]}/${match[4]}`;
+    try {
+        if (isValidUrl(url)) {
+            const urlObj = new URL(url);
+            // Split the path and remove empty strings caused by trailing slashes
+            const parts = urlObj.pathname.split('/').filter(Boolean);
+            if (parts.length >= 2) {
+                // Always grab the last two segments (author/character)
+                return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
+            }
+        } else {
+            // Fallback for relative paths or raw "author/character" strings
+            const parts = url.split('/').filter(Boolean);
+            if (parts.length >= 2) {
+                return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
+            }
+        }
+    } catch (e) {
+        console.error('Error parsing AICC URL:', e);
     }
     return null;
 }

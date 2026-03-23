@@ -638,5 +638,9 @@
     {
         "filename": "presets/reasoning/OpenAI Harmony.json",
         "type": "reasoning"
+    },
+    {
+        "filename": "presets/reasoning/Think XML.json",
+        "type": "reasoning"
     }
 ]

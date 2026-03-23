@@ -17,6 +17,7 @@ import {
     OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
+    SILICONFLOW_ENDPOINT,
     ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
@@ -87,6 +88,7 @@ const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
+const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_PLAYER2 = 'https://api.player2.game/v1';
 const API_PLAYER2_LOCAL = 'http://127.0.0.1:4315';
@@ -1828,7 +1830,9 @@ router.post('/status', async function (request, statusResponse) {
                 return statusResponse.status(500).send({ error: true, message: 'Failed to connect to the Azure endpoint.' });
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
-            apiUrl = API_SILICONFLOW;
+            const defaultApiUrl = request.body.siliconflow_endpoint === SILICONFLOW_ENDPOINT.CN
+                ? API_SILICONFLOW_CN : API_SILICONFLOW;
+            apiUrl = defaultApiUrl;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PLAYER2) {
@@ -2338,7 +2342,9 @@ router.post('/generate', async function (request, response) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.SILICONFLOW) {
-            apiUrl = API_SILICONFLOW;
+            const defaultApiUrl = request.body.siliconflow_endpoint === SILICONFLOW_ENDPOINT.CN
+                ? API_SILICONFLOW_CN : API_SILICONFLOW;
+            apiUrl = defaultApiUrl;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
             headers = {};
             bodyParams = {};

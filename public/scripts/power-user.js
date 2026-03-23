@@ -286,9 +286,9 @@ export const power_user = {
         add_to_prompts: false,
         auto_expand: false,
         show_hidden: false,
-        prefix: '<think>\n',
-        suffix: '\n</think>',
-        separator: '\n\n',
+        prefix: '<think>',
+        suffix: '</think>',
+        separator: '\n',
         max_additions: 1,
     },
 

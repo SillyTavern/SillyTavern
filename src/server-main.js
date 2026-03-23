@@ -328,7 +328,7 @@ async function preSetupTasks() {
     initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass });
 
     // Wait for frontend libs to compile
-    await webpackMiddleware.runWebpackCompiler();
+    await webpackMiddleware.runWebpackCompiler({ pruneCache: true });
 }
 
 /**
