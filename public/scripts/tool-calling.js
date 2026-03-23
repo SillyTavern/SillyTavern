@@ -829,6 +829,7 @@ export class ToolManager {
                 name,
                 parameters: stringify(parameters),
                 result: toolResult,
+                error: false,
                 signature: toolCall.signature || null,
                 reasoning: reasoningText || null,
             };
