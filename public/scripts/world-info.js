@@ -4077,7 +4077,6 @@ async function _save(name, data) {
  * @return {Promise<void>} A promise that resolves when the world info is saved
  */
 export async function saveWorldInfo(name, data, immediately = false) {
-    console.debug(`saveWorldInfo: name=${name}, data=${JSON.stringify(data)}, immediately=${immediately}`);
     if (!name || !data) {
         return;
     }
@@ -4203,7 +4202,6 @@ async function renameWorldInfo(name, data) {
  * @returns {Promise<boolean>} A promise that resolves to true if the world info was successfully deleted, false otherwise
  */
 export async function deleteWorldInfo(worldInfoName) {
-    console.debug(`deleteWorldInfo: worldInfoName=${worldInfoName}`);
     if (!world_names.includes(worldInfoName)) {
         return false;
     }
