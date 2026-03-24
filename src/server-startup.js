@@ -320,7 +320,7 @@ export class ServerStartup {
      * Starts the server using http or https depending on config
      * @param {boolean} useIPv6 If use IPv6
      * @param {boolean} useIPv4 If use IPv4
-     * @returns {Promise<[boolean, boolean]>} A promise that resolves with an array of booleans indicating if the server failed to start on IPv6 and IPv4, respectively
+     * @returns {Promise<[boolean, boolean, unknown, unknown]>} A promise that resolves with an array of booleans indicating if the server failed to start on IPv6 and IPv4, respectively, and the corresponding errors
      */
     async #startHTTPorHTTPS(useIPv6, useIPv4) {
         let v6Failed = false;
