@@ -4163,7 +4163,7 @@ async function renameWorldInfo(name, data) {
                     await getOneCharacter(character.avatar);
 
                     // Flag if the currently open character was affected
-                    if (chid === this_chid) {
+                    if (String(chid) === String(this_chid)) {
                         activeCharacterUpdated = true;
                     }
 
