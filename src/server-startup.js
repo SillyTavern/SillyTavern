@@ -236,7 +236,7 @@ export class ServerStartup {
      */
     #getAddressInUseMessage(url, ipVersion) {
         const listenAddress = this.#getListenAddress(url, ipVersion);
-        return `Error: Port ${listenAddress} is already in use. Another SillyTavern instance may already be running. Stop the other process or change "port" in config.yaml.`;
+        return `Address ${listenAddress} is already in use. Another SillyTavern instance may already be running. Stop the other process or change "port" in config.yaml.`;
     }
 
     /**
