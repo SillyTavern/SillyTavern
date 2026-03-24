@@ -7,8 +7,9 @@ import { getStringHash } from './utils.js';
 import { kai_flags, kai_settings } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
+export { BYTES_PER_TOKEN as CHARACTERS_PER_TOKEN_RATIO };
 
-export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
+export const BYTES_PER_TOKEN = 3.35;
 export const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
 export const TOKENIZER_SUPPORTED_KEY = 'tokenizationSupported';
 
@@ -152,6 +153,7 @@ const TOKENIZER_URLS = {
     },
 };
 
+const textEncoder = new TextEncoder();
 const objectStore = localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
 
 let tokenCache = {};
@@ -162,7 +164,8 @@ let tokenCache = {};
  * @returns {number} Token count.
  */
 export function guesstimate(str) {
-    return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO);
+    const byteLength = textEncoder.encode(str).length;
+    return Math.ceil(byteLength / BYTES_PER_TOKEN);
 }
 
 async function loadTokenCache() {
@@ -603,47 +606,34 @@ export function getTokenizerModel() {
 
         if (model?.architecture?.tokenizer === 'Llama2') {
             return llamaTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Llama3') {
+        } else if (model?.architecture?.tokenizer === 'Llama3') {
             return llama3Tokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Mistral') {
+        } else if (model?.architecture?.tokenizer === 'Mistral') {
             return mistralTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Yi') {
+        } else if (model?.architecture?.tokenizer === 'Yi') {
             return yiTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Gemini') {
+        } else if (model?.architecture?.tokenizer === 'Gemini') {
             return gemmaTokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Qwen') {
+        } else if (model?.architecture?.tokenizer === 'Qwen') {
             return qwen2Tokenizer;
-        }
-        else if (model?.architecture?.tokenizer === 'Cohere') {
+        } else if (model?.architecture?.tokenizer === 'Cohere') {
             if (model?.id && model?.id.includes('command-a')) {
                 return commandATokenizer;
             }
             return commandRTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-4o')) {
+        } else if (oai_settings.openrouter_model.includes('gpt-4o')) {
             return gpt4oTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-4')) {
+        } else if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
+        } else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
             return turboTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('claude')) {
+        } else if (oai_settings.openrouter_model.includes('claude')) {
             return claudeTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('GPT-NeoXT')) {
+        } else if (oai_settings.openrouter_model.includes('GPT-NeoXT')) {
             return gpt2Tokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('jamba')) {
+        } else if (oai_settings.openrouter_model.includes('jamba')) {
             return jambaTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('deepseek')) {
+        } else if (oai_settings.openrouter_model.includes('deepseek')) {
             return deepseekTokenizer;
         }
     }
@@ -651,50 +641,35 @@ export function getTokenizerModel() {
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB && oai_settings.electronhub_model) {
         if (oai_settings.electronhub_model.includes('gpt-4o') || oai_settings.electronhub_model.includes('gpt-5')) {
             return gpt4oTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('gpt-4.1') || oai_settings.electronhub_model.includes('gpt-4.5')) {
+        } else if (oai_settings.electronhub_model.includes('gpt-4.1') || oai_settings.electronhub_model.includes('gpt-4.5')) {
             return gpt4oTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('gpt-4')) {
+        } else if (oai_settings.electronhub_model.includes('gpt-4')) {
             return gpt4Tokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('gpt-3.5-turbo')) {
+        } else if (oai_settings.electronhub_model.includes('gpt-3.5-turbo')) {
             return turboTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('claude')) {
+        } else if (oai_settings.electronhub_model.includes('claude')) {
             return claudeTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('jamba')) {
+        } else if (oai_settings.electronhub_model.includes('jamba')) {
             return jambaTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('deepseek') || oai_settings.electronhub_model.includes('sonar-reasoning') || oai_settings.electronhub_model.includes('r1')) {
+        } else if (oai_settings.electronhub_model.includes('deepseek') || oai_settings.electronhub_model.includes('sonar-reasoning') || oai_settings.electronhub_model.includes('r1')) {
             return deepseekTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('qwen')) {
+        } else if (oai_settings.electronhub_model.includes('qwen')) {
             return qwen2Tokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('gemma')) {
+        } else if (oai_settings.electronhub_model.includes('gemma')) {
             return gemmaTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('mistral')) {
+        } else if (oai_settings.electronhub_model.includes('mistral')) {
             return mistralTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('yi')) {
+        } else if (oai_settings.electronhub_model.includes('yi')) {
             return yiTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('llama3') || oai_settings.electronhub_model.includes('llama-3') || oai_settings.electronhub_model.startsWith('l3')) {
+        } else if (oai_settings.electronhub_model.includes('llama3') || oai_settings.electronhub_model.includes('llama-3') || oai_settings.electronhub_model.startsWith('l3')) {
             return llama3Tokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('llama')) {
+        } else if (oai_settings.electronhub_model.includes('llama')) {
             return llamaTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('command-a')) {
+        } else if (oai_settings.electronhub_model.includes('command-a')) {
             return commandATokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('command-r')) {
+        } else if (oai_settings.electronhub_model.includes('command-r')) {
             return commandRTokenizer;
-        }
-        else if (oai_settings.electronhub_model.includes('nemo')) {
+        } else if (oai_settings.electronhub_model.includes('nemo')) {
             return nemoTokenizer;
         }
     }
@@ -814,9 +789,7 @@ export function countTokensOpenAI(messages, full = false) {
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
-        }
-
-        else {
+        } else {
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
@@ -866,9 +839,7 @@ export async function countTokensOpenAIAsync(messages, full = false) {
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
-        }
-
-        else {
+        } else {
             const data = await jQuery.ajax({
                 async: true,
                 type: 'POST', //
@@ -898,8 +869,7 @@ function getTokenCacheObject() {
     try {
         if (selected_group) {
             chatId = groups.find(x => x.id == selected_group)?.chat_id;
-        }
-        else if (this_chid !== undefined) {
+        } else if (this_chid !== undefined) {
             chatId = characters[this_chid].chat;
         }
     } catch {
@@ -984,8 +954,7 @@ function getTextgenAPITokenizationParams(str) {
         text: str,
         api_type: textgen_settings.type,
         url: getTextGenServer(),
-        vllm_model: textgen_settings.vllm_model,
-        aphrodite_model: textgen_settings.aphrodite_model,
+        model: getTextGenModel(),
     };
 }
 

@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, getBase64Async, ensureImageFormatSupported, supportedImageMimeTypes, isExternalUrl } from './utils.js';
 
 import {
     Generate,
@@ -12,6 +12,7 @@ import {
     comment_avatar,
     deactivateSendButtons,
     default_avatar,
+    deleteCharacter,
     deleteSwipe,
     displayPastChats,
     duplicateCharacter,
@@ -22,9 +23,12 @@ import {
     extractMessageBias,
     generateQuietPrompt,
     generateRaw,
+    getCharacters,
     getCurrentChatDetails,
     getCurrentChatId,
     getFirstDisplayedMessageId,
+    getOneCharacter,
+    getRequestHeaders,
     getThumbnailUrl,
     is_send_press,
     main_api,
@@ -40,6 +44,8 @@ import {
     saveChatConditional,
     saveSettings,
     saveSettingsDebounced,
+    selectCharacterById,
+    select_selected_character,
     sendMessageAsUser,
     sendSystemMessage,
     setActiveCharacter,
@@ -48,6 +54,7 @@ import {
     setCharacterName,
     setExtensionPrompt,
     showMoreMessages,
+    swipe,
     stopGeneration,
     substituteParams,
     syncMesToSwipe,
@@ -62,14 +69,15 @@ import { getMessageTimeStamp, isMobile } from './RossAscends-mods.js';
 import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
-import { chat_completion_sources, oai_settings, promptManager, ZAI_ENDPOINT } from './openai.js';
+import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
+import { chat_completion_sources, oai_settings, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
+import { registerActionLoaderSlashCommands } from './action-loader-slashcommands.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
@@ -90,7 +98,7 @@ import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { t } from './i18n.js';
 import { kai_settings } from './kai-settings.js';
 import { instruct_presets, selectContextPreset, selectInstructPreset } from './instruct-mode.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, SWIPE_DIRECTION, SWIPE_SOURCE } from './constants.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -228,11 +236,6 @@ export function initDefaultSlashCommands() {
         return '';
     }
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'dupe',
-        callback: duplicateCharacter,
-        helpString: t`Duplicates the currently selected character.`,
-    }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'api',
         callback: async function (args, text) {
@@ -677,9 +680,7 @@ export function initDefaultSlashCommands() {
             SlashCommandArgument.fromProps({
                 description: t`background filename`,
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: () => [...document.querySelectorAll('.bg_example')]
-                    .map(it => new SlashCommandEnumValue(it.getAttribute('bgfile')))
-                    .filter(it => it.value?.length),
+                enumProvider: commonEnumProviders.backgrounds,
             }),
         ],
         helpString: `
@@ -761,6 +762,414 @@ export function initDefaultSlashCommands() {
                     <pre><code>/search name="Chloe" tag="friend"</code></pre>
                     ${t`Returns the avatar key for the character "Chloe" that is tagged with "friend".`}
                     ${t`This is useful if you for example have multiple characters named "Chloe", and the others are "foe", "goddess", or anything else, so you can actually select the character you are looking for.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    /**
+     * Provides autocomplete matching for folder names.
+     * Matches if the input starts with the check or vice versa (case-insensitive).
+     * @param {string} input - The input string to match against
+     * @param {string} check - The check string to match with
+     * @param {object} [options={}] - Options
+     * @param {boolean} [options.trueOnEmpty=true] - Whether to return true when input is empty
+     * @returns {boolean} - True if the strings match according to the folder matching rules
+     */
+    function folderEnumMatchProvider(input, check, { trueOnEmpty = true } = {}) {
+        if (!check) return false;
+        if (!input) return trueOnEmpty;
+        const inputLower = input.toLowerCase();
+        const checkLower = check.toLowerCase();
+        return inputLower.startsWith(checkLower) || checkLower.startsWith(inputLower);
+    }
+
+    // Shared character field definitions for char CRUD commands
+    const getCharacterFieldArgs = ({ requiredFields = [] } = {}) => [
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: t`The name of the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('name'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'description',
+            description: t`The character's description/personality definition`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('description'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'firstMessage',
+            description: t`The character's first message/greeting`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('firstMessage'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'personality',
+            description: t`A brief description of the personality`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('personality'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'scenario',
+            description: t`The scenario or circumstances for the conversation`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('scenario'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'messageExamples',
+            description: t`Example messages for the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('messageExamples'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'creatorNotes',
+            description: t`Notes from the character creator`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('creatorNotes'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'systemPrompt',
+            description: t`The character's system prompt`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('systemPrompt'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'postHistoryInstructions',
+            description: t`Post-history instructions (jailbreak)`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('postHistoryInstructions'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'creator',
+            description: t`The creator of the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('creator'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'characterVersion',
+            description: t`The version of the character`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('characterVersion'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'tags',
+            description: t`Comma-separated list of character card tags (embedded in the card, not ST's folder/filter tags). Use /tag-add for ST tags or /tag-import to import card tags as ST tags.`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('tags'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'favorite',
+            description: t`Whether this character is a favorite`,
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            enumProvider: commonEnumProviders.boolean('trueFalse'),
+            isRequired: requiredFields.includes('favorite'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'avatar',
+            description: t`Avatar image. Use "prompt" to open file picker, or provide a local ST file path (e.g., characters/Name.png, backgrounds/image.png). This can also be the return value from the /imagine command. External URLs are not supported.`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('avatar'),
+            enumList: [
+                new SlashCommandEnumValue('prompt', 'Open file picker to select an image', 'enum', '📁'),
+                new SlashCommandEnumValue('characters/...', 'Character avatars path (e.g., characters/Name.png)', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'characters/'), () => 'characters/'),
+                new SlashCommandEnumValue('backgrounds/...', 'Background image path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'backgrounds/'), () => 'backgrounds/'),
+                new SlashCommandEnumValue('User Avatars/...', 'User avatar path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'User Avatars/'), () => 'User Avatars/'),
+                new SlashCommandEnumValue('assets/...', 'Asset file path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'assets/'), () => 'assets/'),
+                new SlashCommandEnumValue('user/images/...', 'User image path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'user/images/'), () => 'user/images/'),
+            ],
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'avatarPromptResize',
+            description: t`Whether to show the avatar resize/crop dialog when uploading (default: true). Ignored if "Never resize avatars" is enabled in settings.`,
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'true',
+            enumProvider: commonEnumProviders.boolean('trueFalse'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'talkativeness',
+            description: t`How often the character speaks in group chats (0.0 to 1.0)`,
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            isRequired: requiredFields.includes('talkativeness'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'world',
+            description: t`The name of the lorebook to attach`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumProvider: commonEnumProviders.worlds,
+            isRequired: requiredFields.includes('world'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'depthPrompt',
+            description: t`Character-specific depth prompt content`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('depthPrompt'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'depthPromptDepth',
+            description: t`Depth for the character-specific depth prompt`,
+            typeList: [ARGUMENT_TYPE.NUMBER],
+            isRequired: requiredFields.includes('depthPromptDepth'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'depthPromptRole',
+            description: t`Role for the depth prompt`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: commonEnumProviders.messageRoles(),
+            isRequired: requiredFields.includes('depthPromptRole'),
+        }),
+    ];
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-create',
+        callback: createCharacterCallback,
+        returns: t`the avatar key (unique identifier) of the created character`,
+        namedArgumentList: [
+            ...getCharacterFieldArgs({ requiredFields: ['name'] }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'select',
+                description: t`Whether to select/open the character after creation (default: true)`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Creates a new character with the specified attributes. Returns the avatar key of the created character.`}
+        </div>
+        <div>
+            <strong>${t`Required arguments:`}</strong>
+            <ul>
+                <li><code>name</code> - ${t`The character's name`}</li>
+            </ul>
+        </div>
+        <div>
+            <strong>${t`Note on tags:`}</strong> ${t`The <code>tags</code> argument sets character card tags (embedded in the character file), not SillyTavern's folder/filter tags. To add ST tags after creation, use <code>/tag-add</code>. To import card tags as ST tags, use <code>/tag-import</code>.`}
+        </div>
+        <div>
+            <strong>${t`Note on avatar:`}</strong> ${t`The <code>avatar</code> argument accepts <code>prompt</code> to open a file picker, or a local ST file path. Supported paths include: <code>characters/Name.png</code>, <code>backgrounds/image.png</code>, <code>User Avatars/avatar.png</code>, <code>assets/category/file.png</code>. This can also be the return value from the /imagine command. External URLs are not supported.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-create name="Alice" description="A friendly AI assistant" firstMessage="Hello! How can I help you today?"</code></pre>
+                </li>
+                <li>
+                    <pre><code>/char-create name="Bob" description="A wise wizard" firstMessage="Greetings, traveler." personality="Wise, patient" scenario="A magical library" favorite=true</code></pre>
+                </li>
+                <li>
+                    <pre><code>/char-create name="Clone" description="A clone" firstMessage="Hi!" avatar=prompt</code></pre>
+                    <span>${t`(opens file picker for avatar)`}</span>
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-update',
+        callback: updateCharacterCallback,
+        returns: t`the avatar key of the updated character`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            ...getCharacterFieldArgs(),
+        ],
+        helpString: `
+        <div>
+            ${t`Updates an existing character's attributes. The character does not need to be currently selected.`}
+        </div>
+        <div>
+            ${t`If no <code>char</code> argument is provided, updates the currently selected character.`}
+        </div>
+        <div>
+            <strong>${t`Note on tags:`}</strong> ${t`The <code>tags</code> argument sets character card tags (embedded in the PNG), not SillyTavern's folder/filter tags. To add ST tags, use <code>/tag-add</code>. To import card tags as ST tags, use <code>/tag-import</code>.`}
+        </div>
+        <div>
+            <strong>${t`Note on avatar:`}</strong> ${t`The <code>avatar</code> argument accepts <code>prompt</code> to open a file picker, or a local ST file path. Supported paths: <code>characters/Name.png</code>, <code>backgrounds/image.png</code>, <code>User Avatars/avatar.png</code>, <code>assets/category/file.png</code>. This can also be the return value from the /imagine command. External URLs are not supported.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-update description="An updated description for this character"</code></pre>
+                    ${t`Updates the currently selected character's description.`}
+                </li>
+                <li>
+                    <pre><code>/char-update char="Alice" personality="Cheerful and energetic" favorite=true</code></pre>
+                    ${t`Updates Alice's personality and marks her as a favorite.`}
+                </li>
+                <li>
+                    <pre><code>/imagine you | /char-update avatar="{{pipe}}"</code></pre>
+                    ${t`Generates an image and sets it as the current character's avatar.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-duplicate',
+        aliases: ['dupe'],
+        callback: duplicateCharacterCallback,
+        returns: t`the avatar key (unique identifier) of the duplicated character`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key to duplicate. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'select',
+                description: t`Whether to select/open the duplicated character after creation (default: false)`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Duplicates a character. Returns the avatar key of the duplicated character.`}
+        </div>
+        <div>
+            ${t`Use <code>/char-update</code> afterwards to modify the duplicated character's fields.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-duplicate</code></pre>
+                    ${t`Duplicates the currently selected character.`}
+                </li>
+                <li>
+                    <pre><code>/char-duplicate char="Alice" select=true</code></pre>
+                    ${t`Duplicates Alice and selects the new character.`}
+                </li>
+                <li>
+                    <pre><code>/char-duplicate | /setvar key=newChar | /char-update char="{{getvar::newChar}}" name="Clone"</code></pre>
+                    ${t`Duplicates the current character and renames the clone.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-get',
+        aliases: ['char-data'],
+        callback: getCharacterDataCallback,
+        returns: t`character data as JSON or a specific field value`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'field',
+                description: t`Specific field to retrieve. If not provided, returns the entire character data.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('name', t`Character name`, enumTypes.enum),
+                    new SlashCommandEnumValue('description', t`Character description`, enumTypes.enum),
+                    new SlashCommandEnumValue('personality', t`Character personality`, enumTypes.enum),
+                    new SlashCommandEnumValue('scenario', t`Character scenario`, enumTypes.enum),
+                    new SlashCommandEnumValue('first_mes', t`First message`, enumTypes.enum),
+                    new SlashCommandEnumValue('mes_example', t`Message examples`, enumTypes.enum),
+                    new SlashCommandEnumValue('creator_notes', t`Creator notes`, enumTypes.enum),
+                    new SlashCommandEnumValue('system_prompt', t`System prompt`, enumTypes.enum),
+                    new SlashCommandEnumValue('post_history_instructions', t`Post-history instructions`, enumTypes.enum),
+                    new SlashCommandEnumValue('creator', t`Creator name`, enumTypes.enum),
+                    new SlashCommandEnumValue('character_version', t`Character version`, enumTypes.enum),
+                    new SlashCommandEnumValue('tags', t`Character tags`, enumTypes.enum),
+                    new SlashCommandEnumValue('talkativeness', t`Talkativeness`, enumTypes.enum),
+                    new SlashCommandEnumValue('avatar', t`Avatar filename`, enumTypes.enum),
+                    new SlashCommandEnumValue('fav', t`Favorite status`, enumTypes.enum),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: t`The way to return the result`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'pipe',
+                enumList: slashCommandReturnHelper.enumList({ allowPipe: true, allowObject: true, allowChat: false, allowPopup: true, allowTextVersion: false }),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Retrieves character data. Can get all data or a specific field.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-get field=description | /echo</code></pre>
+                    ${t`Outputs the current character's description.`}
+                </li>
+                <li>
+                    <pre><code>/char-get char="Alice" field=personality</code></pre>
+                    ${t`Returns Alice's personality field.`}
+                </li>
+                <li>
+                    <pre><code>/char-get char="Bob" return=object</code></pre>
+                    ${t`Returns Bob's entire character data as an object.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'char-delete',
+        callback: deleteCharacterCallback,
+        returns: t`true if the character was deleted, false otherwise`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'char',
+                description: t`Character name or avatar key. If not provided, uses the currently selected character.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.characters('character'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'deleteChats',
+                description: t`Whether to also delete all chats with this character`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'silent',
+                description: t`Skip the confirmation popup`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Deletes a character from the system.`}
+        </div>
+        <div>
+            ${t`If no <code>char</code> argument is provided, deletes the currently selected character.`}
+        </div>
+        <div>
+            <strong>${t`Warning:`}</strong> ${t`This action is irreversible!`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/char-delete</code></pre>
+                    ${t`Deletes the currently selected character (will show confirmation popup).`}
+                </li>
+                <li>
+                    <pre><code>/char-delete char="Bob" deleteChats=true silent=true</code></pre>
+                    ${t`Deletes Bob and all associated chats without confirmation.`}
                 </li>
             </ul>
         </div>
@@ -1131,6 +1540,66 @@ export function initDefaultSlashCommands() {
                     ${t`Continues the chat with the provided prompt and waits for the generation to finish.`}
                 </li>
             </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'regenerate',
+        callback: regenerateChatCallback,
+        aliases: ['regen'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                t`Whether to await for the regeneration before proceeding`,
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
+        helpString: `
+        <div>
+            ${t`Regenerates the latest reply in the chat.`}
+        </div>
+        <div>
+            ${t`If <code>await=true</code> named argument is passed, the command will await for the regeneration before proceeding.`}
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'swipe',
+        callback: swipeChatCallback,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'direction',
+                t`Swipe direction`,
+                [ARGUMENT_TYPE.STRING],
+                false,
+                false,
+                SWIPE_DIRECTION.RIGHT,
+                [
+                    new SlashCommandEnumValue(SWIPE_DIRECTION.RIGHT, t`Swipe to the next reply`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue(SWIPE_DIRECTION.LEFT, t`Swipe to the previous reply`, enumTypes.enum, enumIcons.default),
+                ],
+                [],
+                null,
+                true,
+            ),
+            new SlashCommandNamedArgument(
+                'await',
+                t`Whether to await for the swipe action before proceeding`,
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
+        helpString: `
+        <div>
+            ${t`Swipes the latest reply. Defaults to <code>direction=right</code>; use <code>direction=left</code> to go to the previous reply. If no next swipe exists, behavior depends on message context.`}
+        </div>
+        <div>
+            ${t`If <code>await=true</code> named argument is passed, the command will await for the swipe action before proceeding.`}
         </div>
     `,
     }));
@@ -2081,6 +2550,16 @@ export function initDefaultSlashCommands() {
                 typeList: [ARGUMENT_TYPE.NUMBER],
             }),
             SlashCommandNamedArgument.fromProps({
+                name: 'placeholder',
+                description: t`placeholder text displayed in the input field when empty`,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'tooltip',
+                description: t`tooltip text shown when hovering over the input field`,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'onSuccess',
                 description: t`closure to execute when the ok button is clicked or the input is closed as successful (via Enter, etc)`,
                 typeList: [ARGUMENT_TYPE.CLOSURE],
@@ -2101,6 +2580,14 @@ export function initDefaultSlashCommands() {
         <div>
             ${t`Shows a popup with the provided text and an input field.`}
             ${t`The <code>default</code> argument is the default value of the input field, and the text argument is the text to display.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/input default="John" placeholder="Enter your name" tooltip="Your display name" What is your name?</code></pre>
+                </li>
+            </ul>
         </div>
     `,
     }));
@@ -2213,7 +2700,7 @@ export function initDefaultSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'popup',
         callback: popupCallback,
-        returns: t`popup text`,
+        returns: t`Popup text`,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'scroll',
@@ -2268,6 +2755,11 @@ export function initDefaultSlashCommands() {
                 enumList: commonEnumProviders.boolean('trueFalse')(),
                 defaultValue: 'false',
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'tooltip',
+                description: t`tooltip text shown when hovering over the popup content area`,
+                typeList: [ARGUMENT_TYPE.STRING],
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -2301,7 +2793,7 @@ export function initDefaultSlashCommands() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'labels',
-                description: t`button labels`,
+                description: t`button labels - can be an array of strings or objects with text, tooltip, and icon properties`,
                 typeList: [ARGUMENT_TYPE.LIST],
                 isRequired: true,
             }),
@@ -2326,10 +2818,16 @@ export function initDefaultSlashCommands() {
             ${t`Returns the clicked button label into the pipe or empty string if canceled.`}
         </div>
         <div>
+            ${t`Labels can be simple strings or objects with <code>text</code>, <code>tooltip</code>, and <code>icon</code> (Font Awesome class) properties.`}
+        </div>
+        <div>
             <strong>${t`Example:`}</strong>
             <ul>
                 <li>
                     <pre><code>/buttons labels=["Yes","No"] Do you want to continue?</code></pre>
+                </li>
+                <li>
+                    <pre><code>/buttons labels=[{"text":"Save","icon":"fa-floppy-disk","tooltip":"Save changes"},{"text":"Cancel"}] Choose an action</code></pre>
                 </li>
             </ul>
         </div>
@@ -2470,19 +2968,6 @@ export function initDefaultSlashCommands() {
                 defaultValue: 'popup-html',
                 enumList: slashCommandReturnHelper.enumList({ allowPipe: false, allowObject: true, allowChat: true, allowPopup: true, allowTextVersion: false }),
                 forceEnum: true,
-            }),
-            // TODO remove some day
-            SlashCommandNamedArgument.fromProps({
-                name: 'format',
-                description: t`!!! DEPRECATED - use "return" instead !!! output format`,
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                forceEnum: true,
-                enumList: [
-                    new SlashCommandEnumValue('popup', t`Show injects in a popup.`, enumTypes.enum, enumIcons.default),
-                    new SlashCommandEnumValue('chat', t`Post a system message to the chat.`, enumTypes.enum, enumIcons.default),
-                    new SlashCommandEnumValue('none', t`Just return the injects as a JSON object.`, enumTypes.enum, enumIcons.default),
-                ],
             }),
         ],
     }));
@@ -2647,8 +3132,9 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('custom', 'custom OpenAI-compatible', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'openai')), 'O'),
                     new SlashCommandEnumValue('zai', 'Z.AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'zai')), 'Z'),
                     new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
+                    new SlashCommandEnumValue('siliconflow', 'SiliconFlow', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'siliconflow')), 'S'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
-                    ...Object.values(textgen_types).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
+                    ...Object.values(textgen_types).filter(api => Object.keys(SERVER_INPUTS).includes(api)).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
             }),
             SlashCommandNamedArgument.fromProps({
@@ -2680,7 +3166,7 @@ export function initDefaultSlashCommands() {
                 ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, SiliconFlow, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
@@ -3026,8 +3512,7 @@ export function initDefaultSlashCommands() {
             try {
                 const text = await navigator.clipboard.readText();
                 return text;
-            }
-            catch (error) {
+            } catch (error) {
                 console.error('Error reading clipboard:', error);
                 toastr.warning(t`Failed to read clipboard text. Have you granted the permission?`);
                 return '';
@@ -3156,7 +3641,126 @@ export function initDefaultSlashCommands() {
         helpString: t`Plays the message received sound effect.`,
     }));
 
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'array-wrap',
+        aliases: ['list-wrap'],
+        returns: t`unnamed argument value wrapped into an array`,
+        helpString: t`Wraps a single unnamed argument into an array if it's not already an array. If the value is an empty string, returns an empty array.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'stringify',
+                description: t`Whether JSON primitives (numbers, booleans, nulls) should be treated as strings, i.e. ["null"] when stringify=true vs. [null] when stringify=false.`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST],
+            }),
+        ],
+        callback: (args, value) => {
+            // Closures are not supported
+            if (value instanceof SlashCommandClosure) {
+                throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-wrap. Did you forget to call the closure with parentheses?`);
+            }
+
+            // Multiple unnamed arguments are not supported since acceptsMultiple is false, but check just in case
+            if (Array.isArray(value)) {
+                throw new SlashCommandExecutionError(t`/array-wrap does not support multiple unnamed arguments.`);
+            }
+
+            // Empty string - empty arrays
+            if (value === '') {
+                return JSON.stringify([]);
+            }
+
+            try {
+                // If the value is a valid JSON string, parse it
+                const parsedValue = JSON.parse(value);
+
+                // Already an array - return as-is
+                if (Array.isArray(parsedValue)) {
+                    return value;
+                }
+
+                // If it's an object, wrap it into an array and stringify
+                if (typeof parsedValue === 'object' && parsedValue !== null) {
+                    return JSON.stringify([parsedValue]);
+                }
+
+                // For primitive values, check if we should take the parsed or original value based on the stringify argument
+                const isJsonPrimitive = parsedValue === null || ['string', 'number', 'boolean'].includes(typeof parsedValue);
+                if (isJsonPrimitive && isFalseBoolean(String(args?.stringify?.toString()))) {
+                    return JSON.stringify([parsedValue]);
+                }
+
+                // Wrap the original value (string, number, boolean) into an array, preserving quotes for strings
+                return JSON.stringify([value]);
+            } catch {
+                // Not a valid JSON string - wrap the original value
+                return JSON.stringify([value]);
+            }
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'array-unwrap',
+        aliases: ['list-unwrap'],
+        returns: t`unnamed argument value unwrapped from an array`,
+        helpString: t`Unwraps the first element of an array provided as an unnamed argument. If the value is not an array, returns the value as-is. If the array is empty, returns an empty string.`,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                acceptsMultiple: false,
+                isRequired: true,
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.LIST],
+            }),
+        ],
+        callback: (_args, value) => {
+            // Closures are not supported
+            if (value instanceof SlashCommandClosure) {
+                throw new SlashCommandExecutionError(t`Closures are not supported as unnamed arguments for /array-unwrap. Did you forget to call the closure with parentheses?`);
+            }
+
+            // Multiple unnamed arguments are not supported since acceptsMultiple is false, but check just in case
+            if (Array.isArray(value)) {
+                throw new SlashCommandExecutionError(t`/array-unwrap does not support multiple unnamed arguments.`);
+            }
+
+            try {
+                // If the value is a JSON array, get the first element
+                const parsed = JSON.parse(value);
+
+                if (Array.isArray(parsed)) {
+                    const unwrappedValue = parsed?.[0] ?? '';
+
+                    // If the first element is null or undefined, return an empty string
+                    if (unwrappedValue === null || unwrappedValue === undefined) {
+                        return '';
+                    }
+
+                    // If the first element is an object, stringify it.
+                    if (typeof unwrappedValue === 'object') {
+                        return JSON.stringify(unwrappedValue);
+                    }
+
+                    // Otherwise, return it as a string.
+                    return String(unwrappedValue);
+                }
+                return value;
+            } catch {
+                // Not a valid JSON - return as-is
+                return value;
+            }
+        },
+    }));
+
     registerVariableCommands();
+    registerActionLoaderSlashCommands();
 }
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -3239,27 +3843,6 @@ function injectCallback(args, value) {
 async function listInjectsCallback(args) {
     /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
     let returnType = args.return;
-
-    // Old legacy return type handling
-    if (args.format) {
-        toastr.warning(t`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, t`Deprecation warning`);
-        const type = String(args?.format).toLowerCase().trim();
-        if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
-            type !== 'none' && toastr.info(t`No script injections for the current chat`);
-        }
-        switch (type) {
-            case 'none':
-                returnType = 'none';
-                break;
-            case 'chat':
-                returnType = 'chat-html';
-                break;
-            case 'popup':
-            default:
-                returnType = 'popup-html';
-                break;
-        }
-    }
 
     // Now the actual new return type handling
     const buildTextValue = (injects) => {
@@ -3415,10 +3998,15 @@ async function trimTokensCallback(arg, value) {
 }
 
 /**
- * Displays a popup with buttons based on provided labels and handles button interactions.
- *
+ * @typedef {object} ButtonLabel
+ * @property {string} text - The button text
+ * @property {string} [tooltip] - Optional tooltip text
+ * @property {string} [icon] - Optional Font Awesome icon class (e.g., 'fa-floppy-disk')
+ */
+
+/**
  * @param {object} args - Named arguments for the command
- * @param {string} args.labels - JSON string of an array of button labels
+ * @param {string} args.labels - JSON string of an array of button labels (strings or ButtonLabel objects)
  * @param {string} [args.multiple=false] - Flag indicating if multiple buttons can be toggled
  * @param {string} text - The text content to be displayed within the popup
  *
@@ -3428,11 +4016,21 @@ async function trimTokensCallback(arg, value) {
  */
 async function buttonsCallback(args, text) {
     try {
-        /** @type {string[]} */
-        const buttons = JSON.parse(resolveVariable(args?.labels));
+        /** @type {(string|ButtonLabel)[]} */
+        const rawButtons = JSON.parse(resolveVariable(args?.labels));
 
-        if (!Array.isArray(buttons) || !buttons.length) {
+        if (!Array.isArray(rawButtons) || !rawButtons.length) {
             console.warn('WARN: Invalid labels provided for /buttons command');
+            return '';
+        }
+
+        // Normalize buttons to ButtonLabel format for consistent handling
+        /** @type {ButtonLabel[]} */
+        const buttons = rawButtons.map(btn => typeof btn === 'string' ? { text: btn } : btn);
+
+        // Validate raw buttons: each entry must be a string or a non-null object with a string `text` field that has content
+        if (!buttons.every(btn => typeof btn === 'object' && btn !== null && typeof btn.text === 'string' && btn.text)) {
+            console.warn('WARN: Invalid button label entry provided for /buttons command: each entry must be a string or an object with a "text" property');
             return '';
         }
 
@@ -3441,6 +4039,7 @@ async function buttonsCallback(args, text) {
         const multiple = isTrueBoolean(args?.multiple);
 
         // Map custom buttons to results. Start at 2 because 1 and 0 are reserved for ok and cancel
+        /** @type {Map<number, ButtonLabel>} */
         const resultToButtonMap = new Map(buttons.map((button, index) => [index + 2, button]));
 
         return new Promise(async (resolve) => {
@@ -3475,7 +4074,25 @@ async function buttonsCallback(args, text) {
                     buttonElement.dataset.result = String(result);
                 }
 
-                buttonElement.innerText = button;
+                // Add icon if provided
+                if (button.icon) {
+                    const icon = document.createElement('i');
+                    icon.className = `fa-solid ${button.icon}`;
+                    icon.style.marginRight = '0.5em';
+                    buttonElement.appendChild(icon);
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = button.text;
+                    buttonElement.appendChild(textSpan);
+                } else {
+                    buttonElement.innerText = button.text;
+                }
+
+                // Add tooltip if provided
+                if (button.tooltip) {
+                    buttonElement.title = button.tooltip;
+                    buttonElement.dataset.i18n = '[title]' + button.tooltip;
+                }
+
                 buttonContainer.appendChild(buttonElement);
             }
 
@@ -3498,10 +4115,10 @@ async function buttonsCallback(args, text) {
             /** @returns {string} @param {string|number|boolean} result */
             function getResult(result) {
                 if (multiple) {
-                    const array = result === POPUP_RESULT.AFFIRMATIVE ? Array.from(multipleToggledState).map(r => resultToButtonMap.get(r) ?? '') : [];
+                    const array = result === POPUP_RESULT.AFFIRMATIVE ? Array.from(multipleToggledState).map(r => resultToButtonMap.get(r)?.text ?? '') : [];
                     return JSON.stringify(array);
                 }
-                return typeof result === 'number' ? resultToButtonMap.get(result) ?? '' : '';
+                return typeof result === 'number' ? resultToButtonMap.get(result)?.text ?? '' : '';
             }
         });
     } catch {
@@ -3523,6 +4140,7 @@ async function popupCallback(args, value) {
         transparent: isTrueBoolean(args?.transparent),
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : t`OK`,
         cancelButton: args?.cancelButton !== undefined && typeof args?.cancelButton === 'string' ? args.cancelButton : null,
+        tooltip: args?.tooltip !== undefined && typeof args?.tooltip === 'string' ? args.tooltip : null,
     };
     const result = await Popup.show.text(safeHeader, safeBody, popupOptions);
     return String(requestedResult ? result ?? '' : value);
@@ -3678,6 +4296,8 @@ async function inputCallback(args, prompt) {
         wide: isTrueBoolean(args?.wide),
         okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : t`Ok`,
         rows: args?.rows !== undefined && typeof args?.rows === 'string' ? isNaN(Number(args.rows)) ? 4 : Number(args.rows) : 4,
+        placeholder: args?.placeholder !== undefined && typeof args?.placeholder === 'string' ? args.placeholder : null,
+        tooltip: args?.tooltip !== undefined && typeof args?.tooltip === 'string' ? args.tooltip : null,
     };
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
@@ -3930,7 +4550,7 @@ async function echoCallback(args, value) {
     if (args.timeout && !isNaN(parseInt(args.timeout))) options.timeOut = parseInt(args.timeout);
     if (args.extendedTimeout && !isNaN(parseInt(args.extendedTimeout))) options.extendedTimeOut = parseInt(args.extendedTimeout);
     if (isTrueBoolean(args.preventDuplicates)) options.preventDuplicates = true;
-    if (args.cssClass) options.toastClass = args.cssClass;
+    if (args.cssClass) options.toastClass = [options.toastClass, args.cssClass].filter(Boolean).join(' ');
     options.escapeHtml = args.escapeHtml !== undefined ? isTrueBoolean(args.escapeHtml) : true;
 
     // Prepare possible await handling
@@ -4432,8 +5052,7 @@ async function sendUserMessageCallback(args, text) {
         const name = args.name || '';
         const avatar = findPersonaByName(name) || user_avatar;
         message = await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
-    }
-    else {
+    } else {
         message = await sendMessageAsUser(text, bias, insertAt, compact);
     }
 
@@ -4509,6 +5128,598 @@ async function openChat(chid) {
     await reloadCurrentChat();
 }
 
+/**
+ * Opens a file picker dialog for selecting an image.
+ * @returns {Promise<string|null>} Base64 data URL of selected image, or null if cancelled
+ */
+async function promptForAvatarFile() {
+    return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = supportedImageMimeTypes.join(',');
+        input.onchange = async (e) => {
+            if (!(e.target instanceof HTMLInputElement)) {
+                return '';
+            }
+            const file = e.target?.files?.[0];
+            if (!file) {
+                resolve(null);
+                return;
+            }
+            try {
+                const converted = await ensureImageFormatSupported(file);
+                const base64 = await getBase64Async(converted);
+                resolve(base64);
+            } catch (error) {
+                console.error('Error processing selected image:', error);
+                toastr.error(t`Failed to process selected image: ${error.message}`);
+                resolve(null);
+            }
+        };
+        input.oncancel = () => resolve(null);
+        input.click();
+    });
+}
+
+/**
+ * Resolves avatar data from various input formats (base64, local path, or prompt).
+ * @param {string} input - "prompt" to open file picker, base64 data URL, or local file path
+ * @returns {Promise<string|null>} Base64 data URL or null if invalid/cancelled
+ */
+async function resolveAvatarData(input) {
+    if (!input || typeof input !== 'string') {
+        return null;
+    }
+
+    const trimmed = input.trim();
+
+    // Special value "prompt" opens file picker
+    if (trimmed.toLowerCase() === 'prompt') {
+        return await promptForAvatarFile();
+    }
+
+    // Already a base64 data URL
+    if (trimmed.startsWith('data:image/')) {
+        return trimmed;
+    }
+
+    // External URLs are not supported
+    if (isExternalUrl(trimmed)) {
+        toastr.warning(t`External URLs are not supported for avatars. Use a local file path or "prompt" to select a file.`);
+        return null;
+    }
+    // Local path or URL (e.g., characters/name.png) - fetch from ST server or same origin
+    // Supported paths: /characters/*, /backgrounds/*, /User Avatars/*, /assets/*, /user/images/*
+    // Also supports same-origin URLs (e.g., https://localhost:8000/characters/name.png)
+    if (trimmed.includes('/') || trimmed.endsWith('.png')) {
+        try {
+            // Construct the URL to fetch the local file
+            let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+            // Handle same-origin URLs
+            if (trimmed.startsWith(window.location.origin)) {
+                url = new URL(trimmed).pathname;
+            }
+            // If there is no subfolder, we guess this should be a character image
+            if (!url.includes('/', 1)) {
+                url = '/characters/' + trimmed;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`File not found or inaccessible: ${response.status}`);
+            }
+            const blob = await response.blob();
+            if (!blob.type.startsWith('image/')) {
+                throw new Error('File is not an image');
+            }
+            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
+            return await getBase64Async(converted);
+        } catch (error) {
+            console.error('Error fetching local avatar:', error);
+            toastr.warning(t`Failed to load avatar from path: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Unknown format
+    console.warn('Unknown avatar format:', trimmed.substring(0, 50));
+    toastr.warning(t`Unknown avatar format. Use "prompt" to select a file, or provide a local file path.`);
+    return null;
+}
+
+/**
+ * Uploads an avatar image to a character.
+ * @param {string} avatarKey - The character's avatar filename (e.g., "name.png")
+ * @param {string} base64Data - Base64 data URL of the image
+ * @param {object} [options={}] - Options
+ * @param {boolean} [options.resizePrompt=false] - Whether to show the resize/crop prompt
+ * @returns {Promise<boolean>} True if upload was successful, false if cancelled or failed
+ */
+async function uploadCharacterAvatar(avatarKey, base64Data, { resizePrompt = false } = {}) {
+    if (!base64Data || !avatarKey) {
+        return false;
+    }
+
+    let finalImageData = base64Data;
+
+    // Handle resize prompt
+    if (resizePrompt) {
+        if (power_user.never_resize_avatars) {
+            toastr.warning(t`Avatar resizing is disabled in settings. The image will be uploaded as-is.`);
+        } else {
+            const dlg = new Popup(t`Set the crop position of the avatar image`, POPUP_TYPE.CROP, '', { cropImage: base64Data });
+            const croppedImage = await dlg.show();
+            if (!croppedImage) {
+                // User cancelled the crop dialog
+                return false;
+            }
+            // The dialog returns the already-cropped image
+            finalImageData = String(croppedImage);
+        }
+    }
+
+    try {
+        // Convert base64 to blob
+        const response = await fetch(finalImageData);
+        const blob = await response.blob();
+
+        // Create form data for upload
+        const formData = new FormData();
+        formData.append('avatar', blob, 'avatar.png');
+        formData.append('avatar_url', avatarKey);
+
+        const uploadResponse = await fetch('/api/characters/edit-avatar', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            throw new Error(errorText); // Will be caught and logged below
+        }
+
+        // Bust cache for the avatar thumbnail and character image
+        const thumbnailUrl = getThumbnailUrl('avatar', avatarKey);
+        await fetch(thumbnailUrl, { method: 'GET', cache: 'reload' });
+        await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
+
+        // Refresh all visible avatar images that use this thumbnail URL
+        // This handles messages, character list, and any other place using the thumbnail
+        const avatarImages = document.querySelectorAll(`img[src^="${thumbnailUrl}"]`);
+        for (const img of avatarImages) {
+            if (img instanceof HTMLImageElement) {
+                const originalSrc = img.src;
+                img.src = '';
+                img.src = originalSrc;
+            }
+        }
+        console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
+
+        return true;
+    } catch (error) {
+        console.error('Error uploading character avatar:', error);
+        toastr.warning(t`Failed to upload avatar: ${error.message}`);
+        return false;
+    }
+}
+
+/**
+ * Creates a new character via the API.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} The avatar key of the created character
+ */
+async function createCharacterCallback(args) {
+    const name = args.name;
+    const description = args.description;
+    const firstMessage = args.firstMessage;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+        toastr.warning(t`Character name is required`);
+        return '';
+    }
+
+    // Build the character data object matching the server's expected format
+    const characterData = {
+        ch_name: name.trim(),
+        description: description,
+        first_mes: firstMessage,
+        personality: args.personality ?? '',
+        scenario: args.scenario ?? '',
+        mes_example: args.messageExamples ?? '',
+        creator_notes: args.creatorNotes ?? '',
+        system_prompt: args.systemPrompt ?? '',
+        post_history_instructions: args.postHistoryInstructions ?? '',
+        creator: args.creator ?? '',
+        character_version: args.characterVersion ?? '',
+        tags: args.tags ? args.tags.split(',').map(t => t.trim()).filter(t => t) : [],
+        talkativeness: args.talkativeness ?? '0.5',
+        world: args.world ?? '',
+        depth_prompt_prompt: args.depthPrompt ?? '',
+        depth_prompt_depth: args.depthPromptDepth ?? '4',
+        depth_prompt_role: args.depthPromptRole ?? 'system',
+        fav: isTrueBoolean(args.favorite) ? 'true' : 'false',
+        alternate_greetings: [],
+        extensions: '{}',
+    };
+
+    // Handle avatar if provided (URL or base64)
+    const avatarData = args.avatar ? await resolveAvatarData(args.avatar) : null;
+
+    try {
+        const response = await fetch('/api/characters/create', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(characterData),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText); // Will be caught and logged below
+        }
+
+        const avatarKey = await response.text();
+
+        // Upload avatar if provided
+        if (avatarData) {
+            const resizePrompt = !isFalseBoolean(args.avatarPromptResize);
+            const uploaded = await uploadCharacterAvatar(avatarKey, avatarData, { resizePrompt });
+            if (!uploaded && resizePrompt) {
+                // User cancelled the resize dialog, but character was still created
+                toastr.info(t`Character created without avatar (resize cancelled)`);
+            }
+        }
+
+        // Refresh the character list
+        await getCharacters();
+
+        // Select the character if requested (default: true)
+        const shouldSelect = !isFalseBoolean(args.select);
+        if (shouldSelect) {
+            const characterIndex = characters.findIndex(c => c.avatar === avatarKey);
+            if (characterIndex !== -1) {
+                // selectCharacterById handles group reset and active character setting
+                await selectCharacterById(characterIndex);
+            }
+        }
+
+        toastr.success(t`Character "${name}" created successfully`);
+        return avatarKey;
+    } catch (error) {
+        console.error('Error creating character:', error);
+        toastr.error(t`Failed to create character: ${error.message}`);
+        return '';
+    }
+}
+
+/**
+ * Updates an existing character via the merge-attributes API.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} The avatar key of the updated character
+ */
+async function updateCharacterCallback(args) {
+    // Find the target character
+    let character;
+    let characterIndex;
+    if (args.char) {
+        character = findChar({ name: args.char });
+        if (!character) {
+            toastr.warning(t`Character "${args.char}" not found`);
+            return '';
+        }
+        characterIndex = String(characters.indexOf(character));
+    } else {
+        // Use currently selected character
+        if (this_chid === undefined || !characters[this_chid]) {
+            toastr.warning(t`No character selected and no char argument provided`);
+            return '';
+        }
+        character = characters[this_chid];
+        characterIndex = this_chid;
+    }
+
+    // Build the update object with only provided fields
+    const updateData = {
+        avatar: character.avatar,
+    };
+
+    // Map argument names to character data field names
+    const fieldMappings = {
+        name: 'name',
+        description: 'description',
+        firstMessage: 'first_mes',
+        personality: 'personality',
+        scenario: 'scenario',
+        messageExamples: 'mes_example',
+        creatorNotes: 'creator_notes',
+        systemPrompt: 'system_prompt',
+        postHistoryInstructions: 'post_history_instructions',
+        creator: 'creator',
+        characterVersion: 'character_version',
+        tags: 'tags',
+    };
+
+    // Add provided fields to update data
+    let hasUpdates = false;
+    for (const [argName, fieldName] of Object.entries(fieldMappings)) {
+        if (args[argName] !== undefined) {
+            let value = args[argName];
+            // Handle tags as comma-separated array
+            if (fieldName === 'tags' && typeof value === 'string') {
+                value = value.split(',').map(t => t.trim()).filter(t => t);
+            }
+            updateData[fieldName] = value;
+            // Also set in data object for V2 spec compliance
+            if (!updateData.data) updateData.data = {};
+            updateData.data[fieldName] = value;
+            hasUpdates = true;
+        }
+    }
+
+    // Special handling for world / lorebook: store under data.extensions.world
+    if (args.world !== undefined) {
+        const value = args.world;
+        if (!updateData.data) {
+            updateData.data = {};
+        }
+        if (!updateData.data.extensions) {
+            updateData.data.extensions = {};
+        }
+        updateData.data.extensions.world = value;
+        hasUpdates = true;
+    }
+
+    // Handle talkativeness (stored in extensions)
+    if (args.talkativeness !== undefined) {
+        const talkValue = parseFloat(args.talkativeness);
+        if (!isNaN(talkValue)) {
+            updateData.talkativeness = talkValue;
+            if (!updateData.data) updateData.data = {};
+            if (!updateData.data.extensions) updateData.data.extensions = {};
+            updateData.data.extensions.talkativeness = talkValue;
+            hasUpdates = true;
+        }
+    }
+
+    // Handle favorite
+    if (args.favorite !== undefined) {
+        const favValue = isTrueBoolean(args.favorite);
+        updateData.fav = favValue;
+        if (!updateData.data) updateData.data = {};
+        if (!updateData.data.extensions) updateData.data.extensions = {};
+        updateData.data.extensions.fav = favValue;
+        hasUpdates = true;
+    }
+
+    // Handle avatar (resolve URL/base64, upload separately after merge)
+    const avatarData = args.avatar ? await resolveAvatarData(args.avatar) : null;
+    if (avatarData) {
+        hasUpdates = true;
+    }
+
+    // Handle depth prompt fields
+    if (args.depthPrompt !== undefined || args.depthPromptDepth !== undefined || args.depthPromptRole !== undefined) {
+        if (!updateData.data) updateData.data = {};
+        if (!updateData.data.extensions) updateData.data.extensions = {};
+        if (!updateData.data.extensions.depth_prompt) updateData.data.extensions.depth_prompt = {};
+
+        if (args.depthPrompt !== undefined) {
+            updateData.data.extensions.depth_prompt.prompt = args.depthPrompt;
+            hasUpdates = true;
+        }
+        if (args.depthPromptDepth !== undefined) {
+            updateData.data.extensions.depth_prompt.depth = parseInt(args.depthPromptDepth);
+            hasUpdates = true;
+        }
+        if (args.depthPromptRole !== undefined) {
+            updateData.data.extensions.depth_prompt.role = args.depthPromptRole;
+            hasUpdates = true;
+        }
+    }
+
+    if (!hasUpdates) {
+        toastr.warning(t`No fields provided to update`);
+        return character.avatar;
+    }
+
+    try {
+        const response = await fetch('/api/characters/merge-attributes', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(updateData),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `Server returned ${response.status}`); // Will be caught and logged below
+        }
+
+        // Upload avatar if provided
+        if (avatarData) {
+            const resizePrompt = !isFalseBoolean(args.avatarPromptResize);
+            const uploaded = await uploadCharacterAvatar(character.avatar, avatarData, { resizePrompt });
+            if (!uploaded && resizePrompt) {
+                // User cancelled the resize dialog
+                toastr.warning(t`Avatar update cancelled`);
+            }
+        }
+
+        // Refresh the character data
+        await getOneCharacter(character.avatar);
+
+        await eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: characterIndex, character: characters[characterIndex] } });
+
+        // Update the side panel if this is the currently selected character
+        if (characterIndex === this_chid) {
+            select_selected_character(this_chid, { switchMenu: false });
+        }
+
+        toastr.success(t`Character "${character.name}" updated successfully`);
+        return character.avatar;
+    } catch (error) {
+        console.error('Error updating character:', error);
+        toastr.error(t`Failed to update character: ${error.message}`);
+        return '';
+    }
+}
+
+/**
+ * Duplicates a character via the slash command.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} The avatar key of the duplicated character
+ */
+async function duplicateCharacterCallback(args) {
+    // Find the target character if specified
+    let targetAvatar = null;
+    if (args.char) {
+        const character = findChar({ name: args.char });
+        if (!character) {
+            toastr.warning(t`Character "${args.char}" not found`);
+            return '';
+        }
+        targetAvatar = character.avatar;
+    }
+
+    // Call the duplicateCharacter utility with silent mode (no popup)
+    const newAvatarKey = await duplicateCharacter({ avatar: targetAvatar, silent: true });
+    if (!newAvatarKey) {
+        toastr.error(t`Failed to duplicate character`);
+        return '';
+    }
+
+    // Select the character if requested (default: false)
+    const shouldSelect = isTrueBoolean(args.select);
+    if (shouldSelect) {
+        const characterIndex = characters.findIndex(c => c.avatar === newAvatarKey);
+        if (characterIndex !== -1) {
+            await selectCharacterById(characterIndex);
+        }
+    }
+
+    return newAvatarKey;
+}
+
+/**
+ * Gets character data or a specific field.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} Character data or field value
+ */
+async function getCharacterDataCallback(args) {
+    // Find the target character
+    let character;
+    if (args.char) {
+        character = findChar({ name: args.char });
+        if (!character) {
+            toastr.warning(t`Character "${args.char}" not found`);
+            return '';
+        }
+    } else {
+        // Use currently selected character
+        if (this_chid === undefined || !characters[this_chid]) {
+            toastr.warning(t`No character selected and no char argument provided`);
+            return '';
+        }
+        character = characters[this_chid];
+    }
+
+    // If a specific field is requested
+    if (args.field) {
+        const fieldName = args.field;
+
+        // Try to get from data object first (V2 spec), then fall back to root
+        let value = character.data?.[fieldName] ?? character[fieldName];
+
+        // Handle special cases for nested fields
+        if (fieldName === 'talkativeness') {
+            value = character.data?.extensions?.talkativeness ?? character.talkativeness ?? 0.5;
+        }
+        if (fieldName === 'tags') {
+            value = character.data?.tags ?? character.tags ?? [];
+            if (Array.isArray(value)) {
+                value = value.join(', ');
+            }
+        }
+
+        if (value === undefined) {
+            return '';
+        }
+
+        return await slashCommandReturnHelper.doReturn(args.return ?? 'pipe', value, { objectToStringFunc: x => String(x) });
+    }
+
+    // Return entire character data
+    const charData = {
+        avatar: character.avatar,
+        name: character.name,
+        description: character.description ?? character.data?.description ?? '',
+        personality: character.personality ?? character.data?.personality ?? '',
+        scenario: character.scenario ?? character.data?.scenario ?? '',
+        first_mes: character.first_mes ?? character.data?.first_mes ?? '',
+        mes_example: character.mes_example ?? character.data?.mes_example ?? '',
+        creator_notes: character.data?.creator_notes ?? '',
+        system_prompt: character.data?.system_prompt ?? '',
+        post_history_instructions: character.data?.post_history_instructions ?? '',
+        creator: character.data?.creator ?? '',
+        character_version: character.data?.character_version ?? '',
+        tags: character.data?.tags ?? character.tags ?? [],
+        talkativeness: character.data?.extensions?.talkativeness ?? character.talkativeness ?? 0.5,
+        fav: character.fav ?? character.data?.extensions?.fav ?? false,
+        chat: character.chat,
+        create_date: character.create_date,
+    };
+
+    return await slashCommandReturnHelper.doReturn(args.return ?? 'pipe', charData, { objectToStringFunc: x => JSON.stringify(x, null, 2) });
+}
+
+/**
+ * Deletes a character using the core deleteCharacter function.
+ * @param {object} args Named arguments
+ * @returns {Promise<string>} 'true' if deleted, 'false' otherwise
+ */
+async function deleteCharacterCallback(args) {
+    // Find the target character
+    let character;
+    if (args.char) {
+        character = findChar({ name: args.char });
+        if (!character) {
+            toastr.warning(t`Character "${args.char}" not found`);
+            return 'false';
+        }
+    } else {
+        // Use currently selected character
+        if (this_chid === undefined || !characters[this_chid]) {
+            toastr.warning(t`No character selected and no char argument provided`);
+            return 'false';
+        }
+        character = characters[this_chid];
+    }
+
+    const deleteChats = isTrueBoolean(args.deleteChats);
+    const silent = isTrueBoolean(args.silent);
+
+    // Show confirmation popup unless silent mode
+    if (!silent) {
+        const confirmMessage = deleteChats
+            ? t`Are you sure you want to delete "${character.name}" and all associated chats? This action cannot be undone.`
+            : t`Are you sure you want to delete "${character.name}"? This action cannot be undone.`;
+
+        const result = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            return 'false';
+        }
+    }
+
+    try {
+        // Use the core deleteCharacter function which handles all cleanup and events
+        const success = await deleteCharacter(character.avatar, { deleteChats });
+        return success ? 'true' : 'false';
+    } catch (error) {
+        console.error('Error deleting character:', error);
+        toastr.error(t`Failed to delete character: ${error.message}`);
+        return 'false';
+    }
+}
+
 async function continueChatCallback(args, prompt) {
     const shouldAwait = isTrueBoolean(args?.await);
 
@@ -4537,6 +5748,64 @@ async function continueChatCallback(args, prompt) {
 
     if (shouldAwait) {
         await outerPromise;
+    }
+
+    return '';
+}
+
+async function regenerateChatCallback(args) {
+    const shouldAwait = isTrueBoolean(args?.await);
+
+    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning(t`Cannot run /regenerate command while the reply is being generated.`);
+            outerResolve(Promise.resolve(''));
+            return '';
+        }
+
+        if (selected_group) {
+            outerResolve(Promise.resolve(regenerateGroup()));
+            return '';
+        }
+
+        outerResolve(new Promise(innerResolve => setTimeout(() => {
+            innerResolve(Generate('regenerate'));
+        }, 1)));
+        return '';
+    }, 1));
+
+    if (shouldAwait) {
+        const innerPromise = await outerPromise;
+        await innerPromise;
+    }
+
+    return '';
+}
+
+async function swipeChatCallback(args) {
+    const shouldAwait = isTrueBoolean(args?.await);
+    const direction = args?.direction === SWIPE_DIRECTION.LEFT ? SWIPE_DIRECTION.LEFT : SWIPE_DIRECTION.RIGHT;
+
+    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning(t`Cannot run /swipe command while the reply is being generated.`);
+            outerResolve(Promise.resolve(''));
+            return '';
+        }
+
+        outerResolve(Promise.resolve(swipe(null, direction, { source: SWIPE_SOURCE.SLASH_COMMAND, repeated: false })));
+        return '';
+    }, 1));
+
+    if (shouldAwait) {
+        const innerPromise = await outerPromise;
+        await innerPromise;
     }
 
     return '';
@@ -4640,12 +5909,10 @@ export function getNameAndAvatarForMessage(character, name = null) {
     let force_avatar, original_avatar;
     if (character?.avatar === currentChar?.avatar || isNeutralCharacter) {
         // If the targeted character is the currently selected one in a solo chat, we don't need to force any avatars
-    }
-    else if (character && character.avatar !== 'none') {
+    } else if (character && character.avatar !== 'none') {
         force_avatar = getThumbnailUrl('avatar', character.avatar);
         original_avatar = character.avatar;
-    }
-    else {
+    } else {
         force_avatar = default_avatar;
         original_avatar = default_avatar;
     }
@@ -4916,7 +6183,6 @@ export async function sendNarratorMessage(args, text) {
 }
 
 export async function promptQuietForLoudResponse(who, text) {
-
     let character_id = getContext().characterId;
     if (who === 'sys') {
         text = 'System: ' + text;
@@ -4955,7 +6221,6 @@ export async function promptQuietForLoudResponse(who, text) {
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     await saveChatConditional();
-
 }
 
 async function sendCommentMessage(args, text) {
@@ -5449,6 +6714,32 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
         }
 
         return oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
+    }
+
+    const isCurrentlySiliconFlow = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW;
+    if (api === chat_completion_sources.SILICONFLOW || (!api && isCurrentlySiliconFlow)) {
+        if (!url) {
+            return oai_settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
+        }
+
+        const permittedValues = Object.values(SILICONFLOW_ENDPOINT);
+        if (!permittedValues.includes(url)) {
+            !isQuiet && toastr.warning(t`Valid options are: ${permittedValues.join(', ')}`, t`SiliconFlow endpoint '${url}' is not a valid option.`);
+            return '';
+        }
+
+        if (!isCurrentlySiliconFlow && autoConnect) {
+            toastr.warning(t`SiliconFlow is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
+        $('#siliconflow_endpoint').val(url).trigger('input');
+
+        if (autoConnect) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return oai_settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
     }
 
     const isCurrentlyVertexAI = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI;

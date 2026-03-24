@@ -202,6 +202,16 @@ performance:
   memoryCacheCapacity: '100mb'
   # Enables disk caching for character cards. Improves performances with large card libraries.
   useDiskCache: true
+  # Configures gzip compression for client requests with large payloads (e.g. settings or chat saves).
+  requestCompression:
+    # Enable request compression.
+    enabled: false
+    # Minimum payload size to trigger compression. Set to 0 to compress all requests regardless of size.
+    minPayloadSize: '256kb'
+    # Hard upper payload size limit for compression. Set to 0 to allow compression of any size.
+    maxPayloadSize: '8mb'
+    # Timeout for request compression in milliseconds.
+    timeout: 4000
 
 # CACHE BUSTER CONFIGURATION
 # IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!
@@ -250,6 +260,13 @@ extensions:
     speechToText: Xenova/whisper-small
     textToSpeech: Xenova/speecht5_tts
 
+# Git backend for plugin/extension repository operations.
+# - Use "auto" to prefer system git, falling back to the integrated backend
+# - Use "system" to force system backend
+# - Use "builtin" to force integrated backend
+git:
+  backend: auto
+
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.
 enableDownloadableTokenizers: true
@@ -293,7 +310,7 @@ claude:
   # Otherwise, you'll just waste money on cache misses.
   enableSystemPromptCache: false
   # Enables caching of the message history at depth (if supported).
-  # https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching
+  # https://platform.claude.com/docs/en/build-with-claude/prompt-caching
   # -- IMPORTANT! --
   # Use with caution. Behavior may be unpredictable and no guarantees can or will be made.
   # Set to an integer to specify the desired depth. 0 (which does NOT include the prefill)
@@ -304,6 +321,10 @@ claude:
   ## 5m: base price x 1.25
   ## 1h: base price x 2
   extendedTTL: false
+  # Enables adaptive thinking for supported models (Opus 4.6+).
+  # Disable to enforce legacy thinking mode (with thinking budget).
+  # https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
+  enableAdaptiveThinking: false
 # -- GOOGLE GEMINI API CONFIGURATION --
 gemini:
   # API endpoint version ("v1beta" or "v1alpha")

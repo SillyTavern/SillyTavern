@@ -48,7 +48,6 @@ export class SlashCommandExecutionError extends Error {
     }
 
 
-
     constructor(cause, message, commandName, start, end, commandText, fullText) {
         super(message, { cause });
         this.commandName = commandName;

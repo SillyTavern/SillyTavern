@@ -6,6 +6,10 @@ import sanitize from 'sanitize-filename';
 import { CheckRepoActions, default as simpleGit } from 'simple-git';
 
 import { PUBLIC_DIRECTORIES } from '../constants.js';
+import { getConfigValue } from '../util.js';
+import { createGitClient } from '../git/client.js';
+
+const gitBackend = getConfigValue('git.backend', 'auto');
 
 /**
  * @type {Partial<import('simple-git').SimpleGitOptions>}
@@ -76,8 +80,7 @@ router.post('/install', async (request, response) => {
     }
 
     try {
-        // No timeout for cloning, as it may take a while depending on the repo size
-        const git = simpleGit();
+        const git = createGitClient({ backend: gitBackend });
 
         // make sure the third-party directory exists
         if (!fs.existsSync(path.join(request.user.directories.extensions))) {
@@ -102,16 +105,17 @@ router.post('/install', async (request, response) => {
             return response.status(409).send(`Directory already exists at ${extensionPath}`);
         }
 
-        const cloneOptions = { '--depth': 1 };
+        const cloneOptions = { depth: 1 };
         if (branch) {
-            cloneOptions['--branch'] = branch;
+            cloneOptions.branch = branch;
         }
         await git.clone(url, extensionPath, cloneOptions);
         console.info(`Extension has been cloned to ${extensionPath} from ${url} at ${branch || '(default)'} branch`);
 
         const { version, author, display_name } = await getManifest(extensionPath);
+        const folderName = path.basename(extensionPath);
 
-        return response.send({ version, author, display_name, extensionPath });
+        return response.send({ version, author, display_name, extensionPath, folderName });
     } catch (error) {
         console.error('Importing custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
@@ -367,7 +371,6 @@ router.post('/version', async (request, response) => {
         const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
 
         return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
-
     } catch (error) {
         console.error('Getting extension version failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
@@ -406,7 +409,6 @@ router.post('/delete', async (request, response) => {
         console.info(`Extension has been deleted at ${extensionPath}`);
 
         return response.send(`Extension has been deleted at ${extensionPath}`);
-
     } catch (error) {
         console.error('Deleting custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);

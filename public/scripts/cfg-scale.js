@@ -150,7 +150,6 @@ function onCfgMenuItemClick() {
         setTimeout(function () {
             $('#cfgConfig').hide();
         }, animation_duration);
-
     }
     //duplicate options menu close handler from script.js
     //because this listener takes priority

@@ -82,8 +82,7 @@ function getAuthorFromUrl(url) {
             result.name = pathSegments[0];
             result.url = `${parsedUrl.protocol}//${parsedUrl.hostname}/${result.name}`;
         }
-    }
-    catch (error) {
+    } catch (error) {
         console.debug(DEBUG_PREFIX, 'Error parsing URL:', error);
     }
 
@@ -94,8 +93,7 @@ async function downloadAssetsList(url) {
     updateCurrentAssets().then(async function () {
         fetch(url, { cache: 'no-cache' })
             .then(response => response.json())
-            .then(async function(json) {
-
+            .then(async function (json) {
                 availableAssets = {};
                 $('#assets_menu').empty();
 
@@ -200,8 +198,7 @@ async function downloadAssetsList(url) {
                                 label.removeClass('fa-trash');
                                 label.removeClass('redOverlayGlow');
                             });
-                        }
-                        else {
+                        } else {
                             console.debug(DEBUG_PREFIX, 'not installed, unchecked');
                             element.prop('checked', false);
                             element.on('click', assetInstall);
@@ -347,8 +344,7 @@ async function installAsset(url, assetType, filename) {
                 console.debug(DEBUG_PREFIX, 'Character downloaded.');
             }
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
         return [];
     }
@@ -374,8 +370,7 @@ async function deleteAsset(assetType, filename) {
         if (result.ok) {
             console.debug(DEBUG_PREFIX, 'Deletion success.');
         }
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
         return [];
     }
@@ -428,8 +423,7 @@ async function updateCurrentAssets() {
             headers: getRequestHeaders({ omitContentType: true }),
         });
         currentAssets = result.ok ? (await result.json()) : {};
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
     }
     console.debug(DEBUG_PREFIX, 'Current assets found:', currentAssets);
@@ -491,8 +485,7 @@ jQuery(async () => {
                 connectButton.addClass('fa-plug-circle-exclamation');
                 connectButton.removeClass('redOverlayGlow');
             }
-        }
-        else {
+        } else {
             console.debug(DEBUG_PREFIX, 'Connection refused by user');
         }
     });

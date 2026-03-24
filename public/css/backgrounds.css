@@ -107,7 +107,8 @@
     opacity: 1;
 }
 
-.bg_example .mobile-only-menu-toggle {
+.bg_example .mobile-only-menu-toggle,
+.bg_folder_tile .mobile-only-menu-toggle {
     display: none;
 }
 
@@ -135,19 +136,32 @@
     outline-offset: 0;
 }
 
-.bg_example.locked-background::after {
-    content: '\f023';
+.bg_example.locked-background::after,
+.bg_example.selected-background::before,
+#Backgrounds.bg-selection-mode #bg_menu_content .bg_example.folder-group-selected::before {
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
-
     position: absolute;
+    z-index: 4;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
+    pointer-events: none;
+}
+
+.bg_example.selected-background::before,
+#Backgrounds.bg-selection-mode #bg_menu_content .bg_example.folder-group-selected::before {
+    content: '\f00c';
+    top: 5px;
+    color: var(--white100);
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.bg_example.locked-background::after {
+    content: '\f023';
     bottom: 5px;
     right: 5px;
-    z-index: 4;
     color: var(--golden);
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
     font-size: calc(var(--mainFontSize) * 0.8);
-    pointer-events: none;
 }
 
 .bg_example:not(.locked-background) .jg-unlock,
@@ -161,17 +175,28 @@
 }
 
 .bg_example.selected-background::before {
-    content: '\f00c';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    position: absolute;
-    top: 5px;
     left: 5px;
-    z-index: 4;
-    color: var(--white100);
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8));
-    font-size: calc(var(--mainFontSize) * 0.9);
-    pointer-events: none;
+}
+
+#bg_selection_mode_button.active {
+    color: var(--golden);
+}
+
+#bg_group_select_count {
+    font-weight: 700;
+}
+
+#Backgrounds.bg-selection-mode #bg_menu_content .bg_example .jg-menu {
+    display: none;
+}
+
+#Backgrounds.bg-selection-mode #bg_menu_content .bg_example.folder-group-selected {
+    outline: 2px solid var(--interactable-outline-color);
+    outline-offset: 0;
+}
+
+#Backgrounds.bg-selection-mode #bg_menu_content .bg_example.folder-group-selected::before {
+    right: 5px;
 }
 
 .bg_example .jg-menu {
@@ -375,4 +400,170 @@
 
 #bg_custom_content:not(:empty)~#bg_chat_hint {
     display: none;
+}
+
+.bg_folder_grid.bg_list {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    grid-template-columns: repeat(calc(var(--bg-thumb-columns, 5) + 2), 1fr);
+    margin-bottom: 10px;
+}
+
+.bg_folder_grid:empty {
+    display: none;
+}
+
+.bg_folder_tile {
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    outline: 2px solid var(--SmartThemeBorderColor);
+    outline-offset: -1px;
+    box-shadow: 0 0 7px var(--black50a);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--SmartThemeBlurTintColor);
+    transition: filter var(--animation-duration) ease;
+}
+
+.bg_folder_tile:hover {
+    filter: brightness(1.1);
+}
+
+.bg_folder_tile_cover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-size: cover;
+    background-position: center;
+    border-radius: inherit;
+}
+
+.bg_folder_tile_overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+    color: var(--SmartThemeBodyColor);
+    padding: 6px 8px 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85em;
+    font-weight: 600;
+    pointer-events: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.bg_folder_tile_overlay i {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.bg_folder_tile_name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Folder tile action menu */
+.bg_folder_tile .bg_folder_tile_menu {
+    display: flex;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 5px;
+    padding: 3px;
+    z-index: 3;
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--SmartThemeBorderColor);
+    align-items: center;
+
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.9);
+    transform-origin: center;
+    transition: opacity var(--animation-duration) ease-out, visibility var(--animation-duration) ease-out, transform var(--animation-duration) ease-out;
+}
+
+.bg_folder_tile:hover .bg_folder_tile_menu,
+.bg_folder_tile:focus-within .bg_folder_tile_menu {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+.bg_folder_tile .jg-button {
+    display: flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding: 5px;
+    font-size: 1.1em;
+    border-radius: 5px;
+    transition: background-color var(--animation-duration) ease;
+}
+
+.bg_folder_tile .jg-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* New Folder placeholder tile */
+.bg_new_folder_tile {
+    border: 2px dashed var(--SmartThemeBorderColor);
+    outline: none;
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.6;
+    gap: 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.bg_new_folder_tile:hover {
+    opacity: 1;
+    transform: scale(1.03);
+}
+
+/* Breadcrumb bar */
+.bg_folder_breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    margin-bottom: 5px;
+}
+
+.bg_current_folder_name {
+    font-weight: 600;
+    font-size: 1em;
+    color: var(--SmartThemeBodyColor);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#Backgrounds:not(.in-folder-view) .jg-set-cover {
+    display: none !important;
+}
+
+#Backgrounds.in-folder-view .jg-set-cover {
+    display: flex !important;
+}
+
+/* Hide folder actions on custom (chat-specific) backgrounds */
+.bg_example[custom="true"] .jg-folder,
+.bg_example[custom="true"] .jg-set-cover {
+    display: none !important;
 }

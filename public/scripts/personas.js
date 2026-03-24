@@ -24,7 +24,7 @@ import {
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler } from './utils.js';
+import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler, addLongPressEvent } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { groups, selected_group } from './group-chats.js';
@@ -124,6 +124,7 @@ export async function setUserAvatar(imgfile, { toastPersonaNameChange = true, na
     await retriggerFirstMessageOnEmptyChat();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
+    await eventSource.emit(event_types.PERSONA_CHANGED, user_avatar);
 }
 
 function reloadUserAvatar(force = false) {
@@ -1181,7 +1182,7 @@ async function onPersonaLoreButtonClick(event) {
         return;
     }
 
-    if (event.altKey && selectedLorebook) {
+    if (selectedLorebook && !event.shiftKey && !event.altKey) {
         openWorldInfoEditor(selectedLorebook);
         return;
     }
@@ -1552,9 +1553,8 @@ async function loadPersonaForCurrentChat({ doRender = false } = {}) {
             }
             toastr.success(message, t`Persona Auto Selected`, { escapeHtml: false });
         }
-    }
-    // Even if it's the same persona, we still might need to auto-lock to chat if that's enabled
-    else if (chatPersona && power_user.persona_auto_lock && !chat_metadata.persona) {
+    } else if (chatPersona && power_user.persona_auto_lock && !chat_metadata.persona) {
+        // Even if it's the same persona, we still might need to auto-lock to chat if that's enabled
         await lockPersona('chat');
     }
 
@@ -1593,7 +1593,6 @@ export async function showCharConnections() {
         highlightPersonas: true,
         targetedChar: getCurrentConnectionObj(),
         shiftClickHandler: (element, ev) => {
-
             const personaId = $(element).attr('data-pid');
 
             /** @type {PersonaConnection[]} */
@@ -1845,7 +1844,6 @@ async function lockPersonaCallback(_args, value) {
     if (isFalseBoolean(value)) {
         await setPersonaLockState(false, type);
         return 'false';
-
     }
 
     return '';
@@ -1899,6 +1897,7 @@ function syncCallback() {
 function registerPersonaSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona-lock',
+        aliases: ['lock', 'bind'],
         callback: lockPersonaCallback,
         returns: 'The current lock state for the given type',
         helpString: 'Locks/unlocks a persona (name and avatar) to the current chat. Gets the current lock state for the given type if no state is provided.',
@@ -1919,43 +1918,6 @@ function registerPersonaSlashCommands() {
             SlashCommandArgument.fromProps({
                 description: 'state',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: commonEnumProviders.boolean('onOffToggle'),
-            }),
-        ],
-    }));
-    // TODO: Legacy command. Might be removed in the future and replaced by /persona-lock with aliases.
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'lock',
-        /** @type {(args: { type: string }, value: string) => Promise<string>} */
-        callback: (args, value) => {
-            if (!value) {
-                value = 'toggle';
-                toastr.warning(t`Using /lock without a provided state to toggle the persona is deprecated. Please use /persona-lock instead.
-                        In the future this command with no state provided will return the current state, instead of toggling it.`, t`Deprecation Warning`);
-            }
-            return lockPersonaCallback(args, value);
-        },
-        returns: 'The current lock state for the given type',
-        aliases: ['bind'],
-        helpString: 'Locks/unlocks a persona (name and avatar) to the current chat. Gets the current lock state for the given type if no state is provided.',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'type',
-                description: 'The type of the lock, where it should apply to',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'chat',
-                enumList: [
-                    new SlashCommandEnumValue('chat', 'Lock the persona to the current chat.'),
-                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, multiple personas can be locked to the same character.'),
-                    new SlashCommandEnumValue('default', 'Lock this persona as the default persona for all new chats.'),
-                ],
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'state',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'toggle',
                 enumProvider: commonEnumProviders.boolean('onOffToggle'),
             }),
         ],
@@ -2005,6 +1967,18 @@ export async function initPersonas() {
     $('#persona_depth_value').on('input', onPersonaDescriptionDepthValueInput);
     $('#persona_depth_role').on('input', onPersonaDescriptionDepthRoleInput);
     $('#persona_lore_button').on('click', onPersonaLoreButtonClick);
+    addLongPressEvent('#persona_lore_button', function () {
+        onPersonaLoreButtonClick({ shiftKey: true, altKey: false });
+    });
+    $('#persona-management-dropdown').on('change', async function () {
+        const target = $(this).find(':selected').attr('id');
+        $(this).prop('selectedIndex', 0);
+        switch (target) {
+            case 'persona_lorebook_link':
+                await onPersonaLoreButtonClick({ shiftKey: true, altKey: false });
+                break;
+        }
+    });
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);

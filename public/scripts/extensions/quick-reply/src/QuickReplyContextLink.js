@@ -8,8 +8,6 @@ export class QuickReplyContextLink {
     }
 
 
-
-
     /**@type {QuickReplySet}*/ set;
     /**@type {Boolean}*/ isChained = false;
 

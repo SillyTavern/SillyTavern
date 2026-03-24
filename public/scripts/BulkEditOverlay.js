@@ -14,10 +14,11 @@ import {
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
-import { hideLoader, showLoader } from './loader.js';
+import { loader } from './action-loader.js';
 import { convertCharacterToPersona } from './personas.js';
 import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { createTagInput, getTagKeyForEntity, getTagsList, printTagList, tag_map, compareTagsForSort, removeTagFromMap, importTags, tag_import_setting } from './tags.js';
+import { t } from './i18n.js';
 
 /**
  * Static object representing the actions of the
@@ -101,7 +102,7 @@ class CharacterContextMenu {
      * @param {number} characterId
      * @returns {Promise<void>}
      */
-    static persona = async (characterId) => void(await convertCharacterToPersona(characterId));
+    static persona = async (characterId) => void (await convertCharacterToPersona(characterId));
 
     /**
      * Delete one or more characters,
@@ -754,7 +755,7 @@ class BulkEditOverlay {
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
-        const [x,y] = this.#getContextMenuPosition(event);
+        const [x, y] = this.#getContextMenuPosition(event);
         CharacterContextMenu.show(x, y);
         this.#contextMenuOpen = true;
     };
@@ -846,15 +847,15 @@ class BulkEditOverlay {
 
                 const deleteChats = checkbox.prop('checked') ?? false;
 
-                showLoader();
-                const toast = toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
+                const loaderHandle = loader.show({
+                    title: t`Bulk Delete`,
+                    message: t`Deleting ${characterIds.length} character(s)…`,
+                    toastMode: loader.ToastMode.STATIC,
+                });
                 const avatarList = characterIds.map(id => characters[id]?.avatar).filter(a => a);
                 return CharacterContextMenu.delete(avatarList, deleteChats)
                     .then(() => this.browseState())
-                    .finally(() => {
-                        toastr.clear(toast);
-                        hideLoader();
-                    });
+                    .finally(() => loaderHandle.hide());
             });
 
         // At this moment the popup is already changed in the dom, but not yet closed/resolved. We build the avatar list here

@@ -16,7 +16,7 @@ import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandE
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { applyStreamFadeIn } from './util/stream-fadein.js';
-import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, trimSpaces } from './utils.js';
+import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, stringToRange, trimSpaces } from './utils.js';
 
 /**
  * @typedef {object} ReasoningTemplate
@@ -31,7 +31,7 @@ import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetPropert
  */
 export const reasoning_templates = [];
 
-export const DEFAULT_REASONING_TEMPLATE = 'DeepSeek';
+export const DEFAULT_REASONING_TEMPLATE = 'Think XML';
 
 /**
  * @type {Record<string, JQuery<HTMLElement>>} List of UI elements for reasoning settings
@@ -115,12 +115,14 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.XAI:
                     return data?.choices?.[0]?.message?.reasoning_content ?? '';
                 case chat_completion_sources.OPENROUTER:
-                    return data?.choices?.[0]?.message?.reasoning ?? '';
+                    return data?.choices?.[0]?.message?.reasoning
+                        ?? data?.choices?.[0]?.message?.reasoning_content
+                        ?? '';
                 case chat_completion_sources.MAKERSUITE:
                 case chat_completion_sources.VERTEXAI:
                     return data?.responseContent?.parts?.filter(part => part.thought)?.map(part => part.text)?.join('\n\n') ?? '';
                 case chat_completion_sources.CLAUDE:
-                    return data?.content?.find(part => part.type === 'thinking')?.thinking ?? '';
+                    return data?.content?.filter(part => part.type === 'thinking')?.map(part => part.thinking)?.join('\n\n') ?? '';
                 case chat_completion_sources.MISTRALAI:
                     return data?.choices?.[0]?.message?.content?.[0]?.thinking?.map(part => part.text)?.filter(x => x)?.join('\n\n') ?? '';
                 case chat_completion_sources.AIMLAPI:
@@ -865,7 +867,6 @@ function selectReasoningTemplateCallback(args, name) {
     UI.$select.val(foundName).trigger('change');
     !quiet && toastr.success(`Reasoning template "${foundName}" selected`);
     return foundName;
-
 }
 
 function registerReasoningSlashCommands() {
@@ -1043,6 +1044,80 @@ function registerReasoningSlashCommands() {
                 </ul>
             </div>
             `,
+    }));
+
+    /**
+     * Gets the reasoning details elements for a message range.
+     * @param {string} value Unnamed argument value (message ID or range)
+     * @returns {JQuery<HTMLElement>|null} The reasoning details elements, or null if not found
+     */
+    function getReasoningDetailsElements(value) {
+        const range = value ? stringToRange(String(value), 0, chat.length - 1) : { start: chat.length - 1, end: chat.length - 1 };
+        if (!range) {
+            toastr.warning(t`Invalid message ID or range: ${value}`);
+            return null;
+        }
+        const selector = Array.from({ length: range.end - range.start + 1 }, (_, i) =>
+            `#chat [mesid="${range.start + i}"] .mes_reasoning_details`,
+        ).join(',');
+        const details = $(selector);
+        if (details.length === 0) {
+            toastr.warning(t`No reasoning blocks found for the specified messages.`);
+            return null;
+        }
+        return details;
+    }
+
+    const reasoningVisibilityArgs = [
+        SlashCommandArgument.fromProps({
+            description: 'Message ID or range (e.g. 0-10). If not provided, the last message is used.',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+            enumProvider: commonEnumProviders.messages(),
+        }),
+    ];
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-collapse',
+        aliases: ['collapse-reasoning'],
+        helpString: t`Collapse the reasoning block of a message or range of messages.`,
+        unnamedArgumentList: reasoningVisibilityArgs,
+        callback: (_args, value) => {
+            const details = getReasoningDetailsElements(value);
+            if (details) details.removeAttr('open');
+            return '';
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-expand',
+        aliases: ['expand-reasoning'],
+        helpString: t`Expand the reasoning block of a message or range of messages.`,
+        unnamedArgumentList: reasoningVisibilityArgs,
+        callback: (_args, value) => {
+            const details = getReasoningDetailsElements(value);
+            if (details) details.attr('open', '');
+            return '';
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-toggle',
+        aliases: ['toggle-reasoning'],
+        helpString: t`Toggle the reasoning block of a message or range of messages. Expanded blocks will be collapsed, and collapsed blocks will be expanded.`,
+        unnamedArgumentList: reasoningVisibilityArgs,
+        callback: (_args, value) => {
+            const details = getReasoningDetailsElements(value);
+            if (!details) return '';
+            details.each(function () {
+                const $el = $(this);
+                if ($el.attr('open') !== undefined) {
+                    $el.removeAttr('open');
+                } else {
+                    $el.attr('open', '');
+                }
+            });
+            return '';
+        },
     }));
 }
 

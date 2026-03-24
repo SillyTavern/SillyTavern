@@ -25,7 +25,7 @@ import {
     saveGroupBookmarkChat,
     selected_group,
 } from './group-chats.js';
-import { hideLoader, showLoader } from './loader.js';
+import { loader } from './action-loader.js';
 import { getLastMessageId } from './macros.js';
 import { Popup } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -34,6 +34,7 @@ import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsPro
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { createTagMapFromList } from './tags.js';
 import { renderTemplateAsync } from './templates.js';
+import { compressRequest } from './request-compression.js';
 import { t } from './i18n.js';
 
 import {
@@ -111,12 +112,10 @@ function getMainChatName() {
     if (chat_metadata) {
         if (chat_metadata.main_chat) {
             return chat_metadata.main_chat;
-        }
-        // groups didn't support bookmarks before chat metadata was introduced
-        else if (selected_group) {
+        } else if (selected_group) {
+            // groups didn't support bookmarks before chat metadata was introduced
             return null;
-        }
-        else if (characters[this_chid].chat && characters[this_chid].chat.includes(bookmarkNameToken)) {
+        } else if (characters[this_chid].chat && characters[this_chid].chat.includes(bookmarkNameToken)) {
             const tokenIndex = characters[this_chid].chat.lastIndexOf(bookmarkNameToken);
             chat_metadata.main_chat = characters[this_chid].chat.substring(0, tokenIndex).trim();
             return chat_metadata.main_chat;
@@ -146,8 +145,7 @@ export function showBookmarksButtons() {
             $('#option_back_to_main').hide();
             $('#option_new_bookmark').show();
         }
-    }
-    catch {
+    } catch {
         $('#option_back_to_main').hide();
         $('#option_new_bookmark').hide();
         $('#option_convert_to_group').hide();
@@ -389,11 +387,12 @@ export async function convertSoloToGroupChat() {
     }
 
     // Save group chat
-    const createChatResponse = await fetch('/api/chats/group/save', {
+    const createChatRequest = await compressRequest({
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat] }),
     });
+    const createChatResponse = await fetch('/api/chats/group/save', createChatRequest);
 
     if (!createChatResponse.ok) {
         console.error('Group chat creation unsuccessful');
@@ -662,15 +661,20 @@ export function initBookmarks() {
             return;
         }
 
+        const loaderHandle = loader.show({
+            title: t`Chat History`,
+            message: t`Loading chat…`,
+            toastMode: loader.ToastMode.STATIC,
+        });
+
         try {
-            showLoader();
             if (selected_group) {
                 await openGroupChat(selected_group, fileName);
             } else {
                 await openCharacterChat(fileName);
             }
         } finally {
-            await hideLoader();
+            await loaderHandle.hide();
         }
 
         $('#shadow_select_chat_popup').css('display', 'none');

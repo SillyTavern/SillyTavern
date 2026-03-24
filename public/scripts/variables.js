@@ -264,24 +264,6 @@ async function listVariablesCallback(args) {
     /** @type {import('./slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
     let returnType = args.return;
 
-    // Old legacy return type handling
-    if (args.format) {
-        toastr.warning(`Legacy argument 'format' with value '${args.format}' is deprecated. Please use 'return' instead. Routing to the correct return type...`, 'Deprecation warning');
-        const type = String(args?.format).toLowerCase().trim();
-        switch (type) {
-            case 'none':
-                returnType = 'none';
-                break;
-            case 'chat':
-                returnType = 'chat-html';
-                break;
-            case 'popup':
-            default:
-                returnType = 'popup-html';
-                break;
-        }
-    }
-
     // Now the actual new return type handling
     const scope = String(args?.scope || '').toLowerCase().trim() || 'all';
     if (!chat_metadata.variables) {
@@ -388,8 +370,7 @@ async function timesCallback(args, value) {
             command.breakController = new SlashCommandBreakController();
             command.scope.setMacro('timesIndex', i);
             result = await command.execute();
-        }
-        else {
+        } else {
             result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
         }
         if (result.isAborted) break;
@@ -946,19 +927,6 @@ export function registerVariableCommands() {
                 defaultValue: 'popup-html',
                 enumList: slashCommandReturnHelper.enumList({ allowPipe: false, allowObject: true, allowChat: true, allowPopup: true, allowTextVersion: false }),
                 forceEnum: true,
-            }),
-            // TODO remove some day
-            SlashCommandNamedArgument.fromProps({
-                name: 'format',
-                description: '!!! DEPRECATED - use "return" instead !!! output format',
-                typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
-                forceEnum: true,
-                enumList: [
-                    new SlashCommandEnumValue('popup', 'Show variables in a popup.', enumTypes.enum, enumIcons.default),
-                    new SlashCommandEnumValue('chat', 'Post a system message to the chat.', enumTypes.enum, enumIcons.message),
-                    new SlashCommandEnumValue('none', 'Just return the variables as a JSON list.', enumTypes.enum, enumIcons.array),
-                ],
             }),
         ],
     }));

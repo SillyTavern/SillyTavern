@@ -4,6 +4,7 @@ import path from 'node:path';
 import express from 'express';
 import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
+import bytes from 'bytes';
 
 import { SETTINGS_FILE } from '../constants.js';
 import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
@@ -13,6 +14,10 @@ import { getFileNameValidationFunction } from '../middleware/validateFileName.js
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
 const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
+const ENABLE_REQUEST_COMPRESSION = !!getConfigValue('performance.requestCompression.enabled', false, 'boolean');
+const REQUEST_COMPRESSION_MIN = bytes.parse(getConfigValue('performance.requestCompression.minPayloadSize', '256kb'));
+const REQUEST_COMPRESSION_MAX = bytes.parse(getConfigValue('performance.requestCompression.maxPayloadSize', '8mb'));
+const REQUEST_COMPRESSION_TIMEOUT = Number(getConfigValue('performance.requestCompression.timeout', 3000, 'number'));
 
 // 10 minutes
 const AUTOSAVE_INTERVAL = 10 * 60 * 1000;
@@ -58,8 +63,7 @@ function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
         try {
             const file = fs.readFileSync(path.join(directoryPath, item), 'utf-8');
             parsedFiles.push(fileExtension == '.json' ? JSON.parse(file) : file);
-        }
-        catch {
+        } catch {
             // skip
         }
     });
@@ -282,6 +286,12 @@ router.post('/get', (request, response) => {
         enable_extensions: ENABLE_EXTENSIONS,
         enable_extensions_auto_update: ENABLE_EXTENSIONS_AUTO_UPDATE,
         enable_accounts: ENABLE_ACCOUNTS,
+        request_compression: {
+            enabled: ENABLE_REQUEST_COMPRESSION,
+            minPayloadSize: REQUEST_COMPRESSION_MIN || 0,
+            maxPayloadSize: REQUEST_COMPRESSION_MAX || 0,
+            timeout: REQUEST_COMPRESSION_TIMEOUT || 0,
+        },
     });
 });
 

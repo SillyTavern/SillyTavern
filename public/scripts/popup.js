@@ -1,5 +1,6 @@
 import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
+import { t } from './i18n.js';
 import { power_user, toastPositionClasses } from './power-user.js';
 import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
@@ -40,6 +41,8 @@ export const POPUP_RESULT = {
  * @property {string|boolean?} [okButton=null] - Custom text for the OK button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
  * @property {string|boolean?} [cancelButton=null] - Custom text for the Cancel button. A set text will always show the button. `true` or `false` to explicitly show or hide the button. `null` will leave the behavior and display of the button unchanged, based on the popup type.
  * @property {number?} [rows=1] - The number of rows for the input field
+ * @property {string?} [placeholder=null] - Placeholder text for the main interactive element (input field for INPUT type). For other popup types, use tooltip for additional hints or to describe content elements.
+ * @property {string?} [tooltip=null] - Tooltip text shown on hover for the main interactive element or content area
  * @property {boolean?} [wide=false] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
  * @property {boolean?} [wider=false] - Whether to display the popup in wider mode (just wider, no height scaling)
  * @property {boolean?} [large=false] - Whether to display the popup in large mode (90% of screen)
@@ -51,6 +54,7 @@ export const POPUP_RESULT = {
  * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
+ * @property {boolean} [allowEscapeClose=true] - If true, allows closing the popup with the Escape key, returning `POPUP_RESULT.CANCELLED`. If false, requires double-escape to force close with a confirmation to prevent accidental closure.
  * @property {(popup: Popup) => Promise<boolean?>|boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => Promise<void?>|void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
  * @property {(popup: Popup) => Promise<void?>|void?} [onOpen=null] - Handler called after the popup opens
@@ -61,8 +65,10 @@ export const POPUP_RESULT = {
 /**
  * @typedef {object} CustomPopupButton
  * @property {string} text - The text of the button
+ * @property {string?} [tooltip] - Optional tooltip text displayed when hovering over the button
  * @property {POPUP_RESULT|number?} [result] - The result of the button - can also be a custom result value to make be able to find out that this button was clicked. If no result is specified, this button will **not** close the popup.
  * @property {string[]|string?} [classes] - Optional custom CSS classes applied to the button
+ * @property {string?} [icon] - Optional Font Awesome icon class (e.g. 'fa-wand-magic-sparkles') to display before the text
  * @property {()=>void?} [action] - Optional action to perform when the button is clicked
  * @property {boolean?} [appendAtEnd] - Whether to append the button to the end of the popup - by default it will be prepended
  */
@@ -71,9 +77,10 @@ export const POPUP_RESULT = {
  * @typedef {object} CustomPopupInput
  * @property {string} id - The id for the html element
  * @property {string} label - The label text for the input
- * @property {string?} [tooltip=null] - Optional tooltip icon displayed behind the label
+ * @property {string?} [tooltip=null] - Optional tooltip to be displayed. Default placeholder in input controls, tooltip icon behind the checkbox for those.
  * @property {boolean|string|undefined} [defaultState=false] - The default state when opening the popup (false if not set)
- * @property {string?} [type='checkbox'] - The type of the input (default is checkbox)
+ * @property {('checkbox'|'text'|'textarea')?} [type='checkbox'] - The type of the input (default is checkbox)
+ * @property {number?} [rows=1] - The number of rows for the input field, if the input is 'textarea'
  */
 
 /**
@@ -167,7 +174,11 @@ export class Popup {
 
     /** @type {Promise<any>} */ #promise;
     /** @type {(result: any) => any} */ #resolver;
+
+    /** @type {boolean} */ #allowEscapeClose;
     /** @type {boolean} */ #isClosingPrevented;
+    /** @type {number} */ #lastEscapePress = 0;
+    /** @type {boolean} */ #isShowingForceCloseConfirm = false;
 
     /**
      * Constructs a new Popup object with the given text content, type, inputValue, and options
@@ -177,12 +188,38 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, onOpen = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', {
+        okButton = null,
+        cancelButton = null,
+        rows = 1,
+        placeholder = null,
+        tooltip = null,
+        wide = false,
+        wider = false,
+        large = false,
+        transparent = false,
+        allowHorizontalScrolling = false,
+        allowVerticalScrolling = false,
+        leftAlign = false,
+        animation = 'fast',
+        defaultResult = POPUP_RESULT.AFFIRMATIVE,
+        customButtons = null,
+        customInputs = null,
+        allowEscapeClose = true,
+        onClosing = null,
+        onClose = null,
+        onOpen = null,
+        cropAspect = null,
+        cropImage = null,
+    } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
         this.id = uuidv4();
         this.type = type;
+
+        // Setup some args being passed in as private properties
+        this.#allowEscapeClose = allowEscapeClose;
 
         // Utilize event handlers being passed in
         this.onClosing = onClosing;
@@ -232,6 +269,15 @@ export class Popup {
         this.cancelButton.textContent = typeof cancelButton === 'string' ? cancelButton : template.getAttribute('popup-button-cancel');
         this.cancelButton.dataset.i18n = this.cancelButton.textContent;
 
+        /** @param {HTMLElement} control @param {string} text Sets the title attribute and translation, if text is provided  */
+        function setTitleFromTooltip(control, text) {
+            if (!text) return;
+            control.title = text;
+            if (!control.dataset.i18n) {
+                control.dataset.i18n = '[title]' + text; // Don't override an existing translation of main text with title translation
+            }
+        }
+
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
         this.customButtons?.forEach((x, index) => {
@@ -242,9 +288,22 @@ export class Popup {
             buttonElement.classList.add('menu_button', 'popup-button-custom', 'result-control');
             buttonElement.classList.add(...(button.classes ?? []));
             buttonElement.dataset.result = String(button.result); // This is expected to also write 'null' or 'staging', to indicate cancel and no action respectively
-            buttonElement.textContent = button.text;
-            buttonElement.dataset.i18n = buttonElement.textContent;
             buttonElement.tabIndex = 0;
+
+            if (button.icon) {
+                const icon = document.createElement('i');
+                icon.className = `fa-solid ${button.icon}`;
+                buttonElement.appendChild(icon);
+                const textSpan = document.createElement('span');
+                textSpan.textContent = button.text;
+                textSpan.dataset.i18n = button.text;
+                buttonElement.classList.add('menu_button_icon');
+                buttonElement.appendChild(textSpan);
+            } else {
+                buttonElement.textContent = button.text;
+                buttonElement.dataset.i18n = buttonElement.textContent;
+            }
+            setTitleFromTooltip(buttonElement, button.tooltip);
 
             if (button.appendAtEnd) {
                 this.buttonControls.appendChild(buttonElement);
@@ -281,8 +340,7 @@ export class Popup {
                 if (input.tooltip) {
                     const tooltip = document.createElement('div');
                     tooltip.classList.add('fa-solid', 'fa-circle-info', 'opacity50p');
-                    tooltip.title = input.tooltip;
-                    tooltip.dataset.i18n = '[title]' + input.tooltip;
+                    setTitleFromTooltip(tooltip, input.tooltip);
                     label.appendChild(tooltip);
                 }
 
@@ -298,6 +356,28 @@ export class Popup {
                 inputElement.id = input.id;
                 inputElement.value = String(input.defaultState ?? '');
                 inputElement.placeholder = input.tooltip ?? '';
+                setTitleFromTooltip(inputElement, input.tooltip);
+
+                const labelText = document.createElement('span');
+                labelText.innerText = input.label;
+                labelText.dataset.i18n = input.label;
+
+                label.appendChild(labelText);
+                label.appendChild(inputElement);
+
+                this.inputControls.appendChild(label);
+            } else if (input.type === 'textarea') {
+                const label = document.createElement('label');
+                label.classList.add('text_label', 'justifyCenter');
+                label.setAttribute('for', input.id);
+
+                const inputElement = document.createElement('textarea');
+                inputElement.classList.add('text_pole', 'result-control');
+                inputElement.id = input.id;
+                inputElement.value = String(input.defaultState ?? '');
+                inputElement.rows = input.rows ?? 1;
+                inputElement.placeholder = input.tooltip ?? '';
+                setTitleFromTooltip(inputElement, input.tooltip);
 
                 const labelText = document.createElement('span');
                 labelText.innerText = input.label;
@@ -308,7 +388,7 @@ export class Popup {
 
                 this.inputControls.appendChild(label);
             } else {
-                console.warn('Unknown custom input type. Only checkbox and text are supported.', input);
+                console.warn('Unknown custom input type. Only checkbox, text and textarea are supported.', input);
                 return;
             }
         });
@@ -384,6 +464,16 @@ export class Popup {
         this.mainInput.value = inputValue;
         this.mainInput.rows = rows ?? 1;
 
+        // Apply placeholder and tooltip based on popup type
+        if (type === POPUP_TYPE.INPUT) {
+            // For INPUT type, apply to the main input element
+            this.mainInput.placeholder = placeholder ?? '';
+            setTitleFromTooltip(this.mainInput, tooltip);
+        } else {
+            // For other types, apply tooltip to the content area
+            setTitleFromTooltip(this.content, tooltip);
+        }
+
         this.content.innerHTML = '';
         if (content instanceof jQuery) {
             $(this.content).append(content);
@@ -418,6 +508,53 @@ export class Popup {
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = async (evt) => {
+            if (!this.#allowEscapeClose) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                // Set flag so closeListener also blocks the close event (browser may fire it after multiple Escape presses)
+                this.#isClosingPrevented = true;
+
+                // Check for double-escape within 500ms to allow force-closing
+                const now = Date.now();
+                const timeSinceLastEscape = now - this.#lastEscapePress;
+                this.#lastEscapePress = now;
+
+                if (timeSinceLastEscape < 500 && !this.#isShowingForceCloseConfirm) {
+                    this.#isShowingForceCloseConfirm = true;
+
+                    // Defer to next frame to escape the current event context,
+                    // allowing the confirmation popup to stack properly on top
+                    requestAnimationFrame(async () => {
+                        const confirmPopup = new Popup(
+                            PopupUtils.BuildTextWithHeader(
+                                t`Force-close Blocking Popup`, `
+                                <p>${t`This action is blocking and not meant to be closed manually.`}</p>
+                                <p>${t`Force-closing may leave the application in an inconsistent state.`}</p>
+                                <p><strong>${t`Are you sure you want to force-close?`}</strong></p>`),
+                            POPUP_TYPE.CONFIRM,
+                            '',
+                            { okButton: t`Force Close`, cancelButton: t`Cancel` });
+
+                        // If the the main popup closes while the force-close popup is still being displayed, we gracefully cancel that.
+                        const originalOnClose = this.onClose;
+                        this.onClose = async (x) => {
+                            if (originalOnClose) await originalOnClose;
+                            await confirmPopup.completeCancelled();
+                        };
+
+
+                        const result = await confirmPopup.show();
+                        this.#isShowingForceCloseConfirm = false;
+                        if (result === POPUP_RESULT.AFFIRMATIVE) {
+                            // Force-close by bypassing the normal close prevention
+                            this.#isClosingPrevented = false;
+                            await this.complete(POPUP_RESULT.CANCELLED);
+                        }
+                    });
+                }
+                return;
+            }
+
             evt.preventDefault();
             evt.stopPropagation();
             await this.complete(POPUP_RESULT.CANCELLED);
@@ -478,7 +615,6 @@ export class Popup {
                     break;
                 }
             }
-
         };
         this.dlg.addEventListener('keydown', keyListener.bind(this));
     }
@@ -584,7 +720,7 @@ export class Popup {
             this.inputResults = new Map(this.customInputs.map(input => {
                 /** @type {HTMLInputElement} */
                 const inputControl = this.dlg.querySelector(`#${input.id}`);
-                const value = input.type === 'text' ? inputControl.value : inputControl.checked;
+                const value = ['text', 'textarea'].includes(input.type) ? inputControl.value : inputControl.checked;
                 return [inputControl.id, value];
             }));
         }

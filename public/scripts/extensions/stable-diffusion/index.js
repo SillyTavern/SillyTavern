@@ -810,13 +810,60 @@ async function onRenameStyleClick() {
 /**
  * Modifies prompt based on user inputs.
  * @param {string} prompt Prompt to refine
- * @param {boolean} isNegative Whether the prompt is a negative one
+ * @param {object} [args] Additional arguments for refinement
+ * @param {string} [args.negative] Negative prompt to prefill
+ * @param {string} [args.resolution] Saved resolution to offer as a checkbox option
  * @returns {Promise<string>} Refined prompt
  */
-async function refinePrompt(prompt, isNegative) {
+async function refinePrompt(prompt, args = null) {
     if (extension_settings.sd.refine_mode) {
-        const text = isNegative ? '<h3>Review and edit the <i>negative</i> prompt:</h3>' : '<h3>Review and edit the prompt:</h3>';
-        const refinedPrompt = await callGenericPopup(text + 'Press "Cancel" to abort the image generation.', POPUP_TYPE.INPUT, prompt.trim(), { rows: 8, okButton: 'Continue' });
+        /** @type {import('../../popup.js').CustomPopupInput[]} */
+        const customInputs = [];
+
+        if (args?.negative) {
+            customInputs.push({
+                id: 'sd_refine_negative',
+                label: t`Negative prompt (optional)`,
+                type: 'textarea',
+                rows: 4,
+                defaultState: String(args.negative || ''),
+            });
+        }
+
+        if (args?.resolution) {
+            customInputs.push({
+                id: 'sd_use_saved_resolution',
+                label: t`Use saved resolution (${args.resolution})`,
+                type: 'checkbox',
+                defaultState: true,
+            });
+        }
+
+        const refinedPrompt = await Popup.show.input(
+            t`Review and edit the prompt:`,
+            t`Press "Cancel" to abort the image generation.`,
+            prompt.trim(),
+            {
+                rows: 8,
+                okButton: t`Continue`,
+                cancelButton: t`Cancel`,
+                customInputs,
+                onClose: (popup) => {
+                    if (!popup.result || !(popup.inputResults instanceof Map) || !args) {
+                        return;
+                    }
+
+                    const negativeInput = popup.inputResults.get('sd_refine_negative');
+                    const useSavedResolution = popup.inputResults.get('sd_use_saved_resolution');
+
+                    if (negativeInput) {
+                        args.negative = negativeInput.toString().trim();
+                    }
+                    if (!useSavedResolution) {
+                        args.resolution = null;
+                    }
+                },
+            });
 
         if (refinedPrompt) {
             return String(refinedPrompt);
@@ -2044,7 +2091,8 @@ async function loadFalaiModels() {
 
 async function loadXAIModels() {
     return [
-        { value: 'grok-2-image-1212', text: 'grok-2-image-1212' },
+        { value: 'grok-imagine-image', text: 'grok-imagine-image' },
+        { value: 'grok-imagine-image-pro', text: 'grok-imagine-image-pro' },
     ];
 }
 
@@ -2871,7 +2919,7 @@ function ensureSelectionExists(setting, selector) {
 function updateGenerationIndicator() {
     if (activeGenerations > 0) {
         const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
-        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating image`}${countText}...`;
+        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating an image`}${countText}...`;
 
         // Show persistent toast if not already showing
         if (!generationToast) {
@@ -2952,7 +3000,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     const quietPrompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
-    const characterName = context.groupId
+    let characterName = context.groupId
         ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
         : context.characters[context.characterId]?.name;
 
@@ -2972,6 +3020,10 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     if (isTrueBoolean(args?.quiet)) {
         callback = () => { };
+    }
+
+    if (isFalseBoolean(args?.gallery)) {
+        characterName = '';
     }
 
     const dimensions = setTypeSpecificDimensions(generationType);
@@ -3021,8 +3073,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         const errorText = 'SD prompt text generation failed. ' + reason;
         toastr.error(errorText, 'Image Generation');
         throw new Error(errorText);
-    }
-    finally {
+    } finally {
         $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
@@ -3032,23 +3083,29 @@ async function generatePicture(initiator, args, trigger, message, callback) {
     return imagePath;
 }
 
-function setTypeSpecificDimensions(generationType) {
+/**
+ * Adjusts image generation dimensions based on the generation type and/or previous media attachment.
+ * @param {number} generationType The type of image generation to perform, used to determine dimension adjustments
+ * @param {MediaAttachment} [mediaAttachment] Media attachment to base dimension adjustments on
+ * @returns {{height: number, width: number}} Previous dimensions before modification
+ */
+function setTypeSpecificDimensions(generationType, mediaAttachment = null) {
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
 
-    // Face images are always portrait (pun intended)
-    if ((generationType === generationMode.FACE || generationType === generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
+    // 1. If there's a media attachment, match its previous dimensions
+    // 2. Face images are always portrait (pun intended) - increase height if needed
+    // 3. Background images are always landscape - increase width if needed
+    if (Number.isInteger(mediaAttachment?.width) && Number.isInteger(mediaAttachment?.height)) {
+        extension_settings.sd.width = mediaAttachment.width;
+        extension_settings.sd.height = mediaAttachment.height;
+    } else if ((generationType === generationMode.FACE || generationType === generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
         // Round to nearest multiple of 64
         extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
-    }
-
-    if (generationType === generationMode.BACKGROUND) {
-        // Background images are always landscape
-        if (aspectRatio <= 1) {
-            // Round to nearest multiple of 64
-            extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
-        }
+    } else if (generationType === generationMode.BACKGROUND && aspectRatio <= 1) {
+        // Round to nearest multiple of 64
+        extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
     }
 
     if (extension_settings.sd.snap) {
@@ -3076,6 +3133,10 @@ function setTypeSpecificDimensions(generationType) {
     return { height: prevSDHeight, width: prevSDWidth };
 }
 
+/**
+ * Restores the original image generation dimensions after generation is complete.
+ * @param {{height: number, width: number}} savedParams The original dimensions to restore
+ */
 function restoreOriginalDimensions(savedParams) {
     extension_settings.sd.height = savedParams.height;
     extension_settings.sd.width = savedParams.width;
@@ -3115,7 +3176,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt, combineN
     }
 
     if (generationType !== generationMode.FREE) {
-        prompt = await refinePrompt(prompt, false);
+        prompt = await refinePrompt(prompt);
     }
 
     return prompt;
@@ -3367,7 +3428,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
         return;
     }
 
-    const filename = `${characterName}_${humanizedDateTime()}`;
+    const filename = characterName ? `${characterName}_${humanizedDateTime()}` : humanizedDateTime();
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback
         ? await callback(prompt, base64Image, generationType, additionalNegativePrefix, initiator, prefixedPrompt, result.format)
@@ -3487,7 +3548,7 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'|'zai'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'|'xai'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
@@ -3518,6 +3579,22 @@ function getClosestAspectRatio(width, height, source) {
                     '1:1': 1,
                     '16:9': 16 / 9,
                     '9:16': 9 / 16,
+                };
+            case 'xai':
+                return {
+                    '1:1': 1,
+                    '3:4': 3 / 4,
+                    '4:3': 4 / 3,
+                    '9:16': 9 / 16,
+                    '16:9': 16 / 9,
+                    '2:3': 2 / 3,
+                    '3:2': 3 / 2,
+                    '9:19.5': 9 / 19.5,
+                    '19.5:9': 19.5 / 9,
+                    '9:20': 9 / 20,
+                    '20:9': 20 / 9,
+                    '1:2': 1 / 2,
+                    '2:1': 2 / 1,
                 };
             default:
                 console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
@@ -4404,6 +4481,16 @@ async function generateBflImage(prompt, signal) {
  * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
  */
 async function generateXAIImage(prompt, _negativePrompt, signal) {
+    let aspectRatio;
+    let resolution;
+
+    if (/grok-imagine/.test(extension_settings.sd.model)) {
+        const resolutionThreshold = 1296 * 864;
+        const use2kResolution = (extension_settings.sd.width * extension_settings.sd.height) > resolutionThreshold;
+        aspectRatio = getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'xai');
+        resolution = use2kResolution ? '2k' : '1k';
+    }
+
     const result = await fetch('/api/sd/xai/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -4411,12 +4498,14 @@ async function generateXAIImage(prompt, _negativePrompt, signal) {
         body: JSON.stringify({
             prompt: prompt,
             model: extension_settings.sd.model,
+            aspect_ratio: aspectRatio,
+            resolution: resolution,
         }),
     });
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'jpg', data: data.image };
+        return { format: data.format, data: data.image };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -5147,7 +5236,7 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
     const stopButton = document.getElementById('sd_stop_gen');
     const stopListener = () => abortController.abort('Aborted by user');
     const generationType = mediaAttachment.generation_type ?? message?.extra?.generationType ?? generationMode.FREE;
-    const dimensions = setTypeSpecificDimensions(generationType);
+    let dimensions = { width: extension_settings.sd.width, height: extension_settings.sd.height };
     extension_settings.sd.original_seed = extension_settings.sd.seed;
     extension_settings.sd.seed = extension_settings.sd.seed >= 0 ? Math.round(Math.random() * (Math.pow(2, 32) - 1)) : -1;
 
@@ -5163,9 +5252,13 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
         const callback = (_a, _b, _c, _d, _e, _f, format) => { result.type = isVideo(format) ? MEDIA_TYPE.VIDEO : MEDIA_TYPE.IMAGE; };
         const savedPrompt = mediaAttachment.title ?? message.extra.title ?? '';
-        const prompt = await refinePrompt(savedPrompt, false);
         const savedNegative = mediaAttachment.negative ?? message.extra.negative ?? '';
-        const negative = savedNegative ? await refinePrompt(savedNegative, true) : '';
+        const refineArgs = {
+            negative: savedNegative,
+            resolution: mediaAttachment.width && mediaAttachment.height ? `${mediaAttachment.width}x${mediaAttachment.height}` : null,
+        };
+        const prompt = await refinePrompt(savedPrompt, refineArgs);
+        dimensions = setTypeSpecificDimensions(generationType, refineArgs.resolution ? mediaAttachment : null);
 
         const context = getContext();
         const characterName = context.groupId
@@ -5173,10 +5266,14 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
             : context.characters[context.characterId]?.name;
 
         onStart();
-        result.url = await sendGenerationRequest(generationType, prompt, negative, characterName, callback, initiators.swipe, abortController.signal);
+        result.url = await sendGenerationRequest(generationType, prompt, refineArgs.negative, characterName, callback, initiators.swipe, abortController.signal);
         result.generation_type = generationType;
         result.title = prompt;
-        result.negative = negative;
+        result.negative = refineArgs.negative;
+        if (refineArgs.resolution) {
+            result.width = mediaAttachment.width;
+            result.height = mediaAttachment.height;
+        }
     } finally {
         onComplete();
         $(stopButton).hide();
@@ -5341,7 +5438,6 @@ function registerFunctionTool() {
             const url = await generatePicture(initiators.tool, {}, args.prompt);
             return encodeURI(url);
         },
-        formatMessage: () => 'Generating an image...',
     });
 }
 
@@ -5357,7 +5453,23 @@ jQuery(async () => {
             const currentSettings = applyCommandArguments(args);
 
             try {
-                return await generatePicture(initiators.command, args, String(trigger));
+                const url = await generatePicture(initiators.command, args, String(trigger));
+
+                // Save override width/height into a message result
+                if (!isTrueBoolean(args?.quiet?.toString()) && Object.hasOwn(args, 'width') && Object.hasOwn(args, 'height')) {
+                    const context = getContext();
+                    const message = context.chat.at(-1);
+                    if (Array.isArray(message?.extra?.media) && message.extra.media.length > 0) {
+                        const mediaAttachment = message.extra.media.findLast(m => m.url === url);
+                        if (mediaAttachment) {
+                            mediaAttachment.width = extension_settings.sd.width;
+                            mediaAttachment.height = extension_settings.sd.height;
+                            await context.saveChat();
+                        }
+                    }
+                }
+
+                return url;
             } catch (error) {
                 console.error('Failed to generate image:', error);
                 return '';
@@ -5372,6 +5484,9 @@ jQuery(async () => {
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
+            ),
+            new SlashCommandNamedArgument(
+                'gallery', 'whether to save the generated image to the character gallery', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'negative',
@@ -5555,7 +5670,7 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified).
+                Requests to generate an image and posts it to chat (unless <code>quiet=true</code> argument is specified). The image is saved to the character gallery by default; use <code>gallery=false</code> to save to the root of the user images directory.
             </div>
             <div>
                 Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.

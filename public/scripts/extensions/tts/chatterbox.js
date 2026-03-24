@@ -239,7 +239,6 @@ class ChatterboxTtsProvider {
             }
 
             this.setupEventListeners();
-
         } catch (error) {
             console.error('Error loading Chatterbox settings:', error);
             this.updateStatus('Offline');
@@ -518,7 +517,6 @@ class ChatterboxTtsProvider {
             });
 
             await audio.play();
-
         } catch (error) {
             console.error('Error previewing voice:', error);
             this.updateStatus('Ready');
@@ -627,7 +625,6 @@ class ChatterboxTtsProvider {
 
             // Return the response directly - SillyTavern expects a Response object
             return response;
-
         } catch (error) {
             console.error('Error in generateTts:', error);
             this.updateStatus('Ready');

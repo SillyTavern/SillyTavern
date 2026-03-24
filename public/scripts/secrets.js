@@ -474,7 +474,14 @@ export async function renameSecret(key, id, label) {
 /**
  * Redirects the user to authorize OpenRouter.
  */
-function authorizeOpenRouter() {
+async function authorizeOpenRouter() {
+    if (secret_state[SECRET_KEYS.OPENROUTER]) {
+        const confirmed = await Popup.show.confirm(t`OpenRouter API key already exists`, t`Do you really wish to create a new OpenRouter key? Your existing key will not be deleted.`);
+        if (!confirmed) {
+            return;
+        }
+    }
+
     const redirectUrl = new URL('/callback/openrouter', window.location.origin);
     const openRouterUrl = `https://openrouter.ai/auth?callback_url=${encodeURIComponent(redirectUrl.toString())}`;
     location.href = openRouterUrl;

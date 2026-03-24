@@ -96,6 +96,10 @@ export const event_types = {
     WORLDINFO_ENTRIES_LOADED: 'worldinfo_entries_loaded',
     WORLDINFO_SCAN_DONE: 'worldinfo_scan_done',
     MEDIA_ATTACHMENT_DELETED: 'media_attachment_deleted',
+    PERSONA_CHANGED: 'persona_changed',
+    TTS_JOB_STARTED: 'tts_job_started',
+    TTS_AUDIO_READY: 'tts_audio_ready',
+    TTS_JOB_COMPLETE: 'tts_job_complete',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY, event_types.APP_INITIALIZED]);

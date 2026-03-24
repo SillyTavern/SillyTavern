@@ -110,13 +110,9 @@ class CosyVoiceProvider {
     //#################//
 
     async getVoice(voiceName) {
-
-
-
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceObjects();
         }
-
 
 
         const match = this.voices.filter(
@@ -128,7 +124,6 @@ class CosyVoiceProvider {
         }
         return match;
     }
-
 
 
     async generateTts(text, voiceId) {
@@ -196,7 +191,6 @@ class CosyVoiceProvider {
         }
         return response;
     }
-
 
 
     // Interface not used

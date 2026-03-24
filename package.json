@@ -48,6 +48,7 @@
         "droll": "^0.2.1",
         "env-paths": "^3.0.0",
         "express": "^4.21.0",
+        "fflate": "^0.8.2",
         "form-data": "^4.0.4",
         "fuse.js": "^7.1.0",
         "google-translate-api-x": "^10.7.2",
@@ -61,6 +62,7 @@
         "ip-matching": "^2.1.2",
         "ip-regex": "^5.0.0",
         "ipaddr.js": "^2.2.0",
+        "isomorphic-git": "^1.36.3",
         "is-docker": "^3.0.0",
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",
@@ -94,7 +96,7 @@
         "yauzl": "^3.2.1"
     },
     "engines": {
-        "node": ">= 18"
+        "node": ">= 20"
     },
     "overrides": {
         "vectra": {

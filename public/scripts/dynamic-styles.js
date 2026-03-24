@@ -73,8 +73,7 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
                     const isHover = selector.includes(':hover'), isFocus = selector.includes(':focus');
                     if (isHover && isFocus) {
                         // We currently do nothing here. Rules containing both hover and focus are very specific and should never be automatically touched
-                    }
-                    else if (isHover) {
+                    } else if (isHover) {
                         const baseSelector = selector.replace(/:hover/g, PLACEHOLDER).trim();
                         hoverRules.push({ baseSelector, rule, wrappers: [...wrappers] });
                     } else if (isFocus) {

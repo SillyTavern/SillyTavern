@@ -514,7 +514,6 @@ class PresetManager {
             console.error('Preset could not be renamed', error);
             throw new Error('Preset could not be renamed');
         }
-
     }
 
     /**
@@ -609,15 +608,13 @@ class PresetManager {
                 presets[preset_names.indexOf(name)] = preset;
                 $(this.select).find(`option[value="${name}"]`).prop('selected', true);
                 $(this.select).val(name).trigger('change');
-            }
-            else {
+            } else {
                 const value = preset_names[name];
                 presets[value] = preset;
                 $(this.select).find(`option[value="${value}"]`).prop('selected', true);
                 $(this.select).val(value).trigger('change');
             }
-        }
-        else {
+        } else {
             presets.push(preset);
             const value = presets.length - 1;
 
