@@ -4148,59 +4148,61 @@ async function updateWorldInfoLinks(oldName, newName) {
         }
     });
 
-    if (linkedChIDs.length > 0) {
-        // Trigger the confirmation popup
-        const updatePastLinksConfirm = await Popup.show.confirm(
-            t`World/Lorebook renamed!`,
-            `<p>${t`Auxiliary Lorebook links have been updated. Would you like to update primary lorebook links for ${linkedChIDs.length} character(s) as well?`}</p>`,
-        ) == POPUP_RESULT.AFFIRMATIVE;
+    if (!linkedChIDs.length) {
+        return;
+    }
 
-        if (updatePastLinksConfirm) {
-            let activeCharacterUpdated = false;
+    // Trigger the confirmation popup
+    const updatePastLinksConfirm = await Popup.show.confirm(
+        t`World/Lorebook renamed!`,
+        `<p>${t`Auxiliary Lorebook links have been updated. Would you like to update primary lorebook links for ${linkedChIDs.length} character(s) as well?`}</p>`,
+    ) == POPUP_RESULT.AFFIRMATIVE;
 
-            for (const chid of linkedChIDs) {
-                const character = characters[chid];
+    if (updatePastLinksConfirm) {
+        let activeCharacterUpdated = false;
 
-                try {
-                    // /merge-attributes API call to update the file on the backend silently
-                    const response = await fetch('/api/characters/merge-attributes', {
-                        method: 'POST',
-                        headers: getRequestHeaders(),
-                        body: JSON.stringify({
-                            avatar: character.avatar,
-                            data: {
-                                extensions: {
-                                    world: newName,
-                                },
+        for (const chid of linkedChIDs) {
+            const character = characters[chid];
+
+            try {
+                // /merge-attributes API call to update the file on the backend silently
+                const response = await fetch('/api/characters/merge-attributes', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        avatar: character.avatar,
+                        data: {
+                            extensions: {
+                                world: newName,
                             },
-                        }),
-                    });
+                        },
+                    }),
+                });
 
-                    if (!response.ok) {
-                        throw new Error(`Merge API returned ${response.status}`);
-                    }
-
-                    // used to update the data in the browser's memory
-                    await getOneCharacter(character.avatar);
-
-                    // Flag if the currently open character was affected
-                    if (String(chid) === String(this_chid)) {
-                        activeCharacterUpdated = true;
-                    }
-
-                    toastr.success(`Successfully updated link for ${character.name}.`);
-                } catch (e) {
-                    toastr.error(`Failed to update link for ${character.name}.`);
-                    console.error(`Backend update for character ${character.name} failed:`, e);
+                if (!response.ok) {
+                    throw new Error(`Merge API returned ${response.status}`);
                 }
-            }
 
-            // update the UI fields
-            // only required if the currently selected character was changed
-            if (activeCharacterUpdated) {
-                select_selected_character(this_chid, { switchMenu: false });
-                setWorldInfoButtonClass(this_chid, true);
+                // used to update the data in the browser's memory
+                await getOneCharacter(character.avatar);
+
+                // Flag if the currently open character was affected
+                if (String(chid) === String(this_chid)) {
+                    activeCharacterUpdated = true;
+                }
+
+                toastr.success(`Successfully updated link for ${character.name}.`);
+            } catch (e) {
+                toastr.error(`Failed to update link for ${character.name}.`);
+                console.error(`Backend update for character ${character.name} failed:`, e);
             }
+        }
+
+        // update the UI fields
+        // only required if the currently selected character was changed
+        if (activeCharacterUpdated) {
+            select_selected_character(this_chid, { switchMenu: false });
+            setWorldInfoButtonClass(this_chid, true);
         }
     }
 }
