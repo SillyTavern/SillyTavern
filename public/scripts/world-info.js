@@ -4109,6 +4109,27 @@ async function renameWorldInfo(name, data) {
     await saveWorldInfo(newName, data, true);
     await deleteWorldInfo(oldName);
 
+    await updateWorldInfoLinks(oldName, newName);
+
+    if (entryPreviouslySelected !== -1) {
+        const wiElement = getWIElement(newName);
+        wiElement.prop('selected', true);
+        $('#world_info').trigger('change');
+    }
+
+    const selectedIndex = world_names.indexOf(newName);
+    if (selectedIndex !== -1) {
+        $('#world_editor_select').val(selectedIndex).trigger('change');
+    }
+}
+
+/**
+ * Retargets all character lore links from an old world info name to a new one, with an optional confirmation for primary lorebook links
+ * @param {string} oldName Previous WI file name
+ * @param {string} newName New WI file name
+ * @returns {Promise<void>}
+ */
+async function updateWorldInfoLinks(oldName, newName) {
     const existingCharLores = world_info.charLore?.filter((e) => e.extraBooks.includes(oldName));
     if (existingCharLores && existingCharLores.length > 0) {
         existingCharLores.forEach((charLore) => {
@@ -4181,17 +4202,6 @@ async function renameWorldInfo(name, data) {
                 setWorldInfoButtonClass(this_chid, true);
             }
         }
-    }
-
-    if (entryPreviouslySelected !== -1) {
-        const wiElement = getWIElement(newName);
-        wiElement.prop('selected', true);
-        $('#world_info').trigger('change');
-    }
-
-    const selectedIndex = world_names.indexOf(newName);
-    if (selectedIndex !== -1) {
-        $('#world_editor_select').val(selectedIndex).trigger('change');
     }
 }
 
