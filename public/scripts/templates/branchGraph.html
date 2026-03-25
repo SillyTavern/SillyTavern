@@ -1,0 +1,24 @@
+<div class="branch-graph-container">
+    <div style="position: relative; width: {{totalWidth}}px; height: {{totalHeight}}px;">
+        <svg width="{{totalWidth}}" height="{{totalHeight}}" style="position: absolute; top: 0; left: 0; pointer-events: none;">
+            {{#each lines}}
+            <line x1="{{x1}}" y1="{{y1}}" x2="{{x2}}" y2="{{y2}}" stroke="rgba(255, 255, 255, 0.3)" stroke-width="2"/>
+            {{/each}}
+        </svg>
+        {{#each nodes}}
+        <div class="branch-graph-node {{#if isCurrentChat}}current-chat{{/if}}"
+             data-file-name=""
+             data-node-index="{{@index}}"
+             style="position: absolute; left: {{x}}px; top: {{y}}px; width: {{width}}px;">
+            <div class="branch-graph-node-name">
+                <i class="fa-solid fa-{{#if isCurrentChat}}circle-dot{{else}}circle{{/if}}"></i>
+                <span class="branch-node-name-text"></span>
+            </div>
+            <div class="branch-graph-node-info">
+                {{messageCount}} messages • {{formattedDate}}
+            </div>
+            <div class="branch-graph-node-preview branch-node-preview-text"></div>
+        </div>
+        {{/each}}
+    </div>
+</div>
