@@ -9019,7 +9019,7 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
         .prop('hidden', false)
         .toggleClass('swipe-picker-enabled', canOpenSwipePicker)
         .toggleClass(INTERACTABLE_CONTROL_CLASS, canOpenSwipePicker)
-        .attr('aria-role', canOpenSwipePicker ? 'button' : null)
+        .attr('role', canOpenSwipePicker ? 'button' : null)
         .attr('title', canJumpToSwipe ? t`Click to jump to a swipe` : canOpenSwipePicker ? t`Click to view swipe history` : null);
     swipePickerButton.toggle(canOpenSwipePicker);
 
