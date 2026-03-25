@@ -244,7 +244,7 @@ import {
     isPersonaPanelOpen,
 } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
-import { hideLoader, showLoader } from './scripts/loader.js';
+import { loader } from './scripts/action-loader.js';
 import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
 import { initTextGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, preserveNeutralChat, restoreNeutralChat, formatCreatorNotes, initChatUtilities, addDOMPurifyHooks } from './scripts/chats.js';
@@ -362,11 +362,35 @@ toastr.options = {
         // so the toasts still show up inside there.
         fixToastrForDialogs();
     },
-    onShown: function () {
-        // Set tooltip to the notification message
-        $(this).attr('title', t`Tap to close`);
-    },
 };
+
+// Run once during startup
+toastr.subscribe(function (args) {
+    if (args.state !== 'visible') {
+        return;
+    }
+
+    const $container = toastr.getContainer(args.options, false);
+    if (!$container || !$container.length) {
+        return;
+    }
+
+    // toastr has already inserted the element at this point
+    const $toast = args.options.newestOnTop
+        ? $container.children().first()
+        : $container.children().last();
+
+    // Meaning of "clickable":
+    // Interactable unless tapToDismiss was explicitly false
+    const isInteractable = args.options.tapToDismiss !== false;
+    $toast.toggleClass('interactable', isInteractable);
+    if (isInteractable) {
+        $toast.attr('title', t`Tap to close`);
+    } else {
+        $toast.removeAttr('title');
+        $toast.addClass('toast-non-interactable');
+    }
+});
 
 export const characterGroupOverlay = new BulkEditOverlay();
 
@@ -601,8 +625,7 @@ export let recentSwipes = 0;
 export let extension_prompts = {};
 
 export let main_api;// = "kobold";
-/** @type {AbortController} */
-let abortController;
+let abortController = new AbortController();
 
 //css
 var css_send_form_display = $('<div id=send_form></div>').css('display');
@@ -676,7 +699,28 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    showLoader();
+    const initLoaderOverlay = loader.createOverlay();
+    initLoaderOverlay.classList.add('splash-screen');
+
+    const splashLogo = document.createElement('img');
+    splashLogo.src = '/img/logo.png';
+    splashLogo.alt = 'SillyTavern';
+    splashLogo.className = 'splash-logo';
+    splashLogo.ariaLabel = t`SillyTavern Logo`;
+
+    const splashMessage = document.createElement('h2');
+    splashMessage.className = 'splash-message';
+    splashMessage.textContent = t`Initializing…`;
+    splashMessage.dataset.i18n = 'Initializing…';
+
+    initLoaderOverlay.prepend(splashLogo);
+    initLoaderOverlay.appendChild(splashMessage);
+
+    const initLoaderHandle = loader.show({
+        toastMode: loader.ToastMode.NONE,
+        overlayContent: initLoaderOverlay,
+    });
+
     registerPromptManagerMigration();
     initDomHandlers();
     initStandaloneMode();
@@ -702,7 +746,7 @@ async function firstLoadInit() {
     ToolManager.initToolSlashCommands();
     await initPresetManager();
     await initSystemMessages();
-    await getSettings();
+    await getSettings(initLoaderHandle);
     initKeyboard();
     initDynamicStyles();
     initTags();
@@ -737,7 +781,7 @@ async function firstLoadInit() {
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await eventSource.emit(event_types.APP_INITIALIZED);
-    await hideLoader();
+    await initLoaderHandle.hide();
     await fixViewport();
     await eventSource.emit(event_types.APP_READY);
 }
@@ -2896,9 +2940,15 @@ export function substituteParams(content, options = {}) {
  * Gets stopping sequences for the prompt.
  * @param {boolean} isImpersonate A request is made to impersonate a user
  * @param {boolean} isContinue A request is made to continue the message
+ * @param {string} [api] Optional API name to get API-specific stopping sequences for
  * @returns {string[]} Array of stopping strings
  */
-export function getStoppingStrings(isImpersonate, isContinue) {
+export function getStoppingStrings(isImpersonate, isContinue, api = main_api) {
+    // Only custom stop strings apply to Chat Completion
+    if (api === 'openai') {
+        return getCustomStoppingStrings();
+    }
+
     const result = [];
 
     if (power_user.context.names_as_stop_strings) {
@@ -3723,7 +3773,7 @@ class StreamingProcessor {
         // when streaming, we cache the result of getStoppingStrings instead of calling it once per token.
         const isImpersonate = this.type == 'impersonate';
         const isContinue = this.type == 'continue';
-        this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
+        this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue, main_api);
 
         try {
             const sw = new Stopwatch(1000 / power_user.streaming_fps);
@@ -3864,7 +3914,10 @@ export async function generateRawData({ prompt = '', api = null, instructOverrid
 
     // Allow extensions to stop generation before it happens
     const eventAbortController = new AbortController();
-    const abortHook = () => eventAbortController.abort(new Error('Cancelled by extension'));
+    const abortHook = () => {
+        abortController.abort(new Error('Cancelled by stop event'));
+        eventAbortController.abort(new Error('Cancelled by extension'));
+    };
     eventSource.on(event_types.GENERATION_STOPPED, abortHook);
 
     try {
@@ -5864,34 +5917,60 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-export async function duplicateCharacter() {
-    if (this_chid === undefined || !characters[this_chid]) {
-        toastr.warning(t`You must first select a character to duplicate!`);
-        return '';
+/**
+ * Duplicates a character.
+ * @param {object} [options={}] - Options
+ * @param {string} [options.avatar] - Avatar key of the character to duplicate. Uses current character if not provided.
+ * @param {boolean} [options.silent=false] - Whether to skip the confirmation popup
+ * @returns {Promise<string>} The avatar key of the duplicated character, or empty string if cancelled/failed
+ */
+export async function duplicateCharacter({ avatar = null, silent = false } = {}) {
+    // Determine the character to duplicate
+    let targetAvatar;
+    if (avatar) {
+        const character = characters.find(c => c.avatar === avatar);
+        if (!character) {
+            toastr.warning(t`Character not found: ${avatar}`);
+            return '';
+        }
+        targetAvatar = avatar;
+    } else {
+        if (this_chid === undefined || !characters[this_chid]) {
+            toastr.warning(t`You must first select a character to duplicate!`);
+            return '';
+        }
+        targetAvatar = characters[this_chid].avatar;
     }
 
-    const confirmMessage = $(await renderTemplateAsync('duplicateConfirm'));
-    const confirm = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
+    // Show confirmation unless silent
+    if (!silent) {
+        const confirmMessage = $(await renderTemplateAsync('duplicateConfirm'));
+        const confirm = await callGenericPopup(confirmMessage, POPUP_TYPE.CONFIRM);
 
-    if (!confirm) {
-        console.log('User cancelled duplication');
-        return '';
+        if (!confirm) {
+            console.log('User cancelled duplication');
+            return '';
+        }
     }
 
-    const body = { avatar_url: characters[this_chid].avatar };
+    const body = { avatar_url: targetAvatar };
     const response = await fetch('/api/characters/duplicate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(body),
     });
-    if (response.ok) {
-        toastr.success(t`Character Duplicated`);
-        const data = await response.json();
-        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
-        await getCharacters();
+
+    if (!response.ok) {
+        toastr.error(t`Failed to duplicate character`);
+        return '';
     }
 
-    return '';
+    toastr.success(t`Character Duplicated`);
+    const data = await response.json();
+    await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: targetAvatar, newAvatar: data.path });
+    await getCharacters();
+
+    return data.path;
 }
 
 function setInContextMessages(msgInContextCount, type) {
@@ -6267,7 +6346,7 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
     // Allow for caching of stopping strings. getStoppingStrings is an expensive function, especially with macros
     // enabled, so for streaming, we call it once and then pass it into each cleanUpMessage call.
     if (!stoppingStrings) {
-        stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
+        stoppingStrings = getStoppingStrings(isImpersonate, isContinue, main_api);
     }
 
     for (const stoppingString of stoppingStrings) {
@@ -7317,29 +7396,26 @@ async function read_avatar_load(input) {
         }
 
         await createOrEditCharacter();
-        await delay(DEFAULT_SAVE_EDIT_TIMEOUT);
 
         const formData = new FormData(/** @type {HTMLFormElement} */($('#form_create').get(0)));
-        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url').toString()), {
-            method: 'GET',
-            cache: 'reload',
-        });
+        const avatarKey = formData.get('avatar_url').toString();
 
-        const messages = $('.mes').toArray();
-        for (const el of messages) {
-            const $el = $(el);
-            const nameMatch = $el.attr('ch_name') == formData.get('ch_name');
-            if ($el.attr('is_system') == 'true' && !nameMatch) continue;
-            if ($el.attr('is_user') == 'true') continue;
+        // Bust cache for the avatar thumbnail and character image
+        const thumbnailUrl = getThumbnailUrl('avatar', avatarKey);
+        await fetch(thumbnailUrl, { method: 'GET', cache: 'reload' });
+        await fetch(`/characters/${avatarKey}`, { method: 'GET', cache: 'reload' });
 
-            if (nameMatch) {
-                const previewSrc = $('#avatar_load_preview').attr('src');
-                const avatar = $el.find('.avatar img');
-                avatar.attr('src', default_avatar);
-                await delay(1);
-                avatar.attr('src', previewSrc);
+        // Refresh all visible avatar images that use this thumbnail URL
+        // This handles messages, character list, and any other place using the thumbnail
+        const avatarImages = document.querySelectorAll(`img[src^="${thumbnailUrl}"]`);
+        for (const img of avatarImages) {
+            if (img instanceof HTMLImageElement) {
+                const originalSrc = img.src;
+                img.src = '';
+                img.src = originalSrc;
             }
         }
+        console.debug(`Refreshed ${avatarImages.length} avatar images for ${avatarKey}`);
 
         console.log('Avatar refreshed');
     }
@@ -7717,7 +7793,7 @@ function reloadLoop() {
 
 //MARK: getSettings()
 ///////////////////////////////////////////
-export async function getSettings() {
+export async function getSettings(initLoaderHandle = null) {
     const response = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -7835,7 +7911,7 @@ export async function getSettings() {
         firstRun = !!settings.firstRun;
 
         if (firstRun) {
-            hideLoader();
+            await initLoaderHandle?.hide();
             await doOnboarding(user_avatar);
             firstRun = false;
         }
@@ -10450,7 +10526,7 @@ export async function doNewChat({ deleteCurrentChat = false } = {}) {
  * @param {string} param.newFileName New name for the chat (no JSONL extension)
  * @param {boolean} [param.loader=true] Whether to show loader during the operation
  */
-export async function renameGroupOrCharacterChat({ characterId, groupId, oldFileName, newFileName, loader }) {
+export async function renameGroupOrCharacterChat({ characterId, groupId, oldFileName, newFileName, loader: showLoader }) {
     const currentChatId = getCurrentChatId();
     const body = {
         is_group: !!groupId,
@@ -10468,9 +10544,13 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
         return;
     }
 
-    try {
-        loader && showLoader();
+    const loaderHandle = showLoader ? loader.show({
+        title: t`Rename Chat`,
+        message: t`Renaming chat…`,
+        toastMode: loader.ToastMode.STATIC,
+    }) : null;
 
+    try {
         const response = await fetch('/api/chats/rename', {
             method: 'POST',
             body: JSON.stringify(body),
@@ -10503,11 +10583,10 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
             await reloadCurrentChat();
         }
     } catch {
-        loader && hideLoader();
         await delay(500);
         await callGenericPopup('An error has occurred. Chat was not renamed.', POPUP_TYPE.TEXT);
     } finally {
-        loader && hideLoader();
+        await loaderHandle?.hide();
     }
 }
 
@@ -10611,7 +10690,7 @@ export async function handleDeleteCharacter(this_chid, delete_chats) {
  * @param {string|string[]} characterKey - The key (avatar) of the character to be deleted
  * @param {Object} [options] - Optional parameters for the deletion
  * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
- * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
+ * @return {Promise<boolean>} - A promise that resolves when the character is successfully deleted
  */
 export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
     if (!Array.isArray(characterKey)) {
@@ -10625,14 +10704,16 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
             t`Deleting this character will close the chat and you will lose any unsaved messages. Do you want to proceed?`,
         );
         if (!confirmClose) {
-            return;
+            return false;
         }
     }
 
     const closeChatResult = await closeCurrentChat();
     if (!closeChatResult) {
-        return;
+        return false;
     }
+
+    let deleted = false;
 
     for (const key of characterKey) {
         const character = characters.find(x => x.avatar == key);
@@ -10672,9 +10753,11 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
         }
 
         await eventSource.emit(event_types.CHARACTER_DELETED, { id: chid, character: character });
+        deleted = true;
     }
 
     await removeCharacterFromUI();
+    return deleted;
 }
 
 /**
@@ -11061,21 +11144,32 @@ jQuery(async function () {
     async function handleDeleteChat(chatFile, group, fromSlashCommand = false) {
         // Close past chat popup.
         $('#select_chat_cross').trigger('click');
-        showLoader();
-        if (group) {
-            await deleteGroupChat(group, chatFile);
-        } else {
-            await delChat(`${chatFile}.jsonl`);
+
+        const loaderHandle = loader.show({
+            title: t`Delete Chat`,
+            message: t`Deleting chat…`,
+            toastMode: loader.ToastMode.STATIC,
+        });
+
+        try {
+            if (group) {
+                await deleteGroupChat(group, chatFile);
+            } else {
+                await delChat(`${chatFile}.jsonl`);
+            }
+        } catch (error) {
+            loaderHandle.hide();
+            throw error;
         }
 
         if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
             $('#options').hide();  // Hide option popup menu.
-            hideLoader();
+            await loaderHandle.hide();
         } else {  // Open the history view again after 2 seconds (delay to avoid edge cases for deleting last chat).
-            setTimeout(function () {
+            setTimeout(async function () {
                 $('#option_select_chat').trigger('click');
                 $('#options').hide();  // Hide option popup menu.
-                hideLoader();
+                await loaderHandle.hide();
             }, 2000);
         }
     }

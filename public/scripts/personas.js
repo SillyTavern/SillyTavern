@@ -1897,6 +1897,7 @@ function syncCallback() {
 function registerPersonaSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona-lock',
+        aliases: ['lock', 'bind'],
         callback: lockPersonaCallback,
         returns: 'The current lock state for the given type',
         helpString: 'Locks/unlocks a persona (name and avatar) to the current chat. Gets the current lock state for the given type if no state is provided.',
@@ -1917,43 +1918,6 @@ function registerPersonaSlashCommands() {
             SlashCommandArgument.fromProps({
                 description: 'state',
                 typeList: [ARGUMENT_TYPE.STRING],
-                enumProvider: commonEnumProviders.boolean('onOffToggle'),
-            }),
-        ],
-    }));
-    // TODO: Legacy command. Might be removed in the future and replaced by /persona-lock with aliases.
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'lock',
-        /** @type {(args: { type: string }, value: string) => Promise<string>} */
-        callback: (args, value) => {
-            if (!value) {
-                value = 'toggle';
-                toastr.warning(t`Using /lock without a provided state to toggle the persona is deprecated. Please use /persona-lock instead.
-                        In the future this command with no state provided will return the current state, instead of toggling it.`, t`Deprecation Warning`);
-            }
-            return lockPersonaCallback(args, value);
-        },
-        returns: 'The current lock state for the given type',
-        aliases: ['bind'],
-        helpString: 'Locks/unlocks a persona (name and avatar) to the current chat. Gets the current lock state for the given type if no state is provided.',
-        namedArgumentList: [
-            SlashCommandNamedArgument.fromProps({
-                name: 'type',
-                description: 'The type of the lock, where it should apply to',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'chat',
-                enumList: [
-                    new SlashCommandEnumValue('chat', 'Lock the persona to the current chat.'),
-                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, multiple personas can be locked to the same character.'),
-                    new SlashCommandEnumValue('default', 'Lock this persona as the default persona for all new chats.'),
-                ],
-            }),
-        ],
-        unnamedArgumentList: [
-            SlashCommandArgument.fromProps({
-                description: 'state',
-                typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: 'toggle',
                 enumProvider: commonEnumProviders.boolean('onOffToggle'),
             }),
         ],

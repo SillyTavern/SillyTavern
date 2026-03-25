@@ -55,6 +55,8 @@ import { router as volcengineRouter } from './endpoints/volcengine.js';
  * @typedef {object} ServerStartupResult
  * @property {boolean} v6Failed If the server failed to start on IPv6
  * @property {boolean} v4Failed If the server failed to start on IPv4
+ * @property {unknown} [v6Error] The IPv6 server startup error
+ * @property {unknown} [v4Error] The IPv4 server startup error
  * @property {boolean} useIPv6 If use IPv6
  * @property {boolean} useIPv4 If use IPv4
  */
@@ -207,6 +209,37 @@ export class ServerStartup {
     }
 
     /**
+     * Checks if the error was caused by an occupied port.
+     * @param {unknown} error
+     * @returns {error is NodeJS.ErrnoException}
+     */
+    #isAddressInUseError(error) {
+        return typeof error === 'object' && error !== null && 'code' in error && error.code === 'EADDRINUSE';
+    }
+
+    /**
+     * Gets a readable listen address for an IP version.
+     * @param {URL} url The URL to listen on
+     * @param {number} ipVersion The IP version to use
+     * @returns {string}
+     */
+    #getListenAddress(url, ipVersion) {
+        const host = ipVersion === 6 ? urlHostnameToIPv6(url.hostname) : url.hostname;
+        return `${host}:${Number(url.port || (this.cliArgs.ssl ? 443 : 80))}`;
+    }
+
+    /**
+     * Builds a user-facing error for an occupied port.
+     * @param {URL} url The URL that failed to bind
+     * @param {number} ipVersion The IP version that failed
+     * @returns {string}
+     */
+    #getAddressInUseMessage(url, ipVersion) {
+        const listenAddress = this.#getListenAddress(url, ipVersion);
+        return `Address ${listenAddress} is already in use. Another SillyTavern instance may already be running. Stop the other process or change "port" in config.yaml.`;
+    }
+
+    /**
      * Checks if SSL options are valid. If not, it will print an error message and exit the process.
      * @returns {void}
      */
@@ -287,11 +320,13 @@ export class ServerStartup {
      * Starts the server using http or https depending on config
      * @param {boolean} useIPv6 If use IPv6
      * @param {boolean} useIPv4 If use IPv4
-     * @returns {Promise<[boolean, boolean]>} A promise that resolves with an array of booleans indicating if the server failed to start on IPv6 and IPv4, respectively
+     * @returns {Promise<[boolean, boolean, unknown, unknown]>} A promise that resolves with an array of booleans indicating if the server failed to start on IPv6 and IPv4, respectively, and the corresponding errors
      */
     async #startHTTPorHTTPS(useIPv6, useIPv4) {
         let v6Failed = false;
         let v4Failed = false;
+        let v6Error;
+        let v4Error;
 
         const createFunc = this.cliArgs.ssl ? this.#createHttpsServer.bind(this) : this.#createHttpServer.bind(this);
 
@@ -300,9 +335,14 @@ export class ServerStartup {
                 await createFunc(this.cliArgs.getIPv6ListenUrl(), 6);
             } catch (error) {
                 console.error('Warning: failed to start server on IPv6');
-                console.error(error);
+                if (this.#isAddressInUseError(error)) {
+                    console.error(this.#getAddressInUseMessage(this.cliArgs.getIPv6ListenUrl(), 6));
+                } else {
+                    console.error(error);
+                }
 
                 v6Failed = true;
+                v6Error = error;
             }
         }
 
@@ -311,13 +351,18 @@ export class ServerStartup {
                 await createFunc(this.cliArgs.getIPv4ListenUrl(), 4);
             } catch (error) {
                 console.error('Warning: failed to start server on IPv4');
-                console.error(error);
+                if (this.#isAddressInUseError(error)) {
+                    console.error(this.#getAddressInUseMessage(this.cliArgs.getIPv4ListenUrl(), 4));
+                } else {
+                    console.error(error);
+                }
 
                 v4Failed = true;
+                v4Error = error;
             }
         }
 
-        return [v6Failed, v4Failed];
+        return [v6Failed, v4Failed, v6Error, v4Error];
     }
 
     /**
@@ -325,16 +370,25 @@ export class ServerStartup {
      * @param {ServerStartupResult} result The results of the server startup
      * @returns {void}
      */
-    #handleServerListenFail({ v6Failed, v4Failed, useIPv6, useIPv4 }) {
+    #handleServerListenFail({ v6Failed, v4Failed, v6Error, v4Error, useIPv6, useIPv4 }) {
         if (v6Failed && !useIPv4) {
+            if (this.#isAddressInUseError(v6Error)) {
+                this.#fatal('Error: Startup aborted because IPv6 is the only enabled protocol and its listen port is already in use.');
+            }
             this.#fatal('Error: Failed to start server on IPv6 and IPv4 disabled');
         }
 
         if (v4Failed && !useIPv6) {
+            if (this.#isAddressInUseError(v4Error)) {
+                this.#fatal('Error: Startup aborted because IPv4 is the only enabled protocol and its listen port is already in use.');
+            }
             this.#fatal('Error: Failed to start server on IPv4 and IPv6 disabled');
         }
 
         if (v6Failed && v4Failed) {
+            if (this.#isAddressInUseError(v6Error) && this.#isAddressInUseError(v4Error)) {
+                this.#fatal('Error: Failed to start server because the configured IPv6 and IPv4 listen ports are already in use.');
+            }
             this.#fatal('Error: Failed to start server on both IPv6 and IPv4');
         }
     }
@@ -388,8 +442,8 @@ export class ServerStartup {
             process.exit(1);
         }
 
-        const [v6Failed, v4Failed] = await this.#startHTTPorHTTPS(useIPv6, useIPv4);
-        const result = { v6Failed, v4Failed, useIPv6, useIPv4 };
+        const [v6Failed, v4Failed, v6Error, v4Error] = await this.#startHTTPorHTTPS(useIPv6, useIPv4);
+        const result = { v6Failed, v4Failed, v6Error, v4Error, useIPv6, useIPv4 };
         this.#handleServerListenFail(result);
         return result;
     }

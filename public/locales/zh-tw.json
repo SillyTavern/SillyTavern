@@ -2764,5 +2764,15 @@
     "Interleaved Thinking": "交錯思維",
     "Since Last User Message": "自上一則使用者訊息起",
     "Active Tool Chain": "使用中的工具鏈",
-    "openrouter_interleaved_thinking_hint": "會在工具呼叫請求中附帶先前助理回合的推理，以維持交錯思維的上下文。"
+    "openrouter_interleaved_thinking_hint": "會在工具呼叫請求中附帶先前助理回合的推理，以維持交錯思維的上下文。",
+    "SillyTavern Logo": "SillyTavern 標誌",
+    "Initializing…": "正在初始化…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "名稱不被接受，因為它與之前相同（忽略大小寫和重音）。",
+    "Rename Chat": "重新命名聊天",
+    "Renaming chat…": "正在重新命名聊天…",
+    "Delete Chat": "刪除聊天",
+    "Deleting chat…": "正在刪除聊天…",
+    "Loading chat…": "正在載入聊天…",
+    "Bulk Delete": "批次刪除",
+    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…"
 }

@@ -1442,5 +1442,15 @@
     "Interleaved Thinking": "Черговане мислення",
     "Since Last User Message": "Від останнього повідомлення користувача",
     "Active Tool Chain": "Активний ланцюжок інструментів",
-    "openrouter_interleaved_thinking_hint": "Надсилає міркування з попередніх ходів асистента разом із запитами виклику інструментів, щоб зберегти контекст чергованого мислення."
+    "openrouter_interleaved_thinking_hint": "Надсилає міркування з попередніх ходів асистента разом із запитами виклику інструментів, щоб зберегти контекст чергованого мислення.",
+    "SillyTavern Logo": "Логотип SillyTavern",
+    "Initializing…": "Ініціалізація…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Ім'я не прийнято, оскільки воно збігається з попереднім (ігноруючи регістр та акценти).",
+    "Rename Chat": "Перейменувати чат",
+    "Renaming chat…": "Перейменування чату…",
+    "Delete Chat": "Видалити чат",
+    "Deleting chat…": "Видалення чату…",
+    "Loading chat…": "Завантаження чату…",
+    "Bulk Delete": "Масове видалення",
+    "Deleting ${0} character(s)…": "Видалення ${0} персонажа(ів)…"
 }
