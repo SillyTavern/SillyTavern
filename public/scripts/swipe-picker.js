@@ -101,6 +101,22 @@ async function openSwipePicker(messageId) {
         syncSwipeIdInput();
     }
 
+    function scrollToSelectedSwipe() {
+        const swipeBlock = listContainer.querySelector(`.swipe_picker_block[data-swipe-id="${selectedSwipeId}"]`);
+        if (swipeBlock instanceof HTMLElement) {
+            const scrollParent = swipeBlock.closest('.swipe_picker_div');
+            if (scrollParent instanceof HTMLElement) {
+                const blockRect = swipeBlock.getBoundingClientRect();
+                const parentRect = scrollParent.getBoundingClientRect();
+                if (blockRect.top < parentRect.top) {
+                    scrollParent.scrollTop -= (parentRect.top - blockRect.top) + 5;
+                } else if (blockRect.bottom > parentRect.bottom) {
+                    scrollParent.scrollTop += (blockRect.bottom - parentRect.bottom) + 5;
+                }
+            }
+        }
+    }
+
     function canDeleteSwipeFromPicker(swipeId) {
         if ((message?.swipes?.length ?? 0) <= 1) {
             return false;
@@ -256,6 +272,7 @@ async function openSwipePicker(messageId) {
         wider: true,
         allowVerticalScrolling: true,
         onOpen: function () {
+            scrollToSelectedSwipe();
             if (swipeIdInput instanceof HTMLInputElement) {
                 swipeIdInput.focus();
                 swipeIdInput.select();
@@ -321,7 +338,7 @@ async function openSwipePicker(messageId) {
             }
 
             setSelectedSwipe(nextSwipeId - 1);
-            listContainer.querySelector(`.swipe_picker_block[data-swipe-id="${selectedSwipeId}"]`)?.scrollIntoView({ block: 'nearest' });
+            scrollToSelectedSwipe();
         });
 
         swipeIdInput.addEventListener('blur', function () {
