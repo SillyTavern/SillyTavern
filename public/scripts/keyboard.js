@@ -21,6 +21,11 @@ const interactableSelectors = [
     '.select2_choice_clickable+span.select2-container .select2-selection__choice__display', // select2 control elements if they are meant to be clickable
     '.avatar_load_preview', // Char display avatar selection
     '.bg_tabs_list .bg_tab_button', // Background tabs
+    '.select_chat_block', // The blocks to select a past chat in the past chats menu
+    '.select_chat_block .exportRawChatButton', // Export raw chat button in the past chats menu
+    '.select_chat_block .exportChatButton', // Export chat button in the past chats menu
+    '.select_chat_block .PastChat_cross', // Delete chat button in the past chats menu
+    '.select_chat_block .renameChatButton', // The button to rename a past chat in the past chats menu
 ];
 
 if (CSS.supports('selector(:has(*))')) {
