@@ -9269,6 +9269,7 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
         if (messageId !== chat.length - 1) {
             await updateSwipeCounter(chat.length - 1);
         }
+        refreshSwipeButtons();
         saveChatDebounced();
     }
 
