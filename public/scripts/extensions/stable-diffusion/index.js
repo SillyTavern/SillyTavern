@@ -2093,7 +2093,6 @@ async function loadXAIModels() {
     return [
         { value: 'grok-imagine-image', text: 'grok-imagine-image' },
         { value: 'grok-imagine-image-pro', text: 'grok-imagine-image-pro' },
-        { value: 'grok-2-image-1212', text: 'grok-2-image-1212' },
     ];
 }
 

@@ -1440,5 +1440,15 @@
     "Interleaved Thinking": "Verweven redenering",
     "Since Last User Message": "Sinds laatste gebruikersbericht",
     "Active Tool Chain": "Actieve toolketen",
-    "openrouter_interleaved_thinking_hint": "Verstuurt redenering uit eerdere assistentbeurten met tool-aanvragen om de context van verweven redenering te behouden."
+    "openrouter_interleaved_thinking_hint": "Verstuurt redenering uit eerdere assistentbeurten met tool-aanvragen om de context van verweven redenering te behouden.",
+    "SillyTavern Logo": "SillyTavern-logo",
+    "Initializing…": "Initialiseren…",
+    "Name not accepted, as it is the same as before (ignoring case and accents).": "Naam niet geaccepteerd, omdat deze hetzelfde is als voorheen (hoofdletters en accenten genegeerd).",
+    "Rename Chat": "Chat hernoemen",
+    "Renaming chat…": "Chat hernoemen…",
+    "Delete Chat": "Chat verwijderen",
+    "Deleting chat…": "Chat verwijderen…",
+    "Loading chat…": "Chat laden…",
+    "Bulk Delete": "Bulkverwijdering",
+    "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…"
 }
