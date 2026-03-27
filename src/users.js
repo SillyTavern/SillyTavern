@@ -17,7 +17,7 @@ import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent } from './util.js';
-import { readSecret, writeSecret } from './endpoints/secrets.js';
+import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
 
@@ -1052,7 +1052,14 @@ export async function createBackupArchive(handle, response) {
     archive.pipe(response);
 
     // Append files from a sub-directory, putting its contents at the root of archive
-    archive.directory(directories.root, false);
+    const ignore = allowKeysExposure ? [] : [SECRETS_FILE];
+    archive.glob('**/*', {
+        cwd: directories.root,
+        follow: false,
+        stat: true,
+        dot: true,
+        ignore,
+    });
     archive.finalize();
 }
 

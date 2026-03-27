@@ -277,6 +277,25 @@ function getActiveSecretLabel(key) {
     return '';
 }
 
+export async function canViewSecrets() {
+    try {
+        const response = await fetch('/api/secrets/settings', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        const data = await response.json();
+        return data?.allowKeysExposure === true;
+    } catch (error) {
+        console.error('Error getting secrets settings:', error);
+        return false;
+    }
+}
+
 async function viewSecrets() {
     const response = await fetch('/api/secrets/view', {
         method: 'POST',
