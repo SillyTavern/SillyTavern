@@ -268,7 +268,7 @@ async function backupUserData(handle, callback) {
         }
 
         const includesSecrets = await canViewSecrets();
-        if (!includesSecrets) {
+        if (includesSecrets === false) {
             toastr.warning('The backup will not include secrets due to a server configuration.', 'Secrets Not Included');
         }
 
