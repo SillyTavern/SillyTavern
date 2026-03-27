@@ -142,7 +142,7 @@ router.post('/backup', async (request, response) => {
 
         if (!allowFullDataBackup) {
             console.warn('Backup failed: Full data backup is disabled in configuration');
-            return response.status(418).json({ error: 'Full data backup is disabled' });
+            return response.status(403).json({ error: 'Full data backup is disabled' });
         }
 
         const handle = request.body.handle;
