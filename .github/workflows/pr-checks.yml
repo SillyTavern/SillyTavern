@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
             ref: ${{ github.event.pull_request.head.sha }}
             repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node.js
         # Setup Node.js environment
         # https://github.com/marketplace/actions/setup-node-js-environment
-        uses: actions/setup-node@v4.3.0
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
           node-version: 20
 
@@ -42,7 +42,7 @@ jobs:
       - name: Run ESLint
         # Action ESLint
         # https://github.com/marketplace/actions/action-eslint
-        uses: sibiraj-s/action-eslint@v3.0.1
+        uses: sibiraj-s/action-eslint@bcf41bb9abce43cdbad51ab9b3da2eddaa17eab3 # v3.0.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}                # ESLint can run with the original permissions
           eslint-args: '--ignore-path=.gitignore --quiet'
@@ -62,7 +62,7 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
             ref: ${{ github.event.pull_request.head.sha }}
             repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Node.js
         # Setup Node.js environment
         # https://github.com/marketplace/actions/setup-node-js-environment
-        uses: actions/setup-node@v4.3.0
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
           node-version: 20
 
