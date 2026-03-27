@@ -700,119 +700,13 @@ export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_T
         .sort(getSortFunction());
 }
 
-const FORWARDED_RESPONSE_LOG_LIMIT = 4096;
-const FORWARDED_RESPONSE_HEADERS = ['content-type', 'cache-control', 'content-disposition'];
-
-/**
- * @param {import('node-fetch').Response} from The Fetch API response to read headers from.
- * @param {import('express').Response} to The Express response to write headers to.
- */
-function copyForwardedResponseHeaders(from, to) {
-    for (const headerName of FORWARDED_RESPONSE_HEADERS) {
-        const headerValue = from.headers.get(headerName);
-
-        if (headerValue && !to.hasHeader(headerName)) {
-            to.setHeader(headerName, headerValue);
-        }
-    }
-}
-
-/**
- * @param {unknown} value The error payload value.
- * @returns {string}
- */
-function stringifyStreamingErrorValue(value) {
-    if (typeof value === 'string') {
-        return value.trim();
-    }
-
-    if (Array.isArray(value)) {
-        return value.map(stringifyStreamingErrorValue).filter(Boolean).join('; ');
-    }
-
-    if (value && typeof value === 'object') {
-        if (typeof value.message === 'string') {
-            return value.message.trim();
-        }
-
-        try {
-            return JSON.stringify(value);
-        } catch {
-            return String(value);
-        }
-    }
-
-    if (value === undefined || value === null) {
-        return '';
-    }
-
-    return String(value);
-}
-
-/**
- * @param {any} errorBody Parsed error response body.
- * @returns {string}
- */
-function getStreamingErrorMessage(errorBody) {
-    if (!errorBody || typeof errorBody !== 'object') {
-        return '';
-    }
-
-    const candidates = [errorBody?.error?.message, errorBody?.message, errorBody?.detail, errorBody?.error];
-
-    for (const candidate of candidates) {
-        const message = stringifyStreamingErrorValue(candidate);
-
-        if (message) {
-            return message;
-        }
-    }
-
-    return '';
-}
-
-/**
- * @param {string} value The value to truncate for logs.
- * @returns {string}
- */
-function truncateStreamingLog(value) {
-    if (!value) {
-        return '';
-    }
-
-    return value.length > FORWARDED_RESPONSE_LOG_LIMIT
-        ? `${value.slice(0, FORWARDED_RESPONSE_LOG_LIMIT)}… [truncated ${value.length - FORWARDED_RESPONSE_LOG_LIMIT} chars]`
-        : value;
-}
-
-/**
- * @param {string | null} contentType Response content type.
- * @returns {boolean}
- */
-function canLogResponseBody(contentType) {
-    return !contentType || /^(text\/|application\/(json|problem\+json|xml|xhtml\+xml|javascript))/i.test(contentType);
-}
-
-/**
- * @param {import('express').Response} response The Express response.
- * @param {string | Buffer} [data] Response data.
- */
-function endForwardedResponse(response, data) {
-    if (response.writableEnded || response.destroyed) {
-        return;
-    }
-
-    response.end(data);
-}
-
 /**
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {import('express').Response} to The Express response to pipe to.
  */
 export function forwardFetchResponse(from, to) {
-    const upstreamStatusCode = from.status;
-    let statusCode = upstreamStatusCode;
+    let statusCode = from.status;
     let statusText = from.statusText;
 
     // Avoid sending 401 responses as they reset the client Basic auth.
@@ -826,63 +720,49 @@ export function forwardFetchResponse(from, to) {
 
     to.statusCode = statusCode;
     to.statusMessage = statusText;
-    copyForwardedResponseHeaders(from, to);
 
     if (!from.ok) {
-        void (async () => {
-            try {
-                const errorBuffer = Buffer.from(await from.arrayBuffer());
-                const contentType = from.headers.get('content-type');
-                const rawErrorText = canLogResponseBody(contentType) ? errorBuffer.toString('utf8').trim() : '';
-                const parsedError = rawErrorText ? tryParse(rawErrorText) : undefined;
-                const errorMessage = truncateStreamingLog(getStreamingErrorMessage(parsedError));
-                const errorBody = truncateStreamingLog(rawErrorText);
+        void from.arrayBuffer().then((errorBody) => {
+            const errorBuffer = Buffer.from(errorBody);
+            const rawErrorText = errorBuffer.toString('utf8');
+            const parsedError = tryParse(rawErrorText);
+            const structuredErrorMessage = [
+                parsedError?.error?.message,
+                parsedError?.message,
+                typeof parsedError?.detail === 'string' ? parsedError.detail : '',
+            ].find(message => typeof message === 'string' && message.trim());
 
-                if (errorMessage) {
-                    console.warn(`Streaming request failed with status ${upstreamStatusCode} ${statusText}: ${errorMessage}`);
-
-                    if (errorBody && errorBody !== errorMessage) {
-                        console.warn(`Streaming error body: ${errorBody}`);
-                    }
-                } else if (errorBody) {
-                    console.warn(`Streaming request failed with status ${upstreamStatusCode} ${statusText}: ${errorBody}`);
-                } else {
-                    console.warn(`Streaming request failed with status ${upstreamStatusCode} ${statusText}`);
-                }
-
-                endForwardedResponse(to, errorBuffer);
-                console.info('Streaming request ended after error response');
-            } catch (error) {
-                console.warn(`Streaming request failed with status ${upstreamStatusCode} ${statusText}`);
-                console.error('Failed to read streaming error body:', error);
-                endForwardedResponse(to);
+            if (structuredErrorMessage) {
+                console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${structuredErrorMessage}`);
+            } else if (rawErrorText) {
+                console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${rawErrorText}`);
+            } else {
+                console.warn(`Streaming request failed with status ${from.status} ${statusText}`);
             }
-        })();
+
+            to.end(errorBuffer);
+        }).catch(() => {
+            console.warn(`Streaming request failed with status ${from.status} ${statusText}`);
+            to.end();
+        });
 
         return;
     }
 
     if (from.body && to.socket) {
-        to.socket.once('close', function () {
-            if (from.body instanceof Readable && !from.body.readableEnded && !from.body.destroyed) {
-                from.body.destroy(); // Close the remote stream
-            }
-        });
-
-        console.info('Streaming request started');
-
-        from.body.once('end', function () {
-            console.info('Streaming request finished');
-        });
-
-        from.body.once('error', function (error) {
-            console.error('Streaming response body error:', error);
-            endForwardedResponse(to);
-        });
-
         from.body.pipe(to);
+        to.socket.on('close', function () {
+            if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
+
+            to.end(); // End the Express response
+        });
+
+        from.body.on('end', function () {
+            console.info('Streaming request finished');
+            to.end();
+        });
     } else {
-        endForwardedResponse(to);
+        to.end();
     }
 }
 
