@@ -165,6 +165,8 @@ rateLimiting:
 
 ## BACKUP CONFIGURATION
 backups:
+  # Allow users to create a full backup archive of their data
+  allowFullDataBackup: true
   # Common settings for all backup types
   common:
     # Number of backups to keep for each chat and settings file
