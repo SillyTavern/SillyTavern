@@ -1593,147 +1593,38 @@ export async function prepareOpenAIMessages({
  * @param {string} decoded - response text or decoded stream data
  * @param {object} [options]
  * @param {boolean?} [options.quiet=false] Suppress toast messages
- * @returns {string | null} Parsed error message, if any
  */
-const STREAMING_ERROR_MESSAGE_LIMIT = 300;
-
-function normalizeStreamingErrorValue(value) {
-    if (value === undefined || value === null) {
-        return '';
-    }
-
-    return String(value).replace(/\s+/g, ' ').trim();
-}
-
-function truncateStreamingErrorMessage(message) {
-    if (!message) {
-        return '';
-    }
-
-    if (message.length <= STREAMING_ERROR_MESSAGE_LIMIT) {
-        return message;
-    }
-
-    return `${message.slice(0, STREAMING_ERROR_MESSAGE_LIMIT - 1).trimEnd()}…`;
-}
-
-function getStreamingErrorFallbackMessage(response) {
-    const statusText = normalizeStreamingErrorValue(response.statusText);
-
-    if (statusText) {
-        return statusText;
-    }
-
-    if (response.status) {
-        return `HTTP ${response.status}`;
-    }
-
-    return t`Unknown error`;
-}
-
-function looksLikeHtmlError(decoded) {
-    return typeof decoded === 'string' && /<(?:!doctype|html|head|body|title|h1|div|p)\b/i.test(decoded);
-}
-
-function extractHtmlStreamingErrorMessage(decoded) {
-    if (typeof decoded !== 'string' || !decoded) {
-        return '';
-    }
-
-    try {
-        const doc = new DOMParser().parseFromString(decoded, 'text/html');
-        const title = normalizeStreamingErrorValue(doc.querySelector('title')?.textContent);
-        const heading = normalizeStreamingErrorValue(doc.querySelector('h1')?.textContent);
-        const bodyText = normalizeStreamingErrorValue(doc.body?.textContent);
-        const segments = [];
-
-        if (title) {
-            segments.push(title);
-        }
-
-        if (heading) {
-            const normalizedHeading = heading.toLowerCase();
-            const hasSimilarSegment = segments.some(segment => {
-                const normalizedSegment = segment.toLowerCase();
-                return normalizedSegment.includes(normalizedHeading) || normalizedHeading.includes(normalizedSegment);
-            });
-
-            if (!hasSimilarSegment) {
-                segments.push(heading);
-            }
-        }
-
-        if (!segments.length && bodyText) {
-            segments.push(bodyText);
-        }
-
-        return truncateStreamingErrorMessage(segments.join(': '));
-    } catch {
-        return '';
-    }
-}
-
-function getStructuredStreamingErrorMessage(data) {
-    if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
-        return truncateStreamingErrorMessage(normalizeStreamingErrorValue(data));
-    }
-
-    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-        return '';
-    }
-
-    const detail = data?.detail;
-    const message = data?.error?.message
-        || (typeof data?.message === 'string' ? data.message : '')
-        || (typeof detail === 'string' ? detail : '')
-        || (typeof detail?.error?.message === 'string' ? detail.error.message : '')
-        || (typeof data?.error === 'string' ? data.error : '');
-
-    return truncateStreamingErrorMessage(normalizeStreamingErrorValue(message));
-}
-
 export function tryParseStreamingError(response, decoded, { quiet = false } = {}) {
-    let data = null;
-
     try {
-        data = JSON.parse(decoded);
-    } catch {
-        data = null;
-    }
+        const data = JSON.parse(decoded);
 
-    if (data !== null && data !== undefined) {
-        try {
-            checkQuotaError(data, { quiet });
-        } catch {
-            // Quota popup already shown by checkQuotaError.
+        if (!data) {
+            return;
         }
 
+        checkQuotaError(data, { quiet });
         checkModerationError(data, { quiet });
 
-        const structuredMessage = getStructuredStreamingErrorMessage(data);
+        // these do not throw correctly (equiv to Error("[object Object]"))
+        // if trying to fix "[object Object]" displayed to users, start here
 
-        if (structuredMessage) {
-            !quiet && toastr.error(structuredMessage, 'Chat Completion API');
-            return structuredMessage;
+        if (data.error) {
+            !quiet && toastr.error(data.error.message || response.statusText, 'Chat Completion API');
+            throw new Error(data);
         }
 
-        return null;
+        if (data.message) {
+            !quiet && toastr.error(data.message, 'Chat Completion API');
+            throw new Error(data);
+        }
+
+        if (data.detail) {
+            !quiet && toastr.error(data.detail?.error?.message || response.statusText, 'Chat Completion API');
+            throw new Error(data);
+        }
+    } catch {
+        // No JSON. Do nothing.
     }
-
-    const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
-    const htmlMessage = contentType.includes('text/html') || looksLikeHtmlError(decoded)
-        ? extractHtmlStreamingErrorMessage(decoded)
-        : '';
-    const message = htmlMessage
-        || truncateStreamingErrorMessage(normalizeStreamingErrorValue(decoded))
-        || getStreamingErrorFallbackMessage(response);
-
-    if (message) {
-        !quiet && toastr.error(message, 'Chat Completion API');
-        return message;
-    }
-
-    return null;
 }
 
 /**
@@ -3018,10 +2909,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     });
 
     if (!response.ok) {
-        const message = tryParseStreamingError(response, await response.text());
-        throw new Error(message || `Got response status ${response.status}`);
+        tryParseStreamingError(response, await response.text());
+        throw new Error(`Got response status ${response.status}`);
     }
-
     if (stream) {
         const eventStream = getEventSourceStream();
         response.body.pipeThrough(eventStream);
@@ -3036,12 +2926,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 if (done) return;
                 const rawData = value.data;
                 if (rawData === '[DONE]') return;
-                const message = tryParseStreamingError(response, rawData);
-
-                if (message) {
-                    throw new Error(message);
-                }
-
+                tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
