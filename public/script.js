@@ -8056,9 +8056,7 @@ export async function messageEdit(editMessageId) {
     // Sets the cursor at the end of the text
     editTextArea.setSelectionRange(text.length, text.length);
 
-    if (Number(this_edit_mes_id) === chat.length - 1) {
-        chatElement.scrollTop(chatScrollPosition);
-    }
+    chatElement.scrollTop(chatScrollPosition);
 
     updateEditArrowClasses();
 }
