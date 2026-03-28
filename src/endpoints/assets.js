@@ -232,9 +232,7 @@ router.post('/download', async (request, response) => {
         const destination = path.resolve(temp_path);
         // Delete if previous download failed
         if (fs.existsSync(temp_path)) {
-            fs.unlink(temp_path, (err) => {
-                if (err) throw err;
-            });
+            await fs.promises.unlink(temp_path);
         }
         const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
         // @ts-ignore
@@ -291,21 +289,17 @@ router.post('/delete', async (request, response) => {
     console.info('Request received to delete', category, file_path);
 
     try {
-        // Delete if previous download failed
-        if (fs.existsSync(file_path)) {
-            fs.unlink(file_path, (err) => {
-                if (err) throw err;
-            });
-            console.info('Asset deleted.');
-        } else {
+        if (!fs.existsSync(file_path)) {
             console.error('Asset not found.');
-            response.sendStatus(400);
+            return response.sendStatus(400);
         }
-        // Move into asset place
-        response.sendStatus(200);
+
+        await fs.promises.unlink(file_path);
+        console.info('Asset deleted.');
+        return response.sendStatus(200);
     } catch (error) {
         console.error(error);
-        response.sendStatus(500);
+        return response.sendStatus(500);
     }
 });
 
