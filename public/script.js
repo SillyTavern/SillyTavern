@@ -3847,9 +3847,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        const message = api === 'openai'
-            ? { role: 'user', content: prompt.trim() }
-            : { role: 'system', content: prompt };
+        const message = { role: 'user', content: prompt.trim() };
         prompt = [message];
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
@@ -3876,7 +3874,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
+        systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
