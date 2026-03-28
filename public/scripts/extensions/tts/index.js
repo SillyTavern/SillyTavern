@@ -1,6 +1,7 @@
 import { cancelTtsPlay, eventSource, event_types, getCurrentChatId, isStreamingEnabled, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique, regexFromString } from '../../utils.js';
+import { accountStorage } from '../../util/AccountStorage.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -186,7 +187,16 @@ async function onNarrateText(args, text) {
         ? voiceMap[DEFAULT_VOICE_MARKER]
         : voiceMap[name];
 
-    if (!voiceMapEntry || voiceMapEntry === DISABLED_VOICE_MARKER) {
+    if (voiceMapEntry === DISABLED_VOICE_MARKER) {
+        const storageKey = `tts_disabled_warned_${name}`;
+        if (!accountStorage.getItem(storageKey)) {
+            accountStorage.setItem(storageKey, 'true');
+            toastr.info(`TTS voice for ${name} is disabled.`);
+        }
+        return;
+    }
+
+    if (!voiceMapEntry) {
         toastr.info(`Specified voice for ${name} was not found. Check the TTS extension settings.`);
         return;
     }
@@ -621,7 +631,16 @@ async function processTtsQueue() {
 
             const voiceMapEntry = voiceMap[voiceMapKey] === DEFAULT_VOICE_MARKER ? voiceMap[DEFAULT_VOICE_MARKER] : voiceMap[voiceMapKey];
 
-            if (!voiceMapEntry || voiceMapEntry === DISABLED_VOICE_MARKER) {
+            if (voiceMapEntry === DISABLED_VOICE_MARKER) {
+                const storageKey = `tts_disabled_warned_${char}`;
+                if (!accountStorage.getItem(storageKey)) {
+                    accountStorage.setItem(storageKey, 'true');
+                    toastr.info(`TTS voice for ${char} is disabled.`);
+                }
+                return;
+            }
+
+            if (!voiceMapEntry) {
                 throw `${char} not in voicemap. Configure character in extension settings voice map`;
             }
 
