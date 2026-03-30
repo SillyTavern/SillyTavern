@@ -2,6 +2,7 @@ import {
     characters,
     saveChat,
     system_message_types,
+    syncSwipeToMes,
     this_chid,
     openCharacterChat,
     chat_metadata,
@@ -161,8 +162,28 @@ async function saveBookmarkMenu() {
     return await createNewBookmark(chat.length - 1);
 }
 
+/**
+ * Builds the branch chat snapshot, optionally selecting a specific swipe for the target message.
+ * @param {number} mesId
+ * @param {{swipeId?: number|null}} [options={}]
+ * @returns {ChatMessage[]|null}
+ */
+function getBranchChatSnapshot(mesId, { swipeId = null } = {}) {
+    const snapshot = structuredClone(chat.slice(0, Number(mesId) + 1));
+
+    if (swipeId === null) {
+        return snapshot;
+    }
+
+    if (!syncSwipeToMes(null, swipeId, snapshot[mesId])) {
+        return null;
+    }
+
+    return snapshot;
+}
+
 // Export is used by Timelines extension. Do not remove.
-export async function createBranch(mesId) {
+export async function createBranch(mesId, { swipeId = null } = {}) {
     if (!chat.length) {
         toastr.warning('The chat is empty.', 'Branch creation failed');
         return;
@@ -176,6 +197,12 @@ export async function createBranch(mesId) {
     const lastMes = chat[mesId];
     const mainChatName = (getCurrentChatDetails()).sessionName;
     const newMetadata = { main_chat: mainChatName };
+    const selectedSwipeId = swipeId === null ? null : Number(swipeId);
+
+    if (selectedSwipeId !== null && (!Number.isInteger(selectedSwipeId) || selectedSwipeId < 0 || selectedSwipeId >= (lastMes?.swipes?.length ?? 0))) {
+        toastr.warning('Invalid swipe ID.', 'Branch creation failed');
+        return;
+    }
 
     function buildBranchName(name, i) {
         // Strip off existing suffixes, then build new name
@@ -192,10 +219,16 @@ export async function createBranch(mesId) {
         return;
     }
 
+    const branchChatSnapshot = getBranchChatSnapshot(mesId, { swipeId: selectedSwipeId });
+    if (!branchChatSnapshot) {
+        toastr.warning('Could not prepare the selected swipe for branching.', 'Branch creation failed');
+        return;
+    }
+
     if (selected_group) {
-        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
+        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId, branchChatSnapshot);
     } else {
-        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
+        await saveChat({ chatName: name, withMetadata: newMetadata, mesId, chatData: branchChatSnapshot });
     }
     // append to branches list if it exists
     // otherwise create it
@@ -410,15 +443,20 @@ export async function convertSoloToGroupChat() {
 /**
  * Creates a new branch from the message with the given ID
  * @param {number} mesId Message ID
+ * @param {{swipeId?: number|null}} [options={}] Branch options
  * @returns {Promise<string?>} Branch file name
  */
-export async function branchChat(mesId) {
+export async function branchChat(mesId, { swipeId = null } = {}) {
     if (this_chid === undefined && !selected_group) {
         toastr.info('No character selected.', 'Create Branch');
         return null;
     }
 
-    const fileName = await createBranch(mesId);
+    const fileName = await createBranch(mesId, { swipeId });
+    if (!fileName) {
+        return null;
+    }
+
     await saveItemizedPrompts(fileName);
 
     if (selected_group) {
