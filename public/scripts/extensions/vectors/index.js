@@ -81,6 +81,7 @@ const settings = {
 
     // For chats
     enabled_chats: false,
+    keep_hidden: false,
     template: 'Past events:\n{{text}}',
     depth: 2,
     position: extension_prompt_types.IN_PROMPT,
@@ -347,7 +348,7 @@ async function synchronizeChat(batchSize = 5) {
             return -1;
         }
 
-        const hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
+        const hashedMessages = context.chat.filter(x => settings.keep_hidden || !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
         const hashesInCollection = await getSavedHashes(chatId);
 
         let newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
@@ -1725,6 +1726,11 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
         toggleSettings();
+    });
+    $('#vectors_keep_hidden').prop('checked', settings.keep_hidden).on('input', () => {
+        settings.keep_hidden = !!$('#vectors_keep_hidden').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
     });
     $('#vectors_enabled_files').prop('checked', settings.enabled_files).on('input', () => {
         settings.enabled_files = $('#vectors_enabled_files').prop('checked');
