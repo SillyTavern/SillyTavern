@@ -162,7 +162,7 @@ async function openSwipePicker(messageId) {
                     'data-i18n': '[title]Create Branch',
                 })
                 .removeClass('exportRawChatButton fa-solid fa-file-export')
-                .addClass('swipe_picker_branch mes_button fa-regular fa-code-branch')
+                .addClass('swipe_picker_branch mes_button fa-fw fa-regular fa-code-branch')
                 .on('click', async (event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -174,7 +174,7 @@ async function openSwipePicker(messageId) {
                 .removeAttr('file_name')
                 .attr('aria-disabled', String(!canDeleteSwipe))
                 .removeClass('fa-skull')
-                .addClass('swipe_picker_delete fa-trash-can')
+                .addClass('swipe_picker_delete fa-fw fa-trash-can')
                 .toggleClass('hoverglow', canDeleteSwipe)
                 .toggleClass('disabled', !canDeleteSwipe)
                 .each(function () {
@@ -236,7 +236,7 @@ async function openSwipePicker(messageId) {
             expandCheckbox.type = 'checkbox';
             expandCheckbox.id = expandCheckboxId;
             expandCheckbox.classList.add('swipe_picker_expand_toggle');
-            block.prepend(expandCheckbox);
+            block[0].prepend(expandCheckbox);
 
             const expandLabel = document.createElement('label');
             expandLabel.htmlFor = expandCheckboxId;
@@ -244,15 +244,15 @@ async function openSwipePicker(messageId) {
             expandLabel.title = t`Expand/Collapse`;
             expandLabel.setAttribute('data-i18n', '[title]Expand/Collapse');
             const expandIcon = document.createElement('i');
-            expandIcon.classList.add('fa-solid', 'fa-expand', 'swipe_picker_expand_icon');
+            expandIcon.classList.add('fa-solid', 'fa-fw', 'fa-chevron-down', 'swipe_picker_expand_icon');
             const collapseIcon = document.createElement('i');
-            collapseIcon.classList.add('fa-solid', 'fa-compress', 'swipe_picker_collapse_icon');
+            collapseIcon.classList.add('fa-solid', 'fa-fw', 'fa-chevron-up', 'swipe_picker_collapse_icon');
             expandLabel.append(expandIcon, collapseIcon);
             expandLabel.addEventListener('click', (event) => event.stopPropagation());
 
             // Add copy button
             const copyButton = document.createElement('div');
-            copyButton.classList.add('swipe_picker_copy', 'fa-solid', 'fa-copy');
+            copyButton.classList.add('swipe_picker_copy', 'fa-solid', 'fa-fw', 'fa-copy');
             copyButton.title = t`Copy`;
             copyButton.setAttribute('data-i18n', '[title]Copy');
             copyButton.addEventListener('click', async (event) => {
