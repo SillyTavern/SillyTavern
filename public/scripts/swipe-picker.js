@@ -301,6 +301,7 @@ async function openSwipePicker(messageId) {
             defaultState: String(selectedSwipeId + 1),
             tooltip: `1-${message.swipes.length}`,
         }],
+        large: true,
         wider: true,
         allowVerticalScrolling: true,
         onOpen: function () {
