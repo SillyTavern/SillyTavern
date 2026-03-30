@@ -132,6 +132,7 @@ async function openSwipePicker(messageId) {
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             const block = template.find('.select_chat_block');
             block.removeClass('select_chat_block').addClass('swipe_picker_block');
+            block.find('.select_chat_actions').removeClass('gap10px');
             const branchButton = template.find('.exportRawChatButton');
             const deleteButton = template.find('.PastChat_cross');
             const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[index] : null;

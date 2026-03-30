@@ -4792,7 +4792,7 @@ h5 {
     text-align: left;
 }
 
-.swipe_picker_block .flex-container.gap10px:has(.swipe_picker_copy) {
+.swipe_picker_block .select_chat_actions {
     align-items: baseline;
 }
 
