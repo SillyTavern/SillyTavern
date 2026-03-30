@@ -3880,6 +3880,11 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
         systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
+        if (isInstruct && systemPrompt.length > 0 && !systemPrompt.endsWith('\n')) {
+            if (power_user.instruct.wrap && !power_user.instruct.story_string_suffix) {
+                systemPrompt += '\n';
+            }
+        }
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
