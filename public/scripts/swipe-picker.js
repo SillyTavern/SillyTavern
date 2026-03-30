@@ -4,7 +4,7 @@ import { t } from './i18n.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { clamp, timestampToMoment } from './utils.js';
+import { clamp, copyText, timestampToMoment } from './utils.js';
 import { chat, deleteSwipe, ensureSwipes, isMessageSwipeable, isSwipingAllowed, swipe, syncMesToSwipe } from '/script.js';
 
 /**
@@ -229,11 +229,47 @@ async function openSwipePicker(messageId) {
 
                     await renderSwipeList();
                 });
+
+            // Add expand/collapse toggle
+            const expandCheckboxId = `swipe_picker_expand_${messageId}_${index}`;
+            const expandCheckbox = document.createElement('input');
+            expandCheckbox.type = 'checkbox';
+            expandCheckbox.id = expandCheckboxId;
+            expandCheckbox.classList.add('swipe_picker_expand_toggle');
+            block.prepend(expandCheckbox);
+
+            const expandLabel = document.createElement('label');
+            expandLabel.htmlFor = expandCheckboxId;
+            expandLabel.classList.add('swipe_picker_expand_label');
+            expandLabel.title = t`Expand/Collapse`;
+            expandLabel.setAttribute('data-i18n', '[title]Expand/Collapse');
+            const expandIcon = document.createElement('i');
+            expandIcon.classList.add('fa-solid', 'fa-expand', 'swipe_picker_expand_icon');
+            const collapseIcon = document.createElement('i');
+            collapseIcon.classList.add('fa-solid', 'fa-compress', 'swipe_picker_collapse_icon');
+            expandLabel.append(expandIcon, collapseIcon);
+            expandLabel.addEventListener('click', (event) => event.stopPropagation());
+
+            // Add copy button
+            const copyButton = document.createElement('div');
+            copyButton.classList.add('swipe_picker_copy', 'fa-solid', 'fa-copy');
+            copyButton.title = t`Copy`;
+            copyButton.setAttribute('data-i18n', '[title]Copy');
+            copyButton.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                await copyText(swipeText);
+                toastr.info(t`Copied!`, '', { timeOut: 2000 });
+            });
+
+            // Insert new buttons before the branch button
+            branchButton.before(copyButton, expandLabel);
+
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
             template.find('.chat_file_size').text(swipeDetails.length ? `(${swipeDetails[0]}${swipeDetails.length > 1 ? ',' : ')'}` : '');
             template.find('.chat_messages_num').text(swipeDetails.length > 1 ? `${swipeDetails.slice(1).join(', ')})` : '');
-            template.find('.select_chat_block_mes').text(previewText || t`(empty swipe)`);
+            template.find('.select_chat_block_mes').text(previewText ? swipeText : t`(empty swipe)`);
 
             block.on('click', () => setSelectedSwipe(index));
             block.on('dblclick', async () => {

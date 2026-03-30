@@ -4788,6 +4788,52 @@ h5 {
     user-select: none;
 }
 
+.swipe_picker_block .select_chat_block_mes {
+    text-align: left;
+}
+
+.swipe_picker_expand_toggle {
+    display: none;
+}
+
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .select_chat_block_mes {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.swipe_picker_expand_label {
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.swipe_picker_expand_label:hover {
+    opacity: 1;
+}
+
+.swipe_picker_copy {
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.swipe_picker_copy:hover {
+    opacity: 1;
+}
+
+.swipe_picker_collapse_icon {
+    display: none;
+}
+
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_icon {
+    display: none;
+}
+
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_collapse_icon {
+    display: inline;
+}
+
 .select_chat_block .avatar {
     grid-row: span 2;
 }
