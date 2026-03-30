@@ -4827,7 +4827,7 @@ h5 {
 }
 
 .swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_label::before {
-    content: "\f077";
+    content: "\f077"; /* fa-chevron-up */
 }
 
 .select_chat_block .avatar {
