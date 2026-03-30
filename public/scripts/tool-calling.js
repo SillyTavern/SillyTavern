@@ -808,7 +808,7 @@ export class ToolManager {
                         displayName,
                         name,
                         parameters: stringify(parameters),
-                        result: `Error: ${toolResult.message}`,
+                        result: toolResult.toString(),
                         error: true,
                         signature: toolCall.signature || null,
                         reasoning: reasoningText || null,
