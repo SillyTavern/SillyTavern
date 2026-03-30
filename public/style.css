@@ -4826,8 +4826,8 @@ h5 {
     opacity: 1;
 }
 
-.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_label::before {
-    content: "\f077"; /* fa-chevron-up */
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_label {
+    transform: rotate(180deg);
 }
 
 .select_chat_block .avatar {
