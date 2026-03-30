@@ -4826,16 +4826,8 @@ h5 {
     opacity: 1;
 }
 
-.swipe_picker_collapse_icon {
-    display: none;
-}
-
-.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_icon {
-    display: none;
-}
-
-.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_collapse_icon {
-    display: inline;
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_label::before {
+    content: "\f077";
 }
 
 .select_chat_block .avatar {

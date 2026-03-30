@@ -241,14 +241,9 @@ async function openSwipePicker(messageId) {
 
             const expandLabel = document.createElement('label');
             expandLabel.htmlFor = expandCheckboxId;
-            expandLabel.classList.add('swipe_picker_expand_label');
+            expandLabel.classList.add('swipe_picker_expand_label', 'fa-solid', 'fa-fw', 'fa-chevron-down');
             expandLabel.title = t`Expand/Collapse`;
             expandLabel.setAttribute('data-i18n', '[title]Expand/Collapse');
-            const expandIcon = document.createElement('i');
-            expandIcon.classList.add('fa-solid', 'fa-fw', 'fa-chevron-down', 'swipe_picker_expand_icon');
-            const collapseIcon = document.createElement('i');
-            collapseIcon.classList.add('fa-solid', 'fa-fw', 'fa-chevron-up', 'swipe_picker_collapse_icon');
-            expandLabel.append(expandIcon, collapseIcon);
             expandLabel.addEventListener('click', (event) => event.stopPropagation());
 
             // Add copy button
@@ -264,7 +259,7 @@ async function openSwipePicker(messageId) {
             });
 
             // Insert new buttons before the branch button
-            branchButton.before(copyButton, expandLabel);
+            branchButton.before(expandLabel, copyButton);
 
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
