@@ -34,10 +34,10 @@ jobs:
         # https://github.com/marketplace/actions/setup-node-js-environment
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Run npm install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run ESLint
         # Action ESLint
@@ -72,13 +72,13 @@ jobs:
         # https://github.com/marketplace/actions/setup-node-js-environment
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install root dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Install test dependencies
-        run: npm ci --prefix tests
+        run: npm ci --ignore-scripts --prefix tests
 
       - name: Run unit tests
         run: npm run test:unit --prefix tests
