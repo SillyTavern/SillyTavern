@@ -1497,10 +1497,11 @@ async function onViewStatsClick() {
     { timeOut: 10000, escapeHtml: false },
     );
 
+    $('#chat .mes.vectorized').removeClass('vectorized');
     const chat = getContext().chat;
     for (const message of chat) {
         if (hashesInCollection.includes(getStringHash(substituteParams(message.mes)))) {
-            const messageElement = $(`.mes[mesid="${chat.indexOf(message)}"]`);
+            const messageElement = $(`#chat .mes[mesid="${chat.indexOf(message)}"]`);
             messageElement.addClass('vectorized');
         }
     }
