@@ -2955,7 +2955,7 @@ export function createTimeout(ms, errorMessage = '') {
  * Registers a long-press (touch hold) event as an alternative to modifier+click.
  * Supports event delegation for dynamically created elements.
  * @param {string} selector CSS selector for target elements
- * @param {function} callback Callback to invoke on long-press, `this` is the matched element
+ * @param {(e: TouchEvent) => void} callback Callback to invoke on long-press, `this` is the matched element
  * @param {number} [delay=500] Long-press duration in ms
  */
 export function addLongPressEvent(selector, callback, delay = 500) {
