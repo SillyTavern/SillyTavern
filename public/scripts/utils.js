@@ -2964,6 +2964,7 @@ export function addLongPressEvent(selector, callback, delay = 500) {
     let target = null;
 
     document.addEventListener('touchstart', function (event) {
+        if (!(event.target instanceof Element)) return;
         const el = event.target.closest(selector);
         if (!el) return;
         target = el;
