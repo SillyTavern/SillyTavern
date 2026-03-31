@@ -412,7 +412,7 @@ async function openSwipePicker(messageId) {
 export function initSwipePicker() {
     /**
      * Click handler for opening the swipe picker when clicking on the swipe counter.
-     * @param {JQuery.ClickEvent | JQuery.KeyDownEvent} e Event object
+     * @param {JQuery.ClickEvent | JQuery.KeyDownEvent | TouchEvent} e Event object
      */
     async function onSwipeCounterClick(e) {
         e.preventDefault();
