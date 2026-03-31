@@ -115,6 +115,7 @@
     },
     "version": "1.17.0",
     "scripts": {
+        "init": "node src/server-init.js",
         "start": "node server.js",
         "debug": "node --inspect server.js",
         "start:global": "node server.js --global",
@@ -122,7 +123,6 @@
         "start:deno": "deno run --allow-run --allow-net --allow-read --allow-write --allow-sys --allow-env server.js",
         "start:bun": "bun server.js",
         "start:no-csrf": "node server.js --disableCsrf",
-        "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
         "plugins:update": "node plugins update",

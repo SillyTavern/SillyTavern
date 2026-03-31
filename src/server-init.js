@@ -7,7 +7,7 @@ import process from 'node:process';
 import yaml from 'yaml';
 import chalk from 'chalk';
 import { createRequire } from 'node:module';
-import { addMissingConfigValues } from './src/config-init.js';
+import { addMissingConfigValues } from './config-init.js';
 
 /**
  * Colorizes console output.
@@ -88,7 +88,7 @@ function createDefaultFiles() {
                 );
             } else {
                 throw new Error(
-                    'FATAL: Unexpected default file format in `post-install.js#createDefaultFiles()`.',
+                    'FATAL: Unexpected default file format in `server-init.js#createDefaultFiles()`.',
                 );
             }
         } catch (error) {

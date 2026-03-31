@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 echo "Assuming nodejs and npm is already installed. If you haven't installed them already, do so now"
 echo "Installing Electron Wrapper's Node Modules..."
+export NODE_ENV=production
 npm i --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev
 
 echo "Starting Electron Wrapper..."
