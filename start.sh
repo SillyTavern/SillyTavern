@@ -10,7 +10,7 @@ fi
 
 echo "Installing Node Modules..."
 export NODE_ENV=production
-npm i --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev
+npm install --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev --ignore-scripts
 npm run init
 
 echo "Entering SillyTavern..."
