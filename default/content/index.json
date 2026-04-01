@@ -644,6 +644,10 @@
         "type": "reasoning"
     },
     {
+        "filename": "user.css",
+        "type": "stylesheet"
+    },
+    {
         "filename": "errors/forbidden-by-whitelist.html",
         "type": "error_page"
     },
@@ -658,9 +662,5 @@
     {
         "filename": "errors/url-not-found.html",
         "type": "error_page"
-    },
-    {
-        "filename": "user.css",
-        "type": "stylesheet"
     }
 ]
