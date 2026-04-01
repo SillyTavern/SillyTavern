@@ -90,6 +90,7 @@ const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -1833,6 +1834,49 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
             headers = {};
             queryParams = { type: 'text', sub_type: 'chat' };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
+
+            if (!apiKey) {
+                console.warn('Cloudflare Workers AI API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+
+            try {
+                const accountId = String(request.body.workers_ai_account_id || '').trim();
+                if (!accountId) {
+                    console.warn('Cloudflare Workers AI Account ID is missing.');
+                    return statusResponse.status(400).send({ error: true });
+                }
+
+                const modelsUrl = new URL(`${API_WORKERS_AI}/${encodeURIComponent(accountId)}/ai/models/search`);
+                modelsUrl.searchParams.set('task', 'Text Generation');
+                modelsUrl.searchParams.set('per_page', '1000');
+
+                const response = await fetch(modelsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + apiKey,
+                    },
+                });
+
+                if (response.ok) {
+                    /** @type {any} */
+                    const data = await response.json();
+                    const models = Array.isArray(data?.result)
+                        ? data.result.map(model => ({ ...model, id: model.name }))
+                        : [];
+
+                    console.debug('Available Cloudflare Workers AI models:', models.map(m => m.id));
+                    return statusResponse.send({ data: models });
+                } else {
+                    console.warn('Cloudflare Workers AI models endpoint failed:', response.status, response.statusText);
+                    return statusResponse.status(response.status).send({ error: true });
+                }
+            } catch (error) {
+                console.error('Error fetching Cloudflare Workers AI models:', error);
+                return statusResponse.status(500).send({ error: true });
+            }
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
@@ -2314,6 +2358,24 @@ router.post('/generate', async function (request, response) {
             bodyParams = {};
             if (request.body.json_schema) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
+            const accountId = String(request.body.workers_ai_account_id || '').trim();
+            if (!accountId) {
+                console.warn('Cloudflare Workers AI Account ID is missing.');
+                return response.status(400).send({ error: true });
+            }
+            apiUrl = `${API_WORKERS_AI}/${encodeURIComponent(accountId)}/ai/v1`;
+            headers = {};
+            bodyParams = {
+                repetition_penalty: request.body.repetition_penalty,
+            };
+            if (request.body.json_schema) {
+                bodyParams['response_format'] = {
+                    type: 'json_schema',
+                    json_schema: request.body.json_schema.value,
+                };
             }
         } else {
             console.warn('This chat completion source is not supported yet.');

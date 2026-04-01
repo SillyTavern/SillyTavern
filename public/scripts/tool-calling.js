@@ -637,6 +637,8 @@ export class ToolManager {
                     return currentModel.supported_features?.includes('tools');
                 case chat_completion_sources.ELECTRONHUB:
                     return currentModel.metadata?.function_call;
+                case chat_completion_sources.WORKERS_AI:
+                    return Array.isArray(currentModel.properties) && currentModel.properties.some(p => p.property_id === 'function_calling' && p.value === 'true');
             }
         }
 
@@ -664,6 +666,7 @@ export class ToolManager {
             chat_completion_sources.ZAI,
             chat_completion_sources.SILICONFLOW,
             chat_completion_sources.NANOGPT,
+            chat_completion_sources.WORKERS_AI,
         ];
         return supportedSources.includes(settings.chat_completion_source);
     }
