@@ -19,9 +19,8 @@ export function userCssMiddleware(req, res, next) {
                 return;
             }
         }
-
-        next();
-    };
+    }
+    next();
 }
 
 export default userCssMiddleware;
