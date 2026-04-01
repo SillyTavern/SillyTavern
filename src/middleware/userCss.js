@@ -13,7 +13,7 @@ export function userCssMiddleware(req, res, next) {
     if (req.method === 'GET' && req.path === '/css/user.css') {
         const dataPath = getGlobalTargetByType(CONTENT_TYPES.STYLESHEET);
         if (dataPath) {
-            const userCssPath = path.join(dataPath, 'user.css');
+            const userCssPath = path.resolve(path.join(dataPath, 'user.css'));
             if (fs.existsSync(userCssPath)) {
                 res.sendFile(userCssPath);
                 return;
