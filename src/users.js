@@ -16,7 +16,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent, setPermissionsSync } from './util.js';
 import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
@@ -480,6 +480,48 @@ export async function migrateSystemPrompts() {
             writeFileAtomicSync(migrateMarker, '');
         } catch (error) {
             console.error('Error migrating system prompts:', error);
+        }
+    }
+}
+
+export async function migratePublicOverrides() {
+    const migrationMap = [
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'forbidden-by-whitelist.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'host-not-allowed.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'host-not-allowed.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'unauthorized.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'unauthorized.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'url-not-found.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'url-not-found.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'css', 'user.css'),
+            newPath: path.join(globalThis.DATA_ROOT, '_css', 'user.css'),
+        },
+    ];
+
+    for (const { oldPath, newPath } of migrationMap) {
+        try {
+            if (fs.existsSync(newPath)) {
+                continue;
+            }
+            if (fs.existsSync(oldPath)) {
+                fs.mkdirSync(path.dirname(newPath), { recursive: true });
+                fs.cpSync(oldPath, newPath, { force: true });
+                fs.unlinkSync(oldPath);
+                setPermissionsSync(newPath);
+                console.log(`Migrated ${path.basename(oldPath)} to data root.`);
+            }
+        } catch (error) {
+            console.error(`Error migrating ${oldPath} to ${newPath}:`, error);
         }
     }
 }

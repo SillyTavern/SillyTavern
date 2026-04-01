@@ -37,6 +37,7 @@ import {
     getSessionCookieAge,
     verifySecuritySettings,
     loginPageMiddleware,
+    migratePublicOverrides,
 } from './users.js';
 
 import getWebpackServeMiddleware from './middleware/webpack-serve.js';
@@ -461,6 +462,7 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(ensurePublicDirectoriesExist)
     .then(migrateUserData)
     .then(migrateSystemPrompts)
+    .then(migratePublicOverrides)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .then(apply404Middleware)
