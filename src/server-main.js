@@ -48,6 +48,7 @@ import initRequestProxy from './request-proxy.js';
 import cacheBuster from './middleware/cacheBuster.js';
 import corsProxyMiddleware from './middleware/corsProxy.js';
 import hostWhitelistMiddleware from './middleware/hostWhitelist.js';
+import userCssMiddleware from './middleware/userCss.js';
 import {
     getVersion,
     color,
@@ -229,6 +230,7 @@ app.get('/login', loginPageMiddleware);
 // Host frontend assets
 const webpackMiddleware = getWebpackServeMiddleware();
 app.use(webpackMiddleware);
+app.use(userCssMiddleware);
 app.use(express.static(path.join(serverDirectory, 'public'), {}));
 
 // Public API
@@ -430,7 +432,7 @@ async function postSetupTasks(result) {
  * Registers a not-found error response if a not-found error page exists. Should only be called after all other middlewares have been registered.
  */
 function apply404Middleware() {
-    const notFoundWebpage = safeReadFileSync(path.join(serverDirectory, 'public/error/url-not-found.html')) ?? '';
+    const notFoundWebpage = safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'url-not-found.html')) ?? '';
     app.use((req, res) => {
         res.status(404).send(notFoundWebpage);
     });
