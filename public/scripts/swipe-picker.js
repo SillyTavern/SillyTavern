@@ -3,8 +3,9 @@ import { SWIPE_DIRECTION, SWIPE_SOURCE } from './constants.js';
 import { t } from './i18n.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user } from './power-user.js';
+import { isMobile } from './RossAscends-mods.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { clamp, copyText, timestampToMoment } from './utils.js';
+import { addLongPressEvent, clamp, copyText, timestampToMoment } from './utils.js';
 import { chat, deleteSwipe, ensureSwipes, isMessageSwipeable, isSwipingAllowed, swipe, syncMesToSwipe } from '/script.js';
 
 /**
@@ -409,22 +410,29 @@ async function openSwipePicker(messageId) {
 }
 
 export function initSwipePicker() {
-    $(document).on('click', '.swipes-counter.swipe-picker-enabled', async function (e) {
+    /**
+     * Click handler for opening the swipe picker when clicking on the swipe counter.
+     * @param {JQuery.Event | Event} e Event object
+     */
+    async function onSwipeCounterClick(e) {
         e.preventDefault();
         e.stopPropagation();
 
         const mesId = Number($(this).closest('.mes').attr('mesid'));
         await openSwipePicker(mesId);
-    });
+    }
+
+    if (isMobile()) {
+        addLongPressEvent('.swipes-counter.swipe-picker-enabled', onSwipeCounterClick);
+    } else {
+        $(document).on('click', '.swipes-counter.swipe-picker-enabled', onSwipeCounterClick);
+    }
     $(document).on('keydown', '.swipes-counter.swipe-picker-enabled', async function (e) {
         if (e.key !== ' ') {
             return;
         }
 
-        e.preventDefault();
-        e.stopPropagation();
-        const mesId = Number($(this).closest('.mes').attr('mesid'));
-        await openSwipePicker(mesId);
+        onSwipeCounterClick.call(this, e);
     });
     $(document).on('click', '.mes_swipe_picker', async function (e) {
         e.preventDefault();
