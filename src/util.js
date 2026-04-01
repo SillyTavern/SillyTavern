@@ -704,8 +704,9 @@ export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_T
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {import('express').Response} to The Express response to pipe to.
+ * @returns {Promise<void>}
  */
-export function forwardFetchResponse(from, to) {
+export async function forwardFetchResponse(from, to) {
     let statusCode = from.status;
     let statusText = from.statusText;
 
@@ -722,48 +723,89 @@ export function forwardFetchResponse(from, to) {
     to.statusMessage = statusText;
 
     if (!from.ok) {
-        void from.arrayBuffer().then((errorBody) => {
-            const errorBuffer = Buffer.from(errorBody);
-            const rawErrorText = errorBuffer.toString('utf8');
-            const parsedError = tryParse(rawErrorText);
-            const structuredErrorMessage = [
-                parsedError?.error?.message,
-                parsedError?.message,
-                typeof parsedError?.detail === 'string' ? parsedError.detail : '',
-            ].find(message => typeof message === 'string' && message.trim());
+        try {
+            const rawErrorText = await from.text();
+            const detail = rawErrorText || 'Unknown error occurred';
 
-            if (structuredErrorMessage) {
-                console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${structuredErrorMessage}`);
-            } else if (rawErrorText) {
-                console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${rawErrorText}`);
-            } else {
-                console.warn(`Streaming request failed with status ${from.status} ${statusText}`);
-            }
-
-            to.end(errorBuffer);
-        }).catch(() => {
-            console.warn(`Streaming request failed with status ${from.status} ${statusText}`);
-            to.end();
-        });
+            console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${detail}`);
+            await new Promise(resolve => {
+                to.end(rawErrorText, undefined, resolve);
+            });
+        } catch {
+            console.warn(`Streaming request failed with status ${from.status} ${statusText}: Unknown error occurred`);
+            await new Promise(resolve => {
+                to.end(undefined, undefined, resolve);
+            });
+        }
 
         return;
     }
 
-    if (from.body && to.socket) {
-        from.body.pipe(to);
-        to.socket.on('close', function () {
-            if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
-
-            to.end(); // End the Express response
+    if (!from.body || !to.socket) {
+        await new Promise(resolve => {
+            to.end(undefined, undefined, resolve);
         });
+        return;
+    }
 
-        from.body.on('end', function () {
+    await new Promise((resolve) => {
+        let settled = false;
+
+        const finish = () => {
+            if (settled) {
+                return;
+            }
+
+            settled = true;
+            cleanup();
+            resolve();
+        };
+
+        const onSocketClose = () => {
+            if (from.body instanceof Readable) {
+                from.body.destroy();
+            }
+
+            finish();
+        };
+
+        const onResponseFinish = () => {
+            finish();
+        };
+
+        const onResponseError = () => {
+            if (from.body instanceof Readable) {
+                from.body.destroy();
+            }
+
+            finish();
+        };
+
+        const onBodyEnd = () => {
             console.info('Streaming request finished');
             to.end();
-        });
-    } else {
-        to.end();
-    }
+        };
+
+        const onBodyError = () => {
+            to.end();
+        };
+
+        const cleanup = () => {
+            to.socket.off('close', onSocketClose);
+            to.off('finish', onResponseFinish);
+            to.off('error', onResponseError);
+            from.body.off('end', onBodyEnd);
+            from.body.off('error', onBodyError);
+        };
+
+        to.socket.on('close', onSocketClose);
+        to.on('finish', onResponseFinish);
+        to.on('error', onResponseError);
+        from.body.on('end', onBodyEnd);
+        from.body.on('error', onBodyError);
+
+        from.body.pipe(to, { end: false });
+    });
 }
 
 /**

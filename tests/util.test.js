@@ -132,20 +132,20 @@ describe('flattenSchema', () => {
 });
 
 describe('forwardFetchResponse', () => {
-    test('should log JSON error details and return the original body for non-2xx streaming responses', async () => {
+    test('should log JSON error bodies and return the original body for non-2xx streaming responses', async () => {
         const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
         const body = JSON.stringify({ error: { message: 'Forbidden by upstream policy' }, detail: 'policy_denied' });
         const response = createMockExpressResponse();
         const bodyPromise = collectResponseBody(response);
 
-        forwardFetchResponse(new Response(body, {
+        await forwardFetchResponse(new Response(body, {
             status: 403,
             statusText: 'Forbidden',
         }), response);
 
         expect(await bodyPromise).toBe(body);
         expect(response.statusCode).toBe(403);
-        expect(warnSpy).toHaveBeenCalledWith('Streaming request failed with status 403 Forbidden: Forbidden by upstream policy');
+        expect(warnSpy).toHaveBeenCalledWith(`Streaming request failed with status 403 Forbidden: ${body}`);
     });
 
     test('should log plain text error bodies and return the original body for non-2xx streaming responses', async () => {
@@ -154,13 +154,13 @@ describe('forwardFetchResponse', () => {
         const response = createMockExpressResponse();
         const bodyPromise = collectResponseBody(response);
 
-        forwardFetchResponse(new Response(body, {
+        await forwardFetchResponse(new Response(body, {
             status: 502,
             statusText: 'Bad Gateway',
         }), response);
 
         expect(await bodyPromise).toBe(body);
         expect(response.statusCode).toBe(502);
-        expect(warnSpy).toHaveBeenCalledWith('Streaming request failed with status 502 Bad Gateway: Plain text upstream failure');
+        expect(warnSpy).toHaveBeenCalledWith(`Streaming request failed with status 502 Bad Gateway: ${body}`);
     });
 });
