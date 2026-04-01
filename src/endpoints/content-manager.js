@@ -169,6 +169,7 @@ function seedContent(contentIndex, contentLogPath, resolveTarget, forceCategorie
             continue;
         }
 
+        fs.mkdirSync(contentTarget, { recursive: true });
         fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
         setPermissionsSync(targetPath);
         console.info(`Content file ${contentItem.filename} copied to ${contentTarget}`);
