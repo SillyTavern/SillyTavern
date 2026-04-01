@@ -99,6 +99,10 @@ async function addDockerHostsToWhitelist() {
  * @returns {Promise<import('express').RequestHandler>} Promise that resolves to the middleware function
  */
 export default async function getWhitelistMiddleware() {
+    const forbiddenWebpage = Handlebars.compile(
+        safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html')) ?? '',
+    );
+
     const noLogPaths = [
         '/favicon.ico',
     ];
@@ -124,10 +128,6 @@ export default async function getWhitelistMiddleware() {
         if (!isIPInWhitelist(whitelist, clientIp)
             || forwardedIp && !isIPInWhitelist(whitelist, forwardedIp)
         ) {
-            const forbiddenWebpage = Handlebars.compile(
-                safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html')) ?? '',
-            );
-
             // Log the connection attempt with real IP address
             const ipDetails = forwardedIp
                 ? `${clientIp} (forwarded from ${forwardedIp})`
