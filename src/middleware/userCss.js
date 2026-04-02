@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { CONTENT_TYPES, getGlobalTargetByType } from '../endpoints/content-manager.js';
 
 /**
  * Returns an Express middleware function that serves public override files from the data directory if they exist,
@@ -11,13 +10,10 @@ import { CONTENT_TYPES, getGlobalTargetByType } from '../endpoints/content-manag
  */
 export function userCssMiddleware(req, res, next) {
     if (req.method === 'GET' && req.path === '/css/user.css') {
-        const dataPath = getGlobalTargetByType(CONTENT_TYPES.STYLESHEET);
-        if (dataPath) {
-            const userCssPath = path.resolve(path.join(dataPath, 'user.css'));
-            if (fs.existsSync(userCssPath)) {
-                res.sendFile(userCssPath);
-                return;
-            }
+        const userCssPath = path.resolve(path.join(globalThis.DATA_ROOT, '_css', 'user.css'));
+        if (fs.existsSync(userCssPath)) {
+            res.sendFile(userCssPath);
+            return;
         }
     }
     next();
