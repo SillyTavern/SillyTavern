@@ -111,6 +111,7 @@ export default function getPublicLibConfig({ forceDist = false, pruneCache = fal
         },
         experiments: {
             outputModule: true,
+            asyncWebAssembly: true,
         },
         performance: {
             hints: false,

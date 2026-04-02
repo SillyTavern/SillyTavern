@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import webpack from 'webpack';
 import getPublicLibConfig from '../../webpack.config.js';
@@ -16,8 +17,15 @@ export default function getWebpackServeMiddleware() {
         const outputFile = publicLibConfig.output?.filename;
         const parsedPath = path.parse(req.path);
 
-        if (req.method === 'GET' && parsedPath.dir === '/' && parsedPath.base === outputFile) {
-            return res.sendFile(outputFile, { root: outputPath });
+        if (req.method === 'GET' && parsedPath.dir === '/' && outputPath) {
+            if (parsedPath.base === outputFile) {
+                return res.sendFile(outputFile, { root: outputPath });
+            }
+
+            const assetPath = path.join(outputPath, parsedPath.base);
+            if (fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
+                return res.sendFile(parsedPath.base, { root: outputPath });
+            }
         }
 
         next();
