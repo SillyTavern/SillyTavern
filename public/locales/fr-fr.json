@@ -429,6 +429,7 @@
     "Trim spaces": "Supprimer les espaces",
     "Tokenizer": "Tokeniseur",
     "Token Padding": "Remplissage de token",
+    "Frontend OpenAI tokenization": "Tokenisation OpenAI côté client",
     "Start Reply With": "Commencer la réponse avec",
     "Show reply prefix in chat": "Afficher le préfixe de réponse dans la conversation",
     "Non-markdown strings": "Chaînes non Markdown",

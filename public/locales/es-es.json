@@ -474,6 +474,7 @@
     "Trim spaces": "Recortar espacios",
     "Tokenizer": "Tokenizador",
     "Token Padding": "Relleno de token",
+    "Frontend OpenAI tokenization": "Tokenización OpenAI en el frontend",
     "Start Reply With": "Iniciar Respuesta con",
     "AI reply prefix": "Prefijo de Respuesta de IA",
     "Show reply prefix in chat": "Mostrar prefijo de respuesta en el chat",

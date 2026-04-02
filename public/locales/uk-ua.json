@@ -472,6 +472,7 @@
     "Trim spaces": "Обрізати пробіли",
     "Tokenizer": "Токенізатор",
     "Token Padding": "Набивка токенів",
+    "Frontend OpenAI tokenization": "Фронтендна токенізація OpenAI",
     "Start Reply With": "Почати відповідь з",
     "AI reply prefix": "Префікс відповіді ШІ",
     "Show reply prefix in chat": "Показати префікс відповіді в чаті",

@@ -470,6 +470,7 @@
     "Trim spaces": "Spaties trimmen",
     "Tokenizer": "Tokenizer",
     "Token Padding": "Token-vulling",
+    "Frontend OpenAI tokenization": "Frontend OpenAI-tokenisatie",
     "Start Reply With": "Begin antwoord met",
     "AI reply prefix": "AI antwoord voorvoegsel",
     "Show reply prefix in chat": "Toon antwoordvoorvoegsel in chat",
