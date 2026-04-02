@@ -7958,6 +7958,9 @@ export async function saveSettings(loopCounter = 0) {
         TempResponseLength.restore(null);
     }
 
+    const extensionSettingsPayload = { ...extension_settings };
+    delete extensionSettingsPayload.connectionManager;
+
     const payload = {
         firstRun: firstRun,
         accountStorage: accountStorage.getState(),
@@ -7974,7 +7977,7 @@ export async function saveSettings(loopCounter = 0) {
         swipes: swipes,
         horde_settings: horde_settings,
         power_user: power_user,
-        extension_settings: extension_settings,
+        extension_settings: extensionSettingsPayload,
         tags: tags,
         tag_map: tag_map,
         nai_settings: nai_settings,

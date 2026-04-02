@@ -6,7 +6,7 @@ import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import bytes from 'bytes';
 
-import { SETTINGS_FILE } from '../constants.js';
+import { CONNECTIONS_FILE, SETTINGS_FILE } from '../constants.js';
 import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
 import { getAllUserHandles, getUserDirectories } from '../users.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
@@ -21,6 +21,10 @@ const REQUEST_COMPRESSION_TIMEOUT = Number(getConfigValue('performance.requestCo
 
 // 10 minutes
 const AUTOSAVE_INTERVAL = 10 * 60 * 1000;
+const DEFAULT_CONNECTION_SETTINGS = Object.freeze({
+    profiles: [],
+    selectedProfile: null,
+});
 
 /**
  * Map of functions to trigger settings autosave for a user.
@@ -201,6 +205,25 @@ function getLatestBackup(handle) {
     return path.join(userDirectories.backups, latestBackup);
 }
 
+/**
+ * Sanitizes connection manager data for storage and transport.
+ * @param {any} data Incoming data
+ * @returns {{profiles: object[], selectedProfile: string | null}}
+ */
+function sanitizeConnectionSettings(data) {
+    const profiles = Array.isArray(data?.profiles)
+        ? data.profiles.filter(profile => profile && typeof profile === 'object')
+        : [];
+    const selectedProfile = typeof data?.selectedProfile === 'string'
+        ? data.selectedProfile
+        : DEFAULT_CONNECTION_SETTINGS.selectedProfile;
+
+    return {
+        profiles,
+        selectedProfile,
+    };
+}
+
 export const router = express.Router();
 
 router.post('/save', function (request, response) {
@@ -293,6 +316,42 @@ router.post('/get', (request, response) => {
             timeout: REQUEST_COMPRESSION_TIMEOUT || 0,
         },
     });
+});
+
+router.post('/get-connections', (request, response) => {
+    try {
+        const pathToConnections = path.join(request.user.directories.root, CONNECTIONS_FILE);
+        if (!fs.existsSync(pathToConnections)) {
+            return response.send({
+                exists: false,
+                connections: DEFAULT_CONNECTION_SETTINGS,
+            });
+        }
+
+        const raw = fs.readFileSync(pathToConnections, 'utf8');
+        const parsed = JSON.parse(raw);
+        const connections = sanitizeConnectionSettings(parsed);
+
+        return response.send({
+            exists: true,
+            connections,
+        });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/save-connections', (request, response) => {
+    try {
+        const pathToConnections = path.join(request.user.directories.root, CONNECTIONS_FILE);
+        const connections = sanitizeConnectionSettings(request.body);
+        writeFileAtomicSync(pathToConnections, JSON.stringify(connections, null, 4), 'utf8');
+        return response.send({ result: 'ok' });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
 });
 
 router.post('/get-snapshots', async (request, response) => {

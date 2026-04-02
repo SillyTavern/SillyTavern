@@ -7,6 +7,7 @@ export const PUBLIC_DIRECTORIES = {
 };
 
 export const SETTINGS_FILE = 'settings.json';
+export const CONNECTIONS_FILE = 'connections.json';
 
 /**
  * @type {import('./users.js').UserDirectoryList}

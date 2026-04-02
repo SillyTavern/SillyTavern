@@ -60,6 +60,12 @@ let manifests = {};
  * Default URL for the Extras API.
  */
 const defaultUrl = 'http://localhost:5100';
+const CONNECTION_MANAGER_GET_ENDPOINT = '/api/settings/get-connections';
+const CONNECTION_MANAGER_SAVE_ENDPOINT = '/api/settings/save-connections';
+const CONNECTION_MANAGER_DEFAULT_SETTINGS = Object.freeze({
+    profiles: [],
+    selectedProfile: null,
+});
 
 let requiresReload = false;
 let stateChanged = false;
@@ -211,6 +217,75 @@ export const extension_settings = {
         sort: 'dateAsc',
     },
 };
+
+/**
+ * Sanitizes the connection manager settings.
+ * @param {any} settings Incoming settings
+ * @returns {{profiles: object[], selectedProfile: string | null}}
+ */
+function normalizeConnectionManagerSettings(settings) {
+    const profiles = Array.isArray(settings?.profiles)
+        ? settings.profiles.filter(profile => profile && typeof profile === 'object')
+        : [];
+    const selectedProfile = typeof settings?.selectedProfile === 'string'
+        ? settings.selectedProfile
+        : CONNECTION_MANAGER_DEFAULT_SETTINGS.selectedProfile;
+
+    return {
+        profiles,
+        selectedProfile,
+    };
+}
+
+/**
+ * Checks if a connection manager object has data.
+ * @param {{profiles: object[], selectedProfile: string | null}} settings
+ * @returns {boolean}
+ */
+function hasConnectionManagerData(settings) {
+    return settings.profiles.length > 0 || !!settings.selectedProfile;
+}
+
+/**
+ * Loads persisted connection manager settings from the server.
+ * @returns {Promise<{exists: boolean, connections: {profiles: object[], selectedProfile: string | null}}>}
+ */
+async function fetchConnectionManagerSettings() {
+    const response = await fetch(CONNECTION_MANAGER_GET_ENDPOINT, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({}),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Connection manager settings load failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const connections = normalizeConnectionManagerSettings(data?.connections);
+
+    return {
+        exists: Boolean(data?.exists),
+        connections,
+    };
+}
+
+/**
+ * Saves the current connection manager settings to a dedicated user file.
+ * @param {any} settings Settings object to persist
+ */
+export async function saveConnectionManagerSettings(settings = extension_settings.connectionManager) {
+    const normalized = normalizeConnectionManagerSettings(settings);
+    const response = await fetch(CONNECTION_MANAGER_SAVE_ENDPOINT, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(normalized),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Connection manager settings save failed: ${response.status} ${response.statusText}`);
+    }
+}
 
 function showHideExtensionsMenu() {
     // Get the number of menu items that are not hidden
@@ -1519,8 +1594,28 @@ export async function installExtension(url, global, branch = '') {
  * @param {boolean} enableAutoUpdate Enable auto-update
  */
 export async function loadExtensionSettings(settings, versionChanged, enableAutoUpdate) {
+    const legacyConnectionManager = normalizeConnectionManagerSettings(
+        settings?.extension_settings?.connectionManager ?? extension_settings.connectionManager,
+    );
+
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
+    }
+
+    try {
+        const { exists, connections } = await fetchConnectionManagerSettings();
+        if (exists) {
+            extension_settings.connectionManager = connections;
+        } else if (hasConnectionManagerData(legacyConnectionManager)) {
+            extension_settings.connectionManager = legacyConnectionManager;
+            await saveConnectionManagerSettings(legacyConnectionManager);
+            console.info('Migrated connection profiles from settings.json to connections.json');
+        } else {
+            extension_settings.connectionManager = structuredClone(CONNECTION_MANAGER_DEFAULT_SETTINGS);
+        }
+    } catch (error) {
+        console.error('Failed to load connection profiles from connections.json', error);
+        extension_settings.connectionManager = legacyConnectionManager;
     }
 
     $('#extensions_url').val(extension_settings.apiUrl);
