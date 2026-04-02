@@ -5924,6 +5924,7 @@ export function isImageInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
+        'glm-5v-turbo',
         'autoglm-phone',
         // SiliconFlow
         'Qwen/Qwen3-VL-32B-Instruct',
@@ -6006,6 +6007,7 @@ export function isVideoInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
+        'glm-5v-turbo',
     ];
 
     switch (oai_settings.chat_completion_source) {
