@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Buffer } from 'node:buffer';
+import { createRequire } from 'node:module';
 import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 
@@ -25,6 +26,8 @@ import { getConfigValue, isValidUrl } from '../util.js';
  * @type {{[key: string]: import('tiktoken').Tiktoken}} Tokenizers cache
  */
 const tokenizersCache = {};
+const require = createRequire(import.meta.url);
+const webTokenizersScriptPath = require.resolve('@agnai/web-tokenizers/lib/index.js');
 
 /**
  * @type {string[]}
@@ -239,7 +242,8 @@ class WebTokenizer {
         try {
             const pathToModel = await getPathToTokenizer(this.#model, this.#fallbackModel);
             const fileBuffer = await fs.promises.readFile(pathToModel);
-            this.#instance = await Tokenizer.fromJSON(fileBuffer);
+            const arrayBuffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
+            this.#instance = await Tokenizer.fromJSON(arrayBuffer);
             console.info('Instantiated the tokenizer for', path.parse(pathToModel).name);
             return this.#instance;
         } catch (error) {
@@ -263,6 +267,44 @@ const commandATokenizer = new WebTokenizer('https://github.com/SillyTavern/Silly
 const qwen2Tokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/qwen2.json.gz', 'src/tokenizers/llama3.json');
 const nemoTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/nemo.json.gz', 'src/tokenizers/llama3.json');
 const deepseekTokenizer = new WebTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/deepseek.json.gz', 'src/tokenizers/llama3.json');
+
+/**
+ * Resolves the tokenizer model path for OpenAI count-compatible tokenizers.
+ * @param {string} model Tokenizer model name
+ * @returns {Promise<string|null>} Path to the tokenizer model
+ */
+async function getOpenAITokenizerModelPath(model) {
+    switch (model) {
+        case 'claude':
+            return getPathToTokenizer('src/tokenizers/claude.json', undefined);
+        case 'llama3':
+        case 'llama-3':
+            return getPathToTokenizer('src/tokenizers/llama3.json', undefined);
+        case 'llama':
+            return getPathToTokenizer('src/tokenizers/llama.model', undefined);
+        case 'mistral':
+            return getPathToTokenizer('src/tokenizers/mistral.model', undefined);
+        case 'yi':
+            return getPathToTokenizer('src/tokenizers/yi.model', undefined);
+        case 'gemma':
+        case 'gemini':
+            return getPathToTokenizer('src/tokenizers/gemma.model', undefined);
+        case 'jamba':
+            return getPathToTokenizer('src/tokenizers/jamba.model', undefined);
+        case 'qwen2':
+            return getPathToTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/qwen2.json.gz', 'src/tokenizers/llama3.json');
+        case 'command-r':
+            return getPathToTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-r.json.gz', 'src/tokenizers/llama3.json');
+        case 'command-a':
+            return getPathToTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/command-a.json.gz', 'src/tokenizers/llama3.json');
+        case 'nemo':
+            return getPathToTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/nemo.json.gz', 'src/tokenizers/llama3.json');
+        case 'deepseek':
+            return getPathToTokenizer('https://github.com/SillyTavern/SillyTavern-Tokenizers/raw/main/deepseek.json.gz', 'src/tokenizers/llama3.json');
+        default:
+            return null;
+    }
+}
 
 export const sentencepieceTokenizers = [
     'llama',
@@ -1033,6 +1075,34 @@ router.post('/openai/count', async function (req, res) {
         const jsonBody = JSON.stringify(req.body);
         const num_tokens = guesstimate(jsonBody);
         res.send({ 'token_count': num_tokens });
+    }
+});
+
+router.get('/openai/model', async function (req, res) {
+    try {
+        const queryModel = String(req.query.model || '');
+        const model = getTokenizerModel(queryModel);
+        const modelPath = await getOpenAITokenizerModelPath(model);
+
+        if (!modelPath) {
+            return res.sendStatus(404);
+        }
+
+        const fileBuffer = await fs.promises.readFile(modelPath);
+        res.setHeader('Content-Type', 'application/octet-stream');
+        return res.send(fileBuffer);
+    } catch (error) {
+        console.error('Failed to fetch tokenizer model', error);
+        return res.sendStatus(500);
+    }
+});
+
+router.get('/openai/web-tokenizers', async function (_, res) {
+    try {
+        return res.sendFile(webTokenizersScriptPath);
+    } catch (error) {
+        console.error('Failed to fetch web-tokenizers script', error);
+        return res.sendStatus(500);
     }
 });
 

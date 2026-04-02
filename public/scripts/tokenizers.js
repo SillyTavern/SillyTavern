@@ -1,4 +1,4 @@
-import { localforage } from '../lib.js';
+import { localforage, encoding_for_model } from '../lib.js';
 import { characters, event_types, eventSource, main_api, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
@@ -157,6 +157,38 @@ const textEncoder = new TextEncoder();
 const objectStore = localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
 
 let tokenCache = {};
+const openAITokenizersCache = new Map();
+const openAITokenizerModelsCache = new Map();
+const claudeStyleOpenAITokenizers = new Set(['claude', 'llama3', 'llama-3', 'qwen2', 'command-r', 'command-a', 'nemo', 'deepseek']);
+const sentencepieceOpenAITokenizers = new Set(['llama', 'mistral', 'yi', 'gemma', 'jamba']);
+let agnaiTokenizerClassPromise;
+const TEXT_COMPLETION_MODELS = new Set([
+    'gpt-3.5-turbo-instruct',
+    'gpt-3.5-turbo-instruct-0914',
+    'text-davinci-003',
+    'text-davinci-002',
+    'text-davinci-001',
+    'text-curie-001',
+    'text-babbage-001',
+    'text-ada-001',
+    'code-davinci-002',
+    'code-davinci-001',
+    'code-cushman-002',
+    'code-cushman-001',
+    'text-davinci-edit-001',
+    'code-davinci-edit-001',
+    'text-embedding-ada-002',
+    'text-similarity-davinci-001',
+    'text-similarity-curie-001',
+    'text-similarity-babbage-001',
+    'text-similarity-ada-001',
+    'text-search-davinci-doc-001',
+    'text-search-curie-doc-001',
+    'text-search-babbage-doc-001',
+    'text-search-ada-doc-001',
+    'code-search-babbage-code-001',
+    'code-search-ada-code-001',
+]);
 
 /**
  * Guesstimates the token count for a string.
@@ -185,6 +217,337 @@ export async function saveTokenCache() {
     } catch (e) {
         console.log('Chat Completions: unable to save token cache', e);
     }
+}
+
+function shouldUseFrontendOpenAITokenizer() {
+    return !!power_user.openai_frontend_tokenizer;
+}
+
+function getOpenAITokenizationSource() {
+    return shouldUseFrontendOpenAITokenizer() ? 'frontend' : 'backend';
+}
+
+function getTokenizersGlobal() {
+    return Reflect.get(window, 'tokenizers');
+}
+
+function getCurrentOpenAITokenizerModel() {
+    return normalizeOpenAITokenizerModel(getTokenizerModel());
+}
+
+function normalizeOpenAITokenizerModel(requestModel) {
+    if (requestModel === 'o1' || requestModel.includes('o1-preview') || requestModel.includes('o1-mini') || requestModel.includes('o3-mini')) {
+        return 'o1';
+    }
+
+    if (requestModel.includes('gpt-5') || requestModel.includes('o3') || requestModel.includes('o4-mini')) {
+        return 'o1';
+    }
+
+    if (requestModel.includes('gpt-4o') || requestModel.includes('chatgpt-4o-latest')) {
+        return 'gpt-4o';
+    }
+
+    if (requestModel.includes('gpt-4.1') || requestModel.includes('gpt-4.5')) {
+        return 'gpt-4o';
+    }
+
+    if (requestModel.includes('gpt-4-32k')) {
+        return 'gpt-4-32k';
+    }
+
+    if (requestModel.includes('gpt-4')) {
+        return 'gpt-4';
+    }
+
+    if (requestModel.includes('gpt-3.5-turbo-0301')) {
+        return 'gpt-3.5-turbo-0301';
+    }
+
+    if (requestModel.includes('gpt-3.5-turbo')) {
+        return 'gpt-3.5-turbo';
+    }
+
+    if (TEXT_COMPLETION_MODELS.has(requestModel)) {
+        return requestModel;
+    }
+
+    if (requestModel.includes('claude')) {
+        return 'claude';
+    }
+
+    if (requestModel.includes('llama3') || requestModel.includes('llama-3')) {
+        return 'llama3';
+    }
+
+    if (requestModel.includes('llama')) {
+        return 'llama';
+    }
+
+    if (requestModel.includes('mistral')) {
+        return 'mistral';
+    }
+
+    if (requestModel.includes('yi')) {
+        return 'yi';
+    }
+
+    if (requestModel.includes('deepseek')) {
+        return 'deepseek';
+    }
+
+    if (requestModel.includes('gemma') || requestModel.includes('gemini') || requestModel.includes('learnlm')) {
+        return 'gemma';
+    }
+
+    if (requestModel.includes('jamba')) {
+        return 'jamba';
+    }
+
+    if (requestModel.includes('qwen2')) {
+        return 'qwen2';
+    }
+
+    if (requestModel.includes('command-r')) {
+        return 'command-r';
+    }
+
+    if (requestModel.includes('command-a')) {
+        return 'command-a';
+    }
+
+    if (requestModel.includes('nemo')) {
+        return 'nemo';
+    }
+
+    return 'gpt-3.5-turbo';
+}
+
+function convertClaudePromptForTokenCount(messages) {
+    const promptMessages = messages.map(message => ({ ...message }));
+
+    if (promptMessages.length > 0) {
+        promptMessages.forEach((message) => {
+            if (!message.content) {
+                message.content = '';
+            }
+            if (message.tool_calls) {
+                message.content += JSON.stringify(message.tool_calls);
+            }
+        });
+
+        promptMessages[0].role = 'user';
+
+        let hasUser = false;
+        const firstAssistantIndex = promptMessages.findIndex((message, index) => {
+            if (index >= 0 && (message.role === 'user' || message.content.includes('\n\nHuman: '))) {
+                hasUser = true;
+            }
+            return message.role === 'assistant' && index > 0;
+        });
+
+        if (firstAssistantIndex > 0 && !hasUser) {
+            promptMessages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && promptMessages[firstAssistantIndex - 1].role === 'user' ? 'FixHumMsg' : promptMessages[firstAssistantIndex - 1].role;
+        }
+    }
+
+    return promptMessages.map((message, index) => {
+        const prefix = {
+            assistant: '\n\nAssistant: ',
+            user: '\n\nHuman: ',
+            system: index === 0 ? '' : message.name === 'example_assistant' ? '\n\nA: ' : message.name === 'example_user' ? '\n\nH: ' : '\n\n',
+            FixHumMsg: '\n\nFirst message: ',
+        }[message.role] ?? '';
+
+        return `${prefix}${message.name && message.role !== 'system' ? `${message.name}: ` : ''}${message.content}`;
+    }).join('');
+}
+
+async function getOpenAITokenizerModelBuffer(model) {
+    if (openAITokenizerModelsCache.has(model)) {
+        return openAITokenizerModelsCache.get(model);
+    }
+
+    const modelRequest = fetch(`/api/tokenizers/openai/model?model=${encodeURIComponent(model)}`)
+        .then(async response => {
+            if (!response.ok) {
+                throw new Error(`Tokenizer model request failed: ${response.status}`);
+            }
+
+            return response.arrayBuffer();
+        });
+
+    openAITokenizerModelsCache.set(model, modelRequest);
+
+    try {
+        return await modelRequest;
+    } catch (error) {
+        openAITokenizerModelsCache.delete(model);
+        throw error;
+    }
+}
+
+async function getOpenAITokenizerInstance(model) {
+    if (openAITokenizersCache.has(model)) {
+        return openAITokenizersCache.get(model);
+    }
+
+    const tokenizerRequest = (async () => {
+        if (!claudeStyleOpenAITokenizers.has(model) && !sentencepieceOpenAITokenizers.has(model)) {
+            return encoding_for_model(model);
+        }
+
+        const AgnaiTokenizer = await getAgnaiTokenizerClass();
+        const modelBuffer = await getOpenAITokenizerModelBuffer(model);
+        const tokenizerData = modelBuffer.slice(0);
+
+        if (sentencepieceOpenAITokenizers.has(model)) {
+            return AgnaiTokenizer.fromSentencePiece(tokenizerData);
+        }
+
+        return AgnaiTokenizer.fromJSON(tokenizerData);
+    })();
+
+    openAITokenizersCache.set(model, tokenizerRequest);
+
+    try {
+        const tokenizer = await tokenizerRequest;
+        openAITokenizersCache.set(model, tokenizer);
+        return tokenizer;
+    } catch (error) {
+        openAITokenizersCache.delete(model);
+        throw error;
+    }
+}
+
+async function getAgnaiTokenizerClass() {
+    const tokenizersGlobal = getTokenizersGlobal();
+
+    if (tokenizersGlobal?.Tokenizer) {
+        return tokenizersGlobal.Tokenizer;
+    }
+
+    if (!agnaiTokenizerClassPromise) {
+        const tokenizerClassRequest = new Promise((resolve, reject) => {
+            /** @type {HTMLScriptElement | null} */
+            let script = document.querySelector('script[data-openai-web-tokenizers]');
+
+            if (script?.dataset.failed === 'true') {
+                script.remove();
+                script = null;
+            }
+
+            if (!script) {
+                script = document.createElement('script');
+                script.src = '/api/tokenizers/openai/web-tokenizers';
+                script.async = true;
+                script.dataset.openaiWebTokenizers = 'true';
+                document.head.append(script);
+            }
+
+            script.addEventListener('load', () => {
+                script.dataset.loaded = 'true';
+                delete script.dataset.failed;
+                const loadedTokenizers = getTokenizersGlobal();
+                if (loadedTokenizers?.Tokenizer) {
+                    resolve(loadedTokenizers.Tokenizer);
+                } else {
+                    reject(new Error('web-tokenizers script loaded without exposing Tokenizer.'));
+                }
+            }, { once: true });
+            script.addEventListener('error', () => {
+                script.dataset.failed = 'true';
+                reject(new Error('Failed to load web-tokenizers script.'));
+            }, { once: true });
+
+            if (script.dataset.loaded === 'true') {
+                const loadedTokenizers = getTokenizersGlobal();
+                if (loadedTokenizers?.Tokenizer) {
+                    resolve(loadedTokenizers.Tokenizer);
+                    return;
+                }
+
+                script.remove();
+                reject(new Error('web-tokenizers script loaded without exposing Tokenizer.'));
+            }
+        });
+
+        agnaiTokenizerClassPromise = tokenizerClassRequest.catch((error) => {
+            agnaiTokenizerClassPromise = undefined;
+            throw error;
+        });
+    }
+
+    return agnaiTokenizerClassPromise;
+}
+
+function getOpenAITiktokenInstance(model) {
+    const cachedTokenizer = openAITokenizersCache.get(model);
+
+    if (cachedTokenizer && typeof cachedTokenizer.encode === 'function') {
+        return cachedTokenizer;
+    }
+
+    if (claudeStyleOpenAITokenizers.has(model) || sentencepieceOpenAITokenizers.has(model)) {
+        return null;
+    }
+
+    const tokenizer = encoding_for_model(model);
+    openAITokenizersCache.set(model, tokenizer);
+    return tokenizer;
+}
+
+function countOpenAITokensWithTiktoken(tokenizer, queryModel, messages) {
+    let numTokens = 0;
+    const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
+    const tokensPerMessage = queryModel.includes('gpt-3.5-turbo-0301') ? 4 : 3;
+    const tokensPadding = 3;
+
+    for (const message of messages) {
+        try {
+            numTokens += tokensPerMessage;
+            for (const [key, value] of Object.entries(message)) {
+                numTokens += tokenizer.encode(String(value)).length;
+                if (key === 'name') {
+                    numTokens += tokensPerName;
+                }
+            }
+        } catch {
+            console.warn('Error tokenizing message:', message);
+        }
+    }
+
+    numTokens += tokensPadding;
+
+    if (queryModel.includes('gpt-3.5-turbo-0301')) {
+        numTokens += 9;
+    }
+
+    return numTokens;
+}
+
+function countOpenAITokensWithFrontendTokenizer(tokenizer, model, messages) {
+    if (claudeStyleOpenAITokenizers.has(model)) {
+        const convertedPrompt = convertClaudePromptForTokenCount(messages);
+        return tokenizer.encode(convertedPrompt).length;
+    }
+
+    if (sentencepieceOpenAITokenizers.has(model)) {
+        const joinedPrompt = messages.flatMap(message => Object.values(message)).join('\n\n');
+        return tokenizer.encode(joinedPrompt).length;
+    }
+
+    return countOpenAITokensWithTiktoken(tokenizer, model, messages);
+}
+
+async function countOpenAITokensFrontend(messages, queryModel) {
+    const tokenizer = await getOpenAITokenizerInstance(queryModel);
+    return countOpenAITokensWithFrontendTokenizer(tokenizer, queryModel, messages);
+}
+
+function countOpenAITokensFrontendSync(messages, queryModel) {
+    const tokenizer = getOpenAITiktokenInstance(queryModel);
+    return tokenizer ? countOpenAITokensWithFrontendTokenizer(tokenizer, queryModel, messages) : null;
 }
 
 async function resetTokenCache() {
@@ -789,32 +1152,53 @@ export function getTokenizerModel() {
  * @deprecated Use countTokensOpenAIAsync instead.
  */
 export function countTokensOpenAI(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    const requestModel = getTokenizerModel();
+    const model = getCurrentOpenAITokenizerModel();
+    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${requestModel}`;
     const cacheObject = getTokenCacheObject();
+    const tokenizationSource = getOpenAITokenizationSource();
 
     if (!Array.isArray(messages)) {
         messages = [messages];
     }
 
+    if (model === 'claude') {
+        full = true;
+    }
+
     let token_count = -1;
 
     for (const message of messages) {
-        const model = getTokenizerModel();
-
-        if (model === 'claude') {
-            full = true;
-        }
-
         const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
+        const cacheKey = `${tokenizationSource}-${model}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
+        } else if (shouldUseFrontendOpenAITokenizer()) {
+            const frontendCount = countOpenAITokensFrontendSync([message], model);
+
+            if (typeof frontendCount === 'number') {
+                token_count += frontendCount;
+                cacheObject[cacheKey] = frontendCount;
+            } else {
+                jQuery.ajax({
+                    async: false,
+                    type: 'POST',
+                    url: tokenizerEndpoint,
+                    data: JSON.stringify([message]),
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    success: function (data) {
+                        token_count += Number(data.token_count);
+                        cacheObject[cacheKey] = Number(data.token_count);
+                    },
+                });
+            }
         } else {
             jQuery.ajax({
                 async: false,
-                type: 'POST', //
+                type: 'POST',
                 url: tokenizerEndpoint,
                 data: JSON.stringify([message]),
                 dataType: 'json',
@@ -839,32 +1223,52 @@ export function countTokensOpenAI(messages, full = false) {
  * @returns {Promise<number>} Token count.
  */
 export async function countTokensOpenAIAsync(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    const requestModel = getTokenizerModel();
+    const model = getCurrentOpenAITokenizerModel();
+    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${requestModel}`;
     const cacheObject = getTokenCacheObject();
+    const tokenizationSource = getOpenAITokenizationSource();
 
     if (!Array.isArray(messages)) {
         messages = [messages];
     }
 
+    if (model === 'claude') {
+        full = true;
+    }
+
     let token_count = -1;
 
     for (const message of messages) {
-        const model = getTokenizerModel();
-
-        if (model === 'claude') {
-            full = true;
-        }
-
         const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
+        const cacheKey = `${tokenizationSource}-${model}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
+        } else if (shouldUseFrontendOpenAITokenizer()) {
+            try {
+                const count = await countOpenAITokensFrontend([message], model);
+                token_count += count;
+                cacheObject[cacheKey] = count;
+            } catch (error) {
+                console.warn('Frontend OpenAI tokenization failed, falling back to backend.', error);
+                const data = await jQuery.ajax({
+                    async: true,
+                    type: 'POST',
+                    url: tokenizerEndpoint,
+                    data: JSON.stringify([message]),
+                    dataType: 'json',
+                    contentType: 'application/json',
+                });
+
+                token_count += Number(data.token_count);
+                cacheObject[cacheKey] = Number(data.token_count);
+            }
         } else {
             const data = await jQuery.ajax({
                 async: true,
-                type: 'POST', //
+                type: 'POST',
                 url: tokenizerEndpoint,
                 data: JSON.stringify([message]),
                 dataType: 'json',
@@ -1223,4 +1627,3 @@ export async function initTokenizers() {
     await loadTokenCache();
     registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
 }
-
