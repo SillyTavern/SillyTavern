@@ -110,6 +110,30 @@ export {
 let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
 let hideMutedSprites = false;
+
+/**
+ * @typedef {object} Group
+ * @property {string} id - Unique group ID
+ * @property {string} name - Group name
+ * @property {string[]} members - Array of member avatar filenames
+ * @property {string[]} disabled_members - Array of disabled member avatar filenames
+ * @property {string[]} chats - Array of chat IDs
+ * @property {string} chat_id - Current active chat ID
+ * @property {string} avatar_url - Group avatar URL
+ * @property {boolean} allow_self_responses - Whether self responses are allowed
+ * @property {boolean} hideMutedSprites - Whether muted sprites are hidden
+ * @property {boolean} fav - Whether the group is favorited
+ * @property {number} activation_strategy - Member activation strategy
+ * @property {number} generation_mode - Character card generation mode
+ * @property {number} auto_mode_delay - Auto mode delay in seconds
+ * @property {string} generation_mode_join_prefix - Prefix for joined character cards
+ * @property {string} generation_mode_join_suffix - Suffix for joined character cards
+ * @property {number} date_last_chat - Timestamp of last chat
+ * @property {boolean} response_control_enabled - Whether response control is enabled
+ * @property {number} min_responses - Minimum number of responses per trigger
+ * @property {number} max_responses - Maximum number of responses per trigger
+ */
+ 
 /** @type {Group[]} */
 let groups = [];
 /** @type {string|null} */
@@ -118,6 +142,7 @@ let group_generation_id = null;
 let fav_grp_checked = false;
 let openGroupId = null;
 let newGroupMembers = [];
+let pendingQueueMembers = [];
 
 export const group_activation_strategy = {
     NATURAL: 0,
@@ -1039,7 +1064,26 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
             await saveChatConditional();
             $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
-        groupChatQueueOrder = new Map();
+		// Apply response control if enabled
+		if (group.response_control_enabled && !['swipe', 'impersonate', 'quiet', 'continue'].includes(type) && typeof params.force_chid !== 'number') {
+			const enabledMemberIds = enabledMembers
+				.map(x => characters.findIndex(y => y.avatar === x))
+				.filter(x => x !== -1);
+
+			const min = Math.max(1, group.min_responses ?? 1);
+			const max = Math.min(enabledMemberIds.length, group.max_responses ?? enabledMemberIds.length);
+			const clampedMax = Math.max(min, max);
+			const count = Math.floor(Math.random() * (clampedMax - min + 1)) + min;
+
+			if (activatedMembers.length > count) {
+				// Too many — trim down
+				activatedMembers = activatedMembers.slice(0, count);
+			} else if (activatedMembers.length < count) {
+				// Too few — supplement with random members not already activated
+				const extras = shuffle(enabledMemberIds.filter(x => !activatedMembers.includes(x)));
+				activatedMembers = [...activatedMembers, ...extras.slice(0, count - activatedMembers.length)];
+			}
+		}
 
         if (power_user.show_group_chat_queue) {
             for (let i = 0; i < activatedMembers.length; ++i) {
@@ -1074,10 +1118,29 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
                 groupChatQueueOrder.forEach((value, key, map) => map.set(key, value - 1));
             }
         }
+				// Process any characters queued via the queue button during generation
+		while (pendingQueueMembers.length > 0) {
+			throwIfAborted();
+			const chId = pendingQueueMembers.shift();
+			deactivateSendButtons();
+			setCharacterId(chId);
+			setCharacterName(characters[chId].name);
+			if (power_user.show_group_chat_queue) {
+				printGroupMembers();
+			}
+			await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
+			textResult = await Generate('normal', { automatic_trigger: byAutoMode, ...(params || {}) });
+			if (power_user.show_group_chat_queue) {
+				groupChatQueueOrder.delete(characters[chId].avatar);
+				groupChatQueueOrder.forEach((value, key, map) => map.set(key, value - 1));
+			}
+		}
+		pendingQueueMembers = [];
     } finally {
         is_group_generating = false;
         setSendButtonState(false);
         setCharacterId(undefined);
+		pendingQueueMembers = [];
         if (power_user.show_group_chat_queue) {
             groupChatQueueOrder = new Map();
             printGroupMembers();
@@ -1442,6 +1505,7 @@ async function modifyGroupMember(groupId, groupMember, isDelete) {
 
     printGroupCandidates();
     printGroupMembers();
+	updateResponseControlMaxSliders();
 
     // Refresh the tag filters for both lists to reflect any new tags
     printTagFilters(tag_filter_type.group_candidates_list);
@@ -1512,6 +1576,86 @@ async function onGroupAutoModeDelayInput(e) {
         _thisGroup.auto_mode_delay = Number(e.target.value);
         await editGroup(openGroupId, false, false);
         setAutoModeWorker();
+    }
+}
+
+async function onGroupResponseControlEnabledClick() {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        const value = $(this).prop('checked');
+        _thisGroup.response_control_enabled = value;
+        if (value) {
+            // Turn off auto mode fully
+            is_group_automode_enabled = false;
+            _thisGroup.auto_mode_enabled = false;
+            $('#rm_group_automode').prop('checked', false);
+            setAutoModeWorker();
+        }
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+async function onGroupMinResponsesInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        let min = Number(e.target.value);
+        $('#rm_group_min_responses_counter').val(min);
+        if (min > (_thisGroup.max_responses ?? 3)) {
+            _thisGroup.max_responses = min;
+            $('#rm_group_max_responses').val(min);
+            $('#rm_group_max_responses_counter').val(min);
+        }
+        _thisGroup.min_responses = min;
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+async function onGroupMaxResponsesInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        let max = Number(e.target.value);
+        $('#rm_group_max_responses_counter').val(max);
+        if (max < (_thisGroup.min_responses ?? 1)) {
+            _thisGroup.min_responses = max;
+            $('#rm_group_min_responses').val(max);
+            $('#rm_group_min_responses_counter').val(max);
+        }
+        _thisGroup.max_responses = max;
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+function updateResponseControlMaxSliders() {
+    const group = openGroupId && groups.find(x => x.id == openGroupId);
+    if (!group) return;
+    const memberCount = Math.max(1, group.members?.length ?? 1);
+
+    $('#rm_group_min_responses').attr('max', memberCount);
+    $('#rm_group_min_responses_counter').attr('max', memberCount);
+    $('#rm_group_max_responses').attr('max', memberCount);
+    $('#rm_group_max_responses_counter').attr('max', memberCount);
+
+    // Clamp current values if they now exceed the new max
+    let min = group.min_responses ?? 1;
+    let max = group.max_responses ?? 3;
+
+    if (max > memberCount) {
+        max = memberCount;
+        group.max_responses = max;
+        $('#rm_group_max_responses').val(max);
+        $('#rm_group_max_responses_counter').val(max);
+    }
+
+    if (min > memberCount) {
+        min = memberCount;
+        group.min_responses = min;
+        $('#rm_group_min_responses').val(min);
+        $('#rm_group_min_responses_counter').val(min);
+    }
+
+    // If clamping changed anything, save
+    if (openGroupId) {
+        editGroup(openGroupId, false, false);
     }
 }
 
@@ -1834,6 +1978,11 @@ function select_group_chats(groupId, skipAnimation) {
     $('#rm_group_allow_self_responses').prop('checked', group && group.allow_self_responses);
     $('#rm_group_hidemutedsprites').prop('checked', group && group.hideMutedSprites);
     $('#rm_group_automode_delay').val(group?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY);
+	$('#rm_group_response_control_enabled').prop('checked', group?.response_control_enabled ?? false);
+	$('#rm_group_min_responses').val(group?.min_responses ?? 1).trigger('input');
+    $('#rm_group_max_responses').val(group?.max_responses ?? 3).trigger('input');
+	
+	updateResponseControlMaxSliders();
 
     $('#rm_group_generation_mode_join_prefix').val(group?.generation_mode_join_prefix ?? '').attr('setting', 'generation_mode_join_prefix');
     $('#rm_group_generation_mode_join_suffix').val(group?.generation_mode_join_suffix ?? '').attr('setting', 'generation_mode_join_suffix');
@@ -1998,6 +2147,24 @@ async function onGroupActionClick(event) {
             Generate('normal', { force_chid: chid });
         }
     }
+	
+	if (action === 'queue') {
+    const chid = Number(member.attr('data-chid'));
+    if (Number.isInteger(chid)) {
+        if (is_group_generating) {
+            if (!pendingQueueMembers.includes(chid)) {
+                pendingQueueMembers.push(chid);
+                const avatar = characters[chid]?.avatar;
+                if (avatar) {
+                    groupChatQueueOrder.set(avatar, groupChatQueueOrder.size + 1);
+                    printGroupMembers();
+                }
+            }
+        } else {
+            Generate('normal', { force_chid: chid });
+        }
+    }
+}
 
     await eventSource.emit(event_types.GROUP_UPDATED);
 }
@@ -2114,6 +2281,9 @@ async function createGroup() {
         chat_id: chatName,
         chats: chats,
         auto_mode_delay: autoModeDelay,
+		response_control_enabled: false,
+		min_responses: 1,
+		max_responses: 3,
     };
 
     const createGroupResponse = await fetch('/api/groups/create', {
@@ -2464,10 +2634,19 @@ jQuery(() => {
     $('#rm_group_submit').on('click', createGroup);
     $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
-        const value = $(this).prop('checked');
-        is_group_automode_enabled = value;
-        eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
-    });
+    const value = $(this).prop('checked');
+    is_group_automode_enabled = value;
+    // Mutually exclusive with response control
+    if (value && openGroupId) {
+        const _thisGroup = groups.find(x => x.id == openGroupId);
+        if (_thisGroup?.response_control_enabled) {
+            _thisGroup.response_control_enabled = false;
+            $('#rm_group_response_control_enabled').prop('checked', false);
+            editGroup(openGroupId, false, false);
+        }
+    }
+    eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
+	});
     $('#rm_group_hidemutedsprites').on('input', function () {
         const value = $(this).prop('checked');
         hideMutedSprites = value;
@@ -2482,6 +2661,9 @@ jQuery(() => {
     $('#rm_group_activation_strategy').on('change', onGroupActivationStrategyInput);
     $('#rm_group_generation_mode').on('change', onGroupGenerationModeInput);
     $('#rm_group_automode_delay').on('input', onGroupAutoModeDelayInput);
+	$('#rm_group_response_control_enabled').on('input', onGroupResponseControlEnabledClick);
+	$('#rm_group_min_responses').on('input', onGroupMinResponsesInput);
+	$('#rm_group_max_responses').on('input', onGroupMaxResponsesInput);
     $('#rm_group_generation_mode_join_prefix').on('input', onGroupGenerationModeTemplateInput);
     $('#rm_group_generation_mode_join_suffix').on('input', onGroupGenerationModeTemplateInput);
     $('#group_avatar_button').on('input', uploadGroupAvatar);

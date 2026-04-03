@@ -3924,7 +3924,7 @@
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
                                 <option value="glm-5-turbo">glm-5-turbo</option>
-                                <option value="glm-5v-turbo">glm-5v-turbo</option>
+								<option value="glm-5v-turbo">glm-5v-turbo</option>
                                 <option value="glm-5.1">glm-5.1</option>
                                 <option value="glm-5">glm-5</option>
                                 <option value="glm-4.7">glm-4.7</option>
@@ -6260,6 +6260,25 @@
                                                     <input id="rm_group_hidemutedsprites" type="checkbox" />
                                                     <span data-i18n="Hide Muted Member Sprites">Hide Muted Member Sprites</span>
                                                 </label>
+												<label class="checkbox_label whitespacenowrap">
+													<input id="rm_group_response_control_enabled" type="checkbox" />
+													<span data-i18n="Response Control">Response Control</span>
+												</label>
+												<div class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn gap0">
+													<small data-i18n="Min Responses">Min Responses</small>
+													<input class="neo-range-slider" type="range" id="rm_group_min_responses" min="1" max="10" step="1">
+													<div class="wide100p">
+														<input class="neo-range-input" type="number" min="1" max="10" step="1" data-for="rm_group_min_responses" id="rm_group_min_responses_counter">
+													</div>
+												</div>
+
+												<div class="range-block-range-and-counter alignitemscenter flex-container marginBot5 flexFlowColumn gap0">
+													<small data-i18n="Max Responses">Max Responses</small>
+													<input class="neo-range-slider" type="range" id="rm_group_max_responses" min="1" max="10" step="1">
+													<div class="wide100p">
+														<input class="neo-range-input" type="number" min="1" max="10" step="1" data-for="rm_group_max_responses" id="rm_group_max_responses_counter">
+													</div>
+												</div>
                                             </div>
                                         </div>
                                     </div>
@@ -7504,6 +7523,7 @@
                     <div title="Temporarily disable automatic replies from this character" data-action="disable" class="right_menu_button fa-solid fa-lg fa-comment-slash" data-i18n="[title]Temporarily disable automatic replies from this character"></div>
                     <div title="Enable automatic replies from this character" data-action="enable" class="right_menu_button fa-solid fa-lg fa-comment-slash" data-i18n="[title]Enable automatic replies from this character"></div>
                     <div title="Trigger a message from this character" data-action="speak" class="right_menu_button fa-solid fa-lg fa-comment" data-i18n="[title]Trigger a message from this character"></div>
+					<div title="Add this character to the response queue" data-action="queue" class="right_menu_button fa-solid fa-lg fa-comment-medical" data-i18n="[title]Add this character to the response queue"></div>
                     <div class="flexFlowColumn flex-container">
                         <div title="Move up" data-action="up" class="right_menu_button fa-solid fa-chevron-up" data-i18n="[title]Move up"></div>
                         <div title="Move down" data-action="down" class="right_menu_button fa-solid fa-chevron-down" data-i18n="[title]Move down"></div>
