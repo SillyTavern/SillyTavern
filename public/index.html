@@ -3867,6 +3867,9 @@
                             </select>
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
+                                <option value="glm-5-turbo">glm-5-turbo</option>
+                                <option value="glm-5v-turbo">glm-5v-turbo</option>
+                                <option value="glm-5.1">glm-5.1</option>
                                 <option value="glm-5">glm-5</option>
                                 <option value="glm-4.7">glm-4.7</option>
                                 <option value="glm-4.7-flash">glm-4.7-flash</option>
@@ -6700,7 +6703,7 @@
                                 <small class="chat_file_size select_chat_block_filename_item"></small>
                                 <small class="chat_messages_num select_chat_block_filename_item"></small>
                             </div>
-                            <div class="flex-container gap10px">
+                            <div class="select_chat_actions flex-container gap10px">
                                 <div title="Export JSONL chat file" data-format="jsonl" class="exportRawChatButton opacity50p hoverglow fa-solid fa-file-export" data-i18n="[title]Export JSONL chat file"></div>
                                 <div title="Download chat as plain text document" data-format="txt" class="exportChatButton opacity50p hoverglow fa-solid fa-file-lines" data-i18n="[title]Download chat as plain text document"></div>
                                 <div title="Delete chat file" file_name="" class="PastChat_cross opacity50p hoverglow fa-solid fa-skull" data-i18n="[title]Delete chat file"></div>
@@ -8032,6 +8035,34 @@
                         <div id="mes_impersonate" class="fa-solid fa-user-secret interactable displayNone" title="Ask AI to write your message for you" data-i18n="[title]Ask AI to write your message for you" tabindex="0"></div>
                         <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right interactable displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
                         <div id="send_but" class="fa-solid fa-paper-plane interactable displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
+                    </div>
+                </div>
+                <div id="ask_user_panel" hidden>
+                    <div class="ask_user_panel_header">
+                        <div class="ask_user_panel_heading">
+                            <div id="ask_user_title" class="ask_user_panel_title"></div>
+                            <div id="ask_user_context" class="ask_user_panel_context" hidden></div>
+                        </div>
+                        <div class="ask_user_panel_nav">
+                            <button id="ask_user_prev" type="button" class="menu_button ask_user_nav_button" aria-label="Previous question" title="Previous question">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <div id="ask_user_counter" class="ask_user_panel_counter">1 of 1</div>
+                            <button id="ask_user_next" type="button" class="menu_button ask_user_nav_button" aria-label="Next question" title="Next question">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ask_user_options" class="ask_user_panel_options"></div>
+                    <div class="ask_user_panel_actions">
+                        <button id="ask_user_dismiss" type="button" class="menu_button ask_user_action_button ask_user_action_secondary">
+                            <span>Dismiss</span>
+                            <kbd>ESC</kbd>
+                        </button>
+                        <button id="ask_user_continue" type="button" class="menu_button ask_user_action_button ask_user_action_primary">
+                            <span>Continue</span>
+                            <i class="fa-solid fa-arrow-turn-down-left"></i>
+                        </button>
                     </div>
                 </div>
             </div>

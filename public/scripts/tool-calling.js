@@ -21,6 +21,7 @@ import {
 } from '../script.js';
 import { chat_completion_sources, custom_prompt_post_processing_types, getChatCompletionModel, model_list, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
+import { autoFitSendTextAreaDebounced } from './RossAscends-mods.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -40,11 +41,12 @@ import { setPersonaDescription } from './personas.js';
  * @property {string} result - The result of the tool invocation.
  * @property {string?} signature - The thought signature associated with the tool invocation.
  * @property {string?} reasoning - The plaintext reasoning associated with this tool call turn.
+ * @property {boolean} [error] - Whether the tool invocation failed.
  */
 
 /**
  * @typedef {object} ToolInvocationResult
- * @property {ToolInvocation[]} invocations Successful tool invocations
+ * @property {ToolInvocation[]} invocations Tool invocations (both successful and failed)
  * @property {Error[]} errors Errors that occurred during tool invocation
  * @property {string[]} stealthCalls Names of stealth tools that were invoked
  */
@@ -153,6 +155,12 @@ const NEW_WORKSPACE_OPTION = '__new_workspace__';
 const WORKSPACE_SEPARATOR_OPTION = '__workspace_separator__';
 let lastBrowserSessionId = '';
 let lastBrowserTabIndex = null;
+const ASK_USER_MAX_QUESTIONS = 4;
+const ASK_USER_MAX_OPTIONS = 4;
+const ASK_USER_DEFAULT_FREE_FIELD_LABEL = 'Something else';
+const ASK_USER_DEFAULT_PLACEHOLDER = 'Something else';
+let askUserPanelInitialized = false;
+let askUserSession = null;
 
 /**
  * A class that represents a tool definition.
@@ -428,8 +436,500 @@ function augmentBrowserToolResult(result) {
     return result;
 }
 
+function getAskUserPanelElements() {
+    const sendForm = document.getElementById('send_form');
+    const panel = document.getElementById('ask_user_panel');
+    const title = document.getElementById('ask_user_title');
+    const context = document.getElementById('ask_user_context');
+    const counter = document.getElementById('ask_user_counter');
+    const prevButton = document.getElementById('ask_user_prev');
+    const nextButton = document.getElementById('ask_user_next');
+    const options = document.getElementById('ask_user_options');
+    const dismissButton = document.getElementById('ask_user_dismiss');
+    const continueButton = document.getElementById('ask_user_continue');
+
+    if (!(sendForm instanceof HTMLDivElement)
+        || !(panel instanceof HTMLDivElement)
+        || !(title instanceof HTMLDivElement)
+        || !(context instanceof HTMLDivElement)
+        || !(counter instanceof HTMLDivElement)
+        || !(prevButton instanceof HTMLButtonElement)
+        || !(nextButton instanceof HTMLButtonElement)
+        || !(options instanceof HTMLDivElement)
+        || !(dismissButton instanceof HTMLButtonElement)
+        || !(continueButton instanceof HTMLButtonElement)) {
+        return null;
+    }
+
+    return {
+        sendForm,
+        panel,
+        title,
+        context,
+        counter,
+        prevButton,
+        nextButton,
+        options,
+        dismissButton,
+        continueButton,
+    };
+}
+
+function syncAskUserPanelLayout() {
+    autoFitSendTextAreaDebounced();
+}
+
+function autoFitAskUserFreeInput(input) {
+    if (!(input instanceof HTMLTextAreaElement)) {
+        return;
+    }
+
+    input.style.height = '0px';
+    input.style.height = `${input.scrollHeight}px`;
+}
+
+function initAskUserPanel() {
+    if (askUserPanelInitialized) {
+        return true;
+    }
+
+    const elements = getAskUserPanelElements();
+    if (!elements) {
+        return false;
+    }
+
+    elements.prevButton.addEventListener('click', () => {
+        if (!askUserSession || askUserSession.currentIndex <= 0) {
+            return;
+        }
+
+        askUserSession.currentIndex -= 1;
+        renderAskUserPanel();
+    });
+
+    elements.nextButton.addEventListener('click', () => {
+        if (!askUserSession || askUserSession.currentIndex >= askUserSession.questionnaire.questions.length - 1) {
+            return;
+        }
+
+        askUserSession.currentIndex += 1;
+        renderAskUserPanel();
+    });
+
+    elements.dismissButton.addEventListener('click', () => finishAskUserSession('dismissed'));
+    elements.continueButton.addEventListener('click', () => {
+        if (!askUserSession) {
+            return;
+        }
+
+        if (askUserSession.currentIndex < askUserSession.questionnaire.questions.length - 1) {
+            askUserSession.currentIndex += 1;
+            renderAskUserPanel();
+            return;
+        }
+
+        finishAskUserSession('completed');
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (!askUserSession) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            finishAskUserSession('dismissed');
+            return;
+        }
+
+        if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (askUserSession.currentIndex < askUserSession.questionnaire.questions.length - 1) {
+                askUserSession.currentIndex += 1;
+                renderAskUserPanel();
+            } else {
+                finishAskUserSession('completed');
+            }
+        }
+    });
+
+    askUserPanelInitialized = true;
+    return true;
+}
+
+function normalizeAskUserOption(option, questionIndex, optionIndex) {
+    if (typeof option === 'string') {
+        const label = option.trim();
+        if (!label) {
+            throw new Error(`Question ${questionIndex + 1} option ${optionIndex + 1} must not be empty.`);
+        }
+
+        return { label, value: label, selected: false };
+    }
+
+    if (typeof option === 'object' && option !== null) {
+        const label = String(option.label ?? option.text ?? option.value ?? '').trim();
+        const value = String(option.value ?? label).trim();
+
+        if (!label || !value) {
+            throw new Error(`Question ${questionIndex + 1} option ${optionIndex + 1} must include a label.`);
+        }
+
+        return {
+            label,
+            value,
+            selected: option.selected === true,
+        };
+    }
+
+    throw new Error(`Question ${questionIndex + 1} option ${optionIndex + 1} must be a string or object.`);
+}
+
+function normalizeAskUserStringArray(value) {
+    return Array.isArray(value)
+        ? value.map(item => String(item ?? '').trim()).filter(Boolean)
+        : [];
+}
+
+function normalizeAskUserQuestion(question, questionIndex) {
+    if (typeof question !== 'object' || question === null) {
+        throw new Error(`Question ${questionIndex + 1} must be an object.`);
+    }
+
+    const prompt = String(question.prompt ?? question.question ?? '').trim();
+    if (!prompt) {
+        throw new Error(`Question ${questionIndex + 1} must include a prompt.`);
+    }
+
+    const context = String(question.context ?? question.helper_text ?? question.description ?? '').trim();
+    if (!context) {
+        throw new Error(`Question ${questionIndex + 1} must include context.`);
+    }
+
+    const rawOptions = Array.isArray(question.options) ? question.options : [];
+    if (rawOptions.length === 0) {
+        throw new Error(`Question ${questionIndex + 1} must include at least one option.`);
+    }
+    if (rawOptions.length > ASK_USER_MAX_OPTIONS) {
+        throw new Error(`Question ${questionIndex + 1} has too many options. Max is ${ASK_USER_MAX_OPTIONS}.`);
+    }
+
+    const options = rawOptions.map((option, optionIndex) => normalizeAskUserOption(option, questionIndex, optionIndex));
+    const defaultSelected = new Set(normalizeAskUserStringArray(question.default_selected));
+    const selectedValues = Array.from(new Set(options
+        .filter(option => option.selected || defaultSelected.has(option.value) || defaultSelected.has(option.label))
+        .map(option => option.value)));
+
+    return {
+        prompt,
+        context,
+        options,
+        defaultSelected: selectedValues,
+        defaultText: String(question.default_answer ?? question.default_text ?? '').trim(),
+        placeholder: String(question.placeholder ?? '').trim(),
+        freeFieldLabel: String(question.free_field_label ?? '').trim(),
+        multiline: question.multiline === true,
+    };
+}
+
+function normalizeAskUserPayload(payload) {
+    if (typeof payload !== 'object' || payload === null) {
+        throw new Error('ask_user payload must be an object.');
+    }
+
+    const rawQuestions = Array.isArray(payload.questions)
+        ? payload.questions
+        : [{
+            prompt: payload.question,
+            context: payload.context,
+            options: payload.options,
+            default_answer: payload.default_answer,
+            placeholder: payload.placeholder,
+            multiline: payload.multiline,
+        }];
+
+    if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+        throw new Error('ask_user requires at least one question.');
+    }
+
+    if (rawQuestions.length > ASK_USER_MAX_QUESTIONS) {
+        throw new Error(`ask_user supports a maximum of ${ASK_USER_MAX_QUESTIONS} questions.`);
+    }
+
+    return {
+        questions: rawQuestions.map((question, questionIndex) => normalizeAskUserQuestion(question, questionIndex)),
+    };
+}
+
+function renderAskUserPanel() {
+    if (!askUserSession) {
+        return;
+    }
+
+    const { elements, questionnaire, currentIndex, answers } = askUserSession;
+    const question = questionnaire.questions[currentIndex];
+    const answer = answers[currentIndex];
+    const submitCurrentQuestion = () => {
+        if (!askUserSession) {
+            return;
+        }
+
+        if (askUserSession.currentIndex < askUserSession.questionnaire.questions.length - 1) {
+            askUserSession.currentIndex += 1;
+            renderAskUserPanel();
+            return;
+        }
+
+        finishAskUserSession('completed');
+    };
+
+    elements.title.textContent = question.prompt;
+    elements.context.textContent = question.context;
+    elements.context.hidden = !question.context;
+    elements.counter.textContent = `${currentIndex + 1} of ${questionnaire.questions.length}`;
+    elements.prevButton.disabled = currentIndex === 0;
+    elements.nextButton.disabled = currentIndex >= questionnaire.questions.length - 1;
+    elements.options.replaceChildren();
+
+    question.options.forEach((option, optionIndex) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ask_user_option_row';
+        const isSelected = answer.selectedOptions.includes(option.value);
+        button.classList.toggle('is-selected', isSelected);
+        button.setAttribute('aria-pressed', String(isSelected));
+
+        const index = document.createElement('span');
+        index.className = 'ask_user_option_index';
+        index.textContent = `${optionIndex + 1}.`;
+
+        const body = document.createElement('span');
+        body.className = 'ask_user_option_body';
+
+        const label = document.createElement('span');
+        label.className = 'ask_user_option_label';
+        label.textContent = option.label;
+
+        const check = document.createElement('i');
+        check.className = 'fa-solid fa-check ask_user_option_check';
+        check.setAttribute('aria-hidden', 'true');
+
+        body.append(label, check);
+        button.append(index, body);
+        button.addEventListener('click', () => {
+            if (!askUserSession) {
+                return;
+            }
+
+            const selectedOptions = askUserSession.answers[currentIndex].selectedOptions;
+            const valueIndex = selectedOptions.indexOf(option.value);
+            const nextSelected = valueIndex === -1;
+
+            if (nextSelected) {
+                selectedOptions.push(option.value);
+            } else {
+                selectedOptions.splice(valueIndex, 1);
+            }
+
+            button.classList.toggle('is-selected', nextSelected);
+            button.setAttribute('aria-pressed', String(nextSelected));
+        });
+
+        elements.options.appendChild(button);
+    });
+
+    const freeRow = document.createElement('div');
+    freeRow.className = 'ask_user_free_row';
+
+    const freeIndex = document.createElement('span');
+    freeIndex.className = 'ask_user_option_index';
+    freeIndex.textContent = `${question.options.length + 1}.`;
+
+    const freeBody = document.createElement('div');
+    freeBody.className = 'ask_user_free_body';
+
+    const freeInput = question.multiline
+        ? document.createElement('textarea')
+        : document.createElement('input');
+    freeInput.className = 'ask_user_free_input';
+    freeInput.placeholder = question.placeholder || question.freeFieldLabel || ASK_USER_DEFAULT_PLACEHOLDER;
+    freeInput.setAttribute('aria-label', question.freeFieldLabel || ASK_USER_DEFAULT_FREE_FIELD_LABEL);
+    freeInput.value = answer.freeText;
+    if (freeInput instanceof HTMLTextAreaElement) {
+        freeInput.rows = 3;
+    } else {
+        freeInput.type = 'text';
+    }
+    freeInput.addEventListener('input', () => {
+        if (!askUserSession) {
+            return;
+        }
+
+        askUserSession.answers[currentIndex].freeText = freeInput.value;
+        autoFitAskUserFreeInput(freeInput);
+        syncAskUserPanelLayout();
+    });
+    freeInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        submitCurrentQuestion();
+    });
+
+    freeBody.append(freeInput);
+    freeRow.append(freeIndex, freeBody);
+    elements.options.appendChild(freeRow);
+
+    autoFitAskUserFreeInput(freeInput);
+    syncAskUserPanelLayout();
+}
+
+function formatAskUserSessionResult(session, status) {
+    if (status !== 'completed') {
+        return 'User dismissed the questionnaire.';
+    }
+
+    return session.questionnaire.questions.map((question, index) => {
+        const answer = session.answers[index];
+        const answerParts = [...answer.selectedOptions];
+
+        if (answer.freeText.trim()) {
+            answerParts.push(answer.freeText.trim());
+        }
+
+        return `Q: ${question.prompt}\nA: ${answerParts.join(', ')}`;
+    }).join('\n');
+}
+
+function finishAskUserSession(status) {
+    if (!askUserSession) {
+        return;
+    }
+
+    const session = askUserSession;
+    askUserSession = null;
+
+    session.cleanupAbort?.();
+    session.elements.options.replaceChildren();
+    session.elements.title.textContent = '';
+    session.elements.context.textContent = '';
+    session.elements.context.hidden = true;
+    session.elements.panel.hidden = true;
+    session.elements.sendForm.classList.remove('ask-user-active');
+    syncAskUserPanelLayout();
+
+    const sendTextarea = document.getElementById('send_textarea');
+    if (sendTextarea instanceof HTMLTextAreaElement) {
+        sendTextarea.focus();
+    }
+
+    session.resolve(formatAskUserSessionResult(session, status));
+}
+
+async function promptAskUserQuestionnaire(questionnaire, signal) {
+    if (askUserSession) {
+        return 'Error: ask_user is already waiting for a response.';
+    }
+
+    if (!initAskUserPanel()) {
+        return 'Error: ask_user panel is not available.';
+    }
+
+    const elements = getAskUserPanelElements();
+    if (!elements) {
+        return 'Error: ask_user panel is not available.';
+    }
+
+    return await new Promise((resolve) => {
+        const cleanupAbort = () => {
+            if (signal instanceof AbortSignal) {
+                signal.removeEventListener('abort', abortHandler);
+            }
+        };
+
+        const abortHandler = () => finishAskUserSession('dismissed');
+        if (signal instanceof AbortSignal) {
+            signal.addEventListener('abort', abortHandler, { once: true });
+        }
+
+        askUserSession = {
+            questionnaire,
+            answers: questionnaire.questions.map(question => ({
+                selectedOptions: [...question.defaultSelected],
+                freeText: question.defaultText,
+            })),
+            currentIndex: 0,
+            elements,
+            resolve,
+            cleanupAbort,
+        };
+
+        elements.panel.hidden = false;
+        elements.sendForm.classList.add('ask-user-active');
+        renderAskUserPanel();
+        elements.dismissButton.focus();
+    });
+}
+
 function registerBuiltinTools() {
     const builtinTools = [
+        {
+            name: 'ask_user',
+            displayName: 'Ask User',
+            description: 'Ask the user questions.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    questions: {
+                        type: 'array',
+                        description: 'Up to 4 questions. Each question may include up to 4 options.',
+                        minItems: 1,
+                        maxItems: 4,
+                        items: {
+                            type: 'object',
+                            properties: {
+                                prompt: {
+                                    type: 'string',
+                                    description: 'Question shown to the user.',
+                                },
+                                context: {
+                                    type: 'string',
+                                    description: 'Explanatory text.',
+                                },
+                                options: {
+                                    type: 'array',
+                                    description: 'Up to 4 options.',
+                                    maxItems: 4,
+                                    items: {
+                                        type: 'string',
+                                    },
+                                },
+                            },
+                            required: ['prompt', 'context', 'options'],
+                        },
+                    },
+                },
+            },
+            formatMessage: async (parameters) => {
+                const questionnaire = normalizeAskUserPayload(parameters);
+                const firstPrompt = questionnaire.questions[0]?.prompt || 'questionnaire';
+                return `Asking the user in the bottom bar: ${firstPrompt}`;
+            },
+            action: async (parameters, signal) => {
+                try {
+                    const questionnaire = normalizeAskUserPayload(parameters);
+                    return await promptAskUserQuestionnaire(questionnaire, signal);
+                } catch (error) {
+                    return `Error: ${error.message}`;
+                }
+            },
+        },
         {
             name: 'write_file',
             description: 'Writes or appends content to a file in the files. Creates the file and parent directories if they don\'t exist.',
@@ -1588,10 +2088,10 @@ export class ToolManager {
 
             if (error instanceof Error) {
                 error.cause = name;
-                return error.toString();
+                return error;
             }
 
-            return new Error('Unknown error occurred while invoking the tool.', { cause: name }).toString();
+            return new Error('Unknown error occurred while invoking the tool.', { cause: name });
         }
     }
 
@@ -2228,9 +2728,23 @@ Here are the available tools:
             toastr.clear(toast);
             console.log('[ToolManager] Function tool result:', result);
 
-            // Save a successful invocation
+            // Handle tool errors — still create an invocation so the LLM sees the failure
             if (toolResult instanceof Error) {
                 result.errors.push(toolResult);
+                if (isStealth) {
+                    result.stealthCalls.push(name);
+                } else {
+                    result.invocations.push({
+                        id,
+                        displayName,
+                        name,
+                        parameters: stringify(parameters),
+                        result: toolResult.toString(),
+                        error: true,
+                        signature: toolCall.signature || null,
+                        reasoning: reasoningText || null,
+                    });
+                }
                 continue;
             }
 
@@ -2246,6 +2760,7 @@ Here are the available tools:
                 name,
                 parameters: stringify(parameters),
                 result: toolResult,
+                error: false,
                 signature: toolCall.signature || null,
                 reasoning: reasoningText || null,
             };
