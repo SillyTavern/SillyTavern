@@ -29,6 +29,7 @@ import {
     messageFormatting,
     extension_prompt_types,
     extension_prompt_roles,
+    deleteMessage,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -43,7 +44,7 @@ import {
     updateBindModelTemplatesState,
 } from './instruct-mode.js';
 
-import { getTagsList, tag_import_setting, tag_map, tags } from './tags.js';
+import { getTagsList, tag_import_setting, tag_map, tag_sort_mode, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
@@ -62,6 +63,8 @@ import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
 import { bindModelTemplates } from './chat-templates.js';
+import { IMAGE_OVERSWIPE, MEDIA_DISPLAY } from './constants.js';
+import { t } from './i18n.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -213,6 +216,7 @@ export const power_user = {
     enable_auto_select_input: false,
     enable_md_hotkeys: false,
     tag_import_setting: tag_import_setting.ASK,
+    tag_sort_mode: tag_sort_mode.MANUAL,
     disable_group_trimming: false,
     single_line: false,
 
@@ -336,6 +340,8 @@ export const power_user = {
     external_media_forbidden_overrides: [],
     pin_styles: true,
     click_to_edit: false,
+    media_display: MEDIA_DISPLAY.LIST,
+    image_overswipe: IMAGE_OVERSWIPE.GENERATE,
 };
 
 let themes = [];
@@ -1177,6 +1183,46 @@ function applyFontScale(type) {
     $('#font_scale').val(power_user.font_scale);
 }
 
+/**
+ * Checks if the chat needs to be reloaded to apply media display settings.
+ * @returns {boolean} True if the chat needs reload to apply media display settings
+ */
+function isMediaDisplayReloadNeeded() {
+    // A user is not currently in a chat.
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        return false;
+    }
+
+    const firstDisplayedIndex = getFirstDisplayedMessageId();
+    const hasUnprocessedMediaMessages = chat.some((message, index) => {
+        // Skip messages that are not currently displayed
+        if (index < firstDisplayedIndex) {
+            return false;
+        }
+        const hasMediaAttachments = Array.isArray(message?.extra?.media) && message.extra.media.length > 0;
+        const lacksMediaDisplay = !message?.extra?.media_display;
+        return hasMediaAttachments && lacksMediaDisplay;
+    });
+
+    return hasUnprocessedMediaMessages;
+}
+
+/**
+ * Shows a toast notification prompting the user to reload the chat if media display settings have changed
+ * and there are messages with media attachments that haven't been processed with the new display format.
+ */
+function showMediaDisplayReloadPrompt() {
+    if (!isMediaDisplayReloadNeeded()) {
+        return;
+    }
+    toastr.info(
+        t`Reload the chat to apply the changes. Click here to reload.`,
+        t`Media Style changed`,
+        { onclick: () => void reloadCurrentChat() },
+    );
+}
+
 function applyTheme(name) {
     const theme = themes.find(x => x.name == name);
 
@@ -1366,14 +1412,25 @@ function applyTheme(name) {
                 $('#click_to_edit').prop('checked', power_user.click_to_edit);
             },
         },
+        {
+            key: 'media_display',
+            action: (oldValue, newValue) => {
+                $('#media_display').val(power_user.media_display);
+                if (oldValue !== newValue) {
+                    showMediaDisplayReloadPrompt();
+                }
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
         if (theme[key] !== undefined) {
-            power_user[key] = theme[key];
-            if (selector) $(selector).attr('color', power_user[key]);
+            const oldValue = power_user[key];
+            const newValue = theme[key];
+            power_user[key] = newValue;
+            if (selector) $(selector).attr('color', newValue);
             if (type) applyThemeColor(type);
-            if (action) action();
+            if (action) action(oldValue, newValue);
         } else {
             console.debug(`Empty theme key: ${key}`);
         }
@@ -1500,6 +1557,10 @@ export async function loadPowerUserSettings(settings, data) {
         // Migrate old preference to a new setting
         if (settings.power_user.click_to_edit === undefined && settings.power_user.chat_display === chat_styles.DOCUMENT) {
             settings.power_user.click_to_edit = true;
+        }
+        if (Object.hasOwn(settings.power_user, 'auto_sort_tags') && !Object.hasOwn(settings.power_user, 'tag_sort_mode')) {
+            settings.power_user.tag_sort_mode = settings.power_user.auto_sort_tags ? tag_sort_mode.ALPHABETICAL : tag_sort_mode.MANUAL;
+            delete settings.power_user.auto_sort_tags;
         }
         Object.assign(power_user, settings.power_user);
     }
@@ -1713,6 +1774,8 @@ export async function loadPowerUserSettings(settings, data) {
     $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
     $('#pin_styles').prop('checked', power_user.pin_styles);
     $('#click_to_edit').prop('checked', power_user.click_to_edit);
+    $('#media_display').val(power_user.media_display);
+    $('#image_overswipe').val(power_user.image_overswipe);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -2505,6 +2568,7 @@ function getThemeObject(name) {
         compact_input_area: power_user.compact_input_area,
         show_swipe_num_all_messages: power_user.show_swipe_num_all_messages,
         click_to_edit: power_user.click_to_edit,
+        media_display: power_user.media_display,
     };
 }
 
@@ -2766,7 +2830,6 @@ async function doMesCut(_, text) {
 
     for (let i = 0; i < totalMesToCut; i++) {
         cutText += (chat[mesIDToCut]?.mes || '') + '\n';
-        let done = false;
         let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
         if (!mesToCut.length) {
@@ -2778,14 +2841,10 @@ async function doMesCut(_, text) {
         }
 
         setEditedMessageId(mesIDToCut);
-        eventSource.once(event_types.MESSAGE_DELETED, () => {
-            done = true;
-        });
-        mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
-        while (!done) {
-            await delay(1);
-        }
+        await deleteMessage(mesIDToCut, null, false);
     }
+
+    await saveChatConditional();
 
     return cutText;
 }
@@ -3220,7 +3279,7 @@ jQuery(() => {
         const winHeight = window.innerHeight;
         const originalWidth = winWidth * zoomLevel;
         const originalHeight = winHeight * zoomLevel;
-        console.log(`Window resize: ${coreTruthWinWidth}x${coreTruthWinHeight} -> ${window.innerWidth}x${window.innerHeight}`);
+        console.debug(`Window resize: ${coreTruthWinWidth}x${coreTruthWinHeight} -> ${window.innerWidth}x${window.innerHeight}`);
         console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}, original: ${originalWidth}x${originalHeight} `);
         return zoomLevel;
     });
@@ -4123,6 +4182,19 @@ jQuery(() => {
 
     $('#ui_preset_export_button').on('click', async function () {
         await exportTheme();
+    });
+
+    $('#media_display').on('input', async function () {
+        power_user.media_display = $(this).val().toString();
+        saveSettingsDebounced();
+        if (isMediaDisplayReloadNeeded()) {
+            await reloadCurrentChat();
+        }
+    });
+
+    $('#image_overswipe').on('input', function () {
+        power_user.image_overswipe = $(this).val().toString();
+        saveSettingsDebounced();
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {

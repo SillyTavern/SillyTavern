@@ -235,7 +235,7 @@
     "Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.": "يجمع الرسائل المتتالية للنظام في رسالة واحدة (باستثناء الحوارات المثالية). قد يحسن التتابع لبعض النماذج.",
     "Enable function calling": "تمكين استدعاء الوظيفة",
     "Send inline images": "إرسال الصور المضمنة",
-    "image_inlining_hint_1": "يرسل الصور في المطالبات إذا كان النموذج يدعمها .\n                                                استخدم ال",
+    "image_inlining_hint_1": "يرسل الصور في المطالبات إذا كان النموذج يدعمها .",
     "image_inlining_hint_2": "الإجراء على أي رسالة أو",
     "image_inlining_hint_3": "القائمة لإرفاق ملف صورة للدردشة.",
     "Inline Image Quality": "جودة الصورة المضمنة",

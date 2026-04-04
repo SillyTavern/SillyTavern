@@ -19,6 +19,7 @@ import chalk from 'chalk';
 import bytes from 'bytes';
 import { LOG_LEVELS, CHAT_COMPLETION_SOURCES } from './constants.js';
 import { serverDirectory } from './server-directory.js';
+import { isFirefox } from './express-common.js';
 
 /**
  * Parsed config object.
@@ -422,6 +423,31 @@ export function clientRelativePath(root, inputPath) {
     }
 
     return inputPath.slice(root.length).split(path.sep).join('/');
+}
+
+/**
+ * Returns a name that is unique among the names that exist.
+ * @param {string} name The name to check.
+ * @param {{ (name: string): boolean; }} exists Function to check if name exists.
+ * @returns {string} A unique name.
+ */
+export function getUniqueName(name, exists) {
+    let i = 1;
+    let baseName = name;
+    while (exists(name)) {
+        name = `${baseName} (${i})`;
+        i++;
+    }
+    return name;
+}
+
+/**
+ * Provides safe replacements for characters in filenames. Intended for use with sanitize() from the sanitize-filename package.
+ * @param {string} char Character to sanitize
+ * @returns {string} Safe replacement character
+ */
+export function sanitizeSafeCharacterReplacements(char) {
+    return '_';
 }
 
 /**
@@ -1215,63 +1241,73 @@ export function getRequestURL(request) {
 }
 
 /**
- * Flattens a JSON schema by inlining all definitions and setting additionalProperties to false.
- * @param {object} schema The JSON schema to flatten.
- * @param {string} api The API source, used to determine how to handle certain properties.
- * @returns {object} The flattened schema.
+ * Flattens and simplifies a JSON schema to be compatible with the strict requirements
+ * of Google's Generative AI API.
+ * @param {object} schema The JSON schema to process.
+ * @param {string} api The API source.
+ * @returns {object} The flattened and simplified schema.
  */
 export function flattenSchema(schema, api) {
     if (!schema || typeof schema !== 'object') {
         return schema;
     }
 
-    // Deep clone to avoid modifying the original object.
     const schemaCopy = structuredClone(schema);
+    const isGoogleApi = [CHAT_COMPLETION_SOURCES.VERTEXAI, CHAT_COMPLETION_SOURCES.MAKERSUITE].includes(api);
 
     const definitions = schemaCopy.$defs || {};
     delete schemaCopy.$defs;
 
-    function replaceRefs(obj) {
-        if (obj === null || typeof obj !== 'object') {
+    function resolve(obj, parents = []) {
+        if (!obj || typeof obj !== 'object') {
             return obj;
         }
-
         if (Array.isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                obj[i] = replaceRefs(obj[i]);
-            }
-            return obj;
+            return obj.map(item => resolve(item, parents));
         }
 
-        if (obj.$ref && typeof obj.$ref === 'string' && obj.$ref.startsWith('#/$defs/')) {
+        // 1. Resolve $refs first
+        if (obj.$ref?.startsWith('#/$defs/')) {
             const defName = obj.$ref.split('/').pop();
+            if (parents.includes(defName)) return {}; // Prevent infinite recursion
             if (definitions[defName]) {
-                return replaceRefs(structuredClone(definitions[defName]));
+                return resolve(structuredClone(definitions[defName]), [...parents, defName]);
             }
+            return {}; // Broken reference
         }
 
-        if (api === CHAT_COMPLETION_SOURCES.MAKERSUITE || api === CHAT_COMPLETION_SOURCES.VERTEXAI) {
-            delete obj.default;
-            delete obj.additionalProperties;
-        } else if ('properties' in obj) {
-            if (obj.additionalProperties === undefined || obj.additionalProperties === true) {
-                obj.additionalProperties = false;
-            }
-        }
-
+        // 2. Process the object's properties
+        const result = {};
         for (const key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                obj[key] = replaceRefs(obj[key]);
+            if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+
+            // For Google, filter unsupported top-level keywords
+            if (isGoogleApi && ['default', 'additionalProperties', 'exclusiveMinimum', 'propertyNames'].includes(key)) {
+                continue;
             }
+
+            result[key] = resolve(obj[key], parents);
         }
-        return obj;
+
+        return result;
     }
 
-    const flattenedSchema = replaceRefs(schemaCopy);
-
-    if (flattenedSchema.$schema) {
-        delete flattenedSchema.$schema;
-    }
-
+    const flattenedSchema = resolve(schemaCopy);
+    delete flattenedSchema.$schema;
     return flattenedSchema;
+}
+
+/**
+ * If the file is an image, and the request's user agent matches Firefox, then the response's headers are set to invalidate the cache.
+ * Without this, Firefox ignores updated images even after a refresh.
+ * https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control
+ * @param {string} file File path
+ * @param {import('express').Request} request Request object
+ * @param {import('express').Response} response Response object
+ */
+export function invalidateFirefoxCache(file, request, response) {
+    const mimeType = isFirefox(request) && mime.lookup(file);
+    if (mimeType && mimeType.startsWith('image/')) {
+        response.setHeader('Cache-Control', 'must-understand, no-store');
+    }
 }

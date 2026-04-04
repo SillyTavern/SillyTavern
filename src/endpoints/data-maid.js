@@ -57,16 +57,24 @@ const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
  */
 
 /**
+ * @typedef {object} DataMaidMedia - The media object.
+ * @property {string} url - The media URL
+ */
+
+/**
  * @typedef {object} DataMaidChatMetadata - The chat metadata object.
  * @property {DataMaidFile[]} [attachments] - The array of attachments, if any.
+ * @property {string[]} [chat_backgrounds] - The array of chat background image links, if any.
  */
 
 /**
  * @typedef {object} DataMaidMessageExtra - The extra data object.
- * @property {string} [image] - The link to the image, if any.
- * @property {string} [video] - The link to the video, if any.
- * @property {string[]} [image_swipes] - The links to the image swipes, if any.
- * @property {DataMaidFile} [file] - The file object, if any.
+ * @property {string} [image] - The link to the image, if any - DEPRECATED, use `media` instead.
+ * @property {string} [video] - The link to the video, if any - DEPRECATED, use `media` instead.
+ * @property {string[]} [image_swipes] - The links to the image swipes, if any - DEPRECATED, use `media` instead.
+ * @property {DataMaidMedia[]} [media] - The links to the media, if any.
+ * @property {DataMaidFile} [file] - The file object, if any - DEPRECATED, use `files` instead.
+ * @property {DataMaidFile[]} [files] - The array of file objects, if any.
  */
 
 /**
@@ -166,7 +174,7 @@ export class DataMaidService {
         const result = [];
 
         try {
-            const messages = await this.#parseAllChats(x => !!x?.extra?.image || !!x?.extra?.video || Array.isArray(x?.extra?.image_swipes));
+            const messages = await this.#parseAllChats(x => !!x?.extra?.image || !!x?.extra?.video || Array.isArray(x?.extra?.image_swipes) || Array.isArray(x?.extra?.media));
             const knownImages = new Set();
             for (const message of messages) {
                 if (message?.extra?.image) {
@@ -178,6 +186,23 @@ export class DataMaidService {
                 if (Array.isArray(message?.extra?.image_swipes)) {
                     for (const swipe of message.extra.image_swipes) {
                         knownImages.add(swipe);
+                    }
+                }
+                if (Array.isArray(message?.extra?.media)) {
+                    for (const media of message.extra.media) {
+                        if (media?.url) {
+                            knownImages.add(media.url);
+                        }
+                    }
+                }
+            }
+            const metadata = await this.#parseAllMetadata(x => Array.isArray(x?.chat_backgrounds) && x.chat_backgrounds.length > 0);
+            for (const meta of metadata) {
+                if (Array.isArray(meta?.chat_backgrounds)) {
+                    for (const background of meta.chat_backgrounds) {
+                        if (background) {
+                            knownImages.add(background);
+                        }
                     }
                 }
             }
@@ -221,11 +246,18 @@ export class DataMaidService {
         const result = [];
 
         try {
-            const messages = await this.#parseAllChats(x => !!x?.extra?.file?.url);
+            const messages = await this.#parseAllChats(x => !!x?.extra?.file?.url || (Array.isArray(x?.extra?.files) && x.extra.files.length > 0));
             const knownFiles = new Set();
             for (const message of messages) {
                 if (message?.extra?.file?.url) {
                     knownFiles.add(message.extra.file.url);
+                }
+                if (Array.isArray(message?.extra?.files)) {
+                    for (const file of message.extra.files) {
+                        if (file?.url) {
+                            knownFiles.add(file.url);
+                        }
+                    }
                 }
             }
             const metadata = await this.#parseAllMetadata(x => Array.isArray(x?.attachments) && x.attachments.length > 0);

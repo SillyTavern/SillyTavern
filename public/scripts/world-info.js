@@ -96,6 +96,7 @@ export const METADATA_KEY = 'world_info';
 export const DEFAULT_DEPTH = 4;
 export const DEFAULT_WEIGHT = 100;
 export const MAX_SCAN_DEPTH = 1000;
+const MAX_COMMENT_LENGTH = 100;
 const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
 
 // Typedef area
@@ -2423,7 +2424,7 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         let counter = 0;
         for (const entry of Object.values(data.entries)) {
             if (!entry.comment && Array.isArray(entry.key) && entry.key.length > 0) {
-                entry.comment = entry.key[0];
+                entry.comment = entry.key.join(', ').slice(0, MAX_COMMENT_LENGTH);
                 setWIOriginalDataValue(data, entry.uid, 'comment', entry.comment);
                 counter++;
             }
@@ -2846,6 +2847,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 await saveWorldInfo(name, data);
             }
             $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(data.entries[uid][entryPropName].join(', '), commentInput);
+            }
         });
 
         input.toggleClass('empty', !entry[entryPropName].length);
@@ -2880,6 +2886,11 @@ function enableKeysInputHelper({ template, entry, entryPropName, originalDataVal
                 setWIOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
                 await saveWorldInfo(name, data);
                 $(this).toggleClass('empty', !data.entries[uid][entryPropName].length);
+            }
+            // Update the commentInput's placeholder for primary keys
+            if (entryPropName === 'key') {
+                const commentInput = $(_event.currentTarget).closest('.world_entry_form').find('textarea[name="comment"]');
+                setCommentPlaceholder(value, commentInput);
             }
         });
         input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
@@ -3190,6 +3201,17 @@ function handleEntryKillSwitchHelper({ entryKillSwitch, entry, data, name, templ
 }
 
 /**
+ * Update commentInput's placeholder.
+ * @param {string} keys Text to display in commentInput's placeholder.
+ * @param {JQuery<HTMLElement>} commentInput The comment input element.
+ */
+function setCommentPlaceholder(keys, commentInput) {
+    // Limit placeholder text to avoid performance issues.
+    keys = keys.slice(0, MAX_COMMENT_LENGTH);
+    commentInput.attr('placeholder', (keys || t`Entry Title/Memo`));
+}
+
+/**
  * Main function to build the WI entry editor template.
  * @param {string} name - The name of the world info file.
  * @param {object} data - The world info data object.
@@ -3206,6 +3228,11 @@ export async function getWorldEntry(name, data, entry) {
 
     // Comment
     const commentInput = headerTemplate.find('textarea[name="comment"]');
+
+    //Update the commentInput's placeholder.
+    const keys = entry['key'].join(', ');
+    setCommentPlaceholder(keys, commentInput);
+
     commentInput.data('uid', entry.uid);
     commentInput.on('input', async function (_, { skipReset = false, noSave = false } = {}) {
         const uid = $(this).data('uid');

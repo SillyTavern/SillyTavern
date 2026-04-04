@@ -17,7 +17,7 @@ COPY . ./
 
 RUN \
   echo "*** Install npm packages ***" && \
-  npm i --no-audit --no-fund --loglevel=error --no-progress --omit=dev && npm cache clean --force
+  npm ci --no-audit --no-fund --loglevel=error --no-progress --omit=dev && npm cache clean --force
 
 # Create config directory and link config.yaml
 RUN \

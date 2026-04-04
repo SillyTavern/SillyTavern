@@ -3,10 +3,13 @@ import fetch from 'node-fetch';
 import express from 'express';
 import { speak, languages } from 'google-translate-api-x';
 import crypto from 'node:crypto';
+import util from 'node:util';
+import urlJoin from 'url-join';
+import lodash from 'lodash';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { GEMINI_SAFETY } from '../constants.js';
-import { getConfigValue, trimTrailingSlash } from '../util.js';
+import { GEMINI_SAFETY, VERTEX_SAFETY } from '../constants.js';
+import { delay, getConfigValue, trimTrailingSlash } from '../util.js';
 
 const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
@@ -156,14 +159,16 @@ export function getProjectIdFromServiceAccount(serviceAccount) {
  * @param {express.Request} request Express request object
  * @param {string} model Model name to use
  * @param {string} endpoint API endpoint (default: 'generateContent')
- * @returns {Promise<{url: string, headers: object, apiName: string}>} URL, headers, and API name
+ * @returns {Promise<{url: string, headers: object, apiName: string, baseUrl: string, safetySettings: object[]}>} URL, headers, and API name
  */
 export async function getGoogleApiConfig(request, model, endpoint = 'generateContent') {
     const useVertexAi = request.body.api === 'vertexai';
     const region = request.body.vertexai_region || 'us-central1';
     const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
+    const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
     let url;
+    let baseUrl;
     let headers = {
         'Content-Type': 'application/json',
     };
@@ -176,12 +181,13 @@ export async function getGoogleApiConfig(request, model, endpoint = 'generateCon
             // Express mode: use API key parameter
             const keyParam = authHeader.replace('Bearer ', '');
             const projectId = request.body.vertexai_express_project_id;
-            const baseUrl = region === 'global'
-                ? 'https://aiplatform.googleapis.com'
-                : `https://${region}-aiplatform.googleapis.com`;
+            baseUrl = region === 'global'
+                ? 'https://aiplatform.googleapis.com/v1'
+                : `https://${region}-aiplatform.googleapis.com/v1`;
             url = projectId
-                ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${endpoint}?key=${keyParam}`
-                : `${baseUrl}/v1/publishers/google/models/${model}:${endpoint}?key=${keyParam}`;
+                ? `${baseUrl}/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${endpoint}`
+                : `${baseUrl}/publishers/google/models/${model}:${endpoint}`;
+            headers['x-goog-api-key'] = keyParam;
         } else if (authType === 'full') {
             // Full mode: use project-specific URL with Authorization header
             // Get project ID from Service Account JSON
@@ -198,14 +204,16 @@ export async function getGoogleApiConfig(request, model, endpoint = 'generateCon
                 throw new Error('Failed to extract project ID from Service Account JSON.');
             }
             // Handle global region differently - no region prefix in hostname
-            url = region === 'global'
-                ? `https://aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${endpoint}`
-                : `https://${region}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${endpoint}`;
+            baseUrl = region === 'global'
+                ? 'https://aiplatform.googleapis.com/v1'
+                : `https://${region}-aiplatform.googleapis.com/v1`;
+            url = `${baseUrl}/projects/${projectId}/locations/${region}/publishers/google/models/${model}:${endpoint}`;
             headers['Authorization'] = authHeader;
         } else {
             // Proxy mode: use Authorization header
             const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_VERTEX_AI);
-            url = `${apiUrl}/v1/publishers/google/models/${model}:${endpoint}`;
+            baseUrl = `${apiUrl}/v1`;
+            url = `${baseUrl}/publishers/google/models/${model}:${endpoint}`;
             headers['Authorization'] = authHeader;
         }
     } else {
@@ -213,10 +221,12 @@ export async function getGoogleApiConfig(request, model, endpoint = 'generateCon
         const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
         const apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
         const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
-        url = `${apiUrl}/${apiVersion}/models/${model}:${endpoint}?key=${apiKey}`;
+        baseUrl = `${apiUrl}/${apiVersion}`;
+        url = `${baseUrl}/models/${model}:${endpoint}`;
+        headers['x-goog-api-key'] = apiKey;
     }
 
-    return { url, headers, apiName };
+    return { url, headers, apiName, baseUrl, safetySettings };
 }
 
 export const router = express.Router();
@@ -226,7 +236,7 @@ router.post('/caption-image', async (request, response) => {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
         const model = request.body.model || 'gemini-2.0-flash';
-        const { url, headers, apiName } = await getGoogleApiConfig(request, model);
+        const { url, headers, apiName, safetySettings } = await getGoogleApiConfig(request, model);
 
         const body = {
             contents: [{
@@ -240,7 +250,7 @@ router.post('/caption-image', async (request, response) => {
                         },
                     }],
             }],
-            safetySettings: GEMINI_SAFETY,
+            safetySettings: safetySettings,
         };
 
         console.debug(`${apiName} captioning request`, model, body);
@@ -346,7 +356,7 @@ router.post('/list-native-voices', async (_, response) => {
 router.post('/generate-native-tts', async (request, response) => {
     try {
         const { text, voice, model } = request.body;
-        const { url, headers, apiName } = await getGoogleApiConfig(request, model);
+        const { url, headers, apiName, safetySettings } = await getGoogleApiConfig(request, model);
 
         console.debug(`${apiName} TTS request`, { model, text, voice });
 
@@ -365,7 +375,7 @@ router.post('/generate-native-tts', async (request, response) => {
                     },
                 },
             },
-            safetySettings: GEMINI_SAFETY,
+            safetySettings: safetySettings,
         };
 
         const result = await fetch(url, {
@@ -461,7 +471,7 @@ router.post('/generate-image', async (request, response) => {
         if (!result.ok) {
             const errorText = await result.text();
             console.warn(`${apiName} image generation error: ${result.status} ${result.statusText}`, errorText);
-            return response.sendStatus(500);
+            return response.status(500).send('Image generation request failed');
         }
 
         /** @type {any} */
@@ -470,7 +480,7 @@ router.post('/generate-image', async (request, response) => {
 
         if (!imagePart) {
             console.warn(`${apiName} image generation error: No image data found in response`);
-            return response.sendStatus(500);
+            return response.status(500).send('No image data found in response');
         }
 
         return response.send({ image: imagePart });
@@ -480,5 +490,150 @@ router.post('/generate-image', async (request, response) => {
             return response.sendStatus(500);
         }
         return response.end();
+    }
+});
+
+router.post('/generate-video', async (request, response) => {
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const model = request.body.model || 'veo-3.1-generate-preview';
+        const { url, headers, apiName, baseUrl } = await getGoogleApiConfig(request, model, 'predictLongRunning');
+        const useVertexAi = request.body.api === 'vertexai';
+
+        const isVeo3 = /veo-3/.test(model);
+        const lowerBound = isVeo3 ? 4 : 5;
+        const upperBound = isVeo3 ? 8 : 8;
+
+        const requestBody = {
+            instances: [{
+                prompt: String(request.body.prompt || ''),
+            }],
+            parameters: {
+                negativePrompt: String(request.body.negative_prompt || ''),
+                durationSeconds: lodash.clamp(Number(request.body.seconds || 6), lowerBound, upperBound),
+                aspectRatio: String(request.body.aspect_ratio || '16:9'),
+                personGeneration: 'allow_all',
+                seed: isVeo3 ? Number(request.body.seed ?? Math.floor(Math.random() * 1000000)) : undefined,
+            },
+        };
+
+        console.debug(`${apiName} video generation request:`, model, requestBody);
+        const videoJobResponse = await fetch(url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!videoJobResponse.ok) {
+            const errorText = await videoJobResponse.text();
+            console.warn(`${apiName} video generation error: ${videoJobResponse.status} ${videoJobResponse.statusText}`, errorText);
+            return response.status(500).send('Video generation request failed');
+        }
+
+        /** @type {any} */
+        const videoJobData = await videoJobResponse.json();
+        const videoJobName = videoJobData?.name;
+
+        if (!videoJobName) {
+            console.warn(`${apiName} video generation error: No job name found in response`);
+            return response.status(500).send('No video job name found in response');
+        }
+
+        console.debug(`${apiName} video job name:`, videoJobName);
+
+        for (let attempt = 0; attempt < 30; attempt++) {
+            if (controller.signal.aborted) {
+                console.info(`${apiName} video generation aborted by client`);
+                return response.status(500).send('Video generation aborted by client');
+            }
+
+            await delay(5000 + attempt * 1000);
+
+            if (useVertexAi) {
+                const { url: pollUrl, headers: pollHeaders } = await getGoogleApiConfig(request, model, 'fetchPredictOperation');
+
+                const pollResponse = await fetch(pollUrl, {
+                    method: 'POST',
+                    headers: pollHeaders,
+                    body: JSON.stringify({ operationName: videoJobName }),
+                });
+
+                if (!pollResponse.ok) {
+                    const errorText = await pollResponse.text();
+                    console.warn(`${apiName} video job status error: ${pollResponse.status} ${pollResponse.statusText}`, errorText);
+                    return response.status(500).send('Video job status request failed');
+                }
+
+                /** @type {any} */
+                const pollData = await pollResponse.json();
+                const jobDone = pollData?.done;
+                console.debug(`${apiName} video job status attempt ${attempt + 1}: ${jobDone ? 'done' : 'running'}`);
+
+                if (jobDone) {
+                    const videoData = pollData?.response?.videos?.[0]?.bytesBase64Encoded;
+                    if (!videoData) {
+                        const pollDataLog = util.inspect(pollData, { depth: 5, colors: true, maxStringLength: 500 });
+                        console.warn(`${apiName} video generation error: No video data found in response`, pollDataLog);
+                        return response.status(500).send('No video data found in response');
+                    }
+
+                    return response.send({ video: videoData });
+                }
+            } else {
+                const pollUrl = urlJoin(baseUrl, videoJobName);
+                const pollResponse = await fetch(pollUrl, {
+                    method: 'GET',
+                    headers: headers,
+                });
+
+                if (!pollResponse.ok) {
+                    const errorText = await pollResponse.text();
+                    console.warn(`${apiName} video job status error: ${pollResponse.status} ${pollResponse.statusText}`, errorText);
+                    return response.status(500).send('Video job status request failed');
+                }
+
+                /** @type {any} */
+                const pollData = await pollResponse.json();
+                const jobDone = pollData?.done;
+                console.debug(`${apiName} video job status attempt ${attempt + 1}: ${jobDone ? 'done' : 'running'}`);
+
+                if (jobDone) {
+                    const videoUri = pollData?.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
+                    console.debug(`${apiName} video URI:`, videoUri);
+
+                    if (!videoUri) {
+                        const pollDataLog = util.inspect(pollData, { depth: 5, colors: true, maxStringLength: 500 });
+                        console.warn(`${apiName} video generation error: No video URI found in response`, pollDataLog);
+                        return response.status(500).send('No video URI found in response');
+                    }
+
+                    const videoResponse = await fetch(videoUri, {
+                        method: 'GET',
+                        headers: headers,
+                    });
+
+                    if (!videoResponse.ok) {
+                        console.warn(`${apiName} video fetch error: ${videoResponse.status} ${videoResponse.statusText}`);
+                        return response.status(500).send('Video fetch request failed');
+                    }
+
+                    const videoData = await videoResponse.arrayBuffer();
+                    const videoBase64 = Buffer.from(videoData).toString('base64');
+
+                    return response.send({ video: videoBase64 });
+                }
+            }
+        }
+
+        console.warn(`${apiName} video generation error: Job timed out after multiple attempts`);
+        return response.status(500).send('Video generation timed out');
+    } catch (error) {
+        console.error('Google Video generation failed:', error);
+        return response.sendStatus(500);
     }
 });

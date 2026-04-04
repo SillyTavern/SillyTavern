@@ -20,7 +20,7 @@ if %errorlevel% neq 0 (
     )
 )
 set NODE_ENV=production
-call npm install --no-audit --no-fund --loglevel=error --no-progress --omit=dev
+call npm install --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev
 node server.js %*
 :end
 pause
