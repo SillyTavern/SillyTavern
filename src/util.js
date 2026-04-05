@@ -728,84 +728,36 @@ export async function forwardFetchResponse(from, to) {
             const detail = rawErrorText || 'Unknown error occurred';
 
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${detail}`);
-            await new Promise(resolve => {
-                to.end(rawErrorText, undefined, resolve);
-            });
+            to.end(rawErrorText, 'utf-8');
         } catch {
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: Unknown error occurred`);
-            await new Promise(resolve => {
-                to.end(undefined, undefined, resolve);
-            });
+            to.end('', 'utf-8');
         }
 
         return;
     }
 
     if (!from.body || !to.socket) {
-        await new Promise(resolve => {
-            to.end(undefined, undefined, resolve);
-        });
+        to.end();
         return;
     }
 
-    await new Promise((resolve) => {
-        let settled = false;
+    if (from.body && to.socket) {
+        from.body.pipe(to);
 
-        const finish = () => {
-            if (settled) {
-                return;
-            }
+        to.socket.on('close', function () {
+            if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
 
-            settled = true;
-            cleanup();
-            resolve();
-        };
+            to.end(); // End the Express response
+        });
 
-        const onSocketClose = () => {
-            if (from.body instanceof Readable) {
-                from.body.destroy();
-            }
-
-            finish();
-        };
-
-        const onResponseFinish = () => {
-            finish();
-        };
-
-        const onResponseError = () => {
-            if (from.body instanceof Readable) {
-                from.body.destroy();
-            }
-
-            finish();
-        };
-
-        const onBodyEnd = () => {
+        from.body.on('end', function () {
             console.info('Streaming request finished');
             to.end();
-        };
-
-        const onBodyError = () => {
-            to.end();
-        };
-
-        const cleanup = () => {
-            to.socket.off('close', onSocketClose);
-            to.off('finish', onResponseFinish);
-            to.off('error', onResponseError);
-            from.body.off('end', onBodyEnd);
-            from.body.off('error', onBodyError);
-        };
-
-        to.socket.on('close', onSocketClose);
-        to.on('finish', onResponseFinish);
-        to.on('error', onResponseError);
-        from.body.on('end', onBodyEnd);
-        from.body.on('error', onBodyError);
-
-        from.body.pipe(to, { end: false });
-    });
+        });
+    } else {
+        to.end();
+    }
 }
 
 /**
