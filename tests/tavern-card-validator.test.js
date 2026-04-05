@@ -217,6 +217,21 @@ describe('TavernCardValidator', () => {
             expect(v.validateV3()).toBe(true);
         });
 
+        test('rejects missing spec_version', () => {
+            const card = makeV3Card();
+            delete card.spec_version;
+            const v = new TavernCardValidator(card);
+            expect(v.validateV3()).toBe(false);
+            expect(v.lastValidationError).toBe('spec_version');
+        });
+
+        test('rejects non-numeric spec_version', () => {
+            const card = makeV3Card();
+            card.spec_version = 'foo';
+            const v = new TavernCardValidator(card);
+            expect(v.validateV3()).toBe(false);
+            expect(v.lastValidationError).toBe('spec_version');
+        });
         test('rejects missing data', () => {
             const card = makeV3Card();
             delete card.data;
