@@ -26,7 +26,7 @@ if (fs.existsSync(whitelistPath)) {
     }
 }
 
-whitelist = filterValidIpPatterns(whitelist, (entry, message) => `Whitelist ${color.red('Warning')}: Ignoring invalid entry ${color.yellow(entry)} - ${message}`);
+whitelist = filterValidIpPatterns(whitelist, (entry, message) => `${color.red('Warning')}: Ignoring invalid whitelist entry ${color.yellow(entry)} - ${message}`);
 
 /**
  * Get the client IP address from the request headers.
