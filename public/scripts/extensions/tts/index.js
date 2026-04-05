@@ -494,7 +494,7 @@ async function processAudioJobQueue() {
 
 /** @type {TtsMessage[]} */
 const ttsJobQueue = [];
-/** @type {TtsMessage} */
+/** @type {TtsMessage|null} */
 let currentTtsJob = null; // Null if nothing is currently being processed
 
 function completeTtsJob() {
