@@ -816,10 +816,10 @@ async function authentikUserLogin(request) {
 
 /**
  * Check if the request can authenticate SSO users based on the trusted proxies configuration and the request's IP address.
- * @param {import('express').Request} request Request object
+ * @param {string} ip The IP address of the request
  * @return {boolean} If the request is from a trusted proxy based on the configuration
  */
-function isRequestFromTrustedProxy(request) {
+function isRequestFromTrustedProxy(ip) {
     if (!Array.isArray(TRUSTED_PROXIES)) {
         console.warn(color.yellow('sso.trustedProxies is not an array. Please check your config.yaml. SSO auto-login will not work.'));
         return false;
@@ -831,8 +831,7 @@ function isRequestFromTrustedProxy(request) {
         return true;
     }
 
-    // Get the IP address of the request
-    const ip = getIpFromRequest(request);
+    // If the IP is missing or unknown, we can't trust it
     if (!ip || ip === 'unknown') {
         return false;
     }
@@ -870,9 +869,10 @@ async function headerUserLogin(request, header = 'Remote-User') {
     }
     console.debug(`Attempting auto-login for user from header ${header}: ${remoteUser}`);
 
-    const isTrusted = isRequestFromTrustedProxy(request);
+    const ip = getIpFromRequest(request);
+    const isTrusted = isRequestFromTrustedProxy(ip);
     if (!isTrusted) {
-        console.warn(color.yellow(`Received ${header} header from untrusted IP ${getIpFromRequest(request)}. Ignoring for auto-login.`));
+        console.warn(color.yellow(`Received ${header} header from untrusted IP ${ip}. Ignoring for auto-login.`));
         return false;
     }
 
