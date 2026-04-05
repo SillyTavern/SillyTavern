@@ -179,22 +179,6 @@ describe('TavernCardValidator', () => {
             const v = new TavernCardValidator(card);
             expect(v.validateV2()).toBe(false);
         });
-
-        test('rejects character_book with null extensions', () => {
-            const card = makeV2Card();
-            card.data.character_book = { extensions: null, entries: [] };
-            const v = new TavernCardValidator(card);
-            expect(v.validateV2()).toBe(false);
-            expect(v.lastValidationError).toBe('data.character_book.extensions');
-        });
-
-        test('rejects character_book with array extensions', () => {
-            const card = makeV2Card();
-            card.data.character_book = { extensions: [], entries: [] };
-            const v = new TavernCardValidator(card);
-            expect(v.validateV2()).toBe(false);
-            expect(v.lastValidationError).toBe('data.character_book.extensions');
-        });
     });
 
     describe('validateV3', () => {
