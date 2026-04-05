@@ -208,7 +208,7 @@ function setJsonObjectFormat(bodyParams, messages, jsonSchema) {
  */
 async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE, request.body.secret_id);
     const divider = '-'.repeat(process.stdout.columns);
 
     if (!apiKey) {
@@ -425,7 +425,7 @@ async function sendMakerSuiteRequest(request, response) {
         }
     } else {
         apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE, request.body.secret_id);
 
         if (!request.body.reverse_proxy && !apiKey) {
             console.warn(`${apiName} API key is missing.`);
@@ -641,7 +641,7 @@ async function sendMakerSuiteRequest(request, response) {
             } else if (authType === 'full') {
                 // For Full mode (service account authentication), use project-specific URL
                 // Get project ID from Service Account JSON
-                const serviceAccountJson = readSecret(request.user.directories, SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT);
+                const serviceAccountJson = readSecret(request.user.directories, SECRET_KEYS.VERTEXAI_SERVICE_ACCOUNT, request.body.secret_id);
                 if (!serviceAccountJson) {
                     console.warn('Vertex AI Service Account JSON is missing.');
                     return response.status(400).send({ error: true });
@@ -742,7 +742,7 @@ async function sendMakerSuiteRequest(request, response) {
 async function sendAI21Request(request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AI21);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AI21, request.body.secret_id);
     if (!apiKey) {
         console.warn('AI21 API key is missing.');
         return response.status(400).send({ error: true });
@@ -822,7 +822,7 @@ async function sendAI21Request(request, response) {
  */
 async function sendMistralAIRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI, request.body.secret_id);
 
     if (!apiKey) {
         console.warn('MistralAI API key is missing.');
@@ -911,7 +911,7 @@ async function sendMistralAIRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendCohereRequest(request, response) {
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE, request.body.secret_id);
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
@@ -1012,7 +1012,7 @@ async function sendCohereRequest(request, response) {
  */
 async function sendDeepSeekRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK).toString();
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK, request.body.secret_id);
 
     if (!apiKey && !request.body.reverse_proxy) {
         console.warn('DeepSeek API key is missing.');
@@ -1122,7 +1122,7 @@ async function sendDeepSeekRequest(request, response) {
  */
 async function sendXaiRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_XAI).toString();
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI, request.body.secret_id);
 
     if (!apiKey && !request.body.reverse_proxy) {
         console.warn('xAI API key is missing.');
@@ -1228,7 +1228,7 @@ async function sendXaiRequest(request, response) {
  */
 async function sendAimlapiRequest(request, response) {
     const apiUrl = API_AIMLAPI;
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
 
     if (!apiKey) {
         console.warn('AI/ML API key is missing.');
@@ -1333,7 +1333,7 @@ async function sendAimlapiRequest(request, response) {
  */
 async function sendElectronHubRequest(request, response) {
     const apiUrl = API_ELECTRONHUB;
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB, request.body.secret_id);
 
     if (!apiKey) {
         console.warn('Electron Hub key is missing.');
@@ -1445,7 +1445,7 @@ async function sendElectronHubRequest(request, response) {
  */
 async function sendChutesRequest(request, response) {
     const apiUrl = API_CHUTES;
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES, request.body.secret_id);
 
     if (!apiKey) {
         console.warn('Chutes key is missing.');
@@ -1547,7 +1547,7 @@ async function sendChutesRequest(request, response) {
 async function sendAzureOpenAIRequest(request, response) {
     // 1. GATHER & VALIDATE SETTINGS
     const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI, request.body.secret_id);
     if (!azure_base_url || !azure_deployment_name || !azure_api_version || !apiKey) {
         return response.status(400).send({
             error: {
@@ -1646,74 +1646,74 @@ router.post('/status', async function (request, statusResponse) {
 
         if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
             apiUrl = 'https://openrouter.ai/api/v1';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER, request.body.secret_id);
             // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
             headers = { ...OPENROUTER_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             apiUrl = request.body.custom_url;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);
             headers = {};
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
             apiUrl = API_COHERE_V1;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHUTES) {
             apiUrl = API_CHUTES;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
             apiUrl = API_ELECTRONHUB;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT, request.body.secret_id);
             headers = {};
             queryParams = { detailed: true };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.DEEPSEEK) {
             apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', '')).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.XAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_XAI).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.XAI, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AIMLAPI) {
             apiUrl = API_AIMLAPI;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
             headers = { ...AIMLAPI_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             apiUrl = 'https://gen.pollinations.ai/text';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
             apiUrl = API_COMETAPI;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
             headers = {};
             throw new Error('This provider is temporarily disabled.');
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
             apiUrl = API_FIREWORKS;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE, request.body.secret_id);
             apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
             const apiVersion = getConfigValue('gemini.apiVersion', 'v1beta');
             const modelsUrl = !apiKey && request.body.reverse_proxy
@@ -1750,7 +1750,7 @@ router.post('/status', async function (request, statusResponse) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AZURE_OPENAI) {
             const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
-            const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI);
+            const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI, request.body.secret_id);
 
             // 1) Validate configuration from the frontend
             if (!apiKey || !azure_base_url || !azure_deployment_name || !azure_api_version) {
@@ -1830,7 +1830,7 @@ router.post('/status', async function (request, statusResponse) {
             const defaultApiUrl = request.body.siliconflow_endpoint === SILICONFLOW_ENDPOINT.CN
                 ? API_SILICONFLOW_CN : API_SILICONFLOW;
             apiUrl = defaultApiUrl;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
             headers = {};
             queryParams = { type: 'text', sub_type: 'chat' };
         } else {
@@ -2053,7 +2053,7 @@ router.post('/generate', async function (request, response) {
 
         if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI, request.body.secret_id);
             headers = {};
             bodyParams = {
                 logprobs: request.body.logprobs,
@@ -2073,7 +2073,7 @@ router.post('/generate', async function (request, response) {
             embedOpenRouterMedia(request.body.messages, { audio: true, video: false });
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
             apiUrl = 'https://openrouter.ai/api/v1';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER, request.body.secret_id);
             // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
             headers = { ...OPENROUTER_HEADERS };
             const includeReasoning = Boolean(request.body.include_reasoning);
@@ -2161,7 +2161,7 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             apiUrl = request.body.custom_url;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);
             headers = {};
             bodyParams = {
                 logprobs: request.body.logprobs,
@@ -2179,7 +2179,7 @@ router.post('/generate', async function (request, response) {
             embedOpenRouterMedia(request.body.messages, { audio: true, video: false });
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PERPLEXITY) {
             apiUrl = API_PERPLEXITY;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY, request.body.secret_id);
             headers = {};
             bodyParams = {
                 reasoning_effort: request.body.reasoning_effort,
@@ -2195,7 +2195,7 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {
@@ -2211,7 +2211,7 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
             apiUrl = API_FIREWORKS;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {
@@ -2227,7 +2227,7 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT, request.body.secret_id);
             headers = {};
             bodyParams = {};
             if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
@@ -2256,7 +2256,7 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             apiUrl = API_POLLINATIONS;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
             bodyParams = {
                 reasoning_effort: request.body.reasoning_effort,
@@ -2272,7 +2272,7 @@ router.post('/generate', async function (request, response) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
             headers = {};
             bodyParams = {
                 thinking: {
@@ -2284,7 +2284,7 @@ router.post('/generate', async function (request, response) {
                 : addAssistantPrefix(request.body.messages, [], 'partial');
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
             apiUrl = API_COMETAPI;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
             headers = {};
             bodyParams = {
                 reasoning_effort: request.body.reasoning_effort,
@@ -2293,7 +2293,7 @@ router.post('/generate', async function (request, response) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
             const defaultApiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
             apiUrl = new URL(request.body.reverse_proxy || defaultApiUrl).toString();
-            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.ZAI);
+            apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.ZAI, request.body.secret_id);
             headers = {
                 'Accept-Language': 'en-US,en',
             };
@@ -2309,7 +2309,7 @@ router.post('/generate', async function (request, response) {
             const defaultApiUrl = request.body.siliconflow_endpoint === SILICONFLOW_ENDPOINT.CN
                 ? API_SILICONFLOW_CN : API_SILICONFLOW;
             apiUrl = defaultApiUrl;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {

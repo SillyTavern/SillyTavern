@@ -100,7 +100,7 @@ async function addDockerHostsToWhitelist() {
  */
 export default async function getWhitelistMiddleware() {
     const forbiddenWebpage = Handlebars.compile(
-        safeReadFileSync('./public/error/forbidden-by-whitelist.html') ?? '',
+        safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html')) ?? '',
     );
 
     const noLogPaths = [

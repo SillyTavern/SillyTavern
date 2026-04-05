@@ -441,10 +441,11 @@ export function deleteSecret(directories, key) {
  * Reads a secret from the secrets file
  * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} key Secret key
+ * @param {string?} id Secret ID (optional)
  * @returns {string} Secret value
  */
-export function readSecret(directories, key) {
-    return new SecretManager(directories).readSecret(key, null);
+export function readSecret(directories, key, id = null) {
+    return new SecretManager(directories).readSecret(key, id);
 }
 
 /**

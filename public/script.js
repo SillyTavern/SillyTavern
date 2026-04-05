@@ -2907,6 +2907,11 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
 export function substituteParams(content, options = {}) {
     if (!content) return '';
 
+    if (typeof content !== 'string') {
+        console.warn('substituteParams: content will be coerced to string', content);
+        content = String(content);
+    }
+
     // Handle legacy signature calls to substituteParams
     // We'll simply re-route them to a temporary legacy function. In the future, we'll remove this and cleanly build the options object ourselves.
     const isOptionsObject = options && typeof options === 'object' && !Array.isArray(options);
@@ -3847,9 +3852,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        const message = api === 'openai'
-            ? { role: 'user', content: prompt.trim() }
-            : { role: 'system', content: prompt };
+        const message = { role: 'user', content: prompt.trim() };
         prompt = [message];
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
@@ -3876,7 +3879,12 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
+        systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
+        if (isInstruct && systemPrompt.length > 0 && !systemPrompt.endsWith('\n')) {
+            if (power_user.instruct.wrap && !power_user.instruct.story_string_suffix) {
+                systemPrompt += '\n';
+            }
+        }
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
@@ -5823,11 +5831,11 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
+        await saveChatConditional();
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
-        await saveChatConditional();
     }
 
     return message;

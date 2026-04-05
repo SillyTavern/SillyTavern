@@ -1171,9 +1171,9 @@ function onPersonaDescriptionDepthRoleInput() {
 
 /**
  * Opens a popup to set the lorebook for the current persona.
- * @param {JQuery.ClickEvent} event Click event
+ * @param {Pick<JQuery.ClickEvent, 'shiftKey' | 'altKey'>} event Click event
  */
-async function onPersonaLoreButtonClick(event) {
+async function onPersonaLoreButtonClick({ shiftKey, altKey }) {
     const personaName = power_user.personas[user_avatar];
     const selectedLorebook = power_user.persona_description_lorebook;
 
@@ -1182,7 +1182,7 @@ async function onPersonaLoreButtonClick(event) {
         return;
     }
 
-    if (selectedLorebook && !event.shiftKey && !event.altKey) {
+    if (selectedLorebook && !shiftKey && !altKey) {
         openWorldInfoEditor(selectedLorebook);
         return;
     }
