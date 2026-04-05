@@ -644,6 +644,18 @@
         "type": "reasoning"
     },
     {
+        "filename": "presets/reasoning/Gemma 4.json",
+        "type": "reasoning"
+    },
+    {
+        "filename": "presets/instruct/Gemma 4.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Gemma 4.json",
+        "type": "context"
+    },
+    {
         "filename": "user.css",
         "type": "stylesheet"
     },
