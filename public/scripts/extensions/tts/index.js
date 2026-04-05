@@ -419,9 +419,10 @@ function onAudioControlClicked() {
     // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
     if (!audioElement.paused || isTtsProcessing()) {
         resetTtsPlayback();
-    } else {
+    } else if (context?.chat?.length > 0) {
         // Default play behavior if not processing or playing is to play the last message.
-        processAndQueueTtsMessage(context.chat[context.chat.length - 1]);
+        const id = context.chat.length - 1;
+        processAndQueueTtsMessage(context.chat[id], id, { manual: true });
     }
     updateUiAudioPlayState();
 }
