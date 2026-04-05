@@ -731,7 +731,7 @@ export async function forwardFetchResponse(from, to) {
             to.end(rawErrorText, 'utf-8');
         } catch {
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: Unknown error occurred`);
-            to.end('', 'utf-8');
+            to.end();
         }
 
         return;
