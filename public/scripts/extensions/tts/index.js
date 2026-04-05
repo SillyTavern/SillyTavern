@@ -852,7 +852,7 @@ async function playFullConversation() {
 
     context.chat.forEach((msg, i) => {
         if (!msg.is_system && msg.mes !== '...' && msg.mes !== '') {
-            processAndQueueTtsMessage(msg, i);
+            processAndQueueTtsMessage(msg, i, { manual: false });
         }
     });
 
@@ -1192,7 +1192,7 @@ async function onMessageEvent(messageId, lastCharIndex) {
         message.id = messageId;
         ttsJobQueue.push(message);
     } else {
-        processAndQueueTtsMessage(message, messageId);
+        processAndQueueTtsMessage(message, messageId, { manual: false });
     }
 }
 
