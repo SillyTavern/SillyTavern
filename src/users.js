@@ -21,16 +21,16 @@ import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache
 import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
-import { getIpFromRequest } from './express-common.js';
+import { filterValidIpPatterns, getIpFromRequest } from './express-common.js';
 
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
 const AUTHELIA_AUTH = getConfigValue('sso.autheliaAuth', false, 'boolean');
 const AUTHENTIK_AUTH = getConfigValue('sso.authentikAuth', false, 'boolean');
-const TRUSTED_PROXIES = getConfigValue('sso.trustedProxies', ['127.0.0.1', '::1']);
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
+const TRUSTED_PROXIES = filterValidIpPatterns(getConfigValue('sso.trustedProxies', ['127.0.0.1', '::1']) ?? [], (entry, message) => `SSO ${color.red('Warning')}: Ignoring invalid sso.trustedProxies entry ${color.yellow(entry)} - ${message}`);
 
 /**
  * Cache for user directories.
@@ -845,7 +845,7 @@ function isRequestFromTrustedProxy(ip) {
                 return true;
             }
         } catch (e) {
-            console.warn(`${color.red('Warning')}: Ignoring invalid sso.trustedProxies entry ${color.yellow(entry)} - ${e.message}`);
+            continue;
         }
     }
 
