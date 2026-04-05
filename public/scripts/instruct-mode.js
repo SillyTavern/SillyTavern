@@ -597,7 +597,14 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     function getSequence() {
         // User impersonation prompt
         if (isImpersonate) {
-            return instruct.input_sequence;
+            const seq = instruct.input_sequence || '';
+
+            // Remove trailing space after [INST] for impersonation to fix tokenization
+            if (seq.includes('[INST] ')) {
+                return seq.replace(/\[INST\]\s+$/, '[INST]');
+            }
+
+            return seq;
         }
 
         // Neutral / system / quiet prompt
