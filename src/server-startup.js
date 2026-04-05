@@ -50,6 +50,7 @@ import { router as dataMaidRouter } from './endpoints/data-maid.js';
 import { router as backupsRouter } from './endpoints/backups.js';
 import { router as imageMetadataRouter } from './endpoints/image-metadata.js';
 import { router as volcengineRouter } from './endpoints/volcengine.js';
+import { router as modelslabRouter } from './endpoints/modelslab.js';
 
 /**
  * @typedef {object} ServerStartupResult
@@ -180,6 +181,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/azure', azureRouter);
     app.use('/api/volcengine', volcengineRouter);
     app.use('/api/minimax', minimaxRouter);
+    app.use('/api/modelslab', modelslabRouter);
     app.use('/api/data-maid', dataMaidRouter);
     app.use('/api/backups', backupsRouter);
     app.use('/api/image-metadata', imageMetadataRouter);

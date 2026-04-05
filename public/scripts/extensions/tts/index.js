@@ -37,6 +37,7 @@ import { MiniMaxTtsProvider } from './minimax.js';
 import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
+import { ModelsLabTtsProvider } from './modelslab.js';
 import { applyLocale, t } from '/scripts/i18n.js';
 
 const UPDATE_INTERVAL = 1000;
@@ -149,6 +150,7 @@ const ttsProviders = {
     VITS: VITSTtsProvider,
     XTTSv2: XTTSTtsProvider,
     Volcengine: VolcengineTtsProvider,
+    ModelsLab: ModelsLabTtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
