@@ -643,6 +643,7 @@ async function processTtsQueue() {
                     toastr.info(`TTS voice for ${char} is disabled.`);
                 }
                 currentTtsJob = null;
+                setTimeout(() => wrapper.update(), 0);
                 return;
             }
 
