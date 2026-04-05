@@ -22,7 +22,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -31,7 +31,7 @@ jobs:
       - name: Mark Issues/PRs without Activity
         # Close Stale Issues and PRs
         # https://github.com/marketplace/actions/close-stale-issues
-        uses: actions/stale@v9.1.0
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
           repo-token: ${{ steps.app.outputs.token }}
           days-before-stale: 183
@@ -67,7 +67,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -76,7 +76,7 @@ jobs:
       - name: Mark Issues/PRs Awaiting User Response
         # Close Stale Issues and PRs
         # https://github.com/marketplace/actions/close-stale-issues
-        uses: actions/stale@v9.1.0
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
           repo-token: ${{ steps.app.outputs.token }}
           days-before-stale: 7
@@ -105,7 +105,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -114,7 +114,7 @@ jobs:
       - name: Mark Issues with Alternative Exists
         # Close Stale Issues and PRs
         # https://github.com/marketplace/actions/close-stale-issues
-        uses: actions/stale@v9.1.0
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9.1.0
         with:
           repo-token: ${{ steps.app.outputs.token }}
           days-before-stale: 7

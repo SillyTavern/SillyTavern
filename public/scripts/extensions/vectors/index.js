@@ -72,6 +72,7 @@ const settings = {
     google_model: 'text-embedding-005',
     chutes_model: 'chutes-qwen-qwen3-embedding-8b',
     nanogpt_model: 'text-embedding-3-small',
+    siliconflow_model: 'Qwen/Qwen3-Embedding-0.6B',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -80,6 +81,7 @@ const settings = {
 
     // For chats
     enabled_chats: false,
+    keep_hidden: false,
     template: 'Past events:\n{{text}}',
     depth: 2,
     position: extension_prompt_types.IN_PROMPT,
@@ -346,7 +348,7 @@ async function synchronizeChat(batchSize = 5) {
             return -1;
         }
 
-        const hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
+        const hashedMessages = context.chat.filter(x => settings.keep_hidden || !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
         const hashesInCollection = await getSavedHashes(chatId);
 
         let newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
@@ -837,6 +839,10 @@ function getVectorsRequestBody(args = {}) {
         case 'nanogpt':
             body.model = extension_settings.vectors.nanogpt_model;
             break;
+        case 'siliconflow':
+            body.model = extension_settings.vectors.siliconflow_model;
+            body.siliconflow_endpoint = oai_settings.siliconflow_endpoint;
+            break;
         default:
             break;
     }
@@ -929,7 +935,8 @@ function throwIfSourceInvalid() {
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
         settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
         settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
-        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
+        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE] ||
+        settings.source === 'siliconflow' && !secret_state[SECRET_KEYS.SILICONFLOW]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -1147,6 +1154,7 @@ function toggleSettings() {
     $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
+    $('#siliconflow_vectorsModel').toggle(settings.source === 'siliconflow');
     $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
     switch (settings.source) {
         case 'webllm':
@@ -1163,6 +1171,9 @@ function toggleSettings() {
             break;
         case 'nanogpt':
             loadNanoGPTModels();
+            break;
+        case 'siliconflow':
+            loadSiliconFlowModels();
             break;
     }
 }
@@ -1312,6 +1323,45 @@ function populateOpenRouterModelSelect(models) {
     $('#vectors_openrouter_model').val(settings.openrouter_model);
 }
 
+async function loadSiliconFlowModels() {
+    try {
+        const response = await fetch('/api/openai/siliconflow/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                siliconflow_endpoint: oai_settings.siliconflow_endpoint,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateSiliconFlowModelSelect(models);
+    } catch (err) {
+        console.warn('SiliconFlow models fetch failed', err);
+        populateSiliconFlowModelSelect([]);
+    }
+}
+
+function populateSiliconFlowModelSelect(models) {
+    const select = $('#vectors_siliconflow_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.id;
+        select.append(option);
+    }
+    if (!settings.siliconflow_model && models.length) {
+        settings.siliconflow_model = models[0].id;
+    }
+    $('#vectors_siliconflow_model').val(settings.siliconflow_model);
+}
+
 /**
  * Executes a function with WebLLM error handling.
  * @param {function(): Promise<T>} func Function to execute
@@ -1447,10 +1497,11 @@ async function onViewStatsClick() {
     { timeOut: 10000, escapeHtml: false },
     );
 
+    $('#chat .mes.vectorized').removeClass('vectorized');
     const chat = getContext().chat;
     for (const message of chat) {
         if (hashesInCollection.includes(getStringHash(substituteParams(message.mes)))) {
-            const messageElement = $(`.mes[mesid="${chat.indexOf(message)}"]`);
+            const messageElement = $(`#chat .mes[mesid="${chat.indexOf(message)}"]`);
             messageElement.addClass('vectorized');
         }
     }
@@ -1677,6 +1728,11 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
+    $('#vectors_keep_hidden').prop('checked', settings.keep_hidden).on('input', () => {
+        settings.keep_hidden = !!$('#vectors_keep_hidden').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
     $('#vectors_enabled_files').prop('checked', settings.enabled_files).on('input', () => {
         settings.enabled_files = $('#vectors_enabled_files').prop('checked');
         Object.assign(extension_settings.vectors, settings);
@@ -1721,6 +1777,11 @@ jQuery(async () => {
     });
     $('#vectors_nanogpt_model').val(settings.nanogpt_model).on('change', () => {
         settings.nanogpt_model = String($('#vectors_nanogpt_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_siliconflow_model').val(settings.siliconflow_model).on('change', () => {
+        settings.siliconflow_model = String($('#vectors_siliconflow_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

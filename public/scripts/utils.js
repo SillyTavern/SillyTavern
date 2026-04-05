@@ -180,6 +180,15 @@ export function isValidUrl(value) {
 }
 
 /**
+ * Checks if a URL is external to the current domain.
+ * @param {string} url URL to check
+ * @returns {boolean} True if the URL is external, false otherwise
+ */
+export function isExternalUrl(url) {
+    return (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
+}
+
+/**
  * Checks if a string is a valid UUID (version 1-5).
  * @param {string} value String to check
  * @returns {boolean} True if the string is a valid UUID, false otherwise.
@@ -1733,23 +1742,26 @@ export function loadFileToDocument(url, type) {
 }
 
 /**
+ *  An array of all supported image MIME types.
+ */
+export const supportedImageMimeTypes = Object.freeze([
+    'image/jpeg',
+    'image/png',
+    'image/bmp',
+    'image/tiff',
+    'image/gif',
+    'image/apng',
+    'image/webp',
+    'image/avif',
+]);
+
+/**
  * Ensure that we can import war crime image formats like WEBP and AVIF.
  * @param {File} file Input file
  * @returns {Promise<File>} A promise that resolves to the supported file.
  */
 export async function ensureImageFormatSupported(file) {
-    const supportedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/bmp',
-        'image/tiff',
-        'image/gif',
-        'image/apng',
-        'image/webp',
-        'image/avif',
-    ];
-
-    if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {
+    if (supportedImageMimeTypes.includes(file.type) || !file.type.startsWith('image/')) {
         return file;
     }
 
@@ -2943,7 +2955,7 @@ export function createTimeout(ms, errorMessage = '') {
  * Registers a long-press (touch hold) event as an alternative to modifier+click.
  * Supports event delegation for dynamically created elements.
  * @param {string} selector CSS selector for target elements
- * @param {function} callback Callback to invoke on long-press, `this` is the matched element
+ * @param {(e: TouchEvent) => void} callback Callback to invoke on long-press, `this` is the matched element
  * @param {number} [delay=500] Long-press duration in ms
  */
 export function addLongPressEvent(selector, callback, delay = 500) {
@@ -2952,6 +2964,7 @@ export function addLongPressEvent(selector, callback, delay = 500) {
     let target = null;
 
     document.addEventListener('touchstart', function (event) {
+        if (!(event.target instanceof Element)) return;
         const el = event.target.closest(selector);
         if (!el) return;
         target = el;

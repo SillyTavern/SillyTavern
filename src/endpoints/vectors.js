@@ -38,6 +38,7 @@ const SOURCES = [
     'openrouter',
     'chutes',
     'nanogpt',
+    'siliconflow',
 ];
 
 /**
@@ -85,6 +86,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'nanogpt':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
+        case 'siliconflow':
+            return getOpenAIVector(text, source, directories, sourceSettings.model, sourceSettings.urlOverride);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -155,6 +158,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 break;
             case 'nanogpt':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
+                break;
+            case 'siliconflow':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model, sourceSettings.urlOverride));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -247,6 +253,12 @@ function getSourceSettings(source, request) {
         case 'nanogpt':
             return {
                 model: String(request.body.model || 'text-embedding-3-small'),
+            };
+        case 'siliconflow':
+            return {
+                model: String(request.body.model || 'Qwen/Qwen3-Embedding-0.6B'),
+                urlOverride: request.body.siliconflow_endpoint === 'cn'
+                    ? 'https://api.siliconflow.cn/v1' : null,
             };
         default:
             return {};

@@ -22,7 +22,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -31,7 +31,7 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Auto-Label Issues (Based on Issue Content)
         # only auto label based on issue content once, on open (to prevent re-labeling removed labels)
@@ -39,7 +39,7 @@ jobs:
 
         # Issue Labeler
         # https://github.com/marketplace/actions/regex-issue-labeler
-        uses: github/issue-labeler@v3.4
+        uses: github/issue-labeler@c1b0f9f52a63158c4adc09425e858e87b32e9685 # v3.4
         with:
           configuration-path: .github/issues-auto-labels.yml
           enable-versioned-regex: 0
@@ -56,7 +56,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -66,7 +66,7 @@ jobs:
         if: contains(fromJSON('["👩‍💻 Good First Issue", "🙏 Help Wanted", "🪲 Confirmed", "⚠️ High Priority", "❕ Medium Priority", "💤 Low Priority"]'), github.event.label.name)
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'add-labels'
           token: ${{ steps.app.outputs.token }}
@@ -76,7 +76,7 @@ jobs:
         if: contains(fromJSON('["✅ Done", "✅ Done (staging)", "⚰️ Stale", "❌ wontfix"]'), github.event.label.name)
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ steps.app.outputs.token }}
@@ -86,7 +86,7 @@ jobs:
         if: contains(fromJSON('["❌ wontfix","👍 Approved","👩‍💻 Good First Issue"]'), github.event.label.name)
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ steps.app.outputs.token }}
@@ -96,7 +96,7 @@ jobs:
         if: github.event.label.name == '🪲 Confirmed'
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ steps.app.outputs.token }}
@@ -114,7 +114,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -123,7 +123,7 @@ jobs:
       - name: Remove Stale Label
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ steps.app.outputs.token }}
@@ -141,7 +141,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -150,12 +150,12 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Post Issue Comments Based on Labels
         # Label Commenter
         # https://github.com/marketplace/actions/label-commenter
-        uses: peaceiris/actions-label-commenter@v1.10.0
+        uses: peaceiris/actions-label-commenter@f0dbbef043eb1b150b566db36b0bdc8b7f505579 # v1.10.0
         with:
           config_file: .github/issues-auto-comments.yml
           github_token: ${{ steps.app.outputs.token }}

@@ -8,7 +8,7 @@ import express from 'express';
 import { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey } from '../users.js';
 import { SETTINGS_FILE } from '../constants.js';
 import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
-import { color, Cache } from '../util.js';
+import { color, Cache, getConfigValue } from '../util.js';
 
 const RESET_CACHE = new Cache(5 * 60 * 1000);
 
@@ -138,6 +138,13 @@ router.post('/change-password', async (request, response) => {
 
 router.post('/backup', async (request, response) => {
     try {
+        const allowFullDataBackup = !!getConfigValue('backups.allowFullDataBackup', true, 'boolean');
+
+        if (!allowFullDataBackup) {
+            console.warn('Backup failed: Full data backup is disabled in configuration');
+            return response.status(403).json({ error: 'Full data backup is disabled' });
+        }
+
         const handle = request.body.handle;
 
         if (!handle) {

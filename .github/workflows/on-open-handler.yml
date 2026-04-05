@@ -22,7 +22,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -31,7 +31,7 @@ jobs:
       - name: Label if Author is a Repo Maintainer
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'add-labels'
           token: ${{ steps.app.outputs.token }}

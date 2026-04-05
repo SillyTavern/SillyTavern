@@ -161,6 +161,10 @@ body.no-blur .popup[open]::backdrop {
 .popup-inputs {
     margin-top: 10px;
     font-size: smaller;
+}
+
+.popup-inputs label span {
+    /* Make the title of the custom inputs a bit darker, but keep their text at default opacity. */
     opacity: 0.7;
 }
 
