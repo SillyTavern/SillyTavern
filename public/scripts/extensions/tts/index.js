@@ -166,7 +166,7 @@ async function onNarrateOneMessage() {
     }
 
     resetTtsPlayback();
-    processAndQueueTtsMessage(message, Number(id));
+    processAndQueueTtsMessage(message, Number(id), { manual: true });
     moduleWorker();
 }
 
@@ -200,7 +200,7 @@ async function onNarrateText(args, text) {
     }
 
     resetTtsPlayback();
-    processAndQueueTtsMessage({ mes: text, name: name });
+    processAndQueueTtsMessage({ mes: text, name: name }, null, { manual: true });
     await moduleWorker();
 
     // Return back to the chat voices
@@ -253,7 +253,7 @@ function isTtsProcessing() {
 }
 
 /**
- * @typedef {ChatMessage & { id?: number }} TtsMessage
+ * @typedef {ChatMessage & { id?: number, manual?: boolean, segmentText?: string, segmentType?: string }} TtsMessage
  */
 
 /**
@@ -261,12 +261,15 @@ function isTtsProcessing() {
  * (if enabled) and adds each part to the TTS job queue.
  * @param {ChatMessage} message - The message object to be processed.
  * @param {number|null} [messageId=null] - The chat message index to associate with TTS events.
+ * @param {object} [options={}] - Additional options for processing.
+ * @param {boolean} [options.manual=false] - Whether this TTS job was manually triggered (e.g., from the UI) rather than automatically from a new chat message.
  * @returns {void}
  */
-function processAndQueueTtsMessage(message, messageId = null) {
+function processAndQueueTtsMessage(message, messageId = null, { manual = false } = {}) {
     /** @type {TtsMessage} */
     const clone = structuredClone(message);
     clone.id = messageId ?? null;
+    clone.manual = manual ?? false;
 
     if (!extension_settings.tts.narrate_by_paragraphs) {
         ttsJobQueue.push(clone);
@@ -489,8 +492,10 @@ async function processAudioJobQueue() {
 //  TTS Control   //
 //################//
 
+/** @type {TtsMessage[]} */
 const ttsJobQueue = [];
-let currentTtsJob; // Null if nothing is currently being processed
+/** @type {TtsMessage} */
+let currentTtsJob = null; // Null if nothing is currently being processed
 
 function completeTtsJob() {
     console.info(`Current TTS job for ${currentTtsJob?.name} completed.`);
@@ -631,8 +636,10 @@ async function processTtsQueue() {
 
             if (voiceMapEntry === DISABLED_VOICE_MARKER) {
                 const storageKey = `tts_disabled_warned_${char}`;
-                if (!accountStorage.getItem(storageKey)) {
-                    accountStorage.setItem(storageKey, 'true');
+                if (!accountStorage.getItem(storageKey) || currentTtsJob.manual) {
+                    if (!currentTtsJob.manual) {
+                        accountStorage.setItem(storageKey, 'true');
+                    }
                     toastr.info(`TTS voice for ${char} is disabled.`);
                 }
                 return;
@@ -741,6 +748,7 @@ async function processTtsQueue() {
                 mes: currentTtsJob.mes,
                 extra: currentTtsJob.extra,
                 id: currentTtsJob.id,
+                manual: currentTtsJob.manual,
             };
             ttsJobQueue.unshift(segmentJob);
         }
