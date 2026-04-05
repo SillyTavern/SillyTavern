@@ -5,6 +5,7 @@ jest.unstable_mockModule('../src/util.js', () => ({
     tryParse: (str) => { try { return JSON.parse(str); } catch { return undefined; } },
 }));
 
+/** @type {import('../src/prompt-converters.js')} */
 let mod;
 
 beforeAll(async () => {
