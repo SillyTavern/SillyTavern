@@ -188,16 +188,14 @@ async function onNarrateText(args, text) {
         : voiceMap[name];
 
     if (voiceMapEntry === DISABLED_VOICE_MARKER) {
-        const storageKey = `tts_disabled_warned_${name}`;
-        if (!accountStorage.getItem(storageKey)) {
-            accountStorage.setItem(storageKey, 'true');
-            toastr.info(`TTS voice for ${name} is disabled.`);
-        }
+        toastr.info(`TTS voice for ${name} is disabled.`);
+        await initVoiceMap(false);
         return;
     }
 
     if (!voiceMapEntry) {
         toastr.info(`Specified voice for ${name} was not found. Check the TTS extension settings.`);
+        await initVoiceMap(false);
         return;
     }
 
