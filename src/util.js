@@ -737,11 +737,6 @@ export async function forwardFetchResponse(from, to) {
         return;
     }
 
-    if (!from.body || !to.socket) {
-        to.end();
-        return;
-    }
-
     if (from.body && to.socket) {
         from.body.pipe(to);
 
