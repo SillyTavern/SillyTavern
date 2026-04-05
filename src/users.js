@@ -14,12 +14,14 @@ import archiver from 'archiver';
 import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
+import ipMatching from 'ip-matching';
 
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
-import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent } from './util.js';
+import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent, setPermissionsSync } from './util.js';
 import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
+import { filterValidIpPatterns, getIpFromRequest } from './express-common.js';
 
 export const KEY_PREFIX = 'user:';
 const AVATAR_PREFIX = 'avatar:';
@@ -28,6 +30,7 @@ const AUTHELIA_AUTH = getConfigValue('sso.autheliaAuth', false, 'boolean');
 const AUTHENTIK_AUTH = getConfigValue('sso.authentikAuth', false, 'boolean');
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
+const TRUSTED_PROXIES = filterValidIpPatterns(getConfigValue('sso.trustedProxies', ['127.0.0.1', '::1']) ?? [], (entry, message) => `${color.red('Warning')}: Ignoring invalid sso.trustedProxies entry ${color.yellow(entry)} - ${message}`);
 
 /**
  * Cache for user directories.
@@ -484,6 +487,48 @@ export async function migrateSystemPrompts() {
     }
 }
 
+export async function migratePublicOverrides() {
+    const migrationMap = [
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'forbidden-by-whitelist.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'host-not-allowed.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'host-not-allowed.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'unauthorized.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'unauthorized.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'error', 'url-not-found.html'),
+            newPath: path.join(globalThis.DATA_ROOT, '_errors', 'url-not-found.html'),
+        },
+        {
+            oldPath: path.join(serverDirectory, 'public', 'css', 'user.css'),
+            newPath: path.join(globalThis.DATA_ROOT, '_css', 'user.css'),
+        },
+    ];
+
+    for (const { oldPath, newPath } of migrationMap) {
+        try {
+            if (fs.existsSync(newPath)) {
+                continue;
+            }
+            if (fs.existsSync(oldPath)) {
+                fs.mkdirSync(path.dirname(newPath), { recursive: true });
+                fs.cpSync(oldPath, newPath, { force: true });
+                fs.unlinkSync(oldPath);
+                setPermissionsSync(newPath);
+                console.log(`Migrated ${path.basename(oldPath)} to data root.`);
+            }
+        } catch (error) {
+            console.error(`Error migrating ${oldPath} to ${newPath}:`, error);
+        }
+    }
+}
+
 /**
  * Converts a user handle to a storage key.
  * @param {string} handle User handle
@@ -770,6 +815,44 @@ async function authentikUserLogin(request) {
 }
 
 /**
+ * Check if the request can authenticate SSO users based on the trusted proxies configuration and the request's IP address.
+ * @param {string} ip The IP address of the request
+ * @return {boolean} If the request is from a trusted proxy based on the configuration
+ */
+function isRequestFromTrustedProxy(ip) {
+    if (!Array.isArray(TRUSTED_PROXIES)) {
+        console.warn(color.yellow('sso.trustedProxies is not an array. Please check your config.yaml. SSO auto-login will not work.'));
+        return false;
+    }
+
+    // Bypass magic value check if the user explicitly configured
+    if (TRUSTED_PROXIES.length === 1 && TRUSTED_PROXIES[0] === '*') {
+        console.warn(color.yellow('sso.trustedProxies is set to accept all IPs. This is not recommended for production environments.'));
+        return true;
+    }
+
+    // If the IP is missing or unknown, we can't trust it
+    if (!ip || ip === 'unknown') {
+        return false;
+    }
+
+    // At least one entry in the trusted proxies list must match the request IP for it to be considered trusted
+    for (const entry of TRUSTED_PROXIES) {
+        try {
+            // This will throw if the entry is not a valid IP or CIDR
+            const match = ipMatching.getMatch(entry);
+            if (ipMatching.matches(ip, match)) {
+                return true;
+            }
+        } catch (e) {
+            continue;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Tries auto-login with a given header.
  * @param {import('express').Request} request Request object
  * @param {string} [header='Remote-User'] The header to use for the trusted user
@@ -785,6 +868,13 @@ async function headerUserLogin(request, header = 'Remote-User') {
         return false;
     }
     console.debug(`Attempting auto-login for user from header ${header}: ${remoteUser}`);
+
+    const ip = getIpFromRequest(request);
+    const isTrusted = isRequestFromTrustedProxy(ip);
+    if (!isTrusted) {
+        console.warn(color.yellow(`Received ${header} header from untrusted IP ${ip}. Ignoring for auto-login.`));
+        return false;
+    }
 
     const userHandles = await getAllUserHandles();
     for (const userHandle of userHandles) {

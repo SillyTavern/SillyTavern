@@ -4962,6 +4962,7 @@ function getZaiMaxContext(model, isUnlocked) {
     const contextMap = {
         'glm-5.1': max_200k,
         'glm-5-turbo': max_200k,
+        'glm-5v-turbo': max_200k,
         'glm-5': max_200k,
         'glm-4.7': max_200k,
         'glm-4.7-flash': max_200k,
@@ -5992,6 +5993,7 @@ export function isImageInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
+        'glm-5v-turbo',
         'autoglm-phone',
         // SiliconFlow
         'Qwen/Qwen3-VL-32B-Instruct',
@@ -6078,6 +6080,7 @@ export function isVideoInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
+        'glm-5v-turbo',
     ];
 
     switch (oai_settings.chat_completion_source) {

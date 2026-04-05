@@ -3,6 +3,7 @@
  * allow access to the endpoint after successful authentication.
  */
 import { Buffer } from 'node:buffer';
+import path from 'node:path';
 import storage from 'node-persist';
 import { getAllUserHandles, toKey, getPasswordHash } from '../users.js';
 import { getConfigValue, safeReadFileSync } from '../util.js';
@@ -11,7 +12,7 @@ const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean')
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false, 'boolean');
 
 const basicAuthMiddleware = async function (request, response, callback) {
-    const unauthorizedWebpage = safeReadFileSync('./public/error/unauthorized.html') ?? '';
+    const unauthorizedWebpage = safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'unauthorized.html')) ?? '';
     const unauthorizedResponse = (res) => {
         res.set('WWW-Authenticate', 'Basic realm="SillyTavern", charset="UTF-8"');
         return res.status(401).send(unauthorizedWebpage);
