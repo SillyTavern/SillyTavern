@@ -638,9 +638,7 @@ async function processTtsQueue() {
             if (voiceMapEntry === DISABLED_VOICE_MARKER) {
                 const storageKey = `tts_disabled_warned_${char}`;
                 if (!accountStorage.getItem(storageKey) || currentTtsJob.manual) {
-                    if (!currentTtsJob.manual) {
-                        accountStorage.setItem(storageKey, 'true');
-                    }
+                    accountStorage.setItem(storageKey, 'true');
                     toastr.info(`TTS voice for ${char} is disabled.`);
                 }
                 currentTtsJob = null;
