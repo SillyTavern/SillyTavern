@@ -170,7 +170,6 @@
     "(Saved to Context Template)": "(Сохраняется в шаблоне контекста)",
     "Tokenizer": "Токенайзер",
     "Token Padding": "Кол-во добавочных токенов",
-    "Frontend OpenAI tokenization": "Фронтенд-токенизация OpenAI",
     "Save preset as": "Сохранить пресет как...",
     "Always add character's name to prompt": "Всегда добавлять имя персонажа в промпт",
     "Use as Stop Strings": "Использовать в качестве стоп-строк",

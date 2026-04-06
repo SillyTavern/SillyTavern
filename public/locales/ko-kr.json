@@ -482,7 +482,6 @@
     "Trim spaces": "공백 자르기",
     "Tokenizer": "토크나이저",
     "Token Padding": "토큰 패딩",
-    "Frontend OpenAI tokenization": "프론트엔드 OpenAI 토큰화",
     "Start Reply With": "응답 시작",
     "AI reply prefix": "AI 답변 접두사",
     "Show reply prefix in chat": "채팅에서 응답 접두사 표시",

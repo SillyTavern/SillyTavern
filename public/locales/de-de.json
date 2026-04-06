@@ -474,7 +474,6 @@
     "Trim spaces": "Leerzeichen entfernen",
     "Tokenizer": "Tokenizer",
     "Token Padding": "Token-Auffüllung",
-    "Frontend OpenAI tokenization": "Frontend-OpenAI-Tokenisierung",
     "Start Reply With": "Antwort mit starten",
     "AI reply prefix": "KI-Antwortpräfix",
     "Show reply prefix in chat": "Antwortpräfix im Chat anzeigen",

@@ -474,7 +474,6 @@
     "Trim spaces": "تقليم الفراغات",
     "Tokenizer": "فاصل النصوص",
     "Token Padding": "امتداد الرموز",
-    "Frontend OpenAI tokenization": "تقسيم رموز OpenAI في الواجهة الأمامية",
     "Start Reply With": "بدء الرد مع",
     "AI reply prefix": "بادئة رد الذكاء الاصطناعي",
     "Show reply prefix in chat": "إظهار بادئة الرد في الدردشة",

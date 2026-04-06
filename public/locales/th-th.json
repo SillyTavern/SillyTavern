@@ -479,7 +479,6 @@
   "Trim spaces": "ตัดช่องว่าง",
   "Tokenizer": "ตัวแบ่งโทเค็น",
   "Token Padding": "การเพิ่มโทเค็น",
-  "Frontend OpenAI tokenization": "การตัดโทเค็น OpenAI ฝั่งฟรอนต์เอนด์",
   "Start Reply With": "เริ่มตอบด้วย",
   "AI reply prefix": "คำนำหน้าการตอบของ AI",
   "Show reply prefix in chat": "แสดงคำนำหน้าการตอบในแชท",

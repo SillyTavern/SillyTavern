@@ -472,7 +472,6 @@
     "Trim spaces": "Cắt khoảng trắng",
     "Tokenizer": "Công cụ tách từ",
     "Token Padding": "Đệm Token",
-    "Frontend OpenAI tokenization": "Tách token OpenAI phía frontend",
     "Start Reply With": "Bắt đầu Phản hồi Bằng",
     "AI reply prefix": "Tiền tố trả lời AI",
     "Show reply prefix in chat": "Hiển thị tiền tố phản hồi trong chat",

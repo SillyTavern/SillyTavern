@@ -474,7 +474,6 @@
     "Trim spaces": "スペースをトリミング",
     "Tokenizer": "トークナイザー",
     "Token Padding": "トークンのパディング",
-    "Frontend OpenAI tokenization": "フロントエンド OpenAI トークン化",
     "Start Reply With": "返信の開始",
     "AI reply prefix": "AI応答のプレフィックス",
     "Show reply prefix in chat": "チャットで返信の接頭辞を表示",

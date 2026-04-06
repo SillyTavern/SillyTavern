@@ -668,7 +668,6 @@
     "JSON serialized array of strings": "JSON 序列化的字符串数组",
     "Replace Macro in Stop Strings": "替换自定义停止字符串中的宏",
     "Token Padding": "Token 填充",
-    "Frontend OpenAI tokenization": "前端 OpenAI 分词",
     "Reasoning": "推理",
     "reasoning_auto_parse": "自动从消息内容中提取由推理块前后缀包裹的推理块。前后缀都必须设置且不为空。",
     "Auto-Parse": "自动解析",

@@ -126,7 +126,6 @@ export const power_user = {
     charListGrid: false,
     tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
-    openai_frontend_tokenizer: false,
     collapse_newlines: false,
     pin_examples: false,
     strip_examples: false,
@@ -1692,7 +1691,6 @@ export async function loadPowerUserSettings(settings, data) {
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
     $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).prop('selected', true);
-    $('#openai_frontend_tokenizer').prop('checked', !!power_user.openai_frontend_tokenizer);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).prop('selected', true);
     $('#confirm_message_delete').prop('checked', power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $('#spoiler_free_mode').prop('checked', power_user.spoiler_free_mode);
@@ -3642,12 +3640,6 @@ jQuery(() => {
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize
-        forceCharacterEditorTokenize();
-    });
-
-    $('#openai_frontend_tokenizer').on('input', function () {
-        power_user.openai_frontend_tokenizer = !!$(this).prop('checked');
-        saveSettingsDebounced();
         forceCharacterEditorTokenize();
     });
 

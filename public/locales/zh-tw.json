@@ -471,7 +471,6 @@
     "Trim spaces": "修剪空格",
     "Tokenizer": "分詞器 Tokenizer",
     "Token Padding": "符元填充",
-    "Frontend OpenAI tokenization": "前端 OpenAI 分詞",
     "Start Reply With": "開始回覆",
     "AI reply prefix": "AI 回覆前綴",
     "Show reply prefix in chat": "在聊天中顯示回覆前綴",
