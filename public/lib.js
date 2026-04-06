@@ -24,7 +24,6 @@ import chalk from 'chalk';
 import yaml from 'yaml';
 import * as chevrotain from 'chevrotain';
 import { gzipSync, gzip } from 'fflate';
-import { encoding_for_model } from 'tiktoken';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -99,7 +98,6 @@ export default {
     seedrandom,
     Popper,
     droll,
-    encoding_for_model,
     morphdom,
     slideToggle,
     chalk,
@@ -127,7 +125,6 @@ export {
     seedrandom,
     Popper,
     droll,
-    encoding_for_model,
     morphdom,
     slideToggle,
     chalk,
