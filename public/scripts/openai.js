@@ -197,6 +197,7 @@ export const chat_completion_sources = {
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
+    EUROUTER: 'eurouter',
 };
 
 const character_names_behavior = {
@@ -339,6 +340,7 @@ export const settingsToUpdate = {
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
+    eurouter_model: ['#model_eurouter_select', 'eurouter_model', false, true],
     workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
     workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
@@ -443,6 +445,7 @@ const default_settings = {
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
+    eurouter_model: 'claude-sonnet-4-6',
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     workers_ai_account_id: '',
     azure_base_url: '',
@@ -1707,6 +1710,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.perplexity_model;
         case chat_completion_sources.GROQ:
             return settings.groq_model;
+        case chat_completion_sources.EUROUTER:
+            return settings.eurouter_model;
         case chat_completion_sources.SILICONFLOW:
             return settings.siliconflow_model;
         case chat_completion_sources.ELECTRONHUB:
@@ -2160,6 +2165,24 @@ function saveModelList(data) {
         }
 
         $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.EUROUTER) {
+        $('#model_eurouter_select').empty();
+        model_list.forEach((model) => {
+            $('#model_eurouter_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.eurouter_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.eurouter_model)) {
+            oai_settings.eurouter_model = model_list[0].id;
+        }
+
+        $('#model_eurouter_select').val(oai_settings.eurouter_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
@@ -5254,6 +5277,15 @@ async function onModelChange() {
         oai_settings.groq_model = value;
     }
 
+    if ($(this).is('#model_eurouter_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null EUrouter model selected. Ignoring.');
+            return;
+        }
+        console.log('EUrouter model changed to', value);
+        oai_settings.eurouter_model = value;
+    }
+
     if ($(this).is('#model_siliconflow_select')) {
         if (!value) {
             console.debug('Null SiliconFlow model selected. Ignoring.');
@@ -5521,6 +5553,23 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.EUROUTER) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else if (Array.isArray(model_list) && model_list.length > 0) {
+            const contextLength = model_list.find((record) => record.id === oai_settings.eurouter_model)?.context_window;
+            if (contextLength) {
+                $('#openai_max_context').attr('max', contextLength);
+            }
+        } else {
+            $('#openai_max_context').attr('max', max_200k);
+        }
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -5777,6 +5826,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
+        [chat_completion_sources.EUROUTER]: { key: SECRET_KEYS.EUROUTER, selector: '#api_key_eurouter', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5838,6 +5888,8 @@ function toggleChatCompletionForms() {
         $('#model_perplexity_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.GROQ) {
         $('#model_groq_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.EUROUTER) {
+        $('#model_eurouter_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
         $('#model_chutes_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
@@ -7043,6 +7095,7 @@ export function initOpenAI() {
     $('#model_cohere_select').on('change', onModelChange);
     $('#model_perplexity_select').on('change', onModelChange);
     $('#model_groq_select').on('change', onModelChange);
+    $('#model_eurouter_select').on('change', onModelChange);
     $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
