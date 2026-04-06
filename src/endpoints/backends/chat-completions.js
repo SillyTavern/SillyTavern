@@ -1704,7 +1704,7 @@ router.post('/status', async function (request, statusResponse) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.EUROUTER) {
             apiUrl = API_EUROUTER;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.EUROUTER, request.body.secret_id);
-            headers = {};
+            headers = { 'HTTP-Referer': 'https://sillytavern.app', 'X-EUrouter-Title': 'SillyTavern' };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
             apiUrl = API_COMETAPI;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
@@ -2261,7 +2261,7 @@ router.post('/generate', async function (request, response) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.EUROUTER) {
             apiUrl = API_EUROUTER;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.EUROUTER, request.body.secret_id);
-            headers = {};
+            headers = { 'HTTP-Referer': 'https://sillytavern.app', 'X-EUrouter-Title': 'SillyTavern' };
             bodyParams = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
             apiUrl = API_FIREWORKS;
