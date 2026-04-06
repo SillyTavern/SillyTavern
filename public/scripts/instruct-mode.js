@@ -45,6 +45,7 @@ const controls = [
     { id: 'instruct_names_behavior', property: 'names_behavior', isCheckbox: false },
     { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
     { id: 'instruct_sequences_as_stop_strings', property: 'sequences_as_stop_strings', isCheckbox: true },
+    { id: 'instruct_impersonate_sequence', property: 'impersonate_sequence', isCheckbox: false },
 ];
 
 /**
@@ -82,6 +83,7 @@ function migrateInstructModeSettings(settings) {
         sequences_as_stop_strings: true,
         story_string_prefix: '',
         story_string_suffix: '',
+        impersonate_sequence: '',
     };
 
     for (let key in defaults) {
@@ -597,14 +599,8 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     function getSequence() {
         // User impersonation prompt
         if (isImpersonate) {
-            const seq = instruct.input_sequence || '';
-
-            // Remove trailing space after [INST] for impersonation to fix tokenization
-            if (seq.includes('[INST] ')) {
-                return seq.replace(/\[INST\]\s+$/, '[INST]');
-            }
-
-            return seq;
+            // Fall back to input_sequence if impersonate_sequence is not set
+            return instruct.impersonate_sequence || instruct.input_sequence;
         }
 
         // Neutral / system / quiet prompt
@@ -755,6 +751,12 @@ export function getInstructMacros(env) {
             key: 'instructLastInput|instructLastUserPrefix',
             value: power_user.instruct.last_input_sequence || power_user.instruct.input_sequence,
             enabled: power_user.instruct.enabled,
+        },
+        {
+            key: 'instructImpersonate',
+            value: power_user.instruct.impersonate_sequence || power_user.instruct.input_sequence,
+            enabled: power_user.instruct.enabled,
+        
         },
         // System prompt macros
         {

@@ -248,6 +248,7 @@ export const power_user = {
         bind_to_context: false,
         user_alignment_message: '',
         system_same_as_user: false,
+        impersonate_sequence: '',
         /** @deprecated Use output_suffix instead */
         separator_sequence: '',
         sequences_as_stop_strings: true,
@@ -286,9 +287,9 @@ export const power_user = {
         add_to_prompts: false,
         auto_expand: false,
         show_hidden: false,
-        prefix: '<think>\n',
-        suffix: '\n</think>',
-        separator: '\n\n',
+        prefix: '<think>',
+        suffix: '</think>',
+        separator: '\n',
         max_additions: 1,
     },
 
