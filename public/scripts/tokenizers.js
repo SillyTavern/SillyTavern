@@ -248,33 +248,48 @@ export function getFriendlyTokenizerName(forApi) {
     let tokenizerId = Number(tokenizerOption.val());
     let tokenizerName = tokenizerOption.text();
 
-    if (forApi !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
-        tokenizerId = getTokenizerBestMatch(forApi);
+    if (tokenizerId === tokenizers.BEST_MATCH) {
+        if (forApi === 'openai') {
+            tokenizerName = getTokenizerModel();
+            tokenizerId = tokenizers.OPENAI;
+        } else {
+            tokenizerId = getTokenizerBestMatch(forApi);
 
-        switch (tokenizerId) {
-            case tokenizers.API_KOBOLD:
-                tokenizerName = 'API (KoboldAI Classic)';
-                break;
-            case tokenizers.API_TEXTGENERATIONWEBUI:
-                tokenizerName = 'API (Text Completion)';
-                break;
-            default:
-                tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
-                break;
+            switch (tokenizerId) {
+                case tokenizers.API_KOBOLD:
+                    tokenizerName = 'API (KoboldAI Classic)';
+                    break;
+                case tokenizers.API_TEXTGENERATIONWEBUI:
+                    tokenizerName = 'API (Text Completion)';
+                    break;
+                default:
+                    tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+                    break;
+            }
         }
     }
-
-    tokenizerName = forApi == 'openai'
-        ? getTokenizerModel()
-        : tokenizerName;
-
-    tokenizerId = forApi == 'openai'
-        ? tokenizers.OPENAI
-        : tokenizerId;
 
     const tokenizerKey = Object.entries(tokenizers).find(([_, value]) => value === tokenizerId)[0].toLocaleLowerCase();
 
     return { tokenizerName, tokenizerKey, tokenizerId };
+}
+
+function getChatCompletionTokenizerType() {
+    return power_user.tokenizer === tokenizers.BEST_MATCH
+        ? tokenizers.OPENAI
+        : power_user.tokenizer;
+}
+
+function stringifyChatCompletionMessage(message) {
+    return Object.values(message).map(value => typeof value === 'string' ? value : JSON.stringify(value)).join('\n\n');
+}
+
+function countChatCompletionMessageTokens(tokenizerType, message) {
+    return callTokenizer(tokenizerType, stringifyChatCompletionMessage(message));
+}
+
+async function countChatCompletionMessageTokensAsync(tokenizerType, message) {
+    return callTokenizerAsync(tokenizerType, stringifyChatCompletionMessage(message));
 }
 
 /**
@@ -789,6 +804,7 @@ export function getTokenizerModel() {
  * @deprecated Use countTokensOpenAIAsync instead.
  */
 export function countTokensOpenAI(messages, full = false) {
+    const tokenizerType = getChatCompletionTokenizerType();
     const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
     const cacheObject = getTokenCacheObject();
 
@@ -806,11 +822,15 @@ export function countTokensOpenAI(messages, full = false) {
         }
 
         const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
+        const cacheKey = `${tokenizerType}-${model}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
+        } else if (tokenizerType !== tokenizers.OPENAI) {
+            const count = countChatCompletionMessageTokens(tokenizerType, message);
+            token_count += count;
+            cacheObject[cacheKey] = count;
         } else {
             jQuery.ajax({
                 async: false,
@@ -839,6 +859,7 @@ export function countTokensOpenAI(messages, full = false) {
  * @returns {Promise<number>} Token count.
  */
 export async function countTokensOpenAIAsync(messages, full = false) {
+    const tokenizerType = getChatCompletionTokenizerType();
     const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
     const cacheObject = getTokenCacheObject();
 
@@ -856,11 +877,15 @@ export async function countTokensOpenAIAsync(messages, full = false) {
         }
 
         const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
+        const cacheKey = `${tokenizerType}-${model}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
+        } else if (tokenizerType !== tokenizers.OPENAI) {
+            const count = await countChatCompletionMessageTokensAsync(tokenizerType, message);
+            token_count += count;
+            cacheObject[cacheKey] = count;
         } else {
             const data = await jQuery.ajax({
                 async: true,
@@ -1223,4 +1248,3 @@ export async function initTokenizers() {
     await loadTokenCache();
     registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
 }
-
