@@ -3,6 +3,7 @@ import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, rend
 import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { oai_settings } from '../../openai.js';
 import { getMultimodalCaption } from '../shared.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -506,6 +507,11 @@ jQuery(async function () {
                         'pollinations': SECRET_KEYS.POLLINATIONS,
                     };
 
+                    // Workers AI also requires account ID
+                    if (api === 'workers_ai') {
+                        return !!(secret_state[SECRET_KEYS.WORKERS_AI] && oai_settings.workers_ai_account_id);
+                    }
+
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
                         return true;
                     }
@@ -620,6 +626,37 @@ jQuery(async function () {
         await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
         await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
         await processEndpoint('moonshot', '/api/backends/chat-completions/multimodal-models/moonshot');
+
+        // Workers AI needs account ID in body, so handle separately
+        if (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'workers_ai') {
+            try {
+                const dropdown = document.getElementById('caption_multimodal_model');
+                if (dropdown instanceof HTMLSelectElement) {
+                    const options = Array.from(dropdown.options);
+                    const response = await fetch('/api/backends/chat-completions/multimodal-models/workers_ai', {
+                        method: 'POST',
+                        headers: getRequestHeaders(),
+                        body: JSON.stringify({ workers_ai_account_id: oai_settings.workers_ai_account_id }),
+                    });
+                    if (response.ok) {
+                        const modelIds = await response.json();
+                        if (Array.isArray(modelIds)) {
+                            modelIds.sort().forEach((modelId) => {
+                                if (modelId && typeof modelId === 'string' && !options.some(o => o.value === modelId && o.dataset.type === 'workers_ai')) {
+                                    const option = document.createElement('option');
+                                    option.value = modelId;
+                                    option.textContent = modelId;
+                                    option.dataset.type = 'workers_ai';
+                                    dropdown.add(option);
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Workers AI multimodal models fetch failed', err);
+            }
+        }
     }
 
     await addSettings();

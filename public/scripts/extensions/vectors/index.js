@@ -843,6 +843,10 @@ function getVectorsRequestBody(args = {}) {
             body.model = extension_settings.vectors.siliconflow_model;
             body.siliconflow_endpoint = oai_settings.siliconflow_endpoint;
             break;
+        case 'workers_ai':
+            body.model = extension_settings.vectors.workers_ai_model || '@cf/baai/bge-m3';
+            body.workers_ai_account_id = oai_settings.workers_ai_account_id;
+            break;
         default:
             break;
     }
@@ -1155,6 +1159,7 @@ function toggleSettings() {
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
     $('#siliconflow_vectorsModel').toggle(settings.source === 'siliconflow');
+    $('#workers_ai_vectorsModel').toggle(settings.source === 'workers_ai');
     $('#vector_altEndpointUrl').toggle(vectorApiRequiresUrl.includes(settings.source));
     switch (settings.source) {
         case 'webllm':
@@ -1174,6 +1179,9 @@ function toggleSettings() {
             break;
         case 'siliconflow':
             loadSiliconFlowModels();
+            break;
+        case 'workers_ai':
+            loadWorkersAIModels();
             break;
     }
 }
@@ -1360,6 +1368,45 @@ function populateSiliconFlowModelSelect(models) {
         settings.siliconflow_model = models[0].id;
     }
     $('#vectors_siliconflow_model').val(settings.siliconflow_model);
+}
+
+async function loadWorkersAIModels() {
+    try {
+        const response = await fetch('/api/openai/workers-ai/models/embedding', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                workers_ai_account_id: oai_settings.workers_ai_account_id,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        /** @type {Array<any>} */
+        const data = await response.json();
+        const models = Array.isArray(data) ? data : [];
+        populateWorkersAIModelSelect(models);
+    } catch (err) {
+        console.warn('Workers AI models fetch failed', err);
+        populateWorkersAIModelSelect([]);
+    }
+}
+
+function populateWorkersAIModelSelect(models) {
+    const select = $('#vectors_workers_ai_model');
+    select.empty();
+    for (const m of models) {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.text = m.id;
+        select.append(option);
+    }
+    if (!settings.workers_ai_model && models.length) {
+        settings.workers_ai_model = models[0].id;
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    }
+    $('#vectors_workers_ai_model').val(settings.workers_ai_model);
 }
 
 /**
@@ -1782,6 +1829,11 @@ jQuery(async () => {
     });
     $('#vectors_siliconflow_model').val(settings.siliconflow_model).on('change', () => {
         settings.siliconflow_model = String($('#vectors_siliconflow_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_workers_ai_model').val(settings.workers_ai_model).on('change', () => {
+        settings.workers_ai_model = String($('#vectors_workers_ai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

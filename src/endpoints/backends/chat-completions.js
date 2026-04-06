@@ -2724,6 +2724,39 @@ multimodalModels.post('/moonshot', async (req, res) => {
     }
 });
 
+multimodalModels.post('/workers_ai', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.WORKERS_AI);
+        const accountId = String(req.body.workers_ai_account_id || '').trim();
+
+        if (!key || !accountId) {
+            return res.json([]);
+        }
+
+        const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/models/search?task=Text+Generation&per_page=1000`;
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + key },
+        });
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const models = Array.isArray(data?.result)
+            ? data.result
+                .filter(m => Array.isArray(m.properties) && m.properties.some(p => p.property_id === 'vision' && p.value === 'true'))
+                .map(m => m.name)
+            : [];
+        return res.json(models);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 router.use('/multimodal-models', multimodalModels);
 
 router.post('/process', async function (request, response) {

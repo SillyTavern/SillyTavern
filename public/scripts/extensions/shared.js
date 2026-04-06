@@ -126,6 +126,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
         requestBody.zai_endpoint = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
     }
 
+    if (extension_settings.caption.multimodal_api === 'workers_ai') {
+        requestBody.workers_ai_account_id = oai_settings.workers_ai_account_id;
+    }
+
     function getEndpointUrl() {
         switch (extension_settings.caption.multimodal_api) {
             case 'google':
