@@ -48,6 +48,28 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
 });
 
 /**
+ * @enum {string} User roles in descending privilege order.
+ */
+export const ROLES = Object.freeze({
+    OWNER: 'owner',
+    ADMIN: 'admin',
+    CONTRIBUTOR: 'contributor',
+    END_USER: 'end_user',
+});
+
+/**
+ * Role hierarchy ordered from highest to lowest privilege.
+ * Index 0 = most privileged.
+ * @type {readonly string[]}
+ */
+export const ROLE_HIERARCHY = Object.freeze([
+    'owner',
+    'admin',
+    'contributor',
+    'end_user',
+]);
+
+/**
  * @type {import('./users.js').User}
  * @readonly
  */
@@ -59,6 +81,7 @@ export const DEFAULT_USER = Object.freeze({
     admin: true,
     enabled: true,
     salt: '',
+    role: 'owner',
 });
 
 export const UNSAFE_EXTENSIONS = [

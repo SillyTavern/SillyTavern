@@ -5,8 +5,8 @@ import crypto from 'node:crypto';
 import storage from 'node-persist';
 import express from 'express';
 
-import { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey } from '../users.js';
-import { SETTINGS_FILE } from '../constants.js';
+import { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey, getEffectiveRole, hasRole } from '../users.js';
+import { SETTINGS_FILE, ROLES } from '../constants.js';
 import { checkForNewContent, CONTENT_TYPES } from './content-manager.js';
 import { color, Cache } from '../util.js';
 
@@ -43,6 +43,7 @@ router.get('/me', async (request, response) => {
             name: user.name,
             avatar: await getUserAvatar(user.handle),
             admin: user.admin,
+            role: getEffectiveRole(user),
             password: !!user.password,
             created: user.created,
         };
@@ -61,7 +62,7 @@ router.post('/change-avatar', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
+        if (request.body.handle !== request.user.profile.handle && !hasRole(getEffectiveRole(request.user.profile), ROLES.ADMIN)) {
             console.error('Change avatar failed: Unauthorized');
             return response.status(403).json({ error: 'Unauthorized' });
         }
@@ -96,7 +97,7 @@ router.post('/change-password', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
+        if (request.body.handle !== request.user.profile.handle && !hasRole(getEffectiveRole(request.user.profile), ROLES.ADMIN)) {
             console.error('Change password failed: Unauthorized');
             return response.status(403).json({ error: 'Unauthorized' });
         }
@@ -114,7 +115,7 @@ router.post('/change-password', async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        if (!request.user.profile.admin && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
+        if (!hasRole(getEffectiveRole(request.user.profile), ROLES.ADMIN) && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
             console.error('Change password failed: Incorrect password');
             return response.status(403).json({ error: 'Incorrect password' });
         }
@@ -145,7 +146,7 @@ router.post('/backup', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        if (handle !== request.user.profile.handle && !request.user.profile.admin) {
+        if (handle !== request.user.profile.handle && !hasRole(getEffectiveRole(request.user.profile), ROLES.ADMIN)) {
             console.error('Backup failed: Unauthorized');
             return response.status(403).json({ error: 'Unauthorized' });
         }
@@ -184,7 +185,7 @@ router.post('/change-name', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
+        if (request.body.handle !== request.user.profile.handle && !hasRole(getEffectiveRole(request.user.profile), ROLES.ADMIN)) {
             console.error('Change name failed: Unauthorized');
             return response.status(403).json({ error: 'Unauthorized' });
         }

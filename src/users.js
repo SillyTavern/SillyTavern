@@ -15,7 +15,7 @@ import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import sanitize from 'sanitize-filename';
 
-import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
+import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY, ROLES, ROLE_HIERARCHY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache } from './util.js';
 import { readSecret, writeSecret } from './endpoints/secrets.js';
 import { getContentOfType } from './endpoints/content-manager.js';
@@ -53,7 +53,8 @@ const STORAGE_KEYS = {
  * @property {string} password - Scrypt hash of the user's password
  * @property {string} salt - Salt used for hashing the password
  * @property {boolean} enabled - Whether the user is enabled
- * @property {boolean} admin - Whether the user is an admin (can manage other users)
+ * @property {boolean} admin - Whether the user is an admin. @deprecated Use role instead.
+ * @property {string} [role] - One of: 'owner', 'admin', 'contributor', 'end_user'
  */
 
 /**
@@ -61,11 +62,76 @@ const STORAGE_KEYS = {
  * @property {string} handle - The user's short handle. Used for directories and other references
  * @property {string} name - The user's name. Displayed in the UI
  * @property {string} avatar - The user's avatar image
- * @property {boolean} [admin] - Whether the user is an admin (can manage other users)
+ * @property {boolean} [admin] - Whether the user is an admin. @deprecated Use role instead.
+ * @property {string} [role] - One of: 'owner', 'admin', 'contributor', 'end_user'
  * @property {boolean} password - Whether the user is password protected
  * @property {boolean} [enabled] - Whether the user is enabled
  * @property {number} [created] - The timestamp when the user was created
  */
+
+/**
+ * Gets the effective role of a user, handling backward compatibility.
+ * If the user has a valid role field, use it. Otherwise, derive from admin boolean.
+ * @param {User} user
+ * @returns {string}
+ */
+export function getEffectiveRole(user) {
+    if (user.role && ROLE_HIERARCHY.includes(user.role)) {
+        return user.role;
+    }
+    return user.admin ? ROLES.ADMIN : ROLES.END_USER;
+}
+
+/**
+ * Checks if a role meets or exceeds a minimum required role level.
+ * @param {string} userRole The user's role
+ * @param {string} minimumRole The minimum required role
+ * @returns {boolean}
+ */
+export function hasRole(userRole, minimumRole) {
+    const userIndex = ROLE_HIERARCHY.indexOf(userRole);
+    const minIndex = ROLE_HIERARCHY.indexOf(minimumRole);
+    if (userIndex === -1 || minIndex === -1) return false;
+    return userIndex <= minIndex;
+}
+
+/**
+ * Creates a middleware that checks if the user has one of the specified roles.
+ * @param  {...string} roles Allowed roles
+ * @returns {import('express').RequestHandler}
+ */
+export function requireRole(...roles) {
+    return function (request, response, next) {
+        if (!request.user) {
+            return response.sendStatus(403);
+        }
+        const userRole = getEffectiveRole(request.user.profile);
+        if (roles.includes(userRole)) {
+            return next();
+        }
+        console.warn(`Unauthorized: user ${request.user.profile.handle} (role: ${userRole}) tried to access ${request.originalUrl}, requires one of: [${roles.join(', ')}]`);
+        return response.sendStatus(403);
+    };
+}
+
+/**
+ * Creates a middleware that checks if the user has at least the specified role level.
+ * @param {string} minimumRole The minimum role required
+ * @returns {import('express').RequestHandler}
+ */
+export function requireMinRole(minimumRole) {
+    return function (request, response, next) {
+        if (!request.user) {
+            return response.sendStatus(403);
+        }
+        const userRole = getEffectiveRole(request.user.profile);
+        if (hasRole(userRole, minimumRole)) {
+            return next();
+        }
+        console.warn(`Unauthorized: user ${request.user.profile.handle} (role: ${userRole}) tried to access ${request.originalUrl}, requires at least: ${minimumRole}`);
+        return response.sendStatus(403);
+    };
+}
 
 /**
  * @typedef {Object} UserDirectoryList
@@ -159,11 +225,11 @@ export async function verifySecuritySettings() {
 
     const users = await getAllEnabledUsers();
     const unprotectedUsers = users.filter(x => !x.password);
-    const unprotectedAdminUsers = unprotectedUsers.filter(x => x.admin);
+    const unprotectedAdminUsers = unprotectedUsers.filter(x => hasRole(getEffectiveRole(x), ROLES.ADMIN));
 
     if (unprotectedUsers.length > 0) {
         console.warn(color.blue('A friendly reminder that the following users are not password protected:'));
-        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(x.admin ? '(admin)' : '')}`).forEach(x => console.warn(x));
+        unprotectedUsers.map(x => `${color.yellow(x.handle)} ${color.red(hasRole(getEffectiveRole(x), ROLES.ADMIN) ? `(${getEffectiveRole(x)})` : '')}`).forEach(x => console.warn(x));
         console.log();
         console.warn(`Consider setting a password in the admin panel or by using the ${color.blue('recover.js')} script.`);
         console.log();
@@ -520,6 +586,52 @@ export async function initUserStorage(dataRoot) {
     // If there are no users, create the default user
     if (keys.length === 0) {
         await storage.setItem(toKey(DEFAULT_USER.handle), DEFAULT_USER);
+    }
+
+    // Migrate existing users to role-based permissions
+    await migrateUsersToRoles();
+}
+
+/**
+ * Migrates existing users from admin boolean to role-based permissions.
+ * Idempotent — users that already have a valid role field are not modified.
+ * - First admin user (by creation date) becomes 'owner'
+ * - Other admin users become 'admin'
+ * - Non-admin users become 'end_user'
+ * @returns {Promise<void>}
+ */
+async function migrateUsersToRoles() {
+    const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
+    let ownerAssigned = false;
+
+    // Sort by creation date so the earliest admin becomes owner
+    const sortedUsers = [...users].sort((a, b) => (a.created || 0) - (b.created || 0));
+
+    for (const user of sortedUsers) {
+        if (user.role && ROLE_HIERARCHY.includes(user.role)) {
+            if (user.role === ROLES.OWNER) {
+                ownerAssigned = true;
+            }
+            continue;
+        }
+
+        if (user.admin) {
+            if (!ownerAssigned) {
+                user.role = ROLES.OWNER;
+                ownerAssigned = true;
+                console.log(`[Roles] Migrated user '${user.handle}' to role: owner (first admin)`);
+            } else {
+                user.role = ROLES.ADMIN;
+                console.log(`[Roles] Migrated user '${user.handle}' to role: admin`);
+            }
+        } else {
+            user.role = ROLES.END_USER;
+            console.log(`[Roles] Migrated user '${user.handle}' to role: end_user`);
+        }
+
+        // Keep admin boolean in sync for backward compatibility
+        user.admin = hasRole(user.role, ROLES.ADMIN);
+        await storage.setItem(toKey(user.handle), user);
     }
 }
 
@@ -990,7 +1102,8 @@ function createExtensionsRouteHandler(directoryFn) {
 }
 
 /**
- * Verifies that the current user is an admin.
+ * Verifies that the current user is an admin (or higher).
+ * @deprecated Use requireRole or requireMinRole instead.
  * @param {import('express').Request} request Request object
  * @param {import('express').Response} response Response object
  * @param {import('express').NextFunction} next Next function
@@ -1001,7 +1114,8 @@ export function requireAdminMiddleware(request, response, next) {
         return response.sendStatus(403);
     }
 
-    if (request.user.profile.admin) {
+    const userRole = getEffectiveRole(request.user.profile);
+    if (hasRole(userRole, ROLES.ADMIN)) {
         return next();
     }
 
