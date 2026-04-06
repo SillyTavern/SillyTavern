@@ -54,6 +54,7 @@ export const POPUP_RESULT = {
  * @property {POPUP_RESULT|number?} [defaultResult=POPUP_RESULT.AFFIRMATIVE] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
  * @property {CustomPopupButton[]|string[]?} [customButtons=null] - Custom buttons to add to the popup. If only strings are provided, the buttons will be added with default options, and their result will be in order from `2` onward.
  * @property {CustomPopupInput[]?} [customInputs=null] - Custom inputs to add to the popup. The display below the content and the input box, one by one.
+ * @property {boolean} [allowEscapeClose=true] - If true, allows closing the popup with the Escape key, returning `POPUP_RESULT.CANCELLED`. If false, requires double-escape to force close with a confirmation to prevent accidental closure.
  * @property {(popup: Popup) => Promise<boolean?>|boolean?} [onClosing=null] - Handler called before the popup closes, return `false` to cancel the close
  * @property {(popup: Popup) => Promise<void?>|void?} [onClose=null] - Handler called after the popup closes, but before the DOM is cleaned up
  * @property {(popup: Popup) => Promise<void?>|void?} [onOpen=null] - Handler called after the popup opens
@@ -173,6 +174,8 @@ export class Popup {
 
     /** @type {Promise<any>} */ #promise;
     /** @type {(result: any) => any} */ #resolver;
+
+    /** @type {boolean} */ #allowEscapeClose;
     /** @type {boolean} */ #isClosingPrevented;
     /** @type {number} */ #lastEscapePress = 0;
     /** @type {boolean} */ #isShowingForceCloseConfirm = false;
@@ -185,12 +188,38 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(content, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, placeholder = null, tooltip = null, wide = false, wider = false, large = false, transparent = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, leftAlign = false, animation = 'fast', defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null, customInputs = null, onClosing = null, onClose = null, onOpen = null, cropAspect = null, cropImage = null } = {}) {
+    constructor(content, type, inputValue = '', {
+        okButton = null,
+        cancelButton = null,
+        rows = 1,
+        placeholder = null,
+        tooltip = null,
+        wide = false,
+        wider = false,
+        large = false,
+        transparent = false,
+        allowHorizontalScrolling = false,
+        allowVerticalScrolling = false,
+        leftAlign = false,
+        animation = 'fast',
+        defaultResult = POPUP_RESULT.AFFIRMATIVE,
+        customButtons = null,
+        customInputs = null,
+        allowEscapeClose = true,
+        onClosing = null,
+        onClose = null,
+        onOpen = null,
+        cropAspect = null,
+        cropImage = null,
+    } = {}) {
         Popup.util.popups.push(this);
 
         // Make this popup uniquely identifiable
         this.id = uuidv4();
         this.type = type;
+
+        // Setup some args being passed in as private properties
+        this.#allowEscapeClose = allowEscapeClose;
 
         // Utilize event handlers being passed in
         this.onClosing = onClosing;
@@ -479,10 +508,7 @@ export class Popup {
 
         // Bind dialog listeners manually, so we can be sure context is preserved
         const cancelListener = async (evt) => {
-            // If neither cancel button nor close button is visible or present, don't allow escape to close the popup
-            const hasCancelButton = this.cancelButton?.offsetParent !== null && this.buttonControls?.offsetParent !== null;
-            const hasCloseButton = this.closeButton?.offsetParent !== null;
-            if (!hasCancelButton && !hasCloseButton) {
+            if (!this.#allowEscapeClose) {
                 evt.preventDefault();
                 evt.stopPropagation();
                 // Set flag so closeListener also blocks the close event (browser may fire it after multiple Escape presses)

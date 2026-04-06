@@ -488,7 +488,13 @@ function showOverlay(customContent = null) {
 
     const content = getOverlayContent(customContent);
 
-    loaderPopup = new Popup(content, POPUP_TYPE.DISPLAY, null, { transparent: true, animation: 'none', wide: true, large: true });
+    loaderPopup = new Popup(content, POPUP_TYPE.DISPLAY, null, {
+        allowEscapeClose: false,
+        transparent: true,
+        animation: 'none',
+        wide: true,
+        large: true,
+    });
 
     // No close button, loaders are not closable
     loaderPopup.closeButton.style.display = 'none';

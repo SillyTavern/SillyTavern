@@ -6,7 +6,7 @@ import Handlebars from 'handlebars';
 import ipMatching from 'ip-matching';
 import isDocker from 'is-docker';
 
-import { getIpFromRequest } from '../express-common.js';
+import { filterValidIpPatterns, getIpFromRequest } from '../express-common.js';
 import { color, getConfigValue, safeReadFileSync } from '../util.js';
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
@@ -16,6 +16,8 @@ const whitelistDockerHosts = !!getConfigValue('whitelistDockerHosts', true, 'boo
 let whitelist = getConfigValue('whitelist', []);
 
 if (fs.existsSync(whitelistPath)) {
+    console.warn(color.yellow('whitelist.txt is deprecated and will be removed in a future release.'));
+    console.warn(color.yellow('Please migrate its contents to the whitelist field in config.yaml. See the documentation for more details.'));
     try {
         let whitelistTxt = fs.readFileSync(whitelistPath, 'utf-8');
         whitelist = whitelistTxt.split('\n').filter(ip => ip).map(ip => ip.trim());
@@ -24,28 +26,7 @@ if (fs.existsSync(whitelistPath)) {
     }
 }
 
-/**
- * Validates and filters the whitelist, removing any invalid entries.
- * @param {string[]} entries - The whitelist entries to validate
- * @returns {string[]} The filtered list of valid whitelist entries
- */
-function validateWhitelist(entries) {
-    const validEntries = [];
-
-    for (const entry of entries) {
-        try {
-            // This will throw if the entry is not a valid IP or CIDR
-            ipMatching.getMatch(entry);
-            validEntries.push(entry);
-        } catch (e) {
-            console.warn(`Whitelist ${color.red('Warning')}: Ignoring invalid entry ${color.yellow(entry)} - ${e.message}`);
-        }
-    }
-
-    return validEntries;
-}
-
-whitelist = validateWhitelist(whitelist);
+whitelist = filterValidIpPatterns(whitelist, (entry, message) => `${color.red('Warning')}: Ignoring invalid whitelist entry ${color.yellow(entry)} - ${message}`);
 
 /**
  * Get the client IP address from the request headers.
@@ -100,7 +81,7 @@ async function addDockerHostsToWhitelist() {
  */
 export default async function getWhitelistMiddleware() {
     const forbiddenWebpage = Handlebars.compile(
-        safeReadFileSync('./public/error/forbidden-by-whitelist.html') ?? '',
+        safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html')) ?? '',
     );
 
     const noLogPaths = [

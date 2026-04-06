@@ -1,5 +1,6 @@
 import { getRequestHeaders } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { canViewSecrets } from './secrets.js';
 import { renderTemplateAsync } from './templates.js';
 import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './utils.js';
 
@@ -264,6 +265,11 @@ async function backupUserData(handle, callback) {
             const data = await response.json();
             toastr.error(data.error || 'Unknown error', 'Failed to backup user data');
             throw new Error('Failed to backup user data');
+        }
+
+        const includesSecrets = await canViewSecrets();
+        if (includesSecrets === false) {
+            toastr.warning('The backup will not include secrets due to a server configuration.', 'Secrets Not Included');
         }
 
         const blob = await response.blob();
