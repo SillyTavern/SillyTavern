@@ -649,7 +649,7 @@ async function processTtsQueue() {
     text = substituteParams(text);
 
     if (extension_settings.tts.skip_codeblocks) {
-        text = text.replace(/^\s{4}.*$/gm, '').trim();
+        // text = text.replace(/^\s{4}.*$/gm, '').trim();
         text = text.replace(/```.*?```/gs, '').trim();
         text = text.replace(/~~~.*?~~~/gs, '').trim();
     }
