@@ -210,6 +210,7 @@ export const CHAT_COMPLETION_SOURCES = {
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
     PLAYER2: 'player2',
+    WORKERS_AI: 'workers_ai',
 };
 
 /**

@@ -40,7 +40,7 @@ declare global {
             /**
              * Authenticated user handle.
              */
-            handle: string;
+            handle: string | null;
             /**
              * Last time the session was extended.
              */

@@ -70,6 +70,7 @@ export const SECRET_KEYS = {
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
     PLAYER2: 'api_key_player2',
+    WORKERS_AI: 'api_key_workers_ai',
 };
 
 /**
@@ -105,7 +106,7 @@ const EXPORTABLE_KEYS = [
     SECRET_KEYS.DEEPLX_URL,
 ];
 
-const allowKeysExposure = !!getConfigValue('allowKeysExposure', false, 'boolean');
+export const allowKeysExposure = !!getConfigValue('allowKeysExposure', false, 'boolean');
 
 /**
  * SecretManager class to handle all secret operations
@@ -442,10 +443,11 @@ export function deleteSecret(directories, key) {
  * Reads a secret from the secrets file
  * @param {import('../users.js').UserDirectoryList} directories User directories
  * @param {string} key Secret key
+ * @param {string?} id Secret ID (optional)
  * @returns {string} Secret value
  */
-export function readSecret(directories, key) {
-    return new SecretManager(directories).readSecret(key, null);
+export function readSecret(directories, key, id = null) {
+    return new SecretManager(directories).readSecret(key, id);
 }
 
 /**
@@ -636,4 +638,8 @@ router.post('/rename', (request, response) => {
         console.error('Error renaming secret:', error);
         return response.sendStatus(500);
     }
+});
+
+router.post('/settings', async (_request, response) => {
+    return response.send({ allowKeysExposure });
 });

@@ -435,6 +435,7 @@ export class ConnectionManagerRequestService {
                         max_tokens: maxTokens,
                         model: profile.model,
                         chat_completion_source: selectedApiMap.source,
+                        secret_id: profile['secret-id'],
                         custom_url: profile['api-url'],
                         vertexai_region: profile['api-url'],
                         zai_endpoint: profile['api-url'],
@@ -459,6 +460,7 @@ export class ConnectionManagerRequestService {
                         model: profile.model,
                         api_type: selectedApiMap.type,
                         api_server: profile['api-url'],
+                        secret_id: profile['secret-id'],
                         ...overridePayload,
                     }, {
                         instructName: includeInstruct ? profile.instruct : undefined,

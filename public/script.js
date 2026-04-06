@@ -286,6 +286,7 @@ import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
 import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
+import { canJumpToSwipeForMessage, canOpenSwipePickerForMessage, initSwipePicker } from './scripts/swipe-picker.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -776,6 +777,7 @@ async function firstLoadInit() {
     initDataMaid();
     initItemizedPrompts();
     initAccessibility();
+    initSwipePicker();
     addDebugFunctions();
     doDailyExtensionUpdatesCheck();
     await eventSource.emit(event_types.APP_INITIALIZED);
@@ -2905,6 +2907,11 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
 export function substituteParams(content, options = {}) {
     if (!content) return '';
 
+    if (typeof content !== 'string') {
+        console.warn('substituteParams: content will be coerced to string', content);
+        content = String(content);
+    }
+
     // Handle legacy signature calls to substituteParams
     // We'll simply re-route them to a temporary legacy function. In the future, we'll remove this and cleanly build the options object ourselves.
     const isOptionsObject = options && typeof options === 'object' && !Array.isArray(options);
@@ -3662,7 +3669,16 @@ class StreamingProcessor {
         }
     }
 
-    async onFinishStreaming(messageId, text) {
+    /**
+     * Finalizes an intermediary message after generation is complete, or a tool call is performed.
+     * Performs essential message processing (code blocks, reasoning, swipes, attachments, events)
+     * without the heavier finish operations (UI unlock - optional, auto-swipe, sound, save chat).
+     * @param {number} messageId - The message ID to finalize.
+     * @param {string} text - The message text.
+     * @param {Object} options - Additional options for finalization.
+     * @param {boolean} options.unlockUI - Whether to unlock the generation UI.
+     */
+    async finalizeIntermediaryMessage(messageId, text, { unlockUI = true }) {
         await this.onProgressStreaming(messageId, text, true);
         const messageElement = chatElement.find(`.mes[mesid="${messageId}"]`);
         const message = chat[messageId];
@@ -3701,7 +3717,9 @@ class StreamingProcessor {
             message.extra.reasoning_signature = this.reasoningSignature;
         }
 
-        this.markUIGenStopped();
+        if (unlockUI) {
+            this.markUIGenStopped();
+        }
 
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId, this.type);
@@ -3711,6 +3729,10 @@ class StreamingProcessor {
         }
 
         updateSwipeCounter(messageId, { message, messageElement });
+    }
+
+    async onFinishStreaming(messageId, text) {
+        await this.finalizeIntermediaryMessage(messageId, text, { unlockUI: true });
 
         const isAborted = this.abortController.signal.aborted;
         if (!isAborted && power_user.auto_swipe && generatedTextFiltered(text)) {
@@ -3830,9 +3852,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        const message = api === 'openai'
-            ? { role: 'user', content: prompt.trim() }
-            : { role: 'system', content: prompt };
+        const message = { role: 'user', content: prompt.trim() };
         prompt = [message];
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
@@ -3859,7 +3879,12 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
+        systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
+        if (isInstruct && systemPrompt.length > 0 && !systemPrompt.endsWith('\n')) {
+            if (power_user.instruct.wrap && !power_user.instruct.story_string_suffix) {
+                systemPrompt += '\n';
+            }
+        }
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
@@ -5306,6 +5331,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 const hasToolCalls = ToolManager.hasToolCalls(streamingProcessor.toolCalls);
                 const shouldDeleteMessage = type !== 'swipe' && ['', '...'].includes(lastMessage?.mes) && !lastMessage?.extra?.reasoning && ['', '...'].includes(streamingProcessor?.result);
                 hasToolCalls && shouldDeleteMessage && await deleteLastMessage();
+                if (hasToolCalls && !shouldDeleteMessage) {
+                    await streamingProcessor.finalizeIntermediaryMessage(streamingProcessor.messageId, getMessage, { unlockUI: false });
+                }
                 const invocationResult = await ToolManager.invokeFunctionTools(streamingProcessor.toolCalls, {
                     reasoningText: streamingProcessor.reasoningHandler.reasoning,
                 });
@@ -5803,11 +5831,11 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
+        await saveChatConditional();
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
-        await saveChatConditional();
     }
 
     return message;
@@ -6829,20 +6857,24 @@ export function syncMesToSwipe(messageId = null) {
  * If the swipe data is invalid in some way, this function will exit out without doing anything.
  * @param {number?} [messageId=null] - The ID of the message to sync with the swipe data. If no ID is given, the last message is used.
  * @param {number?} [swipeId=null] - The ID of the swipe to sync. If no ID is given, the current swipe ID in the message object is used.
+ * @param {ChatMessage?} [targetMessage=null] - The message object to sync instead of resolving one from `chat`.
  * @returns {boolean} Whether the swipe data was successfully synced to the message
  */
-export function syncSwipeToMes(messageId = null, swipeId = null) {
-    if (!chat.length) {
+export function syncSwipeToMes(messageId = null, swipeId = null, targetMessage = null) {
+    if (!targetMessage && !chat.length) {
         return false;
     }
 
-    const targetMessageId = messageId ?? chat.length - 1;
-    if (targetMessageId >= chat.length || targetMessageId < 0) {
-        console.warn(`[syncSwipeToMes] Invalid message ID: ${messageId}`);
-        return false;
+    if (!targetMessage) {
+        const targetMessageId = messageId ?? chat.length - 1;
+        if (targetMessageId >= chat.length || targetMessageId < 0) {
+            console.warn(`[syncSwipeToMes] Invalid message ID: ${messageId}`);
+            return false;
+        }
+
+        targetMessage = chat[targetMessageId];
     }
 
-    const targetMessage = chat[targetMessageId];
     if (!targetMessage) {
         return false;
     }
@@ -7265,10 +7297,11 @@ export function saveChatDebounced() {
  * @param {object} [options.withMetadata] Additional metadata to save with the chat
  * @param {number} [options.mesId] The message ID to save the chat up to
  * @param {boolean} [options.force] Force the saving despite the integrity check result
+ * @param {ChatMessage[]} [options.chatData] Chat snapshot to save instead of the current in-memory chat
  *
  * @returns {Promise<void>}
  */
-export async function saveChat({ chatName, withMetadata, mesId, force = false } = {}) {
+export async function saveChat({ chatName, withMetadata, mesId, force = false, chatData = undefined } = {}) {
     if (selected_group) {
         toastr.error(t`Operation was aborted to prevent data corruption.`, t`saveChat called for a group chat`);
         throw new Error('saveChat called for a group chat');
@@ -7294,9 +7327,11 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false } 
 
     characters[this_chid].date_last_chat = Date.now();
 
-    const trimmedChat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
-        ? chat.slice(0, Number(mesId) + 1)
-        : chat.slice();
+    const trimmedChat = Array.isArray(chatData)
+        ? chatData
+        : (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+            ? chat.slice(0, Number(mesId) + 1)
+            : chat.slice();
 
     /** @type {ChatHeader} */
     const chatHeader = {
@@ -9001,7 +9036,22 @@ export async function updateSwipeCounter(mesId, { message = undefined, messageEl
 
     const swipeCounterText = formatSwipeCounter((message?.swipe_id + 1), message?.swipes?.length);
     const swipeCounter = messageElement.find('.swipes-counter');
-    swipeCounter.text(swipeCounterText).prop('hidden', false);
+    const swipePickerButton = messageElement.find('.mes_swipe_picker');
+    const canOpenSwipePicker = canOpenSwipePickerForMessage(mesId);
+    const canJumpToSwipe = canJumpToSwipeForMessage(mesId);
+
+    swipeCounter
+        .text(swipeCounterText)
+        .prop('hidden', false)
+        .toggleClass('swipe-picker-enabled', canOpenSwipePicker)
+        .toggleClass(INTERACTABLE_CONTROL_CLASS, canOpenSwipePicker)
+        .attr('role', canOpenSwipePicker ? 'button' : null)
+        .attr('title', canJumpToSwipe ? t`Click to jump to a swipe` : canOpenSwipePicker ? t`Click to view swipe history` : null);
+    swipePickerButton.toggle(canOpenSwipePicker);
+
+    if (!canOpenSwipePicker) {
+        swipeCounter.removeAttr('tabindex');
+    }
 }
 
 /**
@@ -9130,6 +9180,8 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
             const isLastSwipe = (message?.swipes?.length ?? 1) - 1 <= (message?.swipe_id ?? 0);
             const hasSwipes = (message?.swipes?.length > 1);
             const overswipe = getOverswipeBehavior(messageId, message);
+            const swipePickerButton = $(div).find('.mes_swipe_picker');
+            const canOpenSwipePicker = canOpenSwipePickerForMessage(messageId);
 
             // Chevrons should always be shown on pristine greetings: https://github.com/SillyTavern/SillyTavern/pull/4712#issuecomment-3557893373
             const pristineGreeting = overswipe == OVERSWIPE_BEHAVIOR.PRISTINE_GREETING;
@@ -9143,12 +9195,14 @@ export function refreshSwipeButtons(updateCounters = false, fade = true) {
 
             //If there's only one swipe, the left arrow should not be shown.
             div.classList.toggle('swipes_visible', hasSwipes || pristineGreeting);
+            swipePickerButton.toggle(canOpenSwipePicker);
 
             //updateSwipeCounter does not need to be awaited, It can run a bit later.
             if (updateCounters) updateSwipeCounter(messageId, { message, messageElement: $(div) });
         } else {
             //Hide all messages that are not swipeable.
             div.classList.remove('swipes_visible', 'last_swipe');
+            $(div).find('.mes_swipe_picker').toggle(canOpenSwipePickerForMessage(messageId));
         }
     });
 }
@@ -9182,9 +9236,12 @@ export function hideSwipeButtons({ hideCounters = false } = {}) {
  * @returns {Promise<number>|undefined} - The ID of the new swipe after deletion.
  */
 export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
-    if (swipeId && (isNaN(swipeId) || swipeId < 0)) {
-        toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
-        return;
+    if (swipeId != null) {
+        swipeId = Number(swipeId);
+        if (!Number.isInteger(swipeId) || swipeId < 0) {
+            toastr.warning(t`Invalid swipe ID.`);
+            return;
+        }
     }
 
     const message = chat[messageId];
@@ -9198,7 +9255,8 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
         return;
     }
 
-    swipeId = swipeId ?? message.swipe_id;
+    swipeId = Number(swipeId ?? message.swipe_id);
+    const currentSwipeId = clamp(Number(message.swipe_id ?? 0), 0, message.swipes.length - 1);
 
     if (swipeId < 0 || swipeId >= message.swipes.length) {
         toastr.warning(t`Invalid swipe ID: ${swipeId + 1}`);
@@ -9211,17 +9269,35 @@ export async function deleteSwipe(swipeId = null, messageId = chat.length - 1) {
         message.swipe_info.splice(swipeId, 1);
     }
 
-    // Select the next swipe, or the one before if it was the last one
-    const newSwipeId = Math.min(swipeId, message.swipes.length - 1);
+    let newSwipeId;
+    if (swipeId < currentSwipeId) {
+        newSwipeId = currentSwipeId - 1;
+    } else if (swipeId > currentSwipeId) {
+        newSwipeId = currentSwipeId;
+    } else {
+        // Select the next swipe, or the one before if it was the last one.
+        newSwipeId = Math.min(swipeId, message.swipes.length - 1);
+    }
 
     chat_metadata.tainted = true;
 
     messageId = Number(messageId);
     swipeId = Number(swipeId);
+    message.swipe_id = newSwipeId;
     await eventSource.emit(event_types.MESSAGE_SWIPE_DELETED, { messageId, swipeId, newSwipeId });
-    let direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
-    //Animate swipe and swap dispayed message.
-    await swipe(null, direction, { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+
+    if (swipeId === currentSwipeId) {
+        const direction = (swipeId <= newSwipeId) ? SWIPE_DIRECTION.RIGHT : SWIPE_DIRECTION.LEFT;
+        // Animate swipe and swap displayed message when the currently visible swipe was deleted.
+        await swipe(null, direction, { source: SWIPE_SOURCE.DELETE, repeated: false, forceMesId: messageId, forceSwipeId: newSwipeId });
+    } else {
+        await updateSwipeCounter(messageId);
+        if (messageId !== chat.length - 1) {
+            await updateSwipeCounter(chat.length - 1);
+        }
+        refreshSwipeButtons();
+        saveChatDebounced();
+    }
 
     await saveChatConditional();
 
@@ -9767,7 +9843,7 @@ function formatSwipeCounter(current, total) {
  * @param {SwipeEvent} event Event.
  * @param {SWIPE_DIRECTION} direction The direction to swipe.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {ChatMessage} [params.message=chat[chat.length - 1]] The chat message to swipe.
  * @param {number} [params.forceMesId] The message id to swipe.
@@ -9793,7 +9869,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
 
     const mesId = Number(forceMesId ?? event?.currentTarget?.closest('.mes')?.getAttribute('mesid') ?? messageIndex ?? chat.length - 1);
 
-    if ([SWIPE_SOURCE.DELETE, SWIPE_SOURCE.BACK, SWIPE_SOURCE.AUTO_SWIPE, SWIPE_SOURCE.SLASH_COMMAND].includes(source)) {
+    if ([SWIPE_SOURCE.DELETE, SWIPE_SOURCE.BACK, SWIPE_SOURCE.AUTO_SWIPE, SWIPE_SOURCE.SLASH_COMMAND, SWIPE_SOURCE.SWIPE_PICKER].includes(source)) {
         console.info(`The ${direction} swipe source on message #${mesId} is ${source}, Most checks have been bypassed. `);
     } else {
         //Only show an error if swipes are not hidden and a message is generating.
@@ -10253,7 +10329,7 @@ export async function swipe(event, direction, { source, repeated, message = chat
  * Handles the swipe to the left event.
  * @param {SwipeEvent} [event] Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source]  The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */
@@ -10266,7 +10342,7 @@ export async function swipe_left(event, { source, repeated, message } = {}) {
  * Handles the swipe to the right event.
  * @param {SwipeEvent} [event] Event.
  * @param {object} params Additional parameters.
- * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event. null, 'keyboard', 'auto_swipe', 'back' or 'delete'.
+ * @param {import('./scripts/constants.js').SWIPE_SOURCE} [params.source] The source of the swipe event.
  * @param {boolean} [params.repeated] Is the swipe event repeated.
  * @param {object} [params.message] The chat message to swipe.
  */

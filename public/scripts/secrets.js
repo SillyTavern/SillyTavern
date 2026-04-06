@@ -76,6 +76,7 @@ export const SECRET_KEYS = {
     POLLINATIONS: 'api_key_pollinations',
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
+    WORKERS_AI: 'api_key_workers_ai',
 };
 
 const FRIENDLY_NAMES = {
@@ -140,6 +141,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.POLLINATIONS]: 'Pollinations',
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
     [SECRET_KEYS.VOLCENGINE_ACCESS_KEY]: 'Volcengine Access Key',
+    [SECRET_KEYS.WORKERS_AI]: 'Cloudflare Workers AI',
 };
 
 const INPUT_MAP = {
@@ -184,6 +186,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
     [SECRET_KEYS.COMFY_RUNPOD]: '#api_key_comfy_runpod',
     [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
+    [SECRET_KEYS.WORKERS_AI]: '#api_key_workers_ai',
 };
 
 const getLabel = () => moment().format('L LT');
@@ -275,6 +278,29 @@ function getActiveSecretLabel(key) {
         return activeSecret.label || activeSecret.value || t`[No label]`;
     }
     return '';
+}
+
+/**
+ * Checks if secrets can be viewed based on server configuration.
+ * @returns {Promise<boolean|null>} A boolean value, or null if the request fails.
+ */
+export async function canViewSecrets() {
+    try {
+        const response = await fetch('/api/secrets/settings', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const data = await response.json();
+        return data?.allowKeysExposure === true;
+    } catch (error) {
+        console.error('Error getting secrets settings:', error);
+        return null;
+    }
 }
 
 async function viewSecrets() {
