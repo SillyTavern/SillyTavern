@@ -197,6 +197,7 @@ export const chat_completion_sources = {
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
+    BEDROCK: 'bedrock',
 };
 
 const character_names_behavior = {
@@ -281,6 +282,7 @@ const sensitiveFields = [
     'azure_base_url',
     'azure_deployment_name',
     'workers_ai_account_id',
+    'bedrock_region',
 ];
 
 /**
@@ -387,6 +389,8 @@ export const settingsToUpdate = {
     azure_deployment_name: ['#azure_deployment_name', 'azure_deployment_name', false, true],
     azure_api_version: ['#azure_api_version', 'azure_api_version', false, true],
     azure_openai_model: ['#azure_openai_model', 'azure_openai_model', false, true],
+    bedrock_model: ['#model_bedrock_select', 'bedrock_model', false, true],
+    bedrock_region: ['#bedrock_region', 'bedrock_region', false, true],
     extensions: ['#NULL_SELECTOR', 'extensions', false, false],
 };
 
@@ -449,6 +453,8 @@ const default_settings = {
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
     azure_openai_model: '',
+    bedrock_model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
+    bedrock_region: 'us-east-1',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1735,6 +1741,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.zai_model;
         case chat_completion_sources.WORKERS_AI:
             return settings.workers_ai_model;
+        case chat_completion_sources.BEDROCK:
+            return settings.bedrock_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -2722,6 +2730,19 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.top_k = Number(settings.top_k_openai);
         generate_data.use_sysprompt = settings.use_sysprompt;
         generate_data.stop = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
+        // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
+        if (type !== 'quiet' && !(type === 'continue' && settings.continue_prefill)) {
+            generate_data.assistant_prefill = type === 'impersonate'
+                ? substituteParams(settings.assistant_impersonation)
+                : substituteParams(settings.assistant_prefill);
+        }
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.BEDROCK) {
+        generate_data.bedrock_region = settings.bedrock_region;
+        generate_data.top_k = Number(settings.top_k_openai);
+        generate_data.use_sysprompt = settings.use_sysprompt;
+        generate_data.stop = getCustomStoppingStrings();
         // Don't add a prefill on quiet gens (summarization) and when using continue prefill.
         if (type !== 'quiet' && !(type === 'continue' && settings.continue_prefill)) {
             generate_data.assistant_prefill = type === 'impersonate'
@@ -4313,7 +4334,8 @@ async function getStatusOpen() {
         data.workers_ai_account_id = oai_settings.workers_ai_account_id;
     }
 
-    const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
+    const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check)
+        || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
         setOnlineStatus(t`Status check bypassed`);
     }
@@ -5357,6 +5379,15 @@ async function onModelChange() {
         oai_settings.cometapi_model = value;
     }
 
+    if ($(this).is('#model_bedrock_select')) {
+        if (!value) {
+            console.debug('Null Bedrock model selected. Ignoring.');
+            return;
+        }
+        console.log('Bedrock model changed to', value);
+        oai_settings.bedrock_model = value;
+    }
+
     if ($(this).is('#azure_openai_model')) {
         if (!value) {
             console.debug('Null Azure OpenAI model selected. Ignoring.');
@@ -5777,6 +5808,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
+        [chat_completion_sources.BEDROCK]: { key: SECRET_KEYS.BEDROCK, selector: '#api_key_bedrock', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5800,7 +5832,17 @@ async function onConnectButtonClick(e) {
             await writeSecret(config.key, apiKey);
         }
 
-        if (!secret_state[config.key] && (!config.proxy || !oai_settings.reverse_proxy) && !config.keyless) {
+        // For sources that don't require immediate validation, allow checking status even without input
+        const noValidateSources = [
+            chat_completion_sources.CLAUDE,
+            chat_completion_sources.AI21,
+            chat_completion_sources.VERTEXAI,
+            chat_completion_sources.PERPLEXITY,
+            chat_completion_sources.ZAI,
+        ];
+        const isNoValidateSource = noValidateSources.includes(oai_settings.chat_completion_source);
+
+        if (!secret_state[config.key] && (!config.proxy || !oai_settings.reverse_proxy) && !config.keyless && !isNoValidateSource) {
             console.log(`No secret key saved for ${oai_settings.chat_completion_source}`);
             return;
         }
@@ -5868,6 +5910,8 @@ function toggleChatCompletionForms() {
         $('#model_zai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
+        $('#model_bedrock_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -5897,8 +5941,24 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
-    if (main_api == 'openai') {
-        setOnlineStatus('no_connection');
+    // Check if this is an openai-type API (chat completion API)
+    // main_api might be undefined during initial load, so check chat_completion_source instead
+    const isOpenAITypeAPI = main_api == 'openai' || oai_settings.chat_completion_source !== undefined;
+
+    if (isOpenAITypeAPI) {
+        // For sources that don't require validation, skip setting 'no_connection' status
+        const noValidateSources = [
+            chat_completion_sources.CLAUDE,
+            chat_completion_sources.AI21,
+            chat_completion_sources.VERTEXAI,
+            chat_completion_sources.PERPLEXITY,
+            chat_completion_sources.ZAI,
+        ];
+
+        if (!noValidateSources.includes(oai_settings.chat_completion_source)) {
+            setOnlineStatus('no_connection');
+        }
+
         resultCheckStatus();
         $('#api_button_openai').trigger('click');
     }
@@ -7008,6 +7068,7 @@ export function initOpenAI() {
     $('#model_claude_select').on('change', onModelChange);
     $('#model_google_select').on('change', onModelChange);
     $('#model_vertexai_select').on('change', onModelChange);
+    $('#model_bedrock_select').on('change', onModelChange);
     $('#vertexai_auth_mode').on('change', onVertexAIAuthModeChange);
     $('#vertexai_region').on('input', function () {
         oai_settings.vertexai_region = String($(this).val());
@@ -7015,6 +7076,10 @@ export function initOpenAI() {
     });
     $('#vertexai_express_project_id').on('input', function () {
         oai_settings.vertexai_express_project_id = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#bedrock_region').on('input', function () {
+        oai_settings.bedrock_region = String($(this).val());
         saveSettingsDebounced();
     });
     $('#zai_endpoint').on('input', function () {
