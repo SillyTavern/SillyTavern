@@ -33,11 +33,11 @@ jobs:
       # Using the following workaround because currently GitHub Actions
       # does not support logical AND/OR operations on triggers
       # It's currently not possible to have `branches` under the `schedule` trigger
-      - name: Checkout the release branch (on release)
+      - name: Checkout the triggered branch (on release/push)
         if: ${{ github.event_name == 'release' || github.event_name == 'push' }}
         uses: actions/checkout@v4.1.2
         with:
-          ref: "release"
+          ref: ${{ github.ref }}
 
       - name: Checkout the staging branch
         if: ${{ github.event_name == 'schedule' }}
@@ -90,7 +90,7 @@ jobs:
         uses: docker/build-push-action@v5.3.0
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           file: Dockerfile
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
