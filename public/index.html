@@ -2892,6 +2892,7 @@
                                 <option value="ai21">AI21</option>
                                 <option value="aimlapi">AI/ML API</option>
                                 <option value="azure_openai">Azure OpenAI</option>
+                                <option value="bedrock">AWS Bedrock</option>
                                 <option value="chutes">Chutes</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
@@ -3166,6 +3167,83 @@
                                         <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022</option>
                                         <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                         <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </form>
+                        <form id="bedrock_form" data-source="bedrock" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="AWS Bedrock API Key">AWS Bedrock API Key</h4>
+                            <div>
+                                <span data-i18n="Get your API key from">Get your API key from </span> <a target="_blank" href="https://console.aws.amazon.com/bedrock/">AWS Bedrock Console</a>.
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_bedrock" name="api_key_bedrock" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_bedrock"></div>
+                            </div>
+                            <div data-for="api_key_bedrock" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="AWS Region">AWS Region</h4>
+                                <select id="bedrock_region">
+                                    <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+                                    <option value="us-west-2">US West (Oregon) - us-west-2</option>
+                                    <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+                                    <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+                                    <option value="eu-central-1">Europe (Frankfurt) - eu-central-1</option>
+                                    <option value="eu-west-1">Europe (Ireland) - eu-west-1</option>
+                                    <option value="eu-west-2">Europe (London) - eu-west-2</option>
+                                    <option value="eu-west-3">Europe (Paris) - eu-west-3</option>
+                                </select>
+                            </div>
+                            <div>
+                                <h4 data-i18n="Bedrock Model">Bedrock Model</h4>
+                                <select id="model_bedrock_select">
+                                    <optgroup label="Claude 4 (US Region)">
+                                        <option value="us.anthropic.claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                                        <option value="us.anthropic.claude-sonnet-4-5-20250929-v1:0">Claude Sonnet 4.5</option>
+                                        <option value="us.anthropic.claude-opus-4-6-v1">Claude Opus 4.6</option>
+                                        <option value="us.anthropic.claude-opus-4-5-20251101-v1:0">Claude Opus 4.5</option>
+                                        <option value="us.anthropic.claude-haiku-4-5-20251001-v1:0">Claude Haiku 4.5</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 4 (Global)">
+                                        <option value="global.anthropic.claude-sonnet-4-6">Claude Sonnet 4.6 (Global)</option>
+                                        <option value="global.anthropic.claude-sonnet-4-5-20250929-v1:0">Claude Sonnet 4.5 (Global)</option>
+                                        <option value="global.anthropic.claude-opus-4-6-v1">Claude Opus 4.6 (Global)</option>
+                                        <option value="global.anthropic.claude-opus-4-5-20251101-v1:0">Claude Opus 4.5 (Global)</option>
+                                        <option value="global.anthropic.claude-haiku-4-5-20251001-v1:0">Claude Haiku 4.5 (Global)</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 3.5">
+                                        <option value="us.anthropic.claude-3-5-haiku-20241022-v1:0">Claude 3.5 Haiku</option>
+                                        <option value="us.anthropic.claude-3-5-sonnet-20241022-v2:0">Claude 3.5 Sonnet v2</option>
+                                        <option value="us.anthropic.claude-3-5-sonnet-20240620-v1:0">Claude 3.5 Sonnet v1</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 3">
+                                        <option value="us.anthropic.claude-3-opus-20240229-v1:0">Claude 3 Opus</option>
+                                        <option value="us.anthropic.claude-3-sonnet-20240229-v1:0">Claude 3 Sonnet</option>
+                                        <option value="us.anthropic.claude-3-haiku-20240307-v1:0">Claude 3 Haiku</option>
+                                    </optgroup>
+                                    <optgroup label="Amazon Nova">
+                                        <option value="us.amazon.nova-pro-v1:0">Nova Pro</option>
+                                        <option value="us.amazon.nova-lite-v1:0">Nova Lite</option>
+                                        <option value="us.amazon.nova-micro-v1:0">Nova Micro</option>
+                                    </optgroup>
+                                    <optgroup label="Amazon Titan">
+                                        <option value="amazon.titan-text-premier-v1:0">Titan Text Premier</option>
+                                        <option value="amazon.titan-text-express-v1">Titan Text Express</option>
+                                        <option value="amazon.titan-text-lite-v1">Titan Text Lite</option>
+                                    </optgroup>
+                                    <optgroup label="Meta Llama">
+                                        <option value="us.meta.llama4-maverick-17b-instruct-v1:0">Llama 4 Maverick 17B</option>
+                                        <option value="us.meta.llama4-scout-17b-instruct-v1:0">Llama 4 Scout 17B</option>
+                                        <option value="us.meta.llama3-3-70b-instruct-v1:0">Llama 3.3 70B Instruct</option>
+                                        <option value="us.meta.llama3-2-90b-instruct-v1:0">Llama 3.2 90B Instruct</option>
+                                        <option value="us.meta.llama3-2-11b-instruct-v1:0">Llama 3.2 11B Instruct</option>
+                                        <option value="us.meta.llama3-2-3b-instruct-v1:0">Llama 3.2 3B Instruct</option>
+                                        <option value="us.meta.llama3-2-1b-instruct-v1:0">Llama 3.2 1B Instruct</option>
+                                        <option value="us.meta.llama3-1-405b-instruct-v1:0">Llama 3.1 405B Instruct</option>
+                                        <option value="us.meta.llama3-1-70b-instruct-v1:0">Llama 3.1 70B Instruct</option>
+                                        <option value="us.meta.llama3-1-8b-instruct-v1:0">Llama 3.1 8B Instruct</option>
                                     </optgroup>
                                 </select>
                             </div>
