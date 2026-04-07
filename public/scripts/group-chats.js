@@ -110,29 +110,6 @@ export {
 let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
 let hideMutedSprites = false;
-
-/**
- * @typedef {object} Group
- * @property {string} id - Unique group ID
- * @property {string} name - Group name
- * @property {string[]} members - Array of member avatar filenames
- * @property {string[]} disabled_members - Array of disabled member avatar filenames
- * @property {string[]} chats - Array of chat IDs
- * @property {string} chat_id - Current active chat ID
- * @property {string} avatar_url - Group avatar URL
- * @property {boolean} allow_self_responses - Whether self responses are allowed
- * @property {boolean} hideMutedSprites - Whether muted sprites are hidden
- * @property {boolean} fav - Whether the group is favorited
- * @property {number} activation_strategy - Member activation strategy
- * @property {number} generation_mode - Character card generation mode
- * @property {number} auto_mode_delay - Auto mode delay in seconds
- * @property {string} generation_mode_join_prefix - Prefix for joined character cards
- * @property {string} generation_mode_join_suffix - Suffix for joined character cards
- * @property {number} date_last_chat - Timestamp of last chat
- * @property {boolean} response_control_enabled - Whether response control is enabled
- * @property {number} min_responses - Minimum number of responses per trigger
- * @property {number} max_responses - Maximum number of responses per trigger
- */
  
 /** @type {Group[]} */
 let groups = [];

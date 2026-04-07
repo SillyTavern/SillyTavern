@@ -40,6 +40,9 @@ declare global {
         hideMutedSprites?: boolean;
         fav?: boolean;
         date_last_chat?: MessageTimestamp;
+		response_control_enabled?: boolean;
+		min_responses?: number;
+		max_responses?: number;
     }
 
     interface ChatFile extends Array<ChatMessage> {
