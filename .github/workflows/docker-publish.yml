@@ -13,6 +13,7 @@ on:
     # Temporary workaround
     branches:
       - release
+      - feat/role-based-permissions
 
 env:
   # This should allow creation of docker images even in forked repositories
@@ -21,7 +22,6 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'SillyTavern/SillyTavern'
     runs-on: ubuntu-latest
 
     steps:
@@ -51,7 +51,10 @@ jobs:
       # Otherwise the action triggered by schedule always has ref_name = release
       - name: Get the current branch name
         run: |
-          echo "BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)" >> ${GITHUB_ENV}
+          BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "BRANCH_NAME=${BRANCH}" >> ${GITHUB_ENV}
+          # Docker tags cannot contain '/' — replace with '-'
+          echo "BRANCH_TAG=${BRANCH//\//-}" >> ${GITHUB_ENV}
 
       # Setting up QEMU for multi-arch image build
       - name: Set up QEMU
@@ -69,7 +72,7 @@ jobs:
           # Branch name tag if the workflow is triggered by a push
           # Latest tag if the branch is release and the workflow is triggered by a push
           tags: |
-            ${{ github.event_name == 'release' && github.ref_name || env.BRANCH_NAME }}
+            ${{ github.event_name == 'release' && github.ref_name || env.BRANCH_TAG }}
             ${{ github.event_name == 'push' && env.BRANCH_NAME == 'release' && 'latest' || '' }}
 
       # Login into package repository as the person who created the release
