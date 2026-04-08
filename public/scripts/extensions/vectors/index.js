@@ -128,7 +128,6 @@ const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
  * @property {string} selectId - The ID of the select element (without #)
  * @property {string} [valueProperty='id'] - Property name for the option value
  * @property {string} [textProperty] - Property name for the option text. Falls back to valueProperty
- * @property {boolean} [omitContentType] - Whether to omit the content type header
  * @property {() => object} [getBody] - Function returning the request body
  * @property {(models: any[]) => any[]} [filter] - Optional post-fetch filter for models
  */
@@ -141,21 +140,18 @@ const remoteEmbeddingEndpoints = {
         selectId: 'vectors_chutes_model',
         valueProperty: 'slug',
         textProperty: 'name',
-        omitContentType: true,
     },
     nanogpt: {
         url: '/api/openai/nanogpt/models/embedding',
         settingsKey: 'nanogpt_model',
         selectId: 'vectors_nanogpt_model',
         textProperty: 'name',
-        omitContentType: true,
     },
     electronhub: {
         url: '/api/openai/electronhub/models',
         settingsKey: 'electronhub_model',
         selectId: 'vectors_electronhub_model',
         textProperty: 'name',
-        omitContentType: true,
         filter: models => models.filter(m => Array.isArray(m?.endpoints) && m.endpoints.includes('/v1/embeddings')),
     },
     openrouter: {
@@ -163,7 +159,6 @@ const remoteEmbeddingEndpoints = {
         settingsKey: 'openrouter_model',
         selectId: 'vectors_openrouter_model',
         textProperty: 'name',
-        omitContentType: true,
     },
     siliconflow: {
         url: '/api/openai/siliconflow/models/embedding',
@@ -1243,7 +1238,7 @@ async function loadRemoteEmbeddingModels(source) {
         return;
     }
 
-    const { url, settingsKey, selectId, omitContentType, getBody, filter } = config;
+    const { url, settingsKey, selectId, getBody, filter } = config;
     const valueProperty = config.valueProperty || 'id';
     const textProperty = config.textProperty;
 
@@ -1269,15 +1264,14 @@ async function loadRemoteEmbeddingModels(source) {
     }
 
     try {
+        const body = typeof getBody === 'function' ? getBody() : {};
+
         /** @type {RequestInit} */
         const fetchOptions = {
             method: 'POST',
-            headers: getRequestHeaders(omitContentType ? { omitContentType: true } : undefined),
+            headers: getRequestHeaders(),
+            body: JSON.stringify(body || {}),
         };
-
-        if (getBody) {
-            fetchOptions.body = JSON.stringify(getBody());
-        }
 
         const response = await fetch(url, fetchOptions);
         if (!response.ok) {
