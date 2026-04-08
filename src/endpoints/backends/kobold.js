@@ -99,7 +99,7 @@ router.post('/generate', async function (request, response_generate) {
 
             if (request.body.streaming) {
                 // Pipe remote SSE stream to Express response
-                await forwardFetchResponse(response, response_generate);
+                forwardFetchResponse(response, response_generate);
                 return;
             } else {
                 if (!response.ok) {

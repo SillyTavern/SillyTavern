@@ -53,30 +53,7 @@ export const CONTENT_TYPES = {
     QUICK_REPLIES: 'quick_replies',
     SYSPROMPT: 'sysprompt',
     REASONING: 'reasoning',
-    ERROR_PAGE: 'error_page',
-    STYLESHEET: 'stylesheet',
 };
-
-/**
- * @enum {string}
- */
-export const CONTENT_SCOPE = {
-    USER: 'user',
-    GLOBAL: 'global',
-};
-
-/**
- * Gets the scope of a content type.
- * @param {CONTENT_TYPES} type Content type
- * @returns {CONTENT_SCOPE} Resolved content scope
- */
-function getScopeByType(type) {
-    const globalTypes = [
-        CONTENT_TYPES.ERROR_PAGE,
-        CONTENT_TYPES.STYLESHEET,
-    ];
-    return globalTypes.includes(type) ? CONTENT_SCOPE.GLOBAL : CONTENT_SCOPE.USER;
-}
 
 /**
  * Gets the default presets from the content directory.
@@ -85,13 +62,13 @@ function getScopeByType(type) {
  */
 export function getDefaultPresets(directories) {
     try {
-        const contentIndex = getContentIndex(CONTENT_SCOPE.USER);
+        const contentIndex = getContentIndex();
         const presets = [];
 
         for (const contentItem of contentIndex) {
             if (contentItem.type.endsWith('_preset') || ['instruct', 'context', 'sysprompt', 'reasoning'].includes(contentItem.type)) {
                 contentItem.name = path.parse(contentItem.filename).name;
-                contentItem.folder = getUserTargetByType(contentItem.type, directories);
+                contentItem.folder = getTargetByType(contentItem.type, directories);
                 presets.push(contentItem);
             }
         }
@@ -125,18 +102,24 @@ export function getDefaultPresetFile(filename) {
 }
 
 /**
- * Seeds content from a content index into a target location.
+ * Seeds content for a user.
  * @param {ContentItem[]} contentIndex Content index
- * @param {string} contentLogPath Path to the content log file
- * @param {(type: string) => string | null} resolveTarget Function to resolve the target directory for a content type
- * @param {string[]} [forceCategories] List of categories to force check (even if content check is skipped)
- * @returns {boolean} Whether any content was added
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
+ * @returns {Promise<boolean>} Whether any content was added
  */
-function seedContent(contentIndex, contentLogPath, resolveTarget, forceCategories) {
+async function seedContentForUser(contentIndex, directories, forceCategories) {
     let anyContentAdded = false;
+
+    if (!fs.existsSync(directories.root)) {
+        fs.mkdirSync(directories.root, { recursive: true });
+    }
+
+    const contentLogPath = path.join(directories.root, 'content.log');
     const contentLog = getContentLog(contentLogPath);
 
     for (const contentItem of contentIndex) {
+        // If the content item is already in the log, skip it
         if (contentLog.includes(contentItem.filename) && !forceCategories?.includes(contentItem.type)) {
             continue;
         }
@@ -153,7 +136,7 @@ function seedContent(contentIndex, contentLogPath, resolveTarget, forceCategorie
             continue;
         }
 
-        const contentTarget = resolveTarget(contentItem.type);
+        const contentTarget = getTargetByType(contentItem.type, directories);
 
         if (!contentTarget) {
             console.warn(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
@@ -169,7 +152,6 @@ function seedContent(contentIndex, contentLogPath, resolveTarget, forceCategorie
             continue;
         }
 
-        fs.mkdirSync(contentTarget, { recursive: true });
         fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
         setPermissionsSync(targetPath);
         console.info(`Content file ${contentItem.filename} copied to ${contentTarget}`);
@@ -178,32 +160,6 @@ function seedContent(contentIndex, contentLogPath, resolveTarget, forceCategorie
 
     writeFileAtomicSync(contentLogPath, contentLog.join('\n'));
     return anyContentAdded;
-}
-
-/**
- * Seeds content for a user.
- * @param {ContentItem[]} contentIndex Content index
- * @param {import('../users.js').UserDirectoryList} directories User directories
- * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
- * @returns {Promise<boolean>} Whether any content was added
- */
-async function seedContentForUser(contentIndex, directories, forceCategories) {
-    if (!fs.existsSync(directories.root)) {
-        fs.mkdirSync(directories.root, { recursive: true });
-    }
-
-    const contentLogPath = path.join(directories.root, 'content.log');
-    return seedContent(contentIndex, contentLogPath, (type) => getUserTargetByType(type, directories), forceCategories);
-}
-
-/**
- * Seeds global content that is not user-specific, such as error pages.
- * @param {ContentItem[]} contentIndex Content index
- * @returns {Promise<boolean>} Whether any content was added
- */
-async function seedGlobalContent(contentIndex) {
-    const contentLogPath = path.join(globalThis.DATA_ROOT, 'content.log');
-    return seedContent(contentIndex, contentLogPath, getGlobalTargetByType);
 }
 
 /**
@@ -219,19 +175,13 @@ export async function checkForNewContent(directoriesList, forceCategories = []) 
             return;
         }
 
-        const userContentIndex = getContentIndex(CONTENT_SCOPE.USER);
-        const globalContentIndex = getContentIndex(CONTENT_SCOPE.GLOBAL);
+        const contentIndex = getContentIndex();
         let anyContentAdded = false;
 
-        const globalSeedResult = await seedGlobalContent(globalContentIndex);
-        if (globalSeedResult) {
-            anyContentAdded = true;
-        }
-
         for (const directories of directoriesList) {
-            const userSeedResult = await seedContentForUser(userContentIndex, directories, forceCategories);
+            const seedResult = await seedContentForUser(contentIndex, directories, forceCategories);
 
-            if (userSeedResult) {
+            if (seedResult) {
                 anyContentAdded = true;
             }
         }
@@ -248,10 +198,9 @@ export async function checkForNewContent(directoriesList, forceCategories = []) 
 
 /**
  * Gets combined content index from the content and scaffold directories.
- * @param {CONTENT_SCOPE} scope Scope of content to get
  * @returns {ContentItem[]} Array of content index
  */
-function getContentIndex(scope = CONTENT_SCOPE.USER) {
+function getContentIndex() {
     const result = [];
 
     if (fs.existsSync(scaffoldIndexPath)) {
@@ -260,7 +209,6 @@ function getContentIndex(scope = CONTENT_SCOPE.USER) {
         if (Array.isArray(scaffoldIndex)) {
             scaffoldIndex.forEach((item) => {
                 item.folder = scaffoldDirectory;
-                item.scope = getScopeByType(item.type);
             });
             result.push(...scaffoldIndex);
         }
@@ -272,24 +220,22 @@ function getContentIndex(scope = CONTENT_SCOPE.USER) {
         if (Array.isArray(contentIndex)) {
             contentIndex.forEach((item) => {
                 item.folder = contentDirectory;
-                item.scope = getScopeByType(item.type);
             });
             result.push(...contentIndex);
         }
     }
 
-    return result.filter((item) => item.scope === scope);
+    return result;
 }
 
 /**
  * Gets content by type and format.
  * @param {string} type Type of content
  * @param {'json'|'string'|'raw'} format Format of content
- * @param {CONTENT_SCOPE} scope Scope of content to get
  * @returns {string[]|Buffer[]} Array of content
  */
-export function getContentOfType(type, format, scope = CONTENT_SCOPE.USER) {
-    const contentIndex = getContentIndex(scope);
+export function getContentOfType(type, format) {
+    const contentIndex = getContentIndex();
     const indexItems = contentIndex.filter((item) => item.type === type && item.folder);
     const files = [];
     for (const item of indexItems) {
@@ -323,7 +269,7 @@ export function getContentOfType(type, format, scope = CONTENT_SCOPE.USER) {
  * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {string | null} Target directory
  */
-export function getUserTargetByType(type, directories) {
+function getTargetByType(type, directories) {
     switch (type) {
         case CONTENT_TYPES.SETTINGS:
             return directories.root;
@@ -361,22 +307,6 @@ export function getUserTargetByType(type, directories) {
             return directories.sysprompt;
         case CONTENT_TYPES.REASONING:
             return directories.reasoning;
-        default:
-            return null;
-    }
-}
-
-/**
- * Gets the target directory for global content types.
- * @param {CONTENT_TYPES} type Content type
- * @returns {string | null} Target directory
- */
-export function getGlobalTargetByType(type) {
-    switch (type) {
-        case CONTENT_TYPES.ERROR_PAGE:
-            return path.join(globalThis.DATA_ROOT, '_errors');
-        case CONTENT_TYPES.STYLESHEET:
-            return path.join(globalThis.DATA_ROOT, '_css');
         default:
             return null;
     }

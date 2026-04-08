@@ -5,11 +5,10 @@ import { getConfigValue } from './util.js';
 /**
  * Gets the headers for the Mancer API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getMancerHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.MANCER, secretId);
+function getMancerHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.MANCER);
 
     return apiKey ? ({
         'X-API-KEY': apiKey,
@@ -20,11 +19,10 @@ function getMancerHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the TogetherAI API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getTogetherAIHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.TOGETHERAI, secretId);
+function getTogetherAIHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.TOGETHERAI);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -34,11 +32,10 @@ function getTogetherAIHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the InfermaticAI API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getInfermaticAIHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.INFERMATICAI, secretId);
+function getInfermaticAIHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.INFERMATICAI);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -48,11 +45,10 @@ function getInfermaticAIHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the DreamGen API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getDreamGenHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.DREAMGEN, secretId);
+function getDreamGenHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.DREAMGEN);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -62,11 +58,10 @@ function getDreamGenHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the OpenRouter API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getOpenRouterHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.OPENROUTER, secretId);
+function getOpenRouterHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.OPENROUTER);
     const baseHeaders = { ...OPENROUTER_HEADERS };
 
     return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
@@ -75,11 +70,10 @@ function getOpenRouterHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the vLLM API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getVllmHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.VLLM, secretId);
+function getVllmHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.VLLM);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -89,11 +83,10 @@ function getVllmHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the Aphrodite API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getAphroditeHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.APHRODITE, secretId);
+function getAphroditeHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.APHRODITE);
 
     return apiKey ? ({
         'X-API-KEY': apiKey,
@@ -104,11 +97,10 @@ function getAphroditeHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the Tabby API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getTabbyHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.TABBY, secretId);
+function getTabbyHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.TABBY);
 
     return apiKey ? ({
         'x-api-key': apiKey,
@@ -119,11 +111,10 @@ function getTabbyHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the LlamaCPP API.
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getLlamaCppHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.LLAMACPP, secretId);
+function getLlamaCppHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.LLAMACPP);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -132,12 +123,11 @@ function getLlamaCppHeaders(directories, secretId = null) {
 
 /**
  * Gets the headers for the Ooba API.
- * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
+ * @param {import('./users.js').UserDirectoryList} directories
  * @returns {object} Headers for the request
  */
-function getOobaHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.OOBA, secretId);
+function getOobaHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.OOBA);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -147,11 +137,10 @@ function getOobaHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the KoboldCpp API.
  * @param {import('./users.js').UserDirectoryList} directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getKoboldCppHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.KOBOLDCPP, secretId);
+function getKoboldCppHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.KOBOLDCPP);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -161,11 +150,10 @@ function getKoboldCppHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the Featherless API.
  * @param {import('./users.js').UserDirectoryList} directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getFeatherlessHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.FEATHERLESS, secretId);
+function getFeatherlessHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.FEATHERLESS);
     const baseHeaders = { ...FEATHERLESS_HEADERS };
 
     return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
@@ -174,11 +162,10 @@ function getFeatherlessHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the HuggingFace API.
  * @param {import('./users.js').UserDirectoryList} directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getHuggingFaceHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.HUGGINGFACE, secretId);
+function getHuggingFaceHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.HUGGINGFACE);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -188,11 +175,10 @@ function getHuggingFaceHeaders(directories, secretId = null) {
 /**
  * Gets the headers for the Generic text completion API.
  * @param {import('./users.js').UserDirectoryList} directories
- * @param {string|null} secretId Secret ID for the request (optional, used to determine which secret to use)
  * @returns {object} Headers for the request
  */
-function getGenericHeaders(directories, secretId = null) {
-    const apiKey = readSecret(directories, SECRET_KEYS.GENERIC, secretId);
+function getGenericHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.GENERIC);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -216,7 +202,7 @@ export function getOverrideHeaders(urlHost) {
  * @param {string|null} server API server for new request
  */
 export function setAdditionalHeaders(request, args, server) {
-    setAdditionalHeadersByType(args.headers, request.body.api_type, server, request.user.directories, request.body.secret_id);
+    setAdditionalHeadersByType(args.headers, request.body.api_type, server, request.user.directories);
 }
 
 /**
@@ -225,9 +211,8 @@ export function setAdditionalHeaders(request, args, server) {
  * @param {string} type API type
  * @param {string|null} server API server for new request
  * @param {import('./users.js').UserDirectoryList} directories User directories
- * @param {string|null} secretId Secret ID for the request (optional, used for some API types to determine which secret to use)
  */
-export function setAdditionalHeadersByType(requestHeaders, type, server, directories, secretId = null) {
+export function setAdditionalHeadersByType(requestHeaders, type, server, directories) {
     const headerGetters = {
         [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
         [TEXTGEN_TYPES.VLLM]: getVllmHeaders,
@@ -246,7 +231,7 @@ export function setAdditionalHeadersByType(requestHeaders, type, server, directo
     };
 
     const getHeaders = headerGetters[type];
-    const headers = getHeaders ? getHeaders(directories, secretId) : {};
+    const headers = getHeaders ? getHeaders(directories) : {};
 
     if (typeof server === 'string' && server.length > 0) {
         try {

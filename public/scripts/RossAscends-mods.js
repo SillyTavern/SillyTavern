@@ -2,6 +2,7 @@ import { DOMPurify, Bowser } from '../lib.js';
 
 import {
     characters,
+    event_types,
     online_status,
     main_api,
     is_send_press,
@@ -61,10 +62,37 @@ var connection_made = false;
 var retry_delay = 500;
 let counterNonce = Date.now();
 
-const observerConfig = { childList: true, subtree: true };
+const observerConfig = { childList: true, characterData: true, subtree: true };
 const countTokensDebounced = debounce(RA_CountCharTokens, debounce_timeout.relaxed);
 const countTokensShortDebounced = debounce(RA_CountCharTokens, debounce_timeout.short);
 const checkStatusDebounced = debounce(RA_checkOnlineStatus, debounce_timeout.short);
+
+function getVisibleApiStatusText() {
+    const statuses = $('.online_status_text:visible')
+        .map((_, element) => $(element).text().replace(/\s+/g, ' ').trim())
+        .get()
+        .filter(Boolean);
+
+    return statuses[0] || '';
+}
+
+function isComposerConnected() {
+    if (online_status !== undefined && online_status !== 'no_connection') {
+        return true;
+    }
+
+    const visibleStatus = getVisibleApiStatusText().toLowerCase();
+    if (!visibleStatus) {
+        return false;
+    }
+
+    const disconnectedStatuses = new Set([
+        'not connected...',
+        'no connection...',
+    ]);
+
+    return !disconnectedStatuses.has(visibleStatus);
+}
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
@@ -322,9 +350,10 @@ export async function favsToHotswap() {
 
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
-    if (online_status == 'no_connection') {
+    if (!isComposerConnected()) {
         const send_textarea = $('#send_textarea');
         send_textarea.attr('placeholder', send_textarea.attr('no_connection_text')); //Input bar placeholder tells users they are not connected
+        send_textarea.attr('aria-label', send_textarea.attr('no_connection_text'));
         $('#send_form').addClass('no-connection');
         $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
         $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
@@ -333,9 +362,10 @@ function RA_checkOnlineStatus() {
         $('#API-status-top').addClass('fa-plug-circle-exclamation redOverlayGlow');
         connection_made = false;
     } else {
-        if (online_status !== undefined && online_status !== 'no_connection') {
+        if (online_status !== undefined || getVisibleApiStatusText()) {
             const send_textarea = $('#send_textarea');
             send_textarea.attr('placeholder', send_textarea.attr('connected_text')); //on connect, placeholder tells user to type message
+            send_textarea.attr('aria-label', 'Message input');
             $('#send_form').removeClass('no-connection');
             $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
             $('#API-status-top').addClass('fa-plug');
@@ -407,7 +437,6 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
                     || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
                     || (secret_state[SECRET_KEYS.POLLINATIONS] && oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS)
-                    || (secret_state[SECRET_KEYS.WORKERS_AI] && oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
                 ) {
@@ -692,6 +721,7 @@ export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, deboun
 export function initRossMods() {
     // initial status check
     checkStatusDebounced();
+    eventSource.on(event_types.ONLINE_STATUS_CHANGED, () => checkStatusDebounced());
 
     if (power_user.auto_load_chat) {
         RA_autoloadchat();

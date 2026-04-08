@@ -5808,7 +5808,9 @@ export function openWorldInfoEditor(worldName) {
 
 /**
  * Assigns a lorebook to the current chat.
- * @param {Pick<JQuery.ClickEvent, 'shiftKey' | 'altKey'>} event Click event
+ * @param {Object} options - The options for assigning the lorebook.
+ * @param {boolean} options.shiftKey - Whether the Shift key is pressed.
+ * @param {boolean} options.altKey - Whether the Alt key is pressed.
  * @returns {Promise<void>}
  */
 export async function assignLorebookToChat({ shiftKey, altKey }) {

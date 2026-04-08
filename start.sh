@@ -10,7 +10,7 @@ fi
 
 echo "Installing Node Modules..."
 export NODE_ENV=production
-npm install --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev --ignore-scripts
+npm i --no-save --no-audit --no-fund --loglevel=error --no-progress --omit=dev
 
 echo "Entering SillyTavern..."
 node "server.js" "$@"

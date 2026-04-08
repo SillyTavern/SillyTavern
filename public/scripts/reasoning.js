@@ -134,7 +134,6 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.NANOGPT:
                 case chat_completion_sources.SILICONFLOW:
                 case chat_completion_sources.ZAI:
-                case chat_completion_sources.WORKERS_AI:
                 case chat_completion_sources.CUSTOM: {
                     return data?.choices?.[0]?.message?.reasoning_content
                         ?? data?.choices?.[0]?.message?.reasoning
@@ -1083,7 +1082,7 @@ function registerReasoningSlashCommands() {
         helpString: t`Collapse the reasoning block of a message or range of messages.`,
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
-            const details = getReasoningDetailsElements(value.toString());
+            const details = getReasoningDetailsElements(value);
             if (details) details.removeAttr('open');
             return '';
         },
@@ -1095,7 +1094,7 @@ function registerReasoningSlashCommands() {
         helpString: t`Expand the reasoning block of a message or range of messages.`,
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
-            const details = getReasoningDetailsElements(value.toString());
+            const details = getReasoningDetailsElements(value);
             if (details) details.attr('open', '');
             return '';
         },
@@ -1107,7 +1106,7 @@ function registerReasoningSlashCommands() {
         helpString: t`Toggle the reasoning block of a message or range of messages. Expanded blocks will be collapsed, and collapsed blocks will be expanded.`,
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
-            const details = getReasoningDetailsElements(value.toString());
+            const details = getReasoningDetailsElements(value);
             if (!details) return '';
             details.each(function () {
                 const $el = $(this);

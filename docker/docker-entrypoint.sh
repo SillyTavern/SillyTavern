@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Function to handle startup logic (Config check + init + Start)
+# Function to handle startup logic (Config check + Postinstall + Start)
 start_sillytavern() {
     local PREFIX="$1"
     shift # Remove the first argument (PREFIX) so $@ contains the rest
@@ -11,8 +11,8 @@ start_sillytavern() {
         $PREFIX cp "default/config.yaml" "config/config.yaml"
     fi
 
-    # Execute init script to auto-populate config.yaml with missing values
-    $PREFIX npm run init
+    # Execute postinstall to auto-populate config.yaml with missing values
+    $PREFIX npm run postinstall
 
     # Start the server
     exec $PREFIX node server.js --listen "$@"
