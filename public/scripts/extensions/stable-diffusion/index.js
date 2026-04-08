@@ -99,6 +99,7 @@ const sources = {
     google: 'google',
     zai: 'zai',
     openrouter: 'openrouter',
+    workersai: 'workersai',
 };
 const comfyTypes = {
     standard: 'standard',
@@ -357,6 +358,9 @@ const defaultSettings = {
     // Stability AI settings
     stability_style_preset: 'anime',
 
+    // Cloudflare Workers AI settings
+    cf_workers_account_id: '',
+
     // BFL API settings
     bfl_upsampling: false,
 
@@ -564,6 +568,7 @@ async function loadSettings() {
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
     $('#sd_google_duration').val(extension_settings.sd.google_duration);
+    $('#sd_cf_workers_account_id').val(extension_settings.sd.cf_workers_account_id);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1747,6 +1752,9 @@ async function loadSamplers() {
         case sources.openrouter:
             samplers = ['N/A'];
             break;
+        case sources.workersai:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1969,6 +1977,9 @@ async function loadModels() {
         case sources.openrouter:
             models = await loadOpenRouterModels();
             break;
+        case sources.workersai:
+            models = await loadWorkersAIImageModels();
+            break;
     }
 
     if (extension_settings.sd.source === sources.electronhub) {
@@ -2094,6 +2105,28 @@ async function loadXAIModels() {
         { value: 'grok-imagine-image', text: 'grok-imagine-image' },
         { value: 'grok-imagine-image-pro', text: 'grok-imagine-image-pro' },
     ];
+}
+
+async function loadWorkersAIImageModels() {
+    $('#sd_cf_workers_key').toggleClass('success', !!secret_state[SECRET_KEYS.WORKERS_AI]);
+
+    if (!secret_state[SECRET_KEYS.WORKERS_AI] || !extension_settings.sd.cf_workers_account_id) {
+        return [];
+    }
+
+    const result = await fetch('/api/sd/workersai/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            account_id: extension_settings.sd.cf_workers_account_id,
+        }),
+    });
+
+    if (result.ok) {
+        return await result.json();
+    }
+
+    return [];
 }
 
 async function loadPollinationsModels() {
@@ -2581,6 +2614,9 @@ async function loadSchedulers() {
         case sources.openrouter:
             schedulers = ['N/A'];
             break;
+        case sources.workersai:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2699,6 +2735,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.openrouter:
+            vaes = ['N/A'];
+            break;
+        case sources.workersai:
             vaes = ['N/A'];
             break;
     }
@@ -3403,6 +3442,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.openrouter:
                 result = await generateOpenRouterImage(prefixedPrompt, signal);
+                break;
+            case sources.workersai:
+                result = await generateWorkersAIImage(prefixedPrompt, negativePrompt, signal);
                 break;
         }
 
@@ -4719,6 +4761,33 @@ async function generateOpenRouterImage(prompt, signal) {
     throw new Error(text);
 }
 
+async function generateWorkersAIImage(prompt, negativePrompt, signal) {
+    const result = await fetch('/api/sd/workersai/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            steps: extension_settings.sd.steps,
+            scale: extension_settings.sd.scale,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+            account_id: extension_settings.sd.cf_workers_account_id,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: data?.format, data: data?.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
 async function onComfyOpenWorkflowEditorClick() {
     let workflow = await (await fetch('/api/sd/comfy/workflow', {
         method: 'POST',
@@ -5091,6 +5160,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.ZAI];
         case sources.openrouter:
             return secret_state[SECRET_KEYS.OPENROUTER];
+        case sources.workersai:
+            return !!extension_settings.sd.cf_workers_account_id && secret_state[SECRET_KEYS.WORKERS_AI];
         default:
             return false;
     }
@@ -5850,6 +5921,10 @@ jQuery(async () => {
         extension_settings.sd.google_duration = Number($(this).val());
         saveSettingsDebounced();
     });
+    $('#sd_cf_workers_account_id').on('input', function () {
+        extension_settings.sd.cf_workers_account_id = String($(this).val()).trim();
+        saveSettingsDebounced();
+    });
     $('#sd_electronhub_quality').on('change', function () {
         extension_settings.sd.electronhub_quality = String($(this).val());
         saveSettingsDebounced();
@@ -5893,6 +5968,7 @@ jQuery(async () => {
                 [sources.aimlapi]: SECRET_KEYS.AIMLAPI,
                 [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
                 [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
+                [sources.workersai]: SECRET_KEYS.WORKERS_AI,
             };
             const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);
             if (!shouldReloadOptions) {

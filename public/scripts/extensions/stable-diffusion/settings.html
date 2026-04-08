@@ -64,6 +64,7 @@
                 <option value="togetherai">TogetherAI</option>
                 <option value="xai">xAI (Grok)</option>
                 <option value="zai">Z.AI</option>
+                <option value="workersai">Cloudflare Workers AI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -373,6 +374,19 @@
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
                 </div>
+            </div>
+
+            <div data-sd-source="workersai">
+                <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare Workers AI</a>
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_cf_workers_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_workers_ai">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+                <label for="sd_cf_workers_account_id" data-i18n="Account ID">Account ID</label>
+                <input id="sd_cf_workers_account_id" class="text_pole" type="text" placeholder="Cloudflare Account ID" />
             </div>
 
             <div data-sd-source="google">
