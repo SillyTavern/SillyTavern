@@ -883,7 +883,9 @@ sdcpp.post('/generate', async (request, response) => {
             batch_size: request.body.batch_size,
             sampler_name: request.body.sampler_name,
             scheduler: request.body.scheduler,
-            clip_skip: request.body.clip_skip,
+            // sd.cpp produces blank images when clip_skip is 1, which is the
+            // default (no skipping). Only send clip_skip when it's > 1.
+            clip_skip: request.body.clip_skip > 1 ? request.body.clip_skip : undefined,
         };
 
         for (const [key, value] of Object.entries(payload)) {
