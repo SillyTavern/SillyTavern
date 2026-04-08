@@ -3965,7 +3965,25 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
         return;
     }
 
-    const confirmation = silent || await Popup.show.confirm(t`Delete the entry with UID: ${uid}?`, t`This action is irreversible!`);
+    const entry = data.entries[uid];
+    if (!entry) {
+        return false;
+    }
+
+    let previewText = '';
+    if (entry.comment && entry.comment.trim()) {
+        previewText = entry.comment.trim();
+    } else if (entry.content) {
+        const lines = entry.content.split(/\r?\n/).filter(line => line.trim());
+        previewText = lines.slice(0, 2).join('\n');
+    }
+
+    const popupHeader = t`Delete world info entry with UID: ${uid}?`;
+    const popupText = previewText
+        ? `<strong>${t`Entry`}:</strong><br>${previewText.replace(/\n/g, '<br>')}<br><br>${t`This action is irreversible!`}`
+        : t`This action is irreversible!`;
+
+    const confirmation = silent || await Popup.show.confirm(popupHeader, popupText);
     if (!confirmation) {
         return false;
     }
