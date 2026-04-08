@@ -68,6 +68,7 @@ export const enumIcons = {
     normal: '🟢',
     disabled: '❌',
     vectorized: '🔗',
+    tool: '🛠️',
 
     /**
      * Returns the appropriate state icon based on a boolean
@@ -89,6 +90,7 @@ export const enumIcons = {
         if (entry.constant) return enumIcons.constant;
         if (entry.disable) return enumIcons.disabled;
         if (entry.vectorized) return enumIcons.vectorized;
+        if (entry.tool) return enumIcons.tool;
         return enumIcons.normal;
     },
 

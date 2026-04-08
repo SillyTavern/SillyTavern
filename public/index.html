@@ -6761,6 +6761,22 @@
         <div id="entry_edit_template" class="template_element">
             <div class="world_entry_edit">
                 <div class="flex-container wide100p alignitemscenter">
+                    <div name="toolBlock" class="flex-container flexFlowColumn wide100p" style="display: none;">
+                        <div name="toolCallWarning" class="flex-container wide100p alignitemscenter" style="display: none;">
+                            <i class="fa-solid fa-triangle-exclamation warning"></i>
+                            <small data-i18n="Please use Chat Completion and turn on Function Calling to activate world info entries via tool call.">Please use Chat Completion and turn on Function Calling to activate world info entries via tool call.</small>
+                        </div>
+                        <div class="flex-container wide100p alignitemscenter">
+                            <div class="world_entry_form_control flex1">
+                                <small class="textAlignCenter" data-i18n="Tool Name">Tool Name</small>
+                                <input class="text_pole margin0" name="toolName" type="text" placeholder="Short tool identifier" data-i18n="[placeholder]Short tool identifier">
+                            </div>
+                            <div class="world_entry_form_control flex2">
+                                <small class="textAlignCenter" data-i18n="Tool Description">Tool Description</small>
+                                <input class="text_pole margin0" name="toolDescription" type="text" placeholder="Description for the AI" data-i18n="[placeholder]Description for the AI">
+                            </div>
+                        </div>
+                    </div>
                     <div name="keywordsAndLogicBlock" class="flex-container wide100p alignitemscenter">
                         <div class="world_entry_form_control keyprimary flex1">
                             <small class="displayNone">
@@ -7106,10 +7122,11 @@
                                             <textarea class="text_pole" rows="1" name="comment" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                         </div>
                                         <!-- <span class="world_entry_form_position_value"></span> -->
-                                        <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized" name="entryStateSelector" class="text_pole widthNatural margin0">
+                                        <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal🔗 Vectorized🛠️ Tool" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;🔗 Vectorized&#13;🛠️ Tool" name="entryStateSelector" class="text_pole widthNatural margin0">
                                             <option value="constant" title="Constant" data-i18n="[title]WI_Entry_Status_Constant">🔵</option>
                                             <option value="normal" title="Normal" data-i18n="[title]WI_Entry_Status_Normal">🟢</option>
                                             <option value="vectorized" title="Vectorized" data-i18n="[title]WI_Entry_Status_Vectorized">🔗</option>
+                                            <option value="tool" title="Tool" data-i18n="[title]WI_Entry_Status_Tool">🛠️</option>
                                         </select>
                                     </div>
                                     <div class="WIEnteryHeaderControls flex-container">

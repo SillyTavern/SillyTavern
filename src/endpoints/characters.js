@@ -701,6 +701,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 automation_id: entry.automationId ?? '',
                 role: entry.role ?? 0,
                 vectorized: entry.vectorized ?? false,
+                tool: entry.tool ?? false,
                 sticky: entry.sticky ?? null,
                 cooldown: entry.cooldown ?? null,
                 delay: entry.delay ?? null,

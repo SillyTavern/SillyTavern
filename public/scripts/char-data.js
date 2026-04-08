@@ -32,6 +32,7 @@
  * @property {string} automation_id - An identifier used for automation purposes related to the extension.
  * @property {number} role - The specific function or purpose of the extension.
  * @property {boolean} vectorized - Indicates if the extension is optimized for vectorized processing.
+ * @property {boolean} tool - Indicates if the entry should be loaded via tool call.
  * @property {number} display_index - The order in which the extension should be displayed for user interfaces.
  * @property {boolean} match_persona_description - Wether to match against the persona description.
  * @property {boolean} match_character_description - Wether to match against the persona description.

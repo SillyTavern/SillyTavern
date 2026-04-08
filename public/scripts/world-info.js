@@ -23,6 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
+import { ToolManager } from './tool-calling.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -882,6 +883,59 @@ export const wi_anchor_position = {
 export const worldInfoCache = new StructuredCloneMap({ cloneOnGet: true, cloneOnSet: false });
 
 /**
+ * Registers or unregisters the activateWI function tool based on whether any tool entries exist.
+ */
+async function registerWIFunctionTool() {
+    if (!ToolManager.isToolCallingSupported()) {
+        ToolManager.unregisterFunctionTool('activateWI');
+        return;
+    }
+
+    const sortedEntries = await getSortedEntries();
+    const toolEntries = sortedEntries.filter(entry => entry.tool === true);
+
+    if (toolEntries.length === 0) {
+        ToolManager.unregisterFunctionTool('activateWI');
+        return;
+    }
+
+    const toolNames = toolEntries.map(e => e.toolName).filter(Boolean);
+    const toolLines = toolEntries.map(e => `"${e.toolName}": ${e.toolDescription}`).join('\n');
+    const description = `This function loads further WI entries on demand. It accepts an array with one or more of the following strings:\n${toolLines}`;
+
+    ToolManager.registerFunctionTool({
+        name: 'activateWI',
+        displayName: 'Activate WI Entry',
+        description,
+        parameters: Object.freeze({
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                names: {
+                    type: 'array',
+                    description: 'Array of tool names to activate.',
+                    items: toolNames.length > 0
+                        ? { type: 'string', enum: toolNames }
+                        : { type: 'string' },
+                },
+            },
+            required: ['names'],
+        }),
+        action: async (/** @type {{ names: string[] }} */ { names }) => {
+            if (!Array.isArray(names) || names.length === 0) return 'No names provided.';
+            const entries = await getSortedEntries();
+            const active = entries.filter(entry => entry.tool === true && !entry.disable && names.includes(entry.toolName));
+            if (active.length === 0) return 'No matching WI tool entries found.';
+            for (const entry of active) {
+                WorldInfoBuffer.externalActivations.set(`${entry.world}.${entry.uid}`, entry);
+            }
+            return `Activated ${active.length} WI entr${active.length === 1 ? 'y' : 'ies'}.`;
+        },
+        formatMessage: () => '',
+    });
+}
+
+/**
  * Gets the world info based on chat messages.
  * @param {string[]} chat - The chat messages to scan, in reverse order.
  * @param {number} maxContext - The maximum context size of the generation.
@@ -896,6 +950,10 @@ export async function getWorldInfoPrompt(chat, maxContext, isDryRun, globalScanD
     worldInfoBefore = activatedWorldInfo.worldInfoBefore;
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
+
+    if (!isDryRun) {
+        registerWIFunctionTool();
+    }
 
     if (!isDryRun && activatedWorldInfo.allActivatedEntries && activatedWorldInfo.allActivatedEntries.size > 0) {
         const arg = Array.from(activatedWorldInfo.allActivatedEntries.values());
@@ -2634,6 +2692,9 @@ export const originalWIDataKeyMap = {
     'scanDepth': 'extensions.scan_depth',
     'automationId': 'extensions.automation_id',
     'vectorized': 'extensions.vectorized',
+    'tool': 'extensions.tool',
+    'toolName': 'extensions.tool_name',
+    'toolDescription': 'extensions.tool_description',
     'groupOverride': 'extensions.group_override',
     'groupWeight': 'extensions.group_weight',
     'sticky': 'extensions.sticky',
@@ -3194,7 +3255,7 @@ function handleNumberInputHelper({ inputElem, entry, entryKey, data, name, min, 
 }
 
 /**
- * Helper to handle tri-state selector for constant/normal/vectorized.
+ * Helper to handle quad-state selector for constant/normal/vectorized/tool.
  * @param {object} params - Parameters for handling the entry state selector.
  * @param {JQuery<HTMLElement>} params.entryStateSelector - The select element for entry state.
  * @param {object} params.entry - The entry object containing the state.
@@ -3213,25 +3274,39 @@ function handleEntryStateSelectorHelper({ entryStateSelector, entry, data, name 
             case 'constant':
                 data.entries[uid].constant = true;
                 data.entries[uid].vectorized = false;
+                data.entries[uid].tool = false;
                 setWIOriginalDataValue(data, uid, 'constant', true);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
+                setWIOriginalDataValue(data, uid, 'extensions.tool', false);
                 break;
             case 'normal':
                 data.entries[uid].constant = false;
                 data.entries[uid].vectorized = false;
+                data.entries[uid].tool = false;
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
+                setWIOriginalDataValue(data, uid, 'extensions.tool', false);
                 break;
             case 'vectorized':
                 data.entries[uid].constant = false;
                 data.entries[uid].vectorized = true;
+                data.entries[uid].tool = false;
                 setWIOriginalDataValue(data, uid, 'constant', false);
                 setWIOriginalDataValue(data, uid, 'extensions.vectorized', true);
+                setWIOriginalDataValue(data, uid, 'extensions.tool', false);
+                break;
+            case 'tool':
+                data.entries[uid].constant = false;
+                data.entries[uid].vectorized = false;
+                data.entries[uid].tool = true;
+                setWIOriginalDataValue(data, uid, 'constant', false);
+                setWIOriginalDataValue(data, uid, 'extensions.vectorized', false);
+                setWIOriginalDataValue(data, uid, 'extensions.tool', true);
                 break;
         }
         !noSave && await saveWorldInfo(name, data);
     });
-    const entryState = () => entry.constant === true ? 'constant' : entry.vectorized === true ? 'vectorized' : 'normal';
+    const entryState = () => entry.constant === true ? 'constant' : entry.tool === true ? 'tool' : entry.vectorized === true ? 'vectorized' : 'normal';
     entryStateSelector.find(`option[value=${entryState()}]`).prop('selected', true).trigger('input', { noSave: true });
 }
 
@@ -3746,6 +3821,44 @@ export async function getWorldEntry(name, data, entry) {
         automationIdInput.val(entry.automationId ?? '').trigger('input', { noSave: true });
         setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
 
+        // Tool Name
+        const toolNameInput = editTemplate.find('input[name="toolName"]');
+        toolNameInput.data('uid', entry.uid);
+        toolNameInput.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].toolName = value;
+            setWIOriginalDataValue(data, uid, 'extensions.tool_name', data.entries[uid].toolName);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        toolNameInput.val(entry.toolName ?? '').trigger('input', { noSave: true });
+
+        // Tool Description
+        const toolDescriptionInput = editTemplate.find('input[name="toolDescription"]');
+        toolDescriptionInput.data('uid', entry.uid);
+        toolDescriptionInput.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).val();
+            data.entries[uid].toolDescription = value;
+            setWIOriginalDataValue(data, uid, 'extensions.tool_description', data.entries[uid].toolDescription);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        toolDescriptionInput.val(entry.toolDescription ?? '').trigger('input', { noSave: true });
+
+        // Show/hide toolBlock based on entry state
+        const toolBlock = editTemplate.find('div[name="toolBlock"]');
+        const toolCallWarning = toolBlock.find('div[name="toolCallWarning"]');
+        const updateToolBlock = (/** @type {boolean} */ show) => {
+            toolBlock.toggle(show);
+            if (show) {
+                toolCallWarning.toggle(!ToolManager.isToolCallingSupported());
+            }
+        };
+        updateToolBlock(/** @type {any} */ (entry).tool === true);
+        headerTemplate.find('select[name="entryStateSelector"]').on('input.toolBlock', function () {
+            updateToolBlock($(this).val() === 'tool');
+        });
+
         // Generation Type Triggers
         const generationTypeTriggers = editTemplate.find('select[name="triggers"]');
         generationTypeTriggers.data('uid', entry.uid);
@@ -3981,6 +4094,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
  *
  * @type {{[key: string]: WIEntryFieldDefinition}}
  */
+
 export const newWorldInfoEntryDefinition = {
     key: { default: [], type: 'array' },
     keysecondary: { default: [], type: 'array' },
@@ -3988,6 +4102,7 @@ export const newWorldInfoEntryDefinition = {
     content: { default: '', type: 'string' },
     constant: { default: false, type: 'boolean' },
     vectorized: { default: false, type: 'boolean' },
+    tool: { default: false, type: 'boolean' },
     selective: { default: true, type: 'boolean' },
     selectiveLogic: { default: world_info_logic.AND_ANY, type: 'enum' },
     addMemo: { default: false, type: 'boolean' },
@@ -4016,6 +4131,8 @@ export const newWorldInfoEntryDefinition = {
     matchWholeWords: { default: null, type: 'boolean?' },
     useGroupScoring: { default: null, type: 'boolean?' },
     automationId: { default: '', type: 'string' },
+    toolName: { default: '', type: 'string' },
+    toolDescription: { default: '', type: 'string' },
     role: { default: 0, type: 'enum' },
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
@@ -5351,6 +5468,7 @@ function convertAgnaiMemoryBook(inputObj) {
             constant: false,
             selective: false,
             vectorized: false,
+            tool: false,
             selectiveLogic: world_info_logic.AND_ANY,
             order: entry.weight,
             position: 0,
@@ -5396,6 +5514,7 @@ function convertRisuLorebook(inputObj) {
             constant: entry.alwaysActive,
             selective: entry.selective,
             vectorized: false,
+            tool: false,
             selectiveLogic: world_info_logic.AND_ANY,
             order: entry.insertorder,
             position: world_info_position.before,
@@ -5446,6 +5565,7 @@ function convertNovelLorebook(inputObj) {
             constant: false,
             selective: false,
             vectorized: false,
+            tool: false,
             selectiveLogic: world_info_logic.AND_ANY,
             order: entry.contextConfig?.budgetPriority ?? 0,
             position: 0,
@@ -5518,6 +5638,10 @@ export function convertCharacterBook(characterBook) {
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
             vectorized: entry.extensions?.vectorized ?? false,
+            tool: entry.extensions?.tool ?? false,
+            toolName: entry.extensions?.tool_name ?? '',
+            toolDescription: entry.extensions?.tool_description ?? '',
+                        //TODO: Add new attribute here
             sticky: entry.extensions?.sticky ?? null,
             cooldown: entry.extensions?.cooldown ?? null,
             delay: entry.extensions?.delay ?? null,
