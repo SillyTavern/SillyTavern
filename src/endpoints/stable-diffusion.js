@@ -848,6 +848,24 @@ sdcpp.post('/ping', async (request, response) => {
     }
 });
 
+sdcpp.post('/models', async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = url.pathname.replace(/\/$/, '') + '/v1/models';
+
+        const result = await fetch(url);
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 sdcpp.post('/generate', async (request, response) => {
     try {
         const url = new URL(request.body.url);

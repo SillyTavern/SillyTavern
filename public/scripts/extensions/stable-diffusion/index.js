@@ -294,7 +294,6 @@ const defaultSettings = {
 
     // stable-diffusion.cpp settings
     sdcpp_url: 'http://127.0.0.1:1234',
-    sdcpp_model: '',
 
     vlad_url: 'http://localhost:7860',
     vlad_auth: '',
@@ -535,7 +534,6 @@ async function loadSettings() {
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_sdcpp_url').val(extension_settings.sd.sdcpp_url);
-    $('#sd_sdcpp_model').val(extension_settings.sd.sdcpp_model);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
     $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
@@ -1265,11 +1263,7 @@ function onSdcppUrlInput() {
     saveSettingsDebounced();
 }
 
-function onSdcppModelInput() {
-    extension_settings.sd.sdcpp_model = $('#sd_sdcpp_model').val();
-    extension_settings.sd.model = extension_settings.sd.sdcpp_model;
-    saveSettingsDebounced();
-}
+
 
 function onVladUrlInput() {
     extension_settings.sd.vlad_url = $('#sd_vlad_url').val();
@@ -1824,11 +1818,31 @@ async function loadAutoSamplers() {
 }
 
 async function loadSdcppModels() {
-    // sd.cpp's /sdapi/v1/sd-models endpoint returns dummy data, so we allow the user
-    // to type a model name. This is primarily useful for proxy servers like llama-swap
-    // that use the model field to route requests to the correct backend.
-    const currentModel = extension_settings.sd.sdcpp_model || '';
-    return currentModel ? [{ value: currentModel, text: currentModel }] : [{ value: '', text: 'N/A' }];
+    if (!extension_settings.sd.sdcpp_url) {
+        return [{ value: '', text: 'N/A' }];
+    }
+
+    try {
+        const result = await fetch('/api/sd/sdcpp/models', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url }),
+        });
+
+        if (!result.ok) {
+            return [{ value: '', text: 'N/A' }];
+        }
+
+        const data = await result.json();
+
+        if (data?.data?.length > 0) {
+            return data.data.map(model => ({ value: model.id, text: model.name || model.id }));
+        }
+    } catch (error) {
+        console.error('Failed to load sd.cpp models:', error);
+    }
+
+    return [{ value: '', text: 'N/A' }];
 }
 
 async function loadSdcppSamplers() {
@@ -3874,7 +3888,7 @@ async function generateAutoImage(prompt, negativePrompt, signal) {
 async function generateSdcppImage(prompt, negativePrompt, signal) {
     const payload = {
         url: extension_settings.sd.sdcpp_url,
-        model: extension_settings.sd.sdcpp_model || undefined,
+        model: extension_settings.sd.model || undefined,
         prompt: prompt,
         negative_prompt: negativePrompt,
         steps: extension_settings.sd.steps,
@@ -5802,7 +5816,6 @@ jQuery(async () => {
     $('#sd_auto_auth').on('input', onAutoAuthInput);
     $('#sd_sdcpp_validate').on('click', validateSdcppUrl);
     $('#sd_sdcpp_url').on('input', onSdcppUrlInput);
-    $('#sd_sdcpp_model').on('input', onSdcppModelInput);
     $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
     $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
     $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
