@@ -3854,7 +3854,7 @@ export async function getWorldEntry(name, data, entry) {
                 toolCallWarning.toggle(!ToolManager.isToolCallingSupported());
             }
         };
-        updateToolBlock(/** @type {any} */ (entry).tool === true);
+        updateToolBlock(/** @type {any} */(entry).tool === true);
         headerTemplate.find('select[name="entryStateSelector"]').on('input.toolBlock', function () {
             updateToolBlock($(this).val() === 'tool');
         });
@@ -5641,7 +5641,6 @@ export function convertCharacterBook(characterBook) {
             tool: entry.extensions?.tool ?? false,
             toolName: entry.extensions?.tool_name ?? '',
             toolDescription: entry.extensions?.tool_description ?? '',
-                        //TODO: Add new attribute here
             sticky: entry.extensions?.sticky ?? null,
             cooldown: entry.extensions?.cooldown ?? null,
             delay: entry.extensions?.delay ?? null,
