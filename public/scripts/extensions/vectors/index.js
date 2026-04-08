@@ -389,6 +389,8 @@ async function synchronizeChat(batchSize = 5) {
                     return 'Extras API must provide an "embeddings" module.';
                 case 'webllm_not_supported':
                     return 'WebLLM extension is not installed or the model is not set.';
+                case 'account_id_missing':
+                    return 'Workers AI account ID is required. Save it in the "API Connections" panel.';
                 default:
                     return 'Check server console for more details';
             }
@@ -940,6 +942,7 @@ function throwIfSourceInvalid() {
         settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
         settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
         settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE] ||
+        settings.source === 'workers_ai' && !secret_state[SECRET_KEYS.WORKERS_AI] ||
         settings.source === 'siliconflow' && !secret_state[SECRET_KEYS.SILICONFLOW]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
@@ -967,6 +970,10 @@ function throwIfSourceInvalid() {
 
     if (settings.source === 'webllm' && (!isWebLlmSupported() || !settings.webllm_model)) {
         throw new Error('Vectors: WebLLM is not supported', { cause: 'webllm_not_supported' });
+    }
+
+    if (settings.source === 'workers_ai' && !oai_settings.workers_ai_account_id) {
+        throw new Error('Vectors: Workers AI account ID missing', { cause: 'account_id_missing' });
     }
 }
 
