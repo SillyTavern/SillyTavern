@@ -4,11 +4,15 @@ import _ from 'lodash';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { extractFileFromZipBuffer, extractFilesFromZipBuffer, normalizeZipEntryPath, ensureDirectory } from './util.js';
-import { DEFAULT_AVATAR_PATH } from './constants.js';
+import { DEFAULT_AVATAR_PATH, MEDIA_EXTENSIONS } from './constants.js';
 
 // 'embeded://' is intentional - RisuAI exports use this misspelling
 const CHARX_EMBEDDED_URI_PREFIXES = ['embeded://', 'embedded://', '__asset:'];
 const CHARX_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'apng', 'avif', 'bmp', 'jfif']);
+const CHARX_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'aiff']);
+const CHARX_VIDEO_EXTENSIONS = new Set(MEDIA_EXTENSIONS.filter(ext => !CHARX_IMAGE_EXTENSIONS.has(ext) && !CHARX_AUDIO_EXTENSIONS.has(ext)));
+const CHARX_JSON_EXTENSIONS = new Set(['json']);
+const CHARX_SUPPORTED_ASSET_EXTENSIONS = new Set([...MEDIA_EXTENSIONS, ...CHARX_JSON_EXTENSIONS]);
 const CHARX_SPRITE_TYPES = new Set(['emotion', 'expression']);
 const CHARX_BACKGROUND_TYPES = new Set(['background']);
 
@@ -141,21 +145,21 @@ export class CharXParser {
     }
 
     /**
-     * Strip trailing image extension from asset name if present.
-     * Handles cases like "image.png" with ext "png" → "image" (avoids "image.png.png")
+     * Strip trailing asset extension from asset name if present.
+     * Handles cases like "image.png" with ext "png" -> "image" (avoids "image.png.png")
      * @param {string} name - Asset name that may contain extension
      * @param {string} expectedExt - The expected extension (lowercase, no dot)
      * @returns {string} Name with trailing extension stripped if it matched
      */
-    stripTrailingImageExtension(name, expectedExt) {
+    stripTrailingAssetExtension(name, expectedExt) {
         if (!name || !expectedExt) return name;
         const lower = name.toLowerCase();
         // Check if name ends with the expected extension
         if (lower.endsWith(`.${expectedExt}`)) {
             return name.slice(0, -(expectedExt.length + 1));
         }
-        // Also check for any known image extension at the end
-        for (const ext of CHARX_IMAGE_EXTENSIONS) {
+        // Also check for any supported asset extension at the end
+        for (const ext of CHARX_SUPPORTED_ASSET_EXTENSIONS) {
             if (lower.endsWith(`.${ext}`)) {
                 return name.slice(0, -(ext.length + 1));
             }
@@ -237,6 +241,24 @@ export class CharXParser {
         return (sanitized || fallback).toLowerCase();
     }
 
+    /**
+     * Preserve the original creator-provided asset filename for non-sprite assets.
+     * @param {string} name - Original asset name
+     * @param {string} zipPath - Asset zip path
+     * @param {string} fallback - Fallback name if preservation fails
+     * @returns {string} Preserved filename base (without extension)
+     */
+    getCharXPreservedAssetBaseName(name, zipPath, fallback) {
+        const nameWithoutExt = this.stripTrailingAssetExtension(name, this.normalizeExtString(path.extname(zipPath || '')));
+        const sanitizedName = sanitize(String(nameWithoutExt ?? '').trim());
+        if (sanitizedName) {
+            return sanitizedName;
+        }
+
+        const zipBaseName = sanitize(path.parse(zipPath || '').name);
+        return zipBaseName || fallback;
+    }
+
     mapCharXAssetsForStorage(assets) {
         return assets.reduce((acc, asset) => {
             if (!asset?.zipPath) {
@@ -244,7 +266,7 @@ export class CharXParser {
             }
 
             const ext = (asset.ext || '').toLowerCase();
-            if (!CHARX_IMAGE_EXTENSIONS.has(ext)) {
+            if (!CHARX_SUPPORTED_ASSET_EXTENSIONS.has(ext)) {
                 return acc;
             }
 
@@ -253,24 +275,25 @@ export class CharXParser {
             }
 
             let storageCategory;
-            if (CHARX_SPRITE_TYPES.has(asset.type)) {
+            if (CHARX_SPRITE_TYPES.has(asset.type) && CHARX_IMAGE_EXTENSIONS.has(ext)) {
                 storageCategory = 'sprite';
-            } else if (CHARX_BACKGROUND_TYPES.has(asset.type)) {
+            } else if (CHARX_BACKGROUND_TYPES.has(asset.type) && (CHARX_IMAGE_EXTENSIONS.has(ext) || CHARX_VIDEO_EXTENSIONS.has(ext))) {
                 storageCategory = 'background';
             } else {
                 storageCategory = 'misc';
             }
 
-            // Use hyphens for sprites so ST's expression label extraction works correctly
-            // (sprites.js extracts label via regex that splits on dash or dot)
-            const useHyphens = storageCategory === 'sprite';
-            // Strip trailing extension from name if present (e.g., "image.png" with ext "png")
-            const nameWithoutExt = this.stripTrailingImageExtension(asset.name, ext);
             acc.push({
                 ...asset,
                 ext,
                 storageCategory,
-                baseName: this.getCharXAssetBaseName(nameWithoutExt, `${storageCategory}-${asset.order ?? 0}`, useHyphens),
+                baseName: storageCategory === 'sprite'
+                    ? this.getCharXAssetBaseName(
+                        this.stripTrailingAssetExtension(asset.name, ext),
+                        `${storageCategory}-${asset.order ?? 0}`,
+                        true,
+                    )
+                    : this.getCharXPreservedAssetBaseName(asset.name, asset.zipPath, `${storageCategory}-${asset.order ?? 0}`),
             });
 
             return acc;
@@ -315,6 +338,7 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
 
     let spritesPath = null;
     let miscPath = null;
+    let filesPath = null;
 
     const ensureSpritesPath = () => {
         if (spritesPath) {
@@ -339,6 +363,18 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
         }
         miscPath = candidate;
         return miscPath;
+    };
+
+    const ensureFilesPath = () => {
+        if (filesPath) {
+            return filesPath;
+        }
+        const candidate = path.join(directories.files, characterFolder);
+        if (!ensureDirectory(candidate)) {
+            return null;
+        }
+        filesPath = candidate;
+        return filesPath;
     };
 
     for (const asset of assets) {
@@ -381,12 +417,11 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
             }
 
             if (asset.storageCategory === 'misc') {
-                const miscDir = ensureMiscPath();
-                if (!miscDir) {
+                const targetDir = CHARX_IMAGE_EXTENSIONS.has(asset.ext) ? ensureMiscPath() : ensureFilesPath();
+                if (!targetDir) {
                     continue;
                 }
-                // Overwrite existing misc asset with same name
-                const filePath = path.join(miscDir, `${asset.baseName}.${asset.ext || 'png'}`);
+                const filePath = path.join(targetDir, `${asset.baseName}.${asset.ext || 'png'}`);
                 writeFileAtomicSync(filePath, buffer);
                 summary.misc += 1;
             }
