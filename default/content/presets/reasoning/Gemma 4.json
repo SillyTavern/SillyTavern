@@ -1,6 +1,6 @@
 {
     "name": "Gemma 4",
     "prefix": "<|channel>thought\n",
-    "suffix": "\n<channel|>",
+    "suffix": "<channel|>",
     "separator": "\n\n"
 }
