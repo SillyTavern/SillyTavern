@@ -6,7 +6,7 @@ import sanitize from 'sanitize-filename';
 
 import { invalidateThumbnail } from './thumbnails.js';
 import { thumbnailDimensions, readMetadataIndex, renameMetadata, removeMetadata, getOrGenerateMetadataBatch } from './image-metadata.js';
-import { getImages } from '../util.js';
+import { ensureDirectory, getImages } from '../util.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 
 export const router = express.Router();
@@ -152,5 +152,101 @@ router.post('/upload', async function (request, response) {
     } catch (err) {
         console.error(err);
         response.sendStatus(500);
+    }
+});
+
+/**
+ * Get the character backgrounds directory path.
+ * @param {import('express').Request} request
+ * @param {string} charName
+ * @returns {string}
+ */
+function getCharacterBackgroundDir(request, charName) {
+    return path.join(request.user.directories.characters, sanitize(charName), 'backgrounds');
+}
+
+/**
+ * Get the client-relative path prefix for character backgrounds.
+ * @param {string} charName
+ * @returns {string}
+ */
+function getCharacterBackgroundPathPrefix(charName) {
+    return path.join('characters', sanitize(charName), 'backgrounds').split(path.sep).join('/');
+}
+
+router.post('/character/all', function (request, response) {
+    try {
+        if (!request.body?.name) return response.sendStatus(400);
+
+        const charName = sanitize(request.body.name);
+        if (!charName) return response.sendStatus(400);
+
+        const bgDir = getCharacterBackgroundDir(request, charName);
+        if (!fs.existsSync(bgDir)) {
+            return response.json({ images: [], pathPrefix: getCharacterBackgroundPathPrefix(charName) });
+        }
+
+        const sortOrder = String(request.body.sortOrder || 'az');
+        const sortBy = sortOrder === 'newest' || sortOrder === 'oldest' ? 'date' : 'name';
+        const images = getImages(bgDir, sortBy);
+        if (sortOrder === 'za' || sortOrder === 'oldest') {
+            images.reverse();
+        }
+
+        return response.json({ images, pathPrefix: getCharacterBackgroundPathPrefix(charName) });
+    } catch (error) {
+        console.error('[Backgrounds] Character background list error:', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/character/upload', function (request, response) {
+    try {
+        if (!request.body || !request.file) return response.sendStatus(400);
+
+        const charName = sanitize(request.body.name);
+        if (!charName) return response.sendStatus(400);
+
+        const bgDir = getCharacterBackgroundDir(request, charName);
+        if (!ensureDirectory(bgDir)) {
+            return response.sendStatus(500);
+        }
+
+        const imgPath = path.join(request.file.destination, request.file.filename);
+        const filename = sanitize(request.file.originalname);
+
+        fs.copyFileSync(imgPath, path.join(bgDir, filename));
+        fs.unlinkSync(imgPath);
+        return response.json({ filename, pathPrefix: getCharacterBackgroundPathPrefix(charName) });
+    } catch (error) {
+        console.error('[Backgrounds] Character background upload error:', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/character/delete', function (request, response) {
+    try {
+        if (!request.body) return response.sendStatus(400);
+
+        const charName = sanitize(request.body.name);
+        const bgFile = sanitize(request.body.bg);
+        if (!charName || !bgFile) return response.sendStatus(400);
+
+        if (request.body.bg !== bgFile) {
+            console.error('Malicious bg name prevented');
+            return response.sendStatus(403);
+        }
+
+        const bgDir = getCharacterBackgroundDir(request, charName);
+        const filePath = path.join(bgDir, bgFile);
+        if (!fs.existsSync(filePath)) {
+            return response.sendStatus(404);
+        }
+
+        fs.unlinkSync(filePath);
+        return response.send('ok');
+    } catch (error) {
+        console.error('[Backgrounds] Character background delete error:', error);
+        return response.sendStatus(500);
     }
 });

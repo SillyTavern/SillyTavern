@@ -68,6 +68,7 @@ const METADATA_CACHE = new Map();
 const BG_SOURCES = {
     GLOBAL: 0,
     CHAT: 1,
+    CHARACTER: 2,
 };
 
 /**
@@ -90,6 +91,7 @@ const BG_SORT_OPTIONS = {
 const BG_TABS = Object.freeze({
     [BG_SOURCES.GLOBAL]: 'bg_global_tab',
     [BG_SOURCES.CHAT]: 'bg_chat_tab',
+    [BG_SOURCES.CHARACTER]: 'bg_character_tab',
 });
 
 /**
@@ -104,6 +106,10 @@ let lazyLoadObserver = null;
  * @type {Array<{filename: string, isAnimated: boolean}>}
  */
 let cachedSystemBackgrounds = [];
+/** @type {string[]} */
+let cachedCharacterBackgrounds = [];
+/** @type {string} */
+let cachedCharacterBackgroundPathPrefix = '';
 
 export let background_settings = {
     name: '__transparent.png',
@@ -154,7 +160,8 @@ function sortBackgrounds(backgrounds, isCustom = false) {
  */
 function createThumbnailElement(imageData) {
     const bg = imageData.filename;
-    const isCustom = imageData.isCustom;
+    const isCustom = imageData.isCustom ?? false;
+    const source = imageData.source ?? BG_SOURCES.GLOBAL;
     const isAnimated = imageData.isAnimated ?? false;
 
     const thumbnail = $('#background_template .bg_example').clone();
@@ -164,7 +171,7 @@ function createThumbnailElement(imageData) {
     clipper.style.backgroundImage = PLACEHOLDER_IMAGE;
 
     // Apply dominant color and aspect ratio as placeholder if available
-    const metadataKey = isCustom ? bg : `backgrounds/${bg}`;
+    const metadataKey = source === BG_SOURCES.GLOBAL && !isCustom ? `backgrounds/${bg}` : bg;
     const metadata = METADATA_CACHE.get(metadataKey);
     if (metadata) {
         if (metadata.dominantColor) {
@@ -179,13 +186,14 @@ function createThumbnailElement(imageData) {
     clipper.appendChild(titleElement.get(0));
     thumbnail.append(clipper);
 
-    const url = generateUrlParameter(bg, isCustom);
+    const url = generateUrlParameter(bg, isCustom, source);
     const title = isCustom ? bg.split('/').pop() : bg;
     const friendlyTitle = String(title || '').slice(0, title.lastIndexOf('.'));
 
     thumbnail.attr('title', title);
     thumbnail.attr('bgfile', bg);
     thumbnail.attr('custom', String(isCustom));
+    thumbnail.attr('data-source', String(source));
     thumbnail.attr('animated', String(isAnimated));
     thumbnail.data('url', url);
     titleElement.text(friendlyTitle);
@@ -266,6 +274,7 @@ async function onChatChanged() {
     $('#bg1').css('background-image', lockedUrl || background_settings.url);
 
     renderChatBackgrounds();
+    await getCharacterBackgrounds();
     highlightLockedBackground();
     highlightSelectedBackground();
 }
@@ -368,16 +377,16 @@ function removeBackgroundMetadata() {
  */
 function onSelectBackgroundClick(e) {
     const bgFile = $(this).attr('bgfile');
-    const isCustom = $(this).attr('custom') === 'true';
-    if (isBackgroundSelectionMode && !isCustom) {
+    const source = Number($(this).attr('data-source') || BG_SOURCES.GLOBAL);
+    if (isBackgroundSelectionMode && source === BG_SOURCES.GLOBAL) {
         toggleBackgroundGroupSelection(bgFile);
         return;
     }
 
     const backgroundCssUrl = getUrlParameter(this);
-    const bypassGlobalLock = !isCustom && e.shiftKey;
+    const bypassGlobalLock = source === BG_SOURCES.GLOBAL && e.shiftKey;
 
-    if ((isChatBackgroundLocked() || isCustom) && !bypassGlobalLock) {
+    if ((isChatBackgroundLocked() || source === BG_SOURCES.CHAT) && !bypassGlobalLock) {
         // If a background is locked, update the locked background directly
         saveBackgroundMetadata(backgroundCssUrl);
         $('#bg1').css('background-image', backgroundCssUrl);
@@ -393,6 +402,7 @@ function onSelectBackgroundClick(e) {
 
 async function onCopyToSystemBackgroundClick(e) {
     e.stopPropagation();
+    const source = Number($(this).closest('.bg_example').attr('data-source') || BG_SOURCES.GLOBAL);
     const bgNames = await getNewBackgroundName(this);
 
     if (!bgNames) {
@@ -413,11 +423,15 @@ async function onCopyToSystemBackgroundClick(e) {
 
     await uploadBackground(formData);
 
-    const list = chat_metadata[LIST_METADATA_KEY] || [];
-    const index = list.indexOf(bgNames.oldBg);
-    list.splice(index, 1);
-    saveMetadataDebounced();
-    renderChatBackgrounds();
+    if (source === BG_SOURCES.CHAT) {
+        const list = chat_metadata[LIST_METADATA_KEY] || [];
+        const index = list.indexOf(bgNames.oldBg);
+        if (index !== -1) {
+            list.splice(index, 1);
+            saveMetadataDebounced();
+            renderChatBackgrounds();
+        }
+    }
 }
 
 /**
@@ -428,7 +442,7 @@ async function onCopyToSystemBackgroundClick(e) {
  * @param {boolean} isCustom Is the background custom?
  * @returns {Promise<string>} Blob URL of the thumbnail
  */
-async function getThumbnailFromStorage(bg, isCustom) {
+async function getThumbnailFromStorage(bg, isCustom, source = BG_SOURCES.GLOBAL) {
     const cachedBlobUrl = THUMBNAIL_BLOBS.get(bg);
     if (cachedBlobUrl) {
         return cachedBlobUrl;
@@ -442,7 +456,7 @@ async function getThumbnailFromStorage(bg, isCustom) {
     }
 
     try {
-        const url = isCustom ? bg : getBackgroundPath(bg);
+        const url = source === BG_SOURCES.GLOBAL && !isCustom ? getBackgroundPath(bg) : encodeURI(bg);
         const response = await fetch(url, { cache: 'force-cache' });
         if (!response.ok) {
             throw new Error('Fetch failed with status: ' + response.status);
@@ -529,6 +543,9 @@ async function onDeleteBackgroundClick(e) {
     const bgToDelete = $(this).closest('.bg_example');
     const url = bgToDelete.data('url');
     const isCustom = bgToDelete.attr('custom') === 'true';
+    const source = Number(bgToDelete.attr('data-source') || BG_SOURCES.GLOBAL);
+    const isCharacterBg = source === BG_SOURCES.CHARACTER;
+    const isChatCustom = source === BG_SOURCES.CHAT;
     const deleteFromServerId = 'delete_bg_from_server';
     /** @type {import('./popup.js').CustomPopupInput[]} */
     const customInputs = [{
@@ -539,9 +556,9 @@ async function onDeleteBackgroundClick(e) {
     }];
     let deleteFromServer = false;
     const confirm = await Popup.show.confirm(t`Delete the background?`, null, {
-        customInputs: isCustom ? customInputs : [],
+        customInputs: isChatCustom ? customInputs : [],
         onClose: (popup) => {
-            if (isCustom) {
+            if (isChatCustom) {
                 deleteFromServer = Boolean(popup?.inputResults?.get(deleteFromServerId) ?? false);
             }
         },
@@ -549,8 +566,15 @@ async function onDeleteBackgroundClick(e) {
     const bg = bgToDelete.attr('bgfile');
 
     if (confirm) {
-        // If it's not custom, it's a built-in background. Delete it from the server
-        if (!isCustom) {
+        if (isCharacterBg) {
+            const charName = getCurrentCharacterName();
+            if (!charName) {
+                toastr.warning(t`Select a character to manage its backgrounds`);
+                return;
+            }
+            await delCharacterBackground(charName, String(bg).split('/').pop());
+        } else if (!isCustom) {
+            // If it's not custom, it's a built-in background. Delete it from the server
             await delBackground(bg);
             // Remove from cache to prevent reappearing on sort change
             const cacheIndex = cachedSystemBackgrounds.findIndex(s => s.filename === bg);
@@ -605,7 +629,11 @@ async function onDeleteBackgroundClick(e) {
             removeBackgroundMetadata();
         }
 
-        if (isCustom) {
+        if (isCharacterBg) {
+            await getCharacterBackgrounds();
+        }
+
+        if (isChatCustom) {
             if (deleteFromServer) {
                 await deleteMediaFromServer(bg);
             }
@@ -672,7 +700,12 @@ function renderSystemBackgrounds(backgrounds) {
     const metadataByFilename = new Map(sourceList.map(bg => [bg.filename, bg]));
     sortedList.forEach(filename => {
         const bg = metadataByFilename.get(filename);
-        const imageData = { filename, isCustom: false, isAnimated: bg?.isAnimated ?? false };
+        const imageData = {
+            filename,
+            isCustom: false,
+            source: BG_SOURCES.GLOBAL,
+            isAnimated: bg?.isAnimated ?? false,
+        };
         const thumbnail = createThumbnailElement(imageData);
         container.append(thumbnail);
     });
@@ -697,10 +730,103 @@ function renderChatBackgrounds(backgrounds) {
     sortedList.forEach(bg => {
         // For custom backgrounds, infer isAnimated from extension since we don't have server metadata
         const isAnimated = isAnimatedBackgroundExtension(bg);
-        const imageData = { filename: bg, isCustom: true, isAnimated };
+        const imageData = { filename: bg, isCustom: true, source: BG_SOURCES.CHAT, isAnimated };
         const thumbnail = createThumbnailElement(imageData);
         container.append(thumbnail);
     });
+
+    activateLazyLoader();
+}
+
+/**
+ * Gets the current character's name for background lookups.
+ * @returns {string|null} Character name or null if none selected.
+ */
+function getCurrentCharacterName() {
+    if (selected_group) {
+        return null;
+    }
+
+    if (this_chid !== undefined && characters[this_chid]) {
+        return characters[this_chid].name;
+    }
+
+    return null;
+}
+
+/**
+ * Builds the client-relative prefix for the current character background folder.
+ * @returns {string}
+ */
+function getCurrentCharacterBackgroundPathPrefix() {
+    return cachedCharacterBackgroundPathPrefix || '';
+}
+
+/**
+ * Fetches and renders character-specific backgrounds.
+ */
+async function getCharacterBackgrounds() {
+    const charName = getCurrentCharacterName();
+    const container = $('#bg_character_content');
+    container.empty();
+    cachedCharacterBackgrounds = [];
+    cachedCharacterBackgroundPathPrefix = '';
+
+    if (!charName) {
+        $('#bg_character_hint').show();
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/backgrounds/character/all', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                name: charName,
+                sortOrder: background_settings.sortOrder,
+            }),
+        });
+
+        if (!response.ok) {
+            $('#bg_character_hint').show();
+            return;
+        }
+
+        const { images, pathPrefix } = await response.json();
+        cachedCharacterBackgrounds = images || [];
+        cachedCharacterBackgroundPathPrefix = pathPrefix || '';
+
+        renderCharacterBackgrounds(cachedCharacterBackgrounds, cachedCharacterBackgroundPathPrefix);
+    } catch (error) {
+        console.error('[Backgrounds] Failed to fetch character backgrounds:', error);
+        $('#bg_character_hint').show();
+    }
+}
+
+/**
+ * Renders the character-specific backgrounds gallery.
+ * @param {string[]} backgrounds
+ * @param {string} [pathPrefix]
+ */
+function renderCharacterBackgrounds(backgrounds, pathPrefix = getCurrentCharacterBackgroundPathPrefix()) {
+    const container = $('#bg_character_content');
+    container.empty();
+    $('#bg_character_hint').toggle(!backgrounds.length || !pathPrefix);
+
+    if (backgrounds.length === 0 || !pathPrefix) {
+        return;
+    }
+
+    for (const bg of backgrounds) {
+        const imageData = {
+            filename: `${pathPrefix}/${bg}`,
+            isCustom: true,
+            source: BG_SOURCES.CHARACTER,
+            isAnimated: isAnimatedBackgroundExtension(bg),
+        };
+        const thumbnail = createThumbnailElement(imageData);
+        container.append(thumbnail);
+    }
 
     activateLazyLoader();
 }
@@ -729,6 +855,7 @@ export async function getBackgrounds() {
 
         // Render only filtered images if inside a folder, otherwise all
         renderSystemBackgrounds(getFilteredImages());
+        await getCharacterBackgrounds();
         highlightSelectedBackground();
     }
 }
@@ -1379,7 +1506,8 @@ function activateLazyLoader() {
                     const bg = parentThumbnail.getAttribute('bgfile');
                     const isCustom = parentThumbnail.getAttribute('custom') === 'true';
                     const isAnimated = parentThumbnail.getAttribute('animated') === 'true';
-                    resolveImageUrl(bg, isCustom, isAnimated)
+                    const source = Number(parentThumbnail.getAttribute('data-source') || BG_SOURCES.GLOBAL);
+                    resolveImageUrl(bg, isCustom, isAnimated, source)
                         .then(url => { clipper.style.backgroundImage = url; })
                         .catch(() => { clipper.style.backgroundImage = PLACEHOLDER_IMAGE; });
                 }
@@ -1404,8 +1532,8 @@ function getUrlParameter(block) {
     return $(block).closest('.bg_example').data('url');
 }
 
-function generateUrlParameter(bg, isCustom) {
-    return isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
+function generateUrlParameter(bg, isCustom, source = BG_SOURCES.GLOBAL) {
+    return source === BG_SOURCES.GLOBAL && !isCustom ? `url("${getBackgroundPath(bg)}")` : `url("${encodeURI(bg)}")`;
 }
 
 function isAnimatedBackgroundExtension(fileName) {
@@ -1420,7 +1548,7 @@ function isAnimatedBackgroundExtension(fileName) {
  * @param {boolean|null} [isAnimated=null] Is the background animated (from metadata). If null, infers from extension.
  * @returns {Promise<string>} CSS URL of the background
  */
-async function resolveImageUrl(bg, isCustom, isAnimated = null) {
+async function resolveImageUrl(bg, isCustom, isAnimated = null, source = BG_SOURCES.GLOBAL) {
     // If isAnimated is not provided (null), fall back to extension-based heuristic
     let animated = isAnimated;
     if (animated === null) {
@@ -1428,10 +1556,10 @@ async function resolveImageUrl(bg, isCustom, isAnimated = null) {
     }
 
     const thumbnailUrl = animated && !background_settings.animation
-        ? await getThumbnailFromStorage(bg, isCustom)
-        : isCustom
-            ? bg
-            : getThumbnailUrl('bg', bg);
+        ? await getThumbnailFromStorage(bg, isCustom, source)
+        : source === BG_SOURCES.GLOBAL && !isCustom
+            ? getThumbnailUrl('bg', bg)
+            : encodeURI(bg);
 
     return `url("${thumbnailUrl}")`;
 }
@@ -1463,6 +1591,22 @@ async function delBackground(bg) {
 }
 
 /**
+ * Deletes a character-specific background.
+ * @param {string} charName
+ * @param {string} bgFile
+ */
+async function delCharacterBackground(charName, bgFile) {
+    await fetch('/api/backgrounds/character/delete', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            name: charName,
+            bg: bgFile,
+        }),
+    });
+}
+
+/**
  * Background upload handler.
  * @param {Event} e Event
  * @returns {Promise<void>}
@@ -1490,6 +1634,9 @@ async function onBackgroundUploadSelected(e) {
                 break;
             case BG_SOURCES.CHAT:
                 await uploadChatBackground(formData);
+                break;
+            case BG_SOURCES.CHARACTER:
+                await uploadCharacterBackground(formData);
                 break;
             default:
                 console.error('Unknown background source type');
@@ -1616,10 +1763,55 @@ async function uploadChatBackground(formData) {
 }
 
 /**
+ * Upload a character background using a FormData object.
+ * @param {FormData} formData
+ * @returns {Promise<void>}
+ */
+async function uploadCharacterBackground(formData) {
+    try {
+        const charName = getCurrentCharacterName();
+        if (!charName) {
+            toastr.warning(t`Select a character to upload a background for it`);
+            return;
+        }
+
+        if (!formData.has('avatar')) {
+            console.log('No file provided. Character background upload cancelled.');
+            return;
+        }
+
+        const response = await fetch('/api/backgrounds/character/upload', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            body: formData,
+            cache: 'no-cache',
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to upload character background');
+        }
+
+        const data = await response.json();
+        await getCharacterBackgrounds();
+
+        if (data?.filename && data?.pathPrefix) {
+            highlightNewBackground(`${data.pathPrefix}/${data.filename}`);
+        }
+    } catch (error) {
+        console.error('Error uploading character background:', error);
+    }
+}
+
+/**
  * @param {string} bg
  */
 function highlightNewBackground(bg) {
-    const newBg = $(`.bg_example[bgfile="${bg}"]`);
+    const newBg = $('.bg_example').filter(function () {
+        return $(this).attr('bgfile') === bg;
+    }).first();
+    if (!newBg.length) {
+        return;
+    }
     const scrollOffset = newBg.offset().top - newBg.parent().offset().top;
     $('#Backgrounds').scrollTop(scrollOffset);
     flashHighlight(newBg);
@@ -1653,7 +1845,7 @@ function highlightSelectedBackground() {
 
 function onBackgroundFilterInput() {
     const filterValue = String($('#bg-filter').val()).toLowerCase();
-    $('#bg_menu_content > .bg_example, #bg_custom_content > .bg_example').each(function () {
+    $('#bg_menu_content > .bg_example, #bg_custom_content > .bg_example, #bg_character_content > .bg_example').each(function () {
         const $bg = $(this);
         const title = $bg.attr('title') || '';
         const hasMatch = title.toLowerCase().includes(filterValue);
@@ -1799,12 +1991,13 @@ export function initBackgrounds() {
     $('#bg_folder_remove_selected_button').on('click', onRemoveSelectedFromCurrentFolder);
     $('#add_bg_button').on('change', (e) => onBackgroundUploadSelected(e.originalEvent));
     $('#bg-filter').on('input', () => debouncedOnBackgroundFilterInput());
-    $('#bg-sort').on('change', function () {
+    $('#bg-sort').on('change', async function () {
         background_settings.sortOrder = String($(this).val());
         saveSettingsDebounced();
         // Re-render both galleries with new sort order (respecting active folder filter)
         renderSystemBackgrounds(getFilteredImages());
         renderChatBackgrounds();
+        await getCharacterBackgrounds();
         highlightSelectedBackground();
         highlightLockedBackground();
         // Re-apply any active search filter
