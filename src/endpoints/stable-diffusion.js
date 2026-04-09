@@ -2048,7 +2048,9 @@ workersai.post('/models', async (request, response) => {
             return response.sendStatus(400);
         }
 
-        const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/models/search?task=Text+to+Image&per_page=100`;
+        const apiUrl = new URL(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/models/search`);
+        apiUrl.searchParams.set('task', 'Text-to-Image');
+        apiUrl.searchParams.set('per_page', '1000');
         const result = await fetch(apiUrl, {
             method: 'GET',
             headers: {
@@ -2061,6 +2063,7 @@ workersai.post('/models', async (request, response) => {
             return response.sendStatus(500);
         }
 
+        /** @type {any} */
         const data = await result.json();
 
         if (!data.success || !Array.isArray(data.result)) {
@@ -2068,7 +2071,7 @@ workersai.post('/models', async (request, response) => {
             return response.sendStatus(500);
         }
 
-        const models = data.result.map(x => ({ value: x.name, text: x.description || x.name }));
+        const models = data.result.map(x => ({ value: x.name, text: x.name }));
         return response.send(models);
     } catch (error) {
         console.error(error);
@@ -2137,6 +2140,7 @@ workersai.post('/generate', async (request, response) => {
 
         // Partner models return JSON with base64 image
         if (contentType.includes('application/json')) {
+            /** @type {any} */
             const data = await result.json();
             const image = data?.result?.image || data?.image;
             if (!image) {
