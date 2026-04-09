@@ -550,7 +550,7 @@ async function renameRecentCharacterChat(avatarId, fileName) {
             newFileName: newName,
             loader: false,
         });
-        PinnedChatsManager.rename({ avatar: avatarId, group: '', file_name: fileName }, newName);
+        PinnedChatsManager.rename({ avatar: avatarId, group: '', file_name: fileName + '.jsonl' }, newName + '.jsonl');
         await updateRemoteChatName(characterId, newName);
         await refreshWelcomeScreen();
         toastr.success(t`Chat renamed.`);
@@ -584,7 +584,7 @@ async function renameRecentGroupChat(groupId, fileName) {
             newFileName: String(newName),
             loader: false,
         });
-        PinnedChatsManager.rename({ avatar: '', group: groupId, file_name: fileName }, String(newName));
+        PinnedChatsManager.rename({ avatar: '', group: groupId, file_name: fileName + '.jsonl' }, String(newName) + '.jsonl');
         await refreshWelcomeScreen();
         toastr.success(t`Group chat renamed.`);
     } catch (error) {
