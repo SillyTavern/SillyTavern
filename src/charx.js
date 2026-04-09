@@ -1,16 +1,22 @@
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import _ from 'lodash';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { extractFileFromZipBuffer, extractFilesFromZipBuffer, normalizeZipEntryPath, ensureDirectory } from './util.js';
-import { DEFAULT_AVATAR_PATH } from './constants.js';
+import { DEFAULT_AVATAR_PATH, MEDIA_EXTENSIONS } from './constants.js';
 
 // 'embeded://' is intentional - RisuAI exports use this misspelling
 const CHARX_EMBEDDED_URI_PREFIXES = ['embeded://', 'embedded://', '__asset:'];
 const CHARX_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'apng', 'avif', 'bmp', 'jfif']);
+const CHARX_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'aiff']);
+const CHARX_VIDEO_EXTENSIONS = new Set(MEDIA_EXTENSIONS.filter(ext => !CHARX_IMAGE_EXTENSIONS.has(ext) && !CHARX_AUDIO_EXTENSIONS.has(ext)));
+const CHARX_JSON_EXTENSIONS = new Set(['json']);
+const CHARX_SUPPORTED_EXPORT_EXTENSIONS = new Set([...MEDIA_EXTENSIONS, ...CHARX_JSON_EXTENSIONS]);
 const CHARX_SPRITE_TYPES = new Set(['emotion', 'expression']);
 const CHARX_BACKGROUND_TYPES = new Set(['background']);
+const CHARX_REGEX_AI_OUTPUT = 2;
 
 // ZIP local file header signature: PK\x03\x04
 const ZIP_SIGNATURE = Buffer.from([0x50, 0x4B, 0x03, 0x04]);
@@ -396,4 +402,276 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
     }
 
     return summary;
+}
+
+/**
+ * @typedef {Object} CharXMediaConfig
+ * @property {number} [version]
+ * @property {boolean} [generateRegex]
+ * @property {Array<{sourcePath: string, exportName?: string, enabled?: boolean}>} [items]
+ */
+
+/**
+ * @typedef {Object} CharXExportAsset
+ * @property {string} sourcePath
+ * @property {string} fullPath
+ * @property {'sprite' | 'background' | 'gallery' | 'file' | 'bgm' | 'ambient' | 'blip'} category
+ * @property {string} exportName
+ * @property {string} ext
+ * @property {string} archivePath
+ * @property {'expression' | 'background' | 'custom'} assetType
+ */
+
+function toPosixPath(filePath) {
+    return String(filePath || '').split(path.sep).join(path.posix.sep);
+}
+
+function listSupportedFiles(directoryPath, allowedExtensions) {
+    if (!fs.existsSync(directoryPath) || !fs.statSync(directoryPath).isDirectory()) {
+        return [];
+    }
+
+    return fs.readdirSync(directoryPath, { withFileTypes: true })
+        .filter(dirent => dirent.isFile())
+        .map(dirent => dirent.name)
+        .filter(fileName => allowedExtensions.has(path.extname(fileName).slice(1).toLowerCase()))
+        .sort(Intl.Collator().compare);
+}
+
+function getCharXArchiveDirectory(category, ext) {
+    switch (category) {
+        case 'sprite':
+            return 'assets/expression/image';
+        case 'background':
+            return 'assets/background/image';
+        case 'gallery':
+            if (CHARX_VIDEO_EXTENSIONS.has(ext)) {
+                return 'assets/custom/video';
+            }
+            return 'assets/custom/images';
+        case 'bgm':
+        case 'ambient':
+        case 'blip':
+            return 'assets/custom/audio';
+        case 'file':
+        default:
+            if (CHARX_AUDIO_EXTENSIONS.has(ext)) {
+                return 'assets/custom/audio';
+            }
+            if (CHARX_VIDEO_EXTENSIONS.has(ext)) {
+                return 'assets/custom/video';
+            }
+            if (CHARX_IMAGE_EXTENSIONS.has(ext)) {
+                return 'assets/custom/images';
+            }
+            return 'assets/custom/files';
+    }
+}
+
+function getCharXAssetType(category) {
+    switch (category) {
+        case 'sprite':
+            return 'expression';
+        case 'background':
+            return 'background';
+        default:
+            return 'custom';
+    }
+}
+
+function normalizeCharXExportName(exportName, originalFileName) {
+    const originalExt = path.extname(originalFileName);
+    const originalBaseName = path.basename(originalFileName, originalExt);
+    const sanitizedInput = sanitize(String(exportName ?? '').trim());
+    const candidateName = sanitizedInput || sanitize(originalFileName) || originalFileName;
+    const candidateBaseName = sanitize(path.basename(candidateName, path.extname(candidateName))) || originalBaseName;
+    return `${candidateBaseName}${originalExt}`;
+}
+
+function getCharXMediaConfigItems(mediaConfig) {
+    if (!Array.isArray(mediaConfig?.items)) {
+        return new Map();
+    }
+
+    return new Map(
+        mediaConfig.items
+            .filter(item => typeof item?.sourcePath === 'string' && item.sourcePath.length > 0)
+            .map(item => [toPosixPath(item.sourcePath), item]),
+    );
+}
+
+function discoverCharXExportCandidates(directories, characterFolder) {
+    const safeCharacterFolder = sanitize(characterFolder);
+    if (!safeCharacterFolder) {
+        return [];
+    }
+
+    /** @type {Array<{sourcePath: string, fullPath: string, category: CharXExportAsset['category'], originalFileName: string, ext: string}>} */
+    const discovered = [];
+    const pushDiscovered = (category, directoryPath, relativeDirectory, allowedExtensions) => {
+        const files = listSupportedFiles(directoryPath, allowedExtensions);
+        for (const fileName of files) {
+            const fullPath = path.join(directoryPath, fileName);
+            const sourcePath = path.posix.join(relativeDirectory, fileName);
+            discovered.push({
+                sourcePath,
+                fullPath,
+                category,
+                originalFileName: fileName,
+                ext: path.extname(fileName).slice(1).toLowerCase(),
+            });
+        }
+    };
+
+    pushDiscovered(
+        'sprite',
+        path.join(directories.characters, safeCharacterFolder),
+        path.posix.join('characters', safeCharacterFolder),
+        CHARX_IMAGE_EXTENSIONS,
+    );
+    pushDiscovered(
+        'background',
+        path.join(directories.characters, safeCharacterFolder, 'backgrounds'),
+        path.posix.join('characters', safeCharacterFolder, 'backgrounds'),
+        new Set([...CHARX_IMAGE_EXTENSIONS, ...CHARX_VIDEO_EXTENSIONS]),
+    );
+    pushDiscovered(
+        'gallery',
+        path.join(directories.userImages, safeCharacterFolder),
+        path.posix.join('user', 'images', safeCharacterFolder),
+        new Set([...CHARX_IMAGE_EXTENSIONS, ...CHARX_VIDEO_EXTENSIONS]),
+    );
+    pushDiscovered(
+        'file',
+        path.join(directories.files, safeCharacterFolder),
+        path.posix.join('user', 'files', safeCharacterFolder),
+        CHARX_SUPPORTED_EXPORT_EXTENSIONS,
+    );
+    for (const category of ['bgm', 'ambient', 'blip']) {
+        pushDiscovered(
+            /** @type {CharXExportAsset['category']} */ (category),
+            path.join(directories.characters, safeCharacterFolder, category),
+            path.posix.join('characters', safeCharacterFolder, category),
+            CHARX_AUDIO_EXTENSIONS,
+        );
+    }
+
+    return discovered;
+}
+
+/**
+ * Collects character-owned media files to embed in a CharX export.
+ * @param {import('./users.js').UserDirectoryList} directories
+ * @param {string} characterFolder
+ * @param {CharXMediaConfig | null | undefined} mediaConfig
+ * @returns {CharXExportAsset[]}
+ */
+export function collectCharXExportAssets(directories, characterFolder, mediaConfig) {
+    const discovered = discoverCharXExportCandidates(directories, characterFolder);
+    const mediaItems = getCharXMediaConfigItems(mediaConfig);
+    /** @type {CharXExportAsset[]} */
+    const assets = [];
+    const seenArchivePaths = new Map();
+
+    for (const item of discovered) {
+        const override = mediaItems.get(toPosixPath(item.sourcePath));
+        if (override?.enabled === false) {
+            continue;
+        }
+
+        const exportName = normalizeCharXExportName(override?.exportName, item.originalFileName);
+        const archivePath = path.posix.join(getCharXArchiveDirectory(item.category, item.ext), exportName);
+        if (seenArchivePaths.has(archivePath)) {
+            const previousSource = seenArchivePaths.get(archivePath);
+            throw new Error(`Duplicate CharX archive path "${archivePath}" from "${previousSource}" and "${item.sourcePath}"`);
+        }
+
+        seenArchivePaths.set(archivePath, item.sourcePath);
+        assets.push({
+            sourcePath: item.sourcePath,
+            fullPath: item.fullPath,
+            category: item.category,
+            exportName,
+            ext: item.ext,
+            archivePath,
+            assetType: getCharXAssetType(item.category),
+        });
+    }
+
+    return assets;
+}
+
+function escapeRegexLiteral(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildCharXRegexReplacementPath(characterFolder, exportName) {
+    const encodedCharacterFolder = encodeURIComponent(characterFolder);
+    const encodedFileName = encodeURIComponent(exportName);
+    return `/characters/${encodedCharacterFolder}/${encodedFileName}`;
+}
+
+function buildCharXRegexScripts(characterFolder, assets) {
+    return assets
+        .filter(asset => asset.assetType === 'custom' && (CHARX_IMAGE_EXTENSIONS.has(asset.ext) || CHARX_AUDIO_EXTENSIONS.has(asset.ext) || CHARX_VIDEO_EXTENSIONS.has(asset.ext)))
+        .map(asset => ({
+            id: crypto.randomUUID(),
+            scriptName: `CharX media: ${asset.exportName}`,
+            findRegex: `(?<![/\\\\\\w])${escapeRegexLiteral(asset.exportName)}(?![/\\\\\\w])`,
+            replaceString: buildCharXRegexReplacementPath(characterFolder, asset.exportName),
+            trimStrings: [],
+            placement: [CHARX_REGEX_AI_OUTPUT],
+            disabled: false,
+            markdownOnly: true,
+            promptOnly: false,
+            runOnEdit: false,
+            substituteRegex: 0,
+            minDepth: null,
+            maxDepth: null,
+        }));
+}
+
+/**
+ * Builds a CharX card manifest from the character card JSON and collected export assets.
+ * @param {object} card
+ * @param {string} characterFolder
+ * @param {string} avatarArchivePath
+ * @param {string} avatarExt
+ * @param {CharXExportAsset[]} assets
+ * @param {CharXMediaConfig | null | undefined} mediaConfig
+ * @returns {object}
+ */
+export function buildCharXCard(card, characterFolder, avatarArchivePath, avatarExt, assets, mediaConfig) {
+    const charxCard = _.cloneDeep(card);
+    charxCard.spec = 'chara_card_v3';
+    charxCard.spec_version = '3.0';
+
+    const assetEntries = [{
+        type: 'icon',
+        name: 'main',
+        ext: avatarExt,
+        uri: `embeded://${avatarArchivePath}`,
+    }, ...assets.map(asset => ({
+        type: asset.assetType,
+        name: asset.exportName,
+        ext: asset.ext,
+        uri: `embeded://${asset.archivePath}`,
+    }))];
+
+    _.set(charxCard, 'data.assets', assetEntries);
+
+    if (mediaConfig?.generateRegex === false) {
+        return charxCard;
+    }
+
+    const existingScripts = Array.isArray(_.get(charxCard, 'data.extensions.regex_scripts'))
+        ? _.get(charxCard, 'data.extensions.regex_scripts').filter(script => !String(script?.scriptName || '').startsWith('CharX media: '))
+        : [];
+    const generatedScripts = buildCharXRegexScripts(characterFolder, assets);
+
+    if (generatedScripts.length > 0) {
+        _.set(charxCard, 'data.extensions.regex_scripts', [...existingScripts, ...generatedScripts]);
+    }
+
+    return charxCard;
 }

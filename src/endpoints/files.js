@@ -99,3 +99,31 @@ router.post('/verify', async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+router.post('/list', async (request, response) => {
+    try {
+        const folder = sanitize(String(request.body.folder || ''));
+        if (!folder) {
+            return response.status(400).send('No folder specified');
+        }
+
+        const directoryPath = path.join(request.user.directories.files, folder);
+        if (!directoryPath.startsWith(request.user.directories.files)) {
+            return response.status(400).send('Invalid folder');
+        }
+
+        if (!fs.existsSync(directoryPath) || !fs.statSync(directoryPath).isDirectory()) {
+            return response.send([]);
+        }
+
+        const files = fs.readdirSync(directoryPath, { withFileTypes: true })
+            .filter(dirent => dirent.isFile() && !dirent.name.startsWith('.'))
+            .map(dirent => dirent.name)
+            .sort(Intl.Collator().compare);
+
+        return response.send(files);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});

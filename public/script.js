@@ -185,9 +185,9 @@ import {
     shakeElement,
     createTimeout,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_REQUEST_TYPE, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
-import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors } from './scripts/extensions.js';
+import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, initSlashCommandAutoComplete, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
 import { initMacroAutoComplete } from './scripts/autocomplete/MacroAutoComplete.js';
 import {
@@ -443,6 +443,8 @@ let exportPopper = Popper.createPopper(document.getElementById('export_button'),
     placement: 'left',
 });
 let isExportPopupOpen = false;
+const CHARX_MANAGER_SUPPORTED_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'apng', 'avif', 'bmp', 'jfif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv', 'mpg', 'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'aiff', 'json']);
+const CHARX_MANAGER_CATEGORY_ORDER = ['sprite', 'background', 'gallery', 'file', 'bgm', 'ambient', 'blip'];
 
 // Saved here for performance reasons
 const messageTemplate = $('#message_template .mes');
@@ -469,6 +471,260 @@ export const DEFAULT_PRINT_TIMEOUT = debounce_timeout.quick;
 
 export const saveSettingsDebounced = debounce((loopCounter = 0) => saveSettings(loopCounter), DEFAULT_SAVE_EDIT_TIMEOUT);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), DEFAULT_SAVE_EDIT_TIMEOUT);
+
+function getCharXMediaConfig(character) {
+    if (character?.data?.extensions?.charx_media) {
+        return character.data.extensions.charx_media;
+    }
+
+    if (!character?.json_data) {
+        return {};
+    }
+
+    try {
+        const jsonData = JSON.parse(character.json_data);
+        return jsonData?.data?.extensions?.charx_media || {};
+    } catch {
+        return {};
+    }
+}
+
+function normalizeCharXPath(assetPath) {
+    return String(assetPath || '').replace(/^\//, '').split('?')[0];
+}
+
+function getCharXSupportedExtension(fileName) {
+    const ext = String(fileName || '').split('.').pop()?.toLowerCase() || '';
+    return CHARX_MANAGER_SUPPORTED_EXTENSIONS.has(ext) ? ext : '';
+}
+
+function getCharXManagerCategoryLabel(category) {
+    switch (category) {
+        case 'sprite':
+            return 'Sprite';
+        case 'background':
+            return 'Background';
+        case 'gallery':
+            return 'Gallery';
+        case 'file':
+            return 'File';
+        case 'bgm':
+            return 'BGM';
+        case 'ambient':
+            return 'Ambient';
+        case 'blip':
+            return 'Blip';
+        default:
+            return 'Media';
+    }
+}
+
+async function fetchJsonOrDefault(url, options, fallbackValue) {
+    try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            return fallbackValue;
+        }
+        return await response.json();
+    } catch {
+        return fallbackValue;
+    }
+}
+
+async function getSanitizedCharacterFolderName(charName) {
+    const result = await fetchJsonOrDefault('/api/files/sanitize-filename', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ fileName: charName }),
+    }, { fileName: charName });
+
+    return String(result?.fileName || charName);
+}
+
+async function discoverCharXMedia(character) {
+    const charName = character?.name;
+    if (!charName) {
+        return [];
+    }
+
+    const characterFolder = await getSanitizedCharacterFolderName(charName);
+
+    const [sprites, characterBackgrounds, galleryFiles, characterFiles, bgmFiles, ambientFiles, blipFiles] = await Promise.all([
+        fetchJsonOrDefault(`/api/sprites/get?name=${encodeURIComponent(charName)}`, {}, []),
+        fetchJsonOrDefault('/api/backgrounds/character/all', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name: charName, sortOrder: 'az' }),
+        }, { images: [], pathPrefix: '' }),
+        fetchJsonOrDefault('/api/images/list', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                folder: charName,
+                type: MEDIA_REQUEST_TYPE.IMAGE | MEDIA_REQUEST_TYPE.VIDEO,
+                sortField: 'name',
+                sortOrder: 'asc',
+            }),
+        }, []),
+        fetchJsonOrDefault('/api/files/list', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ folder: charName }),
+        }, []),
+        fetchJsonOrDefault(`/api/assets/character?name=${encodeURIComponent(charName)}&category=bgm`, { method: 'POST' }, []),
+        fetchJsonOrDefault(`/api/assets/character?name=${encodeURIComponent(charName)}&category=ambient`, { method: 'POST' }, []),
+        fetchJsonOrDefault(`/api/assets/character?name=${encodeURIComponent(charName)}&category=blip`, { method: 'POST' }, []),
+    ]);
+
+    /** @type {Array<{category: string, sourcePath: string, defaultExportName: string}>} */
+    const discovered = [];
+    const pushDiscovered = (category, sourcePath) => {
+        const normalizedPath = normalizeCharXPath(sourcePath);
+        const fileName = normalizedPath.split('/').pop() || '';
+        if (!fileName || !getCharXSupportedExtension(fileName)) {
+            return;
+        }
+
+        discovered.push({
+            category,
+            sourcePath: normalizedPath,
+            defaultExportName: fileName,
+        });
+    };
+
+    for (const sprite of sprites) {
+        pushDiscovered('sprite', sprite?.path);
+    }
+    for (const background of characterBackgrounds.images || []) {
+        pushDiscovered('background', `${characterBackgrounds.pathPrefix}/${background}`);
+    }
+    for (const fileName of galleryFiles) {
+        pushDiscovered('gallery', `user/images/${characterFolder}/${fileName}`);
+    }
+    for (const fileName of characterFiles) {
+        pushDiscovered('file', `user/files/${characterFolder}/${fileName}`);
+    }
+    for (const assetPath of bgmFiles) {
+        pushDiscovered('bgm', assetPath);
+    }
+    for (const assetPath of ambientFiles) {
+        pushDiscovered('ambient', assetPath);
+    }
+    for (const assetPath of blipFiles) {
+        pushDiscovered('blip', assetPath);
+    }
+
+    return discovered.sort((left, right) => {
+        const categoryDiff = CHARX_MANAGER_CATEGORY_ORDER.indexOf(left.category) - CHARX_MANAGER_CATEGORY_ORDER.indexOf(right.category);
+        if (categoryDiff !== 0) {
+            return categoryDiff;
+        }
+        return left.defaultExportName.localeCompare(right.defaultExportName);
+    });
+}
+
+function mergeCharXMediaItems(discovered, mediaConfig) {
+    const overrides = new Map(
+        Array.isArray(mediaConfig?.items)
+            ? mediaConfig.items
+                .filter(item => typeof item?.sourcePath === 'string' && item.sourcePath.length > 0)
+                .map(item => [normalizeCharXPath(item.sourcePath), item])
+            : [],
+    );
+
+    return discovered.map(item => {
+        const override = overrides.get(item.sourcePath);
+        return {
+            ...item,
+            enabled: override?.enabled !== false,
+            exportName: String(override?.exportName || item.defaultExportName),
+        };
+    });
+}
+
+function buildCharXMediaManagerTemplate(character, items, generateRegex) {
+    const template = $('<div class="flex-container flexFlowColumn gap10px"></div>');
+    template.append(
+        $('<p></p>').text(t`Choose which character-owned files should be embedded in CharX export. The export keeps your global card JSON and can also generate display-only filename regex scripts for imported media.`),
+    );
+
+    const regexLabel = $('<label class="checkbox_label"></label>');
+    regexLabel.append($('<input id="charx_generate_regex" type="checkbox">').prop('checked', generateRegex));
+    regexLabel.append($('<span></span>').text(t`Generate display-only regex scripts for exported media filenames`));
+    template.append(regexLabel);
+
+    const subtitle = $('<div class="flex-container justifySpaceBetween alignItemsCenter"></div>');
+    subtitle.append($('<strong></strong>').text(character.name));
+    subtitle.append($('<small></small>').text(`${items.length} ${t`items discovered`}`));
+    template.append(subtitle);
+
+    const list = $('<div class="flex-container flexFlowColumn gap5px"></div>');
+    list.css({ maxHeight: '55vh', overflowY: 'auto' });
+
+    if (items.length === 0) {
+        list.append($('<div class="wide100p textAlignCenter"></div>').text(t`No character-owned exportable media was found.`));
+    }
+
+    for (const item of items) {
+        const row = $('<div class="flex-container flexFlowColumn gap5px range-block"></div>');
+        row.attr('data-source-path', item.sourcePath);
+        row.append(
+            $('<div class="flex-container alignItemsCenter gap10px"></div>')
+                .append($('<input class="charx_media_enabled" type="checkbox">').prop('checked', item.enabled))
+                .append($('<strong></strong>').text(getCharXManagerCategoryLabel(item.category)))
+                .append($('<small></small>').text(item.sourcePath)),
+        );
+        row.append(
+            $('<label class="flex-container alignItemsCenter gap10px"></label>')
+                .append($('<span></span>').text(t`Export name`))
+                .append($('<input class="charx_media_export_name text_pole flex1" type="text">').val(item.exportName)),
+        );
+        list.append(row);
+    }
+
+    template.append(list);
+    return template;
+}
+
+async function openCharXMediaManager() {
+    if (this_chid === undefined || !characters[this_chid]) {
+        toastr.warning(t`Select a character first.`);
+        return;
+    }
+
+    const character = characters[this_chid];
+    const mediaConfig = getCharXMediaConfig(character);
+    const discovered = await discoverCharXMedia(character);
+    const items = mergeCharXMediaItems(discovered, mediaConfig);
+    const template = buildCharXMediaManagerTemplate(character, items, mediaConfig?.generateRegex !== false);
+
+    const confirmed = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', {
+        okButton: t`Save`,
+        cancelButton: t`Cancel`,
+        wider: true,
+        allowVerticalScrolling: true,
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    const savedItems = template.find('[data-source-path]').map(function () {
+        return {
+            sourcePath: String($(this).attr('data-source-path')),
+            exportName: String($(this).find('.charx_media_export_name').val() || '').trim(),
+            enabled: $(this).find('.charx_media_enabled').prop('checked'),
+        };
+    }).get();
+
+    await writeExtensionField(this_chid, 'charx_media', {
+        version: 1,
+        generateRegex: template.find('#charx_generate_regex').prop('checked'),
+        items: savedItems,
+    });
+
+    toastr.success(t`CharX media export settings saved.`);
+}
 
 /**
  * Prints the character list in a debounced fashion without blocking, with a delay of 100 milliseconds.
@@ -12035,6 +12291,13 @@ jQuery(async function () {
         exportPopper.update();
     });
 
+    $('#manage_charx_media').on('click', async function () {
+        $('#export_format_popup').hide();
+        isExportPopupOpen = false;
+        exportPopper.update();
+        await openCharXMediaManager();
+    });
+
     $(document).on('click', '.export_format', async function () {
         const format = $(this).data('format');
 
@@ -12056,17 +12319,24 @@ jQuery(async function () {
             body: JSON.stringify(body),
         });
 
-        if (response.ok) {
-            const filename = characters[this_chid].avatar.replace('.png', `.${format}`);
-            const blob = await response.blob();
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.setAttribute('download', filename);
-            document.body.appendChild(a);
-            a.click();
-            URL.revokeObjectURL(a.href);
-            document.body.removeChild(a);
+        if (!response.ok) {
+            const errorText = await response.text();
+            toastr.error(errorText || t`Character export failed.`);
+            return;
         }
+
+        const avatarFileName = characters[this_chid].avatar;
+        const exportFileName = format === 'png'
+            ? avatarFileName
+            : avatarFileName.replace(/\.[^.]+$/, `.${format}`);
+        const blob = await response.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.setAttribute('download', exportFileName);
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(a.href);
+        document.body.removeChild(a);
     });
     //**************************CHAT IMPORT EXPORT*************************//
     $('#chat_import_button').on('click', function () {
