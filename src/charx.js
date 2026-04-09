@@ -40,7 +40,7 @@ function findZipStart(buffer) {
  * @property {string} ext - File extension (lowercase, no dot)
  * @property {string} zipPath - Normalized path within the ZIP archive
  * @property {number} order - Original index in assets array
- * @property {string} [storageCategory] - 'sprite' | 'background' | 'misc' (set by mapCharXAssetsForStorage)
+ * @property {string} [storageCategory] - 'sprite' | 'background' | 'image' | 'audio' | 'video' | 'json' (set by mapCharXAssetsForStorage)
  * @property {string} [baseName] - Normalized filename base (set by mapCharXAssetsForStorage)
  */
 
@@ -279,8 +279,14 @@ export class CharXParser {
                 storageCategory = 'sprite';
             } else if (CHARX_BACKGROUND_TYPES.has(asset.type) && (CHARX_IMAGE_EXTENSIONS.has(ext) || CHARX_VIDEO_EXTENSIONS.has(ext))) {
                 storageCategory = 'background';
+            } else if (CHARX_IMAGE_EXTENSIONS.has(ext)) {
+                storageCategory = 'image';
+            } else if (CHARX_AUDIO_EXTENSIONS.has(ext)) {
+                storageCategory = 'audio';
+            } else if (CHARX_VIDEO_EXTENSIONS.has(ext)) {
+                storageCategory = 'video';
             } else {
-                storageCategory = 'misc';
+                storageCategory = 'json';
             }
 
             acc.push({
@@ -337,8 +343,8 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
     }
 
     let spritesPath = null;
-    let miscPath = null;
-    let filesPath = null;
+    /** @type {Record<string, string>} */
+    const assetPaths = {};
 
     const ensureSpritesPath = () => {
         if (spritesPath) {
@@ -352,29 +358,16 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
         return spritesPath;
     };
 
-    const ensureMiscPath = () => {
-        if (miscPath) {
-            return miscPath;
+    const ensureCharacterAssetPath = (folderName) => {
+        if (assetPaths[folderName]) {
+            return assetPaths[folderName];
         }
-        // Use the image gallery path: user/images/{characterName}/
-        const candidate = path.join(directories.userImages, characterFolder);
+        const candidate = path.join(directories.characters, characterFolder, folderName);
         if (!ensureDirectory(candidate)) {
             return null;
         }
-        miscPath = candidate;
-        return miscPath;
-    };
-
-    const ensureFilesPath = () => {
-        if (filesPath) {
-            return filesPath;
-        }
-        const candidate = path.join(directories.files, characterFolder);
-        if (!ensureDirectory(candidate)) {
-            return null;
-        }
-        filesPath = candidate;
-        return filesPath;
+        assetPaths[folderName] = candidate;
+        return assetPaths[folderName];
     };
 
     for (const asset of assets) {
@@ -402,12 +395,10 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
             }
 
             if (asset.storageCategory === 'background') {
-                // Store in character-specific backgrounds folder: characters/{charName}/backgrounds/
-                const backgroundDir = path.join(directories.characters, characterFolder, 'backgrounds');
-                if (!ensureDirectory(backgroundDir)) {
+                const backgroundDir = ensureCharacterAssetPath('backgrounds');
+                if (!backgroundDir) {
                     continue;
                 }
-                // Delete existing background with same base name
                 deleteExistingByBaseName(backgroundDir, asset.baseName);
                 const fileName = `${asset.baseName}.${asset.ext || 'png'}`;
                 const filePath = path.join(backgroundDir, fileName);
@@ -416,8 +407,9 @@ export function persistCharXAssets(assets, bufferMap, directories, characterFold
                 continue;
             }
 
-            if (asset.storageCategory === 'misc') {
-                const targetDir = CHARX_IMAGE_EXTENSIONS.has(asset.ext) ? ensureMiscPath() : ensureFilesPath();
+            if (asset.storageCategory === 'image' || asset.storageCategory === 'audio' || asset.storageCategory === 'video' || asset.storageCategory === 'json') {
+                const folderName = asset.storageCategory === 'image' ? 'images' : `${asset.storageCategory}`;
+                const targetDir = ensureCharacterAssetPath(folderName);
                 if (!targetDir) {
                     continue;
                 }

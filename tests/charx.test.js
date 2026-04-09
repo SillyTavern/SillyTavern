@@ -3,31 +3,28 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { CharXParser, persistCharXAssets } from '../src/charx.js';
+import { buildSyntheticCharXArchive } from './charx-fixtures.js';
 
 describe('CharXParser.mapCharXAssetsForStorage', () => {
-    test('preserves non-sprite names while normalizing sprite names', () => {
-        const parser = new CharXParser(Buffer.alloc(0));
+    test('preserves non-sprite names while normalizing sprite names across synthetic asset classes', async () => {
+        const parser = new CharXParser(await buildSyntheticCharXArchive());
+        const { auxiliaryAssets } = await parser.parse();
 
-        const assets = parser.mapCharXAssetsForStorage([
-            { type: 'expression', name: 'Happy Face.png', ext: 'png', zipPath: 'assets/sprites/happy-face.png', order: 0 },
-            { type: 'background', name: 'Main Scene.webm', ext: 'webm', zipPath: 'assets/backgrounds/1.webm', order: 1 },
-            { type: 'x-risu-asset', name: 'Theme Song.mp3', ext: 'mp3', zipPath: 'assets/other/audio/2.mp3', order: 2 },
-            { type: 'custom', name: 'Character Regex.json', ext: 'json', zipPath: 'assets/custom/files/3.json', order: 3 },
-            { type: 'custom', name: 'Gallery Image.webp', ext: 'webp', zipPath: 'assets/custom/images/4.webp', order: 4 },
-        ]);
-
-        expect(assets).toEqual([
-            expect.objectContaining({ storageCategory: 'sprite', baseName: 'happy-face', ext: 'png' }),
-            expect.objectContaining({ storageCategory: 'background', baseName: 'Main Scene', ext: 'webm' }),
-            expect.objectContaining({ storageCategory: 'misc', baseName: 'Theme Song', ext: 'mp3' }),
-            expect.objectContaining({ storageCategory: 'misc', baseName: 'Character Regex', ext: 'json' }),
-            expect.objectContaining({ storageCategory: 'misc', baseName: 'Gallery Image', ext: 'webp' }),
-        ]);
+        expect(auxiliaryAssets).toEqual(expect.arrayContaining([
+            expect.objectContaining({ storageCategory: 'sprite', baseName: 'excited-smile-final', ext: 'png' }),
+            expect.objectContaining({ storageCategory: 'sprite', baseName: 'smug-face-final', ext: 'webp' }),
+            expect.objectContaining({ storageCategory: 'background', baseName: 'Forest Dawn Scene', ext: 'webp' }),
+            expect.objectContaining({ storageCategory: 'background', baseName: 'Main Panorama Loop', ext: 'webm' }),
+            expect.objectContaining({ storageCategory: 'image', baseName: 'Gallery Pose A', ext: 'webp' }),
+            expect.objectContaining({ storageCategory: 'audio', baseName: 'Theme Mix (Lo-Fi)', ext: 'mp3' }),
+            expect.objectContaining({ storageCategory: 'video', baseName: 'Reaction Cam 01', ext: 'webm' }),
+            expect.objectContaining({ storageCategory: 'json', baseName: 'Character Regex', ext: 'json' }),
+        ]));
     });
 });
 
 describe('persistCharXAssets', () => {
-    test('writes gallery images to user/images and non-images to user/files', () => {
+    test('writes non-sprite character media into character-local folders', async () => {
         const root = mkdtempSync(path.join(os.tmpdir(), 'charx-test-'));
 
         const directories = {
@@ -41,31 +38,19 @@ describe('persistCharXAssets', () => {
             mkdirSync(directories.characters, { recursive: true });
             mkdirSync(directories.userImages, { recursive: true });
             mkdirSync(directories.files, { recursive: true });
+            const parser = new CharXParser(await buildSyntheticCharXArchive());
+            const { auxiliaryAssets, extractedBuffers } = await parser.parse();
+            const summary = persistCharXAssets(auxiliaryAssets, extractedBuffers, directories, 'Purrsephone');
 
-            const assets = [
-                { zipPath: 'sprite', storageCategory: 'sprite', baseName: 'happy-face', ext: 'png', name: 'Happy Face' },
-                { zipPath: 'background', storageCategory: 'background', baseName: 'Main Scene', ext: 'webm', name: 'Main Scene' },
-                { zipPath: 'gallery', storageCategory: 'misc', baseName: 'Gallery Image', ext: 'webp', name: 'Gallery Image' },
-                { zipPath: 'audio', storageCategory: 'misc', baseName: 'Theme Song', ext: 'mp3', name: 'Theme Song' },
-                { zipPath: 'regex', storageCategory: 'misc', baseName: 'Character Regex', ext: 'json', name: 'Character Regex' },
-            ];
-
-            const buffers = new Map([
-                ['sprite', Buffer.from('sprite')],
-                ['background', Buffer.from('background')],
-                ['gallery', Buffer.from('gallery')],
-                ['audio', Buffer.from('audio')],
-                ['regex', Buffer.from('regex')],
-            ]);
-
-            const summary = persistCharXAssets(assets, buffers, directories, 'Purrsephone');
-
-            expect(summary).toEqual({ sprites: 1, backgrounds: 1, misc: 3 });
-            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'happy-face.png'))).toBe(true);
-            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'backgrounds', 'Main Scene.webm'))).toBe(true);
-            expect(existsSync(path.join(directories.userImages, 'Purrsephone', 'Gallery Image.webp'))).toBe(true);
-            expect(existsSync(path.join(directories.files, 'Purrsephone', 'Theme Song.mp3'))).toBe(true);
-            expect(existsSync(path.join(directories.files, 'Purrsephone', 'Character Regex.json'))).toBe(true);
+            expect(summary).toEqual({ sprites: 2, backgrounds: 2, misc: 4 });
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'excited-smile-final.png'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'smug-face-final.webp'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'backgrounds', 'Forest Dawn Scene.webp'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'backgrounds', 'Main Panorama Loop.webm'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'images', 'Gallery Pose A.webp'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'audio', 'Theme Mix (Lo-Fi).mp3'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'video', 'Reaction Cam 01.webm'))).toBe(true);
+            expect(existsSync(path.join(directories.characters, 'Purrsephone', 'json', 'Character Regex.json'))).toBe(true);
         } finally {
             rmSync(root, { recursive: true, force: true });
         }

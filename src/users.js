@@ -1085,69 +1085,6 @@ function createRouteHandler(directoryFn) {
 }
 
 /**
- * Creates a route handler for character assets with a fallback chain:
- * 1. Sprites and other direct character-folder assets
- * 2. Character gallery assets under user/images
- * 3. Character file assets under user/files
- * 4. Character backgrounds under characters/{charName}/backgrounds/
- * This keeps creator-facing references short while preserving existing sprite paths.
- * @returns {import('express').RequestHandler}
- */
-function createCharacterAssetRouteHandler() {
-    return async (req, res) => {
-        try {
-            const filePath = decodeURIComponent(req.params[0]);
-            const dirs = req.user.directories;
-            /**
-             * Attempt to serve a file from a rooted directory while preserving route-level path safety.
-             * @param {string} rootDir
-             * @param {string} relativePath
-             * @param {string} [cacheKey]
-             * @returns {import('express').Response|undefined}
-             */
-            const trySendFile = (rootDir, relativePath, cacheKey = relativePath) => {
-                const fullPath = path.resolve(path.join(rootDir, relativePath));
-                if (!isPathUnderParent(rootDir, fullPath) || !fs.existsSync(fullPath)) {
-                    return undefined;
-                }
-
-                invalidateFirefoxCache(cacheKey, req, res);
-                return res.sendFile(relativePath, { root: rootDir });
-            };
-
-            const directCharacterAsset = trySendFile(dirs.characters, filePath);
-            if (directCharacterAsset) {
-                return directCharacterAsset;
-            }
-
-            const galleryAsset = trySendFile(dirs.userImages, filePath);
-            if (galleryAsset) {
-                return galleryAsset;
-            }
-
-            const fileAsset = trySendFile(dirs.files, filePath);
-            if (fileAsset) {
-                return fileAsset;
-            }
-
-            const [charName, ...assetParts] = filePath.split('/');
-            const assetFile = assetParts.join('/');
-            if (charName && assetFile) {
-                const backgroundRelativePath = path.join(charName, 'backgrounds', assetFile);
-                const backgroundAsset = trySendFile(dirs.characters, backgroundRelativePath, backgroundRelativePath);
-                if (backgroundAsset) {
-                    return backgroundAsset;
-                }
-            }
-
-            return res.sendStatus(404);
-        } catch (error) {
-            return res.sendStatus(500);
-        }
-    };
-}
-
-/**
  * Creates a route handler for serving extensions.
  * @param {(req: import('express').Request) => string} directoryFn A function that returns the directory path to serve files from
  * @returns {import('express').RequestHandler}
@@ -1274,7 +1211,7 @@ export async function getAllEnabledUsers() {
  */
 export const router = express.Router();
 router.use('/backgrounds/*', createRouteHandler(req => req.user.directories.backgrounds));
-router.use('/characters/*', createCharacterAssetRouteHandler());
+router.use('/characters/*', createRouteHandler(req => req.user.directories.characters));
 router.use('/User%20Avatars/*', createRouteHandler(req => req.user.directories.avatars));
 router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
 router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
