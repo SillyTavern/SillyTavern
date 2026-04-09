@@ -169,7 +169,7 @@ const handleCharChange = () => {
     settings.charConfig = charConfig;
 };
 
-const init = async () => {
+export async function init() {
     await loadSets();
     await loadSettings();
     log('settings: ', settings);
@@ -229,8 +229,8 @@ const finalizeInit = async () => {
     debug('/executing queue');
     isReady = true;
     debug('READY');
-};
-await init();
+}
+
 
 const purgeCharacterQuickReplySets = ({ character }) => {
     // Remove the character's Quick Reply Sets from the settings.

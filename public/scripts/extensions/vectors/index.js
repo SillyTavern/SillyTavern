@@ -1760,7 +1760,7 @@ async function activateWorldInfo(chat) {
     await eventSource.emit(event_types.WORLDINFO_FORCE_ACTIVATE, activatedEntries);
 }
 
-jQuery(async () => {
+export async function init() {
     if (!extension_settings.vectors) {
         extension_settings.vectors = settings;
     }
@@ -2376,4 +2376,4 @@ jQuery(async () => {
         }
         await purgeAllVectorIndexes();
     });
-});
+}
