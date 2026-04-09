@@ -39,10 +39,39 @@ import { flashHighlight, isElementInViewport, sortMoments, timestampToMoment } f
 
 const assistantAvatarKey = 'assistant';
 const pinnedChatsKey = 'pinnedChats';
+const recentChatsSettingsKey = 'recentChatsSettings';
 const defaultAssistantAvatar = 'default_Assistant.png';
 
-const DEFAULT_DISPLAYED = 3;
-const MAX_DISPLAYED = 15;
+const DEFAULT_MAX_DISPLAYED = 15;
+const DEFAULT_COLLAPSED_DISPLAYED = 3;
+
+/**
+ * Gets the current recent chats settings from account storage.
+ * @returns {{ maxDisplayed: number, collapsedDisplayed: number }}
+ */
+function getRecentChatsSettings() {
+    const value = accountStorage.getItem(recentChatsSettingsKey);
+    if (value) {
+        try {
+            const parsed = JSON.parse(value);
+            return {
+                maxDisplayed: Math.max(1, parseInt(parsed.maxDisplayed) || DEFAULT_MAX_DISPLAYED),
+                collapsedDisplayed: Math.max(1, parseInt(parsed.collapsedDisplayed) || DEFAULT_COLLAPSED_DISPLAYED),
+            };
+        } catch {
+            // Ignore parse errors
+        }
+    }
+    return { maxDisplayed: DEFAULT_MAX_DISPLAYED, collapsedDisplayed: DEFAULT_COLLAPSED_DISPLAYED };
+}
+
+/**
+ * Saves recent chats settings to account storage.
+ * @param {{ maxDisplayed: number, collapsedDisplayed: number }} settings
+ */
+function saveRecentChatsSettings(settings) {
+    accountStorage.setItem(recentChatsSettingsKey, JSON.stringify(settings));
+}
 
 /**
  * @typedef {Pick<RecentChat, 'group' | 'avatar' | 'file_name'>} PinnedChat
@@ -137,6 +166,28 @@ class PinnedChatsManager {
         } else {
             delete pinState[pinKey];
         }
+        this.#saveState(pinState);
+    }
+
+    /**
+     * Migrates pinned state when a chat is renamed.
+     * @param {RecentChat} recentChat Recent chat data (with original file_name)
+     * @param {string} newFileName New file name after rename
+     */
+    static rename(recentChat, newFileName) {
+        const oldKey = this.getKey(recentChat);
+        const pinState = { ...this.getState() };
+        if (!(oldKey in pinState)) {
+            return;
+        }
+        const updatedChat = { ...recentChat, file_name: newFileName };
+        const newKey = this.getKey(updatedChat);
+        pinState[newKey] = {
+            group: recentChat.group,
+            avatar: recentChat.avatar,
+            file_name: newFileName,
+        };
+        delete pinState[oldKey];
         this.#saveState(pinState);
     }
 
@@ -293,6 +344,12 @@ async function sendWelcomePanel(chats, expand = false) {
                 button.addEventListener('click', () => {
                     root.classList.add(recentHiddenClass);
                     accountStorage.setItem(recentHiddenKey, 'true');
+                });
+            });
+            root.querySelectorAll('.recentChatsSettings').forEach((button) => {
+                button.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    await openRecentChatsSettingsPopup();
                 });
             });
         });
@@ -493,6 +550,7 @@ async function renameRecentCharacterChat(avatarId, fileName) {
             newFileName: newName,
             loader: false,
         });
+        PinnedChatsManager.rename({ avatar: avatarId, group: '', file_name: fileName }, newName);
         await updateRemoteChatName(characterId, newName);
         await refreshWelcomeScreen();
         toastr.success(t`Chat renamed.`);
@@ -526,6 +584,7 @@ async function renameRecentGroupChat(groupId, fileName) {
             newFileName: String(newName),
             loader: false,
         });
+        PinnedChatsManager.rename({ avatar: '', group: groupId, file_name: fileName }, String(newName));
         await refreshWelcomeScreen();
         toastr.success(t`Group chat renamed.`);
     } catch (error) {
@@ -628,6 +687,58 @@ async function refreshWelcomeScreen({ flashChat = null } = {}) {
 }
 
 /**
+ * Opens a popup to configure recent chats settings.
+ */
+async function openRecentChatsSettingsPopup() {
+    const settings = getRecentChatsSettings();
+    const popupContent = document.createElement('div');
+    popupContent.classList.add('flex-container', 'flexFlowColumn', 'gap10px');
+
+    const maxLabel = document.createElement('label');
+    maxLabel.classList.add('flex-container', 'alignItemsCenter', 'gap10px');
+    const maxLabelText = document.createElement('span');
+    maxLabelText.textContent = t`Max recent chats`;
+    maxLabelText.setAttribute('data-i18n', 'Max recent chats');
+    const maxInput = document.createElement('input');
+    maxInput.type = 'number';
+    maxInput.min = '1';
+    maxInput.max = '100';
+    maxInput.value = String(settings.maxDisplayed);
+    maxInput.classList.add('text_pole');
+    maxLabel.append(maxLabelText, maxInput);
+
+    const collapsedLabel = document.createElement('label');
+    collapsedLabel.classList.add('flex-container', 'alignItemsCenter', 'gap10px');
+    const collapsedLabelText = document.createElement('span');
+    collapsedLabelText.textContent = t`Collapsed recent chats`;
+    collapsedLabelText.setAttribute('data-i18n', 'Collapsed recent chats');
+    const collapsedInput = document.createElement('input');
+    collapsedInput.type = 'number';
+    collapsedInput.min = '1';
+    collapsedInput.max = '100';
+    collapsedInput.value = String(settings.collapsedDisplayed);
+    collapsedInput.classList.add('text_pole');
+    collapsedLabel.append(collapsedLabelText, collapsedInput);
+
+    popupContent.append(maxLabel, collapsedLabel);
+
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, null, {
+        okButton: t`Save`,
+        cancelButton: t`Cancel`,
+    });
+
+    if (!result) {
+        return;
+    }
+
+    const newMax = Math.max(1, parseInt(maxInput.value) || DEFAULT_MAX_DISPLAYED);
+    const newCollapsed = Math.min(Math.max(1, parseInt(collapsedInput.value) || DEFAULT_COLLAPSED_DISPLAYED), newMax);
+
+    saveRecentChatsSettings({ maxDisplayed: newMax, collapsedDisplayed: newCollapsed });
+    await refreshWelcomeScreen();
+}
+
+/**
  * Gets the list of recent chats from the server.
  * @returns {Promise<RecentChat[]>} List of recent chats
  *
@@ -649,10 +760,11 @@ async function refreshWelcomeScreen({ flashChat = null } = {}) {
  * @property {boolean} pinned Indicates if the chat is pinned
  */
 async function getRecentChats() {
+    const settings = getRecentChatsSettings();
     const response = await fetch('/api/chats/recent', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ max: MAX_DISPLAYED, pinned: PinnedChatsManager.getAll() }),
+        body: JSON.stringify({ max: settings.maxDisplayed, pinned: PinnedChatsManager.getAll() }),
         cache: 'no-cache',
     });
 
@@ -694,7 +806,7 @@ async function getRecentChats() {
         chat.chat_name = chat.file_name.replace('.jsonl', '');
         chat.char_thumbnail = character ? getThumbnailUrl('avatar', character.avatar) : system_avatar;
         chat.is_group = !!group;
-        chat.hidden = index >= DEFAULT_DISPLAYED;
+        chat.hidden = index >= settings.collapsedDisplayed;
         chat.avatar = chat.avatar || '';
         chat.group = chat.group || '';
         chat.pinned = PinnedChatsManager.isPinned(chat);
