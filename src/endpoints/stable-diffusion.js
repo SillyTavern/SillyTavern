@@ -2079,8 +2079,6 @@ workersai.post('/generate', async (request, response) => {
             return response.sendStatus(400);
         }
 
-        console.debug('Cloudflare Workers AI request:', model, request.body.prompt?.substring(0, 100));
-
         const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`;
 
         const body = {
@@ -2099,6 +2097,8 @@ workersai.post('/generate', async (request, response) => {
                 delete body[prop];
             }
         }
+
+        console.debug('Cloudflare Workers AI request:', model, body);
 
         const result = await fetch(apiUrl, {
             method: 'POST',

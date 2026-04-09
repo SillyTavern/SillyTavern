@@ -358,9 +358,6 @@ const defaultSettings = {
     // Stability AI settings
     stability_style_preset: 'anime',
 
-    // Cloudflare Workers AI settings
-    cf_workers_account_id: '',
-
     // BFL API settings
     bfl_upsampling: false,
 
@@ -568,7 +565,6 @@ async function loadSettings() {
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
     $('#sd_google_duration').val(extension_settings.sd.google_duration);
-    $('#sd_cf_workers_account_id').val(extension_settings.sd.cf_workers_account_id);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -2110,7 +2106,7 @@ async function loadXAIModels() {
 async function loadWorkersAIImageModels() {
     $('#sd_cf_workers_key').toggleClass('success', !!secret_state[SECRET_KEYS.WORKERS_AI]);
 
-    if (!secret_state[SECRET_KEYS.WORKERS_AI] || !extension_settings.sd.cf_workers_account_id) {
+    if (!secret_state[SECRET_KEYS.WORKERS_AI] || !oai_settings.workers_ai_account_id) {
         return [];
     }
 
@@ -2118,7 +2114,7 @@ async function loadWorkersAIImageModels() {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            account_id: extension_settings.sd.cf_workers_account_id,
+            account_id: oai_settings.workers_ai_account_id,
         }),
     });
 
@@ -4775,7 +4771,7 @@ async function generateWorkersAIImage(prompt, negativePrompt, signal) {
             steps: extension_settings.sd.steps,
             scale: extension_settings.sd.scale,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
-            account_id: extension_settings.sd.cf_workers_account_id,
+            account_id: oai_settings.workers_ai_account_id,
         }),
     });
 
@@ -5161,7 +5157,7 @@ function isValidState() {
         case sources.openrouter:
             return secret_state[SECRET_KEYS.OPENROUTER];
         case sources.workersai:
-            return !!extension_settings.sd.cf_workers_account_id && secret_state[SECRET_KEYS.WORKERS_AI];
+            return !!oai_settings.workers_ai_account_id && secret_state[SECRET_KEYS.WORKERS_AI];
         default:
             return false;
     }
@@ -5919,10 +5915,6 @@ jQuery(async () => {
     });
     $('#sd_google_duration').on('input', function () {
         extension_settings.sd.google_duration = Number($(this).val());
-        saveSettingsDebounced();
-    });
-    $('#sd_cf_workers_account_id').on('input', function () {
-        extension_settings.sd.cf_workers_account_id = String($(this).val()).trim();
         saveSettingsDebounced();
     });
     $('#sd_electronhub_quality').on('change', function () {
