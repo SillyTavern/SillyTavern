@@ -5,7 +5,6 @@ import express from 'express';
 import fetch from 'node-fetch';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
-import FormData from 'form-data';
 import urlJoin from 'url-join';
 import _ from 'lodash';
 import mime from 'mime-types';
@@ -2121,15 +2120,26 @@ workersai.post('/generate', async (request, response) => {
 
         console.debug('Cloudflare Workers AI request:', model, body);
 
-        const result = await fetch(apiUrl, {
+        /** @type {import('node-fetch').RequestInit} */
+        const apiRequest = {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${key}`,
-                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(body),
-        });
+        };
 
+        if (/black-forest-labs/.test(model)) {
+            const formData = new FormData();
+            for (const [key, value] of Object.entries(body)) {
+                formData.append(key, String(value));
+            }
+            apiRequest.body = formData;
+        } else {
+            apiRequest.headers = { ...apiRequest.headers, 'Content-Type': 'application/json' };
+            apiRequest.body = JSON.stringify(body);
+        }
+
+        const result = await fetch(apiUrl, apiRequest);
         if (!result.ok) {
             const text = await result.text();
             console.warn('Cloudflare Workers AI returned an error.', result.status, result.statusText, text);
