@@ -833,8 +833,7 @@ const sdcpp = express.Router();
 
 sdcpp.post('/ping', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = '/v1/images/generations';
+        const url = new URL(urlJoin(request.body.url, '/v1/images/generations'));
 
         const result = await fetch(url, { method: 'OPTIONS' });
         if (!result.ok) {
@@ -848,12 +847,29 @@ sdcpp.post('/ping', async (request, response) => {
     }
 });
 
+sdcpp.post('/models', async (request, response) => {
+    try {
+        const url = new URL(urlJoin(request.body.url, '/v1/models'));
+
+        const result = await fetch(url);
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 sdcpp.post('/generate', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = '/sdapi/v1/txt2img';
+        const url = new URL(urlJoin(request.body.url, '/sdapi/v1/txt2img'));
 
         const payload = {
+            model: request.body.model,
             prompt: request.body.prompt,
             negative_prompt: request.body.negative_prompt,
             width: request.body.width,
@@ -864,7 +880,9 @@ sdcpp.post('/generate', async (request, response) => {
             batch_size: request.body.batch_size,
             sampler_name: request.body.sampler_name,
             scheduler: request.body.scheduler,
-            clip_skip: request.body.clip_skip,
+            // sd.cpp produces blank images when clip_skip is 1, which is the
+            // default (no skipping). Only send clip_skip when it's > 1.
+            clip_skip: request.body.clip_skip > 1 ? request.body.clip_skip : undefined,
         };
 
         for (const [key, value] of Object.entries(payload)) {

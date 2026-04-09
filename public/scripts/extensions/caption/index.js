@@ -455,7 +455,7 @@ function isVideoCaptioningAvailable() {
     return ['google', 'vertexai', 'zai'].includes(extension_settings.caption.multimodal_api);
 }
 
-jQuery(async function () {
+export async function init() {
     function addSendPictureButton() {
         const sendButton = $(`
         <div id="send_picture" class="list-group-item flex-container flexGap5">
@@ -808,4 +808,4 @@ jQuery(async function () {
     }));
 
     document.body.classList.add('caption');
-});
+}
