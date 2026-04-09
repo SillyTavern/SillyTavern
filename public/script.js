@@ -185,7 +185,7 @@ import {
     shakeElement,
     createTimeout,
 } from './scripts/utils.js';
-import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_REQUEST_TYPE, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
+import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
 import { cancelDebouncedMetadataSave, doDailyExtensionUpdatesCheck, extension_settings, initExtensions, loadExtensionSettings, runGenerationInterceptors, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, CONNECT_API_MAP, executeSlashCommandsOnChatInput, initDefaultSlashCommands, initSlashCommandAutoComplete, isExecutingCommandsFromChatInput, pauseScriptExecution, stopScriptExecution, UNIQUE_APIS } from './scripts/slash-commands.js';
@@ -444,7 +444,7 @@ let exportPopper = Popper.createPopper(document.getElementById('export_button'),
 });
 let isExportPopupOpen = false;
 const CHARX_MANAGER_SUPPORTED_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'apng', 'avif', 'bmp', 'jfif', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', '3gp', 'mkv', 'mpg', 'mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'aiff', 'json']);
-const CHARX_MANAGER_CATEGORY_ORDER = ['sprite', 'background', 'gallery', 'file', 'bgm', 'ambient', 'blip'];
+const CHARX_MANAGER_CATEGORY_ORDER = ['sprite', 'background', 'image', 'audio', 'video', 'json'];
 
 // Saved here for performance reasons
 const messageTemplate = $('#message_template .mes');
@@ -504,16 +504,14 @@ function getCharXManagerCategoryLabel(category) {
             return 'Sprite';
         case 'background':
             return 'Background';
-        case 'gallery':
-            return 'Gallery';
-        case 'file':
-            return 'File';
-        case 'bgm':
-            return 'BGM';
-        case 'ambient':
-            return 'Ambient';
-        case 'blip':
-            return 'Blip';
+        case 'image':
+            return 'Image';
+        case 'audio':
+            return 'Audio';
+        case 'video':
+            return 'Video';
+        case 'json':
+            return 'JSON';
         default:
             return 'Media';
     }
@@ -549,31 +547,37 @@ async function discoverCharXMedia(character) {
 
     const characterFolder = await getSanitizedCharacterFolderName(charName);
 
-    const [sprites, characterBackgrounds, galleryFiles, characterFiles, bgmFiles, ambientFiles, blipFiles] = await Promise.all([
-        fetchJsonOrDefault(`/api/sprites/get?name=${encodeURIComponent(charName)}`, {}, []),
-        fetchJsonOrDefault('/api/backgrounds/character/all', {
+    const [sprites, backgroundFiles, imageFiles, audioFiles, videoFiles, jsonFiles] = await Promise.all([
+        fetchJsonOrDefault('/api/files/list', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ name: charName, sortOrder: 'az' }),
-        }, { images: [], pathPrefix: '' }),
-        fetchJsonOrDefault('/api/images/list', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                folder: charName,
-                type: MEDIA_REQUEST_TYPE.IMAGE | MEDIA_REQUEST_TYPE.VIDEO,
-                sortField: 'name',
-                sortOrder: 'asc',
-            }),
+            body: JSON.stringify({ base: 'characters', folder: characterFolder }),
         }, []),
         fetchJsonOrDefault('/api/files/list', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ folder: charName }),
+            body: JSON.stringify({ base: 'characters', folder: `${characterFolder}/backgrounds` }),
         }, []),
-        fetchJsonOrDefault(`/api/assets/character?name=${encodeURIComponent(charName)}&category=bgm`, { method: 'POST' }, []),
-        fetchJsonOrDefault(`/api/assets/character?name=${encodeURIComponent(charName)}&category=ambient`, { method: 'POST' }, []),
-        fetchJsonOrDefault(`/api/assets/character?name=${encodeURIComponent(charName)}&category=blip`, { method: 'POST' }, []),
+        fetchJsonOrDefault('/api/files/list', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ base: 'characters', folder: `${characterFolder}/images` }),
+        }, []),
+        fetchJsonOrDefault('/api/files/list', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ base: 'characters', folder: `${characterFolder}/audio` }),
+        }, []),
+        fetchJsonOrDefault('/api/files/list', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ base: 'characters', folder: `${characterFolder}/video` }),
+        }, []),
+        fetchJsonOrDefault('/api/files/list', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ base: 'characters', folder: `${characterFolder}/json` }),
+        }, []),
     ]);
 
     /** @type {Array<{category: string, sourcePath: string, defaultExportName: string}>} */
@@ -592,26 +596,23 @@ async function discoverCharXMedia(character) {
         });
     };
 
-    for (const sprite of sprites) {
-        pushDiscovered('sprite', sprite?.path);
+    for (const fileName of sprites) {
+        pushDiscovered('sprite', `characters/${characterFolder}/${fileName}`);
     }
-    for (const background of characterBackgrounds.images || []) {
-        pushDiscovered('background', `${characterBackgrounds.pathPrefix}/${background}`);
+    for (const fileName of backgroundFiles) {
+        pushDiscovered('background', `characters/${characterFolder}/backgrounds/${fileName}`);
     }
-    for (const fileName of galleryFiles) {
-        pushDiscovered('gallery', `user/images/${characterFolder}/${fileName}`);
+    for (const fileName of imageFiles) {
+        pushDiscovered('image', `characters/${characterFolder}/images/${fileName}`);
     }
-    for (const fileName of characterFiles) {
-        pushDiscovered('file', `user/files/${characterFolder}/${fileName}`);
+    for (const fileName of audioFiles) {
+        pushDiscovered('audio', `characters/${characterFolder}/audio/${fileName}`);
     }
-    for (const assetPath of bgmFiles) {
-        pushDiscovered('bgm', assetPath);
+    for (const fileName of videoFiles) {
+        pushDiscovered('video', `characters/${characterFolder}/video/${fileName}`);
     }
-    for (const assetPath of ambientFiles) {
-        pushDiscovered('ambient', assetPath);
-    }
-    for (const assetPath of blipFiles) {
-        pushDiscovered('blip', assetPath);
+    for (const fileName of jsonFiles) {
+        pushDiscovered('json', `characters/${characterFolder}/json/${fileName}`);
     }
 
     return discovered.sort((left, right) => {

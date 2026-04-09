@@ -1,61 +1,58 @@
 import { describe, test, expect } from '@jest/globals';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { buildCharXCard, collectCharXExportAssets } from '../src/charx.js';
+import { writeSyntheticCharacterMediaTree } from './charx-fixtures.js';
 
 describe('collectCharXExportAssets', () => {
     test('collects character-owned media and applies export overrides', () => {
         const root = mkdtempSync(path.join(os.tmpdir(), 'charx-export-'));
         const directories = {
             characters: path.join(root, 'characters'),
-            userImages: path.join(root, 'user/images'),
-            files: path.join(root, 'user/files'),
         };
 
         try {
-            mkdirSync(path.join(directories.characters, 'Purrsephone', 'backgrounds'), { recursive: true });
-            mkdirSync(path.join(directories.characters, 'Purrsephone', 'bgm'), { recursive: true });
-            mkdirSync(path.join(directories.userImages, 'Purrsephone'), { recursive: true });
-            mkdirSync(path.join(directories.files, 'Purrsephone'), { recursive: true });
-
-            writeFileSync(path.join(directories.characters, 'Purrsephone', 'happy-face.png'), 'sprite');
-            writeFileSync(path.join(directories.characters, 'Purrsephone', 'backgrounds', 'Main Scene.webm'), 'background');
-            writeFileSync(path.join(directories.characters, 'Purrsephone', 'bgm', 'Theme Song.mp3'), 'audio');
-            writeFileSync(path.join(directories.userImages, 'Purrsephone', 'Gallery Image.webp'), 'gallery');
-            writeFileSync(path.join(directories.files, 'Purrsephone', 'Character Regex.json'), '{}');
+            mkdirSync(directories.characters, { recursive: true });
+            writeSyntheticCharacterMediaTree(directories.characters, 'Purrsephone');
 
             const assets = collectCharXExportAssets(directories, 'Purrsephone', {
                 items: [
-                    { sourcePath: 'user/images/Purrsephone/Gallery Image.webp', exportName: 'Gallery Final.webp' },
-                    { sourcePath: 'user/files/Purrsephone/Character Regex.json', enabled: false },
+                    { sourcePath: 'characters/Purrsephone/images/Gallery Pose A.webp', exportName: 'Gallery Final.webp' },
+                    { sourcePath: 'characters/Purrsephone/json/Character Regex.json', enabled: false },
                 ],
             });
 
             expect(assets).toEqual(expect.arrayContaining([
                 expect.objectContaining({
                     category: 'sprite',
-                    exportName: 'happy-face.png',
-                    archivePath: 'assets/expression/image/happy-face.png',
-                    assetType: 'expression',
+                    exportName: 'excited-smile-final.png',
+                    archivePath: 'assets/emotion/images/excited-smile-final.png',
+                    assetType: 'emotion',
                 }),
                 expect.objectContaining({
                     category: 'background',
-                    exportName: 'Main Scene.webm',
-                    archivePath: 'assets/background/image/Main Scene.webm',
+                    exportName: 'Main Panorama Loop.webm',
+                    archivePath: 'assets/background/video/Main Panorama Loop.webm',
                     assetType: 'background',
                 }),
                 expect.objectContaining({
-                    category: 'gallery',
+                    category: 'image',
                     exportName: 'Gallery Final.webp',
-                    archivePath: 'assets/custom/images/Gallery Final.webp',
-                    assetType: 'custom',
+                    archivePath: 'assets/other/images/Gallery Final.webp',
+                    assetType: 'other',
                 }),
                 expect.objectContaining({
-                    category: 'bgm',
-                    exportName: 'Theme Song.mp3',
-                    archivePath: 'assets/custom/audio/Theme Song.mp3',
-                    assetType: 'custom',
+                    category: 'audio',
+                    exportName: 'Theme Mix (Lo-Fi).mp3',
+                    archivePath: 'assets/other/audio/Theme Mix (Lo-Fi).mp3',
+                    assetType: 'other',
+                }),
+                expect.objectContaining({
+                    category: 'video',
+                    exportName: 'Reaction Cam 01.webm',
+                    archivePath: 'assets/other/video/Reaction Cam 01.webm',
+                    assetType: 'other',
                 }),
             ]));
             expect(assets.find(asset => asset.sourcePath.endsWith('Character Regex.json'))).toBeUndefined();
@@ -66,7 +63,7 @@ describe('collectCharXExportAssets', () => {
 });
 
 describe('buildCharXCard', () => {
-    test('builds a v3 card manifest and injects filename regex scripts for custom media', () => {
+    test('builds a v3 card manifest and injects filename regex scripts for character-local media routes', () => {
         const card = {
             spec: 'chara_card_v2',
             spec_version: '2.0',
@@ -83,47 +80,47 @@ describe('buildCharXCard', () => {
         const assets = [
             {
                 category: 'sprite',
-                exportName: 'happy-face.png',
+                exportName: 'excited-smile-final.png',
                 ext: 'png',
-                archivePath: 'assets/expression/image/happy-face.png',
-                assetType: 'expression',
+                archivePath: 'assets/emotion/images/excited-smile-final.png',
+                assetType: 'emotion',
             },
             {
-                category: 'gallery',
+                category: 'image',
                 exportName: 'Gallery Image.webp',
                 ext: 'webp',
-                archivePath: 'assets/custom/images/Gallery Image.webp',
-                assetType: 'custom',
+                archivePath: 'assets/other/images/Gallery Image.webp',
+                assetType: 'other',
             },
             {
-                category: 'bgm',
+                category: 'audio',
                 exportName: 'Theme Song.mp3',
                 ext: 'mp3',
-                archivePath: 'assets/custom/audio/Theme Song.mp3',
-                assetType: 'custom',
+                archivePath: 'assets/other/audio/Theme Song.mp3',
+                assetType: 'other',
             },
         ];
 
-        const charxCard = buildCharXCard(card, 'Purrsephone', 'assets/icon/image/main.png', 'png', assets, { generateRegex: true });
+        const charxCard = buildCharXCard(card, 'Purrsephone', 'assets/icon/images/main.png', 'png', assets, { generateRegex: true });
 
         expect(charxCard.spec).toBe('chara_card_v3');
         expect(charxCard.spec_version).toBe('3.0');
         expect(charxCard.data.assets).toEqual(expect.arrayContaining([
-            expect.objectContaining({ type: 'icon', name: 'main', ext: 'png', uri: 'embeded://assets/icon/image/main.png' }),
-            expect.objectContaining({ type: 'expression', name: 'happy-face.png', uri: 'embeded://assets/expression/image/happy-face.png' }),
-            expect.objectContaining({ type: 'custom', name: 'Gallery Image.webp', uri: 'embeded://assets/custom/images/Gallery Image.webp' }),
-            expect.objectContaining({ type: 'custom', name: 'Theme Song.mp3', uri: 'embeded://assets/custom/audio/Theme Song.mp3' }),
+            expect.objectContaining({ type: 'icon', name: 'main', ext: 'png', uri: 'embeded://assets/icon/images/main.png' }),
+            expect.objectContaining({ type: 'emotion', name: 'excited-smile-final.png', uri: 'embeded://assets/emotion/images/excited-smile-final.png' }),
+            expect.objectContaining({ type: 'other', name: 'Gallery Image.webp', uri: 'embeded://assets/other/images/Gallery Image.webp' }),
+            expect.objectContaining({ type: 'other', name: 'Theme Song.mp3', uri: 'embeded://assets/other/audio/Theme Song.mp3' }),
         ]));
         expect(charxCard.data.extensions.regex_scripts).toEqual(expect.arrayContaining([
             expect.objectContaining({ scriptName: 'Existing Regex' }),
             expect.objectContaining({
                 scriptName: 'CharX media: Gallery Image.webp',
-                replaceString: '/characters/Purrsephone/Gallery%20Image.webp',
+                replaceString: '/characters/Purrsephone/images/Gallery%20Image.webp',
                 markdownOnly: true,
             }),
             expect.objectContaining({
                 scriptName: 'CharX media: Theme Song.mp3',
-                replaceString: '/characters/Purrsephone/Theme%20Song.mp3',
+                replaceString: '/characters/Purrsephone/audio/Theme%20Song.mp3',
                 markdownOnly: true,
             }),
         ]));

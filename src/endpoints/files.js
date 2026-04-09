@@ -102,13 +102,23 @@ router.post('/verify', async (request, response) => {
 
 router.post('/list', async (request, response) => {
     try {
-        const folder = sanitize(String(request.body.folder || ''));
-        if (!folder) {
+        const baseName = String(request.body.base || 'files');
+        const baseDirectory = baseName === 'characters'
+            ? request.user.directories.characters
+            : request.user.directories.files;
+        const folderParts = String(request.body.folder || '')
+            .split(/[\\/]/)
+            .map(part => sanitize(part))
+            .filter(Boolean);
+
+        if (folderParts.length === 0) {
             return response.status(400).send('No folder specified');
         }
 
-        const directoryPath = path.join(request.user.directories.files, folder);
-        if (!directoryPath.startsWith(request.user.directories.files)) {
+        const resolvedBaseDirectory = path.resolve(baseDirectory);
+        const directoryPath = path.resolve(path.join(baseDirectory, ...folderParts));
+        const relativeToBase = path.relative(resolvedBaseDirectory, directoryPath);
+        if (relativeToBase.startsWith('..') || path.isAbsolute(relativeToBase)) {
             return response.status(400).send('Invalid folder');
         }
 

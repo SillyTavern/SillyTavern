@@ -790,7 +790,7 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
         try {
             const summary = persistCharXAssets(auxiliaryAssets, extractedBuffers, request.user.directories, characterFolder);
             if (summary.sprites || summary.backgrounds || summary.misc) {
-                console.log(`CharX: Imported ${summary.sprites} sprite(s), ${summary.backgrounds} background(s), ${summary.misc} misc asset(s) for ${characterFolder}`);
+                console.log(`CharX: Imported ${summary.sprites} sprite(s), ${summary.backgrounds} background(s), ${summary.misc} additional asset(s) for ${characterFolder}`);
             }
         } catch (error) {
             console.warn(`CharX: Failed to persist auxiliary assets for ${characterFolder}`, error);
@@ -1694,7 +1694,7 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
                     const mediaConfig = _.get(jsonObject, 'data.extensions.charx_media');
                     const exportAssets = collectCharXExportAssets(request.user.directories, characterFolder, mediaConfig);
                     const avatarExt = path.extname(filename).slice(1).toLowerCase() || 'png';
-                    const avatarArchivePath = `assets/icon/image/main.${avatarExt}`;
+                    const avatarArchivePath = `assets/icon/images/main.${avatarExt}`;
                     const charxCard = buildCharXCard(jsonObject, characterFolder, avatarArchivePath, avatarExt, exportAssets, mediaConfig);
 
                     const archive = archiver('zip');
