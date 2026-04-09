@@ -1263,8 +1263,6 @@ function onSdcppUrlInput() {
     saveSettingsDebounced();
 }
 
-
-
 function onVladUrlInput() {
     extension_settings.sd.vlad_url = $('#sd_vlad_url').val();
     saveSettingsDebounced();
