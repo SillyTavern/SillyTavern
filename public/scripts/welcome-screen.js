@@ -111,7 +111,7 @@ class PinnedChatsManager {
 
     /**
      * Generates a key for pinned chat storage.
-     * @param {RecentChat} recentChat Recent chat data
+     * @param {Partial<RecentChat>} recentChat Recent chat data
      * @returns {string} Key for pinned chat storage
      */
     static getKey(recentChat) {
@@ -171,7 +171,7 @@ class PinnedChatsManager {
 
     /**
      * Migrates pinned state when a chat is renamed.
-     * @param {RecentChat} recentChat Recent chat data (with original file_name)
+     * @param {Partial<RecentChat>} recentChat Recent chat data (with original file_name)
      * @param {string} newFileName New file name after rename
      */
     static rename(recentChat, newFileName) {
@@ -550,7 +550,7 @@ async function renameRecentCharacterChat(avatarId, fileName) {
             newFileName: newName,
             loader: false,
         });
-        PinnedChatsManager.rename({ avatar: avatarId, group: '', file_name: fileName + '.jsonl' }, newName + '.jsonl');
+        PinnedChatsManager.rename({ avatar: avatarId, group: '', file_name: fileName }, newName);
         await updateRemoteChatName(characterId, newName);
         await refreshWelcomeScreen();
         toastr.success(t`Chat renamed.`);
@@ -584,7 +584,7 @@ async function renameRecentGroupChat(groupId, fileName) {
             newFileName: String(newName),
             loader: false,
         });
-        PinnedChatsManager.rename({ avatar: '', group: groupId, file_name: fileName + '.jsonl' }, String(newName) + '.jsonl');
+        PinnedChatsManager.rename({ avatar: '', group: groupId, file_name: fileName }, String(newName));
         await refreshWelcomeScreen();
         toastr.success(t`Group chat renamed.`);
     } catch (error) {
@@ -691,50 +691,48 @@ async function refreshWelcomeScreen({ flashChat = null } = {}) {
  */
 async function openRecentChatsSettingsPopup() {
     const settings = getRecentChatsSettings();
-    const popupContent = document.createElement('div');
-    popupContent.classList.add('flex-container', 'flexFlowColumn', 'gap10px');
 
-    const maxLabel = document.createElement('label');
-    maxLabel.classList.add('flex-container', 'alignItemsCenter', 'gap10px');
-    const maxLabelText = document.createElement('span');
-    maxLabelText.textContent = t`Max recent chats`;
-    maxLabelText.setAttribute('data-i18n', 'Max recent chats');
-    const maxInput = document.createElement('input');
-    maxInput.type = 'number';
-    maxInput.min = '1';
-    maxInput.max = '100';
-    maxInput.value = String(settings.maxDisplayed);
-    maxInput.classList.add('text_pole');
-    maxLabel.append(maxLabelText, maxInput);
+    /** @type {import('./popup.js').CustomPopupInput} */
+    const maxRecentChatsInput = {
+        id: 'maxRecentChats',
+        type: 'number',
+        label: t`Max recent chats`,
+        defaultState: String(settings.maxDisplayed),
+        min: 1,
+        max: 1000,
+        step: 1,
+    };
 
-    const collapsedLabel = document.createElement('label');
-    collapsedLabel.classList.add('flex-container', 'alignItemsCenter', 'gap10px');
-    const collapsedLabelText = document.createElement('span');
-    collapsedLabelText.textContent = t`Collapsed recent chats`;
-    collapsedLabelText.setAttribute('data-i18n', 'Collapsed recent chats');
-    const collapsedInput = document.createElement('input');
-    collapsedInput.type = 'number';
-    collapsedInput.min = '1';
-    collapsedInput.max = '100';
-    collapsedInput.value = String(settings.collapsedDisplayed);
-    collapsedInput.classList.add('text_pole');
-    collapsedLabel.append(collapsedLabelText, collapsedInput);
+    /** @type {import('./popup.js').CustomPopupInput} */
+    const collapsedRecentChatsInput = {
+        id: 'collapsedRecentChats',
+        type: 'number',
+        label: t`Collapsed recent chats`,
+        defaultState: String(settings.collapsedDisplayed),
+        min: 1,
+        max: 1000,
+        step: 1,
+    };
 
-    popupContent.append(maxLabel, collapsedLabel);
-
-    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, null, {
+    await callGenericPopup(t`Recent Chats Settings`, POPUP_TYPE.CONFIRM, null, {
         okButton: t`Save`,
         cancelButton: t`Cancel`,
+        customInputs: [maxRecentChatsInput, collapsedRecentChatsInput],
+        onClose: (popup) => {
+            if (!popup.result) {
+                return;
+            }
+
+            const maxInputValue = popup.inputResults.get(maxRecentChatsInput.id)?.toString() ?? String(DEFAULT_MAX_DISPLAYED);
+            const collapsedInputValue = popup.inputResults.get(collapsedRecentChatsInput.id)?.toString() ?? String(DEFAULT_COLLAPSED_DISPLAYED);
+
+            const newMax = Math.max(1, parseInt(maxInputValue) || DEFAULT_MAX_DISPLAYED);
+            const newCollapsed = Math.min(Math.max(1, parseInt(collapsedInputValue) || DEFAULT_COLLAPSED_DISPLAYED), newMax);
+
+            saveRecentChatsSettings({ maxDisplayed: newMax, collapsedDisplayed: newCollapsed });
+        },
     });
 
-    if (!result) {
-        return;
-    }
-
-    const newMax = Math.max(1, parseInt(maxInput.value) || DEFAULT_MAX_DISPLAYED);
-    const newCollapsed = Math.min(Math.max(1, parseInt(collapsedInput.value) || DEFAULT_COLLAPSED_DISPLAYED), newMax);
-
-    saveRecentChatsSettings({ maxDisplayed: newMax, collapsedDisplayed: newCollapsed });
     await refreshWelcomeScreen();
 }
 
