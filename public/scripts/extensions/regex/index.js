@@ -2069,6 +2069,37 @@ jQuery(async () => {
         helpString: 'Runs a Regex extension script by name on the provided string. The script must be enabled.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'regex-state',
+        /** @param {object} _ @param {string} name */
+        callback: (_, name) => {
+            if (!name) {
+                toastr.warning('No regex script name provided.');
+                return '';
+            }
+
+            const scripts = getRegexScripts();
+            const script = scripts.find(s => equalsIgnoreCaseAndAccents(s.scriptName, name));
+
+            if (!script) {
+                toastr.warning(`Regex script "${name}" not found.`);
+                return '';
+            }
+
+            return script.disabled ? 'off' : 'on';
+        },
+        returns: '\'on\' (for enabled) or \'off\' (for disabled)',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'script name',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: localEnumProviders.regexScripts,
+            }),
+        ],
+        helpString: 'Returns the current state of a regex script.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'regex-toggle',
         callback: toggleRegexCallback,
         returns: 'The name of the script that was toggled',
