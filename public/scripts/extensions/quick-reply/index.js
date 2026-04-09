@@ -229,7 +229,7 @@ const finalizeInit = async () => {
     debug('/executing queue');
     isReady = true;
     debug('READY');
-}
+};
 
 
 const purgeCharacterQuickReplySets = ({ character }) => {
