@@ -5946,7 +5946,7 @@ export async function init() {
         extension_settings.sd.google_duration = Number($(this).val());
         saveSettingsDebounced();
     });
-    $('#sd_cf_workers_refresh').on('click', async () => {
+    $('#sd_models_refresh').on('click', async () => {
         await loadModels();
     });
     $('#sd_electronhub_quality').on('change', function () {
