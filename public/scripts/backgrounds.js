@@ -117,6 +117,7 @@ export let background_settings = {
     fitting: 'classic',
     animation: false,
     sortOrder: BG_SORT_OPTIONS.AZ,
+    characterBackgrounds: {},
 };
 
 /**
@@ -240,9 +241,14 @@ export function loadBackgroundSettings(settings) {
     background_settings.thumbnailColumns = columns;
     background_settings.sortOrder = backgroundSettings.sortOrder;
     background_settings.animation = backgroundSettings.animation;
+    background_settings.characterBackgrounds = backgroundSettings.characterBackgrounds && typeof backgroundSettings.characterBackgrounds === 'object'
+        ? backgroundSettings.characterBackgrounds
+        : {};
     applyThumbnailColumns(background_settings.thumbnailColumns);
 
-    setBackground(backgroundSettings.name, backgroundSettings.url);
+    background_settings.name = backgroundSettings.name;
+    background_settings.url = backgroundSettings.url;
+    applyCurrentBackground();
     setFittingClass(backgroundSettings.fitting);
     $('#background_fitting').val(backgroundSettings.fitting);
     $('#background_thumbnails_animation').prop('checked', background_settings.animation);
@@ -269,10 +275,7 @@ async function forceSetBackground(backgroundInfo) {
 }
 
 async function onChatChanged() {
-    const lockedUrl = chat_metadata[BG_METADATA_KEY];
-
-    $('#bg1').css('background-image', lockedUrl || background_settings.url);
-
+    applyCurrentBackground();
     renderChatBackgrounds();
     await getCharacterBackgrounds();
     highlightLockedBackground();
@@ -331,8 +334,8 @@ function onLockBackgroundClick(event = null) {
         return;
     }
 
-    // Take the global background's URL and save it to the chat's metadata.
-    const urlToLock = event ? $(event.target).closest('.bg_example').data('url') : background_settings.url;
+    // Lock the current effective selection for this chat.
+    const urlToLock = event ? $(event.target).closest('.bg_example').data('url') : getSelectedBackgroundUrl();
     saveBackgroundMetadata(urlToLock);
     $('#bg1').css('background-image', urlToLock);
 
@@ -349,8 +352,8 @@ function onUnlockBackgroundClick(_event = null) {
     // Delete the lock from the chat's metadata.
     removeBackgroundMetadata();
 
-    // Revert the view to the current global background.
-    $('#bg1').css('background-image', background_settings.url);
+    // Revert the view to the current effective background.
+    applyCurrentBackground();
 
     // Update UI states to reflect the removal of the lock.
     highlightLockedBackground();
@@ -391,8 +394,7 @@ function onSelectBackgroundClick(e) {
         saveBackgroundMetadata(backgroundCssUrl);
         $('#bg1').css('background-image', backgroundCssUrl);
     } else {
-        // Otherwise, update the global background setting
-        setBackground(bgFile, backgroundCssUrl);
+        setBackground(bgFile, backgroundCssUrl, source);
     }
 
     // Update UI highlights to reflect the changes.
@@ -573,6 +575,10 @@ async function onDeleteBackgroundClick(e) {
                 return;
             }
             await delCharacterBackground(charName, String(bg).split('/').pop());
+            if (getCharacterBackgroundSelectionUrl(charName) === url) {
+                delete background_settings.characterBackgrounds[charName];
+                saveSettingsDebounced();
+            }
         } else if (!isCustom) {
             // If it's not custom, it's a built-in background. Delete it from the server
             await delBackground(bg);
@@ -630,6 +636,11 @@ async function onDeleteBackgroundClick(e) {
         }
 
         if (isCharacterBg) {
+            await THUMBNAIL_STORAGE.removeItem(bg);
+            if (THUMBNAIL_BLOBS.has(bg)) {
+                URL.revokeObjectURL(THUMBNAIL_BLOBS.get(bg));
+                THUMBNAIL_BLOBS.delete(bg);
+            }
             await getCharacterBackgrounds();
         }
 
@@ -641,6 +652,7 @@ async function onDeleteBackgroundClick(e) {
             await saveMetadata();
         }
 
+        applyCurrentBackground();
         highlightLockedBackground();
         highlightSelectedBackground();
         syncGroupSelectionUi();
@@ -752,6 +764,38 @@ function getCurrentCharacterName() {
     }
 
     return null;
+}
+
+/**
+ * Gets the saved character-specific background URL for the current character.
+ * @param {string|null} [charName]
+ * @returns {string|null}
+ */
+function getCharacterBackgroundSelectionUrl(charName = getCurrentCharacterName()) {
+    if (!charName) {
+        return null;
+    }
+
+    return background_settings.characterBackgrounds?.[charName] || null;
+}
+
+/**
+ * Gets the current unlocked background selection for the active character context.
+ * @param {string|null} [charName]
+ * @returns {string}
+ */
+function getSelectedBackgroundUrl(charName = getCurrentCharacterName()) {
+    return getCharacterBackgroundSelectionUrl(charName) || background_settings.url;
+}
+
+/**
+ * Applies the effective background for the active character context.
+ * Chat locks take precedence over character and global selections.
+ * @param {string|null} [charName]
+ */
+function applyCurrentBackground(charName = getCurrentCharacterName()) {
+    const lockedUrl = chat_metadata[BG_METADATA_KEY];
+    $('#bg1').css('background-image', lockedUrl || getSelectedBackgroundUrl(charName));
 }
 
 /**
@@ -1564,13 +1608,20 @@ async function resolveImageUrl(bg, isCustom, isAnimated = null, source = BG_SOUR
     return `url("${thumbnailUrl}")`;
 }
 
-async function setBackground(bg, url) {
-    // Only change the visual background if one is not locked for the current chat.
-    if (!isChatBackgroundLocked()) {
-        $('#bg1').css('background-image', url);
+async function setBackground(bg, url, source = BG_SOURCES.GLOBAL) {
+    const charName = getCurrentCharacterName();
+
+    if (source === BG_SOURCES.CHARACTER && charName) {
+        background_settings.characterBackgrounds[charName] = url;
+    } else {
+        background_settings.name = bg;
+        background_settings.url = url;
     }
-    background_settings.name = bg;
-    background_settings.url = url;
+
+    if (!isChatBackgroundLocked()) {
+        $('#bg1').css('background-image', getSelectedBackgroundUrl(charName));
+    }
+
     saveSettingsDebounced();
 }
 
@@ -1792,6 +1843,14 @@ async function uploadCharacterBackground(formData) {
         }
 
         const data = await response.json();
+        const uploadedPath = data?.filename && data?.pathPrefix ? `${data.pathPrefix}/${data.filename}` : '';
+        if (uploadedPath) {
+            await THUMBNAIL_STORAGE.removeItem(uploadedPath);
+            if (THUMBNAIL_BLOBS.has(uploadedPath)) {
+                URL.revokeObjectURL(THUMBNAIL_BLOBS.get(uploadedPath));
+                THUMBNAIL_BLOBS.delete(uploadedPath);
+            }
+        }
         await getCharacterBackgrounds();
 
         if (data?.filename && data?.pathPrefix) {
@@ -1832,8 +1891,8 @@ function setFittingClass(fitting) {
 function highlightSelectedBackground() {
     $('.bg_example.selected-background').removeClass('selected-background');
 
-    // The "selected" highlight should always reflect the global background setting.
-    const activeUrl = background_settings.url;
+    // The selected highlight reflects the current unlocked character-aware selection.
+    const activeUrl = getSelectedBackgroundUrl();
 
     if (activeUrl) {
         // Find the thumbnail whose data-url attribute matches the active URL
