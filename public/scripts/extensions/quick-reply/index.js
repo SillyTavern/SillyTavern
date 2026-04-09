@@ -214,7 +214,8 @@ const init = async () => {
     eventSource.on(event_types.APP_READY, async () => await finalizeInit());
 
     globalThis.quickReplyApi = quickReplyApi;
-};
+}
+
 const finalizeInit = async () => {
     debug('executing startup');
     await autoExec.handleStartup();
