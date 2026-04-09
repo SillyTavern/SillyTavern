@@ -833,8 +833,7 @@ const sdcpp = express.Router();
 
 sdcpp.post('/ping', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = url.pathname.replace(/\/$/, '') + '/v1/images/generations';
+        const url = urlJoin(request.body.url, '/v1/images/generations');
 
         const result = await fetch(url, { method: 'OPTIONS' });
         if (!result.ok) {
@@ -850,8 +849,7 @@ sdcpp.post('/ping', async (request, response) => {
 
 sdcpp.post('/models', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = url.pathname.replace(/\/$/, '') + '/v1/models';
+        const url = urlJoin(request.body.url, '/v1/models');
 
         const result = await fetch(url);
         if (!result.ok) {
@@ -868,8 +866,7 @@ sdcpp.post('/models', async (request, response) => {
 
 sdcpp.post('/generate', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = url.pathname.replace(/\/$/, '') + '/sdapi/v1/txt2img';
+        const url = urlJoin(request.body.url, '/sdapi/v1/txt2img');
 
         const payload = {
             model: request.body.model,
