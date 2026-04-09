@@ -2085,9 +2085,9 @@ jQuery(async () => {
                 return '';
             }
 
-            return script.disabled ? 'off' : 'on';
+            return script.disabled ? 'false' : 'true';
         },
-        returns: '\'on\' (for enabled) or \'off\' (for disabled)',
+        returns: 'true (for enabled) or false (for disabled)',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'script name',
