@@ -35,7 +35,7 @@ import { callGenericPopup, POPUP_TYPE } from './popup.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { renderTemplateAsync } from './templates.js';
 import { accountStorage } from './util/AccountStorage.js';
-import { flashHighlight, isElementInViewport, sortMoments, timestampToMoment } from './utils.js';
+import { clamp, flashHighlight, isElementInViewport, sortMoments, timestampToMoment } from './utils.js';
 
 const assistantAvatarKey = 'assistant';
 const pinnedChatsKey = 'pinnedChats';
@@ -726,8 +726,8 @@ async function openRecentChatsSettingsPopup() {
             const maxInputValue = popup.inputResults.get(maxRecentChatsInput.id)?.toString() ?? String(DEFAULT_MAX_DISPLAYED);
             const collapsedInputValue = popup.inputResults.get(collapsedRecentChatsInput.id)?.toString() ?? String(DEFAULT_COLLAPSED_DISPLAYED);
 
-            const newMax = Math.max(1, parseInt(maxInputValue) || DEFAULT_MAX_DISPLAYED);
-            const newCollapsed = Math.min(Math.max(1, parseInt(collapsedInputValue) || DEFAULT_COLLAPSED_DISPLAYED), newMax);
+            const newMax = clamp(parseInt(maxInputValue) || DEFAULT_MAX_DISPLAYED, 1, Infinity);
+            const newCollapsed = clamp(parseInt(collapsedInputValue) || DEFAULT_COLLAPSED_DISPLAYED, 1, newMax);
 
             saveRecentChatsSettings({ maxDisplayed: newMax, collapsedDisplayed: newCollapsed });
         },
