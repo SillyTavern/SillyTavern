@@ -692,15 +692,18 @@ async function refreshWelcomeScreen({ flashChat = null } = {}) {
 async function openRecentChatsSettingsPopup() {
     const settings = getRecentChatsSettings();
 
+    const MIN_CHATS = 1;
+    const MAX_CHATS = 1000;
+
     /** @type {import('./popup.js').CustomPopupInput} */
     const maxRecentChatsInput = {
         id: 'maxRecentChats',
         type: 'number',
         label: t`Max recent chats`,
-        tooltip: t`${1} - ${1000}`,
+        tooltip: t`${MIN_CHATS} - ${MAX_CHATS}`,
         defaultState: String(settings.maxDisplayed),
-        min: 1,
-        max: 1000,
+        min: MIN_CHATS,
+        max: MAX_CHATS,
         step: 1,
     };
 
@@ -709,10 +712,10 @@ async function openRecentChatsSettingsPopup() {
         id: 'collapsedRecentChats',
         type: 'number',
         label: t`Collapsed recent chats`,
-        tooltip: t`${1} - ${1000}`,
+        tooltip: t`${MIN_CHATS} - ${MAX_CHATS}`,
         defaultState: String(settings.collapsedDisplayed),
-        min: 1,
-        max: 1000,
+        min: MIN_CHATS,
+        max: MAX_CHATS,
         step: 1,
     };
 
