@@ -2,7 +2,7 @@ import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { t } from './i18n.js';
 import { power_user, toastPositionClasses } from './power-user.js';
-import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
+import { clamp, removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
 /** @enum {Number} */
@@ -79,8 +79,11 @@ export const POPUP_RESULT = {
  * @property {string} label - The label text for the input
  * @property {string?} [tooltip=null] - Optional tooltip to be displayed. Default placeholder in input controls, tooltip icon behind the checkbox for those.
  * @property {boolean|string|undefined} [defaultState=false] - The default state when opening the popup (false if not set)
- * @property {('checkbox'|'text'|'textarea')?} [type='checkbox'] - The type of the input (default is checkbox)
+ * @property {('checkbox'|'text'|'textarea'|'number')?} [type='checkbox'] - The type of the input (default is checkbox)
  * @property {number?} [rows=1] - The number of rows for the input field, if the input is 'textarea'
+ * @property {number?} [min] - The minimum value for number inputs
+ * @property {number?} [max] - The maximum value for number inputs
+ * @property {number?} [step] - The step value for number inputs
  */
 
 /**
@@ -387,8 +390,46 @@ export class Popup {
                 label.appendChild(inputElement);
 
                 this.inputControls.appendChild(label);
+            } else if (input.type === 'number') {
+                const label = document.createElement('label');
+                label.classList.add('text_label', 'justifyCenter');
+                label.setAttribute('for', input.id);
+
+                const inputElement = document.createElement('input');
+                inputElement.classList.add('text_pole', 'result-control');
+                inputElement.type = 'number';
+                inputElement.id = input.id;
+                inputElement.value = String(input.defaultState ?? '');
+                inputElement.placeholder = input.tooltip ?? '';
+                inputElement.min = String(input.min ?? '');
+                inputElement.max = String(input.max ?? '');
+                inputElement.step = String(input.step ?? '');
+                setTitleFromTooltip(inputElement, input.tooltip);
+
+                inputElement.addEventListener('change', () => {
+                    const value = parseFloat(inputElement.value);
+                    if (isNaN(value)) return;
+
+                    const min = Number.isFinite(input.min) ? input.min : -Infinity;
+                    const max = Number.isFinite(input.max) ? input.max : Infinity;
+                    const clamped = clamp(value, min, max);
+
+                    if (clamped !== value) {
+                        inputElement.value = String(clamped);
+                        toastr.warning(t`Value must be between ${min} and ${max}. Clamped to ${clamped}.`);
+                    }
+                });
+
+                const labelText = document.createElement('span');
+                labelText.innerText = input.label;
+                labelText.dataset.i18n = input.label;
+
+                label.appendChild(labelText);
+                label.appendChild(inputElement);
+
+                this.inputControls.appendChild(label);
             } else {
-                console.warn('Unknown custom input type. Only checkbox, text and textarea are supported.', input);
+                console.warn('Unknown custom input type. Only checkbox, text, number and textarea are supported.', input);
                 return;
             }
         });
@@ -720,7 +761,7 @@ export class Popup {
             this.inputResults = new Map(this.customInputs.map(input => {
                 /** @type {HTMLInputElement} */
                 const inputControl = this.dlg.querySelector(`#${input.id}`);
-                const value = ['text', 'textarea'].includes(input.type) ? inputControl.value : inputControl.checked;
+                const value = ['text', 'textarea', 'number'].includes(input.type) ? inputControl.value : inputControl.checked;
                 return [inputControl.id, value];
             }));
         }
