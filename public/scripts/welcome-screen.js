@@ -726,8 +726,8 @@ async function openRecentChatsSettingsPopup() {
             const maxInputValue = popup.inputResults.get(maxRecentChatsInput.id)?.toString() ?? String(DEFAULT_MAX_DISPLAYED);
             const collapsedInputValue = popup.inputResults.get(collapsedRecentChatsInput.id)?.toString() ?? String(DEFAULT_COLLAPSED_DISPLAYED);
 
-            const newMax = clamp(parseInt(maxInputValue) || DEFAULT_MAX_DISPLAYED, 1, Infinity);
-            const newCollapsed = clamp(parseInt(collapsedInputValue) || DEFAULT_COLLAPSED_DISPLAYED, 1, newMax);
+            const newMax = clamp(parseInt(maxInputValue) || DEFAULT_MAX_DISPLAYED, maxRecentChatsInput.min, maxRecentChatsInput.max);
+            const newCollapsed = clamp(parseInt(collapsedInputValue) || DEFAULT_COLLAPSED_DISPLAYED, collapsedRecentChatsInput.min, newMax);
 
             saveRecentChatsSettings({ maxDisplayed: newMax, collapsedDisplayed: newCollapsed });
         },
