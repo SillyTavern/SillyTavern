@@ -15,6 +15,7 @@
 @import url(css/secrets.css);
 @import url(css/backgrounds.css);
 @import url(css/chat-backups.css);
+@import url(css/streaming-display.css);
 
 :root {
     interpolate-size: allow-keywords;

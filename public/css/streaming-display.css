@@ -1,0 +1,110 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Streaming Display — floating toast panel for live LLM generation output.
+   Shows reasoning (thinking) and content as they stream in.
+   Used by extensions that leverage ConnectionManagerRequestService streaming.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.streaming-display {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: min(550px, calc(100vw - 40px));
+    max-height: 70vh;
+    background: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 14px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+}
+
+.streaming-display-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Header label with animated activity indicator */
+.streaming-display-label {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--SmartThemeBodyColor);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.streaming-display-label::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--SmartThemeQuoteColor);
+    animation: streaming-display-pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes streaming-display-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Model/API icon in the label */
+.streaming-display-icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+}
+
+/* Reasoning (thinking) section */
+.streaming-display-reasoning {
+    background: color-mix(in srgb, var(--SmartThemeBodyColor) 5%, transparent);
+    border-radius: 6px;
+    padding: 8px 10px;
+    border-left: 3px solid color-mix(in srgb, var(--SmartThemeBodyColor) 25%, transparent);
+}
+
+.streaming-display-reasoning-label {
+    font-size: 0.8em;
+    font-weight: 600;
+    opacity: 0.5;
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.streaming-display-reasoning-content {
+    font-size: 0.82em;
+    opacity: 0.65;
+    max-height: 25vh;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.45;
+    scrollbar-width: thin;
+}
+
+/* Main content section */
+.streaming-display-text {
+    border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 50%, transparent);
+    padding-top: 8px;
+}
+
+.streaming-display-text-content {
+    font-size: 0.9em;
+    color: var(--SmartThemeBodyColor);
+    max-height: 40vh;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.5;
+    scrollbar-width: thin;
+}
