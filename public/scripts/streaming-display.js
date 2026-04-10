@@ -22,9 +22,6 @@ import { SVGInject } from '../lib.js';
 import { t } from './i18n.js';
 import { animation_duration } from '/script.js';
 
-/** Duration in ms for the show/hide fade animation */
-const ANIMATION_DURATION_MS = animation_duration;
-
 /** CSS class prefix */
 const CSS_PREFIX = 'streaming-display';
 
@@ -188,8 +185,9 @@ export class StreamingDisplay {
         }
 
         el.classList.remove(`${CSS_PREFIX}-visible`);
-        if (ANIMATION_DURATION_MS > 0) {
-            setTimeout(() => el.remove(), ANIMATION_DURATION_MS);
+        const duration = animation_duration;
+        if (duration > 0) {
+            setTimeout(() => el.remove(), duration);
         } else {
             el.remove();
         }
