@@ -410,8 +410,8 @@ export class Popup {
                     const value = parseFloat(inputElement.value);
                     if (isNaN(value)) return;
 
-                    const min = input.min != null ? input.min : -Infinity;
-                    const max = input.max != null ? input.max : Infinity;
+                    const min = Number.isFinite(input.min) ? input.min : -Infinity;
+                    const max = Number.isFinite(input.max) ? input.max : Infinity;
                     const clamped = clamp(value, min, max);
 
                     if (clamped !== value) {
