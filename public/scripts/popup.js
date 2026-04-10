@@ -2,7 +2,7 @@ import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { t } from './i18n.js';
 import { power_user, toastPositionClasses } from './power-user.js';
-import { removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
+import { clamp, removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
 /** @enum {Number} */
@@ -405,6 +405,20 @@ export class Popup {
                 inputElement.max = String(input.max ?? '');
                 inputElement.step = String(input.step ?? '');
                 setTitleFromTooltip(inputElement, input.tooltip);
+
+                inputElement.addEventListener('change', () => {
+                    const value = parseFloat(inputElement.value);
+                    if (isNaN(value)) return;
+
+                    const min = input.min != null ? input.min : -Infinity;
+                    const max = input.max != null ? input.max : Infinity;
+                    const clamped = clamp(value, min, max);
+
+                    if (clamped !== value) {
+                        inputElement.value = String(clamped);
+                        toastr.warning(t`Value must be between ${min} and ${max}. Clamped to ${clamped}.`);
+                    }
+                });
 
                 const labelText = document.createElement('span');
                 labelText.innerText = input.label;
