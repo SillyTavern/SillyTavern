@@ -221,7 +221,7 @@ function getUserAvatarBlock(avatarId) {
 function addMissingPersonas(avatarsList) {
     for (const persona of avatarsList) {
         if (!power_user.personas[persona]) {
-            initPersona(persona, '[Unnamed Persona]', '', '');
+            initPersona(persona, '[Unnamed Persona]', '', '', { silent: true });
         }
     }
 }
@@ -464,9 +464,11 @@ async function createDummyPersona() {
  * @param {string} personaName Name for the persona
  * @param {string} personaDescription Optional description for the persona
  * @param {string} personaTitle Optional title for the persona
+ * @param {object} [options] Optional settings
+ * @param {boolean} [options.silent=false] If true, no PERSONA_CREATED event is emitted (used for background migrations)
  * @returns {void}
  */
-export function initPersona(avatarId, personaName, personaDescription, personaTitle) {
+export function initPersona(avatarId, personaName, personaDescription, personaTitle, { silent = false } = {}) {
     power_user.personas[avatarId] = personaName;
     power_user.persona_descriptions[avatarId] = {
         description: personaDescription || '',
@@ -478,6 +480,10 @@ export function initPersona(avatarId, personaName, personaDescription, personaTi
     };
 
     saveSettingsDebounced();
+
+    if (!silent) {
+        eventSource.emit(event_types.PERSONA_CREATED, { avatarId, name: personaName, description: personaDescription || '', title: personaTitle || '' });
+    }
 }
 
 /**
@@ -540,6 +546,7 @@ export async function convertCharacterToPersona(characterId = null) {
     }
 
     saveSettingsDebounced();
+    eventSource.emit(event_types.PERSONA_CREATED, { avatarId: overwriteName, name, description, title: '' });
 
     console.log('Persona for character created');
     toastr.success(t`You can now pick ${name} as a persona in the Persona Management menu.`, t`Persona Created`);
@@ -778,6 +785,7 @@ async function editPersonaTitle(popup, avatarId, currentTitle) {
         delete power_user.persona_descriptions[avatarId].title;
         await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
+        eventSource.emit(event_types.PERSONA_UPDATED, avatarId);
         return;
     }
 
@@ -786,6 +794,7 @@ async function editPersonaTitle(popup, avatarId, currentTitle) {
         console.log(`Updated persona title for ${avatarId} to ${newTitle}`);
         await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
+        eventSource.emit(event_types.PERSONA_UPDATED, avatarId);
         return;
     }
 }
@@ -821,6 +830,7 @@ async function renamePersona(avatarId) {
     }
 
     saveSettingsDebounced();
+    eventSource.emit(event_types.PERSONA_RENAMED, { avatarId, oldName: currentName, newName });
     await getUserAvatars(true, avatarId);
     updatePersonaUIStates();
     setPersonaDescription();
@@ -1013,6 +1023,7 @@ async function lockPersona(type = 'chat') {
             connections: [],
             title: '',
         };
+        eventSource.emit(event_types.PERSONA_CREATED, { avatarId: user_avatar, name: name1, description: '', title: '' });
     }
 
     switch (type) {
@@ -1113,6 +1124,7 @@ async function deleteUserAvatar() {
         }
 
         saveSettingsDebounced();
+        eventSource.emit(event_types.PERSONA_DELETED, { avatarId, name });
 
         // Use the existing mechanism to re-render the persona list and choose the next persona here
         await loadPersonaForCurrentChat({ doRender: true });
@@ -1145,6 +1157,10 @@ function onPersonaDescriptionInput() {
         .text(power_user.persona_description || $('#user_avatar_block').attr('no_desc_text'))
         .toggleClass('text_muted', !power_user.persona_description);
     saveSettingsDebounced();
+
+    if (power_user.personas[user_avatar]) {
+        eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+    }
 }
 
 function onPersonaDescriptionDepthValueInput() {
@@ -1153,6 +1169,9 @@ function onPersonaDescriptionDepthValueInput() {
     if (power_user.personas[user_avatar]) {
         const object = getOrCreatePersonaDescriptor();
         object.depth = power_user.persona_description_depth;
+        saveSettingsDebounced();
+        eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        return;
     }
 
     saveSettingsDebounced();
@@ -1164,6 +1183,9 @@ function onPersonaDescriptionDepthRoleInput() {
     if (power_user.personas[user_avatar]) {
         const object = getOrCreatePersonaDescriptor();
         object.role = power_user.persona_description_role;
+        saveSettingsDebounced();
+        eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        return;
     }
 
     saveSettingsDebounced();
@@ -1210,6 +1232,10 @@ async function onPersonaLoreButtonClick({ shiftKey, altKey }) {
 
         $('#persona_lore_button').toggleClass('world_set', !!power_user.persona_description_lorebook);
         saveSettingsDebounced();
+
+        if (power_user.personas[user_avatar]) {
+            eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        }
     });
 
     await callGenericPopup(template, POPUP_TYPE.TEXT);
@@ -1223,6 +1249,10 @@ function onPersonaDescriptionPositionInput() {
     if (power_user.personas[user_avatar]) {
         const object = getOrCreatePersonaDescriptor();
         object.position = power_user.persona_description_position;
+        saveSettingsDebounced();
+        eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        $('#persona_depth_position_settings').toggle(power_user.persona_description_position === persona_description_positions.AT_DEPTH);
+        return;
     }
 
     saveSettingsDebounced();
@@ -1807,7 +1837,7 @@ async function migrateNonPersonaUser() {
         return;
     }
 
-    initPersona(user_avatar, name1, '', '');
+    initPersona(user_avatar, name1, '', '', { silent: true });
     setPersonaDescription();
     await getUserAvatars(true, user_avatar);
 }
