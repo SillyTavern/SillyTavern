@@ -474,6 +474,21 @@ export function findExtension(name) {
 }
 
 /**
+ * Returns a deep clone of the manifest for the given extension name.
+ * Accepts either the short name (e.g. `SillyTavern-MyExtension`) or the full internal key
+ * (e.g. `third-party/SillyTavern-MyExtension`). Returns null if the extension is not found.
+ * @param {string} name - Extension name or internal key
+ * @returns {object|null} Cloned manifest object, or null if not found
+ */
+export function getExtensionManifest(name) {
+    const found = extensionNames.find(extName =>
+        equalsIgnoreCaseAndAccents(extName, name) || equalsIgnoreCaseAndAccents(extName, `third-party/${name}`),
+    );
+    const manifest = found ? manifests[found] : null;
+    return manifest ? structuredClone(manifest) : null;
+}
+
+/**
  * Loads manifest.json files for extensions.
  * @param {string[]} names Array of extension names
  * @returns {Promise<Record<string, object>>} Object with extension names as keys and their manifests as values
