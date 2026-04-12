@@ -144,8 +144,8 @@ export class StreamingDisplay {
 
     /**
      * Updates the main content section with new text.
-     * Automatically shows the content section when text is provided.
-     * @param {string} text - Accumulated content text
+     * Automatically shows the content section when text is provided (including empty string).
+     * @param {string|null|undefined} text - Accumulated content text
      */
     updateContent(text) {
         if (!this.#textContent || !this.#textSection || !text) return;
@@ -165,8 +165,9 @@ export class StreamingDisplay {
      * Hides and removes the streaming display.
      * @param {Object} [options]
      * @param {boolean} [options.instant=false] - Skip the fade-out animation
+     * @param {number} [options.delay=1000] - Delay in ms before starting the hide animation (to let user see final result)
      */
-    hide({ instant = false } = {}) {
+    hide({ instant = false, delay = 1000 } = {}) {
         if (!this.#element) return;
 
         const el = this.#element;
@@ -179,17 +180,25 @@ export class StreamingDisplay {
         this.#textContent = null;
         this.#hasContent = false;
 
-        if (instant) {
-            el.remove();
-            return;
-        }
+        const doHide = () => {
+            if (instant) {
+                el.remove();
+                return;
+            }
 
-        el.classList.remove(`${CSS_PREFIX}-visible`);
-        const duration = animation_duration;
-        if (duration > 0) {
-            setTimeout(() => el.remove(), duration);
+            el.classList.remove(`${CSS_PREFIX}-visible`);
+            const duration = animation_duration;
+            if (duration > 0) {
+                setTimeout(() => el.remove(), duration);
+            } else {
+                el.remove();
+            }
+        };
+
+        if (delay > 0) {
+            setTimeout(doHide, delay);
         } else {
-            el.remove();
+            doHide();
         }
     }
 }

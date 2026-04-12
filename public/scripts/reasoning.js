@@ -1412,6 +1412,36 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
 }
 
 /**
+ * Formats reasoning and content into a string using the reasoning template.
+ * This is the inverse of parseReasoningFromString.
+ * @typedef {Object} FormattedReasoning
+ * @property {string} formatted The formatted string with reasoning wrapped in prefix/suffix
+ * @property {string} contentOnly The content without reasoning
+ * @param {string} reasoning The reasoning/thinking text
+ * @param {string} content The main content/response text
+ * @param {ReasoningTemplate} [template=null] Optional template to use. Defaults to power_user.reasoning
+ * @returns {FormattedReasoning} Object containing both formatted (reasoning + content) and contentOnly
+ */
+export function formatReasoning(reasoning, content, template = null) {
+    template = template ?? power_user.reasoning;
+
+    // If no reasoning provided, return content only
+    if (!reasoning || !template.prefix || !template.suffix) {
+        return { formatted: content, contentOnly: content };
+    }
+
+    // Substitute macros in template parts
+    const prefix = substituteParams(template.prefix || '');
+    const suffix = substituteParams(template.suffix || '');
+    const separator = substituteParams(template.separator || '');
+
+    // Build the formatted string: prefix + reasoning + suffix + separator + content
+    const formatted = `${prefix}${reasoning}${suffix}${separator}${content}`;
+
+    return { formatted, contentOnly: content };
+}
+
+/**
  * Parse reasoning in an array of swipe strings if auto-parsing is enabled.
  * @param {string[]} swipes Array of swipe strings
  * @param {{extra: Partial<ReasoningMessageExtra>}[]} swipeInfoArray Array of swipe info objects
