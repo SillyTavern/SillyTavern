@@ -211,6 +211,10 @@ performance:
   memoryCacheCapacity: '100mb'
   # Enables disk caching for character cards. Improves performances with large card libraries.
   useDiskCache: true
+  # Maximum number of character cards to process concurrently when loading the character list.
+  # Lower values reduce memory usage but increase loading time.
+  # Default: 50 for lazy loading mode, 10 for full loading mode.
+  characterLoadConcurrency: -1
   # Configures gzip compression for client requests with large payloads (e.g. settings or chat saves).
   requestCompression:
     # Enable request compression.

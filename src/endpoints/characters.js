@@ -34,6 +34,8 @@ const isAndroid = process.platform === 'android';
 // Use shallow character data for the character list
 const useShallowCharacters = !!getConfigValue('performance.lazyLoadCharacters', false, 'boolean');
 const useDiskCache = !!getConfigValue('performance.useDiskCache', true, 'boolean');
+// Maximum concurrent character processing operations (-1 for auto based on shallow mode)
+const characterLoadConcurrency = getConfigValue('performance.characterLoadConcurrency', -1, 'number');
 
 class DiskCache {
     /**
@@ -406,6 +408,39 @@ const toShallow = (character) => {
 const processCharacter = async (item, directories, { shallow }) => {
     try {
         const imgFile = path.join(directories.characters, item);
+        const charStat = fs.statSync(imgFile);
+
+        // In shallow mode, skip PNG parsing to save memory
+        if (shallow) {
+            const chatsDirectory = path.join(directories.chats, item.replace('.png', ''));
+            const { chatSize, dateLastChat } = calculateChatSize(chatsDirectory);
+
+            return {
+                shallow: true,
+                name: item.replace('.png', ''),
+                avatar: item,
+                chat: undefined,
+                fav: false,
+                date_added: charStat.ctimeMs,
+                create_date: new Date(Math.round(charStat.ctimeMs)).toISOString(),
+                date_last_chat: dateLastChat,
+                chat_size: chatSize,
+                data_size: 0,
+                tags: [],
+                data: {
+                    name: '',
+                    character_version: '',
+                    creator: '',
+                    creator_notes: '',
+                    tags: [],
+                    extensions: {
+                        fav: false,
+                        world: '',
+                    },
+                },
+            };
+        }
+
         const imgData = await readCharacterData(imgFile);
         if (imgData === undefined) throw new Error('Failed to read character file');
 
@@ -413,7 +448,6 @@ const processCharacter = async (item, directories, { shallow }) => {
         jsonObject.avatar = item;
         const character = jsonObject;
         character.json_data = imgData;
-        const charStat = fs.statSync(path.join(directories.characters, item));
         character.date_added = charStat.ctimeMs;
         character.create_date = jsonObject.create_date || new Date(Math.round(charStat.ctimeMs)).toISOString();
         const chatsDirectory = path.join(directories.chats, item.replace('.png', ''));
@@ -422,7 +456,7 @@ const processCharacter = async (item, directories, { shallow }) => {
         character.chat_size = chatSize;
         character.date_last_chat = dateLastChat;
         character.data_size = calculateDataSize(jsonObject?.data);
-        return shallow ? toShallow(character) : character;
+        return character;
     } catch (err) {
         console.error(`Could not process character: ${item}`);
 
@@ -1302,6 +1336,33 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
 });
 
 /**
+ * Limits the concurrency of async operations.
+ * @param {Array<() => Promise<T>>} tasks Array of task functions
+ * @param {number} concurrency Maximum number of concurrent tasks
+ * @returns {Promise<T[]>} Array of results
+ * @template T
+ */
+async function limitConcurrency(tasks, concurrency) {
+    const results = [];
+    const executing = new Set();
+
+    for (const [index, task] of tasks.entries()) {
+        const promise = task().then(result => {
+            results[index] = result;
+            executing.delete(promise);
+        });
+        executing.add(promise);
+
+        if (executing.size >= concurrency) {
+            await Promise.race(executing);
+        }
+    }
+
+    await Promise.all(executing);
+    return results;
+}
+
+/**
  * HTTP POST endpoint for the "/api/characters/all" route.
  *
  * This endpoint is responsible for reading character files from the `charactersPath` directory,
@@ -1319,8 +1380,12 @@ router.post('/all', async function (request, response) {
     try {
         const files = fs.readdirSync(request.user.directories.characters);
         const pngFiles = files.filter(file => file.endsWith('.png'));
-        const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
-        const data = (await Promise.all(processingPromises)).filter(c => c.name);
+        // Limit concurrency to prevent memory exhaustion with large character collections
+        // Use config value if set (>0), otherwise use defaults based on shallow mode
+        const defaultConcurrency = useShallowCharacters ? 50 : 10;
+        const concurrencyLimit = characterLoadConcurrency > 0 ? characterLoadConcurrency : defaultConcurrency;
+        const tasks = pngFiles.map(file => () => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
+        const data = (await limitConcurrency(tasks, concurrencyLimit)).filter(c => c.name);
         return response.send(data);
     } catch (err) {
         console.error(err);
