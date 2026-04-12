@@ -23,10 +23,22 @@ body.no-hotswap .hotswap~hr,
 body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
 body.no-tokenCount .tokenCounterDisplay,
-body.no-mesIDDisplay .mesIDDisplay,
 body.no-modelIcons .icon-svg,
 body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
+}
+
+body.no-mesIDDisplay .mesIDDisplay {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    border: 0 !important;
+    white-space: nowrap !important;
 }
 
 body.no-hotswap #CharListButtonAndHotSwaps .flex-container {
