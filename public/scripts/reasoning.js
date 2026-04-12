@@ -1011,6 +1011,44 @@ function registerReasoningSlashCommands() {
         },
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-format',
+        aliases: ['format-reasoning'],
+        returns: 'formatted string',
+        helpString: t`Formats reasoning and content into a single string using Reasoning Formatting settings. Useful for preparing text that can be parsed with /reasoning-parse.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'reasoning',
+                description: 'The reasoning/thinking text to format',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'The main content text',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+        ],
+        callback: (args, value) => {
+            const reasoning = String(args?.reasoning ?? '');
+            const content = String(value ?? '');
+
+            if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
+                toastr.warning(t`Both prefix and suffix must be set in the Reasoning Formatting settings.`, t`Reasoning Format`);
+                return '';
+            }
+
+            if (!reasoning) {
+                toastr.warning(t`Reasoning argument is required.`, t`Reasoning Format`);
+                return '';
+            }
+
+            const { formatted } = formatReasoning(reasoning, content);
+            return formatted;
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'reasoning-template',
         aliases: ['reasoning-formatting', 'reasoning-preset'],
         callback: selectReasoningTemplateCallback,
