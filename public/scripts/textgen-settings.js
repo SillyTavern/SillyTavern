@@ -1756,7 +1756,7 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
 
     if (settings.type === KOBOLDCPP) {
         params.grammar = settings.grammar_string || undefined;
-        params.grammar_retain_state = (isContinue ? true : false);
+        params.grammar_retain_state = (!!isContinue);
         params.trim_stop = true;
         params.dry_sequence_breakers = params.parseSequenceBreakers();
     }
