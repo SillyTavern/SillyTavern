@@ -20,7 +20,7 @@
 
 import { SVGInject } from '../lib.js';
 import { t } from './i18n.js';
-import { animation_duration } from '/script.js';
+import { animation_duration, messageFormatting } from '/script.js';
 
 /** CSS class prefix */
 const CSS_PREFIX = 'streaming-display';
@@ -138,7 +138,7 @@ export class StreamingDisplay {
         if (!this.#reasoningContent || !this.#reasoningSection || !text) return;
 
         this.#reasoningSection.style.display = '';
-        this.#reasoningContent.textContent = text;
+        this.#reasoningContent.innerHTML = messageFormatting(text, '', false, false, -1, {}, true);
         this.#reasoningContent.scrollTop = this.#reasoningContent.scrollHeight;
     }
 
@@ -152,7 +152,7 @@ export class StreamingDisplay {
 
         this.#hasContent = true;
         this.#textSection.style.display = '';
-        this.#textContent.textContent = text;
+        this.#textContent.innerHTML = messageFormatting(text, '', false, false, -1, {}, false);
         this.#textContent.scrollTop = this.#textContent.scrollHeight;
     }
 

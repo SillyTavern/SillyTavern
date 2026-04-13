@@ -86,10 +86,21 @@
     opacity: 0.65;
     max-height: 25vh;
     overflow-y: auto;
-    white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.45;
     scrollbar-width: thin;
+}
+
+.streaming-display-reasoning-content p {
+    margin: 0.3em 0;
+}
+
+.streaming-display-reasoning-content p:first-child {
+    margin-top: 0;
+}
+
+.streaming-display-reasoning-content p:last-child {
+    margin-bottom: 0;
 }
 
 /* Main content section */
@@ -104,8 +115,19 @@
     color: var(--SmartThemeBodyColor);
     max-height: 40vh;
     overflow-y: auto;
-    white-space: pre-wrap;
     word-break: break-word;
     line-height: 1.5;
     scrollbar-width: thin;
+}
+
+.streaming-display-text-content p {
+    margin: 0.4em 0;
+}
+
+.streaming-display-text-content p:first-child {
+    margin-top: 0;
+}
+
+.streaming-display-text-content p:last-child {
+    margin-bottom: 0;
 }
