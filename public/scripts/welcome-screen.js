@@ -550,7 +550,6 @@ async function renameRecentCharacterChat(avatarId, fileName) {
             newFileName: newName,
             loader: false,
         });
-        PinnedChatsManager.rename({ avatar: avatarId, group: '', file_name: fileName }, newName);
         await updateRemoteChatName(characterId, newName);
         await refreshWelcomeScreen();
         toastr.success(t`Chat renamed.`);
@@ -584,7 +583,6 @@ async function renameRecentGroupChat(groupId, fileName) {
             newFileName: String(newName),
             loader: false,
         });
-        PinnedChatsManager.rename({ avatar: '', group: groupId, file_name: fileName }, String(newName));
         await refreshWelcomeScreen();
         toastr.success(t`Group chat renamed.`);
     } catch (error) {
@@ -943,5 +941,9 @@ export function initWelcomeScreen() {
         if (oldAvatar === getPermanentAssistantAvatar()) {
             accountStorage.setItem(assistantAvatarKey, newAvatar);
         }
+    });
+
+    eventSource.on(event_types.CHAT_RENAMED, async ({ avatarId, groupId, oldFileName, newFileName }) => {
+        PinnedChatsManager.rename({ avatar: avatarId, group: groupId, file_name: oldFileName }, newFileName);
     });
 }
