@@ -11,6 +11,7 @@ import _ from 'lodash';
 import mime from 'mime-types';
 import { Jimp, JimpMime } from '../jimp.js';
 import storage from 'node-persist';
+import PQueue from 'p-queue';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
@@ -408,46 +409,22 @@ const toShallow = (character) => {
 const processCharacter = async (item, directories, { shallow }) => {
     try {
         const imgFile = path.join(directories.characters, item);
-        const charStat = fs.statSync(imgFile);
-
-        // In shallow mode, skip PNG parsing to save memory
-        if (shallow) {
-            const chatsDirectory = path.join(directories.chats, item.replace('.png', ''));
-            const { chatSize, dateLastChat } = calculateChatSize(chatsDirectory);
-
-            return {
-                shallow: true,
-                name: item.replace('.png', ''),
-                avatar: item,
-                chat: undefined,
-                fav: false,
-                date_added: charStat.ctimeMs,
-                create_date: new Date(Math.round(charStat.ctimeMs)).toISOString(),
-                date_last_chat: dateLastChat,
-                chat_size: chatSize,
-                data_size: 0,
-                tags: [],
-                data: {
-                    name: '',
-                    character_version: '',
-                    creator: '',
-                    creator_notes: '',
-                    tags: [],
-                    extensions: {
-                        fav: false,
-                        world: '',
-                    },
-                },
-            };
-        }
-
         const imgData = await readCharacterData(imgFile);
         if (imgData === undefined) throw new Error('Failed to read character file');
 
         let jsonObject = getCharaCardV2(JSON.parse(imgData), directories, false);
         jsonObject.avatar = item;
         const character = jsonObject;
-        character.json_data = imgData;
+
+        // In shallow mode, don't store the full json_data to save memory.
+        // Although toShallow() won't include json_data in the returned object,
+        // avoiding the assignment here prevents the large string from being held
+        // in the character object during processing, reducing peak memory usage.
+        if (!shallow) {
+            character.json_data = imgData;
+        }
+
+        const charStat = fs.statSync(path.join(directories.characters, item));
         character.date_added = charStat.ctimeMs;
         character.create_date = jsonObject.create_date || new Date(Math.round(charStat.ctimeMs)).toISOString();
         const chatsDirectory = path.join(directories.chats, item.replace('.png', ''));
@@ -456,7 +433,7 @@ const processCharacter = async (item, directories, { shallow }) => {
         character.chat_size = chatSize;
         character.date_last_chat = dateLastChat;
         character.data_size = calculateDataSize(jsonObject?.data);
-        return character;
+        return shallow ? toShallow(character) : character;
     } catch (err) {
         console.error(`Could not process character: ${item}`);
 
@@ -1336,33 +1313,6 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
 });
 
 /**
- * Limits the concurrency of async operations.
- * @param {Array<() => Promise<T>>} tasks Array of task functions
- * @param {number} concurrency Maximum number of concurrent tasks
- * @returns {Promise<T[]>} Array of results
- * @template T
- */
-async function limitConcurrency(tasks, concurrency) {
-    const results = [];
-    const executing = new Set();
-
-    for (const [index, task] of tasks.entries()) {
-        const promise = task().then(result => {
-            results[index] = result;
-            executing.delete(promise);
-        });
-        executing.add(promise);
-
-        if (executing.size >= concurrency) {
-            await Promise.race(executing);
-        }
-    }
-
-    await Promise.all(executing);
-    return results;
-}
-
-/**
  * HTTP POST endpoint for the "/api/characters/all" route.
  *
  * This endpoint is responsible for reading character files from the `charactersPath` directory,
@@ -1384,8 +1334,11 @@ router.post('/all', async function (request, response) {
         // Use config value if set (>0), otherwise use defaults based on shallow mode
         const defaultConcurrency = useShallowCharacters ? 50 : 10;
         const concurrencyLimit = characterLoadConcurrency > 0 ? characterLoadConcurrency : defaultConcurrency;
+
+        // Use p-queue for better concurrency control
+        const queue = new PQueue({ concurrency: concurrencyLimit });
         const tasks = pngFiles.map(file => () => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
-        const data = (await limitConcurrency(tasks, concurrencyLimit)).filter(c => c.name);
+        const data = (await queue.addAll(tasks)).filter(c => c.name);
         return response.send(data);
     } catch (err) {
         console.error(err);
