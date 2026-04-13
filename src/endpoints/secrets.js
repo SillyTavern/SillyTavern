@@ -4,6 +4,8 @@ import path from 'node:path';
 import express from 'express';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { color, getConfigValue, uuidv4 } from '../util.js';
+import { requireMinRole } from '../users.js';
+import { ROLES, GLOBAL_DATA_DIR } from '../constants.js';
 
 export const SECRETS_FILE = 'secrets.json';
 export const SECRET_KEYS = {
@@ -483,6 +485,69 @@ export function getAllSecrets(directories) {
 }
 //#endregion
 
+//#region Global secrets helpers
+
+const SHARING_FILE = 'sharing.json';
+
+/**
+ * Gets a pseudo-directories object pointing to the global data directory.
+ * @returns {{ root: string }}
+ */
+function getGlobalDirectories() {
+    const globalRoot = path.join(globalThis.DATA_ROOT, GLOBAL_DATA_DIR);
+    if (!fs.existsSync(globalRoot)) {
+        fs.mkdirSync(globalRoot, { recursive: true });
+    }
+    return { root: globalRoot };
+}
+
+/**
+ * Reads whether global sharing is enabled.
+ * @returns {boolean}
+ */
+function readGlobalSharingEnabled() {
+    const sharingPath = path.join(globalThis.DATA_ROOT, GLOBAL_DATA_DIR, SHARING_FILE);
+    if (!fs.existsSync(sharingPath)) return false;
+    try {
+        const data = JSON.parse(fs.readFileSync(sharingPath, 'utf-8'));
+        return !!data.enabled;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Writes the global sharing toggle.
+ * @param {boolean} enabled
+ */
+function writeGlobalSharingEnabled(enabled) {
+    const globalRoot = path.join(globalThis.DATA_ROOT, GLOBAL_DATA_DIR);
+    if (!fs.existsSync(globalRoot)) {
+        fs.mkdirSync(globalRoot, { recursive: true });
+    }
+    const sharingPath = path.join(globalRoot, SHARING_FILE);
+    writeFileAtomicSync(sharingPath, JSON.stringify({ enabled }, null, 4), 'utf-8');
+}
+
+/**
+ * Reads a secret with fallback to global secrets.
+ * Checks the user's personal secrets first, then falls back to global if sharing is enabled.
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @param {string} key Secret key
+ * @returns {string} Secret value
+ */
+export function readEffectiveSecret(directories, key) {
+    const personal = readSecret(directories, key);
+    if (personal) return personal;
+
+    if (!readGlobalSharingEnabled()) return '';
+
+    const globalDirs = getGlobalDirectories();
+    return new SecretManager(globalDirs).readSecret(key, null);
+}
+
+//#endregion
+
 /**
  * Migrates legacy flat secrets format to the new format for all user directories
  * @param {import('../users.js').UserDirectoryList[]} directoriesList User directories
@@ -627,6 +692,73 @@ router.post('/rename', (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         console.error('Error renaming secret:', error);
+        return response.sendStatus(500);
+    }
+});
+
+// --- Global secrets endpoints ---
+
+router.post('/global/read', (request, response) => {
+    try {
+        const globalDirs = getGlobalDirectories();
+        const manager = new SecretManager(globalDirs);
+        const state = manager.getSecretState();
+        return response.send(state);
+    } catch (error) {
+        console.error('Error reading global secrets:', error);
+        return response.send({});
+    }
+});
+
+router.post('/global/write', requireMinRole(ROLES.OWNER), (request, response) => {
+    try {
+        const { key, value, label } = request.body;
+        if (!key || typeof value !== 'string') {
+            return response.status(400).send('Invalid key or value');
+        }
+        const globalDirs = getGlobalDirectories();
+        const manager = new SecretManager(globalDirs);
+        const id = manager.writeSecret(key, value, label);
+        return response.send({ id });
+    } catch (error) {
+        console.error('Error writing global secret:', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/global/delete', requireMinRole(ROLES.OWNER), (request, response) => {
+    try {
+        const { key, id } = request.body;
+        if (!key) {
+            return response.status(400).send('Key is required');
+        }
+        const globalDirs = getGlobalDirectories();
+        const manager = new SecretManager(globalDirs);
+        manager.deleteSecret(key, id);
+        return response.sendStatus(204);
+    } catch (error) {
+        console.error('Error deleting global secret:', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/global/status', (request, response) => {
+    try {
+        const enabled = readGlobalSharingEnabled();
+        return response.send({ enabled });
+    } catch (error) {
+        console.error('Error reading global sharing status:', error);
+        return response.send({ enabled: false });
+    }
+});
+
+router.post('/global/toggle', requireMinRole(ROLES.OWNER), (request, response) => {
+    try {
+        const { enabled } = request.body;
+        writeGlobalSharingEnabled(!!enabled);
+        return response.sendStatus(204);
+    } catch (error) {
+        console.error('Error toggling global sharing:', error);
         return response.sendStatus(500);
     }
 });

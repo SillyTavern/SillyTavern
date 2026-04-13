@@ -238,6 +238,11 @@ export const CHAT_COMPLETION_SOURCES = {
  */
 export const UPLOADS_DIRECTORY = '_uploads';
 
+/**
+ * Directory name for global (shared) data like global secrets and sharing config.
+ */
+export const GLOBAL_DATA_DIR = '_global';
+
 // TODO: this is copied from the client code; there should be a way to de-duplicate it eventually
 export const TEXTGEN_TYPES = {
     OOBA: 'ooba',
