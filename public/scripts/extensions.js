@@ -1297,12 +1297,6 @@ async function onDeleteClick() {
  */
 async function onCleanClick() {
     const extensionName = $(this).data('name');
-    const isCurrentUserAdmin = isAdmin();
-    const isGlobal = getExtensionType(extensionName) === 'global';
-    if (isGlobal && !isCurrentUserAdmin) {
-        toastr.error(t`You don't have permission to clean global extensions.`);
-        return;
-    }
 
     const confirmation = await Popup.show.confirm(t`Clean extension data`, t`Are you sure you want to clean up data for ${extensionName}? This action cannot be undone.`);
     if (!confirmation) {
