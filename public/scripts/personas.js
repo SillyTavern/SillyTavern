@@ -1826,9 +1826,17 @@ async function duplicatePersona(avatarId) {
         title: descriptor?.title ?? '',
     };
 
-    await eventSource.emit(event_types.PERSONA_CREATED, { avatarId: user_avatar, name: name1, description: '', title: '', duplicatedFromAvatarId: avatarId });
-
     await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
+
+    const eventData = {
+        avatarId: newAvatarId,
+        name: personaName,
+        description: descriptor?.description ?? '',
+        title: descriptor?.title ?? '',
+        duplicatedFromAvatarId: avatarId,
+    };
+    await eventSource.emit(event_types.PERSONA_CREATED, eventData);
+
     await getUserAvatars(true, newAvatarId);
     saveSettingsDebounced();
 }
