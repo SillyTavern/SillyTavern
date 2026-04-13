@@ -1,7 +1,7 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
-import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
+import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from '../../slash-commands/SlashCommandAbortController.js';
@@ -11,9 +11,14 @@ import { SlashCommandDebugController } from '../../slash-commands/SlashCommandDe
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
-import { collapseSpaces, getUniqueName, isFalseBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
+import { collapseSpaces, getUniqueName, isFalseBoolean, isTrueBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
 import { t } from '../../i18n.js';
 import { getSecretLabelById } from '../../secrets.js';
+import { resolveVariable } from '/scripts/variables.js';
+import { performFuzzySearch } from '/scripts/power-user.js';
+import { StreamingDisplay } from '/scripts/streaming-display.js';
+import { ConnectionManagerRequestService } from '../shared.js';
+import { formatReasoning } from '/scripts/reasoning.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -474,6 +479,158 @@ async function renderDetailsContent(detailsContent) {
     }
 }
 
+/**
+ * Callback for the /profile-genstream command
+ * Generates text using Connection Manager with streaming display support.
+ * @param {object} args Named arguments
+ * @param {string} value Unnamed argument (the prompt)
+ * @returns {Promise<string>} The generated text, optionally with formatted reasoning
+ */
+async function generateStreamCallback(args, value) {
+    if (!value) {
+        console.warn('WARN: No argument provided for /profile-genstream command');
+        return '';
+    }
+
+    // Check if Connection Manager is available
+    const context = getContext();
+    if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
+        toastr.error(t`Connection Manager is required for /profile-genstream. Use /gen or /genraw instead.`);
+        return '';
+    }
+
+    const profileIdOrName = args?.profile;
+    const includeReasoning = isTrueBoolean(args?.reasoning);
+    const systemPrompt = resolveVariable(args?.system) || '';
+    const maxTokens = Number(resolveVariable(args?.length) ?? 2048) || 2048;
+    const lock = isTrueBoolean(args?.lock);
+
+    try {
+        if (lock) {
+            deactivateSendButtons();
+        }
+
+        // Determine which profile to use
+        // Use the currently selected profile if no profile specified
+        let effectiveProfileId = context.extensionSettings.connectionManager.selectedProfile;
+
+        const profiles = context.extensionSettings.connectionManager.profiles;
+
+        if (profileIdOrName) {
+            // Use try to find profile by id first, then fuse search
+            const profile = profiles.find(p => p.id === profileIdOrName);
+            if (profile) {
+                effectiveProfileId = profile.id;
+            } else {
+                const keys = [
+                    { name: 'name', weight: 10 },
+                ];
+                const fuseResults = performFuzzySearch('profile', profiles, keys, profileIdOrName);
+                if (fuseResults.length > 0) {
+                    effectiveProfileId = fuseResults[0].item.id;
+                }
+            }
+        }
+
+        if (!effectiveProfileId) {
+            toastr.error(t`No connection profile specified or selected. Use profile= argument or select a profile in Connection Manager.`);
+            return '';
+        }
+
+        // Create streaming display
+        const display = new StreamingDisplay();
+        display.show({
+            label: t`Generating...`,
+            icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
+        });
+
+        const messages = [
+            ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+            { role: 'user', content: value },
+        ];
+
+        let finalText = '';
+        let finalReasoning = '';
+
+        try {
+            // Attempt streaming first
+            const streamResponse = await ConnectionManagerRequestService.sendRequest(
+                effectiveProfileId,
+                messages,
+                maxTokens,
+                { extractData: true, includePreset: true, stream: true },
+            );
+
+            if (typeof streamResponse === 'function') {
+                const generator = streamResponse();
+                for await (const chunk of generator) {
+                    finalText = chunk.text;
+                    finalReasoning = chunk.state?.reasoning || '';
+                    display.updateReasoning(finalReasoning);
+                    display.updateContent(finalText);
+                }
+            } else {
+                // Non-streaming fallback within the try block
+                const extracted = streamResponse;
+                finalText = extracted?.content || '';
+                finalReasoning = extracted?.reasoning || '';
+                if (finalReasoning) {
+                    display.updateReasoning(finalReasoning);
+                }
+                display.updateContent(finalText);
+            }
+        } catch (error) {
+            console.warn('[Slash Commands] Streaming failed, falling back to non-streaming:', error);
+            display.hide({ instant: true });
+
+            // Retry with non-streaming
+            const response = await ConnectionManagerRequestService.sendRequest(
+                effectiveProfileId,
+                messages,
+                maxTokens,
+                { extractData: true, includePreset: true, stream: false },
+            );
+
+            const extracted = /** @type {import('../../custom-request.js').ExtractedData} */ (response);
+            finalText = extracted?.content || '';
+            finalReasoning = extracted?.reasoning || '';
+
+            // Show quick non-streaming display
+            display.show({
+                label: t`Generating...`,
+                icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
+            });
+            if (finalReasoning) {
+                display.updateReasoning(finalReasoning);
+            }
+            display.updateContent(finalText);
+        }
+
+        display.hide({ delay: 1000 });
+
+        if (!finalText) {
+            toastr.warning(t`Generation returned empty result`);
+            return '';
+        }
+
+        // Format output with reasoning if requested
+        if (includeReasoning && finalReasoning) {
+            const { formatted } = formatReasoning(finalReasoning, finalText);
+            return formatted;
+        }
+
+        return finalText;
+    } catch (err) {
+        console.error('Error on /genstream generation', err);
+        toastr.error(err.message, t`API Error`, { preventDuplicates: true });
+        return '';
+    } finally {
+        if (lock) {
+            activateSendButtons();
+        }
+    }
+}
+
 export async function init() {
     extension_settings.connectionManager = extension_settings.connectionManager || structuredClone(DEFAULT_SETTINGS);
 
@@ -823,5 +980,61 @@ export async function init() {
             }
             return JSON.stringify(profile);
         },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'profile-genstream',
+        callback: generateStreamCallback,
+        returns: t`generated text`,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'lock', t`lock user input during generation`, [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', commonEnumProviders.boolean('onOff')(),
+            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'profile',
+                description: t`connection profile ID to use for generation`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: commonEnumProviders.connectionProfiles(),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'reasoning',
+                description: t`include formatted reasoning in the output`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'system',
+                description: t`system prompt at the start`,
+                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'length',
+                description: t`API response length in tokens`,
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                defaultValue: '2048',
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'prompt',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
+        helpString: `
+            <div>
+                ${t`Generates text using Connection Manager with streaming display. Shows live generation progress including reasoning (thinking) and content.`}
+            </div>
+            <div>
+                ${t`Requires Connection Manager extension. Uses the currently selected profile or the specified profile= argument.`}
+            </div>
+            <div>
+                ${t`Use reasoning=true to include formatted reasoning in the output (using the defined reasoning template). This can be parsed later with /reasoning-parse.`}
+            </div>
+            <div>
+                ${t`Example: <pre><code>/profile-genstream profile=my-profile-id reasoning=true Summarize the following text</code></pre>`}
+            </div>
+        `,
     }));
 }
