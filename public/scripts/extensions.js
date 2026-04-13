@@ -1320,6 +1320,10 @@ async function onCleanClick() {
 async function cleanExtension(extensionName) {
     const fullExtensionName = extensionName.startsWith('third-party') ? extensionName : `third-party${extensionName}`;
     await callExtensionHook(fullExtensionName, 'clean');
+
+    // Clean might have updated settings, which could race with the page reload, so we'll force save here
+    await saveSettings();
+
     toastr.success(t`Extension ${extensionName} data cleaned`);
     delay(1000).then(() => location.reload());
 }
@@ -1449,6 +1453,9 @@ export async function deleteExtension(extensionName, shouldClean = false) {
     } catch (error) {
         console.error('Error:', error);
     }
+
+    // Delete or clean might have updated settings, which could race with the page reload, so we'll force save here
+    await saveSettings();
 
     toastr.success(t`Extension ${extensionName} deleted`);
     delay(1000).then(() => location.reload());
