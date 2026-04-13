@@ -101,7 +101,7 @@ export class StreamingDisplay {
         this.#textSection.style.display = 'none';
 
         this.#textContent = document.createElement('div');
-        this.#textContent.classList.add(`${CSS_PREFIX}-text-content`);
+        this.#textContent.classList.add(`${CSS_PREFIX}-text-content`, 'mes_text'); // Allow formatting based on how chat messages are formatted too
         this.#textSection.appendChild(this.#textContent);
 
         this.#element.appendChild(this.#textSection);

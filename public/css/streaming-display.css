@@ -131,3 +131,11 @@
 .streaming-display-text-content p:last-child {
     margin-bottom: 0;
 }
+
+/* Strip auto-added quotes from <q> tags, as message formatting adds them */
+.streaming-display-reasoning-content q:before,
+.streaming-display-reasoning-content q:after,
+.streaming-display-text-content q:before,
+.streaming-display-text-content q:after {
+    content: '';
+}
