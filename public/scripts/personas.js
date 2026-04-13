@@ -1223,7 +1223,7 @@ async function onPersonaLoreButtonClick({ shiftKey, altKey }) {
         worldSelect.append(option);
     }
 
-    worldSelect.on('change', function () {
+    worldSelect.on('change', async function () {
         power_user.persona_description_lorebook = String($(this).val());
 
         if (power_user.personas[user_avatar]) {
@@ -1235,14 +1235,14 @@ async function onPersonaLoreButtonClick({ shiftKey, altKey }) {
         saveSettingsDebounced();
 
         if (power_user.personas[user_avatar]) {
-            eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+            await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
         }
     });
 
     await callGenericPopup(template, POPUP_TYPE.TEXT);
 }
 
-function onPersonaDescriptionPositionInput() {
+async function onPersonaDescriptionPositionInput() {
     power_user.persona_description_position = Number(
         $('#persona_description_position').find(':selected').val(),
     );
@@ -1251,7 +1251,7 @@ function onPersonaDescriptionPositionInput() {
         const object = getOrCreatePersonaDescriptor();
         object.position = power_user.persona_description_position;
         saveSettingsDebounced();
-        eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
         $('#persona_depth_position_settings').toggle(power_user.persona_description_position === persona_description_positions.AT_DEPTH);
         return;
     }
