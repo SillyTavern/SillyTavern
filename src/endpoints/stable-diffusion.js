@@ -2128,7 +2128,7 @@ workersai.post('/generate', async (request, response) => {
             },
         };
 
-        if (/black-forest-labs/.test(model)) {
+        if (/flux-2/.test(model)) {
             const formData = new FormData();
             for (const [key, value] of Object.entries(body)) {
                 formData.append(key, String(value));
