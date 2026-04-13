@@ -84,6 +84,7 @@ export const POPUP_RESULT = {
  * @property {number?} [min] - The minimum value for number inputs
  * @property {number?} [max] - The maximum value for number inputs
  * @property {number?} [step] - The step value for number inputs
+ * @property {boolean?} [disabled=false] - Whether the input should be disabled
  */
 
 /**
@@ -334,6 +335,7 @@ export class Popup {
                 inputElement.type = 'checkbox';
                 inputElement.id = input.id;
                 inputElement.checked = Boolean(input.defaultState ?? false);
+                inputElement.disabled = Boolean(input.disabled ?? false);
                 label.appendChild(inputElement);
                 const labelText = document.createElement('span');
                 labelText.innerText = input.label;
@@ -359,6 +361,7 @@ export class Popup {
                 inputElement.id = input.id;
                 inputElement.value = String(input.defaultState ?? '');
                 inputElement.placeholder = input.tooltip ?? '';
+                inputElement.disabled = Boolean(input.disabled ?? false);
                 setTitleFromTooltip(inputElement, input.tooltip);
 
                 const labelText = document.createElement('span');
@@ -380,6 +383,7 @@ export class Popup {
                 inputElement.value = String(input.defaultState ?? '');
                 inputElement.rows = input.rows ?? 1;
                 inputElement.placeholder = input.tooltip ?? '';
+                inputElement.disabled = Boolean(input.disabled ?? false);
                 setTitleFromTooltip(inputElement, input.tooltip);
 
                 const labelText = document.createElement('span');
@@ -404,6 +408,7 @@ export class Popup {
                 inputElement.min = String(input.min ?? '');
                 inputElement.max = String(input.max ?? '');
                 inputElement.step = String(input.step ?? '');
+                inputElement.disabled = Boolean(input.disabled ?? false);
                 setTitleFromTooltip(inputElement, input.tooltip);
 
                 inputElement.addEventListener('change', () => {

@@ -24,7 +24,7 @@ import {
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler, addLongPressEvent } from './utils.js';
+import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler, addLongPressEvent, uuidv4 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { groups, selected_group } from './group-chats.js';
@@ -217,11 +217,12 @@ function getUserAvatarBlock(avatarId) {
 /**
  * Initialize missing personas in the power user settings.
  * @param {string[]} avatarsList List of avatar file names
+ * @returns {Promise<void>}
  */
-function addMissingPersonas(avatarsList) {
+async function addMissingPersonas(avatarsList) {
     for (const persona of avatarsList) {
         if (!power_user.personas[persona]) {
-            initPersona(persona, '[Unnamed Persona]', '', '');
+            await initPersona(persona, '[Unnamed Persona]', '', '', { silent: true });
         }
     }
 }
@@ -249,7 +250,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
         }
 
         // If any persona is missing from the power user settings, we add it
-        addMissingPersonas(allEntities);
+        await addMissingPersonas(allEntities);
         // Before printing the personas, we check if we should enable/disable search sorting
         verifyPersonaSearchSortRule();
 
@@ -429,7 +430,7 @@ export async function createPersona(avatarId) {
 
     const personaDescription = await Popup.show.input(t`Enter a description for this persona:`, t`You can always add or change it later.`, '', { rows: 4 });
 
-    initPersona(avatarId, personaName, personaDescription, '');
+    await initPersona(avatarId, personaName, personaDescription, '');
     if (power_user.persona_show_notifications) {
         toastr.success(t`You can now pick ${personaName} as a persona in the Persona Management menu.`, t`Persona Created`);
     }
@@ -454,7 +455,7 @@ async function createDummyPersona() {
 
     // Date + name (only ASCII) to make it unique
     const avatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
-    initPersona(avatarId, personaName, '', personaTitle);
+    await initPersona(avatarId, personaName, '', personaTitle);
     await uploadUserAvatar(default_user_avatar, avatarId);
 }
 
@@ -464,9 +465,11 @@ async function createDummyPersona() {
  * @param {string} personaName Name for the persona
  * @param {string} personaDescription Optional description for the persona
  * @param {string} personaTitle Optional title for the persona
- * @returns {void}
+ * @param {object} [options] Optional settings
+ * @param {boolean} [options.silent=false] If true, no PERSONA_CREATED event is emitted (used for background migrations)
+ * @returns {Promise<void>}
  */
-export function initPersona(avatarId, personaName, personaDescription, personaTitle) {
+export async function initPersona(avatarId, personaName, personaDescription, personaTitle, { silent = false } = {}) {
     power_user.personas[avatarId] = personaName;
     power_user.persona_descriptions[avatarId] = {
         description: personaDescription || '',
@@ -478,6 +481,10 @@ export function initPersona(avatarId, personaName, personaDescription, personaTi
     };
 
     saveSettingsDebounced();
+
+    if (!silent) {
+        await eventSource.emit(event_types.PERSONA_CREATED, { avatarId, name: personaName, description: personaDescription || '', title: personaTitle || '' });
+    }
 }
 
 /**
@@ -540,6 +547,7 @@ export async function convertCharacterToPersona(characterId = null) {
     }
 
     saveSettingsDebounced();
+    await eventSource.emit(event_types.PERSONA_CREATED, { avatarId: overwriteName, name, description, title: '' });
 
     console.log('Persona for character created');
     toastr.success(t`You can now pick ${name} as a persona in the Persona Management menu.`, t`Persona Created`);
@@ -778,6 +786,7 @@ async function editPersonaTitle(popup, avatarId, currentTitle) {
         delete power_user.persona_descriptions[avatarId].title;
         await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
+        await eventSource.emit(event_types.PERSONA_UPDATED, avatarId);
         return;
     }
 
@@ -786,6 +795,7 @@ async function editPersonaTitle(popup, avatarId, currentTitle) {
         console.log(`Updated persona title for ${avatarId} to ${newTitle}`);
         await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
+        await eventSource.emit(event_types.PERSONA_UPDATED, avatarId);
         return;
     }
 }
@@ -821,6 +831,7 @@ async function renamePersona(avatarId) {
     }
 
     saveSettingsDebounced();
+    await eventSource.emit(event_types.PERSONA_RENAMED, { avatarId, oldName: currentName, newName });
     await getUserAvatars(true, avatarId);
     updatePersonaUIStates();
     setPersonaDescription();
@@ -1013,6 +1024,7 @@ async function lockPersona(type = 'chat') {
             connections: [],
             title: '',
         };
+        await eventSource.emit(event_types.PERSONA_CREATED, { avatarId: user_avatar, name: name1, description: '', title: '' });
     }
 
     switch (type) {
@@ -1113,13 +1125,15 @@ async function deleteUserAvatar() {
         }
 
         saveSettingsDebounced();
+        await eventSource.emit(event_types.PERSONA_DELETED, { avatarId, name });
 
         // Use the existing mechanism to re-render the persona list and choose the next persona here
+        personaLastLoadedChatId = uuidv4(); // Force reload by making a dummy chat id
         await loadPersonaForCurrentChat({ doRender: true });
     }
 }
 
-function onPersonaDescriptionInput() {
+async function onPersonaDescriptionInput() {
     power_user.persona_description = String($('#persona_description').val());
     countPersonaDescriptionTokens();
 
@@ -1145,25 +1159,35 @@ function onPersonaDescriptionInput() {
         .text(power_user.persona_description || $('#user_avatar_block').attr('no_desc_text'))
         .toggleClass('text_muted', !power_user.persona_description);
     saveSettingsDebounced();
+
+    if (power_user.personas[user_avatar]) {
+        await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+    }
 }
 
-function onPersonaDescriptionDepthValueInput() {
+async function onPersonaDescriptionDepthValueInput() {
     power_user.persona_description_depth = Number($('#persona_depth_value').val());
 
     if (power_user.personas[user_avatar]) {
         const object = getOrCreatePersonaDescriptor();
         object.depth = power_user.persona_description_depth;
+        saveSettingsDebounced();
+        await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        return;
     }
 
     saveSettingsDebounced();
 }
 
-function onPersonaDescriptionDepthRoleInput() {
+async function onPersonaDescriptionDepthRoleInput() {
     power_user.persona_description_role = Number($('#persona_depth_role').find(':selected').val());
 
     if (power_user.personas[user_avatar]) {
         const object = getOrCreatePersonaDescriptor();
         object.role = power_user.persona_description_role;
+        saveSettingsDebounced();
+        await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        return;
     }
 
     saveSettingsDebounced();
@@ -1200,7 +1224,7 @@ async function onPersonaLoreButtonClick({ shiftKey, altKey }) {
         worldSelect.append(option);
     }
 
-    worldSelect.on('change', function () {
+    worldSelect.on('change', async function () {
         power_user.persona_description_lorebook = String($(this).val());
 
         if (power_user.personas[user_avatar]) {
@@ -1210,12 +1234,16 @@ async function onPersonaLoreButtonClick({ shiftKey, altKey }) {
 
         $('#persona_lore_button').toggleClass('world_set', !!power_user.persona_description_lorebook);
         saveSettingsDebounced();
+
+        if (power_user.personas[user_avatar]) {
+            await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        }
     });
 
     await callGenericPopup(template, POPUP_TYPE.TEXT);
 }
 
-function onPersonaDescriptionPositionInput() {
+async function onPersonaDescriptionPositionInput() {
     power_user.persona_description_position = Number(
         $('#persona_description_position').find(':selected').val(),
     );
@@ -1223,6 +1251,10 @@ function onPersonaDescriptionPositionInput() {
     if (power_user.personas[user_avatar]) {
         const object = getOrCreatePersonaDescriptor();
         object.position = power_user.persona_description_position;
+        saveSettingsDebounced();
+        await eventSource.emit(event_types.PERSONA_UPDATED, user_avatar);
+        $('#persona_depth_position_settings').toggle(power_user.persona_description_position === persona_description_positions.AT_DEPTH);
+        return;
     }
 
     saveSettingsDebounced();
@@ -1807,7 +1839,7 @@ async function migrateNonPersonaUser() {
         return;
     }
 
-    initPersona(user_avatar, name1, '', '');
+    await initPersona(user_avatar, name1, '', '', { silent: true });
     setPersonaDescription();
     await getUserAvatars(true, user_avatar);
 }
