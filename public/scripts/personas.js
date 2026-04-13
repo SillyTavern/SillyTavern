@@ -1826,6 +1826,8 @@ async function duplicatePersona(avatarId) {
         title: descriptor?.title ?? '',
     };
 
+    await eventSource.emit(event_types.PERSONA_CREATED, { avatarId: user_avatar, name: name1, description: '', title: '', duplicatedFromAvatarId: avatarId });
+
     await uploadUserAvatar(getUserAvatar(avatarId), newAvatarId);
     await getUserAvatars(true, newAvatarId);
     saveSettingsDebounced();
