@@ -358,10 +358,11 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
  * Checks whether an extension has a specific hook defined in its manifest.
  * @param {string} name Extension name (with or without 'third-party' prefix)
  * @param {'install' | 'update' | 'delete' | 'clean' | 'enable' | 'disable' | 'activate'} hookName The hook to check
+ * @param {boolean} isExternal Whether the extension is third-party or built-in
  * @returns {boolean}
  */
-function hasExtensionHook(name, hookName) {
-    const fullName = name.startsWith('third-party') ? name : `third-party${name}`;
+function hasExtensionHook(name, hookName, isExternal) {
+    const fullName = isExternal ? (name.startsWith('third-party') ? name : `third-party${name}`) : name;
     const manifest = manifests[fullName];
     if (!manifest || !manifest.hooks || typeof manifest.hooks !== 'object') {
         return false;
@@ -895,7 +896,7 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
     let updateButton = isExternal ? `<button class="btn_update menu_button displayNone" data-name="${externalId}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button>` : '';
     let moveButton = isExternal && isUserAdmin ? `<button class="btn_move menu_button" data-name="${externalId}" data-i18n="[title]Move" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>` : '';
     let branchButton = isExternal && isUserAdmin ? `<button class="btn_branch menu_button" data-name="${externalId}" data-i18n="[title]Switch branch" title="Switch branch"><i class="fa-solid fa-code-branch fa-fw"></i></button>` : '';
-    let cleanButton = hasExtensionHook(externalId, 'clean') ? `<button class="btn_clean menu_button" data-name="${externalId}" data-i18n="[title]Clean extension data" title="Clean extension data"><i class="fa-fw fa-solid fa-broom"></i></button>` : '';
+    let cleanButton = hasExtensionHook(name, 'clean', isExternal) ? `<button class="btn_clean menu_button" data-name="${name}" data-i18n="[title]Clean extension data" title="Clean extension data"><i class="fa-fw fa-solid fa-broom"></i></button>` : '';
     let modulesInfo = '';
 
     if (isActive && Array.isArray(manifest.optional)) {
@@ -1278,7 +1279,8 @@ async function onDeleteClick() {
         return;
     }
 
-    const hasCleanHook = hasExtensionHook(extensionName, 'clean');
+    const isExternal = extensionName.startsWith('third-party');
+    const hasCleanHook = hasExtensionHook(extensionName, 'clean', isExternal);
 
     /** @type {import('./popup.js').CustomPopupInput[]} */
     const customInputs = hasCleanHook ? [{ id: 'extension_delete_cleanup', label: t`Also clean up extension data`, defaultState: false }] : null;
