@@ -1542,6 +1542,70 @@ async function sendChutesRequest(request, response) {
 }
 
 /**
+ * Pre-processes messages for MiniMax by converting image content parts
+ * to text descriptions via the MiniMax VLM endpoint.
+ * M2.7 does not natively accept image input; this uses a separate vision model.
+ * @param {object[]} messages Array of chat messages
+ * @param {string} apiKey MiniMax API key
+ * @returns {Promise<object[]>} Messages with images replaced by text descriptions
+ */
+async function minimaxVisionPreprocess(messages, apiKey) {
+    const vlmUrl = API_MINIMAX + '/coding_plan/vlm';
+    const processed = [];
+
+    for (const message of messages) {
+        if (!Array.isArray(message.content)) {
+            processed.push(message);
+            continue;
+        }
+
+        const newContent = [];
+        for (const part of message.content) {
+            if (part.type === 'image_url' && part.image_url?.url) {
+                try {
+                    const imageUrl = part.image_url.url;
+                    const vlmResponse = await fetch(vlmUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + apiKey,
+                        },
+                        body: JSON.stringify({
+                            prompt: 'Describe this image in detail.',
+                            image_url: imageUrl,
+                        }),
+                    });
+
+                    if (vlmResponse.ok) {
+                        const vlmData = await vlmResponse.json();
+                        if (vlmData.content) {
+                            newContent.push({ type: 'text', text: `[Image description: ${vlmData.content}]` });
+                            console.debug('MiniMax VLM described image successfully');
+                            continue;
+                        }
+                    }
+                    console.warn('MiniMax VLM failed, skipping image');
+                } catch (err) {
+                    console.warn('MiniMax VLM error:', err.message);
+                }
+            } else {
+                newContent.push(part);
+            }
+        }
+
+        // Flatten to plain string if only text parts remain
+        const textParts = newContent.filter(p => p.type === 'text');
+        if (textParts.length === newContent.length && textParts.length > 0) {
+            processed.push({ ...message, content: textParts.map(p => p.text).join('\n') });
+        } else {
+            processed.push({ ...message, content: newContent });
+        }
+    }
+
+    return processed;
+}
+
+/**
  * Sends a request to MiniMax.
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
@@ -1562,6 +1626,9 @@ async function sendMinimaxRequest(request, response) {
     });
 
     try {
+        // Pre-process: convert images to text descriptions via VLM
+        const messages = await minimaxVisionPreprocess(request.body.messages, apiKey);
+
         let bodyParams = {};
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
@@ -1591,7 +1658,7 @@ async function sendMinimaxRequest(request, response) {
         }
 
         const requestBody = {
-            'messages': request.body.messages,
+            'messages': messages,
             'model': request.body.model,
             'temperature': temperature,
             'max_tokens': request.body.max_tokens,
