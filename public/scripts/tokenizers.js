@@ -694,6 +694,11 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
+        // MiniMax models use a proprietary tokenizer; default OpenAI tokenizer is the closest approximation
+        return oai_settings.openai_model;
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI && oai_settings.workers_ai_model) {
         const model = oai_settings.workers_ai_model.toLowerCase();
 
