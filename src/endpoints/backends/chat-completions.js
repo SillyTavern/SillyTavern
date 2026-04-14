@@ -1542,7 +1542,105 @@ async function sendChutesRequest(request, response) {
 }
 
 /**
- * Sends a chat completion request to Azure OpenAI.
+ * Sends a request to MiniMax.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendMinimaxRequest(request, response) {
+    const apiUrl = API_MINIMAX;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
+
+    if (!apiKey) {
+        console.warn('MiniMax key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        let bodyParams = {};
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description,
+                    schema: request.body.json_schema.value,
+                    strict: request.body.json_schema.strict ?? true,
+                },
+            };
+        }
+
+        // MiniMax requires temperature in (0.0, 1.0], zero is not allowed
+        let temperature = request.body.temperature;
+        if (temperature !== undefined && temperature <= 0) {
+            temperature = 0.01;
+        }
+        if (temperature !== undefined && temperature > 1) {
+            temperature = 1.0;
+        }
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'stop': request.body.stop,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('MiniMax request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            await forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('MiniMax returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('MiniMax response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with MiniMax: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
  * @param {express.Request} request Express request object (contains request.body with all generate_data)
  * @param {express.Response} response Express response object
  */
@@ -1880,7 +1978,7 @@ router.post('/status', async function (request, statusResponse) {
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
             apiUrl = API_MINIMAX;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
             headers = {};
             // MiniMax does not support the /models endpoint, return hardcoded model list
             if (!apiKey) {
@@ -2096,6 +2194,7 @@ router.post('/generate', async function (request, response) {
             case CHAT_COMPLETION_SOURCES.AIMLAPI: return await sendAimlapiRequest(request, response);
             case CHAT_COMPLETION_SOURCES.XAI: return await sendXaiRequest(request, response);
             case CHAT_COMPLETION_SOURCES.CHUTES: return await sendChutesRequest(request, response);
+            case CHAT_COMPLETION_SOURCES.MINIMAX: return await sendMinimaxRequest(request, response);
             case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return await sendElectronHubRequest(request, response);
             case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return await sendAzureOpenAIRequest(request, response);
         }
@@ -2387,18 +2486,6 @@ router.post('/generate', async function (request, response) {
                     type: 'json_schema',
                     json_schema: request.body.json_schema.value,
                 };
-            }
-        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
-            apiUrl = API_MINIMAX;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
-            headers = {};
-            bodyParams = {};
-            // MiniMax requires temperature in (0.0, 1.0], zero is not allowed
-            if (request.body.temperature !== undefined && request.body.temperature <= 0) {
-                request.body.temperature = 0.01;
-            }
-            if (request.body.temperature !== undefined && request.body.temperature > 1) {
-                request.body.temperature = 1.0;
             }
         } else {
             console.warn('This chat completion source is not supported yet.');
