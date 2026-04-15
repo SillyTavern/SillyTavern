@@ -71,6 +71,7 @@ import {
 } from '../script.js';
 import {
     extension_settings,
+    getExtensionManifest,
     ModuleWorkerWrapper,
     openThirdPartyExtensionMenu,
     renderExtensionTemplate,
@@ -290,6 +291,7 @@ export function getContext() {
         getReasoningTemplateByName,
         unshallowCharacter,
         unshallowGroupMembers,
+        getExtensionManifest,
         openThirdPartyExtensionMenu,
         symbols: {
             ignore: IGNORE_SYMBOL,

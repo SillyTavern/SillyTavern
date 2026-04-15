@@ -505,7 +505,7 @@ export class ChatCompletionService {
         return async function* streamData() {
             let text = '';
             const swipes = [];
-            const state = { reasoning: '', image: '' };
+            const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
