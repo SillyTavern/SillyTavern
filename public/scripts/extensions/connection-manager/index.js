@@ -504,6 +504,24 @@ async function generateStreamCallback(args, value) {
     const systemPrompt = resolveVariable(args?.system) || '';
     const maxTokens = Number(resolveVariable(args?.length) ?? 2048) || 2048;
     const lock = isTrueBoolean(args?.lock);
+    const label = typeof args?.label === 'string' ? args.label : 'Generating...';
+    const completedLabel = typeof args?.completedLabel === 'string' ? args.completedLabel : 'Generated';
+
+    // Parse hideDelay: 'infinite' or negative = null (stay open), number = delay in ms
+    let completeDelay = 3000; // Default 3 seconds
+    if (args?.hideDelay !== undefined) {
+        const delayValue = resolveVariable(args.hideDelay);
+        if (typeof delayValue === 'string' && delayValue.toLowerCase() === 'infinite') {
+            completeDelay = null; // Stay until user closes
+        } else {
+            const parsed = Number(delayValue);
+            if (!isNaN(parsed) && parsed >= 0) {
+                completeDelay = parsed;
+            } else if (!isNaN(parsed) && parsed < 0) {
+                completeDelay = null; // Negative = infinite
+            }
+        }
+    }
 
     try {
         if (lock) {
@@ -540,7 +558,7 @@ async function generateStreamCallback(args, value) {
         // Create streaming display
         const display = new StreamingDisplay();
         display.show({
-            label: t`Generating...`,
+            label: label,
             icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
         });
 
@@ -597,7 +615,7 @@ async function generateStreamCallback(args, value) {
 
             // Show quick non-streaming display
             display.show({
-                label: t`Generating...`,
+                label: label,
                 icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
             });
             if (finalReasoning) {
@@ -606,7 +624,8 @@ async function generateStreamCallback(args, value) {
             display.updateContent(finalText);
         }
 
-        display.hide({ delay: 1000 });
+        // Mark as complete with delay (null = stay open until user closes)
+        display.complete(completedLabel, { delay: completeDelay });
 
         if (!finalText) {
             toastr.warning(t`Generation returned empty result`);
@@ -1014,6 +1033,28 @@ export async function init() {
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 defaultValue: '2048',
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'label',
+                description: t`label/title for the generation display`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'Generating...',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'completedLabel',
+                description: t`updated label/title for when generation completes`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'Generated',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'hideDelay',
+                description: t`auto-hide delay in ms after generation completes. Use "infinite" or negative to keep until manually closed`,
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                defaultValue: '3000',
+                enumList: [
+                    new SlashCommandEnumValue('infinite', 'Keep the streaming display open until manually closed', 'command', '♾️'),
+                    new SlashCommandEnumValue('any delay in seconds', null, 'number', '⌚', () => true, input => input),
+                ],
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -1033,7 +1074,13 @@ export async function init() {
                 ${t`Use reasoning=true to include formatted reasoning in the output (using the defined reasoning template). This can be parsed later with /reasoning-parse.`}
             </div>
             <div>
+                ${t`Use hideDelay to control auto-hide behavior: number (ms), "infinite", or negative to keep the display open until manually closed. The display shows a green LED when complete.`}
+            </div>
+            <div>
                 ${t`Example: <pre><code>/profile-genstream profile=my-profile-id reasoning=true Summarize the following text</code></pre>`}
+            </div>
+            <div>
+                ${t`Example with infinite display: <pre><code>/profile-genstream hideDelay=infinite Tell me a story</code></pre>`}
             </div>
         `,
     }));

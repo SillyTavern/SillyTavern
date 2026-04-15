@@ -11,11 +11,11 @@
  * display.show({ label: 'Generating...' });
  *
  * for await (const chunk of streamGenerator) {
- *     display.updateReasoning(chunk.state?.reasoning);
- *     display.updateContent(chunk.text);
+ *     display.updateReasoning(chunk.state?.reasoning)
+ *         .updateContent(chunk.text);
  * }
  *
- * display.hide();
+ * display.complete('Generated Something'); // Mark as done (green LED, auto-hide if configured)
  */
 
 import { SVGInject } from '../lib.js';
@@ -46,8 +46,20 @@ export class StreamingDisplay {
     #textSection = null;
     /** @type {HTMLElement | null} */
     #textContent = null;
+    /** @type {HTMLElement | null} */
+    #minimizeButton = null;
+    /** @type {HTMLElement | null} */
+    #closeButton = null;
+    /** @type {HTMLElement | null} */
+    #ledIndicator = null;
     /** @type {boolean} */
     #hasContent = false;
+    /** @type {boolean} */
+    #isMinimized = false;
+    /** @type {boolean} */
+    #isComplete = false;
+    /** @type {ReturnType<typeof setTimeout> | null} */
+    #hideTimeoutId = null;
 
     /**
      * Shows the streaming display panel.
@@ -57,14 +69,23 @@ export class StreamingDisplay {
     show({ label = '', icon = null } = {}) {
         if (this.#element) this.hide({ instant: true });
 
+        this.#isMinimized = false;
+        this.#isComplete = false;
+        this.#clearHideTimeout();
+
         this.#element = document.createElement('div');
         this.#element.classList.add(CSS_PREFIX);
 
-        // Header label
+        // Header label with LED indicator
         this.#labelElement = document.createElement('div');
         this.#labelElement.classList.add(`${CSS_PREFIX}-label`);
 
-        // Insert model icon into the label (after the pulsating dot pseudo-element)
+        // LED status indicator (pulsing while streaming, green when complete)
+        this.#ledIndicator = document.createElement('span');
+        this.#ledIndicator.classList.add(`${CSS_PREFIX}-led`);
+        this.#labelElement.appendChild(this.#ledIndicator);
+
+        // Insert model icon into the label (after the LED)
         if (icon instanceof HTMLImageElement) {
             icon.classList.add(`${CSS_PREFIX}-icon`);
             this.#labelElement.appendChild(icon);
@@ -74,10 +95,38 @@ export class StreamingDisplay {
         }
 
         this.#labelText = document.createElement('span');
+        this.#labelText.classList.add(`${CSS_PREFIX}-label-text`);
         this.#labelText.textContent = label;
         this.#labelElement.appendChild(this.#labelText);
 
+        // Window control buttons container
+        const controls = document.createElement('div');
+        controls.classList.add(`${CSS_PREFIX}-controls`);
+
+        // Minimize button
+        this.#minimizeButton = document.createElement('button');
+        this.#minimizeButton.classList.add(`${CSS_PREFIX}-btn`, `${CSS_PREFIX}-btn-minimize`);
+        this.#minimizeButton.setAttribute('aria-label', t`Minimize`);
+        this.#minimizeButton.setAttribute('title', t`Minimize`);
+        this.#minimizeButton.innerHTML = '&#8211;'; // En dash
+        this.#minimizeButton.addEventListener('click', () => this.toggleMinimize());
+        controls.appendChild(this.#minimizeButton);
+
+        // Close button
+        this.#closeButton = document.createElement('button');
+        this.#closeButton.classList.add(`${CSS_PREFIX}-btn`, `${CSS_PREFIX}-btn-close`);
+        this.#closeButton.setAttribute('aria-label', t`Close`);
+        this.#closeButton.setAttribute('title', t`Close (generation continues in background)`);
+        this.#closeButton.innerHTML = '&#215;'; // Multiplication sign (×)
+        this.#closeButton.addEventListener('click', () => this.hide());
+        controls.appendChild(this.#closeButton);
+
+        this.#labelElement.appendChild(controls);
         this.#element.appendChild(this.#labelElement);
+
+        // Content container (for minimize functionality)
+        const contentContainer = document.createElement('div');
+        contentContainer.classList.add(`${CSS_PREFIX}-content`);
 
         // Reasoning section (hidden until content arrives)
         this.#reasoningSection = document.createElement('div');
@@ -93,7 +142,7 @@ export class StreamingDisplay {
         this.#reasoningContent.classList.add(`${CSS_PREFIX}-reasoning-content`);
         this.#reasoningSection.appendChild(this.#reasoningContent);
 
-        this.#element.appendChild(this.#reasoningSection);
+        contentContainer.appendChild(this.#reasoningSection);
 
         // Content section (hidden until content arrives)
         this.#textSection = document.createElement('div');
@@ -104,7 +153,8 @@ export class StreamingDisplay {
         this.#textContent.classList.add(`${CSS_PREFIX}-text-content`, 'mes_text'); // Allow formatting based on how chat messages are formatted too
         this.#textSection.appendChild(this.#textContent);
 
-        this.#element.appendChild(this.#textSection);
+        contentContainer.appendChild(this.#textSection);
+        this.#element.appendChild(contentContainer);
 
         // Append inside the topmost open dialog (same pattern as fixToastrForDialogs in popup.js).
         // Modal <dialog> elements live in the browser's top layer, so z-index alone won't work.
@@ -120,19 +170,57 @@ export class StreamingDisplay {
     }
 
     /**
+     * Toggles the minimized state of the display.
+     * When minimized, only the header with label and buttons is shown.
+     * @returns {StreamingDisplay} this instance for chaining
+     */
+    toggleMinimize() {
+        if (!this.#element) return this;
+
+        this.#isMinimized = !this.#isMinimized;
+        this.#element.classList.toggle(`${CSS_PREFIX}-minimized`, this.#isMinimized);
+
+        // Update minimize button icon/appearance
+        if (this.#minimizeButton) {
+            this.#minimizeButton.innerHTML = this.#isMinimized ? '&#9633;' : '&#8211;'; // Square when minimized, dash when not
+            this.#minimizeButton.setAttribute('title', this.#isMinimized ? t`Restore` : t`Minimize`);
+            this.#minimizeButton.setAttribute('aria-label', this.#isMinimized ? t`Restore` : t`Minimize`);
+        }
+
+        return this;
+    }
+
+    /**
+     * @returns {boolean} Whether the display is currently minimized
+     */
+    get isMinimized() {
+        return this.#isMinimized;
+    }
+
+    /**
+     * @returns {boolean} Whether the display is marked as complete (generation finished)
+     */
+    get isComplete() {
+        return this.#isComplete;
+    }
+
+    /**
      * Updates the header label text.
      * @param {string} label
+     * @returns {StreamingDisplay} this instance for chaining
      */
     setLabel(label) {
         if (this.#labelText) {
             this.#labelText.textContent = label;
         }
+        return this;
     }
 
     /**
      * Updates the reasoning (thinking) section with new text.
      * Automatically shows the reasoning section when text is provided.
      * @param {string} text - Accumulated reasoning text
+     * @returns {StreamingDisplay} this instance for chaining
      */
     updateReasoning(text) {
         if (!this.#reasoningContent || !this.#reasoningSection || !text) return;
@@ -140,12 +228,14 @@ export class StreamingDisplay {
         this.#reasoningSection.style.display = '';
         this.#reasoningContent.innerHTML = messageFormatting(text, '', false, false, -1, {}, true);
         this.#reasoningContent.scrollTop = this.#reasoningContent.scrollHeight;
+        return this;
     }
 
     /**
      * Updates the main content section with new text.
      * Automatically shows the content section when text is provided (including empty string).
      * @param {string|null|undefined} text - Accumulated content text
+     * @returns {StreamingDisplay} this instance for chaining
      */
     updateContent(text) {
         if (!this.#textContent || !this.#textSection || !text) return;
@@ -154,6 +244,7 @@ export class StreamingDisplay {
         this.#textSection.style.display = '';
         this.#textContent.innerHTML = messageFormatting(text, '', false, false, -1, {}, false);
         this.#textContent.scrollTop = this.#textContent.scrollHeight;
+        return this;
     }
 
     /** @returns {boolean} Whether any content text has been displayed via streaming */
@@ -162,15 +253,79 @@ export class StreamingDisplay {
     }
 
     /**
-     * Hides and removes the streaming display.
-     * @param {Object} [options]
-     * @param {boolean} [options.instant=false] - Skip the fade-out animation
-     * @param {number} [options.delay=1000] - Delay in ms before starting the hide animation (to let user see final result)
+     * Marks the generation as complete and initiates cleanup. Optionally set a new label.
+     *
+     * This is the **preferred method** to call after streaming ends. It:
+     * - Changes the LED indicator from pulsing orange to solid green
+     * - Waits for the specified delay to let the user see the final result
+     * - Then hides the display with a fade-out animation
+     *
+     * @param {string|null} [updatedLabel=null] - Set the label automatically to a new one to display the completed state.
+     * @param {Object} [options={}]
+     * @param {number|null} [options.delay=3000] - Delay in ms before hiding. Use `null` or negative value to keep displayed until user manually closes it.
+     * @returns {StreamingDisplay} this instance for chaining
      */
-    hide({ instant = false, delay = 1000 } = {}) {
+    complete(updatedLabel = null, { delay = 3000 } = {}) {
+        if (!this.#element || this.#isComplete) return this;
+
+        this.#isComplete = true;
+        this.#element.classList.add(`${CSS_PREFIX}-complete`);
+
+        // Clear any existing hide timeout
+        this.#clearHideTimeout();
+
+        if (updatedLabel !== null) {
+            this.setLabel(updatedLabel);
+        }
+
+        // Auto-hide after delay if specified (positive number)
+        if (typeof delay === 'number' && delay >= 0) {
+            this.#hideTimeoutId = setTimeout(() => {
+                this.#performHide();
+            }, delay);
+        }
+
+        return this;
+    }
+
+    /**
+     * Immediately hides and removes the streaming display.
+     *
+     * **Note:** This is for immediate cleanup (e.g., when canceling generation
+     * or closing the app). Prefer `complete()` when generation finishes normally,
+     * as it shows the green LED and gives the user time to see the final result.
+     *
+     * @param {Object} [options={}]
+     * @param {boolean} [options.instant=false] - Skip the fade-out animation
+     * @returns {StreamingDisplay} this instance for chaining
+     */
+    hide({ instant = false } = {}) {
+        this.#clearHideTimeout();
+        this.#performHide({ instant });
+        return this;
+    }
+
+    /**
+     * Clears any pending auto-hide timeout.
+     */
+    #clearHideTimeout() {
+        if (this.#hideTimeoutId !== null) {
+            clearTimeout(this.#hideTimeoutId);
+            this.#hideTimeoutId = null;
+        }
+    }
+
+    /**
+     * Internal method to actually remove the DOM element.
+     * @param {Object} [options={}]
+     * @param {boolean} [options.instant=false]
+     */
+    #performHide({ instant = false } = {}) {
         if (!this.#element) return;
 
         const el = this.#element;
+
+        // Clear all private fields
         this.#element = null;
         this.#labelElement = null;
         this.#labelText = null;
@@ -178,27 +333,25 @@ export class StreamingDisplay {
         this.#reasoningContent = null;
         this.#textSection = null;
         this.#textContent = null;
+        this.#minimizeButton = null;
+        this.#closeButton = null;
+        this.#ledIndicator = null;
         this.#hasContent = false;
+        this.#isMinimized = false;
+        this.#isComplete = false;
+        this.#hideTimeoutId = null;
 
-        const doHide = () => {
-            if (instant) {
-                el.remove();
-                return;
-            }
+        if (instant) {
+            el.remove();
+            return;
+        }
 
-            el.classList.remove(`${CSS_PREFIX}-visible`);
-            const duration = animation_duration;
-            if (duration > 0) {
-                setTimeout(() => el.remove(), duration);
-            } else {
-                el.remove();
-            }
-        };
-
-        if (delay > 0) {
-            setTimeout(doHide, delay);
+        el.classList.remove(`${CSS_PREFIX}-visible`);
+        const duration = animation_duration;
+        if (duration > 0) {
+            setTimeout(() => el.remove(), duration);
         } else {
-            doHide();
+            el.remove();
         }
     }
 }

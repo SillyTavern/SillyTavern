@@ -39,17 +39,26 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    user-select: none;
 }
 
-.streaming-display-label::before {
-    content: '';
+/* LED status indicator - pulsing while streaming */
+.streaming-display-led {
     display: inline-block;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--SmartThemeQuoteColor);
+    background: rgb(225, 138, 36);
     animation: streaming-display-pulse 1.5s ease-in-out infinite;
     flex-shrink: 0;
+}
+
+/* Completed state: solid green LED */
+.streaming-display-complete .streaming-display-led {
+    background: #4caf50;
+    animation: none;
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
 }
 
 @keyframes streaming-display-pulse {
@@ -57,11 +66,80 @@
     50% { opacity: 1; transform: scale(1.1); }
 }
 
+/* Label text takes available space */
+.streaming-display-label-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Window control buttons container */
+.streaming-display-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Window control buttons */
+.streaming-display-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--SmartThemeBodyColor);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.streaming-display-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.streaming-display-btn-close:hover {
+    background-color: rgba(244, 67, 54, 0.2);
+}
+
+/* Content container - collapsible for minimize */
+.streaming-display-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    transition: max-height var(--animation-duration, 125ms) ease, opacity var(--animation-duration, 125ms) ease;
+}
+
+/* Minimized state - hide content sections */
+.streaming-display-minimized .streaming-display-content {
+    max-height: 0;
+    opacity: 0;
+}
+
+.streaming-display-minimized {
+    gap: 0;
+}
+
 /* Model/API icon in the label */
 .streaming-display-icon {
     width: 1.1em;
     height: 1.1em;
     flex-shrink: 0;
+}
+
+/* Minimized state adjustments */
+.streaming-display-minimized.streaming-display {
+    padding: 10px 14px;
 }
 
 /* Reasoning (thinking) section */
