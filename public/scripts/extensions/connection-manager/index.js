@@ -1136,7 +1136,7 @@ export async function init() {
                 ${t`Use reasoning=true to include formatted reasoning in the output (using the defined reasoning template). This can be parsed later with /reasoning-parse.`}
             </div>
             <div>
-                ${t`Use hideDelay to control auto-hide behavior: number (ms), "infinite", or negative to keep the display open until manually closed. The display shows a green LED when complete.`}
+                ${t`Use delay to control auto-hide behavior: number (ms), "infinite", or negative to keep the display open until manually closed. The display shows a green LED when complete.`}
             </div>
             <div>
                 ${t`A stop button is shown by default (stop=true). Click it to abort generation and return whatever was streamed so far. Use stop=false to hide the stop button.`}
@@ -1148,7 +1148,7 @@ export async function init() {
                 ${t`Example: <pre><code>/profile-genstream profile=my-profile-id reasoning=true Summarize the following text</code></pre>`}
             </div>
             <div>
-                ${t`Example with infinite display: <pre><code>/profile-genstream hideDelay=infinite Tell me a story</code></pre>`}
+                ${t`Example with infinite display: <pre><code>/profile-genstream delay=infinite Tell me a story</code></pre>`}
             </div>
             <div>
                 ${t`Example with custom stop handler: <pre><code>/profile-genstream onStop={: /echo "Generation stopped!" :} Tell me a story</code></pre>`}
