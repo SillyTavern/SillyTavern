@@ -566,6 +566,9 @@ async function generateStreamCallback(args, value) {
                 const fuseResults = performFuzzySearch('profile', profiles, keys, profileIdOrName);
                 if (fuseResults.length > 0) {
                     effectiveProfileId = fuseResults[0].item.id;
+                } else {
+                    toastr.warning(t`Connection profile not found: ${profileIdOrName}`);
+                    return '';
                 }
             }
         }
