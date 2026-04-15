@@ -241,6 +241,8 @@ export const power_user = {
         story_string_prefix: '',
         story_string_suffix: '',
         stop_sequence: '',
+        consecutive_assistant_message: '',
+        
         wrap: true,
         macro: true,
         names_behavior: names_behavior_types.FORCE,
