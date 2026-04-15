@@ -1661,7 +1661,7 @@ async function sendMinimaxRequest(request, response) {
             'messages': messages,
             'model': request.body.model,
             'temperature': temperature,
-            'max_tokens': request.body.max_tokens,
+            'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
             'stream': request.body.stream,
             'presence_penalty': request.body.presence_penalty,
             'frequency_penalty': request.body.frequency_penalty,
@@ -2052,7 +2052,7 @@ router.post('/status', async function (request, statusResponse) {
                 console.warn('Chat Completion API key is missing.');
                 return statusResponse.status(400).send({ error: true });
             }
-            return statusResponse.send({ data: [{ id: 'MiniMax-M2.7' }, { id: 'MiniMax-M2.7-highspeed' }, { id: 'MiniMax-M2.5' }, { id: 'MiniMax-M2.5-highspeed' }] });
+            return statusResponse.send({ data: [{ id: 'MiniMax-M2.7' }, { id: 'MiniMax-M2.7-highspeed' }, { id: 'MiniMax-M2.5' }, { id: 'MiniMax-M2.5-highspeed' }, { id: 'M2-her' }] });
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });
