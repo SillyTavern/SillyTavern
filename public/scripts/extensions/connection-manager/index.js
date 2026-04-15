@@ -502,8 +502,8 @@ async function generateStreamCallback(args, value) {
 
     const profileIdOrName = args?.profile;
     const includeReasoning = isTrueBoolean(args?.reasoning);
-    const systemPrompt = resolveVariable(args?.system) || '';
-    const maxTokens = Number(resolveVariable(args?.length) ?? 2048) || 2048;
+    const systemPrompt = typeof args?.system == 'string' ? args.system : '';
+    const maxTokens = Number(args?.length ?? 2048) || 2048;
     const lock = isTrueBoolean(args?.lock);
     const generatingLabel = typeof args?.generating === 'string' ? args.generating : 'Generating...';
     const completedLabel = typeof args?.completed === 'string' ? args.completed : 'Generated';
@@ -514,11 +514,10 @@ async function generateStreamCallback(args, value) {
     // Parse delay: 'infinite' or negative = null (stay open), number = delay in ms
     let completeDelay = 3000; // Default 3 seconds
     if (args?.delay !== undefined) {
-        const delayValue = resolveVariable(args.delay);
-        if (typeof delayValue === 'string' && delayValue.toLowerCase() === 'infinite') {
+        if (typeof args.delay === 'string' && args.delay.toLowerCase() === 'infinite') {
             completeDelay = null; // Stay until user closes
         } else {
-            const parsed = Number(delayValue);
+            const parsed = Number(args.delay);
             if (!isNaN(parsed) && parsed >= 0) {
                 completeDelay = parsed;
             } else if (!isNaN(parsed) && parsed < 0) {
@@ -1064,12 +1063,12 @@ export async function init() {
             SlashCommandNamedArgument.fromProps({
                 name: 'system',
                 description: t`system prompt at the start`,
-                typeList: [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.STRING],
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'length',
                 description: t`API response length in tokens`,
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER],
                 defaultValue: '2048',
             }),
             SlashCommandNamedArgument.fromProps({
@@ -1087,7 +1086,7 @@ export async function init() {
             SlashCommandNamedArgument.fromProps({
                 name: 'delay',
                 description: t`auto-hide delay in ms after generation completes. Use "infinite" or negative to keep until manually closed`,
-                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                typeList: [ARGUMENT_TYPE.NUMBER],
                 defaultValue: '3000',
                 enumList: [
                     new SlashCommandEnumValue('infinite', 'Keep the streaming display open until manually closed', 'command', '♾️'),
