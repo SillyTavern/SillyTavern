@@ -2158,7 +2158,7 @@ export async function initPersonas() {
         debouncedPersonaSearch(searchQuery);
     });
 
-    $('#sync_name_button').on('click', syncUserNameToPersona);
+    $('#sync_name_button').on('click', async () => await syncUserNameToPersona());
     $('#avatar_upload_file').on('change', changeUserAvatar);
 
     $(document).on('click', '#user_avatar_block .avatar-container', async function () {
