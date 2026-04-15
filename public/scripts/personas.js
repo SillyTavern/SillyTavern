@@ -24,7 +24,7 @@ import {
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler, addLongPressEvent, uuidv4 } from './utils.js';
+import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler, addLongPressEvent, stringToRange } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { groups, selected_group } from './group-chats.js';
@@ -1760,15 +1760,22 @@ async function onPersonasRestoreInput(e) {
     $('#personas_restore_input').val('');
 }
 
-async function syncUserNameToPersona() {
-    const confirmation = await Popup.show.confirm(t`Are you sure?`, t`All user-sent messages in this chat will be attributed to ${name1}.`);
+async function syncUserNameToPersona({ start = 0, end = chat.length - 1, silent = false } = {}) {
+    const isRangeAll = start === 0 && end === chat.length - 1;
+    const confirmMessage = isRangeAll
+        ? t`All user-sent messages in this chat will be attributed to ${name1}.`
+        : t`User-sent messages in the specified range will be attributed to ${name1}.`;
 
-    if (!confirmation) {
-        return;
+    if (!silent) {
+        const confirmation = await Popup.show.confirm(t`Are you sure?`, confirmMessage);
+        if (!confirmation) {
+            return;
+        }
     }
 
-    for (const mes of chat) {
-        if (mes.is_user) {
+    for (let i = start; i <= end; i++) {
+        const mes = chat[i];
+        if (mes?.is_user) {
             mes.name = name1;
             mes.force_avatar = getThumbnailUrl('persona', user_avatar);
         }
@@ -1931,8 +1938,20 @@ async function setNameCallback({ mode = 'all' }, name) {
     return '';
 }
 
-function syncCallback() {
-    $('#sync_name_button').trigger('click');
+async function syncCallback(args, value) {
+    const range = value ? stringToRange(value, 0, chat.length - 1) : null;
+
+    if (value && !range) {
+        console.warn(`WARN: Invalid range provided for /persona-sync command: ${value}`);
+        return '';
+    }
+
+    const silent = isTrueBoolean(args?.silent);
+    const start = range ? range.start : 0;
+    const end = range ? range.end : chat.length - 1;
+
+    await syncUserNameToPersona({ start, end, silent });
+
     return '';
 }
 
@@ -1988,6 +2007,21 @@ function registerPersonaSlashCommands() {
         name: 'persona-sync',
         aliases: ['sync'],
         callback: syncCallback,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'silent',
+                description: t`suppress the confirmation popup`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`message index (starts with 0) or range, syncs all user messages if not provided`,
+                typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE],
+                defaultValue: '0-{{lastMessageId}}',
+            }),
+        ],
         helpString: 'Syncs the user persona in user-attributed messages in the current chat.',
     }));
 }
