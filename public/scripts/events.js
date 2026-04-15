@@ -105,6 +105,10 @@ export const event_types = {
     TTS_JOB_STARTED: 'tts_job_started',
     TTS_AUDIO_READY: 'tts_audio_ready',
     TTS_JOB_COMPLETE: 'tts_job_complete',
+    ITEMIZED_PROMPTS_LOADED: 'itemized_prompts_loaded',
+    ITEMIZED_PROMPTS_SAVED: 'itemized_prompts_saved',
+    ITEMIZED_PROMPTS_DELETED: 'itemized_prompts_deleted',
+    ITEMIZED_PROMPTS_DELETED_ALL: 'itemized_prompts_deleted_all',
 };
 
 export const eventSource = new EventEmitter([event_types.APP_READY, event_types.APP_INITIALIZED]);
