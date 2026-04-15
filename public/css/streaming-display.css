@@ -6,7 +6,7 @@
 
 .streaming-display {
     position: fixed;
-    bottom: 20px;
+    bottom: max(calc(var(--bottomFormBlockSize) + 5px), 20px);
     right: 20px;
     width: min(550px, calc(100vw - 40px));
     max-height: 70vh;
