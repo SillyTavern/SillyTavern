@@ -42,7 +42,7 @@ router.post('/models/providers', async (req, res) => {
  * @returns {Promise<any[]>} Filtered and/or mapped models
  */
 async function fetchModelsByModality(endpoint, inputModality, outputModality, mapFn = null) {
-    const response = await fetch(`${API_OPENROUTER}${endpoint}?output_modalities=${outputModality}`, {
+    const response = await fetch(`${API_OPENROUTER}${endpoint}?output_modalities=${encodeURIComponent(outputModality)}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
     });
