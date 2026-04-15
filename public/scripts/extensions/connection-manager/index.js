@@ -505,16 +505,16 @@ async function generateStreamCallback(args, value) {
     const systemPrompt = resolveVariable(args?.system) || '';
     const maxTokens = Number(resolveVariable(args?.length) ?? 2048) || 2048;
     const lock = isTrueBoolean(args?.lock);
-    const label = typeof args?.label === 'string' ? args.label : 'Generating...';
-    const completedLabel = typeof args?.completedLabel === 'string' ? args.completedLabel : 'Generated';
+    const generatingLabel = typeof args?.generating === 'string' ? args.generating : 'Generating...';
+    const completedLabel = typeof args?.completed === 'string' ? args.completed : 'Generated';
     const enableStop = !isFalseBoolean(args?.stop);
     const onStopClosure = args?.onStop instanceof SlashCommandClosure ? args.onStop : null;
     const onCompleteClosure = args?.onComplete instanceof SlashCommandClosure ? args.onComplete : null;
 
-    // Parse hideDelay: 'infinite' or negative = null (stay open), number = delay in ms
+    // Parse delay: 'infinite' or negative = null (stay open), number = delay in ms
     let completeDelay = 3000; // Default 3 seconds
-    if (args?.hideDelay !== undefined) {
-        const delayValue = resolveVariable(args.hideDelay);
+    if (args?.delay !== undefined) {
+        const delayValue = resolveVariable(args.delay);
         if (typeof delayValue === 'string' && delayValue.toLowerCase() === 'infinite') {
             completeDelay = null; // Stay until user closes
         } else {
@@ -579,7 +579,7 @@ async function generateStreamCallback(args, value) {
         // Create streaming display
         const display = new StreamingDisplay();
         display.show({
-            label: label,
+            label: generatingLabel,
             icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
             onStop: onStopHandler,
         });
@@ -622,7 +622,7 @@ async function generateStreamCallback(args, value) {
         } catch (error) {
             // If the user clicked stop, don't retry — show stopped state and return empty
             if (abortController?.signal?.aborted) {
-                display.markStopped({ label: `${label} [Stopped]` });
+                display.markStopped({ label: `${generatingLabel} [Stopped]` });
                 return '';
             }
 
@@ -643,7 +643,7 @@ async function generateStreamCallback(args, value) {
 
             // Show quick non-streaming display
             display.show({
-                label: label,
+                label: generatingLabel,
                 icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
             });
             if (finalReasoning) {
@@ -1073,19 +1073,19 @@ export async function init() {
                 defaultValue: '2048',
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'label',
+                name: 'generating',
                 description: t`label/title for the generation display`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'Generating...',
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'completedLabel',
+                name: 'completed',
                 description: t`updated label/title for when generation completes`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'Generated',
             }),
             SlashCommandNamedArgument.fromProps({
-                name: 'hideDelay',
+                name: 'delay',
                 description: t`auto-hide delay in ms after generation completes. Use "infinite" or negative to keep until manually closed`,
                 typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
                 defaultValue: '3000',
