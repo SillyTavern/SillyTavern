@@ -46,6 +46,7 @@ import {
     stringToRange,
     sortIgnoreCaseAndAccents,
     equalsIgnoreCaseAndAccents,
+    uuidv4,
 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
