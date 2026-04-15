@@ -594,6 +594,17 @@ async function generateStreamCallback(args, value) {
         let finalText = '';
         let finalReasoning = '';
 
+        /** Gets the final (if requested, formatted) text to return for this command @returns {string} */
+        function buildResultText() {
+            // Format output with reasoning if requested
+            if (includeReasoning && finalReasoning) {
+                const { formatted } = formatReasoning(finalReasoning, finalText);
+                return formatted;
+            }
+
+            return finalText;
+        }
+
         try {
             // Attempt streaming first
             const streamResponse = await ConnectionManagerRequestService.sendRequest(
@@ -625,7 +636,7 @@ async function generateStreamCallback(args, value) {
             // If the user clicked stop, don't retry — show stopped state and return empty
             if (abortController?.signal?.aborted) {
                 display.markStopped({ label: `${generatingLabel} [Stopped]` });
-                return '';
+                return buildResultText();
             }
 
             console.warn('[Slash Commands] Streaming failed, falling back to non-streaming:', error);
@@ -673,13 +684,7 @@ async function generateStreamCallback(args, value) {
             return '';
         }
 
-        // Format output with reasoning if requested
-        if (includeReasoning && finalReasoning) {
-            const { formatted } = formatReasoning(finalReasoning, finalText);
-            return formatted;
-        }
-
-        return finalText;
+        return buildResultText();
     } catch (err) {
         console.error('Error on /genstream generation', err);
         toastr.error(err.message, t`API Error`, { preventDuplicates: true });
