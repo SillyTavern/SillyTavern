@@ -38,7 +38,7 @@ router.post('/models/providers', async (req, res) => {
  * @param {string} endpoint - The API endpoint to fetch from
  * @param {string} inputModality - Required input modality
  * @param {string} outputModality - Required output modality
- * @param {function?} [mapFn=null] - Optional mapping function to transform the results
+ * @param {((model: any) => any) | null} [mapFn=null] - Optional mapping function to transform the results
  * @returns {Promise<any[]>} Filtered models or model IDs
  */
 async function fetchModelsByModality(endpoint, inputModality, outputModality, mapFn = null) {
