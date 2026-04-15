@@ -2134,7 +2134,12 @@ async function loadXAIModels() {
 async function loadWorkersAIImageModels() {
     $('#sd_cf_workers_key').toggleClass('success', !!secret_state[SECRET_KEYS.WORKERS_AI]);
 
-    if (!secret_state[SECRET_KEYS.WORKERS_AI] || !oai_settings.workers_ai_account_id) {
+    if (!secret_state[SECRET_KEYS.WORKERS_AI]) {
+        return [];
+    }
+
+    if (!oai_settings.workers_ai_account_id) {
+        toastr.warning('Workers AI account ID is required. Save it in the "API Connections" panel.', 'Image Generation');
         return [];
     }
 
