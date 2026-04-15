@@ -2093,12 +2093,12 @@ function registerPersonaSlashCommands() {
         <div>
             <strong>${t`Examples:`}</strong>
             <ul>
-                <li><pre><code>/sync</code></pre> ${t`- Sync all user messages`}</li>
-                <li><pre><code>/sync 5</code></pre> ${t`- Sync only message 5`}</li>
-                <li><pre><code>/sync 0-10</code></pre> ${t`- Sync messages 0 through 10`}</li>
-                <li><pre><code>/sync from=OldPersona 0-20</code></pre> ${t`- Sync only messages with name "OldPersona" in range 0-20`}</li>
-                <li><pre><code>/sync quiet=false</code></pre> ${t`- Sync all with confirmation popup`}</li>
-                <li><pre><code>/sync from=TempName quiet=false 5-15</code></pre> ${t`- Sync messages with name "TempName" in range 5-15 with confirmation`}</li>
+                <li><pre><code>/persona-sync</code></pre> ${t`- Sync all user messages`}</li>
+                <li><pre><code>/persona-sync 5</code></pre> ${t`- Sync only message 5`}</li>
+                <li><pre><code>/persona-sync 0-10</code></pre> ${t`- Sync messages 0 through 10`}</li>
+                <li><pre><code>/persona-sync from=OldPersona 0-20</code></pre> ${t`- Sync only messages with name "OldPersona" in range 0-20`}</li>
+                <li><pre><code>/persona-sync quiet=false</code></pre> ${t`- Sync all with confirmation popup`}</li>
+                <li><pre><code>/persona-sync from=TempName quiet=false 5-15</code></pre> ${t`- Sync messages with name "TempName" in range 5-15 with confirmation`}</li>
             </ul>
         </div>
     `,
