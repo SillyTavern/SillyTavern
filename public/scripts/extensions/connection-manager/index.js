@@ -15,7 +15,6 @@ import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, isTrueBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
 import { t } from '../../i18n.js';
 import { getSecretLabelById } from '../../secrets.js';
-import { resolveVariable } from '/scripts/variables.js';
 import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
