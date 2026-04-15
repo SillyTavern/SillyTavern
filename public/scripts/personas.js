@@ -24,7 +24,29 @@ import {
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { PAGINATION_TEMPLATE, clearInfoBlock, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, parseJsonFile, setInfoBlock, localizePagination, renderPaginationDropdown, paginationDropdownChangeHandler, addLongPressEvent, stringToRange } from './utils.js';
+import {
+    PAGINATION_TEMPLATE,
+    clearInfoBlock,
+    debounce,
+    delay,
+    download,
+    ensureImageFormatSupported,
+    flashHighlight,
+    getBase64Async,
+    getCharIndex,
+    isFalseBoolean,
+    isTrueBoolean,
+    onlyUnique,
+    parseJsonFile,
+    setInfoBlock,
+    localizePagination,
+    renderPaginationDropdown,
+    paginationDropdownChangeHandler,
+    addLongPressEvent,
+    stringToRange,
+    sortIgnoreCaseAndAccents,
+    equalsIgnoreCaseAndAccents,
+} from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { groups, selected_group } from './group-chats.js';
@@ -36,8 +58,8 @@ import { saveMetadataDebounced } from './extensions.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
-import { commonEnumProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
-import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
+import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { isFirefox } from './browser-fixes.js';
 
@@ -1760,13 +1782,27 @@ async function onPersonasRestoreInput(e) {
     $('#personas_restore_input').val('');
 }
 
-async function syncUserNameToPersona({ start = 0, end = chat.length - 1, silent = false } = {}) {
+/**
+ * Synchronizes user-sent messages in the chat to the current persona.
+ * @param {object} [options={}] - Optional parameters
+ * @param {number} [options.start=0] - Start index of the message range (inclusive)
+ * @param {number} [options.end=chat.length - 1] - End index of the message range (inclusive)
+ * @param {boolean} [options.quiet=false] - If true, skips the confirmation popup
+ * @param {string} [options.nameFilter=''] - Filter messages by name (case-insensitive)
+ * @returns {Promise<void>}
+ */
+async function syncUserNameToPersona({ start = 0, end = chat.length - 1, quiet = false, nameFilter = '' } = {}) {
     const isRangeAll = start === 0 && end === chat.length - 1;
-    const confirmMessage = isRangeAll
+    const hasNameFilter = nameFilter?.trim();
+    const confirmMessage = isRangeAll && !hasNameFilter
         ? t`All user-sent messages in this chat will be attributed to ${name1}.`
-        : t`User-sent messages in the specified range will be attributed to ${name1}.`;
+        : isRangeAll && hasNameFilter
+            ? t`User-sent messages with name "${nameFilter}" will be attributed to ${name1}.`
+            : !isRangeAll && !hasNameFilter
+                ? t`User-sent messages in the specified range will be attributed to ${name1}.`
+                : t`User-sent messages with name "${nameFilter}" in the specified range will be attributed to ${name1}.`;
 
-    if (!silent) {
+    if (!quiet) {
         const confirmation = await Popup.show.confirm(t`Are you sure?`, confirmMessage);
         if (!confirmation) {
             return;
@@ -1775,7 +1811,7 @@ async function syncUserNameToPersona({ start = 0, end = chat.length - 1, silent 
 
     for (let i = start; i <= end; i++) {
         const mes = chat[i];
-        if (mes?.is_user) {
+        if (mes?.is_user && (!hasNameFilter || equalsIgnoreCaseAndAccents(mes.name, nameFilter))) {
             mes.name = name1;
             mes.force_avatar = getThumbnailUrl('persona', user_avatar);
         }
@@ -1946,13 +1982,27 @@ async function syncCallback(args, value) {
         return '';
     }
 
-    const silent = isTrueBoolean(args?.silent);
+    const quiet = !isFalseBoolean(args?.quiet);
+    const nameFilter = typeof args?.from === 'string' ? args.from.trim() : '';
     const start = range ? range.start : 0;
     const end = range ? range.end : chat.length - 1;
 
-    await syncUserNameToPersona({ start, end, silent });
+    await syncUserNameToPersona({ start, end, quiet, nameFilter });
 
     return '';
+}
+
+/**
+ * Returns all unique user message names in the current chat for enum autocomplete.
+ * @returns {SlashCommandEnumValue[]}
+ */
+function userMessageNamesEnumProvider() {
+    return chat
+        .filter(mes => mes.is_user)
+        .map(mes => mes.name)
+        .filter(onlyUnique)
+        .sort(sortIgnoreCaseAndAccents)
+        .map(name => new SlashCommandEnumValue(name, null, enumTypes.name, enumIcons.persona));
 }
 
 function registerPersonaSlashCommands() {
@@ -2009,10 +2059,17 @@ function registerPersonaSlashCommands() {
         callback: syncCallback,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
-                name: 'silent',
+                name: 'from',
+                description: t`only sync messages from a certain persona name`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumProvider: userMessageNamesEnumProvider,
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'quiet',
                 description: t`suppress the confirmation popup`,
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('trueFalse')(),
+                defaultValue: 'true',
             }),
         ],
         unnamedArgumentList: [
@@ -2022,7 +2079,28 @@ function registerPersonaSlashCommands() {
                 defaultValue: '0-{{lastMessageId}}',
             }),
         ],
-        helpString: 'Syncs the user persona in user-attributed messages in the current chat.',
+        helpString: `
+        <div>
+            ${t`Syncs the user persona (name and avatar) in user-attributed messages in the current chat.`}
+        </div>
+        <div>
+            ${t`If <code>from</code> is set, only messages with that specific persona name will be synced. Useful when multiple personas have been used in the same chat.`}
+        </div>
+        <div>
+            ${t`If <code>quiet</code> is set to <code>false</code>, a confirmation popup will be shown before syncing.`}
+        </div>
+        <div>
+            <strong>${t`Examples:`}</strong>
+            <ul>
+                <li><pre><code>/sync</code></pre> ${t`- Sync all user messages`}</li>
+                <li><pre><code>/sync 5</code></pre> ${t`- Sync only message 5`}</li>
+                <li><pre><code>/sync 0-10</code></pre> ${t`- Sync messages 0 through 10`}</li>
+                <li><pre><code>/sync from=OldPersona 0-20</code></pre> ${t`- Sync only messages with name "OldPersona" in range 0-20`}</li>
+                <li><pre><code>/sync quiet=false</code></pre> ${t`- Sync all with confirmation popup`}</li>
+                <li><pre><code>/sync from=TempName quiet=false 5-15</code></pre> ${t`- Sync messages with name "TempName" in range 5-15 with confirmation`}</li>
+            </ul>
+        </div>
+    `,
     }));
 }
 
