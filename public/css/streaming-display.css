@@ -61,6 +61,14 @@
     box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
 }
 
+/* Stopped state: solid red LED */
+.streaming-display-stopped .streaming-display-led {
+    background: #f44336;
+    animation: none;
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+}
+
 @keyframes streaming-display-pulse {
     0%, 100% { opacity: 0.4; transform: scale(0.9); }
     50% { opacity: 1; transform: scale(1.1); }
@@ -109,6 +117,15 @@
 
 .streaming-display-btn-close:hover {
     background-color: rgba(244, 67, 54, 0.2);
+}
+
+.streaming-display-btn-stop {
+    font-size: 10px;
+}
+
+.streaming-display-btn-stop:hover {
+    background-color: rgba(244, 150, 36, 0.2);
+    color: rgb(225, 138, 36);
 }
 
 /* Content container - collapsible for minimize */

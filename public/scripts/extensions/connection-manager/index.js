@@ -9,6 +9,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { commonEnumProviders, enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandDebugController } from '../../slash-commands/SlashCommandDebugController.js';
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
+import { SlashCommandClosure } from '../../slash-commands/SlashCommandClosure.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, isTrueBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
@@ -506,6 +507,9 @@ async function generateStreamCallback(args, value) {
     const lock = isTrueBoolean(args?.lock);
     const label = typeof args?.label === 'string' ? args.label : 'Generating...';
     const completedLabel = typeof args?.completedLabel === 'string' ? args.completedLabel : 'Generated';
+    const enableStop = !isFalseBoolean(args?.stop);
+    const onStopClosure = args?.onStop instanceof SlashCommandClosure ? args.onStop : null;
+    const onCompleteClosure = args?.onComplete instanceof SlashCommandClosure ? args.onComplete : null;
 
     // Parse hideDelay: 'infinite' or negative = null (stay open), number = delay in ms
     let completeDelay = 3000; // Default 3 seconds
@@ -522,6 +526,23 @@ async function generateStreamCallback(args, value) {
             }
         }
     }
+
+    // Create abort controller for stop functionality (when stop is enabled)
+    const abortController = enableStop ? new AbortController() : null;
+
+    // Compose the stop handler: abort the request + optionally invoke user closure
+    const onStopHandler = enableStop ? async () => {
+        abortController.abort();
+        if (onStopClosure) {
+            try {
+                const localClosure = onStopClosure.getCopy();
+                localClosure.onProgress = () => { };
+                await localClosure.execute();
+            } catch (e) {
+                console.error('[GenStream] Error executing onStop closure', e);
+            }
+        }
+    } : null;
 
     try {
         if (lock) {
@@ -560,6 +581,7 @@ async function generateStreamCallback(args, value) {
         display.show({
             label: label,
             icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
+            onStop: onStopHandler,
         });
 
         const messages = [
@@ -576,7 +598,7 @@ async function generateStreamCallback(args, value) {
                 effectiveProfileId,
                 messages,
                 maxTokens,
-                { extractData: true, includePreset: true, stream: true },
+                { extractData: true, includePreset: true, stream: true, signal: abortController?.signal ?? undefined },
             );
 
             if (typeof streamResponse === 'function') {
@@ -598,6 +620,12 @@ async function generateStreamCallback(args, value) {
                 display.updateContent(finalText);
             }
         } catch (error) {
+            // If the user clicked stop, don't retry — show stopped state and return empty
+            if (abortController?.signal?.aborted) {
+                display.markStopped({ label: `${label} [Stopped]` });
+                return '';
+            }
+
             console.warn('[Slash Commands] Streaming failed, falling back to non-streaming:', error);
             display.hide({ instant: true });
 
@@ -625,7 +653,18 @@ async function generateStreamCallback(args, value) {
         }
 
         // Mark as complete with delay (null = stay open until user closes)
-        display.complete(completedLabel, { delay: completeDelay });
+        display.complete({ label: completedLabel, delay: completeDelay });
+
+        // Invoke onComplete closure if provided
+        if (onCompleteClosure) {
+            try {
+                const localClosure = onCompleteClosure.getCopy();
+                localClosure.onProgress = () => { };
+                await localClosure.execute();
+            } catch (e) {
+                console.error('[GenStream] Error executing onComplete closure', e);
+            }
+        }
 
         if (!finalText) {
             toastr.warning(t`Generation returned empty result`);
@@ -1055,6 +1094,23 @@ export async function init() {
                     new SlashCommandEnumValue('any delay in seconds', null, 'number', '⌚', () => true, input => input),
                 ],
             }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'stop',
+                description: t`show a stop button on the streaming display that aborts generation when clicked`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'onStop',
+                description: t`closure to execute when the stop button is clicked (in addition to aborting the request)`,
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'onComplete',
+                description: t`closure to execute after generation completes successfully`,
+                typeList: [ARGUMENT_TYPE.CLOSURE],
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -1077,10 +1133,19 @@ export async function init() {
                 ${t`Use hideDelay to control auto-hide behavior: number (ms), "infinite", or negative to keep the display open until manually closed. The display shows a green LED when complete.`}
             </div>
             <div>
+                ${t`A stop button is shown by default (stop=true). Click it to abort generation and return whatever was streamed so far. Use stop=false to hide the stop button.`}
+            </div>
+            <div>
+                ${t`Use onStop and onComplete closures for custom behavior when generation is stopped or completes.`}
+            </div>
+            <div>
                 ${t`Example: <pre><code>/profile-genstream profile=my-profile-id reasoning=true Summarize the following text</code></pre>`}
             </div>
             <div>
                 ${t`Example with infinite display: <pre><code>/profile-genstream hideDelay=infinite Tell me a story</code></pre>`}
+            </div>
+            <div>
+                ${t`Example with custom stop handler: <pre><code>/profile-genstream onStop={: /echo "Generation stopped!" :} Tell me a story</code></pre>`}
             </div>
         `,
     }));

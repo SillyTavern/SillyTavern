@@ -29,6 +29,7 @@ const CSS_PREFIX = 'streaming-display';
  * @typedef {Object} StreamingDisplayOptions
  * @property {string} [label] - Header label (e.g. "Generating greeting...")
  * @property {HTMLImageElement} [icon] - Optional API/model icon image (e.g. from createModelIcon). Will be SVG-injected when loaded.
+ * @property {(() => (void | Promise<void>)) | null} [onStop] - Optional stop handler. When provided, a stop button is shown. Clicking it invokes this handler only — the display is not automatically hidden or completed.
  */
 
 export class StreamingDisplay {
@@ -46,10 +47,14 @@ export class StreamingDisplay {
     #textSection = null;
     /** @type {HTMLElement | null} */
     #textContent = null;
-    /** @type {HTMLElement | null} */
+    /** @type {HTMLButtonElement | null} */
+    #stopButton = null;
+    /** @type {HTMLButtonElement | null} */
     #minimizeButton = null;
-    /** @type {HTMLElement | null} */
+    /** @type {HTMLButtonElement | null} */
     #closeButton = null;
+    /** @type {(() => (void | Promise<void>)) | null} */
+    #onStop = null;
     /** @type {HTMLElement | null} */
     #ledIndicator = null;
     /** @type {boolean} */
@@ -58,6 +63,8 @@ export class StreamingDisplay {
     #isMinimized = false;
     /** @type {boolean} */
     #isComplete = false;
+    /** @type {boolean} */
+    #isStopped = false;
     /** @type {ReturnType<typeof setTimeout> | null} */
     #hideTimeoutId = null;
 
@@ -66,11 +73,12 @@ export class StreamingDisplay {
      * @param {StreamingDisplayOptions} [options]
      * @returns {StreamingDisplay} this instance for chaining
      */
-    show({ label = '', icon = null } = {}) {
+    show({ label = '', icon = null, onStop = null } = {}) {
         if (this.#element) this.hide({ instant: true });
 
         this.#isMinimized = false;
         this.#isComplete = false;
+        this.#onStop = onStop;
         this.#clearHideTimeout();
 
         this.#element = document.createElement('div');
@@ -102,6 +110,27 @@ export class StreamingDisplay {
         // Window control buttons container
         const controls = document.createElement('div');
         controls.classList.add(`${CSS_PREFIX}-controls`);
+
+        // Stop button (only shown when an onStop handler is provided)
+        if (onStop) {
+            this.#stopButton = document.createElement('button');
+            this.#stopButton.classList.add(`${CSS_PREFIX}-btn`, `${CSS_PREFIX}-btn-stop`);
+            this.#stopButton.setAttribute('aria-label', t`Stop`);
+            this.#stopButton.setAttribute('title', t`Stop generation`);
+            this.#stopButton.innerHTML = '&#9632;'; // Black square ■
+            this.#stopButton.addEventListener('click', async () => {
+                // Disable immediately to prevent double-clicks and give instant feedback
+                if (this.#stopButton) {
+                    this.#stopButton.disabled = true;
+                }
+                try {
+                    await this.#onStop?.();
+                } catch (e) {
+                    console.error('[StreamingDisplay] Error executing stop handler', e);
+                }
+            });
+            controls.appendChild(this.#stopButton);
+        }
 
         // Minimize button
         this.#minimizeButton = document.createElement('button');
@@ -205,6 +234,13 @@ export class StreamingDisplay {
     }
 
     /**
+     * @returns {boolean} Whether the display was stopped by the user
+     */
+    get isStopped() {
+        return this.#isStopped;
+    }
+
+    /**
      * Updates the header label text.
      * @param {string} label
      * @returns {StreamingDisplay} this instance for chaining
@@ -223,7 +259,7 @@ export class StreamingDisplay {
      * @returns {StreamingDisplay} this instance for chaining
      */
     updateReasoning(text) {
-        if (!this.#reasoningContent || !this.#reasoningSection || !text) return;
+        if (!this.#reasoningContent || !this.#reasoningSection || !text) return this;
 
         this.#reasoningSection.style.display = '';
         this.#reasoningContent.innerHTML = messageFormatting(text, '', false, false, -1, {}, true);
@@ -238,7 +274,7 @@ export class StreamingDisplay {
      * @returns {StreamingDisplay} this instance for chaining
      */
     updateContent(text) {
-        if (!this.#textContent || !this.#textSection || !text) return;
+        if (!this.#textContent || !this.#textSection || !text) return this;
 
         this.#hasContent = true;
         this.#textSection.style.display = '';
@@ -253,6 +289,36 @@ export class StreamingDisplay {
     }
 
     /**
+     * Marks the generation as stopped by the user.
+     *
+     * Changes the LED indicator to solid red, removes the stop button, and keeps the display
+     * visible until the user manually closes it with the close button (no auto-hide).
+     *
+     * @param {Object} [options={}]
+     * @param {string|null} [options.label=null] - Optional label override (e.g. `'Generating... [Stopped]'`).
+     * @returns {StreamingDisplay} this instance for chaining
+     */
+    markStopped({ label = null } = {}) {
+        if (!this.#element || this.#isStopped || this.#isComplete) return this;
+
+        this.#isStopped = true;
+        this.#clearHideTimeout();
+        this.#element.classList.add(`${CSS_PREFIX}-stopped`);
+
+        // Remove the stop button — nothing left to stop
+        if (this.#stopButton) {
+            this.#stopButton.remove();
+            this.#stopButton = null;
+        }
+
+        if (label !== null) {
+            this.setLabel(label);
+        }
+
+        return this;
+    }
+
+    /**
      * Marks the generation as complete and initiates cleanup. Optionally set a new label.
      *
      * This is the **preferred method** to call after streaming ends. It:
@@ -260,12 +326,12 @@ export class StreamingDisplay {
      * - Waits for the specified delay to let the user see the final result
      * - Then hides the display with a fade-out animation
      *
-     * @param {string|null} [updatedLabel=null] - Set the label automatically to a new one to display the completed state.
      * @param {Object} [options={}]
+     * @param {string|null} [options.label=null] - Set the label automatically to a new one to display the completed state.
      * @param {number|null} [options.delay=3000] - Delay in ms before hiding. Use `null` or negative value to keep displayed until user manually closes it.
      * @returns {StreamingDisplay} this instance for chaining
      */
-    complete(updatedLabel = null, { delay = 3000 } = {}) {
+    complete({ label = null, delay = 3000 } = {}) {
         if (!this.#element || this.#isComplete) return this;
 
         this.#isComplete = true;
@@ -274,8 +340,12 @@ export class StreamingDisplay {
         // Clear any existing hide timeout
         this.#clearHideTimeout();
 
-        if (updatedLabel !== null) {
-            this.setLabel(updatedLabel);
+        if (this.#stopButton) {
+            this.#stopButton.remove();
+            this.#stopButton = null;
+        }
+        if (label !== null) {
+            this.setLabel(label);
         }
 
         // Auto-hide after delay if specified (positive number)
@@ -333,12 +403,15 @@ export class StreamingDisplay {
         this.#reasoningContent = null;
         this.#textSection = null;
         this.#textContent = null;
+        this.#stopButton = null;
         this.#minimizeButton = null;
         this.#closeButton = null;
         this.#ledIndicator = null;
+        this.#onStop = null;
         this.#hasContent = false;
         this.#isMinimized = false;
         this.#isComplete = false;
+        this.#isStopped = false;
         this.#hideTimeoutId = null;
 
         if (instant) {
