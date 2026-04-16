@@ -1630,7 +1630,19 @@ async function sendMinimaxRequest(request, response) {
 
     try {
         // Pre-process: convert images to text descriptions via VLM
-        const messages = await minimaxVisionPreprocess(request.body.messages, apiKey, apiUrl);
+        const preprocessed = await minimaxVisionPreprocess(request.body.messages, apiKey, apiUrl);
+
+        // MiniMax does not allow consecutive messages with the same role.
+        // Merge them into a single message to avoid "invalid chat setting (2013)".
+        const messages = [];
+        for (const msg of preprocessed) {
+            const last = messages[messages.length - 1];
+            if (last && last.role === msg.role) {
+                last.content += '\n' + msg.content;
+            } else {
+                messages.push({ ...msg });
+            }
+        }
 
         let bodyParams = {};
 
