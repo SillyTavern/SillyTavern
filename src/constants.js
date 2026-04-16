@@ -558,3 +558,8 @@ export const SILICONFLOW_ENDPOINT = {
     GLOBAL: 'global',
     CN: 'cn',
 };
+
+export const MINIMAX_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
+};

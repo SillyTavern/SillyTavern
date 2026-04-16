@@ -18,6 +18,7 @@ import {
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
     SILICONFLOW_ENDPOINT,
+    MINIMAX_ENDPOINT,
     ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
@@ -90,6 +91,7 @@ const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_MINIMAX = 'https://api.minimax.io/v1';
+const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
@@ -1549,8 +1551,8 @@ async function sendChutesRequest(request, response) {
  * @param {string} apiKey MiniMax API key
  * @returns {Promise<object[]>} Messages with images replaced by text descriptions
  */
-async function minimaxVisionPreprocess(messages, apiKey) {
-    const vlmUrl = API_MINIMAX + '/coding_plan/vlm';
+async function minimaxVisionPreprocess(messages, apiKey, apiUrl) {
+    const vlmUrl = apiUrl + '/coding_plan/vlm';
     const processed = [];
 
     for (const message of messages) {
@@ -1611,7 +1613,8 @@ async function minimaxVisionPreprocess(messages, apiKey) {
  * @param {express.Response} response Express response
  */
 async function sendMinimaxRequest(request, response) {
-    const apiUrl = API_MINIMAX;
+    const apiUrl = request.body.minimax_endpoint === MINIMAX_ENDPOINT.CN
+        ? API_MINIMAX_CN : API_MINIMAX;
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
 
     if (!apiKey) {
@@ -1627,7 +1630,7 @@ async function sendMinimaxRequest(request, response) {
 
     try {
         // Pre-process: convert images to text descriptions via VLM
-        const messages = await minimaxVisionPreprocess(request.body.messages, apiKey);
+        const messages = await minimaxVisionPreprocess(request.body.messages, apiKey, apiUrl);
 
         let bodyParams = {};
 
@@ -2044,7 +2047,8 @@ router.post('/status', async function (request, statusResponse) {
                 return statusResponse.status(500).send({ error: true });
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
-            apiUrl = API_MINIMAX;
+            apiUrl = request.body.minimax_endpoint === MINIMAX_ENDPOINT.CN
+                ? API_MINIMAX_CN : API_MINIMAX;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
             headers = {};
             // MiniMax does not support the /models endpoint, return hardcoded model list

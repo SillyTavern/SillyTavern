@@ -270,6 +270,11 @@ export const SILICONFLOW_ENDPOINT = {
     CN: 'cn',
 };
 
+export const MINIMAX_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
+};
+
 const sensitiveFields = [
     'reverse_proxy',
     'proxy_password',
@@ -320,6 +325,7 @@ export const settingsToUpdate = {
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     siliconflow_endpoint: ['#siliconflow_endpoint', 'siliconflow_endpoint', false, true],
     minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
+    minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
     electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
@@ -433,6 +439,7 @@ const default_settings = {
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
     minimax_model: 'MiniMax-M2.7',
+    minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,
@@ -2865,6 +2872,10 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.siliconflow_endpoint = settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
     }
 
+    if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
+    }
+
     if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
         generate_data.workers_ai_account_id = settings.workers_ai_account_id;
         generate_data.top_k = settings.top_k_openai > 0 ? Math.min(Number(settings.top_k_openai), 50) : undefined;
@@ -4330,6 +4341,10 @@ async function getStatusOpen() {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
         data.siliconflow_endpoint = oai_settings.siliconflow_endpoint;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        data.minimax_endpoint = oai_settings.minimax_endpoint;
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
@@ -7069,6 +7084,10 @@ export function initOpenAI() {
     });
     $('#siliconflow_endpoint').on('input', function () {
         oai_settings.siliconflow_endpoint = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#minimax_endpoint').on('input', function () {
+        oai_settings.minimax_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
     $('#workers_ai_account_id').on('input', function () {
