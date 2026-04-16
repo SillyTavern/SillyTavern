@@ -87,7 +87,7 @@ export async function deleteItemizedPrompts(chatId) {
         }
 
         await promptStorage.removeItem(chatId);
-        await eventSource.emit(event_types.ITEMIZED_PROMPTS_DELETED, { chatId: chatId });
+        await eventSource.emit(event_types.ITEMIZED_PROMPTS_DELETED, { chatId: chatId, all: false });
     } catch {
         console.log('Error deleting itemized prompts for chat', chatId);
     }
@@ -100,7 +100,7 @@ export async function clearItemizedPrompts() {
     try {
         await promptStorage.clear();
         itemizedPrompts = [];
-        await eventSource.emit(event_types.ITEMIZED_PROMPTS_DELETED_ALL, { });
+        await eventSource.emit(event_types.ITEMIZED_PROMPTS_DELETED, { all: true });
     } catch {
         console.log('Error clearing itemized prompts');
     }
