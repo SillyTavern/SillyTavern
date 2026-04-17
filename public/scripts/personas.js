@@ -22,7 +22,7 @@ import {
     setUserName,
     this_chid,
 } from '../script.js';
-import { persona_description_positions, power_user } from './power-user.js';
+import { power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import {
     PAGINATION_TEMPLATE,
@@ -47,6 +47,8 @@ import {
     sortIgnoreCaseAndAccents,
     equalsIgnoreCaseAndAccents,
     uuidv4,
+    resolveAvatarData,
+    findPersona,
 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -59,10 +61,11 @@ import { saveMetadataDebounced } from './extensions.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
-import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumMatchProviders, commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { isFirefox } from './browser-fixes.js';
+import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 
 /**
  * @typedef {object} PersonaConnection A connection between a character and a character or group entity
@@ -80,6 +83,18 @@ import { isFirefox } from './browser-fixes.js';
  * @property {boolean} locked.chat - Whether the persona is locked to the currently open chat
  * @property {boolean} locked.character - Whether the persona is locked to the currently open character or group
  */
+
+export const persona_description_positions = {
+    IN_PROMPT: 0,
+    /**
+     * @deprecated Use persona_description_positions.IN_PROMPT instead.
+     */
+    AFTER_CHAR: 1,
+    TOP_AN: 2,
+    BOTTOM_AN: 3,
+    AT_DEPTH: 4,
+    NONE: 9,
+};
 
 const USER_AVATAR_PATH = 'User Avatars/';
 
@@ -488,18 +503,28 @@ async function createDummyPersona() {
  * @param {string} personaName Name for the persona
  * @param {string} personaDescription Optional description for the persona
  * @param {string} personaTitle Optional title for the persona
- * @param {object} [options] Optional settings
+ * @param {object} [options={}] Optional settings
  * @param {boolean} [options.silent=false] If true, no PERSONA_CREATED event is emitted (used for background migrations)
+ * @param {number} [options.position=persona_description_positions.IN_PROMPT] Description position (defaults to IN_PROMPT)
+ * @param {number} [options.depth=DEFAULT_DEPTH] Description depth (defaults to DEFAULT_DEPTH)
+ * @param {number} [options.role=DEFAULT_ROLE] Description role (defaults to DEFAULT_ROLE)
+ * @param {string} [options.lorebook=''] Attached lorebook name
  * @returns {Promise<void>}
  */
-export async function initPersona(avatarId, personaName, personaDescription, personaTitle, { silent = false } = {}) {
+export async function initPersona(avatarId, personaName, personaDescription, personaTitle, {
+    silent = false,
+    position = persona_description_positions.IN_PROMPT,
+    depth = DEFAULT_DEPTH,
+    role = DEFAULT_ROLE,
+    lorebook = '',
+} = {}) {
     power_user.personas[avatarId] = personaName;
     power_user.persona_descriptions[avatarId] = {
         description: personaDescription || '',
-        position: persona_description_positions.IN_PROMPT,
-        depth: DEFAULT_DEPTH,
-        role: DEFAULT_ROLE,
-        lorebook: '',
+        position: position,
+        depth: depth,
+        role: role,
+        lorebook: lorebook,
         title: personaTitle || '',
     };
 
@@ -1106,21 +1131,37 @@ async function lockPersona(type = 'chat') {
 }
 
 
+/**
+ * Click handler for the delete persona button. Delegates to deletePersona with the current user avatar.
+ */
 async function deleteUserAvatar() {
-    const avatarId = user_avatar;
+    await deletePersona(user_avatar);
+}
 
+/**
+ * Deletes a persona by avatar id.
+ * @param {string} avatarId The persona's avatar id to delete
+ * @param {object} [options] Options
+ * @param {boolean} [options.silent=false] If true, skips the confirmation popup and suppresses toast notifications
+ * @returns {Promise<boolean>} True if the persona was deleted
+ */
+async function deletePersona(avatarId, { silent = false } = {}) {
     if (!avatarId) {
         console.warn('No avatar id found');
-        return;
+        return false;
     }
-    const name = power_user.personas[avatarId] || '';
-    const confirm = await Popup.show.confirm(
-        t`Delete Persona` + `: ${name}`,
-        t`Are you sure you want to delete this avatar?` + '<br />' + t`All information associated with its linked persona will be lost.`);
 
-    if (!confirm) {
-        console.debug('User cancelled deleting avatar');
-        return;
+    const name = power_user.personas[avatarId] || '';
+
+    if (!silent) {
+        const confirm = await Popup.show.confirm(
+            t`Delete Persona` + `: ${name}`,
+            t`Are you sure you want to delete this avatar?` + '<br />' + t`All information associated with its linked persona will be lost.`);
+
+        if (!confirm) {
+            console.debug('User cancelled deleting avatar');
+            return false;
+        }
     }
 
     const request = await fetch('/api/avatars/delete', {
@@ -1137,12 +1178,12 @@ async function deleteUserAvatar() {
         delete power_user.persona_descriptions[avatarId];
 
         if (avatarId === power_user.default_persona) {
-            toastr.warning(t`The default persona was deleted. You will need to set a new default persona.`, t`Default Persona Deleted`);
+            if (!silent) toastr.warning(t`The default persona was deleted. You will need to set a new default persona.`, t`Default Persona Deleted`);
             power_user.default_persona = null;
         }
 
         if (avatarId === chat_metadata.persona) {
-            toastr.warning(t`The locked persona was deleted. You will need to set a new persona for this chat.`, t`Persona Deleted`);
+            if (!silent) toastr.warning(t`The locked persona was deleted. You will need to set a new persona for this chat.`, t`Persona Deleted`);
             delete chat_metadata.persona;
             await saveMetadata();
         }
@@ -1153,7 +1194,10 @@ async function deleteUserAvatar() {
         // Use the existing mechanism to re-render the persona list and choose the next persona here
         personaLastLoadedChatId = uuidv4(); // Force reload by making a dummy chat id
         await loadPersonaForCurrentChat({ doRender: true });
+        return true;
     }
+
+    return false;
 }
 
 async function onPersonaDescriptionInput() {
@@ -1839,22 +1883,27 @@ export async function retriggerFirstMessageOnEmptyChat() {
 
 /**
  * Duplicates a persona.
- * @param {string} avatarId
- * @returns {Promise<void>}
+ * @param {string} avatarId Source persona avatar id
+ * @param {object} [options] Options
+ * @param {boolean} [options.silent=false] If true, skips the confirmation popup
+ * @param {boolean} [options.select=false] If true, selects/activates the duplicated persona
+ * @returns {Promise<string>} The avatar id of the new persona, or empty string on failure/cancellation
  */
-async function duplicatePersona(avatarId) {
+async function duplicatePersona(avatarId, { silent = false, select = false } = {}) {
     const personaName = power_user.personas[avatarId];
 
     if (!personaName) {
-        toastr.warning('Chosen avatar is not a persona', t`Persona Management`);
-        return;
+        toastr.warning(t`Chosen avatar is not a persona`, t`Persona Management`);
+        return '';
     }
 
-    const confirm = await Popup.show.confirm(t`Are you sure you want to duplicate this persona?`, personaName);
+    if (!silent) {
+        const confirm = await Popup.show.confirm(t`Are you sure you want to duplicate this persona?`, personaName);
 
-    if (!confirm) {
-        console.debug('User cancelled duplicating persona');
-        return;
+        if (!confirm) {
+            console.debug('User cancelled duplicating persona');
+            return '';
+        }
     }
 
     const newAvatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
@@ -1883,6 +1932,12 @@ async function duplicatePersona(avatarId) {
 
     await getUserAvatars(true, newAvatarId);
     saveSettingsDebounced();
+
+    if (select) {
+        await setUserAvatar(newAvatarId);
+    }
+
+    return newAvatarId;
 }
 
 /**
@@ -1898,6 +1953,407 @@ async function migrateNonPersonaUser() {
     await getUserAvatars(true, user_avatar);
 }
 
+
+// #region Persona CRUD Slash Command Utilities
+
+/**
+ * Mapping of human-readable position names to persona_description_positions enum values.
+ * @type {Record<string, number>}
+ */
+const POSITION_NAME_MAP = Object.freeze({
+    'inprompt': persona_description_positions.IN_PROMPT,
+    'topan': persona_description_positions.TOP_AN,
+    'bottoman': persona_description_positions.BOTTOM_AN,
+    'atdepth': persona_description_positions.AT_DEPTH,
+    'none': persona_description_positions.NONE,
+});
+
+/**
+ * Mapping of human-readable role names to numeric role values.
+ * @type {Record<string, number>}
+ */
+const ROLE_NAME_MAP = Object.freeze({
+    'system': 0,
+    'user': 1,
+    'assistant': 2,
+});
+
+/**
+ * Parses a persona description position from a string or number value.
+ * @param {string|number|undefined} value Position value (name or number)
+ * @returns {number|null} Parsed position value, or null if invalid/undefined
+ */
+function parsePersonaPosition(value) {
+    if (value === undefined || value === null) return null;
+    const strValue = String(value).toLowerCase();
+    if (strValue in POSITION_NAME_MAP) return POSITION_NAME_MAP[strValue];
+    const numValue = Number(value);
+    if (!isNaN(numValue) && Object.values(persona_description_positions).includes(numValue)) return numValue;
+    return null;
+}
+
+/**
+ * Parses a persona description role from a string or number value.
+ * @param {string|number|undefined} value Role value (name or number)
+ * @returns {number|null} Parsed role value, or null if invalid/undefined
+ */
+function parsePersonaRole(value) {
+    if (value === undefined || value === null) return null;
+    const strValue = String(value).toLowerCase();
+    if (strValue in ROLE_NAME_MAP) return ROLE_NAME_MAP[strValue];
+    const numValue = Number(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 2) return numValue;
+    return null;
+}
+
+/**
+ * Uploads base64 avatar data to a persona, optionally showing a crop dialog.
+ * @param {string} avatarId The persona's avatar file name
+ * @param {string} base64Data Base64 data URL of the image
+ * @param {object} [options] Options
+ * @param {boolean} [options.resizePrompt=false] Whether to show the crop dialog
+ * @returns {Promise<boolean>} True if upload was successful
+ */
+async function uploadPersonaAvatar(avatarId, base64Data, { resizePrompt = false } = {}) {
+    if (!base64Data || !avatarId) return false;
+
+    let finalImageData = base64Data;
+
+    if (resizePrompt && !power_user.never_resize_avatars) {
+        const dlg = new Popup(t`Set the crop position of the avatar image`, POPUP_TYPE.CROP, '', { cropImage: base64Data });
+        const croppedImage = await dlg.show();
+        if (!croppedImage) return false;
+        finalImageData = String(croppedImage);
+    }
+
+    try {
+        const response = await fetch(finalImageData);
+        const blob = await response.blob();
+        const file = new File([blob], 'avatar.png', { type: 'image/png' });
+        const formData = new FormData();
+        formData.append('avatar', file);
+        formData.append('overwrite_name', avatarId);
+
+        const uploadResponse = await fetch('/api/avatars/upload', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            cache: 'no-cache',
+            body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        }
+
+        // Cache bust for the updated avatar
+        await fetch(getUserAvatar(avatarId), { cache: 'reload' });
+        await fetch(getThumbnailUrl('persona', avatarId), { cache: 'reload' });
+        reloadUserAvatar(true);
+        return true;
+    } catch (error) {
+        console.error('Error uploading persona avatar:', error);
+        toastr.warning(t`Failed to upload avatar: ${error.message}`);
+        return false;
+    }
+}
+
+/**
+ * Resolves a persona from the given argument or falls back to the currently active persona.
+ * @param {string} [personaArg] Persona name or avatar key argument
+ * @returns {import('./utils.js').PersonaViewModel|null} The resolved persona, or null if not found
+ */
+function getTargetPersona(personaArg) {
+    if (personaArg) {
+        const persona = findPersona({ name: personaArg });
+        if (!persona) {
+            toastr.warning(t`Persona "${personaArg}" not found`);
+            return null;
+        }
+        return persona;
+    }
+
+    // Fall back to currently active persona
+    const persona = findPersona({ preferCurrentPersona: true });
+    if (!persona) {
+        toastr.warning(t`No persona selected and no persona argument provided`);
+        return null;
+    }
+    return persona;
+}
+
+// #endregion
+
+// #region Persona CRUD Slash Command Callbacks
+
+/**
+ * Creates a new persona with the specified attributes.
+ * @param {object} args Named arguments from the slash command
+ * @returns {Promise<string>} Avatar key of the created persona, or empty string on failure
+ */
+async function createPersonaCallback(args) {
+    const name = args.name;
+    if (!name || typeof name !== 'string' || !name.trim()) {
+        toastr.warning(t`Persona name is required`);
+        return '';
+    }
+
+    const trimmedName = name.trim();
+    const avatarId = `${Date.now()}-${trimmedName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
+
+    const description = args.description ?? '';
+    const title = args.title ?? '';
+    const position = parsePersonaPosition(args.descriptionPosition) ?? persona_description_positions.IN_PROMPT;
+    const depth = args.descriptionDepth !== undefined ? Number(args.descriptionDepth) : DEFAULT_DEPTH;
+    const role = parsePersonaRole(args.descriptionRole) ?? DEFAULT_ROLE;
+    const lorebook = args.lorebook ?? '';
+
+    // Initialize persona data with all fields
+    await initPersona(avatarId, trimmedName, description, title, {
+        position, depth, role, lorebook,
+    });
+
+    // Handle avatar upload
+    const avatarData = args.avatar ? await resolveAvatarData(args.avatar) : null;
+    if (avatarData) {
+        const resizePrompt = !isFalseBoolean(args.avatarPromptResize ?? 'true');
+        const uploaded = await uploadPersonaAvatar(avatarId, avatarData, { resizePrompt });
+        if (!uploaded) {
+            // Crop was cancelled or upload failed — use default avatar
+            await uploadUserAvatar(default_user_avatar, avatarId);
+        }
+    } else {
+        await uploadUserAvatar(default_user_avatar, avatarId);
+    }
+
+    saveSettingsDebounced();
+    await getUserAvatars(true, avatarId);
+
+    // Select/activate if requested (default: true)
+    if (!isFalseBoolean(args.select ?? 'true')) {
+        await setUserAvatar(avatarId);
+    }
+
+    toastr.success(t`Persona "${trimmedName}" created successfully`);
+    return avatarId;
+}
+
+/**
+ * Updates an existing persona's attributes.
+ * @param {object} args Named arguments from the slash command
+ * @returns {Promise<string>} Avatar key of the updated persona, or empty string on failure
+ */
+async function updatePersonaCallback(args) {
+    const persona = getTargetPersona(args.persona);
+    if (!persona) return '';
+
+    const avatarId = persona.avatar;
+    const descriptor = power_user.persona_descriptions[avatarId];
+
+    if (!descriptor) {
+        toastr.warning(t`Persona data not found for "${persona.name}"`);
+        return '';
+    }
+
+    let hasUpdates = false;
+
+    // Update name
+    if (args.name !== undefined) {
+        const newName = String(args.name).trim();
+        if (newName) {
+            const oldName = power_user.personas[avatarId];
+            power_user.personas[avatarId] = newName;
+            if (avatarId === user_avatar) {
+                setUserName(newName);
+            }
+            await eventSource.emit(event_types.PERSONA_RENAMED, { avatarId, oldName, newName });
+            hasUpdates = true;
+        }
+    }
+
+    // Update description
+    if (args.description !== undefined) {
+        descriptor.description = args.description;
+        if (avatarId === user_avatar) {
+            power_user.persona_description = args.description;
+        }
+        hasUpdates = true;
+    }
+
+    // Update title
+    if (args.title !== undefined) {
+        descriptor.title = args.title;
+        hasUpdates = true;
+    }
+
+    // Update description position
+    if (args.descriptionPosition !== undefined) {
+        const position = parsePersonaPosition(args.descriptionPosition);
+        if (position !== null) {
+            descriptor.position = position;
+            if (avatarId === user_avatar) {
+                power_user.persona_description_position = position;
+            }
+            hasUpdates = true;
+        }
+    }
+
+    // Update description depth
+    if (args.descriptionDepth !== undefined) {
+        const depth = Number(args.descriptionDepth);
+        if (!isNaN(depth)) {
+            descriptor.depth = depth;
+            if (avatarId === user_avatar) {
+                power_user.persona_description_depth = depth;
+            }
+            hasUpdates = true;
+        }
+    }
+
+    // Update description role
+    if (args.descriptionRole !== undefined) {
+        const role = parsePersonaRole(args.descriptionRole);
+        if (role !== null) {
+            descriptor.role = role;
+            if (avatarId === user_avatar) {
+                power_user.persona_description_role = role;
+            }
+            hasUpdates = true;
+        }
+    }
+
+    // Update lorebook
+    if (args.lorebook !== undefined) {
+        descriptor.lorebook = args.lorebook;
+        if (avatarId === user_avatar) {
+            power_user.persona_description_lorebook = args.lorebook;
+        }
+        hasUpdates = true;
+    }
+
+    // Handle avatar
+    const avatarData = args.avatar ? await resolveAvatarData(args.avatar) : null;
+    if (avatarData) {
+        const resizePrompt = !isFalseBoolean(args.avatarPromptResize ?? 'true');
+        const uploaded = await uploadPersonaAvatar(avatarId, avatarData, { resizePrompt });
+        if (uploaded) {
+            hasUpdates = true;
+        }
+    }
+
+    if (!hasUpdates) {
+        toastr.info(t`No fields provided to update`);
+        return avatarId;
+    }
+
+    saveSettingsDebounced();
+    await eventSource.emit(event_types.PERSONA_UPDATED, avatarId);
+
+    // Refresh UI if the updated persona is the active one
+    if (avatarId === user_avatar) {
+        setPersonaDescription();
+    }
+    await getUserAvatars(true, avatarId);
+    updatePersonaUIStates();
+
+    toastr.success(t`Persona "${power_user.personas[avatarId]}" updated successfully`);
+    return avatarId;
+}
+
+/**
+ * Retrieves persona data or a specific field.
+ * @param {object} args Named arguments from the slash command
+ * @returns {Promise<string>} The persona data or field value
+ */
+async function getPersonaDataCallback(args) {
+    const persona = getTargetPersona(args.persona);
+    if (!persona) return '';
+
+    const avatarId = persona.avatar;
+    const descriptor = power_user.persona_descriptions[avatarId] ?? {};
+
+    if (args.field) {
+        /** @type {Record<string, unknown>} */
+        const fieldMap = {
+            name: power_user.personas[avatarId] ?? '',
+            description: descriptor.description ?? '',
+            title: descriptor.title ?? '',
+            position: descriptor.position ?? persona_description_positions.IN_PROMPT,
+            depth: descriptor.depth ?? DEFAULT_DEPTH,
+            role: descriptor.role ?? DEFAULT_ROLE,
+            lorebook: descriptor.lorebook ?? '',
+            avatar: avatarId,
+            default: power_user.default_persona === avatarId,
+            connections: descriptor.connections ?? [],
+        };
+
+        const value = fieldMap[args.field];
+        if (value === undefined) {
+            toastr.warning(t`Unknown persona field "${args.field}"`);
+            return '';
+        }
+
+        return await slashCommandReturnHelper.doReturn(
+            args.return ?? 'pipe', value,
+            { objectToStringFunc: x => typeof x === 'object' ? JSON.stringify(x) : String(x) },
+        );
+    }
+
+    // Return full persona data
+    const personaData = {
+        avatar: avatarId,
+        name: power_user.personas[avatarId] ?? '',
+        description: descriptor.description ?? '',
+        title: descriptor.title ?? '',
+        position: descriptor.position ?? persona_description_positions.IN_PROMPT,
+        depth: descriptor.depth ?? DEFAULT_DEPTH,
+        role: descriptor.role ?? DEFAULT_ROLE,
+        lorebook: descriptor.lorebook ?? '',
+        default: power_user.default_persona === avatarId,
+        connections: descriptor.connections ?? [],
+    };
+
+    return await slashCommandReturnHelper.doReturn(
+        args.return ?? 'pipe', personaData,
+        { objectToStringFunc: x => JSON.stringify(x, null, 2) },
+    );
+}
+
+/**
+ * Deletes a persona via slash command.
+ * @param {object} args Named arguments from the slash command
+ * @returns {Promise<string>} 'true' if deleted, 'false' otherwise
+ */
+async function deletePersonaCallback(args) {
+    const persona = getTargetPersona(args.persona);
+    if (!persona) return 'false';
+
+    const silent = isTrueBoolean(args.silent);
+    const success = await deletePersona(persona.avatar, { silent });
+    return String(success);
+}
+
+/**
+ * Duplicates a persona via slash command.
+ * @param {object} args Named arguments from the slash command
+ * @returns {Promise<string>} Avatar key of the duplicated persona, or empty string on failure
+ */
+async function duplicatePersonaCallback(args) {
+    const persona = getTargetPersona(args.persona);
+    if (!persona) return '';
+
+    const shouldSelect = isTrueBoolean(args.select);
+    const newAvatarId = await duplicatePersona(persona.avatar, { silent: true, select: shouldSelect });
+
+    if (!newAvatarId) {
+        toastr.error(t`Failed to duplicate persona`);
+        return '';
+    }
+
+    toastr.success(t`Persona "${power_user.personas[newAvatarId]}" duplicated successfully`);
+    return newAvatarId;
+}
+
+// #endregion
 
 /**
  * Locks or unlocks the persona of the current chat.
@@ -2007,22 +2463,343 @@ function userMessageNamesEnumProvider() {
 }
 
 function registerPersonaSlashCommands() {
+    // Shared persona field definitions for persona CRUD commands
+    const getPersonaFieldArgs = ({ requiredFields = [] } = {}) => [
+        SlashCommandNamedArgument.fromProps({
+            name: 'name',
+            description: t`The name of the persona`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('name'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'description',
+            description: t`The persona description (sent with messages for AI context)`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('description'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'title',
+            description: t`A display title for the persona (not sent to the AI, display only)`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('title'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'avatar',
+            description: t`Avatar image. Use "prompt" to open file picker, or provide a local ST file path or base64 data URL. Can also be the return value of /imagine.`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            isRequired: requiredFields.includes('avatar'),
+            enumList: [
+                new SlashCommandEnumValue('prompt', 'Open file picker to select an image', enumTypes.enum, '📁'),
+                new SlashCommandEnumValue('characters/...', 'Character avatars path (e.g., characters/Name.png)', enumTypes.enum, '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'characters/'), () => 'characters/'),
+                new SlashCommandEnumValue('backgrounds/...', 'Background image path', enumTypes.enum, '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'backgrounds/'), () => 'backgrounds/'),
+                new SlashCommandEnumValue('User Avatars/...', 'User avatar path', enumTypes.enum, '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'User Avatars/'), () => 'User Avatars/'),
+                new SlashCommandEnumValue('assets/...', 'Asset file path', enumTypes.enum, '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'assets/'), () => 'assets/'),
+                new SlashCommandEnumValue('user/images/...', 'User image path', enumTypes.enum, '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'user/images/'), () => 'user/images/'),
+            ],
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'avatarPromptResize',
+            description: t`Whether to show the avatar resize/crop dialog when uploading. Ignored if "Never resize avatars" is enabled in settings.`,
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'true',
+            enumProvider: commonEnumProviders.boolean('trueFalse'),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'descriptionPosition',
+            description: t`Where to inject the persona description in the prompt`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: [
+                new SlashCommandEnumValue('inPrompt', t`In Prompt (default)`, enumTypes.enum),
+                new SlashCommandEnumValue('topAN', t`Top of Author's Note`, enumTypes.enum),
+                new SlashCommandEnumValue('bottomAN', t`Bottom of Author's Note`, enumTypes.enum),
+                new SlashCommandEnumValue('atDepth', t`At a specific depth (uses descriptionDepth and descriptionRole)`, enumTypes.enum),
+                new SlashCommandEnumValue('none', t`None (don't inject)`, enumTypes.enum),
+            ],
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'descriptionDepth',
+            description: t`Depth for the persona description (when position is "atDepth")`,
+            typeList: [ARGUMENT_TYPE.NUMBER],
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'descriptionRole',
+            description: t`Role for the persona description (when position is "atDepth")`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumList: commonEnumProviders.messageRoles(),
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: 'lorebook',
+            description: t`The name of the lorebook/world info to attach to this persona`,
+            typeList: [ARGUMENT_TYPE.STRING],
+            enumProvider: commonEnumProviders.worlds,
+        }),
+    ];
+
+    // Shared persona target argument (for commands that operate on an existing persona)
+    const personaTargetArg = SlashCommandNamedArgument.fromProps({
+        name: 'persona',
+        description: t`Persona name or avatar key. If not provided, uses the currently active persona.`,
+        typeList: [ARGUMENT_TYPE.STRING],
+        enumProvider: commonEnumProviders.personas,
+    });
+
+    // ========================
+    // New CRUD commands
+    // ========================
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'persona-create',
+        callback: createPersonaCallback,
+        returns: t`the avatar key (unique identifier) of the created persona`,
+        namedArgumentList: [
+            ...getPersonaFieldArgs({ requiredFields: ['name'] }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'select',
+                description: t`Whether to select/activate the persona after creation`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Creates a new persona with the specified attributes. Returns the avatar key of the created persona.`}
+        </div>
+        <div>
+            <strong>${t`Required arguments:`}</strong>
+            <ul>
+                <li><code>name</code> – ${t`The persona's display name.`}</li>
+            </ul>
+        </div>
+        <div>
+            <strong>${t`Note on avatar:`}</strong>
+            ${t`The <code>avatar</code> argument accepts <code>prompt</code> to open a file picker, a local ST file path, or a base64 data URL. Can also be the return value of <code>/imagine</code>. If not provided, a default avatar will be used.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/persona-create name="Alice" description="A curious adventurer"</code></pre>
+                </li>
+                <li>
+                    <pre><code>/persona-create name="Bob" avatar=prompt lorebook="detective_lore" select=false</code></pre>
+                </li>
+                <li>
+                    <pre><code>/imagine portrait of an elf | /persona-create name="Elf" avatar="{{pipe}}"</code></pre>
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'persona-update',
+        callback: updatePersonaCallback,
+        returns: t`the avatar key of the updated persona`,
+        namedArgumentList: [
+            personaTargetArg,
+            ...getPersonaFieldArgs(),
+        ],
+        helpString: `
+        <div>
+            ${t`Updates an existing persona's attributes. Only the provided fields are changed; others are left untouched.`}
+        </div>
+        <div>
+            ${t`If no <code>persona</code> argument is provided, updates the currently active persona.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/persona-update description="An updated description"</code></pre>
+                    ${t`Updates the current persona's description.`}
+                </li>
+                <li>
+                    <pre><code>/persona-update persona="Alice" name="Alice 2.0" descriptionPosition=atDepth descriptionDepth=3</code></pre>
+                    ${t`Renames Alice and sets her description to inject at depth 3.`}
+                </li>
+                <li>
+                    <pre><code>/imagine portrait | /persona-update avatar="{{pipe}}"</code></pre>
+                    ${t`Generates an image and sets it as the current persona's avatar.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'persona-get',
+        aliases: ['persona-data'],
+        callback: getPersonaDataCallback,
+        returns: t`persona data as JSON or a specific field value`,
+        namedArgumentList: [
+            personaTargetArg,
+            SlashCommandNamedArgument.fromProps({
+                name: 'field',
+                description: t`Specific field to retrieve. If not provided, returns the entire persona data as JSON.`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                enumList: [
+                    new SlashCommandEnumValue('name', t`Persona name`, enumTypes.enum, enumIcons.persona),
+                    new SlashCommandEnumValue('description', t`Persona description`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('title', t`Display title`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('position', t`Description position (numeric)`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('depth', t`Description depth`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('role', t`Description role (numeric)`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('lorebook', t`Attached lorebook name`, enumTypes.enum, enumIcons.world),
+                    new SlashCommandEnumValue('avatar', t`Avatar filename (unique key)`, enumTypes.enum, enumIcons.persona),
+                    new SlashCommandEnumValue('default', t`Whether this is the default persona`, enumTypes.enum, enumIcons.default),
+                    new SlashCommandEnumValue('connections', t`Character/group connections (array)`, enumTypes.enum, enumIcons.character),
+                ],
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'return',
+                description: t`The way to return the result`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'pipe',
+                enumList: slashCommandReturnHelper.enumList({ allowPipe: true, allowObject: true, allowPopup: true, allowTextVersion: false }),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Retrieves persona data. Can return all data as JSON or a specific field value.`}
+        </div>
+        <div>
+            ${t`If no <code>persona</code> argument is provided, uses the currently active persona.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/persona-get field=description | /echo</code></pre>
+                    ${t`Outputs the current persona's description.`}
+                </li>
+                <li>
+                    <pre><code>/persona-get persona="Alice" field=name</code></pre>
+                    ${t`Returns Alice's persona name.`}
+                </li>
+                <li>
+                    <pre><code>/persona-get return=object | /json-get key=avatar</code></pre>
+                    ${t`Returns the current persona's full data as an object, then extracts the avatar key.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'persona-delete',
+        callback: deletePersonaCallback,
+        returns: t`true if the persona was deleted, false otherwise`,
+        namedArgumentList: [
+            personaTargetArg,
+            SlashCommandNamedArgument.fromProps({
+                name: 'silent',
+                description: t`Skip the confirmation popup`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Deletes a persona and its avatar from the system.`}
+        </div>
+        <div>
+            ${t`If no <code>persona</code> argument is provided, deletes the currently active persona.`}
+        </div>
+        <div>
+            <strong>⚠️ ${t`Warning:`}</strong> ${t`This action is irreversible. All data associated with the persona will be lost.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/persona-delete</code></pre>
+                    ${t`Deletes the current persona (shows confirmation popup).`}
+                </li>
+                <li>
+                    <pre><code>/persona-delete persona="Bob" silent=true</code></pre>
+                    ${t`Deletes Bob without confirmation.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'persona-duplicate',
+        callback: duplicatePersonaCallback,
+        returns: t`the avatar key (unique identifier) of the duplicated persona`,
+        namedArgumentList: [
+            personaTargetArg,
+            SlashCommandNamedArgument.fromProps({
+                name: 'select',
+                description: t`Whether to select/activate the duplicated persona after creation`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumProvider: commonEnumProviders.boolean('trueFalse'),
+            }),
+        ],
+        helpString: `
+        <div>
+            ${t`Duplicates a persona including all its data and avatar. Returns the avatar key of the new persona.`}
+        </div>
+        <div>
+            ${t`Use <code>/persona-update</code> afterwards to rename or modify the duplicated persona's fields.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li>
+                    <pre><code>/persona-duplicate</code></pre>
+                    ${t`Duplicates the currently active persona.`}
+                </li>
+                <li>
+                    <pre><code>/persona-duplicate persona="Alice" select=true</code></pre>
+                    ${t`Duplicates Alice and selects the new persona.`}
+                </li>
+                <li>
+                    <pre><code>/persona-duplicate | /persona-update persona="{{pipe}}" name="Clone"</code></pre>
+                    ${t`Duplicates the current persona, then renames the clone.`}
+                </li>
+            </ul>
+        </div>
+        `,
+    }));
+
+    // ========================
+    // Existing commands (enhanced help strings)
+    // ========================
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona-lock',
         aliases: ['lock', 'bind'],
         callback: lockPersonaCallback,
-        returns: 'The current lock state for the given type',
-        helpString: 'Locks/unlocks a persona (name and avatar) to the current chat. Gets the current lock state for the given type if no state is provided.',
+        returns: t`The current lock state for the given type`,
+        helpString: `
+        <div>
+            ${t`Locks/unlocks the current persona to a chat, character, or as the default. Returns the lock state if no value is provided.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li><pre><code>/persona-lock on</code></pre> ${t`Locks persona to this chat.`}</li>
+                <li><pre><code>/persona-lock type=character on</code></pre> ${t`Locks persona to the current character.`}</li>
+                <li><pre><code>/persona-lock type=default on</code></pre> ${t`Sets persona as the default for new chats.`}</li>
+                <li><pre><code>/persona-lock</code></pre> ${t`Returns whether the persona is locked to this chat.`}</li>
+            </ul>
+        </div>
+        `,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'type',
-                description: 'The type of the lock, where it should apply to',
+                description: t`The type of the lock, where it should apply to`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'chat',
                 enumList: [
-                    new SlashCommandEnumValue('chat', 'Lock the persona to the current chat.'),
-                    new SlashCommandEnumValue('character', 'Lock this persona to the currently selected character. If the setting is enabled, multiple personas can be locked to the same character.'),
-                    new SlashCommandEnumValue('default', 'Lock this persona as the default persona for all new chats.'),
+                    new SlashCommandEnumValue('chat', t`Lock the persona to the current chat.`),
+                    new SlashCommandEnumValue('character', t`Lock this persona to the currently selected character. If the setting is enabled, multiple personas can be locked to the same character.`),
+                    new SlashCommandEnumValue('default', t`Lock this persona as the default persona for all new chats.`),
                 ],
             }),
         ],
@@ -2034,15 +2811,23 @@ function registerPersonaSlashCommands() {
             }),
         ],
     }));
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona-set',
         callback: setNameCallback,
         aliases: ['persona', 'name'],
         namedArgumentList: [
-            new SlashCommandNamedArgument(
-                'mode', 'The mode for persona selection. ("lookup" = search for existing persona, "temp" = create a temporary name, set a temporary name, "all" = allow both in the same command)',
-                [ARGUMENT_TYPE.STRING], false, false, 'all', ['lookup', 'temp', 'all'],
-            ),
+            SlashCommandNamedArgument.fromProps({
+                name: 'mode',
+                description: t`The mode for persona selection`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'all',
+                enumList: [
+                    new SlashCommandEnumValue('lookup', t`Search for an existing persona only`),
+                    new SlashCommandEnumValue('temp', t`Set a temporary name only (no persona lookup)`),
+                    new SlashCommandEnumValue('all', t`Try persona lookup first, fall back to temporary name`),
+                ],
+            }),
         ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -2052,8 +2837,23 @@ function registerPersonaSlashCommands() {
                 enumProvider: commonEnumProviders.personas,
             }),
         ],
-        helpString: 'Selects the given persona with its name and avatar (by name or avatar url). If no matching persona exists, applies a temporary name.',
+        helpString: `
+        <div>
+            ${t`Selects an existing persona by name or avatar key, or sets a temporary user name.`}
+        </div>
+        <div>
+            ${t`If a matching persona exists, it will be selected with its name and avatar. Otherwise (in "all" or "temp" mode), only the display name is changed temporarily.`}
+        </div>
+        <div>
+            <strong>${t`Example:`}</strong>
+            <ul>
+                <li><pre><code>/persona-set Alice</code></pre> ${t`Selects persona "Alice", or sets name to "Alice" if not found.`}</li>
+                <li><pre><code>/persona-set mode=lookup Alice</code></pre> ${t`Only selects if persona "Alice" exists.`}</li>
+            </ul>
+        </div>
+        `,
     }));
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'persona-sync',
         aliases: ['sync'],

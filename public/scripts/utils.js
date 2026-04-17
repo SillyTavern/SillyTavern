@@ -1742,6 +1742,105 @@ export function loadFileToDocument(url, type) {
 }
 
 /**
+ * Opens a file picker dialog for selecting an image.
+ * @returns {Promise<string|null>} Base64 data URL of selected image, or null if cancelled
+ */
+export async function promptForAvatarFile() {
+    return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = supportedImageMimeTypes.join(',');
+        input.onchange = async (e) => {
+            if (!(e.target instanceof HTMLInputElement)) {
+                return '';
+            }
+            const file = e.target?.files?.[0];
+            if (!file) {
+                resolve(null);
+                return;
+            }
+            try {
+                const converted = await ensureImageFormatSupported(file);
+                const base64 = await getBase64Async(converted);
+                resolve(base64);
+            } catch (error) {
+                console.error('Error processing selected image:', error);
+                toastr.error(t`Failed to process selected image: ${error.message}`);
+                resolve(null);
+            }
+        };
+        input.oncancel = () => resolve(null);
+        input.click();
+    });
+}
+
+/**
+ * Resolves avatar data from various input formats (base64, local path, or prompt).
+ * @param {string} input - "prompt" to open file picker, base64 data URL, or local file path
+ * @returns {Promise<string|null>} Base64 data URL or null if invalid/cancelled
+ */
+export async function resolveAvatarData(input) {
+    if (!input || typeof input !== 'string') {
+        return null;
+    }
+
+    const trimmed = input.trim();
+
+    // Special value "prompt" opens file picker
+    if (trimmed.toLowerCase() === 'prompt') {
+        return await promptForAvatarFile();
+    }
+
+    // Already a base64 data URL
+    if (trimmed.startsWith('data:image/')) {
+        return trimmed;
+    }
+
+    // External URLs are not supported
+    if (isExternalUrl(trimmed)) {
+        toastr.warning(t`External URLs are not supported for avatars. Use a local file path or "prompt" to select a file.`);
+        return null;
+    }
+    // Local path or URL (e.g., characters/name.png) - fetch from ST server or same origin
+    // Supported paths: /characters/*, /backgrounds/*, /User Avatars/*, /assets/*, /user/images/*
+    // Also supports same-origin URLs (e.g., https://localhost:8000/characters/name.png)
+    if (trimmed.includes('/') || trimmed.endsWith('.png')) {
+        try {
+            // Construct the URL to fetch the local file
+            let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+            // Handle same-origin URLs
+            if (trimmed.startsWith(window.location.origin)) {
+                url = new URL(trimmed).pathname;
+            }
+            // If there is no subfolder, we guess this should be a character image
+            if (!url.includes('/', 1)) {
+                url = '/characters/' + trimmed;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`File not found or inaccessible: ${response.status}`);
+            }
+            const blob = await response.blob();
+            if (!blob.type.startsWith('image/')) {
+                throw new Error('File is not an image');
+            }
+            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
+            return await getBase64Async(converted);
+        } catch (error) {
+            console.error('Error fetching local avatar:', error);
+            toastr.warning(t`Failed to load avatar from path: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Unknown format
+    console.warn('Unknown avatar format:', trimmed.substring(0, 50));
+    toastr.warning(t`Unknown avatar format. Use "prompt" to select a file, or provide a local file path.`);
+    return null;
+}
+
+/**
  *  An array of all supported image MIME types.
  */
 export const supportedImageMimeTypes = Object.freeze([

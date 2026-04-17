@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, getBase64Async, ensureImageFormatSupported, supportedImageMimeTypes, isExternalUrl } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, resolveAvatarData } from './utils.js';
 
 import {
     Generate,
@@ -88,7 +88,7 @@ import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortC
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
-import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons, commonEnumMatchProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
@@ -768,23 +768,6 @@ export function initDefaultSlashCommands() {
         `,
     }));
 
-    /**
-     * Provides autocomplete matching for folder names.
-     * Matches if the input starts with the check or vice versa (case-insensitive).
-     * @param {string} input - The input string to match against
-     * @param {string} check - The check string to match with
-     * @param {object} [options={}] - Options
-     * @param {boolean} [options.trueOnEmpty=true] - Whether to return true when input is empty
-     * @returns {boolean} - True if the strings match according to the folder matching rules
-     */
-    function folderEnumMatchProvider(input, check, { trueOnEmpty = true } = {}) {
-        if (!check) return false;
-        if (!input) return trueOnEmpty;
-        const inputLower = input.toLowerCase();
-        const checkLower = check.toLowerCase();
-        return inputLower.startsWith(checkLower) || checkLower.startsWith(inputLower);
-    }
-
     // Shared character field definitions for char CRUD commands
     const getCharacterFieldArgs = ({ requiredFields = [] } = {}) => [
         SlashCommandNamedArgument.fromProps({
@@ -873,11 +856,11 @@ export function initDefaultSlashCommands() {
             isRequired: requiredFields.includes('avatar'),
             enumList: [
                 new SlashCommandEnumValue('prompt', 'Open file picker to select an image', 'enum', '📁'),
-                new SlashCommandEnumValue('characters/...', 'Character avatars path (e.g., characters/Name.png)', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'characters/'), () => 'characters/'),
-                new SlashCommandEnumValue('backgrounds/...', 'Background image path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'backgrounds/'), () => 'backgrounds/'),
-                new SlashCommandEnumValue('User Avatars/...', 'User avatar path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'User Avatars/'), () => 'User Avatars/'),
-                new SlashCommandEnumValue('assets/...', 'Asset file path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'assets/'), () => 'assets/'),
-                new SlashCommandEnumValue('user/images/...', 'User image path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'user/images/'), () => 'user/images/'),
+                new SlashCommandEnumValue('characters/...', 'Character avatars path (e.g., characters/Name.png)', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'characters/'), () => 'characters/'),
+                new SlashCommandEnumValue('backgrounds/...', 'Background image path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'backgrounds/'), () => 'backgrounds/'),
+                new SlashCommandEnumValue('User Avatars/...', 'User avatar path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'User Avatars/'), () => 'User Avatars/'),
+                new SlashCommandEnumValue('assets/...', 'Asset file path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'assets/'), () => 'assets/'),
+                new SlashCommandEnumValue('user/images/...', 'User image path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'user/images/'), () => 'user/images/'),
             ],
         }),
         SlashCommandNamedArgument.fromProps({
@@ -5126,105 +5109,6 @@ async function openChat(chid) {
     setCharacterId(chid);
     await delay(1);
     await reloadCurrentChat();
-}
-
-/**
- * Opens a file picker dialog for selecting an image.
- * @returns {Promise<string|null>} Base64 data URL of selected image, or null if cancelled
- */
-async function promptForAvatarFile() {
-    return new Promise(resolve => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = supportedImageMimeTypes.join(',');
-        input.onchange = async (e) => {
-            if (!(e.target instanceof HTMLInputElement)) {
-                return '';
-            }
-            const file = e.target?.files?.[0];
-            if (!file) {
-                resolve(null);
-                return;
-            }
-            try {
-                const converted = await ensureImageFormatSupported(file);
-                const base64 = await getBase64Async(converted);
-                resolve(base64);
-            } catch (error) {
-                console.error('Error processing selected image:', error);
-                toastr.error(t`Failed to process selected image: ${error.message}`);
-                resolve(null);
-            }
-        };
-        input.oncancel = () => resolve(null);
-        input.click();
-    });
-}
-
-/**
- * Resolves avatar data from various input formats (base64, local path, or prompt).
- * @param {string} input - "prompt" to open file picker, base64 data URL, or local file path
- * @returns {Promise<string|null>} Base64 data URL or null if invalid/cancelled
- */
-async function resolveAvatarData(input) {
-    if (!input || typeof input !== 'string') {
-        return null;
-    }
-
-    const trimmed = input.trim();
-
-    // Special value "prompt" opens file picker
-    if (trimmed.toLowerCase() === 'prompt') {
-        return await promptForAvatarFile();
-    }
-
-    // Already a base64 data URL
-    if (trimmed.startsWith('data:image/')) {
-        return trimmed;
-    }
-
-    // External URLs are not supported
-    if (isExternalUrl(trimmed)) {
-        toastr.warning(t`External URLs are not supported for avatars. Use a local file path or "prompt" to select a file.`);
-        return null;
-    }
-    // Local path or URL (e.g., characters/name.png) - fetch from ST server or same origin
-    // Supported paths: /characters/*, /backgrounds/*, /User Avatars/*, /assets/*, /user/images/*
-    // Also supports same-origin URLs (e.g., https://localhost:8000/characters/name.png)
-    if (trimmed.includes('/') || trimmed.endsWith('.png')) {
-        try {
-            // Construct the URL to fetch the local file
-            let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-            // Handle same-origin URLs
-            if (trimmed.startsWith(window.location.origin)) {
-                url = new URL(trimmed).pathname;
-            }
-            // If there is no subfolder, we guess this should be a character image
-            if (!url.includes('/', 1)) {
-                url = '/characters/' + trimmed;
-            }
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`File not found or inaccessible: ${response.status}`);
-            }
-            const blob = await response.blob();
-            if (!blob.type.startsWith('image/')) {
-                throw new Error('File is not an image');
-            }
-            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
-            return await getBase64Async(converted);
-        } catch (error) {
-            console.error('Error fetching local avatar:', error);
-            toastr.warning(t`Failed to load avatar from path: ${error.message}`);
-            return null;
-        }
-    }
-
-    // Unknown format
-    console.warn('Unknown avatar format:', trimmed.substring(0, 50));
-    toastr.warning(t`Unknown avatar format. Use "prompt" to select a file, or provide a local file path.`);
-    return null;
 }
 
 /**
