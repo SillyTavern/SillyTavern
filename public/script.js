@@ -4470,18 +4470,24 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     for (let i = coreChat.length - 1; i >= 0; i--) {
         const depth = coreChat.length - i - (isContinue ? 2 : 1);
         const isPrefix = isContinue && i === coreChat.length - 1;
+
+        // In group chats, only include reasoning from the currently generating character
+        const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
+
         coreChat[i] = {
             ...coreChat[i],
-            mes: promptReasoning.addToMessage(
-                coreChat[i].mes,
-                getRegexedString(
-                    String(coreChat[i].extra?.reasoning ?? ''),
-                    regex_placement.REASONING,
-                    { isPrompt: true, depth: depth },
+            mes: isOtherGroupMember
+                ? coreChat[i].mes
+                : promptReasoning.addToMessage(
+                    coreChat[i].mes,
+                    getRegexedString(
+                        String(coreChat[i].extra?.reasoning ?? ''),
+                        regex_placement.REASONING,
+                        { isPrompt: true, depth: depth },
+                    ),
+                    isPrefix,
+                    coreChat[i].extra?.reasoning_duration,
                 ),
-                isPrefix,
-                coreChat[i].extra?.reasoning_duration,
-            ),
         };
         if (promptReasoning.isLimitReached()) {
             break;

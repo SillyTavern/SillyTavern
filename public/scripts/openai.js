@@ -604,8 +604,10 @@ function setOpenAIMessages(chat) {
         const originApi = chat[j]?.extra?.api;
         const originModel = chat[j]?.extra?.model;
         const isSameModel = originApi === currentApi && originModel === currentModel;
-        const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
-        const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
+        // In group chats, only include reasoning from the currently generating character
+        const isOtherGroupMember = selected_group && chat[j].name !== name2;
+        const signature = isSameModel && !isOtherGroupMember ? chat[j]?.extra?.reasoning_signature : null;
+        const reasoning = isSameModel && !isOtherGroupMember ? String(chat[j]?.extra?.reasoning ?? '') : '';
 
         // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
