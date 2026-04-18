@@ -889,7 +889,8 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         unsetPrivateFields(jsonData);
         jsonData = readFromV2(jsonData);
         jsonData.create_date = new Date().toISOString();
-        const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
+        jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
+        const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
         const char = JSON.stringify(jsonData);
         const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
         return result ? pngName : '';
@@ -1318,7 +1319,8 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
 router.post('/all', async function (request, response) {
     try {
         const files = fs.readdirSync(request.user.directories.characters);
-        const pngFiles = files.filter(file => file.endsWith('.png'));
+        const pngFiles = files.filter(file => file.endsWith('.png'))
+            .map(file => sanitizeOnDiskFileName(file, request.user.directories));
         const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
         const data = (await Promise.all(processingPromises)).filter(c => c.name);
         return response.send(data);
@@ -1387,12 +1389,53 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
 });
 
 /**
+ * Checks if a character file on disk has an unsanitized filename and renames it if needed.
+ * Also renames the associated chats directory to keep them in sync.
+ * @param {string} fileName The original filename (e.g. "Maya \ Lisa.png")
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @returns {string} The sanitized filename, or the original if no change was needed
+ */
+function sanitizeOnDiskFileName(fileName, directories) {
+    const nameWithoutExt = path.parse(fileName).name;
+    const sanitizedName = sanitize(nameWithoutExt);
+
+    if (sanitizedName === nameWithoutExt) {
+        return fileName;
+    }
+
+    const newInternalName = getPngName(sanitizedName, directories);
+    const newFileName = `${newInternalName}.png`;
+
+    const oldFilePath = path.join(directories.characters, fileName);
+    const newFilePath = path.join(directories.characters, newFileName);
+
+    try {
+        fs.renameSync(oldFilePath, newFilePath);
+        console.info(`Sanitized character filename: "${fileName}" -> "${newFileName}"`);
+
+        const oldChatsDir = path.join(directories.chats, nameWithoutExt);
+        const newChatsDir = path.join(directories.chats, newInternalName);
+
+        if (fs.existsSync(oldChatsDir) && !fs.existsSync(newChatsDir)) {
+            fs.renameSync(oldChatsDir, newChatsDir);
+            console.info(`Renamed chat directory: "${nameWithoutExt}" -> "${newInternalName}"`);
+        }
+    } catch (err) {
+        console.error(`Failed to sanitize character filename: ${fileName}`, err);
+        return fileName;
+    }
+
+    return newFileName;
+}
+
+/**
  * Gets the name for the uploaded PNG file.
  * @param {string} file File name
  * @param {import('../users.js').UserDirectoryList} directories User directories
  * @returns {string} - The name for the uploaded PNG file
  */
 function getPngName(file, directories) {
+    file = sanitize(file);
     let i = 1;
     const baseName = file;
     while (fs.existsSync(path.join(directories.characters, `${file}.png`))) {
