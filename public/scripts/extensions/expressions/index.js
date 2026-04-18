@@ -254,6 +254,8 @@ async function visualNovelSetCharacterSprites(vnContainer, spriteFolderName, exp
         img.attr('data-sprite-folder-name', spriteFolderName);
         img.attr('data-expression', expression);
         img.attr('data-sprite-filename', spriteFile?.fileName || null);
+        img.attr('data-avatar-key', avatar);
+        img.attr('data-character-name', character.name);
         img.attr('title', expression);
 
         if (spriteFile) console.info(`Expression set for group member ${character.name}`, { expression: spriteFile.expression, file: spriteFile.fileName });
@@ -1515,6 +1517,8 @@ async function setExpression(spriteFolderName, expression, { force = false, over
             }
         }
 
+        const character = /** @type {Character} */ (characters[this_chid]);
+
         //only swap expressions when necessary
         if (prevExpressionSrc !== spriteFile.imageSrc
             && !img.hasClass('expression-animating')) {
@@ -1529,6 +1533,8 @@ async function setExpression(spriteFolderName, expression, { force = false, over
             expressionClone.attr('data-sprite-folder-name', spriteFolderName);
             expressionClone.attr('data-expression', expression);
             expressionClone.attr('data-sprite-filename', spriteFile.fileName);
+            expressionClone.attr('data-avatar-key', character.avatar);
+            expressionClone.attr('data-character-name', character.name);
             expressionClone.attr('title', expression);
             //add invisible clone to html
             expressionClone.appendTo($('#expression-holder'));
@@ -1617,6 +1623,8 @@ function setDefaultEmojiForImage(img, expression) {
     img.attr('src', defImgUrl);
     img.attr('data-expression', expression);
     img.attr('data-sprite-filename', null);
+    img.attr('data-avatar-key', null);
+    img.attr('data-character-name', null);
     img.attr('title', expression);
     img.addClass('default');
 }
@@ -1630,6 +1638,8 @@ function setNoneForImage(img, expression) {
     img.attr('src', '');
     img.attr('data-expression', expression);
     img.attr('data-sprite-filename', null);
+    img.attr('data-avatar-key', null);
+    img.attr('data-character-name', null);
     img.attr('title', expression);
     img.removeClass('default');
 }
