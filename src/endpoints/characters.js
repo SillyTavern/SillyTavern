@@ -890,6 +890,9 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         jsonData = readFromV2(jsonData);
         jsonData.create_date = new Date().toISOString();
         jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
+        if (jsonData.data?.name) {
+            jsonData.data.name = jsonData.name;
+        }
         const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
         const char = JSON.stringify(jsonData);
         const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
@@ -1403,9 +1406,21 @@ function sanitizeOnDiskFileName(fileName, directories) {
         return fileName;
     }
 
-    const newInternalName = getPngName(sanitizedName, directories);
-    const newFileName = `${newInternalName}.png`;
+    const oldChatsDir = path.join(directories.chats, nameWithoutExt);
+    const hasChats = fs.existsSync(oldChatsDir);
 
+    // Find a unique name where both the avatar file and chat directory (if applicable) don't conflict
+    const newInternalName = getUniqueName(sanitizedName, (name) =>
+        fs.existsSync(path.join(directories.characters, `${name}.png`)) ||
+        (hasChats && fs.existsSync(path.join(directories.chats, name))),
+    { nameBuilder: (base, i) => i === 0 ? base : `${base}${i}`, startIndex: 0 });
+
+    if (!newInternalName) {
+        console.error(`Failed to find a unique sanitized name for: ${fileName}`);
+        return fileName;
+    }
+
+    const newFileName = `${newInternalName}.png`;
     const oldFilePath = path.join(directories.characters, fileName);
     const newFilePath = path.join(directories.characters, newFileName);
 
@@ -1413,10 +1428,8 @@ function sanitizeOnDiskFileName(fileName, directories) {
         fs.renameSync(oldFilePath, newFilePath);
         console.info(`Sanitized character filename: "${fileName}" -> "${newFileName}"`);
 
-        const oldChatsDir = path.join(directories.chats, nameWithoutExt);
-        const newChatsDir = path.join(directories.chats, newInternalName);
-
-        if (fs.existsSync(oldChatsDir) && !fs.existsSync(newChatsDir)) {
+        if (hasChats) {
+            const newChatsDir = path.join(directories.chats, newInternalName);
             fs.renameSync(oldChatsDir, newChatsDir);
             console.info(`Renamed chat directory: "${nameWithoutExt}" -> "${newInternalName}"`);
         }
@@ -1436,13 +1449,8 @@ function sanitizeOnDiskFileName(fileName, directories) {
  */
 function getPngName(file, directories) {
     file = sanitize(file);
-    let i = 1;
-    const baseName = file;
-    while (fs.existsSync(path.join(directories.characters, `${file}.png`))) {
-        file = baseName + i;
-        i++;
-    }
-    return file;
+    return getUniqueName(file, (name) => fs.existsSync(path.join(directories.characters, `${name}.png`)),
+        { nameBuilder: (base, i) => i === 0 ? base : `${base}${i}`, startIndex: 0 }) ?? file;
 }
 
 /**
