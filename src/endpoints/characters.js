@@ -1355,7 +1355,7 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
                         }
                         const character = JSON.parse(pngStringData);
                         const existingValue = _.get(character, filter.path);
-                        if (existingValue === undefined || existingValue === null) {
+                        if (existingValue === undefined) {
                             skipped.push(avatar);
                             return;
                         }
