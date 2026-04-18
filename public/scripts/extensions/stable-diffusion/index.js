@@ -62,6 +62,7 @@ import { t, translate } from '../../i18n.js';
 import { oai_settings } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
+import { loader } from '/scripts/action-loader.js';
 
 export { MODULE_NAME };
 
@@ -69,11 +70,6 @@ const MODULE_NAME = 'sd';
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 const CUSTOM_STOP_EVENT = 'sd_stop_generation';
-
-// Generation tracking for status indicator
-let activeGenerations = 0;
-/** @type {JQuery<HTMLElement>|null} */
-let generationToast = null;
 
 const sources = {
     extras: 'extras',
@@ -2981,62 +2977,6 @@ function ensureSelectionExists(setting, selector) {
 }
 
 /**
- * Updates the generation status indicator based on active generation count.
- * Shows/hides various UI indicators to inform user of background image generation.
- */
-function updateGenerationIndicator() {
-    if (activeGenerations > 0) {
-        const countText = activeGenerations > 1 ? ` (${activeGenerations})` : '';
-        const toastText = `<i class="fa-solid fa-spinner fa-spin"></i> ${t`Generating an image`}${countText}...`;
-
-        // Show persistent toast if not already showing
-        if (!generationToast) {
-            generationToast = toastr.info(
-                toastText,
-                'Image Generation',
-                {
-                    timeOut: 0,
-                    extendedTimeOut: 0,
-                    tapToDismiss: true,
-                    escapeHtml: false,
-                    onHidden: () => {
-                        generationToast = null;
-                    },
-                },
-            );
-        } else if (activeGenerations > 1) {
-            // Update count in existing toast
-            const toastMessage = $(generationToast).find('.toast-message');
-            if (toastMessage.length) {
-                toastMessage.html(toastText);
-            }
-        }
-    } else {
-        // Hide toast when done
-        if (generationToast) {
-            toastr.clear(generationToast);
-            generationToast = null;
-        }
-    }
-}
-
-/**
- * Increments the active generation counter and updates indicators.
- */
-function startGenerationTracking() {
-    activeGenerations++;
-    updateGenerationIndicator();
-}
-
-/**
- * Decrements the active generation counter and updates indicators.
- */
-function endGenerationTracking() {
-    activeGenerations = Math.max(0, activeGenerations - 1);
-    updateGenerationIndicator();
-}
-
-/**
  * Generates an image based on the given trigger word.
  * @param {string} initiator The initiator of the image generation
  * @param {Record<string, object>} args Command arguments
@@ -3096,11 +3036,18 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     const dimensions = setTypeSpecificDimensions(generationType);
     const abortController = new AbortController();
-    const stopButton = document.getElementById('sd_stop_gen');
     let negativePromptPrefix = args?.negative || '';
     let imagePath = '';
 
     const stopListener = () => abortController.abort('Aborted by user');
+
+    // Show non-blocking stoppable toast for this generation
+    const loaderHandle = loader.show({
+        blocking: false,
+        title: t`Image Generation`,
+        message: t`Generating an image...`,
+        onStop: stopListener,
+    });
 
     try {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
@@ -3114,10 +3061,6 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
         prompt = eventData.prompt; // Allow extensions to modify the prompt
 
-        // Track this generation for status indicator
-        startGenerationTracking();
-        // Show stop button after prompt is ready (prompt generation uses separate abort mechanism)
-        $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
 
         if (typeof args?._abortController?.addEventListener === 'function') {
@@ -3142,10 +3085,9 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         toastr.error(errorText, 'Image Generation');
         throw new Error(errorText);
     } finally {
-        $(stopButton).hide();
         restoreOriginalDimensions(dimensions);
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
-        endGenerationTracking();
+        await loaderHandle.hide();
     }
 
     return imagePath;
@@ -5130,7 +5072,6 @@ async function addSDGenButtons() {
     });
 
     const stopGenButton = $('#sd_stop_gen');
-    stopGenButton.hide();
     stopGenButton.on('click', () => eventSource.emit(CUSTOM_STOP_EVENT));
 }
 
@@ -5216,10 +5157,6 @@ async function sdMessageButton($icon, { animate } = {}) {
         $icon.toggleClass(classes.idle, !isBusy);
         $icon.toggleClass(classes.busy, isBusy);
         $media.toggleClass(classes.animation, isBusy);
-
-        // Update generation counter toast
-        const trackingFunction = isBusy ? startGenerationTracking : endGenerationTracking;
-        trackingFunction();
     }
 
     let $media = jQuery();
@@ -5334,7 +5271,6 @@ async function writePromptFields(characterId) {
  * @returns {Promise<MediaAttachment|null>} - A promise that resolves to the newly generated media attachment, or null if generation failed or was aborted.
  */
 async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete, abortController = new AbortController()) {
-    const stopButton = document.getElementById('sd_stop_gen');
     const stopListener = () => abortController.abort('Aborted by user');
     const generationType = mediaAttachment.generation_type ?? message?.extra?.generationType ?? generationMode.FREE;
     let dimensions = { width: extension_settings.sd.width, height: extension_settings.sd.height };
@@ -5348,8 +5284,15 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         source: MEDIA_SOURCE.GENERATED,
     };
 
+    // Show non-blocking stoppable toast for this generation
+    const loaderHandle = loader.show({
+        blocking: false,
+        title: t`Image Generation`,
+        message: t`Generating an image...`,
+        onStop: stopListener,
+    });
+
     try {
-        $(stopButton).show();
         eventSource.once(CUSTOM_STOP_EVENT, stopListener);
         const callback = (_a, _b, _c, _d, _e, _f, format) => { result.type = isVideo(format) ? MEDIA_TYPE.VIDEO : MEDIA_TYPE.IMAGE; };
         const savedPrompt = mediaAttachment.title ?? message.extra.title ?? '';
@@ -5377,11 +5320,11 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         }
     } finally {
         onComplete();
-        $(stopButton).hide();
         eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
         restoreOriginalDimensions(dimensions);
         extension_settings.sd.seed = extension_settings.sd.original_seed;
         delete extension_settings.sd.original_seed;
+        await loaderHandle.hide();
     }
 
     if (!result.url) {
