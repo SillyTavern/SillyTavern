@@ -3103,6 +3103,24 @@ export function initDefaultSlashCommands() {
         helpString: t`Sets the specified prompt manager entry/entries on or off.`,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'pm-render',
+        callback: (args, _) => {
+            const dryRun = !isFalseBoolean(args?.refresh?.toString());
+            promptManager.render(dryRun);
+            return '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'refresh',
+                description: 'Perform a dry run of the generation to refresh token counters before rendering the prompt manager',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        helpString: t`Rerenders the prompt manager content. Use this if you have made changes to the prompt entries through slash commands and want to see the changes reflected in the prompt manager UI.`,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'pick-icon',
         callback: async () => ((await showFontAwesomePicker()) ?? false).toString(),
         returns: t`The chosen icon name or false if cancelled.`,
