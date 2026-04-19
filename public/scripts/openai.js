@@ -196,7 +196,6 @@ export const chat_completion_sources = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
-    WORKERS_AI: 'workers_ai',
 };
 
 const character_names_behavior = {
@@ -237,6 +236,7 @@ export const reasoning_effort_types = {
     low: 'low',
     medium: 'medium',
     high: 'high',
+    xhigh: 'xhigh',
     min: 'min',
     max: 'max',
 };
@@ -257,7 +257,6 @@ export const tool_reasoning_modes = {
 // Providers that support interleaved reasoning forwarding in tool-call chains.
 const interleaved_reasoning_providers = [
     chat_completion_sources.OPENROUTER,
-    chat_completion_sources.CUSTOM,
 ];
 
 export const ZAI_ENDPOINT = {
@@ -281,7 +280,6 @@ const sensitiveFields = [
     'vertexai_express_project_id',
     'azure_base_url',
     'azure_deployment_name',
-    'workers_ai_account_id',
 ];
 
 /**
@@ -340,8 +338,6 @@ export const settingsToUpdate = {
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
-    workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
-    workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
@@ -444,8 +440,6 @@ const default_settings = {
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
-    workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-    workers_ai_account_id: '',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -604,10 +598,8 @@ function setOpenAIMessages(chat) {
         const originApi = chat[j]?.extra?.api;
         const originModel = chat[j]?.extra?.model;
         const isSameModel = originApi === currentApi && originModel === currentModel;
-        // In group chats, only include reasoning from the currently generating character
-        const isOtherGroupMember = selected_group && chat[j].name !== name2;
-        const signature = isSameModel && !isOtherGroupMember ? chat[j]?.extra?.reasoning_signature : null;
-        const reasoning = isSameModel && !isOtherGroupMember ? String(chat[j]?.extra?.reasoning ?? '') : '';
+        const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
+        const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
 
         // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
@@ -1022,8 +1014,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
                     delete clone.reasoning;
-                } else if (previousAssistantReasoning && !clone.reasoning) {
-                    // Fall back to adjacent assistant-text reasoning only when the invocation has none of its own.
+                } else if (previousAssistantReasoning) {
+                    // Prefer currently editable assistant-text reasoning based on forwarding mode over invocation snapshot.
                     clone.reasoning = previousAssistantReasoning;
                 }
                 return clone;
@@ -1736,8 +1728,6 @@ export function getChatCompletionModel(settings = null) {
             return settings.azure_openai_model;
         case chat_completion_sources.ZAI:
             return settings.zai_model;
-        case chat_completion_sources.WORKERS_AI:
-            return settings.workers_ai_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -2204,24 +2194,6 @@ function saveModelList(data) {
         $('#model_fireworks_select').val(oai_settings.fireworks_model).trigger('change');
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
-        $('#model_workers_ai_select').empty();
-        model_list.forEach((model) => {
-            $('#model_workers_ai_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
-        });
-
-        const selectedModel = model_list.find(model => model.id === oai_settings.workers_ai_model);
-        if (model_list.length > 0 && (!selectedModel || !oai_settings.workers_ai_model)) {
-            oai_settings.workers_ai_model = model_list[0].id;
-        }
-
-        $('#model_workers_ai_select').val(oai_settings.workers_ai_model).trigger('change');
-    }
-
     if (oai_settings.chat_completion_source === chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').empty();
 
@@ -2506,6 +2478,8 @@ function getReasoningEffort(settings = null, model = null) {
                 return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(model)
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
+            case reasoning_effort_types.xhigh:
+                return reasoning_effort_types.high;
             case reasoning_effort_types.max:
                 return reasoning_effort_types.high;
             default:
@@ -2633,8 +2607,7 @@ export async function createGenerationParameters(settings, model, type, messages
     ];
 
     const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(model);
-    const isWorkersAIJsonMode = settings.chat_completion_source === chat_completion_sources.WORKERS_AI && jsonSchema;
-    const stream = settings.stream_openai && type !== 'quiet' && !isO1 && !isWorkersAIJsonMode;
+    const stream = settings.stream_openai && type !== 'quiet' && !isO1;
 
     const noMultiSwipeTypes = ['quiet', 'impersonate', 'continue'];
     const canMultiSwipe = settings.n > 1 && !noMultiSwipeTypes.includes(type) && multiswipeSources.includes(settings.chat_completion_source);
@@ -2843,16 +2816,6 @@ export async function createGenerationParameters(settings, model, type, messages
 
     if (settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
         generate_data.siliconflow_endpoint = settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
-    }
-
-    if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
-        generate_data.workers_ai_account_id = settings.workers_ai_account_id;
-        generate_data.top_k = settings.top_k_openai > 0 ? Math.min(Number(settings.top_k_openai), 50) : undefined;
-        generate_data.repetition_penalty = Number(settings.repetition_penalty_openai);
-        generate_data.seed = settings.seed >= 1 ? Number(settings.seed) : undefined;
-        generate_data.top_p = Math.max(Number(settings.top_p_openai), 0.001);
-        delete generate_data.n;
-        delete generate_data.logit_bias;
     }
 
     // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
@@ -3092,7 +3055,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -4312,10 +4275,6 @@ async function getStatusOpen() {
         data.siliconflow_endpoint = oai_settings.siliconflow_endpoint;
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
-        data.workers_ai_account_id = oai_settings.workers_ai_account_id;
-    }
-
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
         setOnlineStatus(t`Status check bypassed`);
@@ -4965,7 +4924,6 @@ function getZaiMaxContext(model, isUnlocked) {
     const contextMap = {
         'glm-5.1': max_200k,
         'glm-5-turbo': max_200k,
-        'glm-5v-turbo': max_200k,
         'glm-5': max_200k,
         'glm-4.7': max_200k,
         'glm-4.7-flash': max_200k,
@@ -5373,15 +5331,6 @@ async function onModelChange() {
         oai_settings.zai_model = value;
     }
 
-    if ($(this).is('#model_workers_ai_select')) {
-        if (!value || !hasModelsLoaded) {
-            console.debug('Null Workers AI model selected. Ignoring.');
-            return;
-        }
-        console.log('Workers AI model changed to', value);
-        oai_settings.workers_ai_model = value;
-    }
-
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_2mil);
@@ -5437,7 +5386,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6|opus-4-7)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
@@ -5602,22 +5551,6 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else {
-            const model = model_list.find(m => m.id === oai_settings.workers_ai_model);
-            const ctxProp = Array.isArray(model?.properties) && model.properties.find(p => p.property_id === 'context_window');
-            const contextLength = ctxProp ? Number(ctxProp.value) : max_8k;
-            $('#openai_max_context').attr('max', contextLength || max_8k);
-        }
-        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
-        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-        const workersAiMaxTemp = 5.0;
-        oai_settings.temp_openai = Math.min(workersAiMaxTemp, oai_settings.temp_openai);
-        $('#temp_openai').attr('max', workersAiMaxTemp).val(oai_settings.temp_openai).trigger('input');
-    }
-
     if (oai_settings.chat_completion_source === chat_completion_sources.COMETAPI) {
         $('#openai_max_context').attr('max', oai_settings.max_context_unlocked ? unlocked_max : max_128k);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -5779,7 +5712,6 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
-        [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5869,8 +5801,6 @@ function toggleChatCompletionForms() {
         $('#azure_openai_model').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         $('#model_zai_select').trigger('change');
-    } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
-        $('#model_workers_ai_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -5996,7 +5926,6 @@ export function isImageInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
-        'glm-5v-turbo',
         'autoglm-phone',
         // SiliconFlow
         'Qwen/Qwen3-VL-32B-Instruct',
@@ -6052,10 +5981,6 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
-        case chat_completion_sources.WORKERS_AI: {
-            const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
-            return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
-        }
         default:
             return false;
     }
@@ -6083,7 +6008,6 @@ export function isVideoInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
-        'glm-5v-turbo',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -7028,10 +6952,6 @@ export function initOpenAI() {
         oai_settings.siliconflow_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
-    $('#workers_ai_account_id').on('input', function () {
-        oai_settings.workers_ai_account_id = String($(this).val());
-        saveSettingsDebounced();
-    });
     $('#vertexai_service_account_json').on('input', onVertexAIServiceAccountJsonChange);
     $('#vertexai_validate_service_account').on('click', onVertexAIValidateServiceAccount);
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
@@ -7060,7 +6980,6 @@ export function initOpenAI() {
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
-    $('#model_workers_ai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

@@ -8,6 +8,7 @@ const REASONING_EFFORT = {
     low: 'low',
     medium: 'medium',
     high: 'high',
+    xhigh: 'xhigh',
     min: 'min',
     max: 'max',
 };
@@ -1131,6 +1132,8 @@ export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, 
                 return 'medium';
             case REASONING_EFFORT.high:
                 return 'high';
+            case REASONING_EFFORT.xhigh:
+                return 'xhigh';
             case REASONING_EFFORT.max:
                 return 'max';
         }
@@ -1153,6 +1156,9 @@ export function calculateClaudeBudgetTokens(maxTokens, reasoningEffort, stream, 
             break;
         case REASONING_EFFORT.high:
             budgetTokens = Math.floor(maxTokens * 0.5);
+            break;
+        case REASONING_EFFORT.xhigh:
+            budgetTokens = Math.floor(maxTokens * 0.75);
             break;
         case REASONING_EFFORT.max:
             budgetTokens = Math.floor(maxTokens * 0.95);
@@ -1193,6 +1199,9 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
             case REASONING_EFFORT.high:
                 budgetTokens = Math.floor(maxTokens * 0.5);
                 break;
+            case REASONING_EFFORT.xhigh:
+                budgetTokens = Math.floor(maxTokens * 0.75);
+                break;
             case REASONING_EFFORT.max:
                 budgetTokens = maxTokens;
                 break;
@@ -1219,6 +1228,9 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
                 break;
             case REASONING_EFFORT.high:
                 budgetTokens = Math.floor(maxTokens * 0.5);
+                break;
+            case REASONING_EFFORT.xhigh:
+                budgetTokens = Math.floor(maxTokens * 0.75);
                 break;
             case REASONING_EFFORT.max:
                 budgetTokens = maxTokens;
@@ -1248,6 +1260,9 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
             case REASONING_EFFORT.high:
                 budgetTokens = Math.floor(maxTokens * 0.5);
                 break;
+            case REASONING_EFFORT.xhigh:
+                budgetTokens = Math.floor(maxTokens * 0.75);
+                break;
             case REASONING_EFFORT.max:
                 budgetTokens = maxTokens;
                 break;
@@ -1270,6 +1285,8 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
                 return 'medium';
             case REASONING_EFFORT.high:
                 return 'high';
+            case REASONING_EFFORT.xhigh:
+                return 'high';
             case REASONING_EFFORT.max:
                 return 'high';
         }
@@ -1288,6 +1305,8 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
             case REASONING_EFFORT.medium:
                 return 'low';
             case REASONING_EFFORT.high:
+                return 'high';
+            case REASONING_EFFORT.xhigh:
                 return 'high';
             case REASONING_EFFORT.max:
                 return 'high';
