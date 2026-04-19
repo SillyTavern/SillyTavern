@@ -295,7 +295,7 @@ export class FilterHelper {
      * @param {any[]} data The data to filter
      * @param {FilterState|string} state The tri-state filter value (SELECTED, EXCLUDED, or UNDEFINED)
      * @param {Function} filterFunc A predicate function applied to each entity
-     * @param {{ includeFolders?: boolean }} [options] Options object
+     * @param {object} [options] Options object
      * @param {boolean} [options.includeFolders=false] If true, entities with type 'tag' always pass through
      * @returns {any[]} The filtered data
      */
