@@ -124,7 +124,7 @@ const cachedSummaries = new Map();
 /** Hashes skipped this Vectorize All session (summary or embed failure). Cleared on next Vectorize All click. */
 const skippedHashes = new Set();
 /** Error causes treated as fatal — abort Vectorize All rather than skip. */
-const FATAL_CAUSES = new Set(['api_key_missing', 'api_url_missing', 'api_model_missing', 'extras_module_missing', 'webllm_not_supported', 'summary_endpoint_invalid']);
+const FATAL_CAUSES = new Set(['account_id_missing', 'api_key_missing', 'api_url_missing', 'api_model_missing', 'extras_module_missing', 'webllm_not_supported', 'summary_endpoint_invalid']);
 const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
 
 /**
