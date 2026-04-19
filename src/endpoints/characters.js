@@ -1314,8 +1314,8 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
         if (Array.isArray(request.body.avatars)) {
             const { avatars, data, filter } = request.body;
 
-            if (!data || typeof data !== 'object') {
-                return response.status(400).send({ message: 'No update data provided.' });
+            if (!_.isPlainObject(data)) {
+                return response.status(400).send({ message: 'No valid update data provided.' });
             }
 
             // Determine which avatar files to process
