@@ -1322,7 +1322,7 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
             let targetAvatars;
             if (avatars.length > 0) {
                 for (const avatar of avatars) {
-                    if (typeof avatar !== 'string' || forbiddenRegExp.test(avatar)) {
+                    if (typeof avatar !== 'string' || forbiddenRegExp.test(avatar) || path.extname(avatar).toLowerCase() !== '.png') {
                         return response.status(400).send({ message: `Invalid avatar filename: ${avatar}` });
                     }
                 }
@@ -1330,7 +1330,7 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
             } else {
                 // Empty array → scan all characters in the directory
                 const files = fs.readdirSync(request.user.directories.characters);
-                targetAvatars = files.filter(file => file.endsWith('.png'));
+                targetAvatars = files.filter(file => path.extname(file).toLowerCase() === '.png');
             }
 
             const updated = [];
