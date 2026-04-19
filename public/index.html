@@ -2205,6 +2205,29 @@
                                             <span>Prefills won't work when function calling is enabled and any tools are registered.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="claude">
+                                        <label for="claude_compact_enabled" class="checkbox_label widthFreeExpand">
+                                            <input id="claude_compact_enabled" type="checkbox" />
+                                            <span>Enable Claude auto-compact</span>
+                                        </label>
+                                        <div class="wide100p marginBot5">
+                                            <div class="flex-container alignItemsCenter">
+                                                <span>Compact Instructions</span>
+                                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="claude_compact_instructions" title="Expand the editor" data-i18n="[title]Expand the editor"></i>
+                                            </div>
+                                            <textarea id="claude_compact_instructions" class="text_pole textarea_compact autoSetHeight" rows="3"></textarea>
+                                        </div>
+                                        <div class="flex-container flexnowrap flexGap10 wide100p marginBot5">
+                                            <label for="claude_compact_trigger_value" class="wide100p">
+                                                <span>Compact Trigger Tokens</span>
+                                                <input id="claude_compact_trigger_value" class="text_pole" type="number" min="50000" step="1" />
+                                            </label>
+                                        </div>
+                                        <label for="claude_compact_pause_after_compaction" class="checkbox_label widthFreeExpand">
+                                            <input id="claude_compact_pause_after_compaction" type="checkbox" />
+                                            <span>Pause after compaction</span>
+                                        </label>
+                                    </div>
                                 </div>
                                 <div class="range-block m-t-1" data-source="openai,aimlapi,openrouter,custom,electronhub,azure_openai,chutes">
                                     <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
