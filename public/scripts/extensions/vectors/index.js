@@ -121,10 +121,20 @@ const settings = {
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 const webllmProvider = new WebLlmVectorProvider();
+/**
+ * Cache for storing summaries of messages by their hash.
+ * @type {Map<number, string>}
+ */
 const cachedSummaries = new Map();
-/** Hashes skipped this Vectorize All session (summary or embed failure). Cleared on next Vectorize All click. */
+/**
+ * Hashes skipped this Vectorize All session (summary or embed failure). Cleared on next Vectorize All click.
+ * @type {Set<number>}
+ */
 const skippedHashes = new Set();
-/** Error causes treated as fatal — abort Vectorize All rather than skip. */
+/**
+ * Error causes treated as fatal — abort Vectorize All rather than skip.
+ * @type {Set<string>}
+ */
 const FATAL_CAUSES = new Set(['account_id_missing', 'api_key_missing', 'api_url_missing', 'api_model_missing', 'extras_module_missing', 'webllm_not_supported', 'summary_endpoint_invalid']);
 const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
 
@@ -393,11 +403,7 @@ async function summarizeOne(element, endpoint) {
  * @param {boolean} [options.skipOnFailure=false] If true, tags failed elements with `summaryFailed = true` instead of throwing
  * @returns {Promise<HashedMessage[]>} Summarized messages
  */
-async function summarize(hashedMessages, endpoint = 'main', options = {}) {
-    const {
-        skipOnFailure = false,
-    } = options;
-
+async function summarize(hashedMessages, endpoint = 'main', { skipOnFailure = false } = {}) {
     const maxAttempts = Math.max(1, Number(settings.summary_retries) || 1);
     for (const element of hashedMessages) {
         const cachedSummary = cachedSummaries.get(element.hash);
