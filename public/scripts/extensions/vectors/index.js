@@ -77,6 +77,7 @@ const settings = {
     summarize_sent: false,
     summary_source: 'main',
     summary_prompt: 'Ignore previous instructions. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
+    summary_retries: 2,
     force_chunk_delimiter: '',
 
     // For chats
@@ -348,39 +349,55 @@ async function summarizeWebLLM(element) {
 }
 
 /**
- * Summarizes messages using the chosen method.
- * @param {HashedMessage[]} hashedMessages Array of hashed messages
+ * Runs one summarization attempt for a single element via the chosen endpoint.
+ * @param {HashedMessage} element
+ * @param {string} endpoint
+ * @returns {Promise<boolean>} Whether the attempt succeeded.
+ */
+async function summarizeOne(element, endpoint) {
+    switch (endpoint) {
+        case 'main':
+            return await summarizeMain(element);
+        case 'extras':
+            return await summarizeExtra(element);
+        case 'webllm':
+            return await summarizeWebLLM(element);
+        default:
+            throw new Error(`Unsupported summary endpoint: ${endpoint}`, { cause: 'summary_endpoint_invalid' });
+    }
+}
+
+/**
+ * Summarizes messages using the chosen method. Every returned element has been
+ * summarized (via live call or cache). Throws if any element fails after
+ * `settings.summary_retries` attempts.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages (mutated in place)
  * @param {string} endpoint Type of endpoint to use
  * @returns {Promise<HashedMessage[]>} Summarized messages
  */
 async function summarize(hashedMessages, endpoint = 'main') {
+    const maxAttempts = Math.max(1, Number(settings.summary_retries) || 1);
     for (const element of hashedMessages) {
         const cachedSummary = cachedSummaries.get(element.hash);
-        if (!cachedSummary) {
-            let success = true;
-            switch (endpoint) {
-                case 'main':
-                    success = await summarizeMain(element);
-                    break;
-                case 'extras':
-                    success = await summarizeExtra(element);
-                    break;
-                case 'webllm':
-                    success = await summarizeWebLLM(element);
-                    break;
-                default:
-                    console.error('Unsupported endpoint', endpoint);
-                    success = false;
-                    break;
-            }
-            if (success) {
-                cachedSummaries.set(element.hash, element.text);
-            } else {
-                break;
-            }
-        } else {
+        if (cachedSummary) {
             element.text = cachedSummary;
+            continue;
         }
+
+        let success = false;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            success = await summarizeOne(element, endpoint);
+            if (success) break;
+            console.warn(`Vectors: summary attempt ${attempt}/${maxAttempts} failed for hash ${element.hash}`);
+        }
+        if (!success) {
+            throw new Error(`Summarization failed after ${maxAttempts} attempt(s)`, { cause: 'summary_failed' });
+        }
+        cachedSummaries.set(element.hash, element.text);
+    }
+    return hashedMessages;
+}
+
     }
     return hashedMessages;
 }
@@ -450,6 +467,10 @@ async function synchronizeChat(batchSize = 5) {
                     return 'WebLLM extension is not installed or the model is not set.';
                 case 'account_id_missing':
                     return 'Workers AI account ID is required. Save it in the "API Connections" panel.';
+                case 'summary_endpoint_invalid':
+                    return 'Summarization endpoint is not supported.';
+                case 'summary_failed':
+                    return 'Summarization failed after the configured number of retries.';
                 default:
                     return 'Check server console for more details';
             }
@@ -1832,6 +1853,13 @@ export async function init() {
 
     $('#vectors_summary_prompt').val(settings.summary_prompt).on('input', () => {
         settings.summary_prompt = String($('#vectors_summary_prompt').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summary_retries').val(settings.summary_retries).on('input', () => {
+        const parsed = Number($('#vectors_summary_retries').val());
+        settings.summary_retries = Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

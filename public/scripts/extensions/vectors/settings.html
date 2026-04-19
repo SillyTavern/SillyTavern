@@ -493,6 +493,11 @@
                         <label for="vectors_summary_prompt" title="Summary Prompt:">Summary Prompt:</label>
                         <small data-i18n="Only used when Main API or WebLLM Extension is selected.">Only used when Main API or WebLLM Extension is selected.</small>
                         <textarea id="vectors_summary_prompt" class="text_pole textarea_compact" rows="6" placeholder="This prompt will be sent to AI to request the summary generation."></textarea>
+
+                        <label for="vectors_summary_retries" title="Number of attempts per message before aborting vectorization.">
+                            <span data-i18n="Summarization retries per message">Summarization retries per message</span>
+                        </label>
+                        <input id="vectors_summary_retries" type="number" class="text_pole widthUnset" min="1" max="10" step="1" />
                     </div>
                 </div>
                 <small data-i18n="Old messages are vectorized gradually as you chat. To process all previous messages, click the button below.">
