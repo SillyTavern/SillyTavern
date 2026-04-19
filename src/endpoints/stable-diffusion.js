@@ -1938,6 +1938,9 @@ zai.post('/generate', async (request, response) => {
 
             return response.send({ image, format });
         }
+
+        console.warn('Z.AI image was not available after multiple attempts.');
+        return response.sendStatus(500);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -2039,6 +2042,8 @@ zai.post('/generate-video', async (request, response) => {
                 return response.send({ format: 'mp4', video: Buffer.from(contentBuffer).toString('base64') });
             }
         }
+        console.warn('Z.AI video was not available after multiple attempts.');
+        return response.sendStatus(500);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
