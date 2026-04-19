@@ -13,7 +13,7 @@ import { Jimp, JimpMime } from '../jimp.js';
 import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
-import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction, forbiddenRegExp } from '../middleware/validateFileName.js';
 import { deepMerge, humanizedDateTime, tryParse, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
@@ -1321,7 +1321,6 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
             // Determine which avatar files to process
             let targetAvatars;
             if (avatars.length > 0) {
-                const forbiddenRegExp = path.sep === '/' ? /[/\x00]/ : /[/\x00\\]/;
                 for (const avatar of avatars) {
                     if (typeof avatar !== 'string' || forbiddenRegExp.test(avatar)) {
                         return response.status(400).send({ message: `Invalid avatar filename: ${avatar}` });
