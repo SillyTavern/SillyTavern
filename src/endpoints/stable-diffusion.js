@@ -1906,11 +1906,20 @@ zai.post('/generate', async (request, response) => {
         const data = await generateResponse.json();
         console.debug('Z.AI image response:', data);
 
-        const url = data?.data?.[0]?.url;
-        if (!url || !isValidUrl(url) || !new URL(url).hostname.endsWith('.z.ai')) {
+        const urlString = String(data?.data?.[0]?.url ?? '');
+        if (!urlString || !isValidUrl(urlString)) {
             console.warn('Z.AI returned an invalid image URL.');
             return response.sendStatus(500);
         }
+
+        const url = new URL(urlString);
+        if (!url.hostname.endsWith('.z.ai') && !url.hostname.endsWith('.ufileos.com')) {
+            console.warn('Z.AI returned a URL with an unrecognized hostname.');
+            return response.sendStatus(500);
+        }
+
+        // Sometimes the URL is valid but the image isn't immediately available
+        await delay(2000);
 
         const imageResponse = await fetch(url);
         if (!imageResponse.ok) {
@@ -1920,7 +1929,7 @@ zai.post('/generate', async (request, response) => {
 
         const buffer = await imageResponse.arrayBuffer();
         const image = Buffer.from(buffer).toString('base64');
-        const format = path.extname(url).substring(1).toLowerCase() || 'png';
+        const format = path.extname(url.pathname).substring(1).toLowerCase() || 'png';
 
         return response.send({ image, format });
     } catch (error) {
