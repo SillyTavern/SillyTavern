@@ -1933,10 +1933,11 @@ export async function writeExtensionField(characterId, key, value) {
  *   {@link UNSET_VALUE} to delete the key entirely
  * @param {object} [options={}] Optional settings
  * @param {string} [options.filterPath] Dot-path filter — the server will only
- *   update characters where this path exists and is non-null. Useful when the
- *   frontend has shallow character data and cannot pre-filter.
+ *   update characters where this path is present and not `undefined`;
+ *   `null` still counts as a match. Useful when the frontend has shallow
+ *   character data and cannot pre-filter.
  *   Defaults to `data.extensions.<key>` when unsetting, so deletion requests
- *   automatically skip characters that don't have the field.
+ *   automatically skip characters where the field is missing/`undefined`.
  * @returns {Promise<BulkExtensionFieldResult>} Summary of the bulk operation
  */
 export async function writeExtensionFieldBulk(avatars, key, value, { filterPath } = {}) {
