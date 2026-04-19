@@ -62,14 +62,13 @@ import { t, translate } from '../../i18n.js';
 import { oai_settings } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
-import { loader } from '/scripts/action-loader.js';
+import { ActionLoaderHandle, loader } from '/scripts/action-loader.js';
 
 export { MODULE_NAME };
 
 const MODULE_NAME = 'sd';
 // This is a 1x1 transparent PNG
 const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-const CUSTOM_STOP_EVENT = 'sd_stop_generation';
 
 const sources = {
     extras: 'extras',
@@ -3041,13 +3040,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
 
     const stopListener = () => abortController.abort('Aborted by user');
 
-    // Show non-blocking stoppable toast for this generation
-    const loaderHandle = loader.show({
-        blocking: false,
-        title: t`Image Generation`,
-        message: t`Generating an image...`,
-        onStop: stopListener,
-    });
+    let loaderHandle = ActionLoaderHandle.EMPTY;
 
     try {
         const combineNegatives = (prefix) => { negativePromptPrefix = combinePrefixes(negativePromptPrefix, prefix); };
@@ -3061,11 +3054,17 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         await eventSource.emit(event_types.SD_PROMPT_PROCESSING, eventData);
         prompt = eventData.prompt; // Allow extensions to modify the prompt
 
-        eventSource.once(CUSTOM_STOP_EVENT, stopListener);
-
         if (typeof args?._abortController?.addEventListener === 'function') {
             args._abortController.addEventListener('abort', stopListener);
         }
+
+        // Show non-blocking stoppable toast for this generation
+        loaderHandle = loader.show({
+            blocking: false,
+            title: t`Image Generation`,
+            message: t`Generating an image...`,
+            onStop: stopListener,
+        });
 
         // generate the image
         imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback, initiator, abortController.signal);
@@ -3086,7 +3085,6 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         throw new Error(errorText);
     } finally {
         restoreOriginalDimensions(dimensions);
-        eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
         await loaderHandle.hide();
     }
 
@@ -5070,9 +5068,6 @@ async function addSDGenButtons() {
             generatePicture(initiators.wand, {}, param);
         }
     });
-
-    const stopGenButton = $('#sd_stop_gen');
-    stopGenButton.on('click', () => eventSource.emit(CUSTOM_STOP_EVENT));
 }
 
 function isValidState() {
@@ -5284,16 +5279,9 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         source: MEDIA_SOURCE.GENERATED,
     };
 
-    // Show non-blocking stoppable toast for this generation
-    const loaderHandle = loader.show({
-        blocking: false,
-        title: t`Image Generation`,
-        message: t`Generating an image...`,
-        onStop: stopListener,
-    });
+    let loaderHandle = ActionLoaderHandle.EMPTY;
 
     try {
-        eventSource.once(CUSTOM_STOP_EVENT, stopListener);
         const callback = (_a, _b, _c, _d, _e, _f, format) => { result.type = isVideo(format) ? MEDIA_TYPE.VIDEO : MEDIA_TYPE.IMAGE; };
         const savedPrompt = mediaAttachment.title ?? message.extra.title ?? '';
         const savedNegative = mediaAttachment.negative ?? message.extra.negative ?? '';
@@ -5309,6 +5297,14 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
             ? context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString()
             : context.characters[context.characterId]?.name;
 
+        // Show non-blocking stoppable toast for this generation
+        loader.show({
+            blocking: false,
+            title: t`Image Generation`,
+            message: t`Generating an image...`,
+            onStop: stopListener,
+        });
+
         onStart();
         result.url = await sendGenerationRequest(generationType, prompt, refineArgs.negative, characterName, callback, initiators.swipe, abortController.signal);
         result.generation_type = generationType;
@@ -5320,7 +5316,6 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         }
     } finally {
         onComplete();
-        eventSource.removeListener(CUSTOM_STOP_EVENT, stopListener);
         restoreOriginalDimensions(dimensions);
         extension_settings.sd.seed = extension_settings.sd.original_seed;
         delete extension_settings.sd.original_seed;

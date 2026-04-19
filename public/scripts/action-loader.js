@@ -73,6 +73,15 @@ function hasBlockingLoaders() {
  * Manages its own toast, stop handler, and lifecycle.
  */
 export class ActionLoaderHandle {
+    /**
+     * A special empty handle that is already disposed. Useful as a default value to avoid null checks.
+     * Does not generate any id, toast, or overlay, and all its methods are no-ops.
+     * @type {ActionLoaderHandle}
+     */
+    static get EMPTY() {
+        return new ActionLoaderHandle({ predisposed: true });
+    }
+
     /** @type {string} Unique identifier for this handle */
     id;
 
@@ -99,6 +108,7 @@ export class ActionLoaderHandle {
      * @param {string} [options.message='Generating...'] - Message to display in the toast
      * @param {string} [options.title] - Title for the toast notification
      * @param {string} [options.stopTooltip='Stop'] - Tooltip for the stop button
+     * @param {boolean} [options.predisposed=false] - Whether this handle is already disposed (for special use)
      * @param {HTMLElement|string|null} [options.overlayContent] - Custom content for the overlay (replaces default spinner)
      * @param {(() => void)|null} [options.onStop] - Custom stop handler
      * @param {(() => void)|null} [options.onHide] - Custom hide handler
@@ -112,7 +122,13 @@ export class ActionLoaderHandle {
         overlayContent = null,
         onStop = null,
         onHide = null,
+        predisposed = false,
     } = {}) {
+        if (predisposed) {
+            this.#disposed = true;
+            return;
+        }
+
         this.id = generateLoaderId();
         this.#blocking = blocking;
         this.#onStop = onStop;
