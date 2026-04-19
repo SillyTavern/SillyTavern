@@ -44,6 +44,7 @@ import { oai_settings } from '../../openai.js';
  * @property {string} text - The hashed message text
  * @property {number} hash - The hash used as the vector key
  * @property {number} index - The index of the message in the chat
+ * @property {boolean} [summaryFailed] - Whether summarization failed for this message (used internally to skip messages that fail summarization)
  */
 
 const MODULE_NAME = 'vectors';
@@ -393,8 +394,8 @@ async function summarizeOne(element, endpoint) {
  * @returns {Promise<HashedMessage[]>} Summarized messages
  */
 async function summarize(hashedMessages, endpoint = 'main', options = {}) {
-    const { 
-        skipOnFailure = false 
+    const {
+        skipOnFailure = false,
     } = options;
 
     const maxAttempts = Math.max(1, Number(settings.summary_retries) || 1);
@@ -452,6 +453,7 @@ async function synchronizeChat(batchSize = 5) {
             return -1;
         }
 
+        /** @type {HashedMessage[]} */
         const hashedMessages = context.chat.filter(x => settings.keep_hidden || !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
         const hashesInCollection = await getSavedHashes(chatId);
 
@@ -466,7 +468,7 @@ async function synchronizeChat(batchSize = 5) {
             const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
             const toSummarize = minLength > 0 ? batch.filter(x => x.text.length >= minLength) : batch;
             if (toSummarize.length > 0) {
-                await summarize(toSummarize, settings.summary_source, {skipOnFailure: true});
+                await summarize(toSummarize, settings.summary_source, { skipOnFailure: true });
                 const failed = toSummarize.filter(x => x.summaryFailed);
                 if (failed.length > 0) {
                     for (const item of failed) skippedHashes.add(item.hash);
@@ -906,7 +908,7 @@ async function getQueryText(chat, initiator) {
         const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
         const toSummarize = minLength > 0 ? hashedMessages.filter(x => x.text.length >= minLength) : hashedMessages;
         if (toSummarize.length > 0) {
-            await summarize(toSummarize, settings.summary_source, {skipOnFailure: true});
+            await summarize(toSummarize, settings.summary_source, { skipOnFailure: true });
         }
     }
 
