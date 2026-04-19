@@ -164,11 +164,6 @@ export class ActionLoaderHandle {
         const toastContent = document.createElement('div');
         toastContent.className = 'action-loader-toast';
 
-        // Add convenience data to make toasts selectable
-        toastContent.dataset.loaderId = this.id;
-        toastContent.dataset.title = title;
-        toastContent.dataset.blocking = String(this.#blocking);
-
         const messageSpan = document.createElement('span');
         messageSpan.className = 'action-loader-message';
         messageSpan.textContent = message;
