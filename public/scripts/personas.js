@@ -2103,9 +2103,14 @@ async function createPersonaCallback(args) {
     const description = args.description ?? '';
     const title = args.title ?? '';
     const position = parsePersonaPosition(args.descriptionPosition) ?? persona_description_positions.IN_PROMPT;
-    const depth = args.descriptionDepth !== undefined ? Number(args.descriptionDepth) : DEFAULT_DEPTH;
     const role = parsePersonaRole(args.descriptionRole) ?? DEFAULT_ROLE;
     const lorebook = args.lorebook ?? '';
+
+    let depth = args.descriptionDepth !== undefined ? Number(args.descriptionDepth) : DEFAULT_DEPTH;
+    if (isNaN(depth)) {
+        toastr.warning(t`Invalid description depth "${args.descriptionDepth}", defaulting to ${DEFAULT_DEPTH}`);
+        depth = DEFAULT_DEPTH;
+    }
 
     // Initialize persona data with all fields
     await initPersona(avatarId, trimmedName, description, title, {
