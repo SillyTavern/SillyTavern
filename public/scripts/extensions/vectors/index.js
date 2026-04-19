@@ -121,6 +121,10 @@ const settings = {
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 const webllmProvider = new WebLlmVectorProvider();
 const cachedSummaries = new Map();
+/** Hashes skipped this Vectorize All session (summary or embed failure). Cleared on next Vectorize All click. */
+const skippedHashes = new Set();
+/** Error causes treated as fatal — abort Vectorize All rather than skip. */
+const FATAL_CAUSES = new Set(['api_key_missing', 'api_url_missing', 'api_model_missing', 'extras_module_missing', 'webllm_not_supported', 'summary_endpoint_invalid']);
 const vectorApiRequiresUrl = ['llamacpp', 'vllm', 'ollama', 'koboldcpp'];
 
 /**
@@ -201,6 +205,7 @@ async function onVectorizeAllClick() {
         // Clear all cached summaries to ensure that new ones are created
         // upon request of a full vectorise
         cachedSummaries.clear();
+        skippedHashes.clear();
 
         const batchSize = getBatchSize();
         const elapsedLog = [];
@@ -219,6 +224,12 @@ async function onVectorizeAllClick() {
             const startTime = Date.now();
             const remaining = await synchronizeChat(batchSize);
             const elapsed = Date.now() - startTime;
+
+            if (remaining === null) {
+                // synchronizeChat already surfaced a toast; bail out of the loop.
+                throw new Error('Vectorization aborted');
+            }
+
             elapsedLog.push(elapsed);
             finished = remaining <= 0;
 
@@ -241,6 +252,9 @@ async function onVectorizeAllClick() {
             if (chatId !== getCurrentChatId()) {
                 throw new Error('Chat changed');
             }
+        }
+        if (skippedHashes.size > 0) {
+            toastr.warning(`${skippedHashes.size} message(s) skipped due to errors. Click Vectorize All again to retry.`, 'Vectorization partial');
         }
     } catch (error) {
         console.error('Vectors: Failed to vectorize all', error);
@@ -399,6 +413,35 @@ async function summarize(hashedMessages, endpoint = 'main') {
     return hashedMessages;
 }
 
+/**
+ * Like {@link summarize} but tolerates per-element failure: after retries are
+ * exhausted, the element is tagged with `summaryFailed = true` and its text is
+ * left untouched. Fatal endpoint errors still propagate.
+ * @param {HashedMessage[]} hashedMessages Array of hashed messages (mutated in place)
+ * @param {string} endpoint Type of endpoint to use
+ * @returns {Promise<HashedMessage[]>} The same array reference
+ */
+async function summarizeSkipOnFailure(hashedMessages, endpoint = 'main') {
+    const maxAttempts = Math.max(1, Number(settings.summary_retries) || 1);
+    for (const element of hashedMessages) {
+        const cachedSummary = cachedSummaries.get(element.hash);
+        if (cachedSummary) {
+            element.text = cachedSummary;
+            continue;
+        }
+
+        let success = false;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            success = await summarizeOne(element, endpoint);
+            if (success) break;
+            console.warn(`Vectors: summary attempt ${attempt}/${maxAttempts} failed for hash ${element.hash}`);
+        }
+        if (!success) {
+            console.warn(`Vectors: summarization exhausted ${maxAttempts} attempt(s) for hash ${element.hash} — marking for skip`);
+            element.summaryFailed = true;
+            continue;
+        }
+        cachedSummaries.set(element.hash, element.text);
     }
     return hashedMessages;
 }
@@ -428,8 +471,12 @@ async function synchronizeChat(batchSize = 5) {
         const hashedMessages = context.chat.filter(x => settings.keep_hidden || !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
         const hashesInCollection = await getSavedHashes(chatId);
 
-        let newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
+        const newVectorItems = hashedMessages
+            .filter(x => !hashesInCollection.includes(x.hash))
+            .filter(x => !skippedHashes.has(x.hash));
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
+
+        let batch = newVectorItems.slice(0, batchSize);
 
         if (settings.summarize) {
             const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
@@ -444,11 +491,19 @@ async function synchronizeChat(batchSize = 5) {
             }
         }
 
-        if (newVectorItems.length > 0) {
-            const chunkedBatch = splitByChunks(newVectorItems.slice(0, batchSize));
+        if (batch.length > 0) {
+            const chunkedBatch = splitByChunks(batch);
 
-            console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batchSize}...`);
-            await insertVectorItems(chatId, chunkedBatch);
+            console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batch.length}...`);
+            try {
+                await insertVectorItems(chatId, chunkedBatch);
+            } catch (insertError) {
+                if (FATAL_CAUSES.has(insertError?.cause)) {
+                    throw insertError;
+                }
+                console.warn('Vectors: insert failed for batch — marking for skip', insertError);
+                for (const item of batch) skippedHashes.add(item.hash);
+            }
         }
 
         if (deletedHashes.length > 0) {
@@ -490,7 +545,7 @@ async function synchronizeChat(batchSize = 5) {
 
         const message = getErrorMessage(error.cause);
         toastr.error(message, 'Vectorization failed', { preventDuplicates: true });
-        return -1;
+        return null;
     } finally {
         syncBlocked = false;
     }
