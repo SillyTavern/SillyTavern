@@ -6067,6 +6067,11 @@ body:not(.movingUI) .drawer-content.maximized {
     width: fit-content;
     border-radius: 10px;
     outline: 1px solid var(--SmartThemeBorderColor);
+    transition: filter var(--animation-duration-2x) ease-in-out;
+}
+
+#show_more_messages:hover {
+    filter: brightness(1.25);
 }
 
 .draggable img {
