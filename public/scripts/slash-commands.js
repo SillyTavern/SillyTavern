@@ -1224,7 +1224,7 @@ export function initDefaultSlashCommands() {
                         modifyAt = chat.length + modifyAt;
                     }
                     return chat[modifyAt]?.is_user
-                        ? commonEnumProviders.personas()
+                        ? commonEnumProviders.personas()()
                         : commonEnumProviders.characters('character')();
                 },
             }),
@@ -1752,7 +1752,7 @@ export function initDefaultSlashCommands() {
                 description: t`display name`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{user}}',
-                enumProvider: commonEnumProviders.personas,
+                enumProvider: commonEnumProviders.personas({ allowPersonaKey: true }),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'return',
@@ -4999,23 +4999,6 @@ async function triggerGenerationCallback(args, value) {
 
     return '';
 }
-/**
- * Find persona by name.
- * @param {string} name Name to search for
- * @returns {string} Persona name
- */
-function findPersonaByName(name) {
-    if (!name) {
-        return null;
-    }
-
-    for (const persona of Object.entries(power_user.personas)) {
-        if (equalsIgnoreCaseAndAccents(persona[1], name)) {
-            return persona[0];
-        }
-    }
-    return null;
-}
 
 async function sendUserMessageCallback(args, text) {
     text = String(text ?? '').trim();
@@ -5033,7 +5016,7 @@ async function sendUserMessageCallback(args, text) {
     let message;
     if ('name' in args) {
         const name = args.name || '';
-        const avatar = findPersonaByName(name) || user_avatar;
+        const avatar = findPersona({ name })?.avatar || user_avatar;
         message = await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     } else {
         message = await sendMessageAsUser(text, bias, insertAt, compact);

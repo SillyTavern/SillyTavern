@@ -214,9 +214,13 @@ export const commonEnumProviders = {
     /**
      * All possible personas
      *
-     * @returns {SlashCommandEnumValue[]}
+     * @returns {() => SlashCommandEnumValue[]}
      */
-    personas: () => Object.values(power_user.personas).map(persona => new SlashCommandEnumValue(persona, null, enumTypes.name, enumIcons.persona)),
+    personas: ({ allowPersonaKey = false } = {}) => () => Object.entries(power_user.personas).map(([personaKey, personaName]) => {
+        const existsMultiple = Object.values(power_user.personas).filter(p => p === personaName).length > 1;
+        const returnValue = allowPersonaKey && existsMultiple ? personaKey : personaName;
+        return new SlashCommandEnumValue(returnValue, allowPersonaKey && existsMultiple ? personaName : null, enumTypes.name, enumIcons.persona);
+    }),
 
     /**
      * All possible tags, or only those that have been assigned

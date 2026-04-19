@@ -798,15 +798,16 @@ export async function askForPersonaSelection(title, text, personas, { okButton =
 /**
  * Automatically selects a persona based on the given name if a matching persona exists.
  * @param {string} name - The name to search for
+ * @param {Object} [options={}]
+ * @param {string} [options.personaKey=null] - Optionally a persona avatar key to target (if multiple persona have the same name); must match the name
  * @returns {Promise<boolean>} True if a matching persona was found and selected, false otherwise
  */
-export async function autoSelectPersona(name) {
-    for (const [key, value] of Object.entries(power_user.personas)) {
-        if (value === name) {
-            console.log(`Auto-selecting persona ${key} for name ${name}`);
-            await setUserAvatar(key);
-            return true;
-        }
+export async function autoSelectPersona(name, { personaKey = null } = {}) {
+    const persona = findPersona({ name: personaKey ?? name, allowAvatar: !!personaKey });
+    if (persona) {
+        console.log(`Auto-selecting persona ${persona.avatar} for name ${name}`);
+        await setUserAvatar(persona.avatar);
+        return true;
     }
     return false;
 }
@@ -2417,10 +2418,9 @@ async function setNameCallback({ mode = 'all' }, name) {
 
     // If the name matches a persona avatar, or a name, auto-select it
     if (['lookup', 'all'].includes(mode)) {
-        let persona = Object.entries(power_user.personas).find(([avatar, _]) => avatar === name)?.[1];
-        if (!persona) persona = Object.entries(power_user.personas).find(([_, personaName]) => personaName.toLowerCase() === name.toLowerCase())?.[1];
+        const persona = findPersona({ name });
         if (persona) {
-            await autoSelectPersona(persona);
+            await autoSelectPersona(persona.name, { personaKey: persona.avatar });
             return '';
         } else if (mode === 'lookup') {
             toastr.warning(`Persona ${name} not found`);
@@ -2545,7 +2545,7 @@ function registerPersonaSlashCommands() {
         name: 'persona',
         description: t`Persona name or avatar key. If not provided, uses the currently active persona.`,
         typeList: [ARGUMENT_TYPE.STRING],
-        enumProvider: commonEnumProviders.personas,
+        enumProvider: commonEnumProviders.personas({ allowPersonaKey: true }),
     });
 
     // ========================
@@ -2839,7 +2839,7 @@ function registerPersonaSlashCommands() {
                 description: 'persona name',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
-                enumProvider: commonEnumProviders.personas,
+                enumProvider: commonEnumProviders.personas({ allowPersonaKey: true }),
             }),
         ],
         helpString: `
