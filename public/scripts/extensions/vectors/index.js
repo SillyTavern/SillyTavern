@@ -388,9 +388,15 @@ async function summarizeOne(element, endpoint) {
  * `settings.summary_retries` attempts.
  * @param {HashedMessage[]} hashedMessages Array of hashed messages (mutated in place)
  * @param {string} endpoint Type of endpoint to use
+ * @param {Object} [options] Options for summarization behavior
+ * @param {boolean} [options.skipOnFailure=false] If true, tags failed elements with `summaryFailed = true` instead of throwing
  * @returns {Promise<HashedMessage[]>} Summarized messages
  */
-async function summarize(hashedMessages, endpoint = 'main') {
+async function summarize(hashedMessages, endpoint = 'main', options = {}) {
+    const { 
+        skipOnFailure = false 
+    } = options;
+
     const maxAttempts = Math.max(1, Number(settings.summary_retries) || 1);
     for (const element of hashedMessages) {
         const cachedSummary = cachedSummaries.get(element.hash);
@@ -411,45 +417,13 @@ async function summarize(hashedMessages, endpoint = 'main') {
             console.warn(`Vectors: summary attempt ${attempt}/${maxAttempts} failed for hash ${element.hash}`);
         }
         if (!success) {
+            if (skipOnFailure) {
+                console.warn(`Vectors: summarization exhausted ${maxAttempts} attempt(s) for hash ${element.hash} — marking for skip`);
+                element.summaryFailed = true;
+                continue;
+            }
+
             throw new Error(`Summarization failed after ${maxAttempts} attempt(s)`, { cause: 'summary_failed' });
-        }
-        cachedSummaries.set(element.hash, element.text);
-    }
-    return hashedMessages;
-}
-
-/**
- * Like {@link summarize} but tolerates per-element failure: after retries are
- * exhausted, the element is tagged with `summaryFailed = true` and its text is
- * left untouched. Fatal endpoint errors still propagate.
- * @param {HashedMessage[]} hashedMessages Array of hashed messages (mutated in place)
- * @param {string} endpoint Type of endpoint to use
- * @returns {Promise<HashedMessage[]>} The same array reference
- */
-async function summarizeSkipOnFailure(hashedMessages, endpoint = 'main') {
-    const maxAttempts = Math.max(1, Number(settings.summary_retries) || 1);
-    for (const element of hashedMessages) {
-        const cachedSummary = cachedSummaries.get(element.hash);
-        if (cachedSummary) {
-            element.text = cachedSummary;
-            continue;
-        }
-
-        let success = false;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                success = await summarizeOne(element, endpoint);
-                if (success) break;
-            } catch (error) {
-                if (FATAL_CAUSES.has(error?.cause)) throw error;
-                console.warn(`Vectors: summary attempt ${attempt}/${maxAttempts} threw for hash ${element.hash}`, error);
-            }
-            console.warn(`Vectors: summary attempt ${attempt}/${maxAttempts} failed for hash ${element.hash}`);
-        }
-        if (!success) {
-            console.warn(`Vectors: summarization exhausted ${maxAttempts} attempt(s) for hash ${element.hash} — marking for skip`);
-            element.summaryFailed = true;
-            continue;
         }
         cachedSummaries.set(element.hash, element.text);
     }
@@ -492,7 +466,7 @@ async function synchronizeChat(batchSize = 5) {
             const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
             const toSummarize = minLength > 0 ? batch.filter(x => x.text.length >= minLength) : batch;
             if (toSummarize.length > 0) {
-                await summarizeSkipOnFailure(toSummarize, settings.summary_source);
+                await summarize(toSummarize, settings.summary_source, {skipOnFailure: true});
                 const failed = toSummarize.filter(x => x.summaryFailed);
                 if (failed.length > 0) {
                     for (const item of failed) skippedHashes.add(item.hash);
@@ -932,7 +906,7 @@ async function getQueryText(chat, initiator) {
         const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
         const toSummarize = minLength > 0 ? hashedMessages.filter(x => x.text.length >= minLength) : hashedMessages;
         if (toSummarize.length > 0) {
-            await summarizeSkipOnFailure(toSummarize, settings.summary_source);
+            await summarize(toSummarize, settings.summary_source, {skipOnFailure: true});
         }
     }
 
