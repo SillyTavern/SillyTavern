@@ -310,7 +310,7 @@ async function summarizeExtra(element) {
 
         if (apiResult.ok) {
             const data = await apiResult.json();
-            element.text = data.summary;
+            element.text = removeReasoningFromString(data.summary);
         }
     } catch (error) {
         console.log(error);
@@ -342,7 +342,7 @@ async function summarizeWebLLM(element) {
     }
 
     const messages = [{ role: 'system', content: settings.summary_prompt }, { role: 'user', content: element.text }];
-    element.text = await generateWebLlmChatPrompt(messages);
+    element.text = removeReasoningFromString(await generateWebLlmChatPrompt(messages));
 
     return true;
 }
