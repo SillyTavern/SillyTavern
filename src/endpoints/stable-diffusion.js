@@ -1918,20 +1918,26 @@ zai.post('/generate', async (request, response) => {
             return response.sendStatus(500);
         }
 
-        // Sometimes the URL is valid but the image isn't immediately available
-        await delay(2000);
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const imageResponse = await fetch(url);
+            if (!imageResponse.ok) {
+                // Sometimes the URL is valid but the image isn't immediately available
+                if (imageResponse.status === 404) {
+                    console.info('Z.AI image not found yet, retrying...', { attempt: attempt + 1 });
+                    await delay(1000);
+                    continue;
+                }
 
-        const imageResponse = await fetch(url);
-        if (!imageResponse.ok) {
-            console.warn('Z.AI image fetch returned an error. Status:', imageResponse.status, imageResponse.statusText);
-            return response.sendStatus(500);
+                console.warn('Z.AI image fetch returned an error. Status:', imageResponse.status, imageResponse.statusText);
+                return response.sendStatus(500);
+            }
+
+            const buffer = await imageResponse.arrayBuffer();
+            const image = Buffer.from(buffer).toString('base64');
+            const format = path.extname(url.pathname).substring(1).toLowerCase() || 'png';
+
+            return response.send({ image, format });
         }
-
-        const buffer = await imageResponse.arrayBuffer();
-        const image = Buffer.from(buffer).toString('base64');
-        const format = path.extname(url.pathname).substring(1).toLowerCase() || 'png';
-
-        return response.send({ image, format });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
