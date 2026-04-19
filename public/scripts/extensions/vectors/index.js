@@ -203,6 +203,7 @@ async function onVectorizeAllClick() {
         const batchSize = getBatchSize();
         const elapsedLog = [];
         let finished = false;
+        let initialPending = null; // total items pending at the start of this run — set on first sync return
         $('#vectorize_progress').show();
         $('#vectorize_progress_percent').text('0');
         $('#vectorize_progress_eta').text('...');
@@ -219,13 +220,18 @@ async function onVectorizeAllClick() {
             elapsedLog.push(elapsed);
             finished = remaining <= 0;
 
-            const total = getContext().chat.length;
-            const processed = total - remaining;
-            const processedPercent = Math.round((processed / total) * 100); // percentage of the work done
+            if (initialPending === null) {
+                initialPending = Math.max(0, remaining + batchSize);
+            }
+            const pending = Math.max(0, remaining);
+            const processed = Math.max(0, initialPending - pending);
+            const processedPercent = initialPending > 0
+                ? Math.min(100, Math.round((processed / initialPending) * 100))
+                : 100;
             const lastElapsed = elapsedLog.slice(-5); // last 5 elapsed times
             const averageElapsed = lastElapsed.reduce((a, b) => a + b, 0) / lastElapsed.length; // average time needed to process one item
             const pace = averageElapsed / batchSize; // time needed to process one item
-            const remainingTime = Math.round(pace * remaining / 1000);
+            const remainingTime = Math.round(pace * pending / 1000);
 
             $('#vectorize_progress_percent').text(processedPercent);
             $('#vectorize_progress_eta').text(remainingTime);
