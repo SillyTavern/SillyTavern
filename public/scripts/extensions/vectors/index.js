@@ -78,6 +78,7 @@ const settings = {
     summary_source: 'main',
     summary_prompt: 'Ignore previous instructions. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
     summary_retries: 2,
+    summary_threshold: 200,
     force_chunk_delimiter: '',
 
     // For chats
@@ -431,7 +432,16 @@ async function synchronizeChat(batchSize = 5) {
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
         if (settings.summarize) {
-            newVectorItems = await summarize(newVectorItems, settings.summary_source);
+            const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
+            const toSummarize = minLength > 0 ? batch.filter(x => x.text.length >= minLength) : batch;
+            if (toSummarize.length > 0) {
+                await summarizeSkipOnFailure(toSummarize, settings.summary_source);
+                const failed = toSummarize.filter(x => x.summaryFailed);
+                if (failed.length > 0) {
+                    for (const item of failed) skippedHashes.add(item.hash);
+                    batch = batch.filter(x => !x.summaryFailed);
+                }
+            }
         }
 
         if (newVectorItems.length > 0) {
@@ -854,7 +864,11 @@ async function getQueryText(chat, initiator) {
         .slice(0, settings.query);
 
     if (initiator === 'chat' && settings.enabled_chats && settings.summarize && settings.summarize_sent) {
-        hashedMessages = await summarize(hashedMessages, settings.summary_source);
+        const minLength = Math.max(0, Number(settings.summary_threshold) || 0);
+        const toSummarize = minLength > 0 ? hashedMessages.filter(x => x.text.length >= minLength) : hashedMessages;
+        if (toSummarize.length > 0) {
+            await summarizeSkipOnFailure(toSummarize, settings.summary_source);
+        }
     }
 
     const queryText = hashedMessages.map(x => x.text).join('\n');
@@ -1860,6 +1874,13 @@ export async function init() {
     $('#vectors_summary_retries').val(settings.summary_retries).on('input', () => {
         const parsed = Number($('#vectors_summary_retries').val());
         settings.summary_retries = Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summary_threshold').val(settings.summary_threshold).on('input', () => {
+        const parsed = Number($('#vectors_summary_threshold').val());
+        settings.summary_threshold = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

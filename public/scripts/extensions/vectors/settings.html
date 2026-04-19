@@ -498,6 +498,11 @@
                             <span data-i18n="Summarization retries per message">Summarization retries per message</span>
                         </label>
                         <input id="vectors_summary_retries" type="number" class="text_pole widthUnset" min="1" max="10" step="1" />
+
+                        <label for="vectors_summary_threshold" title="Messages shorter than this (in characters) are embedded as-is without summarization. Set to 0 to always summarize.">
+                            <span data-i18n="Summarization min length (chars)">Summarization min length (chars)</span>
+                        </label>
+                        <input id="vectors_summary_threshold" type="number" class="text_pole widthUnset" min="0" step="1" />
                     </div>
                 </div>
                 <small data-i18n="Old messages are vectorized gradually as you chat. To process all previous messages, click the button below.">
