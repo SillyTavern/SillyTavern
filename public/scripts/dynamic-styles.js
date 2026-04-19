@@ -126,6 +126,12 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
             // If something like :focus-within or a more specific selector like `.blah:has(:focus-visible)` for elements inside,
             // it should be manually defined in CSS.
             const focusSelector = rule.selectorText.replace(/:hover/g, ':focus-visible');
+
+            // Skip pseudo-elements (::before, ::after, ::-webkit-scrollbar, etc.)
+            // as they cannot have :focus-visible appended (invalid CSS syntax)
+            if (focusSelector.includes('::')) {
+                return;
+            }
             let focusRule = `${focusSelector} { ${rule.style.cssText} }`;
 
             // Wrap the generated rule into the same @media/@supports/@container chain (if any)

@@ -23,6 +23,14 @@ import {
     isPathUnderParent,
     isFileURL,
     getRequestURL,
+    delay,
+    formatBytes,
+    sanitizeSafeCharacterReplacements,
+    generateTimestamp,
+    mergeObjectWithYaml,
+    excludeKeysByYaml,
+    Cache,
+    MemoryLimitedMap,
 } from '../src/util';
 
 describe('keyToEnv', () => {
@@ -417,5 +425,265 @@ describe('getRequestURL', () => {
 
     test('should throw for invalid types', () => {
         expect(() => getRequestURL(42)).toThrow(TypeError);
+    });
+});
+
+describe('delay', () => {
+    test('should resolve after the specified time', async () => {
+        jest.useFakeTimers();
+        let resolved = false;
+        delay(50).then(() => { resolved = true; });
+        expect(resolved).toBe(false);
+        jest.advanceTimersByTime(50);
+        await Promise.resolve();
+        expect(resolved).toBe(true);
+        jest.useRealTimers();
+    });
+
+    test('should return a promise', () => {
+        jest.useFakeTimers();
+        const result = delay(0);
+        expect(result).toBeInstanceOf(Promise);
+        jest.useRealTimers();
+    });
+});
+
+describe('formatBytes', () => {
+    test('should format bytes to human-readable string', () => {
+        expect(formatBytes(0)).toBe('0B');
+        expect(formatBytes(1024)).toBe('1KB');
+        expect(formatBytes(1048576)).toBe('1MB');
+    });
+
+    test('should return empty string for null/undefined', () => {
+        expect(formatBytes(null)).toBe('');
+        expect(formatBytes(undefined)).toBe('');
+    });
+});
+
+describe('sanitizeSafeCharacterReplacements', () => {
+    test('should always return underscore', () => {
+        expect(sanitizeSafeCharacterReplacements('/')).toBe('_');
+        expect(sanitizeSafeCharacterReplacements('\\')).toBe('_');
+        expect(sanitizeSafeCharacterReplacements(':')).toBe('_');
+        expect(sanitizeSafeCharacterReplacements('')).toBe('_');
+    });
+});
+
+describe('generateTimestamp', () => {
+    test('should return YYYYMMDD-HHMMSS format for a known date', () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2025-07-15T09:30:45'));
+        expect(generateTimestamp()).toBe('20250715-093045');
+        jest.useRealTimers();
+    });
+});
+
+describe('mergeObjectWithYaml', () => {
+    test('should merge a YAML object into the target', () => {
+        const obj = { a: 1 };
+        mergeObjectWithYaml(obj, 'b: 2\nc: 3');
+        expect(obj).toEqual({ a: 1, b: 2, c: 3 });
+    });
+
+    test('should merge a YAML array of objects into the target', () => {
+        const obj = { a: 1 };
+        mergeObjectWithYaml(obj, '- b: 2\n- c: 3');
+        expect(obj).toEqual({ a: 1, b: 2, c: 3 });
+    });
+
+    test('should override existing keys', () => {
+        const obj = { a: 1 };
+        mergeObjectWithYaml(obj, 'a: 99');
+        expect(obj.a).toBe(99);
+    });
+
+    test('should do nothing for empty/falsy yamlString', () => {
+        const obj = { a: 1 };
+        mergeObjectWithYaml(obj, '');
+        mergeObjectWithYaml(obj, null);
+        mergeObjectWithYaml(obj, undefined);
+        expect(obj).toEqual({ a: 1 });
+    });
+
+    test('should not throw on invalid YAML', () => {
+        const obj = { a: 1 };
+        expect(() => mergeObjectWithYaml(obj, '{{{')).not.toThrow();
+        expect(obj).toEqual({ a: 1 });
+    });
+
+    test('should skip non-object items in YAML array', () => {
+        const obj = { a: 1 };
+        mergeObjectWithYaml(obj, '- hello\n- b: 2');
+        expect(obj).toEqual({ a: 1, b: 2 });
+    });
+});
+
+describe('excludeKeysByYaml', () => {
+    test('should delete keys listed in a YAML array', () => {
+        const obj = { a: 1, b: 2, c: 3 };
+        excludeKeysByYaml(obj, '- a\n- c');
+        expect(obj).toEqual({ b: 2 });
+    });
+
+    test('should delete keys from a YAML object', () => {
+        const obj = { a: 1, b: 2 };
+        excludeKeysByYaml(obj, 'a: whatever\nb: whatever');
+        expect(obj).toEqual({});
+    });
+
+    test('should delete a single string key', () => {
+        const obj = { a: 1, b: 2 };
+        excludeKeysByYaml(obj, 'a');
+        expect(obj).toEqual({ b: 2 });
+    });
+
+    test('should do nothing for empty/falsy yamlString', () => {
+        const obj = { a: 1 };
+        excludeKeysByYaml(obj, '');
+        excludeKeysByYaml(obj, null);
+        expect(obj).toEqual({ a: 1 });
+    });
+
+    test('should not throw on invalid YAML', () => {
+        const obj = { a: 1 };
+        expect(() => excludeKeysByYaml(obj, '{{{')).not.toThrow();
+        expect(obj).toEqual({ a: 1 });
+    });
+});
+
+describe('Cache', () => {
+    test('should store and retrieve values', () => {
+        const cache = new Cache(1000);
+        cache.set('key', 'value');
+        expect(cache.get('key')).toBe('value');
+    });
+
+    test('should return null for missing keys', () => {
+        const cache = new Cache(1000);
+        expect(cache.get('missing')).toBeNull();
+    });
+
+    test('should return null for expired entries', () => {
+        jest.useFakeTimers();
+        const cache = new Cache(10);
+        cache.set('key', 'value');
+        jest.advanceTimersByTime(20);
+        expect(cache.get('key')).toBeNull();
+        jest.useRealTimers();
+    });
+
+    test('should remove entries', () => {
+        const cache = new Cache(1000);
+        cache.set('key', 'value');
+        cache.remove('key');
+        expect(cache.get('key')).toBeNull();
+    });
+
+    test('should clear all entries', () => {
+        const cache = new Cache(1000);
+        cache.set('a', 1);
+        cache.set('b', 2);
+        cache.clear();
+        expect(cache.get('a')).toBeNull();
+        expect(cache.get('b')).toBeNull();
+    });
+});
+
+describe('MemoryLimitedMap', () => {
+    test('should store and retrieve values', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('key', 'value');
+        expect(map.get('key')).toBe('value');
+        expect(map.has('key')).toBe(true);
+    });
+
+    test('should reject non-string keys and values', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set(123, 'value');
+        map.set('key', 123);
+        expect(map.size()).toBe(0);
+    });
+
+    test('should evict oldest entries when memory limit is reached', () => {
+        // 20 bytes capacity = 10 chars (2 bytes per char)
+        const map = new MemoryLimitedMap('20B');
+        map.set('a', '12345'); // 10 bytes
+        map.set('b', '12345'); // 10 bytes, fills capacity
+        map.set('c', '12345'); // 10 bytes, should evict 'a'
+        expect(map.has('a')).toBe(false);
+        expect(map.has('b')).toBe(true);
+        expect(map.has('c')).toBe(true);
+    });
+
+    test('should reject values larger than max memory', () => {
+        const map = new MemoryLimitedMap('10B');
+        map.set('key', '123456'); // 12 bytes > 10 byte limit
+        expect(map.has('key')).toBe(false);
+    });
+
+    test('should do nothing when maxMemory is 0', () => {
+        const map = new MemoryLimitedMap('0B');
+        map.set('key', 'value');
+        expect(map.size()).toBe(0);
+    });
+
+    test('should track memory usage', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('key', 'hello'); // 10 bytes
+        expect(map.totalMemory()).toBe(10);
+    });
+
+    test('should update memory when overwriting a key', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('key', 'hi');    // 4 bytes
+        map.set('key', 'hello'); // 10 bytes
+        expect(map.totalMemory()).toBe(10);
+        expect(map.get('key')).toBe('hello');
+    });
+
+    test('should delete entries and free memory', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('key', 'hello');
+        expect(map.delete('key')).toBe(true);
+        expect(map.totalMemory()).toBe(0);
+        expect(map.has('key')).toBe(false);
+    });
+
+    test('should return false when deleting non-existent key', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        expect(map.delete('nope')).toBe(false);
+    });
+
+    test('should clear all entries and reset memory', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('a', 'hello');
+        map.set('b', 'world');
+        map.clear();
+        expect(map.size()).toBe(0);
+        expect(map.totalMemory()).toBe(0);
+    });
+
+    test('should iterate with forEach', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('a', '1');
+        map.set('b', '2');
+        const entries = [];
+        map.forEach((value, key) => entries.push([key, value]));
+        expect(entries).toEqual([['a', '1'], ['b', '2']]);
+    });
+
+    test('should expose keys and values iterators', () => {
+        const map = new MemoryLimitedMap('1 MB');
+        map.set('a', '1');
+        map.set('b', '2');
+        expect([...map.keys()]).toEqual(['a', 'b']);
+        expect([...map.values()]).toEqual(['1', '2']);
+    });
+
+    test('estimateStringSize should return 2 bytes per character', () => {
+        expect(MemoryLimitedMap.estimateStringSize('hello')).toBe(10);
+        expect(MemoryLimitedMap.estimateStringSize('')).toBe(0);
+        expect(MemoryLimitedMap.estimateStringSize(null)).toBe(0);
     });
 });

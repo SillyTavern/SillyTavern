@@ -102,6 +102,10 @@ router.post('/caption-image', async (request, response) => {
             bodyParams.seed = Math.floor(Math.random() * Math.pow(2, 32));
         }
 
+        if (request.body.api === 'workers_ai') {
+            key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
+        }
+
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp'];
         if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api)) {
             console.warn('No key found for API', request.body.api);
@@ -214,6 +218,14 @@ router.post('/caption-image', async (request, response) => {
                     delete imgContent.image_url;
                 }
             }
+        }
+
+        if (request.body.api === 'workers_ai') {
+            const accountId = String(request.body.workers_ai_account_id || '').trim();
+            if (!accountId) {
+                return response.status(400).send({ error: 'Cloudflare Workers AI Account ID is required' });
+            }
+            apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/v1/chat/completions`;
         }
 
         if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
@@ -566,6 +578,50 @@ router.post('/siliconflow/models/embedding', async (request, response) => {
         return response.json(data.data);
     } catch (error) {
         console.error('SiliconFlow embedding models fetch failed', error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/workers-ai/models/embedding', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
+
+        if (!key) {
+            console.warn('No Workers AI key found');
+            return response.sendStatus(400);
+        }
+
+        const accountId = String(request.body.workers_ai_account_id || '').trim();
+        if (!accountId) {
+            console.warn('No Workers AI account ID found');
+            return response.sendStatus(400);
+        }
+
+        const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/models/search?task=Text+Embeddings&per_page=100`;
+        const result = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Workers AI embedding models request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        if (!Array.isArray(data?.result)) {
+            console.warn('Workers AI embedding models response invalid', data);
+            return response.sendStatus(500);
+        }
+
+        return response.json(data.result.map(m => ({ ...m, id: m.name })));
+    } catch (error) {
+        console.error('Workers AI embedding models fetch failed', error);
         response.sendStatus(500);
     }
 });

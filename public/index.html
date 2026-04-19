@@ -697,7 +697,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -710,7 +710,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -723,7 +723,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -736,7 +736,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub,chutes,nanogpt">
+                                <div class="range-block" data-source="claude,aimlapi,openrouter,makersuite,vertexai,cohere,perplexity,electronhub,chutes,nanogpt,workers_ai">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -749,7 +749,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -762,7 +762,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openrouter,nanogpt,chutes">
+                                <div class="range-block" data-source="openrouter,nanogpt,chutes,workers_ai">
                                     <div class="range-block-title" data-i18n="Repetition Penalty">
                                         Repetition Penalty
                                     </div>
@@ -986,7 +986,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,chutes,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai">
+                                <div class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq,electronhub,chutes,nanogpt,xai,pollinations,aimlapi,makersuite,vertexai,azure_openai,workers_ai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1269,8 +1269,8 @@
                                             <span data-i18n="Top K">Top K</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 (or -1, depending on your backend) to disable." data-i18n="[title]Top_K_desc"></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="-1" max="200" step="1">
-                                        <input class="neo-range-input" type="number" min="-1" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="-1" max="500" step="1">
+                                        <input class="neo-range-input" type="number" min="-1" max="500" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
                                     </div>
                                     <div data-tg-samplers="top_p" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
@@ -1996,7 +1996,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt,workers_ai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -2011,7 +2011,7 @@
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openrouter">
+                                    <div class="range-block" data-source="openrouter,custom">
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="tool_reasoning_mode" data-i18n="Interleaved Thinking">
@@ -2035,7 +2035,7 @@
                                             </em>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes">
+                                    <div class="range-block" data-source="openai,aimlapi,openrouter,mistralai,makersuite,vertexai,claude,custom,xai,pollinations,moonshot,cohere,cometapi,nanogpt,electronhub,azure_openai,zai,siliconflow,chutes,workers_ai">
                                         <label for="openai_media_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_media_inlining" type="checkbox" />
                                             <span data-i18n="Send inline media">Send inline media</span>
@@ -2059,7 +2059,7 @@
                                             <strong data-source="makersuite,vertexai" data-i18n="video_inlining_hint_4">Videos must be less than 20 MB and under 1 minute long.</strong>
                                             <strong data-source="makersuite,vertexai" data-i18n="audio_inlining_hint_2">Audio must be less than 20 MB.</strong>
                                         </div>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,chutes,makersuite,vertexai">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,xai,pollinations,cohere,cometapi,nanogpt,moonshot,aimlapi,openrouter,mistralai,electronhub,azure_openai,zai,siliconflow,chutes,makersuite,vertexai,workers_ai">
                                             <div class="flex-container oneline-dropdown">
                                                 <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                     Inline Image Quality
@@ -2120,7 +2120,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,chutes,azure_openai,nanogpt,zai">
+                                    <div class="range-block" data-source="deepseek,aimlapi,openrouter,custom,claude,xai,makersuite,vertexai,pollinations,moonshot,mistralai,fireworks,cometapi,electronhub,chutes,azure_openai,nanogpt,zai,workers_ai">
                                         <label for="openai_show_thoughts" class="checkbox_label widthFreeExpand">
                                             <input id="openai_show_thoughts" type="checkbox" />
                                             <span data-i18n="Request model reasoning">Request model reasoning</span>
@@ -2894,6 +2894,7 @@
                                 <option value="azure_openai">Azure OpenAI</option>
                                 <option value="chutes">Chutes</option>
                                 <option value="claude">Claude</option>
+                                <option value="workers_ai">Cloudflare Workers AI</option>
                                 <option value="cohere">Cohere</option>
                                 <!-- Temporarily disabled. -->
                                 <!-- <option value="cometapi">CometAPI</option> -->
@@ -3143,6 +3144,7 @@
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
                                     <optgroup label="Versions">
+                                        <option value="claude-opus-4-7">claude-opus-4-7</option>
                                         <option value="claude-opus-4-6">claude-opus-4-6</option>
                                         <option value="claude-opus-4-5">claude-opus-4-5</option>
                                         <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101</option>
@@ -3671,6 +3673,26 @@
                                 </select>
                             </div>
                         </div>
+                        <div id="workers_ai_form" data-source="workers_ai">
+                            <h4><a href="https://dash.cloudflare.com/?to=/:account/ai/workers-ai/api-quick-start" target="_blank" rel="noopener noreferrer" data-i18n="Cloudflare Workers AI API Key">Cloudflare Workers AI API Key</a></h4>
+                            <div class="flex-container">
+                                <input id="api_key_workers_ai" name="api_key_workers_ai" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_workers_ai"></div>
+                            </div>
+                            <div data-for="api_key_workers_ai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4><a href="https://dash.cloudflare.com/?to=/:account/workers-and-pages" target="_blank" rel="noopener noreferrer" data-i18n="Cloudflare Account ID">Cloudflare Account ID</a></h4>
+                            <div class="flex-container">
+                                <input id="workers_ai_account_id" class="text_pole flex1" value="" type="text" autocomplete="off" placeholder="e.g. 023e105f4ecef8ad9ca31a8372d0c353" data-i18n="[placeholder]e.g. 023e105f4ecef8ad9ca31a8372d0c353">
+                            </div>
+                            <div>
+                                <h4 data-i18n="Workers AI Model">Workers AI Model</h4>
+                                <select id="model_workers_ai_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                        </div>
                         <div id="deepseek_form" data-source="deepseek">
                             <h4 data-i18n="DeepSeek API Key">DeepSeek API Key</h4>
                             <div class="flex-container">
@@ -3924,6 +3946,7 @@
                             <h4 data-i18n="Z.AI Model">Z.AI Model</h4>
                             <select id="model_zai_select">
                                 <option value="glm-5-turbo">glm-5-turbo</option>
+                                <option value="glm-5v-turbo">glm-5v-turbo</option>
                                 <option value="glm-5.1">glm-5.1</option>
                                 <option value="glm-5">glm-5</option>
                                 <option value="glm-4.7">glm-4.7</option>
@@ -4365,7 +4388,7 @@
                                         <small data-i18n="First User Prefix">First User Prefix</small>
                                         <textarea id="instruct_first_input_sequence" data-macros class="text_pole textarea_compact autoSetHeight"></textarea>
                                     </div>
-                                    <div class="flexAuto" title="Inserted before the last User's message." data-i18n="[title]instruct_last_input_sequence">
+                                    <div class="flexAuto" title="Inserted before the last User's message or as a last prompt line when generating an impersonation." data-i18n="[title]instruct_last_input_sequence">
                                         <small data-i18n="Last User Prefix">Last User Prefix</small>
                                         <textarea id="instruct_last_input_sequence" data-macros class="text_pole wide100p textarea_compact autoSetHeight"></textarea>
                                     </div>
@@ -4775,7 +4798,7 @@
                             <input type="file" id="world_import_file" accept=".json,.lorebook,.png" name="avatar" hidden>
                             <div id="world_create_button" class="menu_button menu_button_icon">
                                 <i class="fa-solid fa-globe"></i>
-                                <span data-i18n="New">New</span>
+                                <span data-i18n="Create">Create</span>
                             </div>
                             <small data-i18n="or">or</small>
                             <select id="world_editor_select">
@@ -6733,7 +6756,7 @@
                                 <small class="chat_file_size select_chat_block_filename_item"></small>
                                 <small class="chat_messages_num select_chat_block_filename_item"></small>
                             </div>
-                            <div class="flex-container gap10px">
+                            <div class="select_chat_actions flex-container gap10px">
                                 <div title="Export JSONL chat file" data-format="jsonl" class="exportRawChatButton opacity50p hoverglow fa-solid fa-file-export" data-i18n="[title]Export JSONL chat file"></div>
                                 <div title="Download chat as plain text document" data-format="txt" class="exportChatButton opacity50p hoverglow fa-solid fa-file-lines" data-i18n="[title]Download chat as plain text document"></div>
                                 <div title="Delete chat file" file_name="" class="PastChat_cross opacity50p hoverglow fa-solid fa-skull" data-i18n="[title]Delete chat file"></div>

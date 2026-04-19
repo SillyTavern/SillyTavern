@@ -1,4 +1,5 @@
 import ipaddr from 'ipaddr.js';
+import ipMatching from 'ip-matching';
 
 const noopMiddleware = (_req, _res, next) => next();
 /** @deprecated Do not use. A global middleware is provided at the application level. */
@@ -49,4 +50,32 @@ export function getRealIpFromHeader(req) {
 export function isFirefox(req) {
     const userAgent = req.headers['user-agent'] || '';
     return /firefox/i.test(userAgent);
+}
+
+/**
+ * Filters and validates IP patterns.
+ * @param {string[]} entries - The list of IP patterns to validate
+ * @param {(entry: string, message: string) => string} formatLog - The function to format the warning message for invalid entries
+ * @returns {string[]} The list of valid IP patterns
+ */
+export function filterValidIpPatterns(entries, formatLog) {
+    const validEntries = [];
+
+    if (!Array.isArray(entries)) {
+        return validEntries;
+    }
+
+    for (const entry of entries) {
+        try {
+            // This will throw if the entry is not a valid IP or CIDR
+            ipMatching.getMatch(entry);
+            validEntries.push(entry);
+        } catch (e) {
+            if (typeof formatLog === 'function') {
+                console.warn(formatLog(entry, e?.message || 'Unknown error'));
+            }
+        }
+    }
+
+    return validEntries;
 }

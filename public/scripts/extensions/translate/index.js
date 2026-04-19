@@ -707,7 +707,7 @@ const handleMessageReasoningDelete = createEventHandler(removeReasoningDisplayTe
 
 globalThis.translate = translate;
 
-jQuery(async () => {
+export async function init() {
     const html = await renderExtensionTemplateAsync('translate', 'index');
     const buttonHtml = await renderExtensionTemplateAsync('translate', 'buttons');
 
@@ -801,4 +801,4 @@ jQuery(async () => {
         },
         returns: ARGUMENT_TYPE.STRING,
     }));
-});
+}

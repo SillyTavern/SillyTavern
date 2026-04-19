@@ -3,8 +3,9 @@ import { SWIPE_DIRECTION, SWIPE_SOURCE } from './constants.js';
 import { t } from './i18n.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user } from './power-user.js';
+import { isMobile } from './RossAscends-mods.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { clamp, timestampToMoment } from './utils.js';
+import { addLongPressEvent, clamp, copyText, timestampToMoment } from './utils.js';
 import { chat, deleteSwipe, ensureSwipes, isMessageSwipeable, isSwipingAllowed, swipe, syncMesToSwipe } from '/script.js';
 
 /**
@@ -132,6 +133,7 @@ async function openSwipePicker(messageId) {
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             const block = template.find('.select_chat_block');
             block.removeClass('select_chat_block').addClass('swipe_picker_block');
+            block.find('.select_chat_actions').removeClass('gap10px');
             const branchButton = template.find('.exportRawChatButton');
             const deleteButton = template.find('.PastChat_cross');
             const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info[index] : null;
@@ -162,7 +164,7 @@ async function openSwipePicker(messageId) {
                     'data-i18n': '[title]Create Branch',
                 })
                 .removeClass('exportRawChatButton fa-solid fa-file-export')
-                .addClass('swipe_picker_branch mes_button fa-regular fa-code-branch')
+                .addClass('swipe_picker_branch mes_button fa-fw fa-regular fa-code-branch')
                 .on('click', async (event) => {
                     event.preventDefault();
                     event.stopPropagation();
@@ -174,7 +176,7 @@ async function openSwipePicker(messageId) {
                 .removeAttr('file_name')
                 .attr('aria-disabled', String(!canDeleteSwipe))
                 .removeClass('fa-skull')
-                .addClass('swipe_picker_delete fa-trash-can')
+                .addClass('swipe_picker_delete fa-fw fa-trash-can')
                 .toggleClass('hoverglow', canDeleteSwipe)
                 .toggleClass('disabled', !canDeleteSwipe)
                 .each(function () {
@@ -229,11 +231,42 @@ async function openSwipePicker(messageId) {
 
                     await renderSwipeList();
                 });
+
+            // Add expand/collapse toggle
+            const expandCheckboxId = `swipe_picker_expand_${messageId}_${index}`;
+            const expandCheckbox = document.createElement('input');
+            expandCheckbox.type = 'checkbox';
+            expandCheckbox.id = expandCheckboxId;
+            expandCheckbox.classList.add('swipe_picker_expand_toggle');
+            block[0].prepend(expandCheckbox);
+
+            const expandLabel = document.createElement('label');
+            expandLabel.htmlFor = expandCheckboxId;
+            expandLabel.classList.add('swipe_picker_expand_label', 'fa-solid', 'fa-fw', 'fa-chevron-down');
+            expandLabel.title = t`Expand/Collapse`;
+            expandLabel.setAttribute('data-i18n', '[title]Expand/Collapse');
+            expandLabel.addEventListener('click', (event) => event.stopPropagation());
+
+            // Add copy button
+            const copyButton = document.createElement('div');
+            copyButton.classList.add('swipe_picker_copy', 'fa-solid', 'fa-fw', 'fa-copy');
+            copyButton.title = t`Copy`;
+            copyButton.setAttribute('data-i18n', '[title]Copy');
+            copyButton.addEventListener('click', async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                await copyText(swipeText);
+                toastr.info(t`Copied!`, '', { timeOut: 2000 });
+            });
+
+            // Insert new buttons before the branch button
+            branchButton.before(expandLabel, copyButton);
+
             template.find('.select_chat_block_filename').text(`#${index + 1}${index === Number(message.swipe_id ?? 0) ? ` ${t`[Current]`}` : ''}`);
             template.find('.chat_messages_date').text(sendDate);
             template.find('.chat_file_size').text(swipeDetails.length ? `(${swipeDetails[0]}${swipeDetails.length > 1 ? ',' : ')'}` : '');
             template.find('.chat_messages_num').text(swipeDetails.length > 1 ? `${swipeDetails.slice(1).join(', ')})` : '');
-            template.find('.select_chat_block_mes').text(previewText || t`(empty swipe)`);
+            template.find('.select_chat_block_mes').text(previewText ? swipeText : t`(empty swipe)`);
 
             block.on('click', () => setSelectedSwipe(index));
             block.on('dblclick', async () => {
@@ -269,6 +302,7 @@ async function openSwipePicker(messageId) {
             defaultState: String(selectedSwipeId + 1),
             tooltip: `1-${message.swipes.length}`,
         }],
+        large: true,
         wider: true,
         allowVerticalScrolling: true,
         onOpen: function () {
@@ -376,22 +410,29 @@ async function openSwipePicker(messageId) {
 }
 
 export function initSwipePicker() {
-    $(document).on('click', '.swipes-counter.swipe-picker-enabled', async function (e) {
+    /**
+     * Click handler for opening the swipe picker when clicking on the swipe counter.
+     * @param {JQuery.Event | Event} e Event object
+     */
+    async function onSwipeCounterClick(e) {
         e.preventDefault();
         e.stopPropagation();
 
         const mesId = Number($(this).closest('.mes').attr('mesid'));
         await openSwipePicker(mesId);
-    });
+    }
+
+    if (isMobile()) {
+        addLongPressEvent('.swipes-counter.swipe-picker-enabled', onSwipeCounterClick);
+    } else {
+        $(document).on('click', '.swipes-counter.swipe-picker-enabled', onSwipeCounterClick);
+    }
     $(document).on('keydown', '.swipes-counter.swipe-picker-enabled', async function (e) {
         if (e.key !== ' ') {
             return;
         }
 
-        e.preventDefault();
-        e.stopPropagation();
-        const mesId = Number($(this).closest('.mes').attr('mesid'));
-        await openSwipePicker(mesId);
+        onSwipeCounterClick.call(this, e);
     });
     $(document).on('click', '.mes_swipe_picker', async function (e) {
         e.preventDefault();
