@@ -1258,15 +1258,20 @@ function processUnsetSentinels(target, source) {
  * @param {string} avatar     Avatar filename (e.g. "char.png")
  * @param {object} updateData The merge payload to apply
  * @param {import("express").Request} request Express request object
- * @returns {Promise<{ok: boolean, error?: string}>}
+ * @param {((data: any) => boolean) | null} [shouldSkip] Optional function to determine if a character should be skipped based on its original data (used for bulk merge filtering)
+ * @returns {Promise<{ok: boolean, error?: string, skipped?: boolean}>} Result of the merge operation, including any validation error
  */
-async function mergeCharacterUpdate(avatarPath, avatar, updateData, request) {
+async function mergeCharacterUpdate(avatarPath, avatar, updateData, request, shouldSkip = null) {
     const pngStringData = await readCharacterData(avatarPath);
     if (!pngStringData) {
         return { ok: false, error: 'Invalid character file' };
     }
 
     let character = JSON.parse(pngStringData);
+
+    if (typeof shouldSkip === 'function' && shouldSkip(character)) {
+        return { ok: false, skipped: true };
+    }
 
     const update = _.cloneDeep(updateData);
     _.unset(update, 'json_data');
@@ -1345,24 +1350,22 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
                 const avatarPath = path.join(request.user.directories.characters, avatar);
 
                 try {
-                    // Apply optional server-side filter before reading the full card
+                    /** @type {(character: object) => boolean} */
+                    let shouldSkip = () => false;
+
+                    // Apply optional server-side filter before updating the card
                     if (filter && typeof filter.path === 'string') {
-                        const pngStringData = await readCharacterData(avatarPath);
-                        if (!pngStringData) {
-                            skipped.push(avatar);
-                            return;
-                        }
-                        const character = JSON.parse(pngStringData);
-                        const existingValue = _.get(character, filter.path);
-                        if (existingValue === undefined) {
-                            skipped.push(avatar);
-                            return;
-                        }
+                        shouldSkip = (character) => {
+                            const value = _.get(character, filter.path);
+                            return value === undefined;
+                        };
                     }
 
-                    const result = await mergeCharacterUpdate(avatarPath, avatar, data, request);
+                    const result = await mergeCharacterUpdate(avatarPath, avatar, data, request, shouldSkip);
                     if (result.ok) {
                         updated.push(avatar);
+                    } else if (result.skipped) {
+                        skipped.push(avatar);
                     } else {
                         console.warn(`Bulk merge failed for ${avatar}:`, result.error);
                         failed.push(avatar);
