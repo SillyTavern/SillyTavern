@@ -4911,7 +4911,7 @@ function getGeminiMaxContext(model, isUnlocked) {
     } else if (/gemma-3-27b-it/.test(model)) {
         return max_128k;
     } else if (/gemma-3n-e4b-it/.test(model)) {
-        return max_128k;
+        return max_8k;
     } else if (/gemma-3/.test(model)) {
         return max_32k;
     } else if (/gemma-4/.test(model)) {
