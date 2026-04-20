@@ -3061,6 +3061,7 @@ async function generatePicture(initiator, args, trigger, message, callback) {
         // Show non-blocking stoppable toast for this generation
         loaderHandle = loader.show({
             blocking: false,
+            slug: `${MODULE_NAME}-image-generation`,
             title: t`Image Generation`,
             message: t`Generating an image...`,
             onStop: stopListener,
