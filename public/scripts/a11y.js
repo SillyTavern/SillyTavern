@@ -23,6 +23,35 @@ function logDebug(location, message, data = null) {
         console.debug(`[A11y][${time}][${location}] ${message}`);
     }
 }
+const buttonSelectors = [
+    '.menu_button',
+    '.right_menu_button',
+    '.mes_button',
+    '.drawer-icon',
+    '.inline-drawer-icon',
+    '.swipe_left',
+    '.swipe_right',
+    '.character_select',
+    '.tags .tag',
+    '.jg-menu .jg-button',
+    '.bg_example .mobile-only-menu-toggle',
+    '.paginationjs-pages li a',
+    '#show_more_messages',
+].join(', ');
+
+const listSelectors = [
+    '.options-content',
+    '.list-group',
+    '#rm_print_characters_block',
+    '#rm_group_members',
+    '#rm_group_add_members',
+    '.tag_view_list_tags',
+    '.secretKeyManagerList',
+    '.recentChatList',
+    '.dataMaidCategoryContent',
+    '#userList',
+    '.bg_list',
+].join(', ');
 
 /**
  * Announces text to screen readers using a dynamic aria-live region.

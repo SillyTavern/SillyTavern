@@ -2140,7 +2140,7 @@ function migrateSettings() {
     }
 }
 
-(async function () {
+export async function init() {
     function addExpressionImage() {
         const html = `
         <div id="expression-wrapper">
@@ -2511,4 +2511,4 @@ function migrateSettings() {
             </div>
         `,
     }));
-})();
+}

@@ -71,6 +71,7 @@ import { bindModelTemplates } from './chat-templates.js';
 import { IMAGE_OVERSWIPE, MEDIA_DISPLAY } from './constants.js';
 import { t } from './i18n.js';
 import { getBackgroundPath, isCustomBackgroundUrl } from './backgrounds.js';
+import { persona_description_positions as _persona_description_positions } from './personas.js';
 
 export const toastPositionClasses = [
     'toast-top-left',
@@ -113,17 +114,7 @@ export const send_on_enter_options = {
     ENABLED: 1,
 };
 
-export const persona_description_positions = {
-    IN_PROMPT: 0,
-    /**
-     * @deprecated Use persona_description_positions.IN_PROMPT instead.
-     */
-    AFTER_CHAR: 1,
-    TOP_AN: 2,
-    BOTTOM_AN: 3,
-    AT_DEPTH: 4,
-    NONE: 9,
-};
+export const persona_description_positions = _persona_description_positions;
 
 export const power_user = {
     charListGrid: false,
@@ -289,9 +280,9 @@ export const power_user = {
         add_to_prompts: false,
         auto_expand: false,
         show_hidden: false,
-        prefix: '<think>\n',
-        suffix: '\n</think>',
-        separator: '\n\n',
+        prefix: '<think>',
+        suffix: '</think>',
+        separator: '\n',
         max_additions: 1,
     },
 

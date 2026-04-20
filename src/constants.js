@@ -209,6 +209,7 @@ export const CHAT_COMPLETION_SOURCES = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    WORKERS_AI: 'workers_ai',
 };
 
 /**
@@ -550,4 +551,9 @@ export const MEDIA_REQUEST_TYPE = {
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
+};
+
+export const SILICONFLOW_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
 };

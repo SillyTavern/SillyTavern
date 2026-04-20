@@ -1,0 +1,84 @@
+name: ✅ Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  run-eslint:
+    name: ✅ Check ESLint on PR
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    # Override permissions, linter likely needs write access to issues
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+            ref: ${{ github.event.pull_request.head.sha }}
+            repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Node.js
+        # Setup Node.js environment
+        # https://github.com/marketplace/actions/setup-node-js-environment
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 24
+
+      - name: Run npm install
+        run: npm ci --ignore-scripts
+
+      - name: Run ESLint
+        # Action ESLint
+        # https://github.com/marketplace/actions/action-eslint
+        uses: sibiraj-s/action-eslint@bcf41bb9abce43cdbad51ab9b3da2eddaa17eab3 # v3.0.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}                # ESLint can run with the original permissions
+          eslint-args: '--ignore-path=.gitignore --quiet'
+          extensions: 'js'
+          annotations: true
+          ignore-patterns: |
+            dist/
+            lib/
+
+  run-tests:
+    name: ✅ Run Unit Tests on PR
+    runs-on: ubuntu-latest
+    # Only needs to run when code is changed
+    if: always() && (github.event.action == 'opened' || github.event.action == 'synchronize')
+
+    steps:
+      - name: Checkout Repository
+        # Checkout
+        # https://github.com/marketplace/actions/checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+            ref: ${{ github.event.pull_request.head.sha }}
+            repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Setup Node.js
+        # Setup Node.js environment
+        # https://github.com/marketplace/actions/setup-node-js-environment
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 24
+
+      - name: Install root dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts --prefix tests
+
+      - name: Run unit tests
+        run: npm run test:unit --prefix tests

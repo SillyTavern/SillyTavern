@@ -2288,11 +2288,14 @@ export function initChatUtilities() {
         await callGenericPopup(wrapper, POPUP_TYPE.TEXT, '', { wide: true, large: true });
     });
 
-    $(document).on('click', 'body .mes .mes_text', function () {
+    $(document).on('click', 'body .mes .mes_text, body .mes .mes_reasoning', function (event) {
         if (!power_user.click_to_edit) return;
         if (window.getSelection().toString()) return;
         if ($('.edit_textarea').length) return;
         $(this).closest('.mes').find('.mes_edit').trigger('click');
+        if ($(event.target).closest('.mes_reasoning').length) {
+            $('.reasoning_edit_textarea').trigger('focus');
+        }
     });
 
     $(document).on('click', '.open_media_overrides', openExternalMediaOverridesDialog);

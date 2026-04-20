@@ -71,16 +71,20 @@ import {
 } from '../script.js';
 import {
     extension_settings,
+    getExtensionManifest,
     ModuleWorkerWrapper,
     openThirdPartyExtensionMenu,
     renderExtensionTemplate,
     renderExtensionTemplateAsync,
     saveMetadataDebounced,
+    UNSET_VALUE,
     writeExtensionField,
+    writeExtensionFieldBulk,
 } from './extensions.js';
 import { groups, openGroupChat, selected_group, unshallowGroupMembers } from './group-chats.js';
 import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
+import { loader } from './action-loader.js';
 import { MacrosParser } from './macros.js';
 import { getChatCompletionModel, oai_settings } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
@@ -189,7 +193,9 @@ export function getContext() {
         /** @deprecated Use callGenericPopup or Popup instead. */
         callPopup,
         callGenericPopup,
+        /** @deprecated Use loader.show instead. */
         showLoader,
+        /** @deprecated Use loader.hide instead. */
         hideLoader,
         mainApi: main_api,
         extensionSettings: extension_settings,
@@ -199,6 +205,7 @@ export function getContext() {
         generateRaw,
         generateRawData,
         writeExtensionField,
+        writeExtensionFieldBulk,
         getThumbnailUrl,
         selectCharacterById,
         messageFormatting,
@@ -236,6 +243,7 @@ export function getContext() {
         scrollChatToBottom,
         scrollOnMediaLoad,
         macros,
+        loader,
         swipe: {
             left: swipe_left,
             right: swipe_right,
@@ -287,6 +295,7 @@ export function getContext() {
         getReasoningTemplateByName,
         unshallowCharacter,
         unshallowGroupMembers,
+        getExtensionManifest,
         openThirdPartyExtensionMenu,
         symbols: {
             ignore: IGNORE_SYMBOL,
@@ -295,6 +304,8 @@ export function getContext() {
             registerSelector: registerA11ySelector,
             processors: a11yProcessors,
             announce: announceA11y,
+        constants: {
+            unset: UNSET_VALUE,
         },
     };
 }
