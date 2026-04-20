@@ -5301,6 +5301,7 @@ async function generateMediaSwipe(mediaAttachment, message, onStart, onComplete,
         // Show non-blocking stoppable toast for this generation
         loaderHandle = loader.show({
             blocking: false,
+            slug: `${MODULE_NAME}-image-generation`,
             title: t`Image Generation`,
             message: t`Generating an image...`,
             onStop: stopListener,
