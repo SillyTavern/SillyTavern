@@ -1747,6 +1747,7 @@ router.post('/status', async function (request, statusResponse) {
                     const models = data.models
                         ?.filter(model => model.supportedGenerationMethods?.includes('generateContent'))
                         ?.map(model => ({
+                            ...model,
                             id: model.name.replace('models/', ''),
                         })) || [];
 
