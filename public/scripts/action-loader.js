@@ -33,7 +33,7 @@ export const ActionLoaderToastMode = {
  * @typedef {object} ActionLoaderOptions
  * @property {boolean} [blocking=true] - Whether to show the blocking overlay. Set to false for non-blocking toast-only loaders.
  * @property {ActionLoaderToastMode} [toastMode='stoppable'] - Toast display mode
- * @property {string} [slug=null] - Unique slug for the loader (to identify it easy via code or CSS)
+ * @property {string} [slug=null] - Unique slug for the loader to identify it easily via code or CSS
  * @property {string} [message='Generating...'] - The message to display in the toast
  * @property {string} [title] - Optional title for the toast notification
  * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
@@ -109,7 +109,7 @@ export class ActionLoaderHandle {
      * @param {object} options - Configuration options
      * @param {boolean} [options.blocking=true] - Whether to show blocking overlay
      * @param {ActionLoaderToastMode} [options.toastMode] - Toast display mode
-     * @param {string} [options.slug] - Unique slug for the loader (to identify it easy via code or CSS)
+     * @param {string|null} [options.slug] - Unique slug for the loader (to identify it easily via code or CSS)
      * @param {string} [options.message='Generating...'] - Message to display in the toast
      * @param {string} [options.title] - Title for the toast notification
      * @param {string} [options.stopTooltip='Stop'] - Tooltip for the stop button
@@ -239,7 +239,7 @@ export class ActionLoaderHandle {
     }
 
     /**
-     * The unique slug for this loader handle. (to identify it easy via code or CSS)
+     * The unique slug for this loader handle, used to identify it easily via code or CSS.
      * @returns {string|null}
      */
     get slug() {
