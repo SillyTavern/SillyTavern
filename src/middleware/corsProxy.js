@@ -37,6 +37,7 @@ export default async function corsProxyMiddleware(req, res) {
         // Copy over relevant response params to the proxy response
         await forwardFetchResponse(response, res);
     } catch (error) {
-        res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
+        console.error('Error in CORS proxy middleware:', error);
+        return res.sendStatus(500);
     }
 }

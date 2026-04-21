@@ -46,6 +46,7 @@ import getWhitelistMiddleware from './middleware/whitelist.js';
 import accessLoggerMiddleware, { getAccessLogPath, migrateAccessLog } from './middleware/accessLogWriter.js';
 import multerMonkeyPatch from './middleware/multerMonkeyPatch.js';
 import initRequestProxy from './request-proxy.js';
+import initPrivateRequestFilter from './private-request-filter.js';
 import cacheBuster from './middleware/cacheBuster.js';
 import corsProxyMiddleware from './middleware/corsProxy.js';
 import hostWhitelistMiddleware from './middleware/hostWhitelist.js';
@@ -327,8 +328,19 @@ async function preSetupTasks() {
         exitProcess();
     });
 
+    // Add private request filter.
+    const requestFilterOptions = {
+        listen: cliArgs.listen,
+        enabled: !!getConfigValue('privateAddressWhitelist.enabled', false, 'boolean'),
+        privateAddressWhitelist: getConfigValue('privateAddressWhitelist.allowedRanges', []),
+        logBlocked: !!getConfigValue('privateAddressWhitelist.logBlocked', true, 'boolean'),
+        logAllowed: !!getConfigValue('privateAddressWhitelist.logAllowed', false, 'boolean'),
+        allowUnresolvedHosts: !!getConfigValue('privateAddressWhitelist.allowUnresolvedHosts', false, 'boolean'),
+    };
+    initPrivateRequestFilter(requestFilterOptions);
+
     // Add request proxy.
-    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass });
+    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass, privateRequestFilterEnabled: requestFilterOptions.enabled });
 
     // Wait for frontend libs to compile
     await webpackMiddleware.runWebpackCompiler({ pruneCache: true });

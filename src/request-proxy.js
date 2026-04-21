@@ -13,12 +13,18 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {boolean} enabled Whether proxy is enabled.
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
+ * @property {boolean} privateRequestFilterEnabled Whether the private request filter is enabled.
  */
-export default function initRequestProxy({ enabled, url, bypass }) {
+export default function initRequestProxy({ enabled, url, bypass, privateRequestFilterEnabled }) {
     try {
         // No proxy is enabled, so return
         if (!enabled) {
             return;
+        }
+
+        if (privateRequestFilterEnabled) {
+            console.warn(color.yellow(LOG_HEADER), 'Warning: Request proxy is enabled while private request filter is also enabled. Only URLs that BYPASS the request proxy will be checked.');
+            console.warn(color.yellow(LOG_HEADER), 'To ensure all requests are properly filtered, disable the request proxy.');
         }
 
         if (!url) {
@@ -39,7 +45,11 @@ export default function initRequestProxy({ enabled, url, bypass }) {
             process.env.no_proxy = bypass.join(',');
         }
 
-        const proxyAgent = new ProxyAgent();
+        const httpAgent = http.globalAgent;
+        const httpsAgent = https.globalAgent;
+
+        const proxyAgent = new ProxyAgent({ httpAgent, httpsAgent });
+
         http.globalAgent = proxyAgent;
         https.globalAgent = proxyAgent;
 
