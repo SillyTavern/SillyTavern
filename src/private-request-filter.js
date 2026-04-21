@@ -3,7 +3,7 @@ import tls from 'node:tls';
 import http from 'node:http';
 import https from 'node:https';
 import dns from 'node:dns';
-import ipMatch from 'ip-matching';
+import ipMatch, { IPMatch } from 'ip-matching';
 import ipRegex from 'ip-regex';
 import { Agent } from 'agent-base';
 import { color } from './util.js';
@@ -40,7 +40,7 @@ const privateIpRanges = [
 class PrivateRequestAgent extends Agent {
     /**
      * List of private IP addresses or CIDR ranges to allow
-     * @type {Readonly<string[]>}
+     * @type {Readonly<IPMatch[]>}
      */
     privateAddressWhitelist = [];
 
@@ -75,7 +75,7 @@ class PrivateRequestAgent extends Agent {
 
         const logEntryWarning = (entry, message) => `${color.red('Warning')}: Ignoring invalid private whitelist entry ${color.yellow(entry)} - ${message}`;
         const whitelistArray = Array.isArray(options.privateAddressWhitelist) ? options.privateAddressWhitelist : [];
-        this.privateAddressWhitelist = Object.freeze(filterValidIpPatterns(whitelistArray, logEntryWarning));
+        this.privateAddressWhitelist = Object.freeze(filterValidIpPatterns(whitelistArray, logEntryWarning).map(pattern => ipMatch.getMatch(pattern)));
         this.allowUnresolvedHosts = options.allowUnresolvedHosts;
         this.logBlocked = options.logBlocked;
         this.logAllowed = options.logAllowed;
@@ -97,7 +97,7 @@ class PrivateRequestAgent extends Agent {
      */
     #isAllowedPrivateAddress(address) {
         // Permit the request if the private IP address is in the whitelist
-        return this.privateAddressWhitelist.some(allowed => ipMatch.getMatch(allowed).matches(address));
+        return this.privateAddressWhitelist.some(match => match.matches(address));
     }
 
     /**
