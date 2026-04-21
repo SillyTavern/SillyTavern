@@ -38,6 +38,9 @@ export default async function corsProxyMiddleware(req, res) {
         await forwardFetchResponse(response, res);
     } catch (error) {
         console.error('Error in CORS proxy middleware:', error);
-        return res.sendStatus(500);
+        if (!res.headersSent) {
+            return res.sendStatus(500);
+        }
+        return res.end();
     }
 }
