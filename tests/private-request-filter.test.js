@@ -118,4 +118,13 @@ describe('private request filter', () => {
         await allowedAgent.connect({}, { host: 'missing-host.local', secureEndpoint: false });
         expect(mockNetConnect).toHaveBeenCalledWith(expect.objectContaining({ host: 'missing-host.local' }));
     });
+
+    test('uses tls.connect for secure endpoints', async () => {
+        mockLookup.mockResolvedValue({ address: '93.184.216.34' });
+        const agent = initAgent();
+        await agent.connect({}, { host: 'example.com', secureEndpoint: true });
+        expect(mockLookup).toHaveBeenCalledWith('example.com');
+        expect(mockTlsConnect).toHaveBeenCalledWith(expect.objectContaining({ host: '93.184.216.34' }));
+        expect(mockNetConnect).not.toHaveBeenCalled();
+    });
 });
