@@ -107,8 +107,9 @@ class PrivateRequestAgent extends Agent {
      */
     async connect(_req, options) {
         /**
-         * Raise an error and emit it on the request object.
+         * Raise an error and log it if necessary.
          * @param {string} message The error message.
+         * @param {boolean} [log=true] Whether to log the error to the console.
          */
         const raiseError = (message, log = true) => {
             if (log) {
