@@ -3,7 +3,7 @@ import tls from 'node:tls';
 import http from 'node:http';
 import https from 'node:https';
 import dns from 'node:dns';
-import ipMatch, { IPMatch } from 'ip-matching';
+import ipMatch from 'ip-matching';
 import ipRegex from 'ip-regex';
 import { Agent } from 'agent-base';
 import { color } from './util.js';
@@ -40,7 +40,7 @@ const privateIpRanges = [
 class PrivateRequestAgent extends Agent {
     /**
      * List of private IP addresses or CIDR ranges to allow
-     * @type {Readonly<IPMatch[]>}
+     * @type {Readonly<import('ip-matching').IPMatch[]>}
      */
     privateAddressWhitelist = [];
 
