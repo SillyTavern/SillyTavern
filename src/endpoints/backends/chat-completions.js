@@ -1,5 +1,6 @@
 /* eslint-disable dot-notation */
 import process from 'node:process';
+import { Transform } from 'node:stream';
 import util from 'node:util';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -1544,67 +1545,179 @@ async function sendChutesRequest(request, response) {
 }
 
 /**
- * Pre-processes messages for MiniMax by converting image content parts
- * to text descriptions via the MiniMax VLM endpoint.
- * M2.7 does not natively accept image input; this uses a separate vision model.
- * @param {object[]} messages Array of chat messages
- * @param {string} apiKey MiniMax API key
- * @returns {Promise<object[]>} Messages with images replaced by text descriptions
+ * Stateful extractor that splits a stream of text into "content" and
+ * "reasoning" segments around `<think>...</think>` markers.
+ *
+ * MiniMax models emit chain-of-thought wrapped in `<think>` tags inside the
+ * regular `content` field instead of the OpenAI-style `reasoning_content`
+ * field. The extractor lets us rewrite the response so the frontend's standard
+ * reasoning extraction picks it up.
+ *
+ * The state machine holds back any tail bytes that could be the start of a
+ * marker, so callers can `feed()` arbitrary chunks. Call `flush()` once the
+ * stream ends to drain whatever is left.
+ *
+ * @returns {{
+ *   feed: (text: string) => Array<{type: 'content'|'reasoning', text: string}>,
+ *   flush: () => Array<{type: 'content'|'reasoning', text: string}>
+ * }}
  */
-async function minimaxVisionPreprocess(messages, apiKey, apiUrl) {
-    const vlmUrl = apiUrl + '/coding_plan/vlm';
-    const processed = [];
+function createMinimaxThinkExtractor() {
+    const OPEN = '<think>';
+    const CLOSE = '</think>';
+    let state = /** @type {'content'|'think'} */ ('content');
+    let buffer = '';
 
-    for (const message of messages) {
-        if (!Array.isArray(message.content)) {
-            processed.push(message);
-            continue;
-        }
-
-        const newContent = [];
-        for (const part of message.content) {
-            if (part.type === 'image_url' && part.image_url?.url) {
-                try {
-                    const imageUrl = part.image_url.url;
-                    const vlmResponse = await fetch(vlmUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + apiKey,
-                        },
-                        body: JSON.stringify({
-                            prompt: 'Describe this image in detail.',
-                            image_url: imageUrl,
-                        }),
-                    });
-
-                    if (vlmResponse.ok) {
-                        const vlmData = await vlmResponse.json();
-                        if (vlmData.content) {
-                            newContent.push({ type: 'text', text: `[Image description: ${vlmData.content}]` });
-                            console.debug('MiniMax VLM described image successfully');
-                            continue;
-                        }
-                    }
-                    console.warn('MiniMax VLM failed, skipping image');
-                } catch (err) {
-                    console.warn('MiniMax VLM error:', err.message);
+    function process(flushTail) {
+        const out = [];
+        while (true) {
+            const marker = state === 'content' ? OPEN : CLOSE;
+            const idx = buffer.indexOf(marker);
+            if (idx >= 0) {
+                const before = buffer.slice(0, idx);
+                if (before) {
+                    out.push({ type: state === 'content' ? 'content' : 'reasoning', text: before });
                 }
-            } else {
-                newContent.push(part);
+                buffer = buffer.slice(idx + marker.length);
+                state = state === 'content' ? 'think' : 'content';
+                continue;
             }
-        }
-
-        // Flatten to plain string if only text parts remain
-        const textParts = newContent.filter(p => p.type === 'text');
-        if (textParts.length === newContent.length && textParts.length > 0) {
-            processed.push({ ...message, content: textParts.map(p => p.text).join('\n') });
-        } else {
-            processed.push({ ...message, content: newContent });
+            // No full marker found. Hold back any tail that could be the start
+            // of a marker so we don't accidentally split it across chunks.
+            let safeEnd = buffer.length;
+            if (!flushTail) {
+                for (let i = Math.min(marker.length - 1, buffer.length); i > 0; i--) {
+                    if (marker.startsWith(buffer.slice(buffer.length - i))) {
+                        safeEnd = buffer.length - i;
+                        break;
+                    }
+                }
+            }
+            const safe = buffer.slice(0, safeEnd);
+            if (safe) {
+                out.push({ type: state === 'content' ? 'content' : 'reasoning', text: safe });
+            }
+            buffer = buffer.slice(safeEnd);
+            return out;
         }
     }
 
-    return processed;
+    return {
+        feed(text) {
+            buffer += text;
+            return process(false);
+        },
+        flush() {
+            return process(true);
+        },
+    };
+}
+
+/**
+ * Mutates a non-streaming MiniMax response so any `<think>...</think>` blocks
+ * inside `message.content` are moved to `message.reasoning_content`.
+ * @param {object} responseJson
+ */
+function extractMinimaxThinkFromResponse(responseJson) {
+    const message = responseJson?.choices?.[0]?.message;
+    if (!message || typeof message.content !== 'string') return;
+
+    const extractor = createMinimaxThinkExtractor();
+    const events = [...extractor.feed(message.content), ...extractor.flush()];
+    let content = '';
+    let reasoning = '';
+    for (const e of events) {
+        if (e.type === 'content') content += e.text;
+        else reasoning += e.text;
+    }
+    // Strip the leading whitespace MiniMax inserts after `</think>`.
+    message.content = content.replace(/^\s+/, '');
+    if (reasoning) {
+        message.reasoning_content = reasoning;
+    }
+}
+
+/**
+ * Returns a Transform stream that intercepts MiniMax SSE chunks and rewrites
+ * `delta.content` segments inside `<think>...</think>` as `delta.reasoning_content`.
+ * Other lines are passed through untouched.
+ * @returns {Transform}
+ */
+function createMinimaxSSETransform() {
+    const extractor = createMinimaxThinkExtractor();
+    let textBuffer = '';
+
+    function buildSseEvent(originalEvent, segment) {
+        const cloned = JSON.parse(JSON.stringify(originalEvent));
+        const choice = cloned.choices?.[0];
+        if (choice?.delta) {
+            if (segment.type === 'reasoning') {
+                delete choice.delta.content;
+                choice.delta.reasoning_content = segment.text;
+            } else {
+                choice.delta.content = segment.text;
+                delete choice.delta.reasoning_content;
+            }
+        }
+        return `data: ${JSON.stringify(cloned)}\n\n`;
+    }
+
+    return new Transform({
+        transform(chunk, _enc, callback) {
+            textBuffer += chunk.toString('utf-8');
+            let outBuf = '';
+            let boundary;
+            while ((boundary = textBuffer.indexOf('\n\n')) >= 0) {
+                const rawEvent = textBuffer.slice(0, boundary);
+                textBuffer = textBuffer.slice(boundary + 2);
+
+                const dataMatch = rawEvent.match(/^data:\s?(.*)$/m);
+                if (!dataMatch) {
+                    outBuf += rawEvent + '\n\n';
+                    continue;
+                }
+                const dataStr = dataMatch[1];
+                if (dataStr === '[DONE]') {
+                    outBuf += rawEvent + '\n\n';
+                    continue;
+                }
+
+                let parsed;
+                try {
+                    parsed = JSON.parse(dataStr);
+                } catch {
+                    outBuf += rawEvent + '\n\n';
+                    continue;
+                }
+
+                const choice = parsed?.choices?.[0];
+                const contentDelta = choice?.delta?.content;
+                if (typeof contentDelta !== 'string' || contentDelta === '') {
+                    outBuf += rawEvent + '\n\n';
+                    continue;
+                }
+
+                const segments = extractor.feed(contentDelta);
+                if (segments.length === 0) {
+                    // Whole delta was a partial marker that we held back;
+                    // emit nothing for this event so the marker isn't shown.
+                    continue;
+                }
+                for (const seg of segments) {
+                    outBuf += buildSseEvent(parsed, seg);
+                }
+            }
+
+            callback(null, outBuf);
+        },
+        flush(callback) {
+            const tail = extractor.flush();
+            if (tail.length) {
+                console.warn('MiniMax SSE: residual think text dropped on flush:', tail);
+            }
+            callback(null, textBuffer);
+        },
+    });
 }
 
 /**
@@ -1629,13 +1742,10 @@ async function sendMinimaxRequest(request, response) {
     });
 
     try {
-        // Pre-process: convert images to text descriptions via VLM
-        const preprocessed = await minimaxVisionPreprocess(request.body.messages, apiKey, apiUrl);
-
         // MiniMax does not allow consecutive messages with the same role.
         // Merge them into a single message to avoid "invalid chat setting (2013)".
         const messages = [];
-        for (const msg of preprocessed) {
+        for (const msg of request.body.messages) {
             const last = messages[messages.length - 1];
             if (last && last.role === msg.role) {
                 last.content += '\n' + msg.content;
@@ -1651,31 +1761,10 @@ async function sendMinimaxRequest(request, response) {
             bodyParams['tool_choice'] = request.body.tool_choice;
         }
 
-        if (request.body.json_schema) {
-            bodyParams['response_format'] = {
-                type: 'json_schema',
-                json_schema: {
-                    name: request.body.json_schema.name,
-                    description: request.body.json_schema.description,
-                    schema: request.body.json_schema.value,
-                    strict: request.body.json_schema.strict ?? true,
-                },
-            };
-        }
-
-        // MiniMax requires temperature in (0.0, 1.0], zero is not allowed
-        let temperature = request.body.temperature;
-        if (temperature !== undefined && temperature <= 0) {
-            temperature = 0.01;
-        }
-        if (temperature !== undefined && temperature > 1) {
-            temperature = 1.0;
-        }
-
         const requestBody = {
             'messages': messages,
             'model': request.body.model,
-            'temperature': temperature,
+            'temperature': request.body.temperature,
             'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
             'stream': request.body.stream,
             'presence_penalty': request.body.presence_penalty,
@@ -1700,7 +1789,27 @@ async function sendMinimaxRequest(request, response) {
         const generateResponse = await fetch(apiUrl + '/chat/completions', config);
 
         if (request.body.stream) {
-            await forwardFetchResponse(generateResponse, response);
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('MiniMax returned error: ', errorText);
+                response.statusCode = generateResponse.status === 401 ? 400 : generateResponse.status;
+                return response.end(errorText);
+            }
+            // Pipe through a transform that moves <think>...</think> from
+            // delta.content to delta.reasoning_content so the frontend's standard
+            // reasoning extraction picks it up as collapsible thinking.
+            const transform = createMinimaxSSETransform();
+            response.statusCode = generateResponse.status;
+            response.statusMessage = generateResponse.statusText;
+            generateResponse.body.pipe(transform).pipe(response);
+            response.socket?.on('close', () => {
+                generateResponse.body?.destroy?.();
+                response.end();
+            });
+            generateResponse.body.on('end', () => {
+                console.info('Streaming request finished');
+                response.end();
+            });
         } else {
             if (!generateResponse.ok) {
                 const errorText = await generateResponse.text();
@@ -1709,6 +1818,8 @@ async function sendMinimaxRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            // Move <think>...</think> from message.content to message.reasoning_content.
+            extractMinimaxThinkFromResponse(generateResponseJson);
             console.debug('MiniMax response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -2058,17 +2169,6 @@ router.post('/status', async function (request, statusResponse) {
                 console.error('Error fetching Cloudflare Workers AI models:', error);
                 return statusResponse.status(500).send({ error: true });
             }
-        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MINIMAX) {
-            apiUrl = request.body.minimax_endpoint === MINIMAX_ENDPOINT.CN
-                ? API_MINIMAX_CN : API_MINIMAX;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
-            headers = {};
-            // MiniMax does not support the /models endpoint, return hardcoded model list
-            if (!apiKey) {
-                console.warn('Chat Completion API key is missing.');
-                return statusResponse.status(400).send({ error: true });
-            }
-            return statusResponse.send({ data: [{ id: 'MiniMax-M2.7' }, { id: 'MiniMax-M2.7-highspeed' }, { id: 'MiniMax-M2.5' }, { id: 'MiniMax-M2.5-highspeed' }, { id: 'M2-her' }] });
         } else {
             console.warn('This chat completion source is not supported yet.');
             return statusResponse.status(400).send({ error: true });

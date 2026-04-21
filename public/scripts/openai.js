@@ -2192,24 +2192,6 @@ function saveModelList(data) {
         $('#model_siliconflow_select').val(oai_settings.siliconflow_model).trigger('change');
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
-        $('#model_minimax_select').empty();
-        model_list.forEach((model) => {
-            $('#model_minimax_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
-        });
-
-        const selectedModel = model_list.find(model => model.id === oai_settings.minimax_model);
-        if (model_list.length > 0 && (!selectedModel || !oai_settings.minimax_model)) {
-            oai_settings.minimax_model = model_list[0].id;
-        }
-
-        $('#model_minimax_select').val(oai_settings.minimax_model).trigger('change');
-    }
-
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').empty();
         model_list.forEach((model) => {
@@ -2874,6 +2856,10 @@ export async function createGenerationParameters(settings, model, type, messages
 
     if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
         generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
+        // MiniMax requires temperature in (0.0, 1.0]; zero is rejected.
+        if (Number.isFinite(generate_data.temperature)) {
+            generate_data.temperature = Math.min(Math.max(generate_data.temperature, 0.01), 1.0);
+        }
     }
 
     if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
@@ -4286,6 +4272,7 @@ async function getStatusOpen() {
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.ZAI,
+        chat_completion_sources.MINIMAX,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
