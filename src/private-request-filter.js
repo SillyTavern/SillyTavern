@@ -14,7 +14,7 @@ const LOG_HEADER = '[Private Request Filter]';
 /** @type {import('ip-matching').IPMatch[]} */
 const privateIpRanges = [
     // Loopback (IPv4)
-    ipMatch.getMatch('127.0.0.1/8'),
+    ipMatch.getMatch('127.0.0.0/8'),
     // Class A private network
     ipMatch.getMatch('10.0.0.0/8'),
     // Class B private network
