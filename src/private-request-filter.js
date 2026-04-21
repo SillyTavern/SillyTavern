@@ -21,10 +21,14 @@ const privateIpRanges = [
     ipMatch.getMatch('172.16.0.0/12'),
     // Class C private network
     ipMatch.getMatch('192.168.0.0/16'),
+    // Link-local address (IPv4)
+    ipMatch.getMatch('169.254.0.0/16'),
     // Loopback (IPv6)
     ipMatch.getMatch('::1/128'),
     // Unique local address (IPv6)
     ipMatch.getMatch('fc00::/7'),
+    // Link-local address (IPv6)
+    ipMatch.getMatch('fe80::/10'),
 ];
 
 /**
