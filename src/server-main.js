@@ -332,7 +332,7 @@ async function preSetupTasks() {
     const requestFilterOptions = {
         listen: cliArgs.listen,
         enabled: !!getConfigValue('privateAddressWhitelist.enabled', false, 'boolean'),
-        privateAddressWhitelist: getConfigValue('privateAddressWhitelist.allowedRanges', []),
+        privateAddressWhitelist: getConfigValue('privateAddressWhitelist.allowedRanges', ['127.0.0.0/8', '::1/128']),
         logBlocked: !!getConfigValue('privateAddressWhitelist.log.blockedRequests', true, 'boolean'),
         logAllowed: !!getConfigValue('privateAddressWhitelist.log.allowedRequests', false, 'boolean'),
         allowUnresolvedHosts: !!getConfigValue('privateAddressWhitelist.allowUnresolvedHosts', false, 'boolean'),
