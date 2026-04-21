@@ -82,16 +82,20 @@ class PrivateRequestAgent extends Agent {
     }
 
     /**
+     * Check if the given address is a private IP address.
+     * @param {string} address The IP address to check.
+     * @returns {boolean} Whether the given address is a private IP address.
+     */
+    #isPrivateIp(address) {
+        return privateIpRanges.some(range => range.matches(address));
+    }
+
+    /**
      * Check if the given address is allowed based on the private address whitelist.
      * @param {string} address The IP address to check.
      * @returns {boolean} Whether the given address is allowed based on the private address whitelist.
      */
     #isAllowedPrivateAddress(address) {
-        // If the address is not in a private IP range, allow it
-        if (!privateIpRanges.some(range => range.matches(address))) {
-            return true;
-        }
-
         // Permit the request if the private IP address is in the whitelist
         return this.privateAddressWhitelist.some(allowed => ipMatch.getMatch(allowed).matches(address));
     }
@@ -115,9 +119,13 @@ class PrivateRequestAgent extends Agent {
 
         /**
          * Establish a connection to the target host using either TLS or a regular socket based on the options provided.
+         * @param {string|null} [hostOverride] Pass a host to override the one in options when connecting.
          * @returns {net.Socket|tls.TLSSocket} A socket connected to the target host.
          */
-        const connect = () => {
+        const connect = (hostOverride = null) => {
+            if (hostOverride) {
+                options.host = hostOverride;
+            }
             if (options.secureEndpoint) {
                 return tls.connect(options);
             } else {
@@ -131,12 +139,18 @@ class PrivateRequestAgent extends Agent {
          * @returns {net.Socket|tls.TLSSocket} A socket connected to the target IP address if it's allowed, otherwise an error is raised.
          */
         const validateIpAddress = (ip) => {
+            // Not a private IP address, allow the request
+            if (!this.#isPrivateIp(ip)) {
+                return connect(ip);
+            }
+
+            // Private IP address, check if it's allowed in the whitelist
             if (this.#isAllowedPrivateAddress(ip)) {
                 if (this.logAllowed) {
                     console.info(color.green(LOG_HEADER), 'Allowed request to private IP address:', color.blue(ip));
                 }
 
-                return connect();
+                return connect(ip);
             }
 
             return raiseError(`Blocked request to private IP address: ${ip}`, this.logBlocked);
