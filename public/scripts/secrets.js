@@ -543,8 +543,12 @@ export async function checkOpenRouterAuth() {
     const source = params.get('source');
     if (source === 'openrouter') {
         const query = new URLSearchParams(params.get('query'));
-        const code = query.get('code');
         try {
+            const code = query.get('code');
+            if (!code) {
+                throw new Error('OpenRouter authorization code not found in URL');
+            }
+
             const codeVerifier = sessionStorage.getItem(getVerifierKey('openrouter'));
             if (!codeVerifier) {
                 throw new Error('OpenRouter code verifier not found in sessionStorage');
