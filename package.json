@@ -64,6 +64,7 @@
         "ipaddr.js": "^2.2.0",
         "is-docker": "^3.0.0",
         "isomorphic-git": "^1.36.3",
+        "js-sha256": "^0.11.1",
         "localforage": "^1.10.0",
         "lodash": "^4.17.21",
         "mime-types": "^3.0.2",
