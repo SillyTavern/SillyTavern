@@ -279,7 +279,7 @@ export function getContext() {
         updateWorldInfoList,
         convertCharacterBook,
         getWorldInfoPrompt,
-        getWorldInfoNames: () => [...world_names],
+        getWorldInfoNames: () => Array.isArray(world_names) ? [...world_names] : [],
         CONNECT_API_MAP,
         getTextGenServer,
         extractMessageFromData,
