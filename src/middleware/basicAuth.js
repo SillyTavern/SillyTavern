@@ -30,19 +30,20 @@ const basicAuthMiddleware = async function (request, response, callback) {
 
     try {
         const ip = getIpAddress(request);
-        await basicAuthLimiter.consume(ip);
 
         const basicAuthUserName = getConfigValue('basicAuthUser.username');
         const basicAuthUserPassword = getConfigValue('basicAuthUser.password');
         const authHeader = request.headers.authorization;
 
         if (!authHeader) {
+            await basicAuthLimiter.consume(ip);
             return unauthorizedResponse(response);
         }
 
         const [scheme, credentials] = authHeader.split(' ');
 
         if (scheme !== 'Basic' || !credentials) {
+            await basicAuthLimiter.consume(ip);
             return unauthorizedResponse(response);
         }
 
@@ -68,6 +69,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
             }
         }
 
+        await basicAuthLimiter.consume(ip);
         return unauthorizedResponse(response);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
