@@ -93,11 +93,11 @@ const OOBA_DEFAULT_ORDER = [
     'tfs',
     'top_a',
     'min_p',
+    'adaptive_p',
     'mirostat',
     'xtc',
     'encoder_repetition_penalty',
     'no_repeat_ngram',
-    'adaptive_p',
 ];
 export const APHRODITE_DEFAULT_ORDER = [
     'dry',
