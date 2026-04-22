@@ -152,6 +152,11 @@ router.post('/recover-step2', async (request, response) => {
         /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
         const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
+        const rateLimit = await recoverLimiter.get(ip);
+
+        if (rateLimit !== null && rateLimit.consumedPoints > recoverLimiter.points) {
+            throw rateLimit;
+        }
 
         if (!user) {
             console.error('Recover step 2 failed: User', request.body.handle, 'not found');
