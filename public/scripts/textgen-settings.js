@@ -97,6 +97,7 @@ const OOBA_DEFAULT_ORDER = [
     'xtc',
     'encoder_repetition_penalty',
     'no_repeat_ngram',
+    'adaptive_p',
 ];
 export const APHRODITE_DEFAULT_ORDER = [
     'dry',
