@@ -43,6 +43,14 @@ export function getRealIpFromHeader(req) {
 }
 
 /**
+ * Gets the IP address of the client, optionally preferring the real IP from headers.
+ * @param {import('express').Request} request Request object
+ * @param {boolean} preferRealIp Whether to prefer the real IP from headers
+ * @returns {string} IP address of the client
+ */
+export const getIpAddress = (request, preferRealIp) => preferRealIp ? getRealIpFromHeader(request) : getIpFromRequest(request);
+
+/**
  * Checks if the request is coming from a Firefox browser.
  * @param {import('express').Request} req Request object
  * @returns {boolean} True if the request is from Firefox, false otherwise.

@@ -8,13 +8,11 @@ import storage from 'node-persist';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { getAllUserHandles, toKey, getPasswordHash } from '../users.js';
 import { getConfigValue, safeReadFileSync } from '../util.js';
-import { getIpFromRequest, getRealIpFromHeader } from '../express-common.js';
+import { getIpAddress } from '../express-common.js';
 
 const PER_USER_BASIC_AUTH = !!getConfigValue('perUserBasicAuth', false, 'boolean');
 const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
 const PREFER_REAL_IP_HEADER = !!getConfigValue('rateLimiting.preferRealIpHeader', false, 'boolean');
-
-const getIpAddress = (request) => PREFER_REAL_IP_HEADER ? getRealIpFromHeader(request) : getIpFromRequest(request);
 
 const basicAuthLimiter = new RateLimiterMemory({
     points: 5,
@@ -29,7 +27,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
     };
 
     try {
-        const ip = getIpAddress(request);
+        const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
 
         const basicAuthUserName = getConfigValue('basicAuthUser.username');
         const basicAuthUserPassword = getConfigValue('basicAuthUser.password');
@@ -73,7 +71,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
         return unauthorizedResponse(response);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.error('Basic auth failed: Rate limited from', getIpAddress(request));
+            console.error('Basic auth failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
             const retryAfter = Math.ceil(error.msBeforeNext / 1000);
             response.set('Retry-After', retryAfter.toString());
             return response.sendStatus(429);
