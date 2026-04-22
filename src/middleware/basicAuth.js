@@ -28,6 +28,11 @@ const basicAuthMiddleware = async function (request, response, callback) {
 
     try {
         const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
+        const rateLimit = await basicAuthLimiter.get(ip);
+
+        if (rateLimit !== null && rateLimit.consumedPoints > basicAuthLimiter.points) {
+            throw rateLimit;
+        }
 
         const basicAuthUserName = getConfigValue('basicAuthUser.username');
         const basicAuthUserPassword = getConfigValue('basicAuthUser.password');
