@@ -1,5 +1,6 @@
 import ipaddr from 'ipaddr.js';
 import ipMatching from 'ip-matching';
+import { getConfigValue } from './util.js';
 
 const noopMiddleware = (_req, _res, next) => next();
 /** @deprecated Do not use. A global middleware is provided at the application level. */
@@ -34,20 +35,24 @@ export function getIpFromRequest(req) {
  * @returns {string|undefined} The client IP address
  */
 export function getRealOrForwardedIp(req) {
+    const xRealIpEnabled = !!getConfigValue('forwardedHeaders.xRealIp', true, 'boolean');
+    const cfConnectingIpEnabled = !!getConfigValue('forwardedHeaders.cfConnectingIp', false, 'boolean');
+    const xForwardedForEnabled = !!getConfigValue('forwardedHeaders.xForwardedFor', true, 'boolean');
+
     // Check if X-Real-IP is available
-    if (req.headers['x-real-ip']) {
+    if (req.headers['x-real-ip'] && xRealIpEnabled) {
         return req.headers['x-real-ip'].toString();
     }
 
-    // Check for X-Forwarded-For and parse if available
-    if (req.headers['x-forwarded-for']) {
-        const ipList = req.headers['x-forwarded-for'].toString().split(',').map(ip => ip.trim());
-        return ipList[0];
+    // Check for CF-Connecting-IP (Cloudflare) if available
+    if (req.headers['cf-connecting-ip'] && cfConnectingIpEnabled) {
+        return req.headers['cf-connecting-ip'].toString();
     }
 
-    // Check for CF-Connecting-IP (Cloudflare) if available
-    if (req.headers['cf-connecting-ip']) {
-        return req.headers['cf-connecting-ip'].toString();
+    // Check for X-Forwarded-For and parse if available
+    if (req.headers['x-forwarded-for'] && xForwardedForEnabled) {
+        const ipList = req.headers['x-forwarded-for'].toString().split(',').map(ip => ip.trim());
+        return ipList[0];
     }
 
     // If none of the headers are available, return undefined
