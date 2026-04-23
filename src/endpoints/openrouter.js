@@ -119,7 +119,7 @@ router.post('/credits', async (req, res) => {
 
         if (!response.ok) {
             console.warn('OpenRouter credits request failed', response.statusText);
-            return res.sendStatus(response.status);
+            return res.sendStatus(500);
         }
 
         /** @type {any} */
