@@ -60,13 +60,16 @@ export function getRealOrForwardedIp(req) {
 }
 
 /**
- * Gets the IP address of the client, optionally preferring the real/forwarded IP from headers.
+ * Gets the IP address of the client, optionally including the real/forwarded IP from headers.
+ * Most common use cases: key for rate limiter, logging, etc. where you want to have the real client IP if behind a reverse proxy.
  * @param {import('express').Request} request Request object
- * @param {boolean} preferRealIp Whether to prefer the real/forwarded IP from headers
- * @returns {string} IP address of the client
+ * @param {boolean} includeHeaderIp Whether to include the real/forwarded IP from headers
+ * @returns {string} IP address of the client (will include "forwarded" info if includeHeaderIp is true and headers are present)
  */
-export function getIpAddress(request, preferRealIp) {
-    return (preferRealIp && getRealOrForwardedIp(request)) || getIpFromRequest(request);
+export function getIpAddress(request, includeHeaderIp) {
+    const socketIp = getIpFromRequest(request);
+    const forwardedIp = includeHeaderIp && getRealOrForwardedIp(request);
+    return forwardedIp ? `${socketIp} (forwarded: ${forwardedIp})` : socketIp;
 }
 
 /**

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { getIpFromRequest, getRealOrForwardedIp } from '../express-common.js';
+import { getIpAddress } from '../express-common.js';
 import { color, getConfigValue } from '../util.js';
 
 const enableAccessLog = getConfigValue('logging.enableAccessLog', true, 'boolean');
@@ -32,10 +32,8 @@ export function migrateAccessLog() {
  */
 export default function accessLoggerMiddleware() {
     return function (req, res, next) {
-        const socketIp = getIpFromRequest(req);
-        const forwardedIp = getRealOrForwardedIp(req);
-        const ipString = forwardedIp ? `${socketIp} (forwarded: ${forwardedIp})` : socketIp;
         const userAgent = req.headers['user-agent'] || 'unknown';
+        const ipString = getIpAddress(req, true);
 
         if (!knownIPs.has(ipString)) {
             // Log new connection
