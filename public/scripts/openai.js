@@ -2501,7 +2501,7 @@ function getReasoningEffort(settings = null, model = null) {
             case reasoning_effort_types.auto:
                 return undefined;
             case reasoning_effort_types.min:
-                if ((chat_completion_sources.OPENROUTER === settings.chat_completion_source || isKoboldCpp) && !settings.show_thoughts) {
+                if (chat_completion_sources.OPENROUTER === settings.chat_completion_source && !settings.show_thoughts) {
                     return 'none';
                 }
 
