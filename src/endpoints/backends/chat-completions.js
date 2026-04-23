@@ -1590,8 +1590,6 @@ async function sendMinimaxRequest(request, response) {
             'temperature': request.body.temperature,
             'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
             'stream': request.body.stream,
-            'presence_penalty': request.body.presence_penalty,
-            'frequency_penalty': request.body.frequency_penalty,
             'top_p': request.body.top_p,
             'stop': request.body.stop,
             ...bodyParams,
