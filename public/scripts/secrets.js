@@ -77,6 +77,7 @@ export const SECRET_KEYS = {
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
     WORKERS_AI: 'api_key_workers_ai',
+    EUROUTER: 'api_key_eurouter',
 };
 
 const FRIENDLY_NAMES = {
@@ -142,6 +143,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
     [SECRET_KEYS.VOLCENGINE_ACCESS_KEY]: 'Volcengine Access Key',
     [SECRET_KEYS.WORKERS_AI]: 'Cloudflare Workers AI',
+    [SECRET_KEYS.EUROUTER]: 'EUrouter',
 };
 
 const INPUT_MAP = {
@@ -186,6 +188,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
     [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
     [SECRET_KEYS.WORKERS_AI]: '#api_key_workers_ai',
+    [SECRET_KEYS.EUROUTER]: '#api_key_eurouter',
 };
 
 const getLabel = () => moment().format('L LT');

@@ -90,6 +90,7 @@ const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_EUROUTER = 'https://api.eurouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
 /**
@@ -1711,6 +1712,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_GROQ;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.EUROUTER) {
+            apiUrl = API_EUROUTER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.EUROUTER, request.body.secret_id);
+            headers = { 'HTTP-Referer': 'https://sillytavern.app', 'X-EUrouter-Title': 'SillyTavern' };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
             apiUrl = API_COMETAPI;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
@@ -2264,6 +2269,11 @@ router.post('/generate', async function (request, response) {
                     },
                 };
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.EUROUTER) {
+            apiUrl = API_EUROUTER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.EUROUTER, request.body.secret_id);
+            headers = { 'HTTP-Referer': 'https://sillytavern.app', 'X-EUrouter-Title': 'SillyTavern' };
+            bodyParams = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
             apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);

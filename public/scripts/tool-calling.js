@@ -650,6 +650,7 @@ export class ToolManager {
             chat_completion_sources.OPENROUTER,
             chat_completion_sources.AIMLAPI,
             chat_completion_sources.GROQ,
+            chat_completion_sources.EUROUTER,
             chat_completion_sources.COHERE,
             chat_completion_sources.DEEPSEEK,
             chat_completion_sources.MAKERSUITE,
