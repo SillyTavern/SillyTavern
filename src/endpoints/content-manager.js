@@ -4,7 +4,6 @@ import zlib from 'node:zlib';
 import { Buffer } from 'node:buffer';
 
 import express from 'express';
-import fetch from 'node-fetch';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
@@ -851,7 +850,7 @@ async function downloadPerchanceCharacter(slug) {
 
 /**
  * Extracts Perchance character data from a gzipped response.
- * @param {import('node-fetch').Response} result Fetch response containing gzipped character data
+ * @param {Response} result Fetch response containing gzipped character data
  * @returns {Promise<Object>} Parsed Perchance character data
  * @throws {Error} If the character data is invalid or missing required fields
  */

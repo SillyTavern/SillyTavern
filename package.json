@@ -70,7 +70,6 @@
         "moment": "^2.30.1",
         "morphdom": "^2.7.7",
         "multer": "^2.1.1",
-        "node-fetch": "^3.3.2",
         "node-persist": "^4.0.4",
         "open": "^10.2.0",
         "png-chunk-text": "^1.0.0",
@@ -101,9 +100,6 @@
     "overrides": {
         "vectra": {
             "openai": "^4.17.0"
-        },
-        "node-fetch": {
-            "whatwg-url": "^14.0.0"
         }
     },
     "name": "sillytavern",

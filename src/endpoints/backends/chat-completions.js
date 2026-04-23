@@ -2,7 +2,6 @@
 import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
-import fetch from 'node-fetch';
 import urlJoin from 'url-join';
 
 import {
@@ -2466,7 +2465,7 @@ router.post('/generate', async function (request, response) {
             excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
         }
 
-        /** @type {import('node-fetch').RequestInit} */
+        /** @type {RequestInit} */
         const config = {
             method: 'post',
             headers: {

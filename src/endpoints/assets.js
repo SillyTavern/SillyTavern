@@ -5,7 +5,6 @@ import { finished } from 'node:stream/promises';
 import mime from 'mime-types';
 import express from 'express';
 import sanitize from 'sanitize-filename';
-import fetch from 'node-fetch';
 
 import { UNSAFE_EXTENSIONS } from '../constants.js';
 import { clientRelativePath, isValidUrl } from '../util.js';

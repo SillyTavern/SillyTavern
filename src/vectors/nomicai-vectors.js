@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { SECRET_KEYS, readSecret } from '../endpoints/secrets.js';
 
 const SOURCES = {

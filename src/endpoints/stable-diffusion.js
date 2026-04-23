@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import express from 'express';
-import fetch from 'node-fetch';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import urlJoin from 'url-join';
@@ -2140,7 +2139,7 @@ workersai.post('/generate', async (request, response) => {
 
         console.debug('Cloudflare Workers AI request:', model, body);
 
-        /** @type {import('node-fetch').RequestInit} */
+        /** @type {RequestInit} */
         const apiRequest = {
             method: 'POST',
             headers: {

@@ -1,5 +1,4 @@
 import express from 'express';
-import fetch from 'node-fetch';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 
 export const router = express.Router();

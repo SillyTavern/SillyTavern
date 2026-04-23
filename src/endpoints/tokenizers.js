@@ -5,7 +5,6 @@ import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 
 import express from 'express';
-import fetch from 'node-fetch';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 
 import { Tokenizer } from '@agnai/web-tokenizers';
