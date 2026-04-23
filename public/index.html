@@ -5352,6 +5352,16 @@
                                         <input class="neo-range-input" type="number" min="5" max="100" step="5" data-for="streaming_fps" id="streaming_fps_counter">
                                     </div>
                                 </div>
+                                <div class="flex-container">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small>
+                                            <span data-i18n="Tool Call Recurse Limit">Tool Call Recurse Limit</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Maximum number of tool call recursion steps per generation." title="Maximum number of tool call recursion steps per generation."></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="tool_call_recurse_limit" name="tool_call_recurse_limit" min="1" max="50" step="1">
+                                        <input class="neo-range-input" type="number" min="1" max="50" step="1" data-for="tool_call_recurse_limit" id="tool_call_recurse_limit_counter">
+                                    </div>
+                                </div>
                                 <div id="examples-behavior-block">
                                     <label for="example_messages_behavior">
                                         <small data-i18n="Example Messages Behavior">

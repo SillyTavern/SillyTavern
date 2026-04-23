@@ -64,6 +64,7 @@ import { fuzzySearchCategories } from './filters.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { extractDominantColor, generateThemePalette, deriveBackgroundName } from './util/ThemeGenerator.js';
 import { DEFAULT_REASONING_TEMPLATE, loadReasoningTemplates } from './reasoning.js';
+import { ToolManager } from './tool-calling.js';
 import { bindModelTemplates } from './chat-templates.js';
 import { IMAGE_OVERSWIPE, MEDIA_DISPLAY } from './constants.js';
 import { t } from './i18n.js';
@@ -132,6 +133,7 @@ export const power_user = {
     markdown_escape_strings: '',
     chat_truncation: 100,
     streaming_fps: 30,
+    tool_call_recurse_limit: 5,
     smooth_streaming: false,
     smooth_streaming_no_think: false,
     smooth_streaming_speed: 50,
@@ -1749,6 +1751,10 @@ export async function loadPowerUserSettings(settings, data) {
 
     $('#streaming_fps').val(power_user.streaming_fps);
     $('#streaming_fps_counter').val(power_user.streaming_fps);
+
+    $('#tool_call_recurse_limit').val(power_user.tool_call_recurse_limit);
+    $('#tool_call_recurse_limit_counter').val(power_user.tool_call_recurse_limit);
+    ToolManager.RECURSE_LIMIT = power_user.tool_call_recurse_limit;
 
     $('#smooth_streaming').prop('checked', power_user.smooth_streaming);
     $('#smooth_streaming_no_think').prop('checked', power_user.smooth_streaming_no_think);
@@ -3400,6 +3406,13 @@ jQuery(() => {
     $('#streaming_fps').on('input', function () {
         power_user.streaming_fps = Number($('#streaming_fps').val());
         $('#streaming_fps_counter').val(power_user.streaming_fps);
+        saveSettingsDebounced();
+    });
+
+    $('#tool_call_recurse_limit').on('input', function () {
+        power_user.tool_call_recurse_limit = Number($('#tool_call_recurse_limit').val());
+        $('#tool_call_recurse_limit_counter').val(power_user.tool_call_recurse_limit);
+        ToolManager.RECURSE_LIMIT = power_user.tool_call_recurse_limit;
         saveSettingsDebounced();
     });
 
