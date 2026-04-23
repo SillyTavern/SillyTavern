@@ -6238,6 +6238,15 @@ export function extractMessageFromData(data, activeApi = null) {
     return Array.isArray(result) ? result.map(x => x.text).filter(x => x).join('') : result;
 }
 
+function stripGemma4ContinueThoughtChannel(text, isContinue) {
+    const model = String(getChatCompletionModel(oai_settings) || '').toLowerCase();
+    if (!isContinue || main_api !== 'openai' || oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM || !model.includes('gemma-4')) {
+        return text;
+    }
+
+    return text.replace(/<\|channel\|?>thought\s*<\|?channel\|>\s*/i, '');
+}
+
 /**
  * Extracts JSON from the response data.
  * @param {object} data Response data
@@ -6377,6 +6386,8 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
     if (!getMessage) {
         return '';
     }
+
+    getMessage = stripGemma4ContinueThoughtChannel(getMessage, isContinue);
 
     // Add the prompt bias before anything else
     if (
