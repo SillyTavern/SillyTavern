@@ -437,6 +437,12 @@ export function fixMarkdown(text, forDisplay) {
 
     // Iterate through the matches and replace adjacent spaces immediately beside formatting characters
     let newText = text;
+
+    // Fix nested emphasis: *text *nested* text* -> *text **nested** text*
+    // Handles the common LLM artifact where it tries to put *action* inside an *action block*
+    const nestedEmphasisRegex = /(^|[^\w*])\*([^*\n]+?)\s+\*([^*\n]+?)\*\s+([^*\n]+?)\*([^\w*]|$)/g;
+    newText = newText.replace(nestedEmphasisRegex, '$1*$2 **$3** $4*$5');
+
     for (let i = matches.length - 1; i >= 0; i--) {
         let matchText = matches[i][0];
         let replacementText = matchText.replace(/(\*|_)([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)|([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)(\*|_)/g, '$1$4');
