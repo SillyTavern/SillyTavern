@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
-import { getRealIpFromHeader } from '../express-common.js';
+import { getIpFromRequest, getRealOrForwardedIp } from '../express-common.js';
 import { color, getConfigValue } from '../util.js';
 
 const enableAccessLog = getConfigValue('logging.enableAccessLog', true, 'boolean');
@@ -32,19 +32,21 @@ export function migrateAccessLog() {
  */
 export default function accessLoggerMiddleware() {
     return function (req, res, next) {
-        const clientIp = getRealIpFromHeader(req);
-        const userAgent = req.headers['user-agent'];
+        const socketIp = getIpFromRequest(req);
+        const forwardedIp = getRealOrForwardedIp(req);
+        const ipString = forwardedIp ? `${socketIp} (forwarded: ${forwardedIp})` : socketIp;
+        const userAgent = req.headers['user-agent'] || 'unknown';
 
-        if (!knownIPs.has(clientIp)) {
+        if (!knownIPs.has(ipString)) {
             // Log new connection
-            knownIPs.add(clientIp);
+            knownIPs.add(ipString);
 
             // Write to access log if enabled
             if (enableAccessLog) {
-                console.info(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}\n`));
+                console.info(color.yellow(`New connection from ${ipString}; User Agent: ${userAgent}\n`));
                 const logPath = getAccessLogPath();
                 const timestamp = new Date().toISOString();
-                const log = `${timestamp} ${clientIp} ${userAgent}\n`;
+                const log = `${timestamp} ${ipString} ${userAgent}\n`;
 
                 fs.appendFile(logPath, log, (err) => {
                     if (err) {

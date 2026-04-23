@@ -29,26 +29,40 @@ export function getIpFromRequest(req) {
 }
 
 /**
- * Gets the IP address of the client when behind reverse proxy using x-real-ip header, falls back to socket remote address.
- * This function should be used when the application is running behind a reverse proxy (e.g., Nginx, traefik, Caddy...).
- * @param {import('express').Request} req Request object
- * @returns {string} IP address of the client
+ * Get the client IP address from the request headers.
+ * @param {import('express').Request} req Express request object
+ * @returns {string|undefined} The client IP address
  */
-export function getRealIpFromHeader(req) {
+export function getRealOrForwardedIp(req) {
+    // Check if X-Real-IP is available
     if (req.headers['x-real-ip']) {
         return req.headers['x-real-ip'].toString();
     }
 
-    return getIpFromRequest(req);
+    // Check for X-Forwarded-For and parse if available
+    if (req.headers['x-forwarded-for']) {
+        const ipList = req.headers['x-forwarded-for'].toString().split(',').map(ip => ip.trim());
+        return ipList[0];
+    }
+
+    // Check for CF-Connecting-IP (Cloudflare) if available
+    if (req.headers['cf-connecting-ip']) {
+        return req.headers['cf-connecting-ip'].toString();
+    }
+
+    // If none of the headers are available, return undefined
+    return undefined;
 }
 
 /**
- * Gets the IP address of the client, optionally preferring the real IP from headers.
+ * Gets the IP address of the client, optionally preferring the real/forwarded IP from headers.
  * @param {import('express').Request} request Request object
- * @param {boolean} preferRealIp Whether to prefer the real IP from headers
+ * @param {boolean} preferRealIp Whether to prefer the real/forwarded IP from headers
  * @returns {string} IP address of the client
  */
-export const getIpAddress = (request, preferRealIp) => preferRealIp ? getRealIpFromHeader(request) : getIpFromRequest(request);
+export function getIpAddress(request, preferRealIp) {
+    return (preferRealIp && getRealOrForwardedIp(request)) || getIpFromRequest(request);
+}
 
 /**
  * Checks if the request is coming from a Firefox browser.
