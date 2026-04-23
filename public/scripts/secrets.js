@@ -1120,5 +1120,28 @@ export async function initSecrets() {
         warningElement.toggle(value.length > 0);
     });
     $('.openrouter_authorize').on('click', authorizeOpenRouter);
+    $(document).on('click', '.openrouter_view_credits', async function (event) {
+        event.preventDefault();
+        const display = $(this).siblings('.openrouter_credits_display').first();
+        display.text(t`Loading…`);
+        try {
+            const response = await fetch('/api/openrouter/credits', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            if (typeof data.remaining !== 'number') {
+                throw new Error('Invalid response');
+            }
+            display.text(`$${data.remaining.toFixed(4)}`);
+        } catch (error) {
+            console.error('Failed to fetch OpenRouter credits:', error);
+            display.text('');
+            toastr.error(t`Could not fetch OpenRouter credits. Please try again.`);
+        }
+    });
     registerSecretSlashCommands();
 }
