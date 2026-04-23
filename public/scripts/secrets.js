@@ -1136,7 +1136,7 @@ export async function initSecrets() {
             if (typeof data.remaining !== 'number') {
                 throw new Error('Invalid response');
             }
-            display.text(`$${data.remaining.toFixed(4)}`);
+            display.text(`$${data.remaining.toFixed(2)}`);
         } catch (error) {
             console.error('Failed to fetch OpenRouter credits:', error);
             display.text('');
