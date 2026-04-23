@@ -2600,7 +2600,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
     messageElement.find('.avatar img').attr('src', avatarImg);
     messageElement.find('.ch_name .name_text').text(mes.name);
     messageElement.find('.timestamp').text(timestamp).attr('title', `${mes.extra?.api ? mes.extra.api + ' - ' : ''}${mes.extra?.model ?? ''}`);
-    messageElement.find('.mesIDDisplay').text(`#${messageId}`);
+    messageElement.find('.mesIDHeading').text(`#${messageId}`);
     tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     mes.title && messageElement.attr('title', mes.title);
     timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -2920,11 +2920,6 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
  */
 export function substituteParams(content, options = {}) {
     if (!content) return '';
-
-    if (typeof content !== 'string') {
-        console.warn('substituteParams: content will be coerced to string', content);
-        content = String(content);
-    }
 
     // Handle legacy signature calls to substituteParams
     // We'll simply re-route them to a temporary legacy function. In the future, we'll remove this and cleanly build the options object ourselves.
@@ -3866,7 +3861,9 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        const message = { role: 'user', content: prompt.trim() };
+        const message = api === 'openai'
+            ? { role: 'user', content: prompt.trim() }
+            : { role: 'system', content: prompt };
         prompt = [message];
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
@@ -3893,12 +3890,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
-        if (isInstruct && systemPrompt.length > 0 && !systemPrompt.endsWith('\n')) {
-            if (power_user.instruct.wrap && !power_user.instruct.story_string_suffix) {
-                systemPrompt += '\n';
-            }
-        }
+        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
@@ -5851,11 +5843,11 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
-        await saveChatConditional();
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
+        await saveChatConditional();
     }
 
     return message;
@@ -9388,7 +9380,7 @@ export function updateViewMessageIds(startIndex = null) {
 
     chatElement.find('.mes').each(function (index, element) {
         $(element).attr('mesid', minId + index);
-        $(element).find('.mesIDDisplay').text(`#${minId + index}`);
+        $(element).find('.mesIDHeading').text(`#${minId + index}`);
     });
 
     chatElement.find('.mes').removeClass('last_mes');
