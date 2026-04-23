@@ -203,6 +203,178 @@ function setJsonObjectFormat(bodyParams, messages, jsonSchema) {
 }
 
 /**
+ * Sends a request to AWS Bedrock API using API Keys.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendBedrockRequest(request, response) {
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.BEDROCK);
+    const region = request.body.bedrock_region || 'us-east-1';
+
+    if (!apiKey) {
+        console.warn('AWS Bedrock API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        // Convert messages to Bedrock format
+        const useSystemPrompt = Boolean(request.body.use_sysprompt);
+        const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
+        const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
+
+        // Build system prompt
+        const systemPrompts = [];
+        if (useSystemPrompt && Array.isArray(convertedPrompt.systemPrompt)) {
+            for (const sysPart of convertedPrompt.systemPrompt) {
+                if (typeof sysPart === 'string') {
+                    systemPrompts.push({ text: sysPart });
+                } else if (sysPart.text) {
+                    systemPrompts.push({ text: sysPart.text });
+                }
+            }
+        }
+
+        // Build inference configuration
+        const inferenceConfig = {
+            maxTokens: request.body.max_tokens || 4096,
+            temperature: request.body.temperature,
+            topP: request.body.top_p,
+        };
+
+        // Build tool configuration if tools are provided
+        const toolConfig = useTools ? {
+            tools: request.body.tools
+                .filter(tool => tool.type === 'function')
+                .map(tool => ({
+                    toolSpec: {
+                        name: tool.function.name,
+                        description: tool.function.description,
+                        inputSchema: {
+                            json: flattenSchema(tool.function.parameters, request.body.chat_completion_source),
+                        },
+                    },
+                })),
+        } : undefined;
+
+        // Add stop sequences if provided
+        const stopSequences = Array.isArray(request.body.stop) ? request.body.stop : [];
+
+        // Clean up undefined values
+        // Note: Some Bedrock models don't allow both temperature and topP, so we only send temperature
+        const cleanInferenceConfig = {};
+        if (inferenceConfig.maxTokens) cleanInferenceConfig.maxTokens = inferenceConfig.maxTokens;
+
+        // Only send temperature (ignore topP to avoid conflicts)
+        if (inferenceConfig.temperature !== undefined && inferenceConfig.temperature !== null) {
+            cleanInferenceConfig.temperature = inferenceConfig.temperature;
+        }
+
+        const requestBody = {
+            messages: convertedPrompt.messages,
+            inferenceConfig: cleanInferenceConfig,
+        };
+
+        if (systemPrompts.length > 0) {
+            requestBody.system = systemPrompts;
+        }
+
+        if (toolConfig) {
+            requestBody.toolConfig = toolConfig;
+        }
+
+        if (stopSequences.length > 0) {
+            requestBody.additionalModelRequestFields = { stop_sequences: stopSequences };
+        }
+
+        console.debug('Bedrock request:', requestBody);
+
+        // Construct API endpoint using Bedrock Runtime API
+        const modelId = request.body.model;
+        const apiUrl = request.body.stream
+            ? `https://bedrock-runtime.${region}.amazonaws.com/model/${modelId}/converse-stream`
+            : `https://bedrock-runtime.${region}.amazonaws.com/model/${modelId}/converse`;
+
+        const fetchOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        const bedrockResponse = await fetch(apiUrl, fetchOptions);
+
+        if (request.body.stream) {
+            // Streaming response
+            if (!bedrockResponse.ok) {
+                const errorText = await bedrockResponse.text();
+                console.warn('Bedrock API returned error:', bedrockResponse.status, errorText);
+                return response.status(500).send({ error: true, message: errorText });
+            }
+
+            response.setHeader('Content-Type', 'text/event-stream');
+            response.setHeader('Cache-Control', 'no-cache');
+            response.setHeader('Connection', 'keep-alive');
+
+            // Forward the stream
+            forwardFetchResponse(bedrockResponse, response);
+        } else {
+            // Non-streaming response
+            if (!bedrockResponse.ok) {
+                const errorText = await bedrockResponse.text();
+                console.warn('Bedrock API returned error:', bedrockResponse.status, errorText);
+                return response.status(500).send({ error: true, message: errorText });
+            }
+
+            const bedrockData = await bedrockResponse.json();
+            console.debug('Bedrock response:', bedrockData);
+
+            // Extract text content
+            let responseText = '';
+            if (bedrockData.output?.message?.content) {
+                for (const content of bedrockData.output.message.content) {
+                    if (content.text) {
+                        responseText += content.text;
+                    }
+                }
+            }
+
+            // Format response to match OpenAI structure
+            const reply = {
+                choices: [{
+                    message: {
+                        content: responseText,
+                        role: 'assistant',
+                    },
+                    index: 0,
+                    finish_reason: bedrockData.stopReason || 'stop',
+                }],
+                usage: {
+                    prompt_tokens: bedrockData.usage?.inputTokens || 0,
+                    completion_tokens: bedrockData.usage?.outputTokens || 0,
+                    total_tokens: (bedrockData.usage?.inputTokens || 0) + (bedrockData.usage?.outputTokens || 0),
+                },
+            };
+
+            return response.send(reply);
+        }
+    } catch (error) {
+        console.error('Error communicating with Bedrock:', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true, message: error.message });
+        }
+    }
+}
+
+/**
  * Sends a request to Claude API.
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
@@ -1760,6 +1932,21 @@ router.post('/status', async function (request, statusResponse) {
                 console.error('Error fetching Google AI Studio models:', error);
                 return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+            // For Bedrock, we don't have a models endpoint with API keys
+            // Just validate that the API key exists and return success
+            const apiKey = readSecret(request.user.directories, SECRET_KEYS.BEDROCK);
+
+            if (!apiKey) {
+                console.warn('AWS Bedrock API key is missing.');
+                return statusResponse.status(400).send({ error: true });
+            }
+
+            // Return a success response without trying to fetch models
+            // The models are pre-configured in the UI
+            return statusResponse.send({
+                data: []
+            });
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.AZURE_OPENAI) {
             const { azure_base_url, azure_deployment_name, azure_api_version } = request.body;
             const apiKey = readSecret(request.user.directories, SECRET_KEYS.AZURE_OPENAI, request.body.secret_id);
@@ -2071,7 +2258,6 @@ router.post('/bias', async function (request, response) {
 router.post('/generate', async function (request, response) {
     try {
         if (!request.body) return response.status(400).send({ error: true });
-
         const postProcessingType = request.body.custom_prompt_post_processing;
         if (Array.isArray(request.body.messages) && postProcessingType) {
             console.info('Applying custom prompt post-processing of type', postProcessingType);
@@ -2087,6 +2273,7 @@ router.post('/generate', async function (request, response) {
 
         switch (request.body.chat_completion_source) {
             case CHAT_COMPLETION_SOURCES.CLAUDE: return await sendClaudeRequest(request, response);
+            case CHAT_COMPLETION_SOURCES.BEDROCK: return await sendBedrockRequest(request, response);
             case CHAT_COMPLETION_SOURCES.AI21: return await sendAI21Request(request, response);
             case CHAT_COMPLETION_SOURCES.MAKERSUITE: return await sendMakerSuiteRequest(request, response);
             case CHAT_COMPLETION_SOURCES.VERTEXAI: return await sendMakerSuiteRequest(request, response);
