@@ -1567,15 +1567,7 @@ async function sendMinimaxRequest(request, response) {
     try {
         // MiniMax does not allow consecutive messages with the same role.
         // Merge them into a single message to avoid "invalid chat setting (2013)".
-        const messages = [];
-        for (const msg of request.body.messages) {
-            const last = messages[messages.length - 1];
-            if (last && last.role === msg.role) {
-                last.content += '\n' + msg.content;
-            } else {
-                messages.push({ ...msg });
-            }
-        }
+        const messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.MERGE_TOOLS, getPromptNames(request));
 
         let bodyParams = {};
 
