@@ -47,6 +47,7 @@ import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
+    clamp,
     createThumbnail,
     delay,
     download,
@@ -2858,7 +2859,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
         // MiniMax requires temperature in (0.0, 1.0]; zero is rejected.
         if (Number.isFinite(generate_data.temperature)) {
-            generate_data.temperature = Math.min(Math.max(generate_data.temperature, 0.01), 1.0);
+            generate_data.temperature = clamp(generate_data.temperature, Number.EPSILON, 1.0);
         }
     }
 
