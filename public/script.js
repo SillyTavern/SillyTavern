@@ -269,7 +269,7 @@ import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, ReasoningType, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
@@ -4475,13 +4475,18 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // In group chats, only include reasoning from the currently generating character
         const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
 
+        // Parsed reasoning was extracted from message text (e.g. Gemma 4 with --reasoning off).
+        // Re-adding the reasoning tokens to the continue prefill causes the model to repeat them
+        // at the start of the continuation. Skip reasoning for parsed type on the prefix message.
+        const skipReasoningForPrefix = isPrefix && coreChat[i].extra?.reasoning_type === ReasoningType.Parsed;
+
         coreChat[i] = {
             ...coreChat[i],
             mes: isOtherGroupMember
                 ? coreChat[i].mes
                 : promptReasoning.addToMessage(
                     coreChat[i].mes,
-                    getRegexedString(
+                    skipReasoningForPrefix ? '' : getRegexedString(
                         String(coreChat[i].extra?.reasoning ?? ''),
                         regex_placement.REASONING,
                         { isPrompt: true, depth: depth },
