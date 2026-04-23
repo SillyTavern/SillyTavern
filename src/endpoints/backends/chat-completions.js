@@ -2395,7 +2395,7 @@ router.post('/generate', async function (request, response) {
 
         // A few of OpenAIs reasoning models support reasoning effort
         if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
-            if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
+            if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model) || String(request.body.model).startsWith('koboldcpp/')) {
                 bodyParams['reasoning_effort'] = OPENAI_FIXED_REASONING_EFFORT[request.body.model] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
             }
         }
