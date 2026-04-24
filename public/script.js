@@ -6238,13 +6238,21 @@ export function extractMessageFromData(data, activeApi = null) {
     return Array.isArray(result) ? result.map(x => x.text).filter(x => x).join('') : result;
 }
 
-function stripGemma4ContinueThoughtChannel(text, isContinue) {
-    const model = String(getChatCompletionModel(oai_settings) || '').toLowerCase();
-    if (!isContinue || main_api !== 'openai' || oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM || !model.includes('gemma-4')) {
+/**
+ * Strips leaked thought-channel markers from continue responses.
+ * Handles patterns like <|channel>thought <channel|> used by some models.
+ * @param {string} text Response text
+ * @param {boolean} isContinue Whether this is a continue generation
+ * @returns {string} Cleaned text
+ */
+function stripThoughtChannelMarkers(text, isContinue) {
+    // Only apply to continue generations on OpenAI-compatible APIs
+    if (!isContinue || main_api !== 'openai') {
         return text;
     }
 
-    return text.replace(/<\|channel\|?>thought\s*<\|?channel\|>\s*/i, '');
+    // Remove common thought-channel leak patterns
+    return text.replace(/<\|channel\|?>thought\s*<\|?channel\|>\s*/gi, '');
 }
 
 /**
@@ -6387,7 +6395,8 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
         return '';
     }
 
-    getMessage = stripGemma4ContinueThoughtChannel(getMessage, isContinue);
+    // Strip leaked thought-channel markers from continue responses
+    getMessage = stripThoughtChannelMarkers(getMessage, isContinue);
 
     // Add the prompt bias before anything else
     if (
