@@ -1095,6 +1095,11 @@ async function sendDeepSeekRequest(request, response) {
             ...bodyParams,
         };
 
+        // DeepSeek requires thinking to be enabled when reasoning_effort is set
+        if (requestBody.thinking?.type === 'disabled') {
+            delete requestBody.reasoning_effort;
+        }
+
         const config = {
             method: 'POST',
             headers: {
