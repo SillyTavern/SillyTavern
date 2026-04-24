@@ -446,7 +446,7 @@ const default_settings = {
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
-    deepseek_model: 'deepseek-v4-flash',
+    deepseek_model: 'deepseek-chat',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -2088,23 +2088,20 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
-        const knownDeepSeekModels = [
-            { id: 'deepseek-v4-flash' },
-            { id: 'deepseek-v4-pro' },
+        const legacyDeepSeekModels = [
             { id: 'deepseek-chat', deprecated: '2026/07/24' },
             { id: 'deepseek-reasoner', deprecated: '2026/07/24' },
-            { id: 'deepseek-coder' },
         ];
-        const mergedModels = [...model_list];
-        for (const known of knownDeepSeekModels) {
-            if (!mergedModels.some(m => m.id === known.id)) {
-                mergedModels.push(known);
+        const deepSeekModels = [...model_list];
+        for (const legacyModel of legacyDeepSeekModels) {
+            if (!deepSeekModels.some(model => model.id === legacyModel.id)) {
+                deepSeekModels.push(legacyModel);
             }
         }
 
         $('#model_deepseek_select').empty();
-        mergedModels.forEach((model) => {
-            const deprecatedInfo = knownDeepSeekModels.find(k => k.id === model.id)?.deprecated;
+        deepSeekModels.forEach((model) => {
+            const deprecatedInfo = legacyDeepSeekModels.find(legacyModel => legacyModel.id === model.id)?.deprecated;
             const label = deprecatedInfo ? `${model.id} (deprecated ${deprecatedInfo})` : model.id;
             $('#model_deepseek_select').append(
                 $('<option>', {
@@ -2113,9 +2110,9 @@ function saveModelList(data) {
                 }));
         });
 
-        const selectedModel = mergedModels.find(model => model.id === oai_settings.deepseek_model);
-        if (mergedModels.length > 0 && (!selectedModel || !oai_settings.deepseek_model)) {
-            oai_settings.deepseek_model = mergedModels[0].id;
+        const selectedModel = deepSeekModels.find(model => model.id === oai_settings.deepseek_model);
+        if (deepSeekModels.length > 0 && (!selectedModel || !oai_settings.deepseek_model)) {
+            oai_settings.deepseek_model = deepSeekModels[0].id;
         }
 
         $('#model_deepseek_select').val(oai_settings.deepseek_model).trigger('change');
@@ -5651,8 +5648,10 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^deepseek-v4/.test(oai_settings.deepseek_model) || ['deepseek-reasoner', 'deepseek-chat'].includes(oai_settings.deepseek_model)) {
+        } else if (/^deepseek-v4/.test(oai_settings.deepseek_model)) {
             $('#openai_max_context').attr('max', max_1mil);
+        } else if (['deepseek-chat','deepseek-reasoner'].includes(oai_settings.deepseek_model)) {
+            $('#openai_max_context').attr('max', max_128k);
         } else if (oai_settings.deepseek_model == 'deepseek-coder') {
             $('#openai_max_context').attr('max', max_16k);
         } else {
