@@ -13,7 +13,7 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {boolean} enabled Whether proxy is enabled.
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
- * @property {boolean} [enableKeepAlive] Enable HTTP/HTTPS keep-alive.
+ * @property {boolean} enableKeepAlive Enable HTTP/HTTPS keep-alive.
  */
 export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive }) {
     try {
