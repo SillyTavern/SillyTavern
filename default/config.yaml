@@ -43,7 +43,7 @@ port: 8000
 heartbeatInterval: 0
 # Enable HTTP/HTTPS keep-alive globally.
 # Disabling restores old Node 18 behavior, can help if ECONNRESET and other network errors occur.
-enableKeepAlive: true
+enableKeepAlive: false
 # -- SSL options --
 ssl:
   # Enable SSL/TLS encryption

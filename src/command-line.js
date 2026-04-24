@@ -77,7 +77,7 @@ export class CommandLineParser {
             keyPassphrase: '',
             whitelistMode: true,
             basicAuthMode: false,
-            enableKeepAlive: true,
+            enableKeepAlive: false,
             requestProxyEnabled: false,
             requestProxyUrl: '',
             requestProxyBypass: [],
