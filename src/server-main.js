@@ -5,6 +5,8 @@ import util from 'node:util';
 import net from 'node:net';
 import dns from 'node:dns';
 import process from 'node:process';
+import http from 'node:http';
+import https from 'node:https';
 
 import cors from 'cors';
 import { csrfSync } from 'csrf-sync';
@@ -93,6 +95,10 @@ if (!cliArgs.enableIPv6 && !cliArgs.enableIPv4) {
     console.error('error: You can\'t disable all internet protocols: at least IPv6 or IPv4 must be enabled.');
     process.exit(1);
 }
+
+// Set keep-alive preference for all HTTP/HTTPS requests.
+http.globalAgent = new http.Agent({ keepAlive: cliArgs.enableKeepAlive });
+https.globalAgent = new https.Agent({ keepAlive: cliArgs.enableKeepAlive });
 
 const app = express();
 app.use(helmet({
@@ -340,7 +346,7 @@ async function preSetupTasks() {
     initPrivateRequestFilter(requestFilterOptions);
 
     // Add request proxy.
-    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass, privateRequestFilterEnabled: requestFilterOptions.enabled });
+    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass, enableKeepAlive: cliArgs.enableKeepAlive, privateRequestFilterEnabled: requestFilterOptions.enabled });
 
     // Wait for frontend libs to compile
     await webpackMiddleware.runWebpackCompiler({ pruneCache: true });

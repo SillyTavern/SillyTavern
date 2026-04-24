@@ -209,6 +209,7 @@ export const CHAT_COMPLETION_SOURCES = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    MINIMAX: 'minimax',
     WORKERS_AI: 'workers_ai',
 };
 
@@ -554,6 +555,11 @@ export const ZAI_ENDPOINT = {
 };
 
 export const SILICONFLOW_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
+};
+
+export const MINIMAX_ENDPOINT = {
     GLOBAL: 'global',
     CN: 'cn',
 };
