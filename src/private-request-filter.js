@@ -69,9 +69,10 @@ class PrivateRequestAgent extends Agent {
      * @param {boolean} options.logBlocked Whether to log blocked requests to the console.
      * @param {boolean} options.logAllowed Whether to log allowed requests to the console.
      * @param {boolean} options.allowUnresolvedHosts Whether to allow requests to hosts that cannot be resolved.
+     * @param {boolean} options.enableKeepAlive Whether to enable HTTP/HTTPS keep-alive.
      */
-    constructor(options = { privateAddressWhitelist: [], logBlocked: true, logAllowed: false, allowUnresolvedHosts: false }) {
-        super();
+    constructor(options = { privateAddressWhitelist: [], logBlocked: true, logAllowed: false, allowUnresolvedHosts: false, enableKeepAlive: false }) {
+        super({ keepAlive: options.enableKeepAlive });
 
         const logEntryWarning = (entry, message) => `${color.red('Warning')}: Ignoring invalid private whitelist entry ${color.yellow(entry)} - ${message}`;
         const whitelistArray = Array.isArray(options.privateAddressWhitelist) ? options.privateAddressWhitelist : [];
@@ -204,8 +205,9 @@ class PrivateRequestAgent extends Agent {
  * @param {boolean} options.logBlocked Whether to log blocked requests to the console.
  * @param {boolean} options.logAllowed Whether to log allowed requests to the console.
  * @param {boolean} options.allowUnresolvedHosts Whether to allow requests to hosts that cannot be resolved.
+ * @param {boolean} options.enableKeepAlive Whether to enable HTTP/HTTPS keep-alive.
  */
-export default function initPrivateRequestFilter({ listen, enabled, privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts }) {
+export default function initPrivateRequestFilter({ listen, enabled, privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts, enableKeepAlive }) {
     if (!enabled) {
         if (listen) {
             console.warn();
@@ -215,7 +217,7 @@ export default function initPrivateRequestFilter({ listen, enabled, privateAddre
         return;
     }
 
-    const agent = new PrivateRequestAgent({ privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts });
+    const agent = new PrivateRequestAgent({ privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts, enableKeepAlive });
 
     http.globalAgent = agent;
     https.globalAgent = agent;

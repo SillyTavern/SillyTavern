@@ -342,6 +342,7 @@ async function preSetupTasks() {
         logBlocked: !!getConfigValue('privateAddressWhitelist.log.blockedRequests', true, 'boolean'),
         logAllowed: !!getConfigValue('privateAddressWhitelist.log.allowedRequests', false, 'boolean'),
         allowUnresolvedHosts: !!getConfigValue('privateAddressWhitelist.allowUnresolvedHosts', false, 'boolean'),
+        enableKeepAlive: cliArgs.enableKeepAlive,
     };
     initPrivateRequestFilter(requestFilterOptions);
 
