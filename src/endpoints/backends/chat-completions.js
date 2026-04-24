@@ -1090,6 +1090,8 @@ async function sendDeepSeekRequest(request, response) {
             'top_p': request.body.top_p,
             'stop': request.body.stop,
             'seed': request.body.seed,
+            'reasoning_effort': request.body.reasoning_effort,
+            'thinking': request.body.include_reasoning ? { type: 'enabled' } : { type: 'disabled' },
             ...bodyParams,
         };
 

@@ -2501,6 +2501,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.DEEPSEEK,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2520,6 +2521,9 @@ function getReasoningEffort(settings = null, model = null) {
                     ? reasoning_effort_types.min
                     : reasoning_effort_types.low;
             case reasoning_effort_types.max:
+                if (settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+                    return reasoning_effort_types.max;
+                }
                 return reasoning_effort_types.high;
             default:
                 return settings.reasoning_effort;
