@@ -2488,6 +2488,17 @@ function getReasoningEffort(settings = null, model = null) {
     settings = settings ?? oai_settings;
     model = model ?? getChatCompletionModel(settings);
 
+    if (settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+        switch (settings.reasoning_effort) {
+            case reasoning_effort_types.auto:
+                return undefined;
+            case reasoning_effort_types.max:
+                return reasoning_effort_types.max;
+            default:
+                return reasoning_effort_types.high;
+        }
+    }
+
     // These sources expect the effort as string.
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
@@ -5624,8 +5635,8 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (['deepseek-reasoner', 'deepseek-chat'].includes(oai_settings.deepseek_model)) {
-            $('#openai_max_context').attr('max', max_128k);
+        } else if (/^deepseek-v4/.test(oai_settings.deepseek_model) || ['deepseek-reasoner', 'deepseek-chat'].includes(oai_settings.deepseek_model)) {
+            $('#openai_max_context').attr('max', max_1mil);
         } else if (oai_settings.deepseek_model == 'deepseek-coder') {
             $('#openai_max_context').attr('max', max_16k);
         } else {

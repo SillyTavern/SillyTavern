@@ -79,7 +79,8 @@ const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_CHUTES = 'https://llm.chutes.ai/v1';
 const API_ELECTRONHUB = 'https://api.electronhub.ai/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
-const API_DEEPSEEK = 'https://api.deepseek.com/beta';
+const API_DEEPSEEK = 'https://api.deepseek.com';
+const API_DEEPSEEK_BETA = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
 const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://gen.pollinations.ai/v1';
@@ -1026,7 +1027,6 @@ async function sendCohereRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendDeepSeekRequest(request, response) {
-    const apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK, request.body.secret_id);
 
     if (!apiKey && !request.body.reverse_proxy) {
@@ -1074,10 +1074,22 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
+        const isV4Model = /^deepseek-v4/.test(request.body.model);
+        const usesPrefixCompletion = processedMessages.some(message => message.prefix);
 
-        if (/-reasoner/.test(request.body.model)) {
+        if (/-reasoner/.test(request.body.model) || isV4Model) {
             addReasoningContentToToolCalls(processedMessages);
         }
+
+        if (isV4Model) {
+            bodyParams['thinking'] = { type: request.body.include_reasoning ? 'enabled' : 'disabled' };
+
+            if (request.body.include_reasoning && request.body.reasoning_effort) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+            }
+        }
+
+        const apiUrl = new URL(request.body.reverse_proxy || (usesPrefixCompletion ? API_DEEPSEEK_BETA : API_DEEPSEEK)).toString();
 
         const requestBody = {
             'messages': processedMessages,
@@ -1775,7 +1787,7 @@ router.post('/status', async function (request, statusResponse) {
             headers = {};
             queryParams = { detailed: true };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.DEEPSEEK) {
-            apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK.replace('/beta', '')).toString();
+            apiUrl = new URL(request.body.reverse_proxy || API_DEEPSEEK).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.DEEPSEEK, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.XAI) {
