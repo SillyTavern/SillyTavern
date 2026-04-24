@@ -1074,18 +1074,10 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
-        const isV4Model = /^deepseek-v4/.test(request.body.model);
+        addReasoningContentToToolCalls(processedMessages);
 
-        if (/-reasoner/.test(request.body.model) || isV4Model) {
-            addReasoningContentToToolCalls(processedMessages);
-        }
-
-        if (isV4Model) {
-            bodyParams['thinking'] = { type: request.body.include_reasoning ? 'enabled' : 'disabled' };
-
-            if (request.body.include_reasoning && request.body.reasoning_effort) {
-                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
-            }
+        if (request.body.include_reasoning && request.body.reasoning_effort) {
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
         }
 
         const requestBody = {
@@ -1099,8 +1091,10 @@ async function sendDeepSeekRequest(request, response) {
             'top_p': request.body.top_p,
             'stop': request.body.stop,
             'seed': request.body.seed,
+            'thinking': { type: request.body.include_reasoning ? 'enabled' : 'disabled' },
             ...bodyParams,
         };
+
 
         const config = {
             method: 'POST',

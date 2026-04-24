@@ -2088,31 +2088,18 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
-        const legacyDeepSeekModels = [
-            { id: 'deepseek-chat', deprecated: '2026/07/24' },
-            { id: 'deepseek-reasoner', deprecated: '2026/07/24' },
-        ];
-        const deepSeekModels = [...model_list];
-        for (const legacyModel of legacyDeepSeekModels) {
-            if (!deepSeekModels.some(model => model.id === legacyModel.id)) {
-                deepSeekModels.push(legacyModel);
-            }
-        }
-
         $('#model_deepseek_select').empty();
-        deepSeekModels.forEach((model) => {
-            const deprecatedInfo = legacyDeepSeekModels.find(legacyModel => legacyModel.id === model.id)?.deprecated;
-            const label = deprecatedInfo ? `${model.id} (deprecated ${deprecatedInfo})` : model.id;
+        model_list.forEach((model) => {
             $('#model_deepseek_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: label,
+                    text: model.id,
                 }));
         });
 
-        const selectedModel = deepSeekModels.find(model => model.id === oai_settings.deepseek_model);
-        if (deepSeekModels.length > 0 && (!selectedModel || !oai_settings.deepseek_model)) {
-            oai_settings.deepseek_model = deepSeekModels[0].id;
+        const selectedModel = model_list.find(model => model.id === oai_settings.deepseek_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.deepseek_model)) {
+            oai_settings.deepseek_model = model_list[0].id;
         }
 
         $('#model_deepseek_select').val(oai_settings.deepseek_model).trigger('change');
@@ -4134,6 +4121,7 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
+        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
     ];
 
     for (const migration of migrateMap) {
@@ -5646,18 +5634,8 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^deepseek-v4/.test(oai_settings.deepseek_model)) {
-            $('#openai_max_context').attr('max', max_1mil);
-        } else if (['deepseek-chat','deepseek-reasoner'].includes(oai_settings.deepseek_model)) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (oai_settings.deepseek_model == 'deepseek-coder') {
-            $('#openai_max_context').attr('max', max_16k);
-        } else {
-            $('#openai_max_context').attr('max', max_64k);
-        }
-
+        const maxContext = oai_settings.max_context_unlocked ? unlocked_max : max_1mil;
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
