@@ -70,7 +70,7 @@ basicAuthUser:
   username: "user"
   password: "password"
 # Enables CORS proxy middleware
-enableCorsProxy: false
+enableCorsProxy: true
 # CORS settings (applied to all routes)
 cors:
   # Enable or disable CORS middleware
@@ -344,6 +344,6 @@ gemini:
     # Leave empty to use the API-default value.
     personGeneration: 'allow_adult'
 # -- SERVER PLUGIN CONFIGURATION --
-enableServerPlugins: false
+enableServerPlugins: true
 # Attempt to automatically update server plugins on startup
 enableServerPluginsAutoUpdate: true
