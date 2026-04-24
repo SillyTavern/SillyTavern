@@ -8,7 +8,6 @@ console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV
 const cliArgs = new CommandLineParser().parse(process.argv);
 globalThis.DATA_ROOT = cliArgs.dataRoot;
 globalThis.COMMAND_LINE_ARGS = cliArgs;
-
 process.chdir(serverDirectory);
 
 try {
