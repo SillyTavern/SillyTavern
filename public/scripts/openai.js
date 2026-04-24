@@ -446,7 +446,7 @@ const default_settings = {
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
-    deepseek_model: 'deepseek-chat',
+    deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -2088,18 +2088,34 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
+        const knownDeepSeekModels = [
+            { id: 'deepseek-v4-flash' },
+            { id: 'deepseek-v4-pro' },
+            { id: 'deepseek-chat', deprecated: '2026/07/24' },
+            { id: 'deepseek-reasoner', deprecated: '2026/07/24' },
+            { id: 'deepseek-coder' },
+        ];
+        const mergedModels = [...model_list];
+        for (const known of knownDeepSeekModels) {
+            if (!mergedModels.some(m => m.id === known.id)) {
+                mergedModels.push(known);
+            }
+        }
+
         $('#model_deepseek_select').empty();
-        model_list.forEach((model) => {
+        mergedModels.forEach((model) => {
+            const deprecatedInfo = knownDeepSeekModels.find(k => k.id === model.id)?.deprecated;
+            const label = deprecatedInfo ? `${model.id} (deprecated ${deprecatedInfo})` : model.id;
             $('#model_deepseek_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: label,
                 }));
         });
 
-        const selectedModel = model_list.find(model => model.id === oai_settings.deepseek_model);
-        if (model_list.length > 0 && (!selectedModel || !oai_settings.deepseek_model)) {
-            oai_settings.deepseek_model = model_list[0].id;
+        const selectedModel = mergedModels.find(model => model.id === oai_settings.deepseek_model);
+        if (mergedModels.length > 0 && (!selectedModel || !oai_settings.deepseek_model)) {
+            oai_settings.deepseek_model = mergedModels[0].id;
         }
 
         $('#model_deepseek_select').val(oai_settings.deepseek_model).trigger('change');
