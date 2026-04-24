@@ -4122,7 +4122,7 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
-        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
+        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
     ];
 
     for (const migration of migrateMap) {
