@@ -31,6 +31,7 @@ import { initConfig } from './config-init.js';
  * @property {string} keyPassphrase SSL private key passphrase
  * @property {boolean} whitelistMode If enable whitelist mode
  * @property {boolean} basicAuthMode If enable basic authentication
+ * @property {boolean} disableKeepAlive Disable HTTP/HTTPS keep-alive globally
  * @property {boolean} requestProxyEnabled If enable outgoing request proxy
  * @property {string} requestProxyUrl Request proxy URL
  * @property {string[]} requestProxyBypass Request proxy bypass list
@@ -76,6 +77,7 @@ export class CommandLineParser {
             keyPassphrase: '',
             whitelistMode: true,
             basicAuthMode: false,
+            disableKeepAlive: false,
             requestProxyEnabled: false,
             requestProxyUrl: '',
             requestProxyBypass: [],
@@ -217,6 +219,11 @@ export class CommandLineParser {
                 default: null,
                 describe: 'Enables basic authentication',
             })
+            .option('disableKeepAlive', {
+                type: 'boolean',
+                default: null,
+                describe: 'Disable HTTP/HTTPS keep-alive globally',
+            })
             .option('requestProxyEnabled', {
                 type: 'boolean',
                 default: null,
@@ -313,6 +320,7 @@ export class CommandLineParser {
             keyPassphrase: cliArguments.keyPassphrase ?? getConfigValue('ssl.keyPassphrase', defaultConfig.keyPassphrase),
             whitelistMode: cliArguments.whitelist ?? getConfigValue('whitelistMode', defaultConfig.whitelistMode, 'boolean'),
             basicAuthMode: cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', defaultConfig.basicAuthMode, 'boolean'),
+            disableKeepAlive: cliArguments.disableKeepAlive ?? getConfigValue('disableKeepAlive', defaultConfig.disableKeepAlive, 'boolean'),
             requestProxyEnabled: cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', defaultConfig.requestProxyEnabled, 'boolean'),
             requestProxyUrl: cliArguments.requestProxyUrl ?? getConfigValue('requestProxy.url', defaultConfig.requestProxyUrl),
             requestProxyBypass: cliArguments.requestProxyBypass ?? getConfigValue('requestProxy.bypass', defaultConfig.requestProxyBypass),
