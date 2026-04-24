@@ -2512,6 +2512,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.DEEPSEEK,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2519,6 +2520,17 @@ function getReasoningEffort(settings = null, model = null) {
     }
 
     function resolveReasoningEffort() {
+        if (settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.max:
+                    return reasoning_effort_types.max;
+                default:
+                    return reasoning_effort_types.high;
+            }
+        }
+
         switch (settings.reasoning_effort) {
             case reasoning_effort_types.auto:
                 return undefined;
