@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-import http from 'node:http';
-import https from 'node:https';
 import { CommandLineParser } from './src/command-line.js';
 import { serverDirectory } from './src/server-directory.js';
 
@@ -10,11 +8,6 @@ console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV
 const cliArgs = new CommandLineParser().parse(process.argv);
 globalThis.DATA_ROOT = cliArgs.dataRoot;
 globalThis.COMMAND_LINE_ARGS = cliArgs;
-
-if (cliArgs.disableKeepAlive) {
-    http.globalAgent = new http.Agent({ keepAlive: false });
-    https.globalAgent = new https.Agent({ keepAlive: false });
-}
 
 process.chdir(serverDirectory);
 
