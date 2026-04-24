@@ -4213,16 +4213,11 @@ function loadOpenAISettings(data, settings) {
     setNamesBehaviorControls();
     setContinuePostfixControls();
     setToolReasoningControls();
-    updateFunctionCallingControls();
     ToolManager.RECURSE_LIMIT = oai_settings.tool_call_recurse_limit;
 
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
     $('#chat_completion_source').trigger('change');
-}
-
-function updateFunctionCallingControls() {
-    $('#tool_call_recurse_limit_block').toggle(oai_settings.function_calling);
 }
 
 function setNamesBehaviorControls() {
@@ -6825,7 +6820,6 @@ export function initOpenAI() {
 
     $('#openai_function_calling').on('input', function () {
         oai_settings.function_calling = !!$(this).prop('checked');
-        updateFunctionCallingControls();
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
