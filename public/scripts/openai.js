@@ -2488,17 +2488,6 @@ function getReasoningEffort(settings = null, model = null) {
     settings = settings ?? oai_settings;
     model = model ?? getChatCompletionModel(settings);
 
-    if (settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
-        switch (settings.reasoning_effort) {
-            case reasoning_effort_types.auto:
-                return undefined;
-            case reasoning_effort_types.max:
-                return reasoning_effort_types.max;
-            default:
-                return reasoning_effort_types.high;
-        }
-    }
-
     // These sources expect the effort as string.
     const reasoningEffortSources = [
         chat_completion_sources.OPENAI,
