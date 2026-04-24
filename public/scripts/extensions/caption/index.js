@@ -320,6 +320,8 @@ async function captionMultimodal(base64Img, externalPrompt) {
         }
         prompt = String(customPrompt).trim();
     }
+    //added macro stuff to prompt
+    prompt = substituteParamsExtended(prompt);
 
     const caption = await getMultimodalCaption(base64Img, prompt);
     return { caption };
