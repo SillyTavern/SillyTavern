@@ -1073,9 +1073,9 @@ async function sendDeepSeekRequest(request, response) {
             request.body.messages.push(message);
         }
 
-        const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
+        const processedMessages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request));
         const isV4Model = /^deepseek-v4/.test(request.body.model);
-        const usesPrefixCompletion = processedMessages.some(message => message.prefix);
+        const usesPrefixCompletion = processedMessages.some(message => message.role === 'assistant' && message.prefix === true);
 
         if (/-reasoner/.test(request.body.model) || isV4Model) {
             addReasoningContentToToolCalls(processedMessages);
