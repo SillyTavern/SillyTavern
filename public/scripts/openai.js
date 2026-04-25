@@ -4884,41 +4884,43 @@ function onSettingsPresetChange() {
     });
 }
 
+/**
+ * Get the maximum context size for the OpenAI model
+ * @param {string} value Model identifier
+ * @returns {number} Maximum context size in tokens
+ */
 function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
-    } else if (value.startsWith('gpt-5.4')) {
-        return max_1mil;
-    } else if (value.startsWith('gpt-5')) {
-        return max_400k;
-    } else if (value.includes('gpt-4.1')) {
-        return max_1mil;
-    } else if (value.includes('gpt-audio')) {
-        return max_128k;
-    } else if (value.startsWith('o1')) {
-        return max_128k;
-    } else if (value.startsWith('o4') || value.startsWith('o3')) {
-        return max_200k;
-    } else if (value.includes('chatgpt-4o-latest') || value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
-        return max_128k;
-    } else if (value.includes('gpt-3.5-turbo-1106')) {
-        return max_16k;
-    } else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
-        return max_8k;
-    } else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
-        return max_32k;
-    } else if (value.includes('gpt-realtime')) {
-        return max_32k;
-    } else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
-        return max_16k;
-    } else if (value == 'code-davinci-002') {
-        return max_8k;
-    } else if (['text-curie-001', 'text-babbage-001', 'text-ada-001'].includes(value)) {
-        return max_2k;
-    } else {
-        // default to gpt-3 (4095 tokens)
-        return max_4k;
     }
+
+    /** @type {[RegExp, number][]} */
+    const contextMap = [
+        [/^gpt-5\.[45]/, max_1mil],
+        [/^gpt-5/, max_400k],
+        [/gpt-4\.1/, max_1mil],
+        [/gpt-audio/, max_128k],
+        [/^o1/, max_128k],
+        [/^o[34]/, max_200k],
+        [/chatgpt-4o-latest|gpt-4-turbo|gpt-4o|gpt-4-1106|gpt-4-0125|gpt-4-vision/, max_128k],
+        [/gpt-3\.5-turbo-1106/, max_16k],
+        [/^(gpt-4|gpt-4-0314|gpt-4-0613)$/, max_8k],
+        [/^(gpt-4-32k|gpt-4-32k-0314|gpt-4-32k-0613)$/, max_32k],
+        [/gpt-realtime/, max_32k],
+        [/^(gpt-3\.5-turbo-16k|gpt-3\.5-turbo-16k-0613)$/, max_16k],
+        [/^code-davinci-002$/, max_8k],
+        [/^(text-curie-001|text-babbage-001|text-ada-001)$/, max_2k],
+        [/gpt-3/, max_4k],
+    ];
+
+    for (const [regex, max] of contextMap) {
+        if (regex.test(value)) {
+            return max;
+        }
+    }
+
+    // Safe default for most modern models
+    return max_128k;
 }
 
 /**
