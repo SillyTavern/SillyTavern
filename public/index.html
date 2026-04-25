@@ -697,7 +697,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -749,7 +749,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -1400,7 +1400,7 @@
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
 
-                                    <div data-tg-type="koboldcpp, llamacpp, tabby" id="adaptive_p_block" class="wide100p">
+                                    <div data-tg-type="koboldcpp, llamacpp, ooba, tabby" id="adaptive_p_block" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Adaptive-P">Adaptive-P</label>
                                             <a href="https://github.com/MrJackSpade/adaptive-p-docs" target="_blank">
@@ -1831,6 +1831,7 @@
                                             <div data-name="tfs" draggable="true"><span>Tail Free Sampling</span><small></small></div>
                                             <div data-name="top_a" draggable="true"><span>Top A</span><small></small></div>
                                             <div data-name="min_p" draggable="true"><span>Min P</span><small></small></div>
+                                            <div data-name="adaptive_p" draggable="true"><span>Adaptive-P</span><small></small></div>
                                             <div data-name="mirostat" draggable="true"><span>Mirostat</span><small></small></div>
                                             <div data-name="xtc" draggable="true"><span>XTC</span><small></small></div>
                                             <div data-name="encoder_repetition_penalty" draggable="true"><span>Encoder Repetition Penalty</span><small></small></div>
@@ -1996,7 +1997,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt,workers_ai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,minimax,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt,workers_ai">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -2009,6 +2010,20 @@
                                             <span data-i18n="enable_functions_desc_1">Allows using </span><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" data-i18n="enable_functions_desc_2">function tools</a>.
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
+                                        </div>
+                                        <div id="tool_call_recurse_limit_block" class="range-block wide100p">
+                                            <div class="range-block-title">
+                                                <small data-i18n="Tool Call Recurse Limit">Tool Call Recurse Limit</small>
+                                                <div class="fa-solid fa-circle-info opacity50p margin5" data-i18n="[title]Maximum number of tool call recursion steps per generation." title="Maximum number of tool call recursion steps per generation."></div>
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="tool_call_recurse_limit" name="tool_call_recurse_limit" min="1" max="50" step="1">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="1" max="50" step="1" data-for="tool_call_recurse_limit" id="tool_call_recurse_limit_counter">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openrouter,custom">
@@ -2129,12 +2144,12 @@
                                             <span data-i18n="Allows the model to return its thinking process.">
                                                 Allows the model to return its thinking process.
                                             </span>
-                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai,moonshot,openrouter">
+                                            <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai,moonshot,openrouter,deepseek">
                                                 This setting affects visibility only.
                                             </strong>
                                         </div>
                                     </div>
-                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes,nanogpt">
+                                    <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom,claude,xai,makersuite,vertexai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes,nanogpt,deepseek">
                                         <div class="flex-container oneline-dropdown" title="Constrains effort on reasoning for reasoning models.&#10;Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response." data-i18n="[title]Constrains effort on reasoning for reasoning models.">
                                             <label for="openai_reasoning_effort">
                                                 <span data-i18n="Reasoning Effort">Reasoning Effort</span>
@@ -2445,7 +2460,8 @@
                                     <small data-i18n="Click Authorize below or get the key from">
                                         Click "Authorize" below or get the key from </small> <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
                                     <br>
-                                    <a href="https://openrouter.ai/account" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
+                                    <a href="https://openrouter.ai/settings/credits" target="_blank" class="openrouter_view_credits" data-i18n="View Remaining Credits">View Remaining Credits</a>
+                                    <span class="openrouter_credits_display marginLeft5"></span>
                                 </div>
                                 <div class="flex-container">
                                     <input id="api_key_openrouter-tg" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" value="" type="text" autocomplete="off">
@@ -2905,6 +2921,7 @@
                                 <option value="makersuite">Google AI Studio</option>
                                 <option value="vertexai">Google Vertex AI</option>
                                 <option value="mistralai">MistralAI</option>
+                                <option value="minimax">MiniMax</option>
                                 <option value="moonshot">Moonshot AI</option>
                                 <option value="nanogpt">NanoGPT</option>
                                 <option value="openrouter">OpenRouter</option>
@@ -3029,8 +3046,17 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
+                                    <optgroup label="GPT-5.5">
+                                        <option value="gpt-5.5">gpt-5.5</option>
+                                        <option value="gpt-5.5-2026-04-23">gpt-5.5-2026-04-23</option>
+                                    </optgroup>
                                     <optgroup label="GPT-5.4">
                                         <option value="gpt-5.4">gpt-5.4</option>
+                                        <option value="gpt-5.4-2026-03-05">gpt-5.4-2026-03-05</option>
+                                        <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+                                        <option value="gpt-5.4-mini-2026-03-17">gpt-5.4-mini-2026-03-17</option>
+                                        <option value="gpt-5.4-nano">gpt-5.4-nano</option>
+                                        <option value="gpt-5.4-nano-2026-03-17">gpt-5.4-nano-2026-03-17</option>
                                     </optgroup>
                                     <optgroup label="GPT-5.3">
                                         <option value="gpt-5.3-chat-latest">gpt-5.3-chat-latest</option>
@@ -3178,7 +3204,8 @@
                                 <small data-i18n="Click Authorize below or get the key from">
                                     Click "Authorize" below or get the key from </small> <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
                                 <br>
-                                <a href="https://openrouter.ai/account" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
+                                <a href="https://openrouter.ai/settings/credits" target="_blank" class="openrouter_view_credits" data-i18n="View Remaining Credits">View Remaining Credits</a>
+                                <span class="openrouter_credits_display marginLeft5"></span>
                             </div>
                             <div class="flex-container">
                                 <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" value="" type="text" autocomplete="off">
@@ -3570,6 +3597,32 @@
                                 <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                             </select>
                         </div>
+                        <div id="minimax_form" data-source="minimax">
+                            <h4 data-i18n="MiniMax API Key">MiniMax API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_minimax" name="api_key_minimax" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_minimax"></div>
+                            </div>
+                            <div data-for="api_key_minimax" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="MiniMax Endpoint">MiniMax Endpoint</h4>
+                            <select id="minimax_endpoint">
+                                <option value="global" data-i18n="Global (minimax.io)">Global (minimax.io)</option>
+                                <option value="cn" data-i18n="China (minimaxi.com)">China (minimaxi.com)</option>
+                            </select>
+                            <h4 data-i18n="MiniMax Model">MiniMax Model</h4>
+                            <select id="model_minimax_select">
+                                <option value="MiniMax-M2.7">MiniMax-M2.7</option>
+                                <option value="MiniMax-M2.7-highspeed">MiniMax-M2.7-highspeed</option>
+                                <option value="MiniMax-M2.5">MiniMax-M2.5</option>
+                                <option value="MiniMax-M2.5-highspeed">MiniMax-M2.5-highspeed</option>
+                                <option value="MiniMax-M2.1">MiniMax-M2.1</option>
+                                <option value="MiniMax-M2.1-highspeed">MiniMax-M2.1-highspeed</option>
+                                <option value="MiniMax-M2">MiniMax-M2</option>
+                                <option value="M2-her">M2-her</option>
+                            </select>
+                        </div>
                         <div id="electronhub_form" data-source="electronhub">
                             <h4 data-i18n="Electron Hub API Key">Electron Hub API Key</h4>
                             <div>
@@ -3707,9 +3760,7 @@
                             <div>
                                 <h4 data-i18n="DeepSeek Model">DeepSeek Model</h4>
                                 <select id="model_deepseek_select">
-                                    <option value="deepseek-chat">deepseek-chat</option>
-                                    <option value="deepseek-coder">deepseek-coder</option>
-                                    <option value="deepseek-reasoner">deepseek-reasoner</option>
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
                         </div>

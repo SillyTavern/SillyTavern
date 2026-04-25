@@ -41,6 +41,9 @@ port: 8000
 # Interval in seconds to write a heartbeat file. Set to 0 to disable.
 # This is used primarily for Docker healthchecks.
 heartbeatInterval: 0
+# Enable HTTP/HTTPS keep-alive globally.
+# Disabling restores old Node 18 behavior, can help if ECONNRESET and other network errors occur.
+enableKeepAlive: false
 # -- SSL options --
 ssl:
   # Enable SSL/TLS encryption

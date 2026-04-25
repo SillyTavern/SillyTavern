@@ -13,8 +13,9 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {boolean} enabled Whether proxy is enabled.
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
+ * @property {boolean} enableKeepAlive Enable HTTP/HTTPS keep-alive.
  */
-export default function initRequestProxy({ enabled, url, bypass }) {
+export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive }) {
     try {
         // No proxy is enabled, so return
         if (!enabled) {
@@ -39,7 +40,8 @@ export default function initRequestProxy({ enabled, url, bypass }) {
             process.env.no_proxy = bypass.join(',');
         }
 
-        const proxyAgent = new ProxyAgent();
+        const proxyAgentOptions =  enableKeepAlive ? { keepAlive: true } : { keepAlive: false };
+        const proxyAgent = new ProxyAgent(proxyAgentOptions);
         http.globalAgent = proxyAgent;
         https.globalAgent = proxyAgent;
 

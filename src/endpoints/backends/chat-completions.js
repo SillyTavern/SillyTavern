@@ -18,6 +18,7 @@ import {
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
     SILICONFLOW_ENDPOINT,
+    MINIMAX_ENDPOINT,
     ZAI_ENDPOINT,
 } from '../../constants.js';
 import {
@@ -89,6 +90,8 @@ const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
+const API_MINIMAX = 'https://api.minimax.io/v1';
+const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
@@ -1071,9 +1074,10 @@ async function sendDeepSeekRequest(request, response) {
         }
 
         const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
+        addReasoningContentToToolCalls(processedMessages);
 
-        if (/-reasoner/.test(request.body.model)) {
-            addReasoningContentToToolCalls(processedMessages);
+        if (request.body.include_reasoning && request.body.reasoning_effort) {
+            bodyParams['reasoning_effort'] = request.body.reasoning_effort;
         }
 
         const requestBody = {
@@ -1087,6 +1091,7 @@ async function sendDeepSeekRequest(request, response) {
             'top_p': request.body.top_p,
             'stop': request.body.stop,
             'seed': request.body.seed,
+            'thinking': { type: request.body.include_reasoning ? 'enabled' : 'disabled' },
             ...bodyParams,
         };
 
@@ -1552,7 +1557,87 @@ async function sendChutesRequest(request, response) {
 }
 
 /**
- * Sends a chat completion request to Azure OpenAI.
+ * Sends a request to MiniMax.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendMinimaxRequest(request, response) {
+    const apiUrl = request.body.minimax_endpoint === MINIMAX_ENDPOINT.CN
+        ? API_MINIMAX_CN : API_MINIMAX;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
+
+    if (!apiKey) {
+        console.warn('MiniMax key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        // MiniMax does not allow consecutive messages with the same role.
+        // Merge them into a single message to avoid "invalid chat setting (2013)".
+        const messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.MERGE_TOOLS, getPromptNames(request));
+
+        let bodyParams = {};
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        const requestBody = {
+            'messages': messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
+            'stream': request.body.stream,
+            'top_p': request.body.top_p,
+            'stop': request.body.stop,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('MiniMax request:', requestBody);
+
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
+
+        if (request.body.stream) {
+            await forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('MiniMax returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('MiniMax response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with MiniMax: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
  * @param {express.Request} request Express request object (contains request.body with all generate_data)
  * @param {express.Response} response Express response object
  */
@@ -2097,6 +2182,7 @@ router.post('/generate', async function (request, response) {
             case CHAT_COMPLETION_SOURCES.AIMLAPI: return await sendAimlapiRequest(request, response);
             case CHAT_COMPLETION_SOURCES.XAI: return await sendXaiRequest(request, response);
             case CHAT_COMPLETION_SOURCES.CHUTES: return await sendChutesRequest(request, response);
+            case CHAT_COMPLETION_SOURCES.MINIMAX: return await sendMinimaxRequest(request, response);
             case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return await sendElectronHubRequest(request, response);
             case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return await sendAzureOpenAIRequest(request, response);
         }

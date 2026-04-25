@@ -1125,11 +1125,12 @@ function throwIfSourceInvalid() {
  * @returns {Promise<void>}
  */
 async function deleteVectorItems(collectionId, hashes) {
+    const args = await getAdditionalArgs([]);
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            ...getVectorsRequestBody(),
+            ...getVectorsRequestBody(args),
             collectionId: collectionId,
             hashes: hashes,
             source: settings.source,
