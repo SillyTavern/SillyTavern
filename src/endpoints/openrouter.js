@@ -100,6 +100,41 @@ router.post('/models/image', async (_req, res) => {
     }
 });
 
+router.post('/credits', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.OPENROUTER);
+
+        if (!key) {
+            console.warn('OpenRouter API key not found');
+            return res.sendStatus(400);
+        }
+
+        const response = await fetch(`${API_OPENROUTER}/credits`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            console.warn('OpenRouter credits request failed', response.statusText);
+            return res.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const totalCredits = data.data?.total_credits ?? 0;
+        const totalUsage = data.data?.total_usage ?? 0;
+        const remaining = totalCredits - totalUsage;
+
+        return res.json({ remaining, total_credits: totalCredits, total_usage: totalUsage });
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
 router.post('/image/generate', async (req, res) => {
     try {
         const key = readSecret(req.user.directories, SECRET_KEYS.OPENROUTER);

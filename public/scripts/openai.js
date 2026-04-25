@@ -47,6 +47,7 @@ import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
+    clamp,
     createThumbnail,
     delay,
     download,
@@ -197,6 +198,7 @@ export const chat_completion_sources = {
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
+    MINIMAX: 'minimax',
 };
 
 const character_names_behavior = {
@@ -270,6 +272,11 @@ export const SILICONFLOW_ENDPOINT = {
     CN: 'cn',
 };
 
+export const MINIMAX_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
+};
+
 const sensitiveFields = [
     'reverse_proxy',
     'proxy_password',
@@ -319,6 +326,8 @@ export const settingsToUpdate = {
     chutes_sort_models: ['#chutes_sort_models', 'chutes_sort_models', false, true],
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     siliconflow_endpoint: ['#siliconflow_endpoint', 'siliconflow_endpoint', false, true],
+    minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
+    minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
     electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
@@ -374,6 +383,7 @@ export const settingsToUpdate = {
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
+    tool_call_recurse_limit: ['#tool_call_recurse_limit', 'tool_call_recurse_limit', false, false],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true, false],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false, false],
     verbosity: ['#openai_verbosity', 'verbosity', false, false],
@@ -431,11 +441,13 @@ const default_settings = {
     chutes_sort_models: 'alphabetically',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
+    minimax_model: 'MiniMax-M2.7',
+    minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
-    deepseek_model: 'deepseek-chat',
+    deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -481,6 +493,7 @@ const default_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
+    tool_call_recurse_limit: 5,
     names_behavior: character_names_behavior.DEFAULT,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
@@ -1712,6 +1725,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.groq_model;
         case chat_completion_sources.SILICONFLOW:
             return settings.siliconflow_model;
+        case chat_completion_sources.MINIMAX:
+            return settings.minimax_model;
         case chat_completion_sources.ELECTRONHUB:
             return settings.electronhub_model;
         case chat_completion_sources.CHUTES:
@@ -2488,6 +2503,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.DEEPSEEK,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2495,6 +2511,36 @@ function getReasoningEffort(settings = null, model = null) {
     }
 
     function resolveReasoningEffort() {
+        if (settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.max:
+                    return reasoning_effort_types.max;
+                default:
+                    return reasoning_effort_types.high;
+            }
+        }
+
+        if (settings.chat_completion_source === chat_completion_sources.CUSTOM && /^koboldcpp\/(.+)$/.test(model)) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return 'minimal';
+                case reasoning_effort_types.low:
+                    return 'low';
+                case reasoning_effort_types.medium:
+                    return 'medium';
+                case reasoning_effort_types.high:
+                    return 'high';
+                case reasoning_effort_types.max:
+                    return 'xhigh';
+                default:
+                    return settings.reasoning_effort;
+            }
+        }
+
         switch (settings.reasoning_effort) {
             case reasoning_effort_types.auto:
                 return undefined;
@@ -2503,9 +2549,16 @@ function getReasoningEffort(settings = null, model = null) {
                     return 'none';
                 }
 
-                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(model)
-                    ? reasoning_effort_types.min
-                    : reasoning_effort_types.low;
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)) {
+                    if (/^gpt-5\.(4|5)/.test(model)) {
+                        return 'none';
+                    }
+                    if (/^gpt-5/.test(model)) {
+                        return reasoning_effort_types.min;
+                    }
+                }
+
+                return reasoning_effort_types.low;
             case reasoning_effort_types.max:
                 return reasoning_effort_types.high;
             default:
@@ -2845,6 +2898,14 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.siliconflow_endpoint = settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
     }
 
+    if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
+        // MiniMax requires temperature in (0.0, 1.0]; zero is rejected.
+        if (Number.isFinite(generate_data.temperature)) {
+            generate_data.temperature = clamp(generate_data.temperature, Number.EPSILON, 1.0);
+        }
+    }
+
     if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
         generate_data.workers_ai_account_id = settings.workers_ai_account_id;
         generate_data.top_k = settings.top_k_openai > 0 ? Math.min(Number(settings.top_k_openai), 50) : undefined;
@@ -2910,7 +2971,7 @@ export async function createGenerationParameters(settings, model, type, messages
         if (/gpt-5-chat-latest/.test(model)) {
             delete generate_data.tools;
             delete generate_data.tool_choice;
-        } else if (/gpt-5\.(1|2|3|4)/.test(model) && !/chat-latest/.test(model)) {
+        } else if (/gpt-5\.(1|2|3|4)/.test(model) && !/chat-latest/.test(model) && !generate_data.reasoning_effort) {
             delete generate_data.frequency_penalty;
             delete generate_data.presence_penalty;
             delete generate_data.logit_bias;
@@ -4089,6 +4150,7 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
+        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
     ];
 
     for (const migration of migrateMap) {
@@ -4190,6 +4252,7 @@ function loadOpenAISettings(data, settings) {
     setNamesBehaviorControls();
     setContinuePostfixControls();
     setToolReasoningControls();
+    ToolManager.RECURSE_LIMIT = oai_settings.tool_call_recurse_limit;
 
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
@@ -4255,6 +4318,7 @@ async function getStatusOpen() {
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.ZAI,
+        chat_completion_sources.MINIMAX,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4310,6 +4374,10 @@ async function getStatusOpen() {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
         data.siliconflow_endpoint = oai_settings.siliconflow_endpoint;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        data.minimax_endpoint = oai_settings.minimax_endpoint;
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
@@ -4845,41 +4913,102 @@ function onSettingsPresetChange() {
     });
 }
 
+/**
+ * Get the maximum context size for the OpenAI model
+ * @param {string} value Model identifier
+ * @returns {number} Maximum context size in tokens
+ */
 function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
-    } else if (value.startsWith('gpt-5.4')) {
-        return max_1mil;
-    } else if (value.startsWith('gpt-5')) {
-        return max_400k;
-    } else if (value.includes('gpt-4.1')) {
-        return max_1mil;
-    } else if (value.includes('gpt-audio')) {
-        return max_128k;
-    } else if (value.startsWith('o1')) {
-        return max_128k;
-    } else if (value.startsWith('o4') || value.startsWith('o3')) {
-        return max_200k;
-    } else if (value.includes('chatgpt-4o-latest') || value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
-        return max_128k;
-    } else if (value.includes('gpt-3.5-turbo-1106')) {
-        return max_16k;
-    } else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
-        return max_8k;
-    } else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
-        return max_32k;
-    } else if (value.includes('gpt-realtime')) {
-        return max_32k;
-    } else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
-        return max_16k;
-    } else if (value == 'code-davinci-002') {
-        return max_8k;
-    } else if (['text-curie-001', 'text-babbage-001', 'text-ada-001'].includes(value)) {
-        return max_2k;
-    } else {
-        // default to gpt-3 (4095 tokens)
-        return max_4k;
     }
+
+    /** @type {[RegExp, number][]} */
+    const contextMap = [
+        [/^gpt-5\.[45]/, max_1mil],
+        [/^gpt-5/, max_400k],
+        [/gpt-4\.1/, max_1mil],
+        [/gpt-audio/, max_128k],
+        [/^o1/, max_128k],
+        [/^o[34]/, max_200k],
+        [/chatgpt-4o-latest|gpt-4-turbo|gpt-4o|gpt-4-1106|gpt-4-0125|gpt-4-vision/, max_128k],
+        [/gpt-3\.5-turbo-1106/, max_16k],
+        [/^(gpt-4|gpt-4-0314|gpt-4-0613)$/, max_8k],
+        [/^(gpt-4-32k|gpt-4-32k-0314|gpt-4-32k-0613)$/, max_32k],
+        [/gpt-realtime/, max_32k],
+        [/^(gpt-3\.5-turbo-16k|gpt-3\.5-turbo-16k-0613)$/, max_16k],
+        [/^code-davinci-002$/, max_8k],
+        [/^(text-curie-001|text-babbage-001|text-ada-001)$/, max_2k],
+        [/gpt-3/, max_4k],
+    ];
+
+    for (const [regex, max] of contextMap) {
+        if (regex.test(value)) {
+            return max;
+        }
+    }
+
+    // Safe default for most modern models
+    return max_128k;
+}
+
+/**
+ * Get the maximum context size for Gemini models based on model identifier and optional model list.
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getGeminiMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const contextLength = model_list.find((record) => record.id === model)?.inputTokenLimit;
+        if (Number.isFinite(contextLength) && contextLength > 0) {
+            return contextLength;
+        }
+    }
+
+    /** @type {[RegExp, number][]} */
+    const contextMap = [
+        [/gemini-2\.5-flash-image/, max_32k],
+        [/gemini-3-pro-image/, max_64k],
+        [/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
+        [/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/, max_1mil],
+        [/gemma-3-27b-it/, max_128k],
+        [/gemma-3n-e4b-it/, max_8k],
+        [/gemma-3/, max_32k],
+        [/gemma-4/, max_256k],
+    ];
+
+    for (const [regex, max] of contextMap) {
+        if (regex.test(model)) {
+            return max;
+        }
+    }
+
+    return max_128k;
+}
+
+/**
+ * Get the maximum temperature for Gemini models based on model identifier and optional model list.
+ * @param {string} model Model identifier
+ * @returns {number} Maximum temperature for Gemini models
+ */
+function getGeminiMaxTemp(model) {
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const temp = model_list.find((record) => record.id === model)?.temperature;
+        if (Number.isFinite(temp) && temp > 0) {
+            return temp;
+        }
+    }
+
+    if (/(vision|ultra|gemma)/.test(model)) {
+        return 1.0;
+    }
+
+    return 2.0;
 }
 
 /**
@@ -5266,6 +5395,15 @@ async function onModelChange() {
         oai_settings.siliconflow_model = value;
     }
 
+    if ($(this).is('#model_minimax_select')) {
+        if (!value) {
+            console.debug('Null MiniMax model selected. Ignoring.');
+            return;
+        }
+        console.log('MiniMax model changed to', value);
+        oai_settings.minimax_model = value;
+    }
+
     if ($(this).is('#model_electronhub_select')) {
         if (!value || !hasModelsLoaded) {
             console.debug('Null ElectronHub model selected. Ignoring.');
@@ -5383,28 +5521,11 @@ async function onModelChange() {
     }
 
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-2.5-flash-image')) {
-            $('#openai_max_context').attr('max', max_32k);
-        } else if (value.includes('gemini-3-pro-image')) {
-            $('#openai_max_context').attr('max', max_64k);
-        } else if (/gemini-3[.\d]*-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
-            $('#openai_max_context').attr('max', max_1mil);
-        } else if (value.includes('gemini-exp') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
-            $('#openai_max_context').attr('max', max_1mil);
-        } else if (value.includes('gemma-3-27b-it')) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (value.includes('gemma-3n-e4b-it')) {
-            $('#openai_max_context').attr('max', max_8k);
-        } else if (value.includes('gemma-3')) {
-            $('#openai_max_context').attr('max', max_32k);
-        } else {
-            $('#openai_max_context').attr('max', max_32k);
-        }
-        let makersuite_max_temp = (value.includes('vision') || value.includes('ultra') || value.includes('gemma')) ? 1.0 : 2.0;
-        oai_settings.temp_openai = Math.min(makersuite_max_temp, oai_settings.temp_openai);
-        $('#temp_openai').attr('max', makersuite_max_temp).val(oai_settings.temp_openai).trigger('input');
+        const contextSize = getGeminiMaxContext(value, oai_settings.max_context_unlocked);
+        const maxTemp = getGeminiMaxTemp(value);
+        $('#openai_max_context').attr('max', contextSize);
+        oai_settings.temp_openai = Math.min(maxTemp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', maxTemp).val(oai_settings.temp_openai).trigger('input');
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
     }
@@ -5587,16 +5708,8 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else if (['deepseek-reasoner', 'deepseek-chat'].includes(oai_settings.deepseek_model)) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (oai_settings.deepseek_model == 'deepseek-coder') {
-            $('#openai_max_context').attr('max', max_16k);
-        } else {
-            $('#openai_max_context').attr('max', max_64k);
-        }
-
+        const maxContext = oai_settings.max_context_unlocked ? unlocked_max : max_1mil;
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
@@ -5707,6 +5820,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        const maxContext = oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         const maxContext = getZaiMaxContext(oai_settings.zai_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5780,6 +5902,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
+        [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5845,6 +5968,8 @@ function toggleChatCompletionForms() {
         $('#model_chutes_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
         $('#model_siliconflow_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
+        $('#model_minimax_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -5976,6 +6101,10 @@ export function isImageInliningSupported() {
         'gemini-exp-1206',
         'learnlm',
         'gemini-robotics',
+        'gemma-3-27b',
+        'gemma-3-12b',
+        'gemma-3-4b',
+        'gemma-4',
         // MistralAI
         'mistral-small-2503',
         'mistral-small-2506',
@@ -6080,6 +6209,7 @@ export function isVideoInliningSupported() {
         'gemini-2.5',
         'gemini-exp-1206',
         'gemini-3',
+        'gemma-4',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
@@ -6774,6 +6904,13 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#tool_call_recurse_limit').on('input', function () {
+        oai_settings.tool_call_recurse_limit = Number($(this).val());
+        $('#tool_call_recurse_limit_counter').val(oai_settings.tool_call_recurse_limit);
+        ToolManager.RECURSE_LIMIT = oai_settings.tool_call_recurse_limit;
+        saveSettingsDebounced();
+    });
+
     $('#tool_reasoning_mode').on('input', function () {
         oai_settings.tool_reasoning_mode = getToolReasoningMode({
             ...oai_settings,
@@ -7028,6 +7165,10 @@ export function initOpenAI() {
         oai_settings.siliconflow_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
+    $('#minimax_endpoint').on('input', function () {
+        oai_settings.minimax_endpoint = String($(this).val());
+        saveSettingsDebounced();
+    });
     $('#workers_ai_account_id').on('input', function () {
         oai_settings.workers_ai_account_id = String($(this).val());
         saveSettingsDebounced();
@@ -7048,6 +7189,7 @@ export function initOpenAI() {
     $('#model_groq_select').on('change', onModelChange);
     $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
+    $('#model_minimax_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);

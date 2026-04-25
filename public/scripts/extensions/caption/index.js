@@ -1,6 +1,6 @@
 import { ensureImageFormatSupported, getBase64Async, getFileExtension, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
-import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
+import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { oai_settings } from '../../openai.js';
@@ -100,7 +100,7 @@ async function wrapCaptionTemplate(caption) {
         template += ' {{caption}}';
     }
 
-    let messageText = substituteParamsExtended(template, { caption: caption });
+    let messageText = substituteParams(template, { dynamicMacros: { caption: caption } });
 
     if (extension_settings.caption.refine_mode) {
         messageText = await Popup.show.input(
@@ -321,6 +321,8 @@ async function captionMultimodal(base64Img, externalPrompt) {
         }
         prompt = String(customPrompt).trim();
     }
+
+    prompt = substituteParams(prompt);
 
     const caption = await getMultimodalCaption(base64Img, prompt);
     return { caption };

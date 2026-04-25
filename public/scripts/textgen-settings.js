@@ -93,6 +93,7 @@ const OOBA_DEFAULT_ORDER = [
     'tfs',
     'top_a',
     'min_p',
+    'adaptive_p',
     'mirostat',
     'xtc',
     'encoder_repetition_penalty',
