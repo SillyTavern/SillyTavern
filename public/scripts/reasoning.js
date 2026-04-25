@@ -756,7 +756,7 @@ export class PromptReasoning {
             this.prefixDuration = duration;
             this.prefixIncomplete = false;
         }
-        return `${formattedReasoning}${content}`;
+        return `${formattedReasoning}${content ?? ''}`;
     }
 
     /**
