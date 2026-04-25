@@ -4951,22 +4951,22 @@ function getGeminiMaxContext(model, isUnlocked) {
         }
     }
 
-    if (/gemini-2\.5-flash-image/.test(model)) {
-        return max_32k;
-    } else if (/gemini-3-pro-image/.test(model)) {
-        return max_64k;
-    } else if (/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/.test(model)) {
-        return max_1mil;
-    } else if (/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/.test(model)) {
-        return max_1mil;
-    } else if (/gemma-3-27b-it/.test(model)) {
-        return max_128k;
-    } else if (/gemma-3n-e4b-it/.test(model)) {
-        return max_8k;
-    } else if (/gemma-3/.test(model)) {
-        return max_32k;
-    } else if (/gemma-4/.test(model)) {
-        return max_256k;
+    /** @type {[RegExp, number][]} */
+    const contextMap = [
+        [/gemini-2\.5-flash-image/, max_32k],
+        [/gemini-3-pro-image/, max_64k],
+        [/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
+        [/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/, max_1mil],
+        [/gemma-3-27b-it/, max_128k],
+        [/gemma-3n-e4b-it/, max_8k],
+        [/gemma-3/, max_32k],
+        [/gemma-4/, max_256k],
+    ];
+
+    for (const [regex, max] of contextMap) {
+        if (regex.test(model)) {
+            return max;
+        }
     }
 
     return max_128k;
