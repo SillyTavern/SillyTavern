@@ -131,14 +131,18 @@ export const group_activation_strategy = {
 
 const DEFAULT_ROUTER_MAX_CONSECUTIVE = 4;
 const DEFAULT_ROUTER_MAX_TOKENS = 64;
-const DEFAULT_ROUTER_PROMPT = `You are a turn router for a roleplay group chat. Your only job is to choose which character(s) should reply next and in what order.
+const DEFAULT_ROUTER_PROMPT = `You are a turn router for a roleplay group chat. Your only job is to decide whether any character should reply next, and if so, which character(s) and in what order.
 
-Rules:
-- If the latest message clearly addresses one character, return only that character.
-- If multiple characters are addressed, list them in the order they should speak.
-- If a character mentions or asks something of another character, queue that addressee next.
-- If the conversation has reached a natural pause and should hand back to the user, return an empty list.
-- Avoid letting one character monologue across many turns unless they are clearly continuing a thought.
+When the user has just spoken, choose the most appropriate character (or characters) to respond.
+
+When this is a follow-up round (one or more characters have already replied since the user spoke), the DEFAULT is to return [] (empty list) so control returns to the user. Only return a non-empty list when one of these is clearly true:
+- A character is addressed by name in the latest message.
+- A direct question is asked of a specific character.
+- A character has performed an unmistakable handoff (passing the spotlight, asking another character something, gazing at them expectantly with intent to be answered).
+
+If multiple characters are addressed, list them in the order they should speak.
+Do not invent reasons to continue. When in doubt, return [].
+Do not let one character monologue across many consecutive turns.
 
 Output format: a JSON array of character names from the roster, and nothing else.
 Examples: ["Alice"]   ["Alice","Bob"]   []`;
@@ -1108,7 +1112,7 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
                 const newLast = chat[chat.length - 1];
                 const triggerText = newLast?.mes ?? '';
                 if (triggerText) {
-                    const next = await activateLlmRouter(enabledMembers, newLast, triggerText, false, group);
+                    const next = await activateLlmRouter(enabledMembers, newLast, triggerText, false, group, consecutiveTurns);
                     for (const id of next) {
                         activatedMembers.push(id);
                         if (power_user.show_group_chat_queue) {
@@ -1451,9 +1455,10 @@ function parseRouterOutput(text, enabledMembers) {
  * @param {string} activationText Text the router should react to (user input or last message)
  * @param {boolean} isUserInput Whether the trigger is fresh user input
  * @param {Group} group The group object
+ * @param {number} [consecutiveTurns=0] How many consecutive AI turns have already happened since the last user input
  * @returns {Promise<number[]>} Ordered list of character ids to speak next (may be empty)
  */
-async function activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group) {
+async function activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group, consecutiveTurns = 0) {
     const profileId = group?.router_profile_id;
     if (!profileId) {
         console.warn('[group-chats] LLM-routed strategy active but no router profile is set; falling back to natural order.');
@@ -1466,6 +1471,10 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
         const speakers = recentSpeakers().join(', ') || '(none yet)';
         const lastSpeaker = isUserInput ? '{{user}}' : (lastMessage?.name ?? 'unknown');
         const lastText = String(activationText ?? '').slice(0, 2000);
+        const maxConsecutive = Math.max(1, Number(group?.router_max_consecutive ?? DEFAULT_ROUTER_MAX_CONSECUTIVE));
+        const turnContext = consecutiveTurns <= 0
+            ? 'TURN CONTEXT: The user just spoke. Pick the character(s) who should respond first.'
+            : `TURN CONTEXT: This is consecutive AI turn ${consecutiveTurns} of max ${maxConsecutive} since the user last spoke. The user is waiting. Strongly prefer [] unless a character is clearly addressed by name, asked a direct question, or being unmistakably handed off to. The closer ${consecutiveTurns} is to ${maxConsecutive}, the more strongly you should prefer [].`;
 
         const prompt = [
             systemPrompt,
@@ -1474,6 +1483,8 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             roster || '(roster unavailable)',
             '',
             `RECENT SPEAKERS (most recent first): ${speakers}`,
+            '',
+            turnContext,
             '',
             `LATEST MESSAGE FROM ${lastSpeaker}:`,
             '"""',
