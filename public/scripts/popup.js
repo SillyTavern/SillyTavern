@@ -183,6 +183,7 @@ export class Popup {
     /** @type {boolean} */ #isClosingPrevented;
     /** @type {number} */ #lastEscapePress = 0;
     /** @type {boolean} */ #isShowingForceCloseConfirm = false;
+    /** @type {() => void} */ #viewportPositionListener = () => this.#updateViewportPosition();
 
     /**
      * Constructs a new Popup object with the given text content, type, inputValue, and options
@@ -677,7 +678,9 @@ export class Popup {
         // Run opening animation
         this.dlg.setAttribute('opening', '');
 
+        this.#enableViewportPositionTracking();
         this.dlg.showModal();
+        this.#updateViewportPosition();
 
         // We need to fix the toastr to be present inside this dialog
         fixToastrForDialogs();
@@ -816,6 +819,7 @@ export class Popup {
         runAfterAnimation(this.dlg, async () => {
             // Call the close on the dialog
             this.dlg.close();
+            this.#disableViewportPositionTracking();
 
             // Run a possible custom handler right before DOM removal
             if (this.onClose) {
@@ -841,6 +845,45 @@ export class Popup {
 
             this.#resolver(this.value);
         });
+    }
+
+    #enableViewportPositionTracking() {
+        if (!window.visualViewport) {
+            return;
+        }
+
+        this.dlg.classList.add('popup--viewport-positioned');
+        this.#updateViewportPosition();
+        window.visualViewport.addEventListener('resize', this.#viewportPositionListener);
+        window.visualViewport.addEventListener('scroll', this.#viewportPositionListener);
+        window.addEventListener('resize', this.#viewportPositionListener);
+        window.addEventListener('orientationchange', this.#viewportPositionListener);
+    }
+
+    #disableViewportPositionTracking() {
+        this.dlg.classList.remove('popup--viewport-positioned');
+        window.visualViewport?.removeEventListener('resize', this.#viewportPositionListener);
+        window.visualViewport?.removeEventListener('scroll', this.#viewportPositionListener);
+        window.removeEventListener('resize', this.#viewportPositionListener);
+        window.removeEventListener('orientationchange', this.#viewportPositionListener);
+    }
+
+    #updateViewportPosition() {
+        const viewport = window.visualViewport;
+
+        // Do not constantly reposition the modal if the user is zoomed in (scale !== 1).
+        // This prevents the modal from jumping wildly due to coordinate miscalculations
+        // when panning or focusing an input on mobile browsers (especially Chrome Android).
+        if (viewport && Math.abs(viewport.scale - 1) > 0.01) {
+            return;
+        }
+
+        const left = viewport ? viewport.offsetLeft + viewport.width / 2 : window.innerWidth / 2;
+        const top = viewport ? viewport.offsetTop + viewport.height / 2 : window.innerHeight / 2;
+
+        this.dlg.style.setProperty('--popup-left', `${left}px`);
+        this.dlg.style.setProperty('--popup-top', `${top}px`);
+        this.dlg.style.setProperty('--popup-transform', 'translate(-50%, -50%)');
     }
 
     /**

@@ -32,6 +32,14 @@ dialog {
     --popup-animation-speed: var(--animation-duration-slow);
 }
 
+.popup.popup--viewport-positioned[open] {
+    position: fixed;
+    top: var(--popup-top, 50%);
+    left: var(--popup-left, 50%);
+    margin: 0;
+    transform: var(--popup-transform, translate(-50%, -50%));
+}
+
 /** Popup styles applied to the main popup */
 .popup--animation-fast {
     --popup-animation-speed: var(--animation-duration);
