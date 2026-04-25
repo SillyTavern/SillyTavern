@@ -40,6 +40,9 @@ declare global {
         hideMutedSprites?: boolean;
         fav?: boolean;
         date_last_chat?: MessageTimestamp;
+        router_profile_id?: string;
+        router_system_prompt?: string;
+        router_max_consecutive?: number;
     }
 
     interface ChatFile extends Array<ChatMessage> {

@@ -87,6 +87,8 @@ import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { compressRequest } from './request-compression.js';
+import { extension_settings } from './extensions.js';
+import { ConnectionManagerRequestService } from './extensions/shared.js';
 
 export {
     selected_group,
@@ -124,7 +126,22 @@ export const group_activation_strategy = {
     LIST: 1,
     MANUAL: 2,
     POOLED: 3,
+    LLM: 4,
 };
+
+const DEFAULT_ROUTER_MAX_CONSECUTIVE = 4;
+const DEFAULT_ROUTER_MAX_TOKENS = 64;
+const DEFAULT_ROUTER_PROMPT = `You are a turn router for a roleplay group chat. Your only job is to choose which character(s) should reply next and in what order.
+
+Rules:
+- If the latest message clearly addresses one character, return only that character.
+- If multiple characters are addressed, list them in the order they should speak.
+- If a character mentions or asks something of another character, queue that addressee next.
+- If the conversation has reached a natural pause and should hand back to the user, return an empty list.
+- Avoid letting one character monologue across many turns unless they are clearly continuing a thought.
+
+Output format: a JSON array of character names from the roster, and nothing else.
+Examples: ["Alice"]   ["Alice","Bob"]   []`;
 
 export const group_generation_mode = {
     SWAP: 0,
@@ -1002,6 +1019,7 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
         const enabledMembers = group.members.filter(x => !group.disabled_members.includes(x));
         let activatedMembers = [];
+        let isLlmRouted = false;
 
         if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
@@ -1026,6 +1044,9 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
             activatedMembers = activateListOrder(enabledMembers);
         } else if (activationStrategy === group_activation_strategy.POOLED) {
             activatedMembers = activatePooledOrder(enabledMembers, lastMessage, isUserInput);
+        } else if (activationStrategy === group_activation_strategy.LLM) {
+            isLlmRouted = true;
+            activatedMembers = await activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group);
         } else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
             activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
         }
@@ -1047,8 +1068,15 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
             }
         }
         await eventSource.emit(event_types.GROUP_WRAPPER_STARTED, { selected_group, type });
-        // now the real generation begins: cycle through every activated character
-        for (const chId of activatedMembers) {
+        // now the real generation begins: cycle through every activated character.
+        // For the LLM-routed strategy, the queue is dynamic: once it drains we re-poll the
+        // router with the most recent message so addressed/cross-talking characters can join.
+        const routerMaxConsecutive = isLlmRouted
+            ? Math.max(1, Number(group.router_max_consecutive ?? DEFAULT_ROUTER_MAX_CONSECUTIVE))
+            : Infinity;
+        let consecutiveTurns = 0;
+        for (let i = 0; i < activatedMembers.length; i++) {
+            const chId = activatedMembers[i];
             throwIfAborted();
             deactivateSendButtons();
             setCharacterId(chId);
@@ -1072,6 +1100,26 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
             if (power_user.show_group_chat_queue) {
                 groupChatQueueOrder.delete(characters[chId].avatar);
                 groupChatQueueOrder.forEach((value, key, map) => map.set(key, value - 1));
+            }
+            consecutiveTurns++;
+
+            const isLastQueued = i === activatedMembers.length - 1;
+            if (isLlmRouted && isLastQueued && consecutiveTurns < routerMaxConsecutive) {
+                const newLast = chat[chat.length - 1];
+                const triggerText = newLast?.mes ?? '';
+                if (triggerText) {
+                    const next = await activateLlmRouter(enabledMembers, newLast, triggerText, false, group);
+                    for (const id of next) {
+                        activatedMembers.push(id);
+                        if (power_user.show_group_chat_queue) {
+                            // Position is "turns until this character speaks" relative to current i.
+                            groupChatQueueOrder.set(characters[id].avatar, activatedMembers.length - 1 - i);
+                        }
+                    }
+                    if (power_user.show_group_chat_queue) {
+                        printGroupMembers();
+                    }
+                }
             }
         }
     } finally {
@@ -1316,6 +1364,139 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
 }
 
 /**
+ * Build a compact roster string for the router prompt.
+ * @param {string[]} memberAvatars Enabled group member avatars
+ * @returns {string}
+ */
+function buildRouterRoster(memberAvatars) {
+    const lines = [];
+    for (const avatar of memberAvatars) {
+        const character = characters.find(x => x.avatar === avatar);
+        if (!character) continue;
+        const description = String(character.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 280);
+        const personality = String(character.personality ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+        const summary = [personality, description].filter(Boolean).join(' — ');
+        lines.push(summary ? `- ${character.name}: ${summary}` : `- ${character.name}`);
+    }
+    return lines.join('\n');
+}
+
+/**
+ * Collect a short tail of recent speakers for context (most recent first).
+ * @returns {string[]}
+ */
+function recentSpeakers(limit = 6) {
+    const out = [];
+    for (let i = chat.length - 1; i >= 0 && out.length < limit; i--) {
+        const m = chat[i];
+        if (!m || m.is_system) continue;
+        out.push(m.is_user ? '{{user}}' : (m.name ?? '?'));
+    }
+    return out;
+}
+
+/**
+ * Parse the router model's output into an ordered list of avatars from the enabled set.
+ * Tolerant of stray prose: tries JSON first, then falls back to scanning for member names.
+ * @param {string} text Raw model output
+ * @param {string[]} enabledMembers Avatars of currently enabled members
+ * @returns {string[]} Ordered list of member avatars (subset of enabledMembers, may be empty)
+ */
+function parseRouterOutput(text, enabledMembers) {
+    const nameToAvatar = new Map();
+    for (const avatar of enabledMembers) {
+        const character = characters.find(x => x.avatar === avatar);
+        if (character?.name) nameToAvatar.set(character.name.toLowerCase(), avatar);
+    }
+
+    const fromNames = (names) => {
+        const seen = new Set();
+        const result = [];
+        for (const raw of names) {
+            const avatar = nameToAvatar.get(String(raw).toLowerCase().trim());
+            if (avatar && !seen.has(avatar)) {
+                seen.add(avatar);
+                result.push(avatar);
+            }
+        }
+        return result;
+    };
+
+    const arrayMatch = String(text ?? '').match(/\[[\s\S]*?\]/);
+    if (arrayMatch) {
+        try {
+            const parsed = JSON.parse(arrayMatch[0]);
+            if (Array.isArray(parsed)) {
+                return fromNames(parsed);
+            }
+        } catch { /* fall through to name scanning */ }
+    }
+
+    // Fallback: pick names in the order they appear in the text.
+    const found = [];
+    const lower = String(text ?? '').toLowerCase();
+    for (const [name, avatar] of nameToAvatar) {
+        const idx = lower.indexOf(name);
+        if (idx !== -1) found.push({ avatar, idx });
+    }
+    found.sort((a, b) => a.idx - b.idx);
+    return found.map(f => f.avatar);
+}
+
+/**
+ * Ask a small LLM (via a Connection Manager profile) which characters should reply next.
+ * Falls back to natural order if the profile is missing/invalid or the request fails.
+ * @param {string[]} enabledMembers Avatars of enabled members
+ * @param {ChatMessage} lastMessage Last message in the chat
+ * @param {string} activationText Text the router should react to (user input or last message)
+ * @param {boolean} isUserInput Whether the trigger is fresh user input
+ * @param {Group} group The group object
+ * @returns {Promise<number[]>} Ordered list of character ids to speak next (may be empty)
+ */
+async function activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group) {
+    const profileId = group?.router_profile_id;
+    if (!profileId) {
+        console.warn('[group-chats] LLM-routed strategy active but no router profile is set; falling back to natural order.');
+        return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
+    }
+
+    try {
+        const systemPrompt = String(group?.router_system_prompt || DEFAULT_ROUTER_PROMPT);
+        const roster = buildRouterRoster(enabledMembers);
+        const speakers = recentSpeakers().join(', ') || '(none yet)';
+        const lastSpeaker = isUserInput ? '{{user}}' : (lastMessage?.name ?? 'unknown');
+        const lastText = String(activationText ?? '').slice(0, 2000);
+
+        const prompt = [
+            systemPrompt,
+            '',
+            'CHARACTERS IN SCENE:',
+            roster || '(roster unavailable)',
+            '',
+            `RECENT SPEAKERS (most recent first): ${speakers}`,
+            '',
+            `LATEST MESSAGE FROM ${lastSpeaker}:`,
+            '"""',
+            lastText,
+            '"""',
+            '',
+            'Reply with only the JSON array of character names.',
+        ].join('\n');
+
+        const result = await ConnectionManagerRequestService.sendRequest(profileId, prompt, DEFAULT_ROUTER_MAX_TOKENS);
+        const content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
+        const orderedAvatars = parseRouterOutput(content, enabledMembers);
+
+        return orderedAvatars
+            .map(avatar => characters.findIndex(c => c.avatar === avatar))
+            .filter(i => i !== -1);
+    } catch (error) {
+        console.error('[group-chats] LLM router failed; falling back to natural order.', error);
+        return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
+    }
+}
+
+/**
  * Deletes a group from the server by ID.
  * @param {string} id Group ID to delete
  * @returns {Promise<void>} Promise that resolves when the group is deleted
@@ -1493,7 +1674,70 @@ async function onGroupActivationStrategyInput(e) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
         _thisGroup.activation_strategy = Number(e.target.value);
         await editGroup(openGroupId, false, false);
+        toggleRouterControls(_thisGroup);
     }
+}
+
+async function onGroupRouterProfileInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.router_profile_id = String(e.target.value || '');
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+async function onGroupRouterMaxConsecutiveInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        const value = Number(e.target.value);
+        _thisGroup.router_max_consecutive = Number.isFinite(value) && value > 0
+            ? Math.min(20, Math.max(1, Math.floor(value)))
+            : DEFAULT_ROUTER_MAX_CONSECUTIVE;
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+async function onGroupRouterSystemPromptInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.router_system_prompt = String(e.target.value ?? '');
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+/**
+ * Show/hide the router-specific controls based on the selected activation strategy.
+ * @param {Group} group Group object
+ */
+function toggleRouterControls(group) {
+    const isLlm = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL) === group_activation_strategy.LLM;
+    $('.rm_group_router_control').toggle(isLlm);
+}
+
+/**
+ * Repopulate the router profile dropdown from the Connection Manager's profile list.
+ * @param {string|undefined} selectedId Currently selected profile id (if any)
+ */
+function renderRouterProfileOptions(selectedId) {
+    const select = document.getElementById('rm_group_router_profile');
+    if (!(select instanceof HTMLSelectElement)) return;
+
+    const profiles = extension_settings?.connectionManager?.profiles ?? [];
+    select.innerHTML = '';
+
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = t`None`;
+    select.appendChild(noneOption);
+
+    for (const profile of [...profiles].sort((a, b) => String(a.name).localeCompare(String(b.name)))) {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        select.appendChild(option);
+    }
+
+    select.value = selectedId && profiles.some(p => p.id === selectedId) ? selectedId : '';
 }
 
 async function onGroupGenerationModeInput(e) {
@@ -1839,6 +2083,11 @@ function select_group_chats(groupId, skipAnimation) {
     $('#rm_group_generation_mode_join_suffix').val(group?.generation_mode_join_suffix ?? '').attr('setting', 'generation_mode_join_suffix');
     toggleHiddenControls(group, generationMode);
 
+    renderRouterProfileOptions(group?.router_profile_id);
+    $('#rm_group_router_max_consecutive').val(group?.router_max_consecutive ?? DEFAULT_ROUTER_MAX_CONSECUTIVE);
+    $('#rm_group_router_system_prompt').val(group?.router_system_prompt ?? '');
+    toggleRouterControls(group);
+
     // bottom buttons
     if (openGroupId) {
         $('#rm_group_submit').hide();
@@ -2089,6 +2338,9 @@ async function createGroup() {
     let activationStrategy = Number($('#rm_group_activation_strategy').find(':selected').val()) ?? group_activation_strategy.NATURAL;
     let generationMode = Number($('#rm_group_generation_mode').find(':selected').val()) ?? group_generation_mode.SWAP;
     let autoModeDelay = Number($('#rm_group_automode_delay').val()) ?? DEFAULT_AUTO_MODE_DELAY;
+    let routerProfileId = String($('#rm_group_router_profile').val() ?? '');
+    let routerMaxConsecutive = Number($('#rm_group_router_max_consecutive').val()) || DEFAULT_ROUTER_MAX_CONSECUTIVE;
+    let routerSystemPrompt = String($('#rm_group_router_system_prompt').val() ?? '');
     const members = newGroupMembers;
     const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(', ');
 
@@ -2114,6 +2366,9 @@ async function createGroup() {
         chat_id: chatName,
         chats: chats,
         auto_mode_delay: autoModeDelay,
+        router_profile_id: routerProfileId,
+        router_max_consecutive: routerMaxConsecutive,
+        router_system_prompt: routerSystemPrompt,
     };
 
     const createGroupResponse = await fetch('/api/groups/create', {
@@ -2484,6 +2739,9 @@ jQuery(() => {
     $('#rm_group_automode_delay').on('input', onGroupAutoModeDelayInput);
     $('#rm_group_generation_mode_join_prefix').on('input', onGroupGenerationModeTemplateInput);
     $('#rm_group_generation_mode_join_suffix').on('input', onGroupGenerationModeTemplateInput);
+    $('#rm_group_router_profile').on('change', onGroupRouterProfileInput);
+    $('#rm_group_router_max_consecutive').on('input', onGroupRouterMaxConsecutiveInput);
+    $('#rm_group_router_system_prompt').on('input', onGroupRouterSystemPromptInput);
     $('#group_avatar_button').on('input', uploadGroupAvatar);
     $('#rm_group_restore_avatar').on('click', restoreGroupAvatar);
     $(document).on('click', '.group_member .right_menu_button', onGroupActionClick);

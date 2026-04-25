@@ -175,6 +175,9 @@ router.post('/create', (request, response) => {
         auto_mode_delay: request.body.auto_mode_delay ?? 5,
         generation_mode_join_prefix: request.body.generation_mode_join_prefix ?? '',
         generation_mode_join_suffix: request.body.generation_mode_join_suffix ?? '',
+        router_profile_id: request.body.router_profile_id ?? '',
+        router_max_consecutive: request.body.router_max_consecutive ?? 4,
+        router_system_prompt: request.body.router_system_prompt ?? '',
     };
     const pathToFile = path.join(request.user.directories.groups, sanitize(`${id}.json`));
     const fileData = JSON.stringify(groupMetadata, null, 4);
