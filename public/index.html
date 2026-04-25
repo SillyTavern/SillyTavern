@@ -2011,6 +2011,20 @@
                                             <span data-i18n="enable_functions_desc_3">Can be utilized by various extensions to provide additional functionality.</span>
                                             <strong data-i18n="enable_functions_desc_4">Not supported when Prompt Post-Processing with "no tools" is used!</strong>
                                         </div>
+                                        <div id="tool_call_recurse_limit_block" class="range-block wide100p">
+                                            <div class="range-block-title">
+                                                <small data-i18n="Tool Call Recurse Limit">Tool Call Recurse Limit</small>
+                                                <div class="fa-solid fa-circle-info opacity50p margin5" data-i18n="[title]Maximum number of tool call recursion steps per generation." title="Maximum number of tool call recursion steps per generation."></div>
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="tool_call_recurse_limit" name="tool_call_recurse_limit" min="1" max="50" step="1">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="1" max="50" step="1" data-for="tool_call_recurse_limit" id="tool_call_recurse_limit_counter">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="range-block" data-source="openrouter,custom">
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10">
@@ -3032,8 +3046,17 @@
                             <div>
                                 <h4 data-i18n="OpenAI Model">OpenAI Model</h4>
                                 <select id="model_openai_select">
+                                    <optgroup label="GPT-5.5">
+                                        <option value="gpt-5.5">gpt-5.5</option>
+                                        <option value="gpt-5.5-2026-04-23">gpt-5.5-2026-04-23</option>
+                                    </optgroup>
                                     <optgroup label="GPT-5.4">
                                         <option value="gpt-5.4">gpt-5.4</option>
+                                        <option value="gpt-5.4-2026-03-05">gpt-5.4-2026-03-05</option>
+                                        <option value="gpt-5.4-mini">gpt-5.4-mini</option>
+                                        <option value="gpt-5.4-mini-2026-03-17">gpt-5.4-mini-2026-03-17</option>
+                                        <option value="gpt-5.4-nano">gpt-5.4-nano</option>
+                                        <option value="gpt-5.4-nano-2026-03-17">gpt-5.4-nano-2026-03-17</option>
                                     </optgroup>
                                     <optgroup label="GPT-5.3">
                                         <option value="gpt-5.3-chat-latest">gpt-5.3-chat-latest</option>
@@ -3350,6 +3373,8 @@
                                         <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
                                     </optgroup>
                                     <optgroup label="Gemma">
+                                        <option value="gemma-4-31b-it">gemma-4-31b-it</option>
+                                        <option value="gemma-4-26b-a4b-it">gemma-4-26b-a4b-it</option>
                                         <option value="gemma-3n-e4b-it">gemma-3n-e4b-it</option>
                                         <option value="gemma-3n-e2b-it">gemma-3n-e2b-it</option>
                                         <option value="gemma-3-27b-it">gemma-3-27b-it</option>
