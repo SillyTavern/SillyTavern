@@ -6204,7 +6204,28 @@
                                                     <option value="0" data-i18n="Natural order">Natural order</option>
                                                     <option value="1" data-i18n="List order">List order</option>
                                                     <option value="3" data-i18n="Pooled order">Pooled order</option>
+                                                    <option value="4" data-i18n="LLM-routed">LLM-routed</option>
                                                 </select>
+                                            </div>
+                                            <div class="flex1 flexGap5 rm_group_router_control" title="Connection profile used to decide who speaks next. Pick a small/fast model to keep this cheap." data-i18n="[title]Connection profile used to decide who speaks next. Pick a small/fast model to keep this cheap.">
+                                                <label for="rm_group_router_profile" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Speaker selection profile">Speaker selection profile</span>
+                                                </label>
+                                                <select id="rm_group_router_profile">
+                                                    <option value="" data-i18n="None">None</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex1 flexGap5 rm_group_router_control" title="Maximum number of consecutive AI turns before the conversation hands back to the user. Prevents runaway loops between characters." data-i18n="[title]Maximum number of consecutive AI turns before the conversation hands back to the user. Prevents runaway loops between characters.">
+                                                <label for="rm_group_router_max_consecutive" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Max consecutive turns">Max consecutive turns</span>
+                                                </label>
+                                                <input id="rm_group_router_max_consecutive" type="number" min="1" max="20" step="1" class="text_pole textarea_compact" />
+                                            </div>
+                                            <div class="flex1 flexGap5 rm_group_router_control" title="Override the system prompt sent to the router model. Leave blank to use the default." data-i18n="[title]Override the system prompt sent to the router model. Leave blank to use the default.">
+                                                <label for="rm_group_router_system_prompt" class="flexnowrap width100p whitespacenowrap">
+                                                    <span data-i18n="Router system prompt (override)">Router system prompt (override)</span>
+                                                </label>
+                                                <textarea id="rm_group_router_system_prompt" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                             <div class="flex1 flexGap5">
                                                 <label for="rm_group_generation_mode" class="flexnowrap width100p whitespacenowrap">
