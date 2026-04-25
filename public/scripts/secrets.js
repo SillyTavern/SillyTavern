@@ -1,5 +1,5 @@
 import { DOMPurify, moment, sha256 } from '../lib.js';
-import { event_types, eventSource, getRequestHeaders } from '../script.js';
+import { event_types, eventSource, getRequestHeaders, saveSettings } from '../script.js';
 import { t } from './i18n.js';
 import { chat_completion_sources } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
@@ -14,6 +14,7 @@ import { renderTemplateAsync } from './templates.js';
 import { textgen_types } from './textgen-settings.js';
 import { getCurrentUserHandle } from './user.js';
 import { copyText, isTrueBoolean, uuidv4 } from './utils.js';
+import { accountStorage } from './util/AccountStorage.js';
 
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
@@ -527,11 +528,15 @@ async function authorizeOpenRouter() {
         }
     }
 
-    const redirectUrl = new URL('/callback/openrouter', window.location.origin);
+    // Generate a PKCE code verifier and code challenge
     const codeVerifier = uuidv4() + uuidv4();
     const codeChallenge = generateChallenge(codeVerifier);
+    accountStorage.setItem(getVerifierKey('openrouter'), codeVerifier);
+    await saveSettings();
+
+    // Redirect to OpenRouter authorization URL with the code challenge and callback URL
+    const redirectUrl = new URL('/callback/openrouter', window.location.origin);
     const openRouterUrl = `https://openrouter.ai/auth?callback_url=${encodeURIComponent(redirectUrl.toString())}&code_challenge=${codeChallenge}&code_challenge_method=S256`;
-    sessionStorage.setItem(getVerifierKey('openrouter'), codeVerifier);
     location.href = openRouterUrl;
 }
 
@@ -550,9 +555,9 @@ export async function checkOpenRouterAuth() {
                 throw new Error('OpenRouter authorization code not found in URL');
             }
 
-            const codeVerifier = sessionStorage.getItem(getVerifierKey('openrouter'));
+            const codeVerifier = accountStorage.getItem(getVerifierKey('openrouter'));
             if (!codeVerifier) {
-                throw new Error('OpenRouter code verifier not found in sessionStorage');
+                throw new Error('OpenRouter code verifier not found in accountStorage');
             }
 
             const response = await fetch('https://openrouter.ai/api/v1/auth/keys', {
@@ -594,8 +599,8 @@ export async function checkOpenRouterAuth() {
         }
     }
 
-    // Clean-up any code verifiers that might be left in sessionStorage from abandoned auth flows
-    sessionStorage.removeItem(getVerifierKey('openrouter'));
+    // Clean-up any code verifiers that might be left in accountStorage from abandoned auth flows
+    accountStorage.removeItem(getVerifierKey('openrouter'));
 }
 
 /**
