@@ -1144,5 +1144,106 @@ export async function initSecrets() {
             toastr.error(t`Could not fetch OpenRouter credits. Please try again.`);
         }
     });
+
+    const formatNanoGptNumber = (num, decimals = null) => {
+        const number = Number(num);
+        if (!Number.isFinite(number)) return decimals === null ? '0' : (0).toFixed(decimals);
+        if (decimals !== null) return number.toFixed(decimals);
+        if (number >= 1000000) return (number / 1000000).toFixed(1) + 'M';
+        if (number >= 1000) return (number / 1000).toFixed(1) + 'K';
+        return number.toString();
+    };
+
+    const createNanoGptCreditsPopup = (credits) => {
+        const root = $('<div class="nanogpt-credits-popup"></div>');
+        root.css({ display: 'grid', gap: '0.25em 1em', gridTemplateColumns: 'max-content minmax(0, 1fr)', textAlign: 'left' });
+        root.append($('<h3></h3>').text(t`NanoGPT Credits & Usage`));
+        root.children('h3').css({ gridColumn: '1 / -1', margin: '0 0 0.25em' });
+
+        const rows = [
+            [t`USD`, `$${formatNanoGptNumber(credits.usdBalance, 2)}`],
+            [t`NANO`, formatNanoGptNumber(credits.nanoBalance, 3)],
+        ];
+
+        const addUsage = (label, usage, limit) => {
+            if (usage) {
+                rows.push([label, t`${formatNanoGptNumber(usage.used)} / ${formatNanoGptNumber(limit)} (${formatNanoGptNumber(usage.remaining)} left)`]);
+            }
+        };
+
+        if (credits.subscription?.active) {
+            const sub = credits.subscription;
+            rows.push([t`Sub`, t`Active`]);
+            addUsage(t`Tokens/wk`, sub.weekly_tokens, sub.limits?.weeklyInputTokens);
+            addUsage(t`Tokens/day`, sub.daily_tokens, sub.limits?.dailyInputTokens);
+            addUsage(t`Images/day`, sub.daily_images, sub.limits?.dailyImages);
+        }
+
+        for (const [label, value] of rows) {
+            root.append($('<div></div>').css({ opacity: 0.8, whiteSpace: 'nowrap' }).text(label));
+            root.append($('<div></div>').css({ fontWeight: 600, overflowWrap: 'anywhere' }).text(value));
+        }
+
+        return root;
+    };
+
+    $(document).on('click', '.nanogpt_view_credits', async function (event) {
+        event.preventDefault();
+        const display = $(this).siblings('.nanogpt_credits_display').first();
+        display.empty().text(t`Loading…`);
+
+        try {
+            const response = await fetch('/api/nanogpt/credits', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            const usdBalance = Number(data.usd_balance);
+            const nanoBalance = Number(data.nano_balance);
+            if (!Number.isFinite(usdBalance) || !Number.isFinite(nanoBalance)) {
+                throw new Error('Invalid response');
+            }
+
+            let balances = [`$${formatNanoGptNumber(usdBalance, 2)}`];
+            if (nanoBalance > 0) {
+                balances.push(`${formatNanoGptNumber(nanoBalance, 3)} NANO`);
+            }
+            let shortInlineText = balances.join(' | ');
+
+            if (data.subscription?.active) {
+                shortInlineText += ` | ${t`Sub Active`}`;
+            }
+
+            display.empty().text(shortInlineText + ' ');
+
+            const infoBtn = $('<i class="fa-solid fa-circle-info cursor-pointer nanogpt_info_btn"></i>');
+            infoBtn.attr('title', t`View details`);
+            infoBtn.css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.8em', minHeight: '1.8em', marginLeft: '0.15em', verticalAlign: 'middle' });
+            infoBtn.data('credits', {
+                usdBalance,
+                nanoBalance,
+                subscription: data.subscription,
+            });
+            display.append(infoBtn);
+
+        } catch (error) {
+            console.error('Failed to fetch NanoGPT credits:', error);
+            display.empty().text('');
+            toastr.error(t`Could not fetch NanoGPT credits. Please try again.`);
+        }
+    });
+
+    $(document).on('click', '.nanogpt_info_btn', async function () {
+        const credits = $(this).data('credits');
+        if (credits) {
+            await callGenericPopup(createNanoGptCreditsPopup(credits), POPUP_TYPE.TEXT);
+        }
+    });
     registerSecretSlashCommands();
 }
