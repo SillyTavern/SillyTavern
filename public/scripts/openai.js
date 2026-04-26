@@ -2396,7 +2396,7 @@ function sortModelsBy(data, property, source) {
                 } else if (property === 'pricing.output' || property === 'pricing.completion') {
                     return parseFloat(a.pricing?.completion || 0) - parseFloat(b.pricing?.completion || 0);
                 } else {
-                    return a?.name && b?.name && a.name.localeCompare(b.name);
+                    return a?.name && b?.name ? a.name.localeCompare(b.name) : 0;
                 }
             });
         case chat_completion_sources.CHUTES:
@@ -2408,7 +2408,7 @@ function sortModelsBy(data, property, source) {
                 } else if (property === 'pricing.output' || property === 'pricing.completion') {
                     return parseFloat(a.pricing?.output || 0) - parseFloat(b.pricing?.output || 0);
                 } else {
-                    return a?.id && b?.id && a.id.localeCompare(b.id);
+                    return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
                 }
             });
         case chat_completion_sources.ELECTRONHUB:
@@ -2420,7 +2420,7 @@ function sortModelsBy(data, property, source) {
                 } else if (property === 'pricing.output' || property === 'pricing.completion') {
                     return parseFloat(a.pricing?.output || 0) - parseFloat(b.pricing?.output || 0);
                 } else {
-                    return a?.name && b?.name && a.name.localeCompare(b.name);
+                    return a?.name && b?.name ? a.name.localeCompare(b.name) : 0;
                 }
             });
         case chat_completion_sources.NANOGPT:
@@ -2432,7 +2432,7 @@ function sortModelsBy(data, property, source) {
                 } else if (property === 'pricing.output' || property === 'pricing.completion') {
                     return parseFloat(a.pricing?.completion || 0) - parseFloat(b.pricing?.completion || 0);
                 } else {
-                    return a?.name && b?.name && a.name.localeCompare(b.name);
+                    return a?.name && b?.name ? a.name.localeCompare(b.name) : 0;
                 }
             });
         case chat_completion_sources.AIMLAPI:
@@ -2441,7 +2441,7 @@ function sortModelsBy(data, property, source) {
                     return (b.info?.contextLength || 0) - (a.info?.contextLength || 0);
                 } else {
                     // No pricing information on the API. Sort alphabetically by name.
-                    return a?.info?.name && b?.info?.name && a.info.name.localeCompare(b.info.name);
+                    return a?.info?.name && b?.info?.name ? a.info.name.localeCompare(b.info.name) : 0;
                 }
             });
         default:
@@ -2477,7 +2477,8 @@ function groupModelsByVendor(array, source) {
             }, new Map());
         case chat_completion_sources.NANOGPT:
             return array.reduce((acc, curr) => {
-                const vendor = String(/\//.test(curr.id) ? curr?.id?.split('/')[0] : curr?.id?.split('-')[0]).toLowerCase() || 'Other';
+                const vendorPart = /\//.test(curr.id) ? curr.id.split('/')[0] : curr.id.split('-')[0];
+                const vendor = String(vendorPart?.trim()?.toLowerCase() || 'Other');
                 if (!acc.has(vendor)) {
                     acc.set(vendor, []);
                 }
