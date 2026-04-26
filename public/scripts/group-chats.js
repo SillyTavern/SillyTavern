@@ -18,6 +18,8 @@ import {
     paginationDropdownChangeHandler,
     waitUntilCondition,
     uuidv4,
+    stripReasoningTags,
+    parseJsonArrayFromText,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -1407,6 +1409,8 @@ function recentSpeakers(limit = 6) {
  * @returns {string[]} Ordered list of member avatars (subset of enabledMembers, may be empty)
  */
 function parseRouterOutput(text, enabledMembers) {
+    const cleaned = stripReasoningTags(text);
+
     const nameToAvatar = new Map();
     for (const avatar of enabledMembers) {
         const character = characters.find(x => x.avatar === avatar);
@@ -1426,19 +1430,12 @@ function parseRouterOutput(text, enabledMembers) {
         return result;
     };
 
-    const arrayMatch = String(text ?? '').match(/\[[\s\S]*?\]/);
-    if (arrayMatch) {
-        try {
-            const parsed = JSON.parse(arrayMatch[0]);
-            if (Array.isArray(parsed)) {
-                return fromNames(parsed);
-            }
-        } catch { /* fall through to name scanning */ }
-    }
+    const parsed = parseJsonArrayFromText(cleaned);
+    if (parsed) return fromNames(parsed);
 
-    // Fallback: pick names in the order they appear in the text.
+    // Fallback: pick names in the order they appear in the post-strip text.
     const found = [];
-    const lower = String(text ?? '').toLowerCase();
+    const lower = cleaned.toLowerCase();
     for (const [name, avatar] of nameToAvatar) {
         const idx = lower.indexOf(name);
         if (idx !== -1) found.push({ avatar, idx });

@@ -356,6 +356,40 @@ export function isDigitsOnly(str) {
 }
 
 /**
+ * Strip common reasoning/thinking tags from a model's output so a downstream parser
+ * can find the actual answer. Handles `<think>`, `<thinking>`, `<reasoning>`,
+ * `<|think|>`, and `<|begin_of_thought|>` style blocks.
+ * @param {string} text Raw model output
+ * @returns {string} Output with thinking blocks removed
+ */
+export function stripReasoningTags(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/<(?:think(?:ing)?|reasoning)>[\s\S]*?<\/(?:think(?:ing)?|reasoning)>/gi, '')
+        .replace(/<\|think\|>[\s\S]*?<\|\/think\|>/gi, '')
+        .replace(/<\|begin_of_thought\|>[\s\S]*?<\|end_of_thought\|>/gi, '');
+}
+
+/**
+ * Find the last valid JSON array in a string. Robust to thinking-model output that
+ * may contain bracketed prose ("let me weigh [option A]...") before the actual answer
+ * — the answer is almost always the final bracketed block. Returns null if no
+ * bracketed substring parses as a JSON array.
+ * @param {string} text Input text
+ * @returns {any[] | null} The last array that parses, or null
+ */
+export function parseJsonArrayFromText(text) {
+    const matches = [...String(text ?? '').matchAll(/\[[\s\S]*?\]/g)];
+    for (let i = matches.length - 1; i >= 0; i--) {
+        try {
+            const value = JSON.parse(matches[i][0]);
+            if (Array.isArray(value)) return value;
+        } catch { /* try next */ }
+    }
+    return null;
+}
+
+/**
  * Gets a drag delay for sortable elements. This is to prevent accidental drags when scrolling.
  * @returns {number} The delay in milliseconds. 50ms for desktop, 750ms for mobile.
  */

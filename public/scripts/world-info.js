@@ -1,7 +1,7 @@
 import { Fuse } from '../lib.js';
 
 import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1, getOneCharacter, select_selected_character } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn, addLongPressEvent } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn, addLongPressEvent, stripReasoningTags, parseJsonArrayFromText } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -86,11 +86,12 @@ export let world_info_llm_filter_profile = '';
 export let world_info_llm_filter_context_messages = 5;
 export let world_info_llm_filter_system_prompt = '';
 
-const DEFAULT_LLM_FILTER_PROMPT = `You are a relevance filter for roleplay world info entries. You will see recent chat messages and a numbered list of candidate entries — each shows the entry title, primary keys, and secondary keys (no entry content).
+const DEFAULT_LLM_FILTER_PROMPT = `You are a relevance filter for roleplay world info entries. You will see (optionally) an author's note describing the current story beat or scene context, recent chat messages, and a numbered list of candidate entries — each shows the entry title, primary keys, and secondary keys (no entry content).
 
 Your job: pick which entries are clearly relevant to what is happening in the chat right now. Use semantic understanding — synonyms count when the meaning matches.
 
 Rules:
+- If an author's note is provided, weigh it heavily. It often names the current story beat, location, or active characters and is the author's explicit hint about what is in play.
 - INCLUDE an entry when its named subject (character, place, item, faction, concept) is in play, even via a synonym (e.g. "stallion" should activate a "horse" entry).
 - DO NOT include an entry just because a key word appears generically. If an entry titled "Excalibur" has the key "sword" and the chat says "I drew my sword", do NOT activate Excalibur — that is a generic sword, not the named one.
 - Secondary keys further constrain relevance; respect them.
@@ -4625,17 +4626,13 @@ function getLlmFilterCandidates(sortedEntries) {
  * @returns {number[] | null} Sorted unique indices, or null if no parse
  */
 function parseLlmFilterIndices(text, candidateCount) {
-    const raw = String(text ?? '');
-    const arrayMatch = raw.match(/\[[\s\S]*?\]/);
-    let parsed = null;
-    if (arrayMatch) {
-        try {
-            const value = JSON.parse(arrayMatch[0]);
-            if (Array.isArray(value)) parsed = value;
-        } catch { /* fall through */ }
-    }
+    const cleaned = stripReasoningTags(text);
+    let parsed = parseJsonArrayFromText(cleaned);
     if (!parsed) {
-        const digits = raw.match(/\d+/g);
+        // Fallback: thinking-model output with no parseable array — last resort, scan
+        // for digit sequences. Operate on the post-strip text so we don't pull numbers
+        // out of the reasoning block.
+        const digits = cleaned.match(/\d+/g);
         if (!digits) return null;
         parsed = digits.map(Number);
     }
@@ -4665,6 +4662,7 @@ async function applyLlmKeyFilter(sortedEntries, chat) {
 
     const lastN = Math.max(1, Math.min(50, Number(world_info_llm_filter_context_messages) || 5));
     const recent = (Array.isArray(chat) ? chat.slice(0, lastN) : []).reverse(); // chronological order for the prompt
+    const authorsNote = String(chat_metadata?.[metadata_keys.prompt] ?? '').trim();
 
     const candidateLines = candidates.map((entry, i) => {
         const title = String(entry.comment || entry.key?.[0] || `entry ${entry.uid}`).slice(0, 80);
@@ -4674,9 +4672,18 @@ async function applyLlmKeyFilter(sortedEntries, chat) {
     }).join('\n');
 
     const systemPrompt = String(world_info_llm_filter_system_prompt || DEFAULT_LLM_FILTER_PROMPT);
-    const prompt = [
+    const promptParts = [
         systemPrompt,
         '',
+    ];
+    if (authorsNote) {
+        promptParts.push(
+            'AUTHOR’S NOTE (story-beat / scene context — weigh this heavily):',
+            authorsNote,
+            '',
+        );
+    }
+    promptParts.push(
         'RECENT MESSAGES (oldest → newest):',
         recent.length ? recent.join('\n') : '(none)',
         '',
@@ -4684,7 +4691,8 @@ async function applyLlmKeyFilter(sortedEntries, chat) {
         candidateLines,
         '',
         'Reply with only the JSON array of indices to include.',
-    ].join('\n');
+    );
+    const prompt = promptParts.join('\n');
 
     const result = await ConnectionManagerRequestService.sendRequest(world_info_llm_filter_profile, prompt, LLM_FILTER_MAX_TOKENS);
     const content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
