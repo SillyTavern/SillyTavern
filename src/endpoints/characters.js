@@ -887,9 +887,12 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         console.info(`Importing from ${jsonData.spec} json`);
         importRisuSprites(request.user.directories, jsonData);
         unsetPrivateFields(jsonData);
+        if (jsonData.data?.name) {
+            jsonData.data.name = sanitize(jsonData.data.name);
+        }
         jsonData = readFromV2(jsonData);
         jsonData.create_date = new Date().toISOString();
-        const pngName = preservedFileName || getPngName(jsonData.data?.name || jsonData.name, request.user.directories);
+        const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
         const char = JSON.stringify(jsonData);
         const result = await writeCharacterData(DEFAULT_AVATAR_PATH, char, pngName, request);
         return result ? pngName : '';
@@ -1529,13 +1532,9 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
  * @returns {string} - The name for the uploaded PNG file
  */
 function getPngName(file, directories) {
-    let i = 1;
-    const baseName = file;
-    while (fs.existsSync(path.join(directories.characters, `${file}.png`))) {
-        file = baseName + i;
-        i++;
-    }
-    return file;
+    file = sanitize(file);
+    return getUniqueName(file, (name) => fs.existsSync(path.join(directories.characters, `${name}.png`)),
+        { nameBuilder: (base, i) => i === 0 ? base : `${base}${i}`, startIndex: 0 }) ?? file;
 }
 
 /**
