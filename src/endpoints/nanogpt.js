@@ -60,6 +60,7 @@ router.post('/credits', async (req, res) => {
 
         /** @type {any} */
         const balanceData = await balanceReq.value.json();
+        /** @type {any} */
         const result = {
             usd_balance: parseNumber(balanceData.usd_balance),
             nano_balance: parseNumber(balanceData.nano_balance),
