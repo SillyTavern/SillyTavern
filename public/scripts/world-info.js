@@ -4695,12 +4695,36 @@ async function applyLlmKeyFilter(sortedEntries, chat) {
     );
     const prompt = promptParts.join('\n');
 
-    const result = await ConnectionManagerRequestService.sendRequest(world_info_llm_filter_profile, prompt, LLM_FILTER_MAX_TOKENS);
-    const content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
+    let content = '';
+    try {
+        const result = await ConnectionManagerRequestService.sendRequest(world_info_llm_filter_profile, prompt, LLM_FILTER_MAX_TOKENS);
+        content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
+    } catch (error) {
+        eventSource.emit(event_types.LLM_DECISION_CALL, {
+            kind: 'wi-filter',
+            profileId: world_info_llm_filter_profile,
+            prompt,
+            response: '',
+            error: error?.message ?? String(error),
+            parsed: null,
+            meta: { candidates: candidates.length },
+        });
+        throw error;
+    }
+
     const indices = parseLlmFilterIndices(content, candidates.length);
 
     if (!indices) {
         // Fail-open: keep nothing extra; let the normal regex scan run instead.
+        eventSource.emit(event_types.LLM_DECISION_CALL, {
+            kind: 'wi-filter',
+            profileId: world_info_llm_filter_profile,
+            prompt,
+            response: content,
+            error: 'Could not parse LLM filter response',
+            parsed: null,
+            meta: { candidates: candidates.length },
+        });
         throw new Error('Could not parse LLM filter response');
     }
 
@@ -4708,6 +4732,20 @@ async function applyLlmKeyFilter(sortedEntries, chat) {
         const entry = candidates[i];
         WorldInfoBuffer.externalActivations.set(`${entry.world}.${entry.uid}`, entry);
     }
+
+    eventSource.emit(event_types.LLM_DECISION_CALL, {
+        kind: 'wi-filter',
+        profileId: world_info_llm_filter_profile,
+        prompt,
+        response: content,
+        error: null,
+        parsed: {
+            indices,
+            kept: indices.map(i => candidates[i]?.comment || candidates[i]?.key?.[0] || `entry ${candidates[i]?.uid}`),
+        },
+        meta: { candidates: candidates.length },
+    });
+
     return { ran: true, kept: indices.length, total: candidates.length };
 }
 
