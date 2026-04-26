@@ -2515,21 +2515,13 @@ function getAimlapiModelTemplate(option) {
 function nanoGptSortBy(data, property = 'alphabetically') {
     return data.sort((a, b) => {
         if (property === 'context_length') {
-            const aCtx = a.context_length || 0;
-            const bCtx = b.context_length || 0;
-            return bCtx - aCtx;
+            return (b.context_length || 0) - (a.context_length || 0);
         } else if (property === 'pricing.prompt') {
-            const aPrice = parseFloat(a.pricing?.prompt || 0);
-            const bPrice = parseFloat(b.pricing?.prompt || 0);
-            return aPrice - bPrice;
+            return parseFloat(a.pricing?.prompt || 0) - parseFloat(b.pricing?.prompt || 0);
         } else if (property === 'pricing.completion') {
-            const aPrice = parseFloat(a.pricing?.completion || 0);
-            const bPrice = parseFloat(b.pricing?.completion || 0);
-            return aPrice - bPrice;
+            return parseFloat(a.pricing?.completion || 0) - parseFloat(b.pricing?.completion || 0);
         } else {
-            const aName = a?.name || a?.id || '';
-            const bName = b?.name || b?.id || '';
-            return aName.localeCompare(bName);
+            return a?.name && b?.name && a.name.localeCompare(b.name);
         }
     });
 }
