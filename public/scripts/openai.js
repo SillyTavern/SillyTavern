@@ -2124,10 +2124,18 @@ function saveModelList(data) {
         model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.CHUTES);
         $('#model_chutes_select').empty();
 
-        for (const model of model_list) {
-            const option = $('<option>').val(model.id).text(model.id);
-            option.attr('data-model', JSON.stringify(model));
-            $('#model_chutes_select').append(option);
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.CHUTES).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.id }));
+                });
+                $('#model_chutes_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_chutes_select').append($('<option>', { value: model.id, text: model.id }));
+            });
         }
 
         const selectedModel = model_list.find(model => model.id === oai_settings.chutes_model);
@@ -2379,7 +2387,7 @@ function saveModelList(data) {
  */
 function sortModelsBy(data, property, source) {
     switch (source) {
-        case 'openrouter':
+        case chat_completion_sources.OPENROUTER:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
                     return (b.context_length || 0) - (a.context_length || 0);
@@ -2391,7 +2399,7 @@ function sortModelsBy(data, property, source) {
                     return a?.name && b?.name && a.name.localeCompare(b.name);
                 }
             });
-        case 'chutes':
+        case chat_completion_sources.CHUTES:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
                     return (b.context_length || 0) - (a.context_length || 0);
@@ -2403,7 +2411,7 @@ function sortModelsBy(data, property, source) {
                     return a?.id && b?.id && a.id.localeCompare(b.id);
                 }
             });
-        case 'electronhub':
+        case chat_completion_sources.ELECTRONHUB:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
                     return (b.tokens || 0) - (a.tokens || 0);
@@ -2415,7 +2423,7 @@ function sortModelsBy(data, property, source) {
                     return a?.name && b?.name && a.name.localeCompare(b.name);
                 }
             });
-        case 'nanogpt':
+        case chat_completion_sources.NANOGPT:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
                     return (b.context_length || 0) - (a.context_length || 0);
@@ -2427,7 +2435,7 @@ function sortModelsBy(data, property, source) {
                     return a?.name && b?.name && a.name.localeCompare(b.name);
                 }
             });
-        case 'aimlapi':
+        case chat_completion_sources.AIMLAPI:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
                     return (b.info?.contextLength || 0) - (a.info?.contextLength || 0);
@@ -2449,7 +2457,7 @@ function sortModelsBy(data, property, source) {
  */
 function groupModelsByVendor(array, source) {
     switch (source) {
-        case 'openrouter':
+        case chat_completion_sources.OPENROUTER:
             return array.reduce((acc, curr) => {
                 const vendor = curr.id.split('/')[0];
                 if (!acc.has(vendor)) {
@@ -2458,7 +2466,7 @@ function groupModelsByVendor(array, source) {
                 acc.get(vendor).push(curr);
                 return acc;
             }, new Map());
-        case 'electronhub':
+        case chat_completion_sources.ELECTRONHUB:
             return array.reduce((acc, curr) => {
                 const vendor = String(curr?.name || curr?.id || 'Other').split(':')[0].trim() || 'Other';
                 if (!acc.has(vendor)) {
@@ -2467,7 +2475,7 @@ function groupModelsByVendor(array, source) {
                 acc.get(vendor).push(curr);
                 return acc;
             }, new Map());
-        case 'nanogpt':
+        case chat_completion_sources.NANOGPT:
             return array.reduce((acc, curr) => {
                 const vendor = String(/\//.test(curr.id) ? curr?.id?.split('/')[0] : curr?.id?.split('-')[0]).toLowerCase() || 'Other';
                 if (!acc.has(vendor)) {
@@ -2476,7 +2484,16 @@ function groupModelsByVendor(array, source) {
                 acc.get(vendor).push(curr);
                 return acc;
             }, new Map());
-        case 'aimlapi':
+        case chat_completion_sources.CHUTES:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.id.split('/')[0];
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.AIMLAPI:
             return array.reduce((acc, curr) => {
                 const vendor = curr.info?.developer || 'Other';
                 if (!acc.has(vendor)) {
