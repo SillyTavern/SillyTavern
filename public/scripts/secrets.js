@@ -1218,7 +1218,8 @@ export async function initSecrets() {
 
         if (credits.subscription?.active) {
             const sub = credits.subscription;
-            rows.push([t`Sub`, t`Active`]);
+            const subEndDate = sub.period?.currentPeriodEnd ? moment(sub.period.currentPeriodEnd).format('LL') : t`Unknown`;
+            rows.push([t`Sub`, t`Active (until ${subEndDate})`]);
             addUsage(t`Tokens/wk`, sub.weekly_tokens, sub.limits?.weeklyInputTokens);
             addUsage(t`Tokens/day`, sub.daily_tokens, sub.limits?.dailyInputTokens);
             addUsage(t`Images/day`, sub.daily_images, sub.limits?.dailyImages);
