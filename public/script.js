@@ -213,7 +213,7 @@ import {
     tag_import_setting,
     applyCharacterTagsToMessageDivs,
 } from './scripts/tags.js';
-import { initSecrets, readSecretState } from './scripts/secrets.js';
+import { checkOpenRouterAuth, initSecrets, readSecretState } from './scripts/secrets.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
@@ -748,6 +748,7 @@ async function firstLoadInit() {
     await initPresetManager();
     await initSystemMessages();
     await getSettings(initLoaderHandle);
+    await checkOpenRouterAuth();
     initKeyboard();
     initDynamicStyles();
     initTags();

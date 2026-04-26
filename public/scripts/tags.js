@@ -2762,37 +2762,10 @@ function extractCharacterAvatar(avatarSrc) {
 
 function restoreSavedTagFilters() {
     try {
-        const validStates = new Set(Object.keys(FILTER_STATES));
-        const readState = (/** @type {string} */ storageKey) => {
-            const v = accountStorage.getItem(storageKey);
-            return v && validStates.has(v) ? v : null;
-        };
-
-        const favState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FAV);
-        const groupState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP);
-        const folderState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER);
-
-        if (favState) {
-            ACTIONABLE_TAGS.FAV.filter_state = favState;
-            entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
-        }
-
         // Load persisted filter states for all contexts (including character list)
         loadFilterStatesForContext(entitiesFilter, 'CharacterList');
         loadFilterStatesForContext(groupCandidatesFilter, 'GroupCandidates');
         loadFilterStatesForContext(groupMembersFilter, 'GroupMembers');
-        if (groupState) {
-            ACTIONABLE_TAGS.GROUP.filter_state = groupState;
-            entitiesFilter.setFilterData(FILTER_TYPES.GROUP, groupState, true);
-        }
-        if (folderState) {
-            ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
-            entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
-        }
-
-        // Note: Regular tag filter states are now loaded from storage via loadFilterStatesForContext()
-        // The old tag.filter_state property is only maintained for backward compatibility with
-        // the main character list's actionable tags (Favorites, Groups, Folders)
     } catch (e) {
         console.warn('Failed to restore actionable filter states from account storage', e);
     }

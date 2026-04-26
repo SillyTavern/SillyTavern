@@ -459,7 +459,7 @@ async function sendMakerSuiteRequest(request, response) {
     const includeReasoning = Boolean(request.body.include_reasoning);
     const aspectRatio = String(request.body.request_image_aspect_ratio);
     const imageSize = String(request.body.request_image_resolution);
-    const isGemma = model.includes('gemma');
+    const isGemma3 = /gemma-3/.test(model);
     const isLearnLM = model.includes('learnlm');
 
     const responseMimeType = request.body.responseMimeType ?? (request.body.json_schema ? 'application/json' : undefined);
@@ -519,13 +519,13 @@ async function sendMakerSuiteRequest(request, response) {
             }
         }
 
-        const useSystemPrompt = !enableImageModality && !isGemma && request.body.use_sysprompt;
+        const useSystemPrompt = !enableImageModality && !isGemma3 && request.body.use_sysprompt;
 
         const tools = [];
         const prompt = convertGooglePrompt(request.body.messages, model, useSystemPrompt, getPromptNames(request));
         const safetySettings = [...GEMINI_SAFETY, ...(useVertexAi ? VERTEX_SAFETY : [])];
 
-        if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma) {
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0 && !enableImageModality && !isGemma3) {
             const functionDeclarations = [];
             const customTools = [];
             for (const tool of request.body.tools) {
@@ -550,7 +550,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
         }
 
-        if (enableWebSearch && !enableImageModality && !isGemma && !isLearnLM && !noSearchModels.includes(model)) {
+        if (enableWebSearch && !enableImageModality && !isGemma3 && !isLearnLM && !noSearchModels.includes(model)) {
             // Tool use with function calling is unsupported
             if (!tools.some(t => t.function_declarations)) {
                 tools.push({ google_search: {} });
@@ -1832,6 +1832,7 @@ router.post('/status', async function (request, statusResponse) {
                     const models = data.models
                         ?.filter(model => model.supportedGenerationMethods?.includes('generateContent'))
                         ?.map(model => ({
+                            ...model,
                             id: model.name.replace('models/', ''),
                         })) || [];
 
@@ -2483,6 +2484,9 @@ router.post('/generate', async function (request, response) {
         if (request.body.reasoning_effort && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
             if (OPENAI_REASONING_EFFORT_MODELS.includes(request.body.model)) {
                 bodyParams['reasoning_effort'] = OPENAI_FIXED_REASONING_EFFORT[request.body.model] ?? OPENAI_REASONING_EFFORT_MAP[request.body.reasoning_effort] ?? request.body.reasoning_effort;
+            }
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && /^koboldcpp\/(.+)$/.test(request.body.model)) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
             }
         }
 
