@@ -16,7 +16,7 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groupMembersFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce, findChar } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce, findChar, escapeHtml } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -977,11 +977,12 @@ async function importTags(character, { importSetting = null } = {}) {
 
     const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
     const added = addTagsToEntity(tagsToImport, character.avatar);
+    const tagNames = tagsToImport.map(x => escapeHtml(x.name)).join(', ');
 
     if (added) {
-        toastr.success(t`Imported tags:` + `<br />${tagsToImport.map(x => x.name).join(', ')}`, t`Importing Tags`, { escapeHtml: false });
+        toastr.success(t`Imported tags:` + `<br />${tagNames}`, t`Importing Tags`, { escapeHtml: false });
     } else {
-        toastr.error(t`Couldn't import tags:` + `<br />${tagsToImport.map(x => x.name).join(', ')}`, t`Importing Tags`, { escapeHtml: false });
+        toastr.error(t`Couldn't import tags:` + `<br />${tagNames}`, t`Importing Tags`, { escapeHtml: false });
     }
 
     return added;
@@ -1124,7 +1125,7 @@ function getTag(tagName, { createNew = false } = {}) {
 function createNewTag(tagName) {
     const existing = getTag(tagName);
     if (existing) {
-        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${existing.name}`, 'Creating Tag', { escapeHtml: false });
+        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${escapeHtml(existing.name)}`, 'Creating Tag', { escapeHtml: false });
         return existing;
     }
 

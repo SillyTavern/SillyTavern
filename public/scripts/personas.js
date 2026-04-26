@@ -49,6 +49,7 @@ import {
     uuidv4,
     resolveAvatarData,
     findPersona,
+    escapeHtml,
 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -946,8 +947,9 @@ async function selectCurrentPersona({ toastPersonaNameChange = true } = {}) {
             const temporary = getPersonaTemporaryLockInfo();
             if (temporary.isTemporary) {
                 toastr.info(t`This persona is only temporarily chosen. Click for more info.`, t`Temporary Persona`, {
-                    preventDuplicates: true, onclick: () => {
-                        toastr.info(temporary.info.replaceAll('\n', '<br />'), t`Temporary Persona`, { escapeHtml: false });
+                    preventDuplicates: true,
+                    onclick: () => {
+                        toastr.info(escapeHtml(temporary.info).replaceAll('\n', '<br />'), t`Temporary Persona`, { escapeHtml: false });
                     },
                 });
             }
@@ -1116,9 +1118,9 @@ async function lockPersona(type = 'chat') {
                 if (power_user.persona_show_notifications) {
                     let additional = '';
                     if (unlinkedCharacters.length)
-                        additional += `<br /><br />${t`Unlinked existing persona${unlinkedCharacters.length > 1 ? 's' : ''}: ${unlinkedCharacters.join(', ')}`}`;
+                        additional += `<br /><br />${t`Unlinked existing persona${unlinkedCharacters.length > 1 ? 's' : ''}: ${unlinkedCharacters.map(escapeHtml).join(', ')}`}`;
                     if (additional || !isPersonaPanelOpen()) {
-                        toastr.success(t`User persona ${name1} is locked to character ${name2}${additional}`, t`Persona Locked`, { escapeHtml: false });
+                        toastr.success(t`User persona ${escapeHtml(name1)} is locked to character ${escapeHtml(name2)}${additional}`, t`Persona Locked`, { escapeHtml: false });
                     }
                 }
             }
