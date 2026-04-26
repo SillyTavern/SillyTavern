@@ -1895,35 +1895,6 @@ function getChutesModelTemplate(option) {
     `));
 }
 
-function getNanoGptModelTemplate(option) {
-    const model = model_list.find(x => x.id === option?.element?.value);
-
-    if (!option.id || !model) {
-        return option.text;
-    }
-
-    const inputPrice = model.pricing?.prompt;
-    const outputPrice = model.pricing?.completion;
-
-    let price = 'Unknown';
-    if (inputPrice !== undefined && outputPrice !== undefined) {
-        // Check if both prices are 0 (free model)
-        if (inputPrice === 0 && outputPrice === 0) {
-            price = 'Free';
-        } else {
-            price = `$${Math.round(inputPrice * 100) / 100}/$${Math.round(outputPrice * 100) / 100} in/out Mtoken`;
-        }
-    }
-
-    const contextLength = model.context_length || 'Unknown';
-
-    return $((`
-        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
-            <strong>${DOMPurify.sanitize(model.id)}</strong> | ${contextLength} ctx | <small>${price}</small>
-        </div>
-    `));
-}
-
 function calculateChutesCost() {
     if (oai_settings.chat_completion_source !== chat_completion_sources.CHUTES) {
         return;
@@ -1949,6 +1920,66 @@ function calculateChutesCost() {
     }
 
     $('#chutes_max_prompt_cost').text(cost);
+}
+
+function getNanoGptModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const inputPrice = model.pricing?.prompt;
+    const outputPrice = model.pricing?.completion;
+    let price = 'Unknown';
+
+    if (inputPrice !== undefined && outputPrice !== undefined) {
+        if (inputPrice === 0 && outputPrice === 0) {
+            price = 'Free';
+        } else {
+            price = `$${Math.round(inputPrice * 100) / 100}/$${Math.round(outputPrice * 100) / 100} in/out Mtoken`;
+        }
+    }
+
+    const visionIcon = model.capabilities?.vision ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.capabilities?.reasoning ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
+    const toolCallsIcon = model.capabilities?.tool_calling ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports tool calling"></i>' : '';
+
+    let subHtml = '';
+    const sub = model.subscription;
+
+    if (sub) {
+        if (sub.included) {
+            let titleText = 'Included in subscription';
+            let multiplierText = '';
+
+            if (sub.inputTokenMultiplier && sub.inputTokenMultiplier > 1) {
+                multiplierText = ` (${sub.inputTokenMultiplier}x)`;
+                titleText += ` - Input Multiplier: ${sub.inputTokenMultiplier}x`;
+            }
+            subHtml = ` <small title="${titleText}"><i class="fa-solid fa-crown fa-sm"></i> Sub${multiplierText}</small>`;
+        } else if (sub.note) {
+            const safeNote = DOMPurify.sanitize(sub.note);
+            subHtml = ` <small title="${safeNote}"><i class="fa-solid fa-circle-info fa-sm"></i> Not in Sub</small>`;
+        }
+    }
+
+    const iconsContainer = document.createElement('span');
+    iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', reasoningIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', toolCallsIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', subHtml);
+
+    const capabilities = (iconsContainer.children.length) ? ` | ${iconsContainer.innerHTML}` : '';
+
+    const contextLength = model.context_length || 'Unknown';
+    const modelName = model.name || model.id;
+
+    return $((`
+        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
+            <strong>${DOMPurify.sanitize(modelName)}</strong> | ${contextLength} ctx | <small>${price}</small>${capabilities}
+        </div>
+    `));
 }
 
 function saveModelList(data) {
