@@ -132,7 +132,10 @@ export const group_activation_strategy = {
 };
 
 const DEFAULT_ROUTER_MAX_CONSECUTIVE = 4;
-const DEFAULT_ROUTER_MAX_TOKENS = 64;
+// Generous cap so thinking models (DeepSeek-R1, QwQ, etc.) have room to finish their
+// reasoning block AND produce the JSON answer. The actual answer is tiny; this is just
+// headroom — the API still bills only the tokens generated.
+const DEFAULT_ROUTER_MAX_TOKENS = 1024;
 const DEFAULT_ROUTER_PROMPT = `You are a turn router for a roleplay group chat. Your only job is to decide whether any character should reply next, and if so, which character(s) and in what order.
 
 When the user has just spoken, choose the most appropriate character (or characters) to respond.
@@ -1499,7 +1502,9 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             .map(avatar => characters.findIndex(c => c.avatar === avatar))
             .filter(i => i !== -1);
     } catch (error) {
+        const message = error?.message ?? String(error);
         console.error('[group-chats] LLM router failed; falling back to natural order.', error);
+        toastr.error(message, t`Group reply LLM router failed — using natural order`, { timeOut: 8000, preventDuplicates: true });
         return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
     }
 }

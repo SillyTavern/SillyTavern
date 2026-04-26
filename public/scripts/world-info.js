@@ -99,7 +99,8 @@ Rules:
 
 Output format: a JSON array of integer indices and nothing else.
 Examples: [1,3,7]   [2]   []`;
-const LLM_FILTER_MAX_TOKENS = 256;
+// Generous cap so thinking models have room for reasoning + the JSON answer.
+const LLM_FILTER_MAX_TOKENS = 2048;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info });
@@ -4801,7 +4802,9 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                 buffer = new WorldInfoBuffer([], { ...defaultGlobalScanData, trigger: globalScanData.trigger });
             }
         } catch (error) {
+            const message = error?.message ?? String(error);
             console.error('[WI] LLM filter failed; falling back to normal regex scan.', error);
+            toastr.error(message, t`World Info LLM filter failed — using regex scan`, { timeOut: 8000, preventDuplicates: true });
         }
     }
 
