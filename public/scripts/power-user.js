@@ -200,6 +200,7 @@ export const power_user = {
     allow_name2_display: false,
     hotswap_enabled: true,
     timer_enabled: true,
+    debug_logger_enabled: false,
     timestamps_enabled: true,
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
@@ -1718,6 +1719,7 @@ export async function loadPowerUserSettings(settings, data) {
     //$("#removeXML").prop("checked", power_user.removeXML);
     $('#hotswapEnabled').prop('checked', power_user.hotswap_enabled);
     $('#messageTimerEnabled').prop('checked', power_user.timer_enabled);
+    $('#debugLoggerEnabled').prop('checked', power_user.debug_logger_enabled);
     $('#messageTimestampsEnabled').prop('checked', power_user.timestamps_enabled);
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
@@ -2565,6 +2567,7 @@ export function getThemeObject(name) {
         noShadows: power_user.noShadows,
         chat_width: power_user.chat_width,
         timer_enabled: power_user.timer_enabled,
+        debug_logger_enabled: power_user.debug_logger_enabled,
         timestamps_enabled: power_user.timestamps_enabled,
         timestamp_model_icon: power_user.timestamp_model_icon,
 
@@ -3684,6 +3687,11 @@ jQuery(() => {
         const value = !!$(this).prop('checked');
         power_user.timer_enabled = value;
         switchTimer();
+        saveSettingsDebounced();
+    });
+
+    $('#debugLoggerEnabled').on('input', function () {
+        power_user.debug_logger_enabled = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
