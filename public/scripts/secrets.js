@@ -499,9 +499,9 @@ export async function renameSecret(key, id, label) {
 }
 
 /**
- * Generates a session storage key for the PKCE code verifier for a given source.
- * @param {string} source Source for which to generate the session storage key (e.g. 'openrouter')
- * @returns {string} The session storage key for the PKCE code verifier for a given source.
+ * Generates a storage key for the PKCE code verifier for a given source.
+ * @param {string} source Source for which to generate the storage key (e.g. 'openrouter')
+ * @returns {string} The storage key for the PKCE code verifier for a given source.
  */
 const getVerifierKey = (source) => `${getCurrentUserHandle()}_${source}_code_verifier`;
 
