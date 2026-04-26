@@ -7056,13 +7056,13 @@ export function initOpenAI() {
 
     $('#cc_group_models').on('input', async () => {
         oai_settings.group_models = $('#cc_group_models').prop('checked');
-        await getStatusOpen();
+        reconnectOpenAi();
         saveSettingsDebounced();
     });
 
     $('#cc_sort_models').on('input', async () => {
         oai_settings.sort_models = $('#cc_sort_models').val().toString();
-        await getStatusOpen();
+        reconnectOpenAi();
         saveSettingsDebounced();
     });
 
