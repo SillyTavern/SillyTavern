@@ -1953,7 +1953,7 @@ function getNanoGptModelTemplate(option) {
             let titleText = 'Included in subscription';
             let multiplierText = '';
 
-            if (sub.inputTokenMultiplier && sub.inputTokenMultiplier > 1) {
+            if (sub.inputTokenMultiplier && sub.inputTokenMultiplier !== 1) {
                 multiplierText = ` (${sub.inputTokenMultiplier}x)`;
                 titleText += ` - Input Multiplier: ${sub.inputTokenMultiplier}x`;
             }
