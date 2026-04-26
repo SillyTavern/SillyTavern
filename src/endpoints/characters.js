@@ -1541,7 +1541,7 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
 function getPngName(file, directories) {
     file = sanitize(file);
     return getUniqueName(file, (name) => fs.existsSync(path.join(directories.characters, `${name}.png`)),
-        { nameBuilder: (base, i) => i === 0 ? base : `${base}${i}`, startIndex: 0 }) ?? file;
+        { nameBuilder: (base, i) => i === 0 ? base : `${base}${i}`, startIndex: 0, maxTries: 10000 }) ?? file;
 }
 
 /**
