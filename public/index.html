@@ -4763,7 +4763,33 @@
                                                     Alert On Overflow
                                                 </small>
                                             </label>
+                                            <label title="Use a small/fast model to decide which lorebook entries activate based on the chat context. Replaces keyword regex matching for selective entries; constants and decorators still apply normally." data-i18n="[title]Use a small/fast model to decide which lorebook entries activate based on the chat context. Replaces keyword regex matching for selective entries; constants and decorators still apply normally." class="checkbox_label flex1">
+                                                <input id="world_info_llm_filter_enabled" type="checkbox" />
+                                                <small data-i18n="LLM Key Filter" class="whitespacenowrap flex1">
+                                                    LLM Key Filter
+                                                </small>
+                                            </label>
                                         </div>
+                                    </div>
+                                    <div class="world_info_llm_filter_control flex-container marginTop5" title="Connection profile used by the LLM key filter. Pick a small/fast model." data-i18n="[title]Connection profile used by the LLM key filter. Pick a small/fast model.">
+                                        <label for="world_info_llm_filter_profile" class="flexnowrap whitespacenowrap">
+                                            <span data-i18n="LLM filter profile">LLM filter profile</span>
+                                        </label>
+                                        <select id="world_info_llm_filter_profile" class="flex1 margin0">
+                                            <option value="" data-i18n="None">None</option>
+                                        </select>
+                                    </div>
+                                    <div class="world_info_llm_filter_control flex-container marginTop5" title="How many recent chat messages to send to the LLM filter for context (1–50)." data-i18n="[title]How many recent chat messages to send to the LLM filter for context (1–50).">
+                                        <label for="world_info_llm_filter_context_messages" class="flexnowrap whitespacenowrap">
+                                            <span data-i18n="Context messages">Context messages</span>
+                                        </label>
+                                        <input id="world_info_llm_filter_context_messages" type="number" min="1" max="50" step="1" class="text_pole textarea_compact" />
+                                    </div>
+                                    <div class="world_info_llm_filter_control flex-container flexFlowColumn marginTop5" title="Override the system prompt sent to the LLM filter. Leave blank to use the default." data-i18n="[title]Override the system prompt sent to the LLM filter. Leave blank to use the default.">
+                                        <label for="world_info_llm_filter_system_prompt" class="flexnowrap whitespacenowrap">
+                                            <span data-i18n="LLM filter system prompt (override)">LLM filter system prompt (override)</span>
+                                        </label>
+                                        <textarea id="world_info_llm_filter_system_prompt" class="text_pole wide100p textarea_compact autoSetHeight" placeholder="&mdash;" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>

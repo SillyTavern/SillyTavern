@@ -23,6 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
+import { ConnectionManagerRequestService } from './extensions/shared.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -80,6 +81,24 @@ export let world_info_use_group_scoring = false;
 export let world_info_character_strategy = world_info_insertion_strategy.character_first;
 export let world_info_budget_cap = 0;
 export let world_info_max_recursion_steps = 0;
+export let world_info_llm_filter_enabled = false;
+export let world_info_llm_filter_profile = '';
+export let world_info_llm_filter_context_messages = 5;
+export let world_info_llm_filter_system_prompt = '';
+
+const DEFAULT_LLM_FILTER_PROMPT = `You are a relevance filter for roleplay world info entries. You will see recent chat messages and a numbered list of candidate entries — each shows the entry title, primary keys, and secondary keys (no entry content).
+
+Your job: pick which entries are clearly relevant to what is happening in the chat right now. Use semantic understanding — synonyms count when the meaning matches.
+
+Rules:
+- INCLUDE an entry when its named subject (character, place, item, faction, concept) is in play, even via a synonym (e.g. "stallion" should activate a "horse" entry).
+- DO NOT include an entry just because a key word appears generically. If an entry titled "Excalibur" has the key "sword" and the chat says "I drew my sword", do NOT activate Excalibur — that is a generic sword, not the named one.
+- Secondary keys further constrain relevance; respect them.
+- When in doubt, EXCLUDE. False positives waste prompt budget.
+
+Output format: a JSON array of integer indices and nothing else.
+Examples: [1,3,7]   [2]   []`;
+const LLM_FILTER_MAX_TOKENS = 256;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info });
@@ -808,6 +827,10 @@ export function getWorldInfoSettings() {
         world_info_budget_cap,
         world_info_use_group_scoring,
         world_info_max_recursion_steps,
+        world_info_llm_filter_enabled,
+        world_info_llm_filter_profile,
+        world_info_llm_filter_context_messages,
+        world_info_llm_filter_system_prompt,
     };
 }
 
@@ -834,6 +857,10 @@ export function updateWorldInfoSettings(settings, activeWorldInfo) {
         world_info_budget_cap: (value) => world_info_budget_cap = Number(value),
         world_info_use_group_scoring: (value) => world_info_use_group_scoring = Boolean(value),
         world_info_max_recursion_steps: (value) => world_info_max_recursion_steps = Number(value),
+        world_info_llm_filter_enabled: (value) => world_info_llm_filter_enabled = Boolean(value),
+        world_info_llm_filter_profile: (value) => world_info_llm_filter_profile = String(value ?? ''),
+        world_info_llm_filter_context_messages: (value) => world_info_llm_filter_context_messages = Math.max(1, Math.min(50, Number(value) || 5)),
+        world_info_llm_filter_system_prompt: (value) => world_info_llm_filter_system_prompt = String(value ?? ''),
         // Unused
         world_info: (_value) => { },
     };
@@ -991,6 +1018,12 @@ export function setWorldInfoSettings(settings, data) {
 
     $('#world_info_max_recursion_steps').val(world_info_max_recursion_steps);
     $('#world_info_max_recursion_steps_counter').val(world_info_max_recursion_steps);
+
+    $('#world_info_llm_filter_enabled').prop('checked', world_info_llm_filter_enabled);
+    $('#world_info_llm_filter_context_messages').val(world_info_llm_filter_context_messages);
+    $('#world_info_llm_filter_system_prompt').val(world_info_llm_filter_system_prompt);
+    renderLlmFilterProfileOptions(world_info_llm_filter_profile);
+    toggleLlmFilterControls();
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -4568,6 +4601,140 @@ function parseDecorators(content) {
 }
 
 /**
+ * Build the candidate pool for the LLM key filter: selective entries with keys, that aren't
+ * constant or already controlled by an explicit decorator.
+ * @param {object[]} sortedEntries Result of getSortedEntries()
+ * @returns {object[]} Subset eligible to be filtered by the LLM
+ */
+function getLlmFilterCandidates(sortedEntries) {
+    return sortedEntries.filter(entry => {
+        if (!entry || entry.disable) return false;
+        if (entry.constant) return false;
+        if (Array.isArray(entry.decorators) && (entry.decorators.includes('@@activate') || entry.decorators.includes('@@dont_activate'))) return false;
+        if (!Array.isArray(entry.key) || entry.key.length === 0) return false;
+        if (!entry.world || entry.uid === undefined) return false;
+        return true;
+    });
+}
+
+/**
+ * Parse a JSON array of integer indices from raw model output.
+ * Tolerant of stray prose; falls back to scanning for digit sequences.
+ * @param {string} text Raw model output
+ * @param {number} candidateCount Length of the candidate list (for bounds checking)
+ * @returns {number[] | null} Sorted unique indices, or null if no parse
+ */
+function parseLlmFilterIndices(text, candidateCount) {
+    const raw = String(text ?? '');
+    const arrayMatch = raw.match(/\[[\s\S]*?\]/);
+    let parsed = null;
+    if (arrayMatch) {
+        try {
+            const value = JSON.parse(arrayMatch[0]);
+            if (Array.isArray(value)) parsed = value;
+        } catch { /* fall through */ }
+    }
+    if (!parsed) {
+        const digits = raw.match(/\d+/g);
+        if (!digits) return null;
+        parsed = digits.map(Number);
+    }
+    const seen = new Set();
+    const result = [];
+    for (const v of parsed) {
+        const n = Math.floor(Number(v));
+        if (Number.isFinite(n) && n >= 0 && n < candidateCount && !seen.has(n)) {
+            seen.add(n);
+            result.push(n);
+        }
+    }
+    return result;
+}
+
+/**
+ * Run the LLM key filter: ask a small model which entries are semantically relevant
+ * to the recent chat, then mark the chosen ones as externally activated so the
+ * downstream scan picks them up without doing keyword matching.
+ * @param {object[]} sortedEntries All eligible entries from getSortedEntries()
+ * @param {string[]} chat The chat array passed to checkWorldInfo (most-recent-first)
+ * @returns {Promise<{ ran: boolean, kept: number, total: number }>} Whether the filter ran and counts for logging
+ */
+async function applyLlmKeyFilter(sortedEntries, chat) {
+    const candidates = getLlmFilterCandidates(sortedEntries);
+    if (candidates.length === 0) return { ran: false, kept: 0, total: 0 };
+
+    const lastN = Math.max(1, Math.min(50, Number(world_info_llm_filter_context_messages) || 5));
+    const recent = (Array.isArray(chat) ? chat.slice(0, lastN) : []).reverse(); // chronological order for the prompt
+
+    const candidateLines = candidates.map((entry, i) => {
+        const title = String(entry.comment || entry.key?.[0] || `entry ${entry.uid}`).slice(0, 80);
+        const keys = JSON.stringify((entry.key ?? []).map(k => String(k).slice(0, 40)));
+        const secondary = JSON.stringify((entry.keysecondary ?? []).map(k => String(k).slice(0, 40)));
+        return `[${i}] ${title} — keys: ${keys}, secondary: ${secondary}`;
+    }).join('\n');
+
+    const systemPrompt = String(world_info_llm_filter_system_prompt || DEFAULT_LLM_FILTER_PROMPT);
+    const prompt = [
+        systemPrompt,
+        '',
+        'RECENT MESSAGES (oldest → newest):',
+        recent.length ? recent.join('\n') : '(none)',
+        '',
+        'CANDIDATE ENTRIES:',
+        candidateLines,
+        '',
+        'Reply with only the JSON array of indices to include.',
+    ].join('\n');
+
+    const result = await ConnectionManagerRequestService.sendRequest(world_info_llm_filter_profile, prompt, LLM_FILTER_MAX_TOKENS);
+    const content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
+    const indices = parseLlmFilterIndices(content, candidates.length);
+
+    if (!indices) {
+        // Fail-open: keep nothing extra; let the normal regex scan run instead.
+        throw new Error('Could not parse LLM filter response');
+    }
+
+    for (const i of indices) {
+        const entry = candidates[i];
+        WorldInfoBuffer.externalActivations.set(`${entry.world}.${entry.uid}`, entry);
+    }
+    return { ran: true, kept: indices.length, total: candidates.length };
+}
+
+/**
+ * Repopulate the LLM filter profile dropdown from the Connection Manager's profile list.
+ * @param {string|undefined} selectedId Currently selected profile id (if any)
+ */
+function renderLlmFilterProfileOptions(selectedId) {
+    const select = document.getElementById('world_info_llm_filter_profile');
+    if (!(select instanceof HTMLSelectElement)) return;
+
+    const profiles = extension_settings?.connectionManager?.profiles ?? [];
+    select.innerHTML = '';
+
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = t`None`;
+    select.appendChild(noneOption);
+
+    for (const profile of [...profiles].sort((a, b) => String(a.name).localeCompare(String(b.name)))) {
+        const option = document.createElement('option');
+        option.value = profile.id;
+        option.textContent = profile.name;
+        select.appendChild(option);
+    }
+    select.value = selectedId && profiles.some(p => p.id === selectedId) ? selectedId : '';
+}
+
+/**
+ * Show/hide the LLM filter detail controls based on the toggle.
+ */
+function toggleLlmFilterControls() {
+    $('.world_info_llm_filter_control').toggle(!!world_info_llm_filter_enabled);
+}
+
+/**
  * Performs a scan on the chat and returns the world info activated.
  * @param {string[]} chat The chat messages to scan, in reverse order.
  * @param {number} maxContext The maximum context size of the generation.
@@ -4578,7 +4745,7 @@ function parseDecorators(content) {
 //MARK: checkWorldInfo
 export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData = defaultGlobalScanData) {
     const context = getContext();
-    const buffer = new WorldInfoBuffer(chat, globalScanData);
+    let buffer = new WorldInfoBuffer(chat, globalScanData);
 
     console.debug(`[WI] --- START WI SCAN (on ${chat.length} messages, trigger = ${globalScanData.trigger})${isDryRun ? ' (DRY RUN)' : ''} ---`);
 
@@ -4612,6 +4779,24 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
 
     console.debug(`[WI] Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
+
+    // LLM key filter: if enabled, ask a small model which selective entries to activate based on
+    // the recent chat context. Chosen entries become externally-activated; the regex scan is then
+    // suppressed (by replacing the buffer with empty content) so it can't add anything more.
+    // Constants, decorators, sticky/cooldown state still apply normally because those paths run
+    // before keyword matching inside the scan loop.
+    if (world_info_llm_filter_enabled && world_info_llm_filter_profile && !isDryRun) {
+        try {
+            const stats = await applyLlmKeyFilter(sortedEntries, chat);
+            if (stats.ran) {
+                console.debug(`[WI] LLM filter kept ${stats.kept}/${stats.total} candidates; suppressing regex scan.`);
+                buffer = new WorldInfoBuffer([], { ...defaultGlobalScanData, trigger: globalScanData.trigger });
+            }
+        } catch (error) {
+            console.error('[WI] LLM filter failed; falling back to normal regex scan.', error);
+        }
+    }
+
     const timedEffects = new WorldInfoTimedEffects(chat, sortedEntries, isDryRun);
 
     timedEffects.checkTimedEffects();
@@ -6175,6 +6360,33 @@ export function initWorldInfo() {
         } else {
             saveSettings();
         }
+    });
+
+    $('#world_info_llm_filter_enabled').on('input', function () {
+        world_info_llm_filter_enabled = !!$(this).prop('checked');
+        toggleLlmFilterControls();
+        if (world_info_llm_filter_enabled) {
+            renderLlmFilterProfileOptions(world_info_llm_filter_profile);
+        }
+        saveSettingsDebounced();
+    });
+
+    $('#world_info_llm_filter_profile').on('change', function () {
+        world_info_llm_filter_profile = String($(this).val() || '');
+        saveSettingsDebounced();
+    });
+
+    $('#world_info_llm_filter_context_messages').on('input', function () {
+        const value = Number($(this).val());
+        world_info_llm_filter_context_messages = Number.isFinite(value) && value > 0
+            ? Math.min(50, Math.max(1, Math.floor(value)))
+            : 5;
+        saveSettingsDebounced();
+    });
+
+    $('#world_info_llm_filter_system_prompt').on('input', function () {
+        world_info_llm_filter_system_prompt = String($(this).val() ?? '');
+        saveSettingsDebounced();
     });
 
     $('#world_button').on('click', async function (event) {
