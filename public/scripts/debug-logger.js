@@ -13,6 +13,8 @@ import { selected_group, groups } from './group-chats.js';
 
 /** @type {object|null} Currently-building entry, or null between generations */
 let currentEntry = null;
+/** Hard cap on prompt/response sizes written to the log so files stay reasonable. */
+const LLM_TEXT_TRUNCATE = 8000;
 
 function isEnabled() {
     return !!power_user?.debug_logger_enabled;
@@ -55,25 +57,63 @@ function getCurrentContextLabel() {
 }
 
 /**
- * Resets and starts a new log entry. Idempotent: if a previous one was never flushed
- * (e.g. generation aborted mid-flight), it's discarded.
+ * Lazily creates the per-turn entry on first relevant event. The group router fires
+ * its first LLM decision *before* GENERATION_STARTED, so the entry has to be
+ * creatable from any of the capture events — not only GENERATION_STARTED.
  */
+function ensureEntry() {
+    if (!isEnabled()) return null;
+    if (!currentEntry) {
+        currentEntry = {
+            startedAt: nowIso(),
+            generationType: 'pending',
+            context: getCurrentContextLabel(),
+            lastSpeaker: getLastSpeaker(),
+            worldInfoEntries: [],
+            promptOrder: [],
+            llmDecisionCalls: [],
+            notes: [],
+        };
+    }
+    return currentEntry;
+}
+
+/** GENERATION_STARTED: refresh fields without discarding any pre-Generate router data. */
 function startEntry(generationType) {
     if (!isEnabled()) return;
-    currentEntry = {
-        startedAt: nowIso(),
-        generationType: String(generationType ?? 'normal'),
-        context: getCurrentContextLabel(),
-        lastSpeaker: getLastSpeaker(),
-        worldInfoEntries: [],
-        promptOrder: [],
-        notes: [],
-    };
+    const entry = ensureEntry();
+    if (!entry) return;
+    entry.generationType = String(generationType ?? 'normal');
+    if (!entry.lastSpeaker) entry.lastSpeaker = getLastSpeaker();
+    if (entry.context === 'unknown') entry.context = getCurrentContextLabel();
+}
+
+function truncate(text, max = LLM_TEXT_TRUNCATE) {
+    const s = String(text ?? '');
+    if (s.length <= max) return s;
+    return s.slice(0, max) + `…[truncated, ${s.length - max} chars omitted]`;
+}
+
+function captureLlmDecisionCall(payload) {
+    if (!isEnabled()) return;
+    if (!payload || typeof payload !== 'object') return;
+    if (!ensureEntry()) return;
+    currentEntry.llmDecisionCalls.push({
+        capturedAt: nowIso(),
+        kind: String(payload.kind ?? 'unknown'),
+        profileId: String(payload.profileId ?? ''),
+        prompt: truncate(payload.prompt),
+        response: truncate(payload.response),
+        error: payload.error ? String(payload.error) : null,
+        parsed: payload.parsed ?? null,
+        meta: payload.meta ?? null,
+    });
 }
 
 function captureWorldInfo(entries) {
-    if (!isEnabled() || !currentEntry) return;
+    if (!isEnabled()) return;
     if (!Array.isArray(entries)) return;
+    if (!ensureEntry()) return;
     for (const entry of entries) {
         currentEntry.worldInfoEntries.push({
             world: entry?.world ?? '',
@@ -110,7 +150,8 @@ function describeChatCompletionMessage(message) {
  * Capture the chat completion prompt order. Fired by the openai pipeline.
  */
 function captureChatCompletionPrompt(eventData) {
-    if (!isEnabled() || !currentEntry) return;
+    if (!isEnabled()) return;
+    if (!ensureEntry()) return;
     const messages = Array.isArray(eventData?.chat) ? eventData.chat : [];
     currentEntry.promptOrder = messages.map((m, i) => `${String(i + 1).padStart(2, '0')}. ${describeChatCompletionMessage(m)}`);
     currentEntry.promptKind = 'chat-completion';
@@ -123,7 +164,8 @@ function captureChatCompletionPrompt(eventData) {
  * to give a rough sense of order.
  */
 function captureTextCompletionPrompt(eventData) {
-    if (!isEnabled() || !currentEntry) return;
+    if (!isEnabled()) return;
+    if (!ensureEntry()) return;
     if (currentEntry.promptOrder.length > 0) return; // already captured via chat-completion path
     const prompt = String(eventData?.prompt ?? '');
     if (!prompt) return;
@@ -166,6 +208,31 @@ function formatEntryAsLines(entry) {
             lines.push(`    ${line}`);
         }
     }
+    if (entry.llmDecisionCalls && entry.llmDecisionCalls.length) {
+        lines.push(`  llm_decision_calls (${entry.llmDecisionCalls.length}):`);
+        for (let i = 0; i < entry.llmDecisionCalls.length; i++) {
+            const call = entry.llmDecisionCalls[i];
+            lines.push('    ' + '-'.repeat(72));
+            lines.push(`    [#${i + 1}] kind=${call.kind} profile=${call.profileId} captured=${call.capturedAt}`);
+            if (call.error) {
+                lines.push(`      error: ${call.error}`);
+            }
+            if (call.meta) {
+                lines.push(`      meta: ${JSON.stringify(call.meta)}`);
+            }
+            if (call.parsed !== null && call.parsed !== undefined) {
+                lines.push(`      parsed: ${JSON.stringify(call.parsed)}`);
+            }
+            lines.push('      --- prompt sent ---');
+            for (const promptLine of String(call.prompt ?? '').split('\n')) {
+                lines.push(`      | ${promptLine}`);
+            }
+            lines.push('      --- response received ---');
+            for (const responseLine of String(call.response ?? '').split('\n')) {
+                lines.push(`      | ${responseLine}`);
+            }
+        }
+    }
     if (entry.notes.length) {
         lines.push('  notes:');
         for (const n of entry.notes) lines.push(`    - ${n}`);
@@ -201,6 +268,7 @@ export function initDebugLogger() {
     eventSource.on(event_types.WORLD_INFO_ACTIVATED, (entries) => captureWorldInfo(entries));
     eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (eventData) => captureChatCompletionPrompt(eventData));
     eventSource.on(event_types.GENERATE_AFTER_COMBINE_PROMPTS, (eventData) => captureTextCompletionPrompt(eventData));
+    eventSource.on(event_types.LLM_DECISION_CALL, (payload) => captureLlmDecisionCall(payload));
     eventSource.on(event_types.GENERATION_ENDED, () => { void flushEntry(); });
     // Defensive: if generation is interrupted (stop button, abort), still flush what we have.
     eventSource.on(event_types.GENERATION_STOPPED, () => { void flushEntry(); });

@@ -1465,18 +1465,20 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
         return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
     }
 
+    const maxConsecutive = Math.max(1, Number(group?.router_max_consecutive ?? DEFAULT_ROUTER_MAX_CONSECUTIVE));
+    let prompt = '';
+
     try {
         const systemPrompt = String(group?.router_system_prompt || DEFAULT_ROUTER_PROMPT);
         const roster = buildRouterRoster(enabledMembers);
         const speakers = recentSpeakers().join(', ') || '(none yet)';
         const lastSpeaker = isUserInput ? '{{user}}' : (lastMessage?.name ?? 'unknown');
         const lastText = String(activationText ?? '').slice(0, 2000);
-        const maxConsecutive = Math.max(1, Number(group?.router_max_consecutive ?? DEFAULT_ROUTER_MAX_CONSECUTIVE));
         const turnContext = consecutiveTurns <= 0
             ? 'TURN CONTEXT: The user just spoke. Pick the character(s) who should respond first.'
             : `TURN CONTEXT: This is consecutive AI turn ${consecutiveTurns} of max ${maxConsecutive} since the user last spoke. The user is waiting. Strongly prefer [] unless a character is clearly addressed by name, asked a direct question, or being unmistakably handed off to. The closer ${consecutiveTurns} is to ${maxConsecutive}, the more strongly you should prefer [].`;
 
-        const prompt = [
+        prompt = [
             systemPrompt,
             '',
             'CHARACTERS IN SCENE:',
@@ -1497,14 +1499,34 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
         const result = await ConnectionManagerRequestService.sendRequest(profileId, prompt, DEFAULT_ROUTER_MAX_TOKENS);
         const content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
         const orderedAvatars = parseRouterOutput(content, enabledMembers);
-
-        return orderedAvatars
+        const orderedCharIds = orderedAvatars
             .map(avatar => characters.findIndex(c => c.avatar === avatar))
             .filter(i => i !== -1);
+
+        eventSource.emit(event_types.LLM_DECISION_CALL, {
+            kind: 'group-router',
+            profileId,
+            prompt,
+            response: content,
+            error: null,
+            parsed: orderedCharIds.map(id => characters[id]?.name).filter(Boolean),
+            meta: { consecutiveTurns, maxConsecutive, enabledMembers: enabledMembers.length },
+        });
+
+        return orderedCharIds;
     } catch (error) {
         const message = error?.message ?? String(error);
         console.error('[group-chats] LLM router failed; falling back to natural order.', error);
         toastr.error(message, t`Group reply LLM router failed — using natural order`, { timeOut: 8000, preventDuplicates: true });
+        eventSource.emit(event_types.LLM_DECISION_CALL, {
+            kind: 'group-router',
+            profileId,
+            prompt: prompt || '(prompt not built — error before assembly)',
+            response: '',
+            error: message,
+            parsed: null,
+            meta: { consecutiveTurns, maxConsecutive, enabledMembers: enabledMembers.length },
+        });
         return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
     }
 }

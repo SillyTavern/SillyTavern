@@ -59,6 +59,13 @@ export const event_types = {
     GROUP_WRAPPER_STARTED: 'group_wrapper_started',
     GROUP_WRAPPER_FINISHED: 'group_wrapper_finished',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
+    /**
+     * Fires once per LLM-as-judge call made by features that use a small router/filter
+     * model (currently the group chat speaker router and the world info LLM key filter).
+     * Payload: `{ kind, profileId, prompt, response, error, parsed, meta }`.
+     * Used by the optional Debug Logger to capture inputs and outputs of these calls.
+     */
+    LLM_DECISION_CALL: 'llm_decision_call',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
     CHAT_COMPLETION_PROMPT_READY: 'chat_completion_prompt_ready',
