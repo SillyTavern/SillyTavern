@@ -775,6 +775,7 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
     if (card.data?.name) {
         card.data.name = sanitize(card.data.name);
     }
+    card.name = sanitize(card.data?.name || card.name);
     let processedCard = readFromV2(card);
     unsetPrivateFields(processedCard);
     processedCard.create_date = new Date().toISOString();
@@ -892,6 +893,7 @@ async function importFromJson(uploadPath, { request }, preservedFileName) {
         if (jsonData.data?.name) {
             jsonData.data.name = sanitize(jsonData.data.name);
         }
+        jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
         jsonData = readFromV2(jsonData);
         jsonData.create_date = new Date().toISOString();
         const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
