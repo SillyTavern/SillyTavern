@@ -1231,7 +1231,6 @@ export async function initSecrets() {
                 subscription: data.subscription,
             });
             display.append(infoBtn);
-
         } catch (error) {
             console.error('Failed to fetch NanoGPT credits:', error);
             display.empty().text('');
