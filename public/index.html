@@ -3687,7 +3687,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div id="nanogpt_form" data-source="nanogpt">
+                       <div id="nanogpt_form" data-source="nanogpt">
                             <h4 data-i18n="NanoGPT API Key">NanoGPT API Key</h4>
                             <div class="flex-container">
                                 <input id="api_key_nanogpt" name="api_key_nanogpt" class="text_pole flex1" value="" type="text" autocomplete="off">
@@ -3701,6 +3701,26 @@
                                 <select id="model_nanogpt_select">
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
+                            </div>
+                            <div class="marginTopBot5">
+                                <div class="inline-drawer wide100p">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b data-i18n="NanoGPT Model Sorting">NanoGPT Model Sorting</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content m-b-1">
+                                        <div class="marginTopBot5">
+                                            <label for="nanogpt_sort_models" class="checkbox_label">
+                                                <select id="nanogpt_sort_models">
+                                                    <option data-i18n="Alphabetically" value="alphabetically">Alphabetically</option>
+                                                    <option data-i18n="Input Price" value="pricing.prompt">Input Price (cheapest)</option>
+                                                    <option data-i18n="Output Price" value="pricing.completion">Output Price (cheapest)</option>
+                                                    <option data-i18n="Context Size" value="context_length">Context Size</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div id="workers_ai_form" data-source="workers_ai">

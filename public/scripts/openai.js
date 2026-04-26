@@ -332,6 +332,7 @@ export const settingsToUpdate = {
     electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
     electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
+    nanogpt_sort_models: ['#nanogpt_sort_models', 'nanogpt_sort_models', false, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
@@ -446,6 +447,7 @@ const default_settings = {
     electronhub_sort_models: 'alphabetically',
     electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
+    nanogpt_sort_models: 'alphabetically',
     deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
@@ -2101,12 +2103,13 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
+        model_list = nanoGptSortBy(model_list, oai_settings.nanogpt_sort_models);
         $('#model_nanogpt_select').empty();
         model_list.forEach((model) => {
             $('#model_nanogpt_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: model.name || model.id,
                 }));
         });
 
@@ -2507,6 +2510,28 @@ function getAimlapiModelTemplate(option) {
             <div><strong>${DOMPurify.sanitize(model.info?.name || model.name || model.id)}</strong> | ${vendor}</div>
         </div>
     `));
+}
+
+function nanoGptSortBy(data, property = 'alphabetically') {
+    return data.sort((a, b) => {
+        if (property === 'context_length') {
+            const aCtx = a.context_length || 0;
+            const bCtx = b.context_length || 0;
+            return bCtx - aCtx;
+        } else if (property === 'pricing.prompt') {
+            const aPrice = parseFloat(a.pricing?.prompt || 0);
+            const bPrice = parseFloat(b.pricing?.prompt || 0);
+            return aPrice - bPrice;
+        } else if (property === 'pricing.completion') {
+            const aPrice = parseFloat(a.pricing?.completion || 0);
+            const bPrice = parseFloat(b.pricing?.completion || 0);
+            return aPrice - bPrice;
+        } else {
+            const aName = a?.name || a?.id || '';
+            const bName = b?.name || b?.id || '';
+            return aName.localeCompare(bName);
+        }
+    });
 }
 
 /**
@@ -5815,6 +5840,10 @@ async function onElectronHubModelSortChange() {
     await getStatusOpen();
 }
 
+async function onNanoGptModelSortChange() {
+    await getStatusOpen();
+}
+
 async function onNewPresetClick() {
     const name = await Popup.show.input(t`Preset name:`, t`Hint: Use a character/group name to bind preset to a specific chat.`, oai_settings.preset_settings_openai);
 
@@ -6825,6 +6854,11 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#nanogpt_sort_models').on('input', function () {
+        oai_settings.nanogpt_sort_models = String($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#electronhub_group_models').on('input', function () {
         oai_settings.electronhub_group_models = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -7128,6 +7162,7 @@ export function initOpenAI() {
     $('#chutes_sort_models').on('change', onChutesModelSortChange);
     $('#electronhub_group_models').on('change', onElectronHubModelSortChange);
     $('#electronhub_sort_models').on('change', onElectronHubModelSortChange);
+    $('#nanogpt_sort_models').on('change', onNanoGptModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
     $('#model_mistralai_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
