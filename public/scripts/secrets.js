@@ -1203,9 +1203,7 @@ export async function initSecrets() {
 
     const createNanoGptCreditsPopup = (credits) => {
         const root = $('<div class="nanogpt-credits-popup"></div>');
-        root.css({ display: 'grid', gap: '0.25em 1em', gridTemplateColumns: 'max-content minmax(0, 1fr)', textAlign: 'left' });
         root.append($('<h3></h3>').text(t`NanoGPT Credits & Usage`));
-        root.children('h3').css({ gridColumn: '1 / -1', margin: '0 0 0.25em' });
 
         const rows = [
             [t`USD`, `$${formatNanoGptNumber(credits.usdBalance, 2)}`],
@@ -1227,8 +1225,8 @@ export async function initSecrets() {
         }
 
         for (const [label, value] of rows) {
-            root.append($('<div></div>').css({ opacity: 0.8, whiteSpace: 'nowrap' }).text(label));
-            root.append($('<div></div>').css({ fontWeight: 600, overflowWrap: 'anywhere' }).text(value));
+            root.append($('<div></div>').text(label));
+            root.append($('<div></div>').text(value));
         }
 
         return root;
@@ -1271,7 +1269,6 @@ export async function initSecrets() {
 
             const infoBtn = $('<i class="fa-solid fa-circle-info cursor-pointer nanogpt_info_btn"></i>');
             infoBtn.attr('title', t`View details`);
-            infoBtn.css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '1.8em', minHeight: '1.8em', marginLeft: '0.15em', verticalAlign: 'middle' });
             infoBtn.data('credits', {
                 usdBalance,
                 nanoBalance,

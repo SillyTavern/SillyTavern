@@ -6400,6 +6400,38 @@ body:not(.movingUI) .drawer-content.maximized {
     background-color: rgba(241, 163, 163, 0.2);
 }
 
+.nanogpt_info_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8em;
+    min-height: 1.8em;
+    margin-left: 0.15em;
+    vertical-align: middle;
+}
+
+.nanogpt-credits-popup {
+    display: grid;
+    gap: 0.25em 1em;
+    grid-template-columns: max-content minmax(0, 1fr);
+    text-align: left;
+}
+
+.nanogpt-credits-popup h3 {
+    grid-column: 1 / -1;
+    margin: 0 0 0.25em;
+}
+
+.nanogpt-credits-popup div:nth-of-type(odd) {
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.nanogpt-credits-popup div:nth-of-type(even) {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
 @media (prefers-contrast: more) {
     :root {
         --interactable-outline-color: CanvasText;
