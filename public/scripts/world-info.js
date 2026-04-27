@@ -4832,7 +4832,13 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
     // suppressed (by replacing the buffer with empty content) so it can't add anything more.
     // Constants, decorators, sticky/cooldown state still apply normally because those paths run
     // before keyword matching inside the scan loop.
-    if (world_info_llm_filter_enabled && world_info_llm_filter_profile && !isDryRun) {
+    // Skip the LLM filter for "quiet" generations (summarization, vector embeddings,
+    // expression classifier, and other background tasks that don't produce visible
+    // chat replies). Their prompts typically don't include WI anyway, so running the
+    // filter for them just burns tokens and adds latency.
+    const isQuietTrigger = globalScanData?.trigger === 'quiet';
+
+    if (world_info_llm_filter_enabled && world_info_llm_filter_profile && !isDryRun && !isQuietTrigger) {
         try {
             const stats = await applyLlmKeyFilter(sortedEntries, chat);
             if (stats.ran) {
@@ -4844,6 +4850,8 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
             console.error('[WI] LLM filter failed; falling back to normal regex scan.', error);
             toastr.error(message, t`World Info LLM filter failed — using regex scan`, { timeOut: 8000, preventDuplicates: true });
         }
+    } else if (world_info_llm_filter_enabled && isQuietTrigger) {
+        console.debug('[WI] LLM filter skipped for quiet generation (background task).');
     }
 
     const timedEffects = new WorldInfoTimedEffects(chat, sortedEntries, isDryRun);
