@@ -9,15 +9,17 @@ import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } fr
 
 const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false, 'boolean');
 const PREFER_REAL_IP_HEADER = getConfigValue('rateLimiting.preferRealIpHeader', false, 'boolean');
+const LOGIN_POINTS = getConfigValue('rateLimiting.accountsLoginMaxAttempts', 5, 'number');
+const RECOVER_POINTS = getConfigValue('rateLimiting.accountsRecoverMaxAttempts', 5, 'number');
 const MFA_CACHE = new Cache(5 * 60 * 1000);
 
 export const router = express.Router();
 const loginLimiter = new RateLimiterMemory({
-    points: 5,
+    points: LOGIN_POINTS > 0 ? LOGIN_POINTS : Number.MAX_SAFE_INTEGER,
     duration: 60,
 });
 const recoverLimiter = new RateLimiterMemory({
-    points: 5,
+    points: RECOVER_POINTS > 0 ? RECOVER_POINTS : Number.MAX_SAFE_INTEGER,
     duration: 300,
 });
 
