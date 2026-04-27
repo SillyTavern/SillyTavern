@@ -75,7 +75,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
         return unauthorizedResponse(response);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.error('Basic auth failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
+            console.error('Basic auth failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER), request.method, request.originalUrl);
             const retryAfter = Math.ceil(error.msBeforeNext / 1000);
             response.set('Retry-After', retryAfter.toString());
             return response.sendStatus(429);
