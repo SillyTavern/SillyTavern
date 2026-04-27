@@ -36,6 +36,8 @@ dialog {
     position: fixed;
     top: var(--popup-top, 50%);
     left: var(--popup-left, 50%);
+    right: auto;
+    bottom: auto;
     margin: 0;
     transform: var(--popup-transform, translate(-50%, -50%));
 }

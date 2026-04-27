@@ -183,7 +183,8 @@ export class Popup {
     /** @type {boolean} */ #isClosingPrevented;
     /** @type {number} */ #lastEscapePress = 0;
     /** @type {boolean} */ #isShowingForceCloseConfirm = false;
-    /** @type {() => void} */ #viewportPositionListener = () => this.#updateViewportPosition();
+    /** @type {number?} */ #viewportPositionFrame = null;
+    /** @type {() => void} */ #viewportPositionListener = () => this.#scheduleViewportPositionUpdate();
 
     /**
      * Constructs a new Popup object with the given text content, type, inputValue, and options
@@ -862,10 +863,27 @@ export class Popup {
 
     #disableViewportPositionTracking() {
         this.dlg.classList.remove('popup--viewport-positioned');
+
+        if (this.#viewportPositionFrame !== null) {
+            cancelAnimationFrame(this.#viewportPositionFrame);
+            this.#viewportPositionFrame = null;
+        }
+
         window.visualViewport?.removeEventListener('resize', this.#viewportPositionListener);
         window.visualViewport?.removeEventListener('scroll', this.#viewportPositionListener);
         window.removeEventListener('resize', this.#viewportPositionListener);
         window.removeEventListener('orientationchange', this.#viewportPositionListener);
+    }
+
+    #scheduleViewportPositionUpdate() {
+        if (this.#viewportPositionFrame !== null) {
+            return;
+        }
+
+        this.#viewportPositionFrame = requestAnimationFrame(() => {
+            this.#viewportPositionFrame = null;
+            this.#updateViewportPosition();
+        });
     }
 
     #updateViewportPosition() {
