@@ -1387,7 +1387,7 @@ export function isPathUnderParent(parentPath, childPath) {
 
     const relativePath = path.relative(normalizedParent, normalizedChild);
 
-    return !relativePath.startsWith('..') && !path.isAbsolute(relativePath);
+    return relativePath !== '..' && !relativePath.startsWith('..' + path.sep) && !path.isAbsolute(relativePath);
 }
 
 /**
