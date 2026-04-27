@@ -7,7 +7,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { isFalseBoolean } from './utils.js';
-import { DOMPurify } from '/lib.js';
+import { DOMPurify } from '../lib.js';
 
 /**
  * Registers slash commands for the action loader module.
