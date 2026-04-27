@@ -2355,10 +2355,12 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         $('#world_popup_export').off('click').on('click', nullWorldInfo);
         $('#world_popup_delete').off('click').on('click', nullWorldInfo);
         $('#world_duplicate').off('click').on('click', nullWorldInfo);
+        $('#world_lorebook_settings').hide();
         worldEntriesList.hide();
         $('#world_info_pagination').html('');
         return;
     }
+    $('#world_lorebook_settings').show();
 
     // Regardless of whether success is displayed or not. Make sure the delete button is available.
     // Do not put this code behind.
@@ -2600,6 +2602,15 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
                 await hideWorldEditor();
             }
         }
+    });
+
+    // Per-lorebook setting: disable inclusion group competition. When checked, entries
+    // in this lorebook all activate independently regardless of shared group strings.
+    const $disableGroupsCheckbox = $('#world_disable_inclusion_groups');
+    $disableGroupsCheckbox.prop('checked', !!data.disable_inclusion_group_competition);
+    $disableGroupsCheckbox.off('input').on('input', async function () {
+        data.disable_inclusion_group_competition = !!$(this).prop('checked');
+        await saveWorldInfo(name, data);
     });
 
     // Check if a sortable instance exists
@@ -4377,6 +4388,25 @@ export async function createNewWorldInfo(worldName, { interactive = false } = {}
     return true;
 }
 
+/**
+ * Map raw lorebook entries into the flat {uid, world, ...} shape used by the scanner,
+ * stamping each entry with any lorebook-level runtime flags. Underscore-prefixed
+ * fields (`_disableInclusionGroups`) are runtime-only and not persisted back.
+ * @param {object|null} data Loaded lorebook data (output of loadWorldInfo)
+ * @param {string} worldName Name of the lorebook the entries come from
+ * @returns {object[]}
+ */
+function mapEntriesWithLorebookSettings(data, worldName) {
+    if (!data?.entries) return [];
+    const disableInclusionGroups = !!data.disable_inclusion_group_competition;
+    return Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({
+        uid,
+        world: worldName,
+        _disableInclusionGroups: disableInclusionGroups,
+        ...rest,
+    }));
+}
+
 async function getCharacterLore() {
     const character = characters[this_chid];
     const name = character?.name;
@@ -4417,7 +4447,7 @@ async function getCharacterLore() {
         }
 
         const data = await loadWorldInfo(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: worldName, ...rest })) : [];
+        const newEntries = mapEntriesWithLorebookSettings(data, worldName);
         entries = entries.concat(newEntries);
 
         if (!newEntries.length) {
@@ -4437,7 +4467,7 @@ async function getGlobalLore() {
     let entries = [];
     for (const worldName of selected_world_info) {
         const data = await loadWorldInfo(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: worldName, ...rest })) : [];
+        const newEntries = mapEntriesWithLorebookSettings(data, worldName);
         entries = entries.concat(newEntries);
     }
 
@@ -4459,7 +4489,7 @@ async function getChatLore() {
     }
 
     const data = await loadWorldInfo(chatWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: chatWorld, ...rest })) : [];
+    const entries = mapEntriesWithLorebookSettings(data, chatWorld);
 
     console.debug(`[WI] Chat lore has ${entries.length} entries`, [chatWorld]);
 
@@ -4485,7 +4515,7 @@ async function getPersonaLore() {
     }
 
     const data = await loadWorldInfo(personaWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(({ uid, ...rest }) => ({ uid, world: personaWorld, ...rest })) : [];
+    const entries = mapEntriesWithLorebookSettings(data, personaWorld);
 
     console.debug(`[WI] Persona lore has ${entries.length} entries`, [personaWorld]);
 
@@ -5493,7 +5523,9 @@ function filterGroupsByTimedEffects(groups, timedEffects, removeEntry) {
 function filterByInclusionGroups(newEntries, allActivatedEntries, buffer, scanState, timedEffects) {
     console.debug('[WI] --- INCLUSION GROUP CHECKS ---');
 
-    const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
+    // Entries from a lorebook with the "disable inclusion group competition" flag skip
+    // grouping entirely — they all activate independently regardless of shared group strings.
+    const grouped = newEntries.filter(x => x.group && !x._disableInclusionGroups).reduce((acc, item) => {
         item.group.split(/,\s*/).filter(x => x).forEach(group => {
             if (!acc[group]) {
                 acc[group] = [];
