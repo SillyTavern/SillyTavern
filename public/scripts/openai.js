@@ -2745,6 +2745,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'top_p': Number(settings.top_p_openai),
         'max_tokens': settings.openai_max_tokens,
         'stream': stream,
+        'stream_options': stream ? { include_usage: true } : undefined,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': settings.chat_completion_source,
@@ -3062,14 +3063,19 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
+            let apiUsage = null;
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) return;
+                if (done) break;
                 const rawData = value.data;
-                if (rawData === '[DONE]') return;
+                if (rawData === '[DONE]') break;
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
+
+                if (parsed.usage) {
+                    apiUsage = parsed.usage;
+                }
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
@@ -3081,7 +3087,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
                 ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
 
-                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
+                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state, usage: apiUsage };
             }
         };
     } else {

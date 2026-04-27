@@ -400,8 +400,8 @@ async function sendClaudeRequest(request, response) {
             const responseText = generateResponseJson?.content?.[0]?.text || '';
             console.debug('Claude response:', generateResponseJson);
 
-            // Wrap it back to OAI format + save the original content
-            const reply = { choices: [{ 'message': { 'content': responseText } }], content: generateResponseJson.content };
+            // Wrap it back to OAI format + save the original content and usage
+            const reply = { choices: [{ 'message': { 'content': responseText } }], content: generateResponseJson.content, usage: generateResponseJson.usage };
             return response.send(reply);
         }
     } catch (error) {
@@ -738,7 +738,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
 
             // Wrap it back to OAI format (responseContent includes thought signatures in parts array)
-            const reply = { choices: [{ 'message': { 'content': responseText } }], responseContent };
+            const reply = { choices: [{ 'message': { 'content': responseText } }], responseContent, usage: generateResponseJson.usageMetadata };
             return response.send(reply);
         }
     } catch (error) {
