@@ -3,16 +3,29 @@ import { power_user } from './power-user.js';
 import { selected_group, groups } from './group-chats.js';
 
 /**
- * Lightweight per-generation debug logger that writes one entry per turn to a daily
+ * Lightweight per-turn debug logger that writes one entry per "user turn" to a daily
  * file under the user's Logs_Debug directory. Captures only structural metadata
- * (last speaker, activated lorebook entries, prompt section order) — not the full
- * prompt content — so the file stays small and human-scannable.
+ * (last speaker, activated lorebook entries, prompt section order, LLM router/filter
+ * inputs and outputs) — not the full main-prompt content — so the file stays small
+ * and human-scannable.
  *
- * Activated by the "Debug log to file" checkbox in User Settings.
+ * Activated by the "Debug Log to File" checkbox in User Settings.
+ *
+ * Entry boundaries:
+ *   - Solo turn:  GENERATION_STARTED → GENERATION_ENDED  (one entry per Generate)
+ *   - Group turn: GROUP_WRAPPER_STARTED → GROUP_WRAPPER_FINISHED  (one entry covering
+ *                 every sub-Generate inside the wrapper, plus pre-wrapper router calls)
+ *
+ * Sub-generations:
+ *   Each Generate inside a group turn becomes a sub-generation with its own
+ *   world_info_injected and prompt_order. Solo turns have exactly one sub-generation
+ *   and the formatter flattens it for readability.
  */
 
-/** @type {object|null} Currently-building entry, or null between generations */
+/** @type {object|null} Currently-building entry, or null between turns */
 let currentEntry = null;
+/** True between GROUP_WRAPPER_STARTED and GROUP_WRAPPER_FINISHED. Suppresses per-Generate flush. */
+let inGroupWrapper = false;
 /** Hard cap on prompt/response sizes written to the log so files stay reasonable. */
 const LLM_TEXT_TRUNCATE = 8000;
 
@@ -56,10 +69,21 @@ function getCurrentContextLabel() {
     return 'unknown';
 }
 
+function makeSubGeneration(generationType) {
+    return {
+        startedAt: nowIso(),
+        generationType: String(generationType ?? 'pending'),
+        worldInfoEntries: [],
+        promptOrder: [],
+        promptKind: undefined,
+        promptCount: 0,
+    };
+}
+
 /**
  * Lazily creates the per-turn entry on first relevant event. The group router fires
- * its first LLM decision *before* GENERATION_STARTED, so the entry has to be
- * creatable from any of the capture events — not only GENERATION_STARTED.
+ * its first LLM decision *before* GENERATION_STARTED, and the user message itself
+ * may trigger multiple events; we want them all to land in one entry.
  */
 function ensureEntry() {
     if (!isEnabled()) return null;
@@ -69,8 +93,7 @@ function ensureEntry() {
             generationType: 'pending',
             context: getCurrentContextLabel(),
             lastSpeaker: getLastSpeaker(),
-            worldInfoEntries: [],
-            promptOrder: [],
+            subGenerations: [],
             llmDecisionCalls: [],
             notes: [],
         };
@@ -78,12 +101,26 @@ function ensureEntry() {
     return currentEntry;
 }
 
-/** GENERATION_STARTED: refresh fields without discarding any pre-Generate router data. */
-function startEntry(generationType) {
+/**
+ * Returns the current sub-generation, creating one lazily if needed. Required for
+ * pre-Generate events (e.g. WI scan during group router pre-roll, though uncommon).
+ */
+function ensureCurrentSub() {
+    const entry = ensureEntry();
+    if (!entry) return null;
+    if (entry.subGenerations.length === 0) {
+        entry.subGenerations.push(makeSubGeneration('pending'));
+    }
+    return entry.subGenerations[entry.subGenerations.length - 1];
+}
+
+/** GENERATION_STARTED: open a new sub-generation; refresh entry-level fields. */
+function onGenerationStarted(generationType) {
     if (!isEnabled()) return;
     const entry = ensureEntry();
     if (!entry) return;
-    entry.generationType = String(generationType ?? 'normal');
+    entry.subGenerations.push(makeSubGeneration(generationType));
+    if (entry.generationType === 'pending') entry.generationType = String(generationType ?? 'normal');
     if (!entry.lastSpeaker) entry.lastSpeaker = getLastSpeaker();
     if (entry.context === 'unknown') entry.context = getCurrentContextLabel();
 }
@@ -97,8 +134,9 @@ function truncate(text, max = LLM_TEXT_TRUNCATE) {
 function captureLlmDecisionCall(payload) {
     if (!isEnabled()) return;
     if (!payload || typeof payload !== 'object') return;
-    if (!ensureEntry()) return;
-    currentEntry.llmDecisionCalls.push({
+    const entry = ensureEntry();
+    if (!entry) return;
+    entry.llmDecisionCalls.push({
         capturedAt: nowIso(),
         kind: String(payload.kind ?? 'unknown'),
         profileId: String(payload.profileId ?? ''),
@@ -113,9 +151,10 @@ function captureLlmDecisionCall(payload) {
 function captureWorldInfo(entries) {
     if (!isEnabled()) return;
     if (!Array.isArray(entries)) return;
-    if (!ensureEntry()) return;
+    const sub = ensureCurrentSub();
+    if (!sub) return;
     for (const entry of entries) {
-        currentEntry.worldInfoEntries.push({
+        sub.worldInfoEntries.push({
             world: entry?.world ?? '',
             uid: entry?.uid ?? '',
             title: String(entry?.comment || entry?.key?.[0] || `entry ${entry?.uid}`).slice(0, 80),
@@ -146,37 +185,56 @@ function describeChatCompletionMessage(message) {
     return `${role}${message.name ? `:${message.name}` : ''}${head ? ` — ${head}…` : ''}`;
 }
 
-/**
- * Capture the chat completion prompt order. Fired by the openai pipeline.
- */
 function captureChatCompletionPrompt(eventData) {
     if (!isEnabled()) return;
-    if (!ensureEntry()) return;
+    const sub = ensureCurrentSub();
+    if (!sub) return;
     const messages = Array.isArray(eventData?.chat) ? eventData.chat : [];
-    currentEntry.promptOrder = messages.map((m, i) => `${String(i + 1).padStart(2, '0')}. ${describeChatCompletionMessage(m)}`);
-    currentEntry.promptKind = 'chat-completion';
-    currentEntry.promptCount = messages.length;
+    sub.promptOrder = messages.map((m, i) => `${String(i + 1).padStart(2, '0')}. ${describeChatCompletionMessage(m)}`);
+    sub.promptKind = 'chat-completion';
+    sub.promptCount = messages.length;
 }
 
-/**
- * Capture the text completion combined-prompt. Fires for non-OpenAI APIs. We only
- * have a single combined string, so split on the major SillyTavern section markers
- * to give a rough sense of order.
- */
 function captureTextCompletionPrompt(eventData) {
     if (!isEnabled()) return;
-    if (!ensureEntry()) return;
-    if (currentEntry.promptOrder.length > 0) return; // already captured via chat-completion path
+    const sub = ensureCurrentSub();
+    if (!sub) return;
+    if (sub.promptOrder.length > 0) return; // already captured via chat-completion path
     const prompt = String(eventData?.prompt ?? '');
     if (!prompt) return;
     // Sniff for common section markers SillyTavern emits in the assembled text-completion prompt.
     const markerLines = prompt.split('\n').filter(line => /^(?:###|##|---|\[Start a new Chat\]|<[A-Za-z_]+>|Persona:|Scenario:|Personality:|Description:|World Info:|Author's Note:|Example:)/.test(line));
-    currentEntry.promptKind = 'text-completion';
-    currentEntry.promptCount = prompt.length;
-    currentEntry.promptOrder = markerLines.slice(0, 60).map((line, i) => `${String(i + 1).padStart(2, '0')}. ${line.trim().slice(0, 100)}`);
-    if (markerLines.length === 0) {
+    sub.promptKind = 'text-completion';
+    sub.promptCount = prompt.length;
+    sub.promptOrder = markerLines.slice(0, 60).map((line, i) => `${String(i + 1).padStart(2, '0')}. ${line.trim().slice(0, 100)}`);
+    if (markerLines.length === 0 && currentEntry) {
         currentEntry.notes.push('text-completion prompt: no recognized section markers');
     }
+}
+
+function formatSubBody(sub, indent) {
+    const lines = [];
+    lines.push(`${indent}world_info_injected (${sub.worldInfoEntries.length}):`);
+    if (sub.worldInfoEntries.length === 0) {
+        lines.push(`${indent}  (none)`);
+    } else {
+        for (const e of sub.worldInfoEntries) {
+            const tags = [];
+            if (e.constant) tags.push('constant');
+            if (e.position !== null) tags.push(`pos=${e.position}`);
+            if (e.depth !== null) tags.push(`depth=${e.depth}`);
+            lines.push(`${indent}  - [${e.world}/${e.uid}] ${e.title}${tags.length ? ' (' + tags.join(', ') + ')' : ''}`);
+        }
+    }
+    lines.push(`${indent}prompt_order (${sub.promptKind ?? 'unknown'}, ${sub.promptCount ?? 0} items):`);
+    if (!sub.promptOrder.length) {
+        lines.push(`${indent}  (no prompt captured — generation may have aborted before assembly)`);
+    } else {
+        for (const line of sub.promptOrder) {
+            lines.push(`${indent}  ${line}`);
+        }
+    }
+    return lines;
 }
 
 function formatEntryAsLines(entry) {
@@ -188,27 +246,22 @@ function formatEntryAsLines(entry) {
     } else {
         lines.push('  last_speaker: (none)');
     }
-    lines.push(`  world_info_injected (${entry.worldInfoEntries.length}):`);
-    if (entry.worldInfoEntries.length === 0) {
-        lines.push('    (none)');
+
+    // Sub-generations: flatten when there's exactly one (typical for solo turns), expand
+    // when there are multiple (group turns with re-routing).
+    if (entry.subGenerations.length <= 1) {
+        const sub = entry.subGenerations[0] ?? makeSubGeneration('none');
+        for (const line of formatSubBody(sub, '  ')) lines.push(line);
     } else {
-        for (const e of entry.worldInfoEntries) {
-            const tags = [];
-            if (e.constant) tags.push('constant');
-            if (e.position !== null) tags.push(`pos=${e.position}`);
-            if (e.depth !== null) tags.push(`depth=${e.depth}`);
-            lines.push(`    - [${e.world}/${e.uid}] ${e.title}${tags.length ? ' (' + tags.join(', ') + ')' : ''}`);
+        lines.push(`  sub_generations (${entry.subGenerations.length}):`);
+        for (let i = 0; i < entry.subGenerations.length; i++) {
+            const sub = entry.subGenerations[i];
+            lines.push(`    [#${i + 1}] (${sub.generationType}) started=${sub.startedAt}`);
+            for (const line of formatSubBody(sub, '      ')) lines.push(line);
         }
     }
-    lines.push(`  prompt_order (${entry.promptKind ?? 'unknown'}, ${entry.promptCount ?? 0} items):`);
-    if (!entry.promptOrder.length) {
-        lines.push('    (no prompt captured — generation may have aborted before assembly)');
-    } else {
-        for (const line of entry.promptOrder) {
-            lines.push(`    ${line}`);
-        }
-    }
-    if (entry.llmDecisionCalls && entry.llmDecisionCalls.length) {
+
+    if (entry.llmDecisionCalls.length) {
         lines.push(`  llm_decision_calls (${entry.llmDecisionCalls.length}):`);
         for (let i = 0; i < entry.llmDecisionCalls.length; i++) {
             const call = entry.llmDecisionCalls[i];
@@ -264,12 +317,28 @@ async function flushEntry() {
  * during app boot.
  */
 export function initDebugLogger() {
-    eventSource.on(event_types.GENERATION_STARTED, (type) => startEntry(type));
+    eventSource.on(event_types.GROUP_WRAPPER_STARTED, () => {
+        // Pre-router calls may have already created an entry; reuse it. Otherwise lazy.
+        inGroupWrapper = true;
+        ensureEntry();
+    });
+    eventSource.on(event_types.GROUP_WRAPPER_FINISHED, () => {
+        inGroupWrapper = false;
+        void flushEntry();
+    });
+    eventSource.on(event_types.GENERATION_STARTED, (type) => onGenerationStarted(type));
     eventSource.on(event_types.WORLD_INFO_ACTIVATED, (entries) => captureWorldInfo(entries));
     eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, (eventData) => captureChatCompletionPrompt(eventData));
     eventSource.on(event_types.GENERATE_AFTER_COMBINE_PROMPTS, (eventData) => captureTextCompletionPrompt(eventData));
     eventSource.on(event_types.LLM_DECISION_CALL, (payload) => captureLlmDecisionCall(payload));
-    eventSource.on(event_types.GENERATION_ENDED, () => { void flushEntry(); });
+    eventSource.on(event_types.GENERATION_ENDED, () => {
+        // Inside a group wrapper, hold the entry open for re-poll router calls and the
+        // next sub-Generate. The wrapper's FINISHED event flushes the whole turn.
+        if (!inGroupWrapper) void flushEntry();
+    });
     // Defensive: if generation is interrupted (stop button, abort), still flush what we have.
-    eventSource.on(event_types.GENERATION_STOPPED, () => { void flushEntry(); });
+    eventSource.on(event_types.GENERATION_STOPPED, () => {
+        inGroupWrapper = false;
+        void flushEntry();
+    });
 }
