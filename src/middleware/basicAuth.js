@@ -28,26 +28,25 @@ const basicAuthMiddleware = async function (request, response, callback) {
 
     try {
         const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
-        const rateLimit = await basicAuthLimiter.get(ip);
-
-        if (rateLimit !== null && rateLimit.consumedPoints > basicAuthLimiter.points) {
-            throw rateLimit;
-        }
 
         const basicAuthUserName = getConfigValue('basicAuthUser.username');
         const basicAuthUserPassword = getConfigValue('basicAuthUser.password');
         const authHeader = request.headers.authorization;
 
         if (!authHeader) {
-            await basicAuthLimiter.consume(ip);
             return unauthorizedResponse(response);
         }
 
         const [scheme, credentials] = authHeader.split(' ');
 
         if (scheme !== 'Basic' || !credentials) {
-            await basicAuthLimiter.consume(ip);
             return unauthorizedResponse(response);
+        }
+
+        const rateLimit = await basicAuthLimiter.get(ip);
+
+        if (rateLimit !== null && rateLimit.consumedPoints > basicAuthLimiter.points) {
+            throw rateLimit;
         }
 
         const usePerUserAuth = PER_USER_BASIC_AUTH && ENABLE_ACCOUNTS;
