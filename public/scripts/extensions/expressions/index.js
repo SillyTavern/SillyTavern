@@ -789,7 +789,7 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 /**
  * @param {string} expressionName - Label of the expression to set as fallback
  */
-function setFallBackExpression(args, expressionName) {
+function setFallBackExpressionSlashCommand(args, expressionName) {
     const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
     const options = [...select?.options || []];
     const hasExpression = options.some(option => option.value === expressionName);
@@ -2333,7 +2333,7 @@ export async function init() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-set-fallback',
-        callback: setFallBackExpression,
+        callback: setFallBackExpressionSlashCommand,
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: 'expression label',
