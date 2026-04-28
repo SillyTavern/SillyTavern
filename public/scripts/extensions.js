@@ -2105,10 +2105,14 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     await installExtension(url, global, branchName);
 }
 
-export const EMPTY_AUTHOR = {
+/**
+ * Sentinel value representing an empty author, used when author information cannot be extracted from a URL.
+ * @type {{name: string, url: string}}
+ */
+export const EMPTY_AUTHOR = Object.freeze({
     name: '',
     url: '',
-};
+});
 
 /**
  * Extracts the repository author from a given URL.
