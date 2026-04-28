@@ -2604,7 +2604,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
     messageElement.find('.mesIDDisplay').text(`#${messageId}`);
     const apiUsage = mes.extra?.api_usage;
     if (apiUsage) {
-        const completion = apiUsage.completion_tokens ?? apiUsage.output_tokens ?? apiUsage.candidatesTokenCount ?? 0;
+        const completion = apiUsage.completion_tokens ?? apiUsage.output_tokens ?? apiUsage.totalTokenCount ?? 0;
         messageElement.find('.tokenCounterDisplay').text(`${completion}t`);
     } else if (tokenCount) {
         messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
@@ -3656,7 +3656,7 @@ class StreamingProcessor {
             if (this.messageTokenCounterDom instanceof HTMLElement) {
                 const apiUsage = chat[messageId].extra?.api_usage;
                 if (apiUsage) {
-                    const completion = apiUsage.completion_tokens ?? apiUsage.output_tokens ?? apiUsage.candidatesTokenCount ?? 0;
+                    const completion = apiUsage.completion_tokens ?? apiUsage.output_tokens ?? apiUsage.totalTokenCount ?? 0;
                     this.messageTokenCounterDom.textContent = `${completion}t`;
                 } else if (currentTokenCount) {
                     this.messageTokenCounterDom.textContent = `${currentTokenCount}t`;
