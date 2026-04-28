@@ -1364,7 +1364,9 @@ export function embedOpenRouterMedia(messages, { audio = true, video = true } = 
 }
 
 /**
- * Adds a dummy reasoning_content field to messages with tool calls for DeepSeek reasoner.
+ * Adds reasoning_content field to messages with tool calls for DeepSeek thinking mode.
+ * If the message has stored reasoning from a previous response, it is used; otherwise
+ * an empty string is set. The non-standard `reasoning` field is removed from the message.
  * @param {object[]} messages Array of messages
  * @returns {void}
  */
@@ -1374,11 +1376,15 @@ export function addReasoningContentToToolCalls(messages) {
     }
 
     for (const message of messages) {
-        if (!Array.isArray(message.tool_calls) || 'reasoning_content' in message) {
+        if (!Array.isArray(message.tool_calls)) {
             continue;
         }
 
-        message.reasoning_content = '';
+        if (!message.reasoning_content) {
+            message.reasoning_content = message.reasoning ?? '';
+        }
+
+        delete message.reasoning;
     }
 }
 

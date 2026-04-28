@@ -234,18 +234,45 @@ describe('addReasoningContentToToolCalls', () => {
         expect(messages[0].reasoning_content).toBe('');
     });
 
-    test('does not overwrite existing reasoning_content', () => {
+    test('uses stored reasoning as reasoning_content', () => {
         const messages = [
-            { role: 'assistant', tool_calls: [{ id: '1' }], reasoning_content: 'existing' },
+            { role: 'assistant', tool_calls: [{ id: '1' }], reasoning: 'I thought about this.' },
+        ];
+        mod.addReasoningContentToToolCalls(messages);
+        expect(messages[0].reasoning_content).toBe('I thought about this.');
+        expect(messages[0].reasoning).toBeUndefined();
+    });
+
+    test('does not overwrite non-empty reasoning_content with stored reasoning', () => {
+        const messages = [
+            { role: 'assistant', tool_calls: [{ id: '1' }], reasoning_content: 'existing', reasoning: 'other' },
         ];
         mod.addReasoningContentToToolCalls(messages);
         expect(messages[0].reasoning_content).toBe('existing');
+        expect(messages[0].reasoning).toBeUndefined();
+    });
+
+    test('upgrades empty reasoning_content with stored reasoning', () => {
+        const messages = [
+            { role: 'assistant', tool_calls: [{ id: '1' }], reasoning_content: '', reasoning: 'actual thinking' },
+        ];
+        mod.addReasoningContentToToolCalls(messages);
+        expect(messages[0].reasoning_content).toBe('actual thinking');
+        expect(messages[0].reasoning).toBeUndefined();
     });
 
     test('skips messages without tool_calls', () => {
         const messages = [{ role: 'user', content: 'hi' }];
         mod.addReasoningContentToToolCalls(messages);
         expect(messages[0].reasoning_content).toBeUndefined();
+    });
+
+    test('removes reasoning field from tool_call messages', () => {
+        const messages = [
+            { role: 'assistant', tool_calls: [{ id: '1' }], reasoning: 'some thinking' },
+        ];
+        mod.addReasoningContentToToolCalls(messages);
+        expect(messages[0].reasoning).toBeUndefined();
     });
 
     test('handles non-array input gracefully', () => {

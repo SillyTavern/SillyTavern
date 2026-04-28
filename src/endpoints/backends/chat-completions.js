@@ -1072,7 +1072,7 @@ async function sendDeepSeekRequest(request, response) {
 
         const processedMessages = addAssistantPrefix(postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.SEMI_TOOLS, getPromptNames(request)), bodyParams.tools, 'prefix');
 
-        if (/-reasoner/.test(request.body.model)) {
+        if (/-reasoner/.test(request.body.model) || request.body.include_reasoning) {
             addReasoningContentToToolCalls(processedMessages);
         }
 
