@@ -928,6 +928,7 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
                 ${originHtml}
                 <span class="${isActive ? 'extension_enabled' : isDisabled ? 'extension_disabled' : 'extension_missing'}">
                     <span class="extension_name">${DOMPurify.sanitize(displayName)}</span>
+                    <span class="extension_author"></span>
                     <span class="extension_version">${DOMPurify.sanitize(displayVersion)}</span>
                     ${modulesInfo}
                 </span>
@@ -1701,6 +1702,18 @@ async function checkForUpdatesManual(sortFn, abortSignal) {
                         }
                     }
 
+                    const authorElement = extensionBlock.querySelector('.extension_author');
+                    if (authorElement) {
+                        const author = getAuthorFromUrl(origin) || EMPTY_AUTHOR;
+                        if (author.name) {
+                            const icon = document.createElement('i');
+                            icon.classList.add('fa-solid', 'fa-at', 'fa-xs');
+                            const name = document.createElement('span');
+                            name.textContent = author.name;
+                            authorElement.append(icon, name);
+                        }
+                    }
+
                     const versionElement = extensionBlock.querySelector('.extension_version');
                     if (versionElement) {
                         versionElement.textContent += ` (${branch}-${commitHash.substring(0, 7)})`;
@@ -2055,6 +2068,35 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     const url = String(input).trim();
     const branchName = String(popup.inputResults.get('extension_branch_name') ?? '').trim();
     await installExtension(url, global, branchName);
+}
+
+export const EMPTY_AUTHOR = {
+    name: '',
+    url: '',
+};
+
+/**
+ * Extracts the repository author from a given URL.
+ * @param {string} url - The URL of the repository.
+ * @returns {{name: string, url: string}} Object containing the author's name and URL, or empty strings if not found.
+ */
+export function getAuthorFromUrl(url) {
+    const result = structuredClone(EMPTY_AUTHOR);
+
+    try {
+        const parsedUrl = new URL(url);
+        const pathSegments = parsedUrl.pathname.split('/').filter(s => s.length > 0);
+
+        // TODO: Handle non-GitHub URLs if needed
+        if (parsedUrl.host === 'github.com' && pathSegments.length >= 2) {
+            result.name = pathSegments[0];
+            result.url = `${parsedUrl.protocol}//${parsedUrl.hostname}/${result.name}`;
+        }
+    } catch (error) {
+        console.debug('Error parsing URL:', error);
+    }
+
+    return result;
 }
 
 export async function initExtensions() {

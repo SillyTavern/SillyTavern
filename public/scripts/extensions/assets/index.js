@@ -5,7 +5,7 @@ TODO:
 
 import { DOMPurify } from '../../../lib.js';
 import { getRequestHeaders, processDroppedFiles, eventSource, event_types } from '../../../script.js';
-import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
+import { deleteExtension, EMPTY_AUTHOR, extensionNames, getAuthorFromUrl, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
 import { accountStorage } from '../../util/AccountStorage.js';
@@ -60,36 +60,8 @@ const KNOWN_TYPES = {
     'blip': t`Blip sounds`,
 };
 
-const EMPTY_AUTHOR = {
-    name: '',
-    url: '',
-};
 
 const isOfficialExtension = (url) => /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(url);
-
-/**
- * Extracts the repository author from a given URL.
- * @param {string} url - The URL of the repository.
- * @returns {{name: string, url: string}} Object containing the author's name and URL, or empty strings if not found.
- */
-function getAuthorFromUrl(url) {
-    const result = structuredClone(EMPTY_AUTHOR);
-
-    try {
-        const parsedUrl = new URL(url);
-        const pathSegments = parsedUrl.pathname.split('/').filter(s => s.length > 0);
-
-        // TODO: Handle non-GitHub URLs if needed
-        if (parsedUrl.host === 'github.com' && pathSegments.length >= 2) {
-            result.name = pathSegments[0];
-            result.url = `${parsedUrl.protocol}//${parsedUrl.hostname}/${result.name}`;
-        }
-    } catch (error) {
-        console.debug(DEBUG_PREFIX, 'Error parsing URL:', error);
-    }
-
-    return result;
-}
 
 async function downloadAssetsList(url) {
     updateCurrentAssets().then(async function () {
