@@ -5,7 +5,7 @@ TODO:
 
 import { DOMPurify } from '../../../lib.js';
 import { getRequestHeaders, processDroppedFiles, eventSource, event_types } from '../../../script.js';
-import { deleteExtension, EMPTY_AUTHOR, extensionNames, getAuthorFromUrl, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
+import { deleteExtension, EMPTY_AUTHOR, extensionNames, getAuthorFromUrl, getContext, installExtension, renderExtensionTemplateAsync, isOfficialExtension } from '../../extensions.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from '../../popup.js';
 import { executeSlashCommandsWithOptions } from '../../slash-commands.js';
 import { accountStorage } from '../../util/AccountStorage.js';
@@ -59,9 +59,6 @@ const KNOWN_TYPES = {
     'bgm': t`Background music`,
     'blip': t`Blip sounds`,
 };
-
-
-const isOfficialExtension = (url) => /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(url);
 
 async function downloadAssetsList(url) {
     updateCurrentAssets().then(async function () {
@@ -127,7 +124,15 @@ async function downloadAssetsList(url) {
                             element.off('click');
                             label.removeClass('fa-download');
                             this.classList.add('asset-download-button-loading');
-                            await installAsset(asset.url, assetType, asset.id);
+                            const result = await installAsset(asset.url, assetType, asset.id);
+                            if (!result) {
+                                this.classList.remove('asset-download-button-loading');
+                                label.addClass('fa-download');
+                                label.removeClass('fa-spinner');
+                                label.removeClass('fa-spin');
+                                element.on('click', assetInstall);
+                                return;
+                            }
                             label.addClass('fa-check');
                             this.classList.remove('asset-download-button-loading');
                             element.on('click', assetDelete);
@@ -303,9 +308,9 @@ async function installAsset(url, assetType, filename) {
     try {
         if (category === 'extension') {
             console.debug(DEBUG_PREFIX, 'Installing extension ', url);
-            await installExtension(url, false);
+            const result = await installExtension(url, false);
             console.debug(DEBUG_PREFIX, 'Extension installed.');
-            return;
+            return result;
         }
 
         const body = { url, category, filename };
@@ -324,10 +329,12 @@ async function installAsset(url, assetType, filename) {
                 await processDroppedFiles([file]);
                 console.debug(DEBUG_PREFIX, 'Character downloaded.');
             }
+            return true;
         }
+        return false;
     } catch (err) {
         console.log(err);
-        return [];
+        return false;
     }
 }
 
@@ -379,9 +386,13 @@ async function openCharacterBrowser(forceDefault) {
 
         downloadButton.toggle(!isInstalled).on('click', async () => {
             downloadButton.toggleClass('fa-download fa-spinner fa-spin');
-            await installAsset(character.url, 'character', character.id);
-            downloadButton.hide();
-            checkMark.show();
+            const result = await installAsset(character.url, 'character', character.id);
+            if (result) {
+                downloadButton.hide();
+                checkMark.show();
+            } else {
+                downloadButton.toggleClass('fa-download fa-spinner fa-spin');
+            }
         });
 
         checkMark.toggle(isInstalled);

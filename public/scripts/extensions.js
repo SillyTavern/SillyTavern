@@ -61,6 +61,8 @@ let manifests = {};
  */
 const defaultUrl = 'http://localhost:5100';
 
+export const isOfficialExtension = (url) => /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(url);
+
 let requiresReload = false;
 let stateChanged = false;
 let saveMetadataTimeout = null;
@@ -1558,9 +1560,40 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
  * Installs a third-party extension via the API.
  * @param {string} url Extension repository URL
  * @param {boolean} global Is the extension global?
- * @returns {Promise<void>}
+ * @param {string} [branch] Optional branch to install, if not provided the default branch will be used
+ * @returns {Promise<boolean>} True if the extension was installed successfully, false otherwise
  */
 export async function installExtension(url, global, branch = '') {
+    if (!isOfficialExtension(url)) {
+        const extensionInstallationWarningKey = 'extensionInstallationWarningShown';
+        if (accountStorage.getItem(extensionInstallationWarningKey)) {
+            // User has previously chosen to not show the warning again, so we proceed with the installation
+            console.debug('User has previously chosen to not show the extension installation warning again. Proceeding with installation.');
+        } else {
+            let dismissWarning = false;
+            const confirmation = await Popup.show.confirm(
+                t`Install a third-party extension?`,
+                await renderTemplateAsync('thirdPartyExtensionWarning'),
+                {
+                    customInputs: [{ id: 'dontAskAgain', type: 'checkbox', label: t`Don't show this warning again`, defaultState: false }],
+                    onClose: (popup) => {
+                        if (!popup.result) {
+                            return;
+                        }
+                        dismissWarning = Boolean(popup.inputResults?.get('dontAskAgain') ?? false);
+                    },
+                    okButton: t`Yes, install it`,
+                    cancelButton: t`No, cancel`,
+                });
+            if (!confirmation) {
+                return false;
+            }
+            if (dismissWarning) {
+                accountStorage.setItem(extensionInstallationWarningKey, '1');
+            }
+        }
+    }
+
     console.debug('Extension installation started', url);
 
     toastr.info(t`Please wait...`, t`Installing extension`);
@@ -1579,7 +1612,7 @@ export async function installExtension(url, global, branch = '') {
         const text = await request.text();
         toastr.warning(text || request.statusText, t`Extension installation failed`, { timeOut: 5000 });
         console.error('Extension installation failed', request.status, request.statusText, text);
-        return;
+        return false;
     }
 
     const response = await request.json();
@@ -1592,6 +1625,8 @@ export async function installExtension(url, global, branch = '') {
         const extensionName = `third-party/${response.folderName}`;
         await callExtensionHook(extensionName, 'install');
     }
+
+    return true;
 }
 
 /**
