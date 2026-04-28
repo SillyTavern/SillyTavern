@@ -65,6 +65,8 @@ const EMPTY_AUTHOR = {
     url: '',
 };
 
+const isOfficialExtension = (url) => /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(url);
+
 /**
  * Extracts the repository author from a given URL.
  * @param {string} url - The URL of the repository.
@@ -248,7 +250,14 @@ async function downloadAssetsList(url) {
 
                         assetBlock.addClass('asset-block');
 
-                        assetTypeMenu.append(assetBlock);
+                        if (assetType === 'extension') {
+                            const extensionBlockList = isOfficialExtension(asset.url)
+                                ? assetTypeMenu.find('.assets-list-extensions-official .assets-list-extensions')
+                                : assetTypeMenu.find('.assets-list-extensions-community .assets-list-extensions');
+                            extensionBlockList.append(assetBlock);
+                        } else {
+                            assetTypeMenu.append(assetBlock);
+                        }
                     }
                     assetTypeMenu.appendTo('#assets_menu');
                     assetTypeMenu.on('click', 'a.asset_preview', previewAsset);
