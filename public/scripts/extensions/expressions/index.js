@@ -787,6 +787,21 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 }
 
 /**
+ * @param {string} expressionName - Label of the expression to set as fallback
+ */
+function setFallBackExpression(args, expressionName) {
+    const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
+    const options = [...select?.options || []];
+    const hasExpression = options.some(option => option.value === expressionName);
+
+    if (!hasExpression) return '';
+
+    $(select).val(expressionName).trigger('change');
+
+    return expressionName;
+}
+
+/**
  * Returns the sprite folder name (including override) for a character.
  * @param {object} char Character object
  * @param {string} char.avatar Avatar filename with extension
@@ -2314,6 +2329,24 @@ export async function init() {
             }),
         ],
         helpString: 'Force sets the expression for the current character.',
+        returns: 'The currently set expression label after setting it.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'expression-set-fallback',
+        callback: setFallBackExpression,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'expression label',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => [
+                    new SlashCommandEnumValue('#none', 'Sets the fallback expression to no image'),
+                    new SlashCommandEnumValue('#emoji', 'Sets the fallback expression to emojis'),
+                    ...localEnumProviders.expressions(),
+                ]
+            }),
+        ],
+        helpString: 'Force sets the expression fallback for the current character.',
         returns: 'The currently set expression label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
