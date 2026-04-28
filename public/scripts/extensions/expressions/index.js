@@ -2343,7 +2343,7 @@ export async function init() {
                     new SlashCommandEnumValue('#none', 'Sets the fallback expression to no image'),
                     new SlashCommandEnumValue('#emoji', 'Sets the fallback expression to emojis'),
                     ...localEnumProviders.expressions(),
-                ]
+                ],
             }),
         ],
         helpString: 'Force sets the expression fallback for the current character.',
