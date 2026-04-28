@@ -80,6 +80,11 @@ router.post('/install', async (request, response) => {
     }
 
     try {
+        const parsedUrl = new URL(request.body.url);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            return response.status(400).send('Only HTTP and HTTPS protocols are supported for the Extension URL.');
+        }
+
         const git = createGitClient({ backend: gitBackend });
 
         // make sure the third-party directory exists
@@ -99,7 +104,12 @@ router.post('/install', async (request, response) => {
         }
 
         const basePath = global ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const extensionPath = path.join(basePath, sanitize(path.basename(url, '.git')));
+        const extensionNameSanitized = sanitize(path.basename(url, '.git'));
+        if (!extensionNameSanitized) {
+            return response.status(400).send('Could not determine the extension name from the URL. Please provide a valid git repository URL.');
+        }
+
+        const extensionPath = path.join(basePath, extensionNameSanitized);
 
         if (fs.existsSync(extensionPath)) {
             return response.status(409).send(`Directory already exists at ${extensionPath}`);
@@ -147,7 +157,12 @@ router.post('/update', async (request, response) => {
         }
 
         const basePath = global ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const extensionPath = path.join(basePath, sanitize(extensionName));
+        const extensionNameSanitized = sanitize(extensionName);
+        if (!extensionNameSanitized) {
+            return response.status(400).send('Could not determine the extension name. Please provide a valid extension name.');
+        }
+
+        const extensionPath = path.join(basePath, extensionNameSanitized);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -180,8 +195,9 @@ router.post('/update', async (request, response) => {
 router.post('/branches', async (request, response) => {
     try {
         const { extensionName, global } = request.body;
+        const extensionNameSanitized = sanitize(extensionName);
 
-        if (!extensionName) {
+        if (!extensionNameSanitized) {
             return response.status(400).send('Bad Request: extensionName is required in the request body.');
         }
 
@@ -191,7 +207,7 @@ router.post('/branches', async (request, response) => {
         }
 
         const basePath = global ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const extensionPath = path.join(basePath, sanitize(extensionName));
+        const extensionPath = path.join(basePath, extensionNameSanitized);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -225,8 +241,9 @@ router.post('/branches', async (request, response) => {
 router.post('/switch', async (request, response) => {
     try {
         const { extensionName, branch, global } = request.body;
+        const extensionNameSanitized = sanitize(extensionName);
 
-        if (!extensionName || !branch) {
+        if (!extensionNameSanitized || !branch) {
             return response.status(400).send('Bad Request: extensionName and branch are required in the request body.');
         }
 
@@ -236,7 +253,7 @@ router.post('/switch', async (request, response) => {
         }
 
         const basePath = global ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const extensionPath = path.join(basePath, sanitize(extensionName));
+        const extensionPath = path.join(basePath, extensionNameSanitized);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -284,8 +301,9 @@ router.post('/switch', async (request, response) => {
 router.post('/move', async (request, response) => {
     try {
         const { extensionName, source, destination } = request.body;
+        const extensionNameSanitized = sanitize(extensionName);
 
-        if (!extensionName || !source || !destination) {
+        if (!extensionNameSanitized || !source || !destination) {
             return response.status(400).send('Bad Request. Not all required parameters are provided.');
         }
 
@@ -296,8 +314,8 @@ router.post('/move', async (request, response) => {
 
         const sourceDirectory = source === 'global' ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
         const destinationDirectory = destination === 'global' ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const sourcePath = path.join(sourceDirectory, sanitize(extensionName));
-        const destinationPath = path.join(destinationDirectory, sanitize(extensionName));
+        const sourcePath = path.join(sourceDirectory, extensionNameSanitized);
+        const destinationPath = path.join(destinationDirectory, extensionNameSanitized);
 
         if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isDirectory()) {
             console.error(`Source directory does not exist at ${sourcePath}`);
@@ -336,14 +354,15 @@ router.post('/move', async (request, response) => {
  * @returns {void}
  */
 router.post('/version', async (request, response) => {
-    if (!request.body.extensionName) {
-        return response.status(400).send('Bad Request: extensionName is required in the request body.');
-    }
-
     try {
         const { extensionName, global } = request.body;
+        const extensionNameSanitized = sanitize(extensionName);
+        if (!extensionNameSanitized) {
+            return response.status(400).send('Bad Request: Invalid extensionName provided.');
+        }
+
         const basePath = global ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const extensionPath = path.join(basePath, sanitize(extensionName));
+        const extensionPath = path.join(basePath, extensionNameSanitized);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -367,7 +386,7 @@ router.post('/version', async (request, response) => {
         // get only the working branch
         const currentBranchName = currentBranch.current;
         await git.fetch('origin');
-        console.debug(extensionName, currentBranchName, currentCommitHash);
+        console.debug(extensionNameSanitized, currentBranchName, currentCommitHash);
         const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
 
         return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
@@ -386,12 +405,12 @@ router.post('/version', async (request, response) => {
  * @returns {void}
  */
 router.post('/delete', async (request, response) => {
-    if (!request.body.extensionName) {
-        return response.status(400).send('Bad Request: extensionName is required in the request body.');
-    }
-
     try {
         const { extensionName, global } = request.body;
+        const extensionNameSanitized = sanitize(extensionName);
+        if (!extensionNameSanitized) {
+            return response.status(400).send('Bad Request: Invalid extensionName provided.');
+        }
 
         if (global && !request.user.profile.admin) {
             console.error(`User ${request.user.profile.handle} does not have permission to delete global extensions.`);
@@ -399,7 +418,7 @@ router.post('/delete', async (request, response) => {
         }
 
         const basePath = global ? PUBLIC_DIRECTORIES.globalExtensions : request.user.directories.extensions;
-        const extensionPath = path.join(basePath, sanitize(extensionName));
+        const extensionPath = path.join(basePath, extensionNameSanitized);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
