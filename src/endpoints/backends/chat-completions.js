@@ -2372,6 +2372,13 @@ router.post('/generate', async function (request, response) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT, request.body.secret_id);
             headers = {};
             bodyParams = {};
+            if (request.body.nanogpt_provider) {
+                headers['X-Provider'] = request.body.nanogpt_provider;
+            }
+            if (request.body.nanogpt_payg_override) {
+                headers['X-Billing-Mode'] = 'paygo';
+                bodyParams['billing_mode'] = 'paygo';
+            }
             if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
                 request.body.model = `${request.body.model}:online`;
             }
