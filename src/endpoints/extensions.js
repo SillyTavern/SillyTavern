@@ -127,8 +127,8 @@ router.post('/install', async (request, response) => {
 
         return response.send({ version, author, display_name, extensionPath, folderName });
     } catch (error) {
-        console.error('Importing custom content failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
+        console.error('Importing extension failed', error);
+        return response.status(500).send('Internal Server Error. Check the server logs for more details.');
     }
 });
 
@@ -392,7 +392,7 @@ router.post('/version', async (request, response) => {
         return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
     } catch (error) {
         console.error('Getting extension version failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
+        return response.status(500).send('Internal Server Error. Check the server logs for more details.');
     }
 });
 
@@ -429,8 +429,8 @@ router.post('/delete', async (request, response) => {
 
         return response.send(`Extension has been deleted at ${extensionPath}`);
     } catch (error) {
-        console.error('Deleting custom content failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
+        console.error('Deleting extension failed', error);
+        return response.status(500).send('Internal Server Error. Check the server logs for more details.');
     }
 });
 
