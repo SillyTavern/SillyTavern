@@ -1008,6 +1008,17 @@ async function sendCohereRequest(request, response) {
             }
             const generateResponseJson = await generateResponse.json();
             console.debug('Cohere response:', generateResponseJson);
+
+            // Map Cohere's meta.tokens / meta.billed_units to OAI-compatible usage format
+            const tokens = generateResponseJson?.meta?.tokens || generateResponseJson?.meta?.billed_units;
+            if (tokens) {
+                generateResponseJson.usage = {
+                    prompt_tokens: tokens.input_tokens || 0,
+                    completion_tokens: tokens.output_tokens || 0,
+                    total_tokens: (tokens.input_tokens || 0) + (tokens.output_tokens || 0),
+                };
+            }
+
             return response.send(generateResponseJson);
         }
     } catch (error) {

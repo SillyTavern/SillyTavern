@@ -3073,8 +3073,16 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
 
-                if (parsed.usage) {
-                    apiUsage = parsed.usage;
+                // Capture API usage from various SSE formats:
+                // OAI / Anthropic: parsed.usage (prompt_tokens/completion_tokens or input_tokens/output_tokens)
+                // Gemini:          parsed.usageMetadata (candidatesTokenCount etc.)
+                // Cohere v2:       parsed.meta.tokens (input_tokens/output_tokens)
+                const chunkUsage = parsed.usage
+                    || parsed.usageMetadata
+                    || parsed.meta?.tokens
+                    || null;
+                if (chunkUsage) {
+                    apiUsage = chunkUsage;
                 }
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
