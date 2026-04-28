@@ -1,16 +1,10 @@
-import fs from 'node:fs';
-
 import { sync as commandExistsSync } from 'command-exists';
-import git from 'isomorphic-git';
-import http from 'isomorphic-git/http/node';
-import simpleGit from 'simple-git';
 
-/** @type {{ AUTO: 'auto', SYSTEM: 'system', BUILTIN: 'builtin' }} */
-export const GIT_BACKENDS = {
-    AUTO: 'auto',
-    SYSTEM: 'system',
-    BUILTIN: 'builtin',
-};
+import { IsomorphicGitClient } from './isomorphic-git-client.js';
+import { SimpleGitClient } from './simple-git-client.js';
+import { GIT_BACKENDS } from './git-common.js';
+
+export { GIT_BACKENDS, getRepoUpdateState } from './git-common.js';
 
 /**
  * @param {string | undefined | null} preferredBackend
@@ -26,7 +20,7 @@ function resolveBackend(preferredBackend) {
     const systemGitAvailable = commandExistsSync('git');
 
     if (backend === GIT_BACKENDS.SYSTEM && !systemGitAvailable) {
-        throw new Error('System git backend is configured, but no git binary was found in PATH.');
+        throw new Error('git.backend is set to "system", but no git binary was found in PATH. Install Git or set git.backend to "auto" or "builtin".');
     }
 
     if (backend === GIT_BACKENDS.SYSTEM || (backend === GIT_BACKENDS.AUTO && systemGitAvailable)) {
@@ -37,102 +31,15 @@ function resolveBackend(preferredBackend) {
 }
 
 /**
- * @typedef {object} GitCloneOptions
- * @property {number} [depth]
- * @property {string} [branch]
- */
-
-const SUPPORTED_CLONE_OPTIONS = new Set(['depth', 'branch']);
-
-/**
- * @param {GitCloneOptions} [options]
- * @returns {{ depth?: number, branch?: string }}
- */
-function normalizeCloneOptions(options = {}) {
-    for (const key of Object.keys(options)) {
-        if (!SUPPORTED_CLONE_OPTIONS.has(key)) {
-            throw new Error(`Unsupported clone option: ${key}`);
-        }
-    }
-    return { depth: options.depth, branch: options.branch };
-}
-
-/**
- * @typedef {object} GitClient
- * @property {'system' | 'builtin'} backend
- * @property {(url: string, localPath: string, options?: GitCloneOptions) => Promise<void>} clone
- */
-
-/**
- * @param {{ backend?: string }} [options]
- * @returns {GitClient}
+ * @param {{ backend?: string, timeout?: number }} [options]
+ * `timeout` applies to repo-scoped system-git commands and does not apply to clone.
+ * @returns {import('./git-common.js').GitClient}
  */
 export function createGitClient(options = {}) {
     const backend = resolveBackend(options.backend);
     if (backend === GIT_BACKENDS.SYSTEM) {
-        return new SimpleGitClient();
+        return new SimpleGitClient({ timeout: options.timeout });
     }
 
     return new IsomorphicGitClient();
-}
-
-/**
- * @implements {GitClient}
- */
-class SimpleGitClient {
-    constructor() {
-        this.backend = GIT_BACKENDS.SYSTEM;
-        this.git = simpleGit();
-    }
-
-    /**
-     * @param {string} url
-     * @param {string} localPath
-     * @param {GitCloneOptions} [options]
-     * @returns {Promise<void>}
-     */
-    async clone(url, localPath, options = {}) {
-        const { depth, branch } = normalizeCloneOptions(options);
-        /** @type {Record<string, any>} */
-        const cloneOptions = {};
-
-        if (depth !== undefined) {
-            cloneOptions['--depth'] = depth;
-        }
-
-        if (branch) {
-            cloneOptions['--branch'] = branch;
-        }
-
-        await this.git.clone(url, localPath, cloneOptions);
-    }
-}
-
-/**
- * @implements {GitClient}
- */
-class IsomorphicGitClient {
-    constructor() {
-        this.backend = GIT_BACKENDS.BUILTIN;
-    }
-
-    /**
-     * @param {string} url
-     * @param {string} localPath
-     * @param {GitCloneOptions} [options]
-     * @returns {Promise<void>}
-     */
-    async clone(url, localPath, options = {}) {
-        const { depth, branch } = normalizeCloneOptions(options);
-
-        await git.clone({
-            fs,
-            http,
-            dir: localPath,
-            url,
-            depth,
-            ref: branch,
-            singleBranch: depth !== undefined || Boolean(branch),
-        });
-    }
 }

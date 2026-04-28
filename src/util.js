@@ -11,14 +11,13 @@ import crypto from 'node:crypto';
 import readline from 'node:readline';
 
 import yaml from 'yaml';
-import { sync as commandExistsSync } from 'command-exists';
 import _ from 'lodash';
 import yauzl from 'yauzl';
 import mime from 'mime-types';
-import { default as simpleGit } from 'simple-git';
 import chalk from 'chalk';
 import bytes from 'bytes';
 import { LOG_LEVELS, CHAT_COMPLETION_SOURCES, MEDIA_REQUEST_TYPE } from './constants.js';
+import { createGitClient } from './git/client.js';
 import { serverDirectory } from './server-directory.js';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { isFirefox } from './express-common.js';
@@ -144,18 +143,20 @@ export async function getVersion() {
         const require = createRequire(import.meta.url);
         const pkgJson = require(path.join(serverDirectory, './package.json'));
         pkgVersion = pkgJson.version;
-        if (commandExistsSync('git')) {
-            const git = simpleGit({ baseDir: serverDirectory });
-            gitRevision = await git.revparse(['--short', 'HEAD']);
-            gitBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
-            commitDate = await git.show(['-s', '--format=%ci', gitRevision]);
+        const gitClient = createGitClient({ backend: getConfigValue('git.backend', 'auto') });
+        const branchInfo = await gitClient.branch(serverDirectory);
+        gitBranch = branchInfo.current || null;
 
-            const trackingBranch = await git.revparse(['--abbrev-ref', '@{u}']);
+        if (gitBranch) {
+            const head = await gitClient.getCommitInfo(serverDirectory, 'HEAD');
+            gitRevision = head.shortOid;
+            commitDate = head.commitDate;
 
-            // Might fail, but exception is caught. Just don't run anything relevant after in this block...
-            const localLatest = await git.revparse(['HEAD']);
-            const remoteLatest = await git.revparse([trackingBranch]);
-            isLatest = localLatest === remoteLatest;
+            const trackingRef = await gitClient.getTrackingRef(serverDirectory, gitBranch);
+            if (trackingRef) {
+                const remoteLatest = await gitClient.resolveRef(serverDirectory, trackingRef);
+                isLatest = head.oid === remoteLatest;
+            }
         }
     } catch {
         // suppress exception

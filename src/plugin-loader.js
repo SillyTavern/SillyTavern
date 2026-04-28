@@ -3,12 +3,13 @@ import path from 'node:path';
 import url from 'node:url';
 
 import express from 'express';
-import { default as git, CheckRepoActions } from 'simple-git';
-import { sync as commandExistsSync } from 'command-exists';
 import { getConfigValue, color } from './util.js';
+import { createGitClient, getRepoUpdateState } from './git/client.js';
 
 const enableServerPlugins = !!getConfigValue('enableServerPlugins', false, 'boolean');
 const enableServerPluginsAutoUpdate = !!getConfigValue('enableServerPluginsAutoUpdate', true, 'boolean');
+const gitBackend = getConfigValue('git.backend', 'auto');
+const gitClient = createGitClient({ backend: gitBackend });
 
 /**
  * Map of loaded plugins.
@@ -249,38 +250,22 @@ async function updatePlugins(pluginsPath) {
 
     console.log(color.blue('Auto-updating server plugins... Set'), color.yellow('enableServerPluginsAutoUpdate: false'), color.blue('in config.yaml to disable this feature.'));
 
-    if (!commandExistsSync('git')) {
-        console.error(color.red('Git is not installed. Please install Git to enable auto-updating of server plugins.'));
-        return;
-    }
-
     let pluginsToUpdate = 0;
 
     for (const directory of directories) {
         try {
             const pluginPath = path.join(pluginsPath, directory);
-            const pluginRepo = git(pluginPath);
-
-            const isRepo = await pluginRepo.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
-            if (!isRepo) {
+            const updateState = await getRepoUpdateState(gitClient, pluginPath);
+            if (!updateState.isRepo) {
                 continue;
             }
-
-            await pluginRepo.fetch();
-            const commitHash = await pluginRepo.revparse(['HEAD']);
-            const trackingBranch = await pluginRepo.revparse(['--abbrev-ref', '@{u}']);
-            const log = await pluginRepo.log({
-                from: commitHash,
-                to: trackingBranch,
-            });
-
-            if (log.total === 0) {
+            if (updateState.isUpToDate) {
                 continue;
             }
 
             pluginsToUpdate++;
-            await pluginRepo.pull();
-            const latestCommit = await pluginRepo.revparse(['HEAD']);
+            await gitClient.pull(pluginPath, { remote: updateState.remote, branch: updateState.remoteBranch });
+            const latestCommit = await gitClient.resolveRef(pluginPath, 'HEAD');
             console.log(`Plugin ${color.green(directory)} updated to commit ${color.cyan(latestCommit)}`);
         } catch (error) {
             console.error(color.red(`Failed to update plugin ${directory}: ${error.message}`));
