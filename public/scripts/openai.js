@@ -5032,7 +5032,7 @@ function getGeminiMaxContext(model, isUnlocked) {
  */
 function getGeminiMaxTemp(model) {
     if (Array.isArray(model_list) && model_list.length > 0) {
-        const temp = model_list.find((record) => record.id === model)?.temperature;
+        const temp = model_list.find((record) => record.id === model)?.maxTemperature;
         if (Number.isFinite(temp) && temp > 0) {
             return temp;
         }
