@@ -213,7 +213,7 @@ import {
     tag_import_setting,
     applyCharacterTagsToMessageDivs,
 } from './scripts/tags.js';
-import { initSecrets, readSecretState } from './scripts/secrets.js';
+import { checkOpenRouterAuth, initSecrets, readSecretState } from './scripts/secrets.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
@@ -717,6 +717,7 @@ async function firstLoadInit() {
     initLoaderOverlay.appendChild(splashMessage);
 
     const initLoaderHandle = loader.show({
+        slug: 'app-init',
         toastMode: loader.ToastMode.NONE,
         overlayContent: initLoaderOverlay,
     });
@@ -741,12 +742,13 @@ async function firstLoadInit() {
     initKoboldSettings();
     initNovelAISettings();
     initSystemPrompts();
-    initExtensions();
+    await initExtensions();
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
     await initPresetManager();
     await initSystemMessages();
     await getSettings(initLoaderHandle);
+    await checkOpenRouterAuth();
     initKeyboard();
     initDynamicStyles();
     initTags();
@@ -1910,17 +1912,32 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 }
 
 /**
+ * Creates an Image element for the given API/model icon.
+ * The image references the matching SVG file from `/img/` and includes a tooltip with API and model info.
+ * The caller is responsible for appending the image to the DOM and optionally calling `SVGInject` on it.
+ *
+ * @param {string} apiName - API identifier matching an SVG file in /img/ (e.g. 'openai', 'openrouter', 'claude')
+ * @param {string} [modelName=''] - Model name shown in the tooltip
+ * @returns {HTMLImageElement} The image element (not yet in the DOM)
+ */
+export function createModelIcon(apiName, modelName = '') {
+    const image = new Image();
+    image.classList.add('icon-svg');
+    image.src = `/img/${apiName}.svg`;
+    image.title = modelName ? `${apiName} - ${modelName}` : apiName;
+    return image;
+}
+
+/**
  * Inserts or replaces an SVG icon adjacent to the provided message's timestamp.
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {ChatMessageExtra} extra - Contains the API and model details.
  */
 function insertSVGIcon(mes, extra) {
-    // Determine the SVG filename
-    let modelName = extra?.api || '';
+    const apiName = extra?.api || '';
 
-    // If there's no API information, we can't determine which SVG to use
-    if (!modelName) {
+    if (!apiName) {
         return;
     }
 
@@ -1937,16 +1954,14 @@ function insertSVGIcon(mes, extra) {
         };
     };
 
-    const createModelImage = (className, targetSelector, insertBefore) => {
-        const image = new Image();
-        image.classList.add('icon-svg', className);
-        image.src = `/img/${modelName}.svg`;
-        image.title = `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`;
+    const insertIcon = (className, targetSelector, insertBefore) => {
+        const image = createModelIcon(apiName, extra?.model);
+        image.classList.add(className);
         insertOrReplaceSVG(image, className, targetSelector, insertBefore);
     };
 
-    createModelImage('timestamp-icon', '.timestamp');
-    createModelImage('thinking-icon', '.mes_reasoning_header_title', true);
+    insertIcon('timestamp-icon', '.timestamp');
+    insertIcon('thinking-icon', '.mes_reasoning_header_title', true);
 }
 
 /**
@@ -4457,18 +4472,24 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     for (let i = coreChat.length - 1; i >= 0; i--) {
         const depth = coreChat.length - i - (isContinue ? 2 : 1);
         const isPrefix = isContinue && i === coreChat.length - 1;
+
+        // In group chats, only include reasoning from the currently generating character
+        const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
+
         coreChat[i] = {
             ...coreChat[i],
-            mes: promptReasoning.addToMessage(
-                coreChat[i].mes,
-                getRegexedString(
-                    String(coreChat[i].extra?.reasoning ?? ''),
-                    regex_placement.REASONING,
-                    { isPrompt: true, depth: depth },
+            mes: isOtherGroupMember
+                ? coreChat[i].mes
+                : promptReasoning.addToMessage(
+                    coreChat[i].mes,
+                    getRegexedString(
+                        String(coreChat[i].extra?.reasoning ?? ''),
+                        regex_placement.REASONING,
+                        { isPrompt: true, depth: depth },
+                    ),
+                    isPrefix,
+                    coreChat[i].extra?.reasoning_duration,
                 ),
-                isPrefix,
-                coreChat[i].extra?.reasoning_duration,
-            ),
         };
         if (promptReasoning.isLimitReached()) {
             break;
@@ -4705,7 +4726,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
         }
 
-        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct) {
+        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct && !isImpersonate) {
             // Reformat with the last input sequence (if any)
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
         }
@@ -6011,7 +6032,7 @@ function setInContextMessages(msgInContextCount, type) {
 
     if (lastMessageBlock.length === 0) {
         const firstMessageId = getFirstDisplayedMessageId();
-        chatElement.find(`.mes[mesid="${firstMessageId}"`).addClass('lastInContext');
+        chatElement.find(`.mes[mesid="${firstMessageId}"]`).addClass('lastInContext');
     }
 
     // Update last id to chat. No metadata save on purpose, gets hopefully saved via another call
@@ -10573,6 +10594,7 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
     }
 
     const loaderHandle = showLoader ? loader.show({
+        slug: 'chat-rename',
         title: t`Rename Chat`,
         message: t`Renaming chat…`,
         toastMode: loader.ToastMode.STATIC,
@@ -10610,6 +10632,9 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
         if (currentChatId) {
             await reloadCurrentChat();
         }
+
+        const eventData = { avatarId: body.avatar_url, groupId, oldFileName: body.original_file, newFileName: body.renamed_file };
+        await eventSource.emit(event_types.CHAT_RENAMED, eventData);
     } catch {
         await delay(500);
         await callGenericPopup('An error has occurred. Chat was not renamed.', POPUP_TYPE.TEXT);
@@ -11174,6 +11199,7 @@ jQuery(async function () {
         $('#select_chat_cross').trigger('click');
 
         const loaderHandle = loader.show({
+            slug: 'chat-delete',
             title: t`Delete Chat`,
             message: t`Deleting chat…`,
             toastMode: loader.ToastMode.STATIC,
@@ -12468,7 +12494,9 @@ jQuery(async function () {
         $('#avatar-and-name-block').slideToggle();
     });
 
-    $(document).on('mouseup touchend', '#show_more_messages', async function () {
+    $(document).on('click', '#show_more_messages', async function (event) {
+        event.stopPropagation();
+        event.preventDefault();
         await showMoreMessages();
     });
 

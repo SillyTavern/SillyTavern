@@ -40,10 +40,11 @@
                 <span data-i18n="sd_minimal_prompt_processing_txt">Minimal response prompt processing</span>
             </label>
             <label for="sd_source" data-i18n="Source">Source</label>
-            <select id="sd_source">
+            <select id="sd_source" class="text_pole">
                 <option value="aimlapi">AI/ML API</option>
                 <option value="bfl">BFL (Black Forest Labs)</option>
                 <option value="chutes">Chutes</option>
+                <option value="workersai">Cloudflare Workers AI</option>
                 <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="electronhub">Electron Hub</option>
@@ -123,7 +124,7 @@
                 <div class="flex-container" id="sd_electronhub_quality_row">
                     <div class="flex1">
                         <label for="sd_electronhub_quality" data-i18n="Image Quality">Image Quality</label>
-                        <select id="sd_electronhub_quality"></select>
+                        <select id="sd_electronhub_quality" class="text_pole"></select>
                     </div>
                 </div>
             </div>
@@ -191,14 +192,14 @@
                 <div class="flex-container">
                     <div data-sd-model="dall-e-3" class="flex1">
                         <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
-                        <select id="sd_openai_style">
+                        <select id="sd_openai_style" class="text_pole">
                             <option value="vivid">Vivid</option>
                             <option value="natural">Natural</option>
                         </select>
                     </div>
                     <div data-sd-model="gpt-image" class="flex1">
                         <label for="sd_openai_quality_gpt" data-i18n="Image Quality">Image Quality</label>
-                        <select id="sd_openai_quality_gpt">
+                        <select id="sd_openai_quality_gpt" class="text_pole">
                             <option value="auto" data-i18n="Auto">Auto</option>
                             <option value="low" data-i18n="Low">Low</option>
                             <option value="medium" data-i18n="Medium">Medium</option>
@@ -207,7 +208,7 @@
                     </div>
                     <div data-sd-model="dall-e-3,cogview-4,glm-image,cogvideox" class="flex1">
                         <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
-                        <select id="sd_openai_quality">
+                        <select id="sd_openai_quality" class="text_pole">
                             <option value="standard" data-i18n="Standard">Standard</option>
                             <option value="hd" data-i18n="HD">HD</option>
                         </select>
@@ -216,7 +217,7 @@
                 <div data-sd-model="sora-2,sora-2-pro" class="flex-container">
                     <div class="flex1">
                         <label for="sd_openai_duration" data-i18n="Duration">Duration</label>
-                        <select id="sd_openai_duration">
+                        <select id="sd_openai_duration" class="text_pole">
                             <option value="4" data-i18n="Short (4 seconds)">Short (4 seconds)</option>
                             <option value="8" data-i18n="Medium (8 seconds)">Medium (8 seconds)</option>
                             <option value="12" data-i18n="Long (16 seconds)">Long (12 seconds)</option>
@@ -226,7 +227,7 @@
             </div>
             <div data-sd-source="comfy">
                 <label for="sd_comfy_type">Server Type</label>
-                <select id="sd_comfy_type">
+                <select id="sd_comfy_type" class="text_pole">
                     <option value="standard">Standard Server</option>
                     <option value="runpod_serverless">RunPod Serverless Endpoint</option>
                 </select>
@@ -318,7 +319,7 @@
                 <div class="flex-container">
                     <div class="flex1">
                         <label for="sd_stability_style_preset" data-i18n="Style Preset">Style Preset</label>
-                        <select id="sd_stability_style_preset">
+                        <select id="sd_stability_style_preset" class="text_pole">
                             <option value="anime">Anime</option>
                             <option value="3d-model">3D Model</option>
                             <option value="analog-film">Analog Film</option>
@@ -375,6 +376,20 @@
                 </div>
             </div>
 
+            <div data-sd-source="workersai">
+                <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare Workers AI</a>
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_cf_workers_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_workers_ai">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+                <div class="flex-container flexnowrap alignItemsBaseline">
+                    <small class="flex1" data-i18n="Hint: Account ID and API key are pulled from API connections.">Hint: Account ID and API key are pulled from API connections.</small>
+                </div>
+            </div>
+
             <div data-sd-source="google">
                 <div class="flex-container">
                     <div class="flex1">
@@ -394,7 +409,7 @@
                     </label>
                     <div class="flex1">
                         <label for="sd_google_duration" data-i18n="Duration (Veo)">Duration (Veo)</label>
-                        <select id="sd_google_duration">
+                        <select id="sd_google_duration" class="text_pole">
                             <option value="4">Short (4 seconds)</option>
                             <option value="6">Medium (6 seconds)</option>
                             <option value="8">Long (8 seconds)</option>
@@ -405,37 +420,42 @@
 
             <div class="flex-container">
                 <div class="flex1">
-                    <label for="sd_model" data-i18n="Model">Model</label>
-                    <select id="sd_model"></select>
+                    <label for="sd_model" class="flex-container justifySpaceBetween">
+                        <span data-i18n="Model">Model</span>
+                        <div id="sd_models_refresh" class="right_menu_button margin0 padding0" title="Refresh model list" data-i18n="[title]Refresh model list">
+                            <i class="fa-solid fa-sync"></i>
+                        </div>
+                    </label>
+                    <select id="sd_model" class="text_pole"></select>
                 </div>
 
                 <div class="flex1" data-sd-source="comfy,auto">
                     <label for="sd_vae">VAE</label>
-                    <select id="sd_vae"></select>
+                    <select id="sd_vae" class="text_pole"></select>
                 </div>
             </div>
 
             <div class="flex-container">
                 <div class="flex1" data-sd-source="extras,horde,auto,drawthings,novel,vlad,comfy,sdcpp">
                     <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
-                    <select id="sd_sampler"></select>
+                    <select id="sd_sampler" class="text_pole"></select>
                 </div>
 
                 <div class="flex1" data-sd-source="comfy,auto,novel,sdcpp">
                     <label for="sd_scheduler" data-i18n="Scheduler">Scheduler</label>
-                    <select id="sd_scheduler"></select>
+                    <select id="sd_scheduler" class="text_pole"></select>
                 </div>
             </div>
 
             <div class="flex-container">
                 <div class="flex1">
                     <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
-                    <select id="sd_resolution"><!-- Populated in JS --></select>
+                    <select id="sd_resolution" class="text_pole"><!-- Populated in JS --></select>
                 </div>
 
                 <div class="flex1" data-sd-source="auto,vlad,drawthings">
                     <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
-                    <select id="sd_hr_upscaler"></select>
+                    <select id="sd_hr_upscaler" class="text_pole"></select>
                 </div>
             </div>
 

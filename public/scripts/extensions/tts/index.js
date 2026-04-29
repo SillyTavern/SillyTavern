@@ -674,7 +674,6 @@ async function processTtsQueue() {
     text = substituteParams(text);
 
     if (extension_settings.tts.skip_codeblocks) {
-        text = text.replace(/^\s{4}.*$/gm, '').trim();
         text = text.replace(/```.*?```/gs, '').trim();
         text = text.replace(/~~~.*?~~~/gs, '').trim();
     }
@@ -1532,7 +1531,7 @@ async function initVoiceMapInternal(unrestricted) {
     updateVoiceMap();
 }
 
-jQuery(async function () {
+export async function init() {
     async function addExtensionControls() {
         const settingsHtml = $(await renderExtensionTemplateAsync('tts', 'settings'));
         $('#tts_container').append(settingsHtml);
@@ -1620,4 +1619,4 @@ jQuery(async function () {
     }));
 
     document.body.appendChild(audioElement);
-});
+}

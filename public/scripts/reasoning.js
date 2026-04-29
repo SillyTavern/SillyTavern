@@ -1011,6 +1011,44 @@ function registerReasoningSlashCommands() {
         },
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'reasoning-format',
+        aliases: ['format-reasoning'],
+        returns: 'formatted string',
+        helpString: t`Formats reasoning and content into a single string using Reasoning Formatting settings. Useful for preparing text that can be parsed with /reasoning-parse.`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'reasoning',
+                description: 'The reasoning/thinking text to format',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+            }),
+        ],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'The main content text',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: false,
+            }),
+        ],
+        callback: (args, value) => {
+            const reasoning = String(args?.reasoning ?? '');
+            const content = String(value ?? '');
+
+            if (!power_user.reasoning.prefix || !power_user.reasoning.suffix) {
+                toastr.warning(t`Both prefix and suffix must be set in the Reasoning Formatting settings.`, t`Reasoning Format`);
+                return '';
+            }
+
+            if (!reasoning) {
+                toastr.warning(t`Reasoning argument is required.`, t`Reasoning Format`);
+                return '';
+            }
+
+            const { formatted } = formatReasoning(reasoning, content);
+            return formatted;
+        },
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'reasoning-template',
         aliases: ['reasoning-formatting', 'reasoning-preset'],
         callback: selectReasoningTemplateCallback,
@@ -1409,6 +1447,36 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
         console.error('[Reasoning] Error parsing reasoning block', error);
         return null;
     }
+}
+
+/**
+ * Formats reasoning and content into a string using the reasoning template.
+ * This is the inverse of parseReasoningFromString.
+ * @typedef {Object} FormattedReasoning
+ * @property {string} formatted The formatted string with reasoning wrapped in prefix/suffix
+ * @property {string} contentOnly The content without reasoning
+ * @param {string} reasoning The reasoning/thinking text
+ * @param {string} content The main content/response text
+ * @param {ReasoningTemplate} [template=null] Optional template to use. Defaults to power_user.reasoning
+ * @returns {FormattedReasoning} Object containing both formatted (reasoning + content) and contentOnly
+ */
+export function formatReasoning(reasoning, content, template = null) {
+    template = template ?? power_user.reasoning;
+
+    // If no reasoning provided, return content only
+    if (!reasoning || !template.prefix || !template.suffix) {
+        return { formatted: content, contentOnly: content };
+    }
+
+    // Substitute macros in template parts
+    const prefix = substituteParams(template.prefix || '');
+    const suffix = substituteParams(template.suffix || '');
+    const separator = substituteParams(template.separator || '');
+
+    // Build the formatted string: prefix + reasoning + suffix + separator + content
+    const formatted = `${prefix}${reasoning}${suffix}${separator}${content}`;
+
+    return { formatted, contentOnly: content };
 }
 
 /**

@@ -500,6 +500,11 @@
     .horde_multiple_hint {
         display: none;
     }
+
+    select[multiple] {
+        max-height: 50px;
+        overflow-y: auto;
+    }
 }
 
 /*landscape mode phones and ipads*/

@@ -39,6 +39,7 @@ const SOURCES = [
     'chutes',
     'nanogpt',
     'siliconflow',
+    'workers_ai',
 ];
 
 /**
@@ -87,6 +88,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'nanogpt':
             return getOpenAIVector(text, source, directories, sourceSettings.model);
         case 'siliconflow':
+            return getOpenAIVector(text, source, directories, sourceSettings.model, sourceSettings.urlOverride);
+        case 'workers_ai':
             return getOpenAIVector(text, source, directories, sourceSettings.model, sourceSettings.urlOverride);
     }
 
@@ -160,6 +163,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             case 'siliconflow':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model, sourceSettings.urlOverride));
+                break;
+            case 'workers_ai':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model, sourceSettings.urlOverride));
                 break;
             default:
@@ -260,6 +266,15 @@ function getSourceSettings(source, request) {
                 urlOverride: request.body.siliconflow_endpoint === 'cn'
                     ? 'https://api.siliconflow.cn/v1' : null,
             };
+        case 'workers_ai': {
+            const accountId = String(request.body.workers_ai_account_id || '').trim();
+            return {
+                model: String(request.body.model || '@cf/baai/bge-m3'),
+                urlOverride: accountId
+                    ? `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/v1`
+                    : null,
+            };
+        }
         default:
             return {};
     }

@@ -33,6 +33,7 @@ export const ActionLoaderToastMode = {
  * @typedef {object} ActionLoaderOptions
  * @property {boolean} [blocking=true] - Whether to show the blocking overlay. Set to false for non-blocking toast-only loaders.
  * @property {ActionLoaderToastMode} [toastMode='stoppable'] - Toast display mode
+ * @property {string} [slug=null] - Unique slug for the loader to identify it easily via code or CSS
  * @property {string} [message='Generating...'] - The message to display in the toast
  * @property {string} [title] - Optional title for the toast notification
  * @property {string} [stopTooltip='Stop'] - Tooltip text for the stop button
@@ -73,8 +74,20 @@ function hasBlockingLoaders() {
  * Manages its own toast, stop handler, and lifecycle.
  */
 export class ActionLoaderHandle {
+    /**
+     * A special empty handle that is already disposed. Useful as a default value to avoid null checks.
+     * Does not generate any id, toast, or overlay, and all its methods are no-ops.
+     * @type {ActionLoaderHandle}
+     */
+    static get EMPTY() {
+        return new ActionLoaderHandle({ predisposed: true });
+    }
+
     /** @type {string} Unique identifier for this handle */
-    id;
+    #id;
+
+    /** @type {string|null} Unique slug for the loader */
+    #slug = null;
 
     /** @type {JQuery<HTMLElement>|null} The toast element for this loader */
     #toast = null;
@@ -96,9 +109,11 @@ export class ActionLoaderHandle {
      * @param {object} options - Configuration options
      * @param {boolean} [options.blocking=true] - Whether to show blocking overlay
      * @param {ActionLoaderToastMode} [options.toastMode] - Toast display mode
+     * @param {string|null} [options.slug] - Unique slug for the loader (to identify it easily via code or CSS)
      * @param {string} [options.message='Generating...'] - Message to display in the toast
      * @param {string} [options.title] - Title for the toast notification
      * @param {string} [options.stopTooltip='Stop'] - Tooltip for the stop button
+     * @param {boolean} [options.predisposed=false] - Whether this handle is already disposed (for special use)
      * @param {HTMLElement|string|null} [options.overlayContent] - Custom content for the overlay (replaces default spinner)
      * @param {(() => void)|null} [options.onStop] - Custom stop handler
      * @param {(() => void)|null} [options.onHide] - Custom hide handler
@@ -106,14 +121,22 @@ export class ActionLoaderHandle {
     constructor({
         blocking = true,
         toastMode = ActionLoaderToastMode.STOPPABLE,
+        slug = null,
         message = t`Generating...`,
         title = '',
         stopTooltip = t`Stop`,
         overlayContent = null,
         onStop = null,
         onHide = null,
+        predisposed = false,
     } = {}) {
-        this.id = generateLoaderId();
+        if (predisposed) {
+            this.#disposed = true;
+            return;
+        }
+
+        this.#id = generateLoaderId();
+        this.#slug = slug;
         this.#blocking = blocking;
         this.#onStop = onStop;
         this.#onHide = onHide;
@@ -147,6 +170,12 @@ export class ActionLoaderHandle {
     #createToast(message, title, toastMode, stopTooltip) {
         const toastContent = document.createElement('div');
         toastContent.className = 'action-loader-toast';
+
+        if (this.#slug) {
+            toastContent.dataset.slug = this.#slug;
+        }
+        toastContent.dataset.loaderId = this.#id;
+        toastContent.dataset.blocking = this.#blocking.toString();
 
         const messageSpan = document.createElement('span');
         messageSpan.className = 'action-loader-message';
@@ -199,6 +228,22 @@ export class ActionLoaderHandle {
         if (this.#blocking && !hasBlockingLoaders()) {
             await hideOverlay();
         }
+    }
+
+    /**
+     * The unique identifier for this loader handle.
+     * @returns {string}
+     */
+    get id() {
+        return this.#id;
+    }
+
+    /**
+     * The unique slug for this loader handle, used to identify it easily via code or CSS.
+     * @returns {string|null}
+     */
+    get slug() {
+        return this.#slug;
     }
 
     /**
