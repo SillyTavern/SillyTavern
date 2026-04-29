@@ -11,6 +11,7 @@
                 </label>
                 <select id="vectors_source" class="text_pole">
                     <option value="chutes">Chutes</option>
+                    <option value="workers_ai">Cloudflare Workers AI</option>
                     <option value="cohere">Cohere</option>
                     <option value="electronhub">Electron Hub</option>
                     <option value="extras">Extras (deprecated)</option>
@@ -202,6 +203,16 @@
                 <select id="vectors_siliconflow_model" class="text_pole"></select>
                 <i data-i18n="Hint: Set your SiliconFlow API key in API Connections.">
                     Hint: Set your SiliconFlow API key in API Connections.
+                </i>
+            </div>
+
+            <div class="flex-container flexFlowColumn" id="workers_ai_vectorsModel">
+                <label for="vectors_workers_ai_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_workers_ai_model" class="text_pole"></select>
+                <i data-i18n="Hint: Set your Workers AI API key and Account ID in API Connections.">
+                    Hint: Set your Workers AI API key and Account ID in API Connections.
                 </i>
             </div>
 
@@ -482,6 +493,16 @@
                         <label for="vectors_summary_prompt" title="Summary Prompt:">Summary Prompt:</label>
                         <small data-i18n="Only used when Main API or WebLLM Extension is selected.">Only used when Main API or WebLLM Extension is selected.</small>
                         <textarea id="vectors_summary_prompt" class="text_pole textarea_compact" rows="6" placeholder="This prompt will be sent to AI to request the summary generation."></textarea>
+
+                        <label for="vectors_summary_retries" title="Number of attempts per message before aborting vectorization.">
+                            <span data-i18n="Summarization retries per message">Summarization retries per message</span>
+                        </label>
+                        <input id="vectors_summary_retries" type="number" class="text_pole widthUnset" min="1" max="10" step="1" />
+
+                        <label for="vectors_summary_threshold" title="Messages shorter than this (in characters) are embedded as-is without summarization. Set to 0 to always summarize.">
+                            <span data-i18n="Summarization min length (chars)">Summarization min length (chars)</span>
+                        </label>
+                        <input id="vectors_summary_threshold" type="number" class="text_pole widthUnset" min="0" step="1" />
                     </div>
                 </div>
                 <small data-i18n="Old messages are vectorized gradually as you chat. To process all previous messages, click the button below.">

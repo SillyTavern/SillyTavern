@@ -1,9 +1,9 @@
 import { DOMPurify, Popper } from '../lib.js';
 
 import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
-import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
-import { delay, equalsIgnoreCaseAndAccents, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
+import { delay, deleteValueByPath, equalsIgnoreCaseAndAccents, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
 import { getContext } from './st-context.js';
 import { isAdmin } from './user.js';
 import { addLocaleData, getCurrentLocale, t } from './i18n.js';
@@ -355,11 +355,27 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
 }
 
 /**
+ * Checks whether an extension has a specific hook defined in its manifest.
+ * @param {string} name Extension name (with or without 'third-party' prefix)
+ * @param {'install' | 'update' | 'delete' | 'clean' | 'enable' | 'disable' | 'activate'} hookName The hook to check
+ * @returns {boolean}
+ */
+function hasExtensionHook(name, hookName) {
+    const fullName = name.startsWith('third-party') ? name : `third-party${name}`;
+    const manifest = manifests[fullName];
+    if (!manifest || !manifest.hooks || typeof manifest.hooks !== 'object') {
+        return false;
+    }
+    const hookFunctionName = manifest.hooks[hookName];
+    return typeof hookFunctionName === 'string' && hookFunctionName.length > 0;
+}
+
+/**
  * Calls a manifest hook for an extension.
  * Hooks are optional function names exported from the extension's JS entry point module.
  * The hook function can optionally return a Promise that will be awaited.
  * @param {string} name Extension name
- * @param {'install' | 'update' | 'delete' | 'enable' | 'disable' | 'activate'} hookName The hook to call
+ * @param {'install' | 'update' | 'delete' | 'clean' | 'enable' | 'disable' | 'activate'} hookName The hook to call
  * @returns {Promise<void>}
  */
 async function callExtensionHook(name, hookName) {
@@ -471,6 +487,21 @@ export function findExtension(name) {
     if (!internalExtensionName) return null;
     const isEnabled = !extension_settings.disabledExtensions.includes(internalExtensionName);
     return { name: internalExtensionName, enabled: isEnabled };
+}
+
+/**
+ * Returns a deep clone of the manifest for the given extension name.
+ * Accepts either the short name (e.g. `SillyTavern-MyExtension`) or the full internal key
+ * (e.g. `third-party/SillyTavern-MyExtension`). Returns null if the extension is not found.
+ * @param {string} name - Extension name or internal key
+ * @returns {object|null} Cloned manifest object, or null if not found
+ */
+export function getExtensionManifest(name) {
+    const found = extensionNames.find(extName =>
+        equalsIgnoreCaseAndAccents(extName, name) || equalsIgnoreCaseAndAccents(extName, `third-party/${name}`),
+    );
+    const manifest = found ? manifests[found] : null;
+    return manifest ? structuredClone(manifest) : null;
 }
 
 /**
@@ -864,6 +895,7 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
     let updateButton = isExternal ? `<button class="btn_update menu_button displayNone" data-name="${externalId}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button>` : '';
     let moveButton = isExternal && isUserAdmin ? `<button class="btn_move menu_button" data-name="${externalId}" data-i18n="[title]Move" title="Move"><i class="fa-solid fa-folder-tree fa-fw"></i></button>` : '';
     let branchButton = isExternal && isUserAdmin ? `<button class="btn_branch menu_button" data-name="${externalId}" data-i18n="[title]Switch branch" title="Switch branch"><i class="fa-solid fa-code-branch fa-fw"></i></button>` : '';
+    let cleanButton = isExternal && hasExtensionHook(externalId, 'clean') ? `<button class="btn_clean menu_button" data-name="${externalId}" data-i18n="[title]Clean extension data" title="Clean extension data"><i class="fa-fw fa-solid fa-broom"></i></button>` : '';
     let modulesInfo = '';
 
     if (isActive && Array.isArray(manifest.optional)) {
@@ -904,6 +936,7 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
 
             <div class="extension_actions flex-container alignItemsCenter">
                 ${updateButton}
+                ${cleanButton}
                 ${branchButton}
                 ${moveButton}
                 ${deleteButton}
@@ -1234,6 +1267,7 @@ async function updateExtension(extensionName, quiet, timeout = null) {
  * This function makes a POST request to '/api/extensions/delete' with the extension's name.
  * If the extension is deleted, it displays a success message.
  * Creates a popup for the user to confirm before delete.
+ * If the extension has a 'clean' hook, an optional checkbox to also run the cleanup is shown.
  */
 async function onDeleteClick() {
     const extensionName = $(this).data('name');
@@ -1244,11 +1278,48 @@ async function onDeleteClick() {
         return;
     }
 
-    // use callPopup to create a popup for the user to confirm before delete
-    const confirmation = await callGenericPopup(t`Are you sure you want to delete ${extensionName}?`, POPUP_TYPE.CONFIRM, '', {});
+    const hasCleanHook = hasExtensionHook(extensionName, 'clean');
+
+    /** @type {import('./popup.js').CustomPopupInput[]} */
+    const customInputs = hasCleanHook ? [{ id: 'extension_delete_cleanup', label: t`Also clean up extension data`, defaultState: false }] : null;
+
+    const popup = new Popup(t`Are you sure you want to delete ${extensionName}?`, POPUP_TYPE.CONFIRM, '', { customInputs });
+    const confirmation = await popup.show();
     if (confirmation === POPUP_RESULT.AFFIRMATIVE) {
-        await deleteExtension(extensionName);
+        const shouldClean = hasCleanHook && Boolean(popup.inputResults?.get('extension_delete_cleanup'));
+        await deleteExtension(extensionName, shouldClean);
     }
+}
+
+/**
+ * Handles the click event for the clean button of an extension.
+ * Runs the extension's 'clean' hook after user confirmation, then reloads the page.
+ */
+async function onCleanClick() {
+    const extensionName = $(this).data('name');
+
+    const confirmation = await Popup.show.confirm(t`Clean extension data`, t`Are you sure you want to clean up data for ${extensionName}? This action cannot be undone.`);
+    if (!confirmation) {
+        return;
+    }
+
+    await cleanExtension(extensionName);
+}
+
+/**
+ * Runs the 'clean' hook for an extension and reloads the page.
+ * @param {string} extensionName Extension name (without 'third-party' prefix)
+ * @returns {Promise<void>}
+ */
+async function cleanExtension(extensionName) {
+    const fullExtensionName = extensionName.startsWith('third-party') ? extensionName : `third-party${extensionName}`;
+    await callExtensionHook(fullExtensionName, 'clean');
+
+    // Clean might have updated settings, which could race with the page reload, so we'll force save here
+    await saveSettings();
+
+    toastr.success(t`Extension ${extensionName} data cleaned`);
+    delay(1000).then(() => location.reload());
 }
 
 async function onBranchClick() {
@@ -1353,9 +1424,16 @@ async function moveExtension(extensionName, source, destination) {
 /**
  * Deletes an extension via the API.
  * @param {string} extensionName Extension name to delete
+ * @param {boolean} [shouldClean=false] Whether to also run the 'clean' hook before deleting
  */
-export async function deleteExtension(extensionName) {
-    await callExtensionHook(extensionName, 'delete');
+export async function deleteExtension(extensionName, shouldClean = false) {
+    const fullExtensionName = extensionName.startsWith('third-party') ? extensionName : `third-party${extensionName}`;
+
+    if (shouldClean) {
+        await callExtensionHook(fullExtensionName, 'clean');
+    }
+
+    await callExtensionHook(fullExtensionName, 'delete');
 
     try {
         await fetch('/api/extensions/delete', {
@@ -1369,6 +1447,9 @@ export async function deleteExtension(extensionName) {
     } catch (error) {
         console.error('Error:', error);
     }
+
+    // Delete or clean might have updated settings, which could race with the page reload, so we'll force save here
+    await saveSettings();
 
     toastr.success(t`Extension ${extensionName} deleted`);
     delay(1000).then(() => location.reload());
@@ -1759,6 +1840,18 @@ export async function runGenerationInterceptors(chat, contextSize, type) {
 }
 
 /**
+ * Sentinel value that signals a field should be completely removed (unset)
+ * from the character card rather than being set to any value. Pass this as
+ * the `value` argument to {@link writeExtensionField} or
+ * {@link writeExtensionFieldBulk} to delete the key entirely.
+ *
+ * Using `null` as a value will set the field to `null` (the key remains).
+ * Using this sentinel will delete the key from the character card.
+ * @type {string}
+ */
+export const UNSET_VALUE = '__@@UNSET@@__';
+
+/**
  * Writes a field to the character's data extensions object.
  * @param {number|string} characterId Index in the character array
  * @param {string} key Field name
@@ -1772,13 +1865,23 @@ export async function writeExtensionField(characterId, key, value) {
         console.warn('Character not found', characterId);
         return;
     }
-    const path = `data.extensions.${key}`;
-    setValueByPath(character, path, value);
+    const extensionPath = `data.extensions.${key}`;
+    const isUnset = value === UNSET_VALUE;
+
+    if (isUnset) {
+        deleteValueByPath(character, extensionPath);
+    } else {
+        setValueByPath(character, extensionPath, value);
+    }
 
     // Process JSON data
     if (character.json_data) {
         const jsonData = JSON.parse(character.json_data);
-        setValueByPath(jsonData, path, value);
+        if (isUnset) {
+            deleteValueByPath(jsonData, extensionPath);
+        } else {
+            setValueByPath(jsonData, extensionPath, value);
+        }
         character.json_data = JSON.stringify(jsonData);
 
         // Make sure the data doesn't get lost when saving the current character
@@ -1805,6 +1908,107 @@ export async function writeExtensionField(characterId, key, value) {
     if (!mergeResponse.ok) {
         console.error('Failed to save extension field', mergeResponse.statusText);
     }
+}
+
+/**
+ * @typedef {object} BulkExtensionFieldResult
+ * @property {string[]} updated  Avatar filenames that were successfully updated
+ * @property {string[]} skipped  Avatar filenames skipped (filter didn't match or unreadable)
+ * @property {string[]} failed   Avatar filenames where the update failed
+ */
+
+/**
+ * Writes (or deletes) an extension field for multiple characters in a single
+ * bulk request. Unlike {@link writeExtensionField}, this sends one API call
+ * for all characters, and the server processes them in parallel.
+ *
+ * When `value` is {@link UNSET_VALUE} the extension key is **deleted** from
+ * each matching character card. Passing `null` sets the field to `null`
+ * (the key is preserved).
+ *
+ * @param {string[]|null} avatars Avatar filenames to update. Pass `null` or an
+ *   empty array to target **all** characters in the user's character directory.
+ * @param {string} key Extension field name (e.g. "greeting_tools")
+ * @param {any} value Field value, `null` to set null, or
+ *   {@link UNSET_VALUE} to delete the key entirely
+ * @param {object} [options={}] Optional settings
+ * @param {string} [options.filterPath] Dot-path filter — the server will only
+ *   update characters where this path is present and not `undefined`;
+ *   `null` still counts as a match. Useful when the frontend has shallow
+ *   character data and cannot pre-filter.
+ *   Defaults to `data.extensions.<key>` when unsetting, so deletion requests
+ *   automatically skip characters where the field is missing/`undefined`.
+ * @returns {Promise<BulkExtensionFieldResult>} Summary of the bulk operation
+ */
+export async function writeExtensionFieldBulk(avatars, key, value, { filterPath } = {}) {
+    const context = getContext();
+    const extensionPath = `data.extensions.${key}`;
+    const isUnset = value === UNSET_VALUE;
+
+    // Build the server request
+    const requestBody = {
+        avatars: Array.isArray(avatars) && avatars.length > 0 ? avatars : [],
+        data: {
+            data: {
+                extensions: {
+                    [key]: value,
+                },
+            },
+        },
+    };
+
+    // Default filter: when unsetting, only touch characters that have the field
+    const resolvedFilterPath = filterPath ?? (isUnset ? extensionPath : undefined);
+    if (resolvedFilterPath) {
+        requestBody.filter = { path: resolvedFilterPath };
+    }
+
+    const mergeResponse = await fetch('/api/characters/merge-attributes', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(requestBody),
+    });
+
+    if (!mergeResponse.ok) {
+        console.error('Bulk extension field update failed', mergeResponse.statusText);
+        return { updated: [], skipped: [], failed: [] };
+    }
+
+    /** @type {BulkExtensionFieldResult} */
+    const result = await mergeResponse.json();
+
+    // Sync in-memory character objects for successfully updated characters
+    const updatedSet = new Set(result.updated);
+    for (const character of context.characters) {
+        if (!character || !updatedSet.has(character.avatar)) continue;
+
+        if (isUnset) {
+            deleteValueByPath(character, extensionPath);
+        } else {
+            setValueByPath(character, extensionPath, value);
+        }
+
+        // Keep json_data in sync
+        if (character.json_data) {
+            const jsonData = JSON.parse(character.json_data);
+            if (isUnset) {
+                deleteValueByPath(jsonData, extensionPath);
+            } else {
+                setValueByPath(jsonData, extensionPath, value);
+            }
+            character.json_data = JSON.stringify(jsonData);
+        }
+    }
+
+    // If the currently active character was updated, sync the hidden input
+    if (context.characterId !== undefined) {
+        const activeChar = context.characters[context.characterId];
+        if (activeChar && updatedSet.has(activeChar.avatar) && activeChar.json_data) {
+            $('#character_json_data').val(activeChar.json_data);
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -1865,6 +2069,7 @@ export async function initExtensions() {
     $(document).on('click', '.extensions_info .extension_block .toggle_enable', onEnableExtensionClick);
     $(document).on('click', '.extensions_info .extension_block .btn_update', onUpdateClick);
     $(document).on('click', '.extensions_info .extension_block .btn_delete', onDeleteClick);
+    $(document).on('click', '.extensions_info .extension_block .btn_clean', onCleanClick);
     $(document).on('click', '.extensions_info .extension_block .btn_move', onMoveClick);
     $(document).on('click', '.extensions_info .extension_block .btn_branch', onBranchClick);
 

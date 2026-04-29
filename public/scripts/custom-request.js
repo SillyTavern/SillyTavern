@@ -505,7 +505,7 @@ export class ChatCompletionService {
         return async function* streamData() {
             let text = '';
             const swipes = [];
-            const state = { reasoning: '', image: '' };
+            const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -591,7 +591,7 @@ export class ChatCompletionService {
         }
 
         // Ensure api-url is properly applied for all sources that accept it
-        ['custom_url', 'vertexai_region', 'zai_endpoint', 'siliconflow_endpoint'].forEach(field => {
+        ['custom_url', 'vertexai_region', 'zai_endpoint', 'siliconflow_endpoint', 'minimax_endpoint'].forEach(field => {
             // The order is: connection profile => CC preset => CC settings
             overridePayload[field] = overridePayload[field] || settings[field] || oai_settings[field];
         });
