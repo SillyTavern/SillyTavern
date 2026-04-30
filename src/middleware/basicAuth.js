@@ -8,7 +8,7 @@ import storage from 'node-persist';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import { getAllUserHandles, toKey, getPasswordHash } from '../users.js';
 import { getConfigValue, safeReadFileSync } from '../util.js';
-import { getIpAddress } from '../express-common.js';
+import { getIpAddress, retryAfter } from '../express-common.js';
 
 const PER_USER_BASIC_AUTH = !!getConfigValue('perUserBasicAuth', false, 'boolean');
 const ENABLE_ACCOUNTS = !!getConfigValue('enableUserAccounts', false, 'boolean');
@@ -77,9 +77,7 @@ const basicAuthMiddleware = async function (request, response, callback) {
     } catch (error) {
         if (error instanceof RateLimiterRes) {
             console.error('Basic auth failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER), request.method, request.originalUrl);
-            const retryAfter = Math.ceil(error.msBeforeNext / 1000);
-            response.set('Retry-After', retryAfter.toString());
-            return response.sendStatus(429);
+            return retryAfter(response, error).sendStatus(429);
         }
         console.error('Basic auth error:', error);
         return response.sendStatus(500);

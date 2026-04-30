@@ -1,5 +1,6 @@
 import ipaddr from 'ipaddr.js';
 import ipMatching from 'ip-matching';
+import { RateLimiterRes } from 'rate-limiter-flexible';
 import { getConfigValue } from './util.js';
 
 const noopMiddleware = (_req, _res, next) => next();
@@ -108,4 +109,19 @@ export function filterValidIpPatterns(entries, formatLog) {
     }
 
     return validEntries;
+}
+
+/**
+ * Sets the Retry-After header on the response based on the rate limit information.
+ * @param {import('express').Response} response Express response object
+ * @param {RateLimiterRes} rateLimit The rate limit information from rate-limiter-flexible
+ * @returns {import('express').Response} The response object with the Retry-After header set if applicable
+ */
+export function retryAfter(response, rateLimit) {
+    if (response.headersSent || !(rateLimit instanceof RateLimiterRes)) {
+        return response;
+    }
+    const retryAfter = Math.ceil(rateLimit.msBeforeNext / 1000);
+    response.set('Retry-After', retryAfter.toString());
+    return response;
 }

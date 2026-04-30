@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import storage from 'node-persist';
 import express from 'express';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
-import { getIpAddress } from '../express-common.js';
+import { getIpAddress, retryAfter } from '../express-common.js';
 import { color, Cache, getConfigValue } from '../util.js';
 import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } from '../users.js';
 
@@ -96,7 +96,7 @@ router.post('/login', async (request, response) => {
     } catch (error) {
         if (error instanceof RateLimiterRes) {
             console.error('Login failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
-            return response.status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
+            return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
         }
 
         console.error('Login failed:', error);
@@ -136,7 +136,7 @@ router.post('/recover-step1', async (request, response) => {
     } catch (error) {
         if (error instanceof RateLimiterRes) {
             console.error('Recover step 1 failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
-            return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
+            return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
         console.error('Recover step 1 failed:', error);
@@ -195,7 +195,7 @@ router.post('/recover-step2', async (request, response) => {
     } catch (error) {
         if (error instanceof RateLimiterRes) {
             console.error('Recover step 2 failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
-            return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
+            return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
         console.error('Recover step 2 failed:', error);
