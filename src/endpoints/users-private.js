@@ -132,7 +132,7 @@ router.post('/change-password', async (request, response) => {
         await storage.setItem(toKey(request.body.handle), user);
 
         // Update session version to keep the current session valid after password change
-        if (request.session) {
+        if (request.session && request.session.handle === user.handle) {
             request.session.version = getAccountVersion(user);
         }
 
