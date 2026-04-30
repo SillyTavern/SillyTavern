@@ -4,7 +4,7 @@ import { characters, eventSource, event_types, generateQuietPrompt, generateRaw,
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
-import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition, findChar, isFalseBoolean } from '../../utils.js';
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition, findChar, isFalseBoolean, includesIgnoreCaseAndAccents } from '../../utils.js';
 import { hideMutedSprites, selected_group } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
 import { debounce_timeout } from '../../constants.js';
@@ -784,6 +784,30 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
     await sendExpressionCall(spriteFolderName, label, { force: true, overrideSpriteFile: spriteFile });
 
     return label;
+}
+
+/**
+ * @param {string} expressionName - Label of the expression to set as fallback
+ */
+function setFallBackExpressionSlashCommand(args, expressionName) {
+    expressionName = expressionName.trim().toLowerCase();
+
+    const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
+    const fallbackExpressions = Array
+        .from(select?.options || [])
+        .map(option => option.value)
+        .filter(expression => expression?.length > 0);
+
+    const expressionMatch = fallbackExpressions.find(expression => includesIgnoreCaseAndAccents(expression, expressionName));
+
+    if (!expressionMatch) {
+        toastr.warning(t`No expression found for search term ${expressionName}`, t`Set Fallback Expression`);
+        return '';
+    }
+
+    $(select).val(expressionMatch).trigger('change');
+
+    return expressionMatch;
 }
 
 /**
@@ -2314,6 +2338,24 @@ export async function init() {
             }),
         ],
         helpString: 'Force sets the expression for the current character.',
+        returns: 'The currently set expression label after setting it.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'expression-set-fallback',
+        callback: setFallBackExpressionSlashCommand,
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'expression label to set',
+                typeList: [ARGUMENT_TYPE.STRING],
+                isRequired: true,
+                enumProvider: () => [
+                    new SlashCommandEnumValue('#none', 'Sets the fallback expression to no image'),
+                    new SlashCommandEnumValue('#emoji', 'Sets the fallback expression to emojis'),
+                    ...localEnumProviders.expressions(),
+                ],
+            }),
+        ],
+        helpString: 'Force sets the expression fallback for all characters.',
         returns: 'The currently set expression label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({

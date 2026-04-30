@@ -100,3 +100,39 @@ router.post('/credits', async (req, res) => {
         return res.sendStatus(500);
     }
 });
+
+router.post('/models/providers', async (req, res) => {
+    try {
+        const { model } = req.body;
+
+        if (!model) {
+            return res.status(400).json({ supportsProviderSelection: false, providers: [] });
+        }
+
+        const encodedModel = encodeURIComponent(model);
+        const response = await fetch(`${API_NANOGPT}/models/${encodedModel}/providers`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            return res.json({ supportsProviderSelection: false, providers: [] });
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const providers = Array.isArray(data?.providers)
+            ? data.providers.filter(p => p?.available !== false).map(p => p.provider).filter(Boolean)
+            : [];
+
+        return res.json({
+            supportsProviderSelection: Boolean(data?.supportsProviderSelection),
+            providers,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});

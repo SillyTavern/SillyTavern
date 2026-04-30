@@ -61,6 +61,19 @@ let manifests = {};
  */
 const defaultUrl = 'http://localhost:5100';
 
+/**
+ * Checks if the extension is officially supported by its URL pattern.
+ * @param {string} url URL to check
+ * @returns {boolean} True if the URL matches the pattern, false otherwise (or not a valid URL)
+ */
+export const isOfficialExtension = (url) => {
+    try {
+        return /^https:\/\/github\.com\/SillyTavern\/(.+)$/i.test(new URL(url).href);
+    } catch (e) {
+        return false;
+    }
+};
+
 let requiresReload = false;
 let stateChanged = false;
 let saveMetadataTimeout = null;
@@ -928,6 +941,7 @@ function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal,
                 ${originHtml}
                 <span class="${isActive ? 'extension_enabled' : isDisabled ? 'extension_disabled' : 'extension_missing'}">
                     <span class="extension_name">${DOMPurify.sanitize(displayName)}</span>
+                    <span class="extension_author"></span>
                     <span class="extension_version">${DOMPurify.sanitize(displayVersion)}</span>
                     ${modulesInfo}
                 </span>
@@ -1557,9 +1571,53 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
  * Installs a third-party extension via the API.
  * @param {string} url Extension repository URL
  * @param {boolean} global Is the extension global?
- * @returns {Promise<void>}
+ * @param {string} [branch] Optional branch to install, if not provided the default branch will be used
+ * @returns {Promise<boolean>} True if the extension was installed successfully, false otherwise
  */
 export async function installExtension(url, global, branch = '') {
+    try {
+        const parsedUrl = new URL(url);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            throw new Error('Invalid URL protocol');
+        }
+
+        // Normalize the URL (resolve relative paths, remove redundant segments, etc.)
+        url = parsedUrl.href;
+    } catch (error) {
+        console.error('Invalid URL:', error);
+        toastr.error(t`Only valid HTTP and HTTPS URLs are allowed.`, t`Invalid URL`);
+        return false;
+    }
+
+    if (!isOfficialExtension(url)) {
+        const extensionInstallationWarningKey = 'extensionInstallationWarningShown';
+        if (accountStorage.getItem(extensionInstallationWarningKey)) {
+            console.debug('Bypassed URL check for third-party extension (account preference).', url);
+        } else {
+            let dismissWarning = false;
+            const confirmation = await Popup.show.confirm(
+                t`Install a third-party extension?`,
+                await renderTemplateAsync('thirdPartyExtensionWarning'),
+                {
+                    customInputs: [{ id: 'dontAskAgain', type: 'checkbox', label: t`Don't show this warning again`, defaultState: false }],
+                    onClose: (popup) => {
+                        if (!popup.result) {
+                            return;
+                        }
+                        dismissWarning = Boolean(popup.inputResults?.get('dontAskAgain') ?? false);
+                    },
+                    okButton: t`Yes, install it`,
+                    cancelButton: t`No, cancel`,
+                });
+            if (!confirmation) {
+                return false;
+            }
+            if (dismissWarning) {
+                accountStorage.setItem(extensionInstallationWarningKey, '1');
+            }
+        }
+    }
+
     console.debug('Extension installation started', url);
 
     toastr.info(t`Please wait...`, t`Installing extension`);
@@ -1578,11 +1636,11 @@ export async function installExtension(url, global, branch = '') {
         const text = await request.text();
         toastr.warning(text || request.statusText, t`Extension installation failed`, { timeOut: 5000 });
         console.error('Extension installation failed', request.status, request.statusText, text);
-        return;
+        return false;
     }
 
     const response = await request.json();
-    toastr.success(t`Extension '${response.display_name}' by ${response.author} (version ${response.version}) has been installed successfully!`, t`Extension installation successful`);
+    toastr.success(t`Extension '${response.display_name}' has been installed successfully!`, t`Extension installation successful`);
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
     await loadExtensionSettings({}, false, false);
     await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
@@ -1591,6 +1649,8 @@ export async function installExtension(url, global, branch = '') {
         const extensionName = `third-party/${response.folderName}`;
         await callExtensionHook(extensionName, 'install');
     }
+
+    return true;
 }
 
 /**
@@ -1698,6 +1758,18 @@ async function checkForUpdatesManual(sortFn, abortSignal) {
                             originLink.rel = 'noopener noreferrer';
                         } catch (error) {
                             console.log('Error setting origin link', originLink, error);
+                        }
+                    }
+
+                    const authorElement = extensionBlock.querySelector('.extension_author');
+                    if (authorElement) {
+                        const author = getAuthorFromUrl(origin) || EMPTY_AUTHOR;
+                        if (author.name) {
+                            const icon = document.createElement('i');
+                            icon.classList.add('fa-solid', 'fa-at', 'fa-xs');
+                            const name = document.createElement('span');
+                            name.textContent = author.name;
+                            authorElement.append(icon, name);
                         }
                     }
 
@@ -2055,6 +2127,39 @@ export async function openThirdPartyExtensionMenu(suggestUrl = '') {
     const url = String(input).trim();
     const branchName = String(popup.inputResults.get('extension_branch_name') ?? '').trim();
     await installExtension(url, global, branchName);
+}
+
+/**
+ * Sentinel value representing an empty author, used when author information cannot be extracted from a URL.
+ * @type {{name: string, url: string}}
+ */
+export const EMPTY_AUTHOR = Object.freeze({
+    name: '',
+    url: '',
+});
+
+/**
+ * Extracts the repository author from a given URL.
+ * @param {string} url - The URL of the repository.
+ * @returns {{name: string, url: string}} Object containing the author's name and URL, or empty strings if not found.
+ */
+export function getAuthorFromUrl(url) {
+    const result = structuredClone(EMPTY_AUTHOR);
+
+    try {
+        const parsedUrl = new URL(url);
+        const pathSegments = parsedUrl.pathname.split('/').filter(s => s.length > 0);
+
+        // TODO: Handle non-GitHub URLs if needed
+        if (parsedUrl.host === 'github.com' && pathSegments.length >= 2) {
+            result.name = pathSegments[0];
+            result.url = `${parsedUrl.protocol}//${parsedUrl.hostname}/${result.name}`;
+        }
+    } catch (error) {
+        console.debug('Error parsing URL:', error);
+    }
+
+    return result;
 }
 
 export async function initExtensions() {
