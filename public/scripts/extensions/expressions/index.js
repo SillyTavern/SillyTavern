@@ -2346,7 +2346,7 @@ export async function init() {
                 ],
             }),
         ],
-        helpString: 'Force sets the expression fallback for the current character.',
+        helpString: 'Force sets the expression fallback for all characters.',
         returns: 'The currently set expression label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
