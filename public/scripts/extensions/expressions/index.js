@@ -2350,7 +2350,7 @@ export async function init() {
             SlashCommandArgument.fromProps({
                 description: 'expression label to set',
                 typeList: [ARGUMENT_TYPE.STRING],
-                isRequired: true,
+                isRequired: false,
                 enumProvider: () => [
                     new SlashCommandEnumValue('#none', 'Sets the fallback expression to no image'),
                     new SlashCommandEnumValue('#emoji', 'Sets the fallback expression to emojis'),
@@ -2358,7 +2358,25 @@ export async function init() {
                 ],
             }),
         ],
-        helpString: 'Force sets the expression fallback for all characters.',
+        helpString: `
+            <div>
+                Gets the currently selected expression fallback for all characters.<br />
+                If a valid expression label is sent, it will be set as the new fallback.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/expression-fallback | /echo</code></pre>
+                        <small>Returns the currently selected fallback.</small>
+                    </li>
+                    <li>
+                        <pre><code>/expression-fallback admiration</code></pre>
+                        <small>Sets a new expression as fallback.</small>
+                    </li>
+                </ul>
+            </div>
+        `,
         returns: 'The currently set expression label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
