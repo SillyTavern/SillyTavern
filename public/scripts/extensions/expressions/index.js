@@ -792,6 +792,8 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 function setFallBackExpressionSlashCommand(args, expressionName) {
     expressionName = expressionName.trim().toLowerCase();
 
+    if (!expressionName) return extension_settings?.expressions?.fallback_expression || '';
+
     const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
     const fallbackExpressions = Array
         .from(select?.options || [])
@@ -2341,7 +2343,8 @@ export async function init() {
         returns: 'The currently set expression label after setting it.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'expression-set-fallback',
+        name: 'expression-fallback',
+        aliases: ['expression-set-fallback'],
         callback: setFallBackExpressionSlashCommand,
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
