@@ -61,7 +61,18 @@ let manifests = {};
  */
 const defaultUrl = 'http://localhost:5100';
 
-export const isOfficialExtension = (url) => /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(url);
+/**
+ * Checks if the extension is officially supported by its URL pattern.
+ * @param {string} url URL to check
+ * @returns {boolean} True if the URL matches the pattern, false otherwise (or not a valid URL)
+ */
+export const isOfficialExtension = (url) => {
+    try {
+        return /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(new URL(url).href);
+    } catch (e) {
+        return false;
+    }
+};
 
 let requiresReload = false;
 let stateChanged = false;
