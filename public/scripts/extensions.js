@@ -1608,6 +1608,7 @@ export async function installExtension(url, global, branch = '') {
                     },
                     okButton: t`Yes, install it`,
                     cancelButton: t`No, cancel`,
+                    defaultResult: POPUP_RESULT.NEGATIVE,
                 });
             if (!confirmation) {
                 return false;
