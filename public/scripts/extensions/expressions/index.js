@@ -4,7 +4,7 @@ import { characters, eventSource, event_types, generateQuietPrompt, generateRaw,
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, performFuzzySearch, power_user } from '../../power-user.js';
-import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition, findChar, isFalseBoolean } from '../../utils.js';
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, waitUntilCondition, findChar, isFalseBoolean, includesIgnoreCaseAndAccents } from '../../utils.js';
 import { hideMutedSprites, selected_group } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
 import { debounce_timeout } from '../../constants.js';
@@ -790,15 +790,24 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
  * @param {string} expressionName - Label of the expression to set as fallback
  */
 function setFallBackExpressionSlashCommand(args, expressionName) {
+    expressionName = expressionName.trim().toLowerCase();
+
     const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
-    const options = [...select?.options || []];
-    const hasExpression = options.some(option => option.value === expressionName);
+    const fallbackExpressions = Array
+        .from(select?.options || [])
+        .map(option => option.value)
+        .filter(expression => expression?.length > 0);
 
-    if (!hasExpression) return '';
+    const expressionMatch = fallbackExpressions.find(expression => includesIgnoreCaseAndAccents(expression, expressionName));
 
-    $(select).val(expressionName).trigger('change');
+    if (!expressionMatch) {
+        toastr.warning(t`No expression found for search term ${expressionName}`, t`Set Fallback Expression`);
+        return '';
+    }
 
-    return expressionName;
+    $(select).val(expressionMatch).trigger('change');
+
+    return expressionMatch;
 }
 
 /**
