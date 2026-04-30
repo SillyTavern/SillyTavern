@@ -941,7 +941,7 @@ async function basicUserLogin(request) {
  */
 export function getAccountVersion(user) {
     return crypto.createHash('shake256', { outputLength: 8 })
-        .update(JSON.stringify([user.password, user.salt]))
+        .update(JSON.stringify([user.handle, user.password, user.salt]))
         .digest('hex');
 }
 
