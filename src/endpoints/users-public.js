@@ -13,6 +13,8 @@ const LOGIN_POINTS = getConfigValue('rateLimiting.accountsLoginMaxAttempts', 5, 
 const RECOVER_POINTS = getConfigValue('rateLimiting.accountsRecoverMaxAttempts', 5, 'number');
 const MFA_CACHE = new Cache(5 * 60 * 1000);
 
+const generateRecoveryCode = () => Array.from({ length: 6 }, () => crypto.randomInt(0, 10)).join('');
+
 export const router = express.Router();
 const loginLimiter = new RateLimiterMemory({
     points: LOGIN_POINTS > 0 ? LOGIN_POINTS : Number.MAX_SAFE_INTEGER,
@@ -128,7 +130,7 @@ router.post('/recover-step1', async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        const mfaCode = String(crypto.randomInt(1000, 9999));
+        const mfaCode = generateRecoveryCode();
         console.log();
         console.log(color.blue(`${user.name}, your password recovery code is: `) + color.magenta(mfaCode));
         console.log();
