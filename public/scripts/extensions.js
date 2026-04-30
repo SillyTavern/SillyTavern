@@ -1640,7 +1640,7 @@ export async function installExtension(url, global, branch = '') {
     }
 
     const response = await request.json();
-    toastr.success(t`Extension '${response.display_name}' by ${response.author} (version ${response.version}) has been installed successfully!`, t`Extension installation successful`);
+    toastr.success(t`Extension '${response.display_name}' has been installed successfully!`, t`Extension installation successful`);
     console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
     await loadExtensionSettings({}, false, false);
     await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED, response);
