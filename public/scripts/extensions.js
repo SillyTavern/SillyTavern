@@ -68,7 +68,7 @@ const defaultUrl = 'http://localhost:5100';
  */
 export const isOfficialExtension = (url) => {
     try {
-        return /^https:\/\/github\.com\/SillyTavern\/(.+)$/.test(new URL(url).href);
+        return /^https:\/\/github\.com\/SillyTavern\/(.+)$/i.test(new URL(url).href);
     } catch (e) {
         return false;
     }
