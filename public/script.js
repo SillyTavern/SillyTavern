@@ -7953,6 +7953,10 @@ export async function getSettings(initLoaderHandle = null) {
             const isVersionChanged = settings.currentVersion !== currentVersion;
             await loadExtensionSettings(settings, isVersionChanged, enableAutoUpdate);
             await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+        } else {
+            Object.assign(extension_settings, (settings.extension_settings ?? {}));
+            $('#third_party_extension_button').addClass('disabled');
+            $('#extensions_details').addClass('disabled');
         }
 
         firstRun = !!settings.firstRun;
