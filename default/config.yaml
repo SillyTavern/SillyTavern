@@ -151,6 +151,26 @@ hostWhitelist:
   # - .trycloudflare.com
   hosts: []
 
+# Perform whitelist checks against server-side HTTP requests that resolve to private IP addresses.
+# This is an additional layer of security to prevent Server-Side Request Forgery (SSRF) attacks.
+# Recommended when listen mode is enabled, or if your server is accessible by untrusted users.
+privateAddressWhitelist:
+  # Enable private address whitelist to block requests to private IP ranges.
+  enabled: false
+  # If true, requests to hosts that cannot be resolved will be allowed instead of blocked.
+  allowUnresolvedHosts: false
+  # Log blocked and allowed requests to the console.
+  log:
+    # Log blocked requests to the console with a warning message
+    blockedRequests: true
+    # Log allowed requests to the console with an info message
+    allowedRequests: false
+  # List of allowed private IP ranges (in CIDR notation or wildcard format).
+  # Allows loopback IP ranges by default, but you can customize this list to fit your needs.
+  allowedRanges:
+    - '127.0.0.0/8'      # Loopback (IPv4)
+    - '::1/128'          # Loopback (IPv6)
+
 # User session timeout *in seconds* (defaults to 24 hours).
 ## Set to a positive number to expire session after a certain time of inactivity
 ## Set to 0 to expire session when the browser is closed

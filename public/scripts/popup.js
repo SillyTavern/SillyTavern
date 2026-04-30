@@ -718,6 +718,10 @@ export class Popup {
             }
         }
 
+        if (!control) {
+            return;
+        }
+
         if (applyAutoFocus) {
             control.setAttribute('autofocus', '');
             // Manually enable tabindex too, as this might only be applied by the interactable functionality in the background, but too late for HTML autofocus

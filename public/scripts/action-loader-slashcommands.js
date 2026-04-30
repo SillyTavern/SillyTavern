@@ -7,6 +7,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { isFalseBoolean } from './utils.js';
+import { DOMPurify } from '../lib.js';
 
 /**
  * Registers slash commands for the action loader module.
@@ -275,8 +276,8 @@ export function registerActionLoaderSlashCommands() {
                 slug: typeof args.slug === 'string' ? String(args.slug) : 'slash-show',
                 blocking,
                 toastMode,
-                message,
-                title,
+                message: DOMPurify.sanitize(message),
+                title: DOMPurify.sanitize(title),
                 stopTooltip,
                 onStop: createClosureHandler(args.onStop),
                 onHide: createClosureHandler(args.onHide, { argName: 'onHide' }),
