@@ -1578,8 +1578,7 @@ export async function installExtension(url, global, branch = '') {
     if (!isOfficialExtension(url)) {
         const extensionInstallationWarningKey = 'extensionInstallationWarningShown';
         if (accountStorage.getItem(extensionInstallationWarningKey)) {
-            // User has previously chosen to not show the warning again, so we proceed with the installation
-            console.debug('User has previously chosen to not show the extension installation warning again. Proceeding with installation.');
+            console.debug('Bypassed URL check for third-party extension (account preference).', url);
         } else {
             let dismissWarning = false;
             const confirmation = await Popup.show.confirm(
