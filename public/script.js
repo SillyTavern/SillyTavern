@@ -3239,7 +3239,7 @@ export function getExtensionPromptMaxDepth() {
  * @param {boolean} [wrap] Wrap start and end with a separator
  * @returns {Promise<string>} Extension prompt
  */
-export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
+export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n\n', role = undefined, wrap = true) {
     const filterByFunction = async (prompt) => {
         const hasFilter = typeof prompt.filter === 'function';
         if (hasFilter && !await prompt.filter()) {
@@ -4290,7 +4290,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (selected_group && !is_group_generating) {
         if (!dryRun) {
             // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage });
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, jsonSchema });
         }
 
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
