@@ -994,7 +994,7 @@ export async function setUserDataMiddleware(request, response, next) {
             console.warn('User data has changed since the session was created. Invalidating session for user:', handle);
             request.session.handle = null;
             request.session.csrfToken = null;
-            request.session = null;
+            request.session.version = null;
             return next();
         }
     } else {
