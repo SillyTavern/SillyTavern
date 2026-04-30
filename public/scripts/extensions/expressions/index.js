@@ -2344,7 +2344,6 @@ export async function init() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-fallback',
-        aliases: ['expression-set-fallback'],
         callback: setFallBackExpressionSlashCommand,
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
