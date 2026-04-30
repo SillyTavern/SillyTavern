@@ -1575,6 +1575,20 @@ async function switchExtensionBranch(extensionName, isGlobal, branch) {
  * @returns {Promise<boolean>} True if the extension was installed successfully, false otherwise
  */
 export async function installExtension(url, global, branch = '') {
+    try {
+        const parsedUrl = new URL(url);
+        if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+            throw new Error('Invalid URL protocol');
+        }
+
+        // Normalize the URL (resolve relative paths, remove redundant segments, etc.)
+        url = parsedUrl.href;
+    } catch (error) {
+        console.error('Invalid URL:', error);
+        toastr.error(t`Only valid HTTP and HTTPS URLs are allowed.`, t`Invalid URL`);
+        return false;
+    }
+
     if (!isOfficialExtension(url)) {
         const extensionInstallationWarningKey = 'extensionInstallationWarningShown';
         if (accountStorage.getItem(extensionInstallationWarningKey)) {
