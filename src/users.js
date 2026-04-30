@@ -788,6 +788,7 @@ async function singleUserLogin(request) {
         const user = await storage.getItem(toKey(userHandles[0]));
         if (user && !user.password) {
             request.session.handle = userHandles[0];
+            request.session.version = getAccountVersion(user);
             return true;
         }
     }
@@ -882,6 +883,7 @@ async function headerUserLogin(request, header = 'Remote-User') {
             const user = await storage.getItem(toKey(userHandle));
             if (user && user.enabled) {
                 request.session.handle = userHandle;
+                request.session.version = getAccountVersion(user);
                 return true;
             }
         }
@@ -923,12 +925,24 @@ async function basicUserLogin(request) {
             // Verify pass again here just to be sure
             if (user && user.enabled && user.password && user.password === getPasswordHash(password, user.salt)) {
                 request.session.handle = userHandle;
+                request.session.version = getAccountVersion(user);
                 return true;
             }
         }
     }
 
     return false;
+}
+
+/**
+ * Gets the account version tag for the provided user.
+ * @param {User} user User account object
+ * @returns {string} Account version tag
+ */
+export function getAccountVersion(user) {
+    return crypto.createHash('shake256', { outputLength: 8 })
+        .update(JSON.stringify([user.password, user.salt]))
+        .digest('hex');
 }
 
 /**
@@ -973,6 +987,19 @@ export async function setUserDataMiddleware(request, response, next) {
     if (!user.enabled) {
         console.error('User is disabled:', handle);
         return next();
+    }
+
+    if (Object.hasOwn(request.session, 'version')) {
+        if (request.session.version !== getAccountVersion(user)) {
+            console.warn('User data has changed since the session was created. Invalidating session for user:', handle);
+            request.session.handle = null;
+            request.session.csrfToken = null;
+            request.session = null;
+            return next();
+        }
+    } else {
+        // If there is no version in the session, it means it's an old session. Upgrade it by adding the version.
+        request.session.version = getAccountVersion(user);
     }
 
     const directories = getUserDirectories(handle);
