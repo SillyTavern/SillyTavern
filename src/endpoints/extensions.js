@@ -65,6 +65,15 @@ async function checkIfRepoIsUpToDate(extensionPath) {
 
 export const router = express.Router();
 
+// Feature flag guard: don't allow calling any of the endpoints if extensions are disabled
+router.use((_, response, next) => {
+    const enabled = !!getConfigValue('extensions.enabled', true, 'boolean');
+    if (!enabled) {
+        return response.status(400).send('Bad Request: Extensions are disabled.');
+    }
+    next();
+});
+
 /**
  * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
  * and return extension information and path.
