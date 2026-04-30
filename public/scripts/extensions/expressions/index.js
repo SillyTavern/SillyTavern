@@ -2336,7 +2336,7 @@ export async function init() {
         callback: setFallBackExpressionSlashCommand,
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'expression label',
+                description: 'expression label to set',
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: true,
                 enumProvider: () => [
