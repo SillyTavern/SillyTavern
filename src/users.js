@@ -995,7 +995,8 @@ export async function setUserDataMiddleware(request, response, next) {
             request.session.handle = null;
             request.session.csrfToken = null;
             request.session.version = null;
-            return next();
+            request.session = null;
+            return response.sendStatus(403);
         }
     } else {
         // If there is no version in the session, it means it's an old session. Upgrade it by adding the version.
