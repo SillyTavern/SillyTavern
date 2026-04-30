@@ -58,7 +58,7 @@ ssl:
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
-# Whitelist will also verify IP in X-Forwarded-For / X-Real-IP headers
+# When enabled, whitelist will also verify IP in headers enabled in `forwardedHeaders` section.
 enableForwardedWhitelist: true
 # Whitelist of allowed IP addresses
 whitelist:
@@ -189,9 +189,24 @@ logging:
   minLogLevel: 0
 # -- RATE LIMITING CONFIGURATION --
 rateLimiting:
-  # Use X-Real-IP header instead of socket IP for rate limiting
-  # Only enable this if you are using a properly configured reverse proxy (like Nginx/traefik/Caddy)
+  # Use any of the enabled headers in the `forwardedHeaders` section to identify the client IP for rate limiting.
+  # If disabled, only the socket IP will be used, which may not work correctly if you are behind a reverse proxy.
   preferRealIpHeader: false
+  # Set the maximum number of allowed failed basic authentication attempts before rate limiting is applied. Set to 0 to disable rate limiting for basic auth.
+  basicAuthMaxAttempts: 5
+  # Set the maximum number of allowed failed account login attempts before rate limiting is applied. Set to 0 to disable rate limiting for account logins.
+  accountsLoginMaxAttempts: 5
+  # Set the maximum number of allowed failed account recovery attempts before rate limiting is applied. Set to 0 to disable rate limiting for account recovery.
+  accountsRecoverMaxAttempts: 5
+# Set to true to enable support for real IPs in certain request headers for features like IP whitelisting, rate limiting and access logging.
+# Only change if you are sure that you use a correctly configured reverse proxy, otherwise this may lead to IP spoofing.
+forwardedHeaders:
+  # X-Real-IP header (common with Nginx and Caddy)
+  xRealIp: true
+  # X-Forwarded-For header (common with many proxies, but may contain multiple IPs - only the first one will be used)
+  xForwardedFor: true
+  # CF-Connecting-IP header (used by Cloudflare Tunnels)
+  cfConnectingIp: false
 
 ## BACKUP CONFIGURATION
 backups:
