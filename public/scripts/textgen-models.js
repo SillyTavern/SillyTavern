@@ -114,55 +114,206 @@ const OPENROUTER_PROVIDERS = [
  * @type {{id: string, label: string}[]}
  */
 const NANOGPT_PROVIDERS = [
-    { id: 'akash', label: 'Akash' },
-    { id: 'alibaba', label: 'Alibaba' },
-    { id: 'ambient', label: 'Ambient' },
-    { id: 'arliai', label: 'ArliAI' },
-    { id: 'atlascloud', label: 'AtlasCloud' },
-    { id: 'azure', label: 'Azure' },
-    { id: 'awsbedrock', label: 'Amazon Bedrock' },
-    { id: 'baidu', label: 'Baidu' },
-    { id: 'baseten', label: 'BaseTen' },
-    { id: 'cerebras', label: 'Cerebras' },
-    { id: 'chutes', label: 'Chutes' },
-    { id: 'clarifai', label: 'Clarifai' },
-    { id: 'cloudflare', label: 'Cloudflare' },
-    { id: 'crusoe', label: 'Crusoe' },
-    { id: 'dekallm', label: 'DekaLLM' },
-    { id: 'deepinfra', label: 'DeepInfra' },
-    { id: 'deepseek', label: 'DeepSeek' },
-    { id: 'fireworks', label: 'Fireworks' },
-    { id: 'friendli', label: 'Friendli' },
-    { id: 'gmicloud', label: 'GMICloud' },
-    { id: 'lilac', label: 'Lilac' },
-    { id: 'google', label: 'Google' },
-    { id: 'groq', label: 'Groq' },
-    { id: 'hyperbolic', label: 'Hyperbolic' },
-    { id: 'ionet', label: 'Io Net' },
-    { id: 'inceptron', label: 'Inceptron' },
-    { id: 'mancer', label: 'Mancer' },
-    { id: 'mara', label: 'Mara' },
-    { id: 'meganova', label: 'MegaNova' },
-    { id: 'minimax', label: 'MiniMax' },
-    { id: 'modelrun', label: 'ModelRun' },
-    { id: 'moonshot', label: 'Moonshot' },
-    { id: 'morph', label: 'Morph' },
-    { id: 'ncompass', label: 'NCompass' },
-    { id: 'nebius', label: 'Nebius' },
-    { id: 'neuralwatt', label: 'Neuralwatt' },
-    { id: 'nextbit', label: 'NextBit' },
-    { id: 'novita', label: 'Novita' },
-    { id: 'parasail', label: 'Parasail' },
-    { id: 'phala', label: 'Phala' },
-    { id: 'redpill', label: 'Redpill' },
-    { id: 'sambanova', label: 'SambaNova' },
-    { id: 'sambanova-high-throughput', label: 'SambaNova (High Throughput)' },
-    { id: 'siliconflow', label: 'SiliconFlow' },
-    { id: 'streamlake', label: 'StreamLake' },
-    { id: 'tinfoil', label: 'Tinfoil' },
-    { id: 'together', label: 'Together' },
-    { id: 'wandb', label: 'Weights & Biases' },
-    { id: 'zai', label: 'Z.AI' },
+    {
+        'id': 'akash',
+        'label': 'Akash',
+    },
+    {
+        'id': 'alibaba',
+        'label': 'Alibaba',
+    },
+    {
+        'id': 'ambient',
+        'label': 'Ambient',
+    },
+    {
+        'id': 'arliai',
+        'label': 'ArliAI',
+    },
+    {
+        'id': 'atlascloud',
+        'label': 'AtlasCloud',
+    },
+    {
+        'id': 'azure',
+        'label': 'Azure',
+    },
+    {
+        'id': 'awsbedrock',
+        'label': 'Amazon Bedrock',
+    },
+    {
+        'id': 'baidu',
+        'label': 'Baidu',
+    },
+    {
+        'id': 'baseten',
+        'label': 'BaseTen',
+    },
+    {
+        'id': 'cerebras',
+        'label': 'Cerebras',
+    },
+    {
+        'id': 'chutes',
+        'label': 'Chutes',
+    },
+    {
+        'id': 'clarifai',
+        'label': 'Clarifai',
+    },
+    {
+        'id': 'cloudflare',
+        'label': 'Cloudflare',
+    },
+    {
+        'id': 'crusoe',
+        'label': 'Crusoe',
+    },
+    {
+        'id': 'dekallm',
+        'label': 'DekaLLM',
+    },
+    {
+        'id': 'deepinfra',
+        'label': 'DeepInfra',
+    },
+    {
+        'id': 'deepseek',
+        'label': 'DeepSeek',
+    },
+    {
+        'id': 'fireworks',
+        'label': 'Fireworks',
+    },
+    {
+        'id': 'friendli',
+        'label': 'Friendli',
+    },
+    {
+        'id': 'gmicloud',
+        'label': 'GMICloud',
+    },
+    {
+        'id': 'lilac',
+        'label': 'Lilac',
+    },
+    {
+        'id': 'google',
+        'label': 'Google',
+    },
+    {
+        'id': 'groq',
+        'label': 'Groq',
+    },
+    {
+        'id': 'hyperbolic',
+        'label': 'Hyperbolic',
+    },
+    {
+        'id': 'ionet',
+        'label': 'Io Net',
+    },
+    {
+        'id': 'inceptron',
+        'label': 'Inceptron',
+    },
+    {
+        'id': 'mancer',
+        'label': 'Mancer',
+    },
+    {
+        'id': 'mara',
+        'label': 'Mara',
+    },
+    {
+        'id': 'meganova',
+        'label': 'MegaNova',
+    },
+    {
+        'id': 'minimax',
+        'label': 'MiniMax',
+    },
+    {
+        'id': 'modelrun',
+        'label': 'ModelRun',
+    },
+    {
+        'id': 'moonshot',
+        'label': 'Moonshot',
+    },
+    {
+        'id': 'morph',
+        'label': 'Morph',
+    },
+    {
+        'id': 'ncompass',
+        'label': 'NCompass',
+    },
+    {
+        'id': 'nebius',
+        'label': 'Nebius',
+    },
+    {
+        'id': 'neuralwatt',
+        'label': 'Neuralwatt',
+    },
+    {
+        'id': 'nextbit',
+        'label': 'NextBit',
+    },
+    {
+        'id': 'novita',
+        'label': 'Novita',
+    },
+    {
+        'id': 'parasail',
+        'label': 'Parasail',
+    },
+    {
+        'id': 'phala',
+        'label': 'Phala',
+    },
+    {
+        'id': 'redpill',
+        'label': 'Redpill',
+    },
+    {
+        'id': 'sambanova',
+        'label': 'SambaNova',
+    },
+    {
+        'id': 'sambanova-high-throughput',
+        'label': 'SambaNova (High Throughput)',
+    },
+    {
+        'id': 'siliconflow',
+        'label': 'SiliconFlow',
+    },
+    {
+        'id': 'streamlake',
+        'label': 'StreamLake',
+    },
+    {
+        'id': 'tinfoil',
+        'label': 'Tinfoil',
+    },
+    {
+        'id': 'together',
+        'label': 'Together',
+    },
+    {
+        'id': 'venice',
+        'label': 'Venice',
+    },
+    {
+        'id': 'wandb',
+        'label': 'Weights & Biases',
+    },
+    {
+        'id': 'zai',
+        'label': 'Z.AI',
+    },
 ];
 
 const OPENROUTER_PROVIDER_WARNING_SELECTORS = {
