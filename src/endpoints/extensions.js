@@ -145,6 +145,10 @@ router.post('/install', async (request, response) => {
  */
 router.post('/update', async (request, response) => {
     try {
+        if (typeof request.body.extensionName !== 'string') {
+            return response.status(400).send('Bad Request: A valid extensionName is required in the request body.');
+        }
+
         const { extensionName, global } = request.body;
         const extensionNameSanitized = sanitize(extensionName);
         if (!extensionNameSanitized) {
@@ -189,6 +193,10 @@ router.post('/update', async (request, response) => {
 
 router.post('/branches', async (request, response) => {
     try {
+        if (typeof request.body.extensionName !== 'string') {
+            return response.status(400).send('Bad Request: A valid extensionName is required in the request body.');
+        }
+
         const { extensionName, global } = request.body;
         const extensionNameSanitized = sanitize(extensionName);
         if (!extensionNameSanitized) {
@@ -234,6 +242,10 @@ router.post('/branches', async (request, response) => {
 
 router.post('/switch', async (request, response) => {
     try {
+        if (typeof request.body.extensionName !== 'string') {
+            return response.status(400).send('Bad Request: A valid extensionName is required in the request body.');
+        }
+
         const { extensionName, branch, global } = request.body;
         const extensionNameSanitized = sanitize(extensionName);
         if (!extensionNameSanitized || !branch) {
@@ -293,6 +305,10 @@ router.post('/switch', async (request, response) => {
 
 router.post('/move', async (request, response) => {
     try {
+        if (typeof request.body.extensionName !== 'string') {
+            return response.status(400).send('Bad Request: A valid extensionName is required in the request body.');
+        }
+
         const { extensionName, source, destination } = request.body;
         const extensionNameSanitized = sanitize(extensionName);
         if (!extensionNameSanitized || !source || !destination) {
@@ -347,6 +363,10 @@ router.post('/move', async (request, response) => {
  */
 router.post('/version', async (request, response) => {
     try {
+        if (typeof request.body.extensionName !== 'string') {
+            return response.status(400).send('Bad Request: A valid extensionName is required in the request body.');
+        }
+
         const { extensionName, global } = request.body;
         const extensionNameSanitized = sanitize(extensionName);
         if (!extensionNameSanitized) {
@@ -391,13 +411,17 @@ router.post('/version', async (request, response) => {
 /**
  * HTTP POST handler function to delete a git repository based on the extension name provided in the request body.
  *
- * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
+ * @param {Object} request - HTTP Request object, expects a JSON body with a 'extensionName' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
  *
  * @returns {void}
  */
 router.post('/delete', async (request, response) => {
     try {
+        if (typeof request.body.extensionName !== 'string') {
+            return response.status(400).send('Bad Request: A valid extensionName is required in the request body.');
+        }
+
         const { extensionName, global } = request.body;
         const extensionNameSanitized = sanitize(extensionName);
         if (!extensionNameSanitized) {
