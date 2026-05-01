@@ -5930,6 +5930,12 @@ body:not(.movingUI) .drawer-content.maximized {
 
 /* Mobile-friendly zoomed avatar — pin above the chat instead of overlapping */
 @media screen and (max-width: 1000px) {
+    .zoomed_avatar.draggable {
+        /* Override the global mobile .draggable rule that forces 100vw/100vh */
+        width: auto;
+        height: auto;
+    }
+
     .zoomed_avatar {
         --maxWidth: min(95vw, 60vh);
         left: 50% !important;
@@ -5946,6 +5952,41 @@ body:not(.movingUI) .drawer-content.maximized {
     .zoomed_avatar video.zoomed_avatar_video,
     .zoomed_avatar img {
         max-height: 50vh !important;
+    }
+
+    /* Touch screens have no hover — keep the close/toggle buttons visible */
+    .zoomed_avatar .panelControlBar {
+        opacity: 1;
+    }
+
+    /* Bigger tap targets for the panel control buttons on mobile */
+    .zoomed_avatar .panelControlBar {
+        min-width: 90px;
+        gap: 8px;
+    }
+
+    .zoomed_avatar .dragClose,
+    .zoomed_avatar .zoomed_avatar_toggle,
+    .zoomed_avatar .drag-grabber {
+        height: 28px;
+        min-width: 28px;
+        font-size: calc(var(--mainFontSize) * 1.6);
+        opacity: 0.85;
+    }
+}
+
+/* Touch / coarse pointer enlargement for the character video upload controls */
+@media (hover: none) and (pointer: coarse), screen and (max-width: 1000px) {
+    .character_video_button {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+    }
+
+    .character_video_controls {
+        bottom: 6px;
+        right: 6px;
+        gap: 6px;
     }
 }
 
