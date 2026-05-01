@@ -72,7 +72,7 @@ export const router = express.Router();
 export const extensionsEnabledFeatureGuard = (_, response, next) => {
     const enabled = !!getConfigValue('extensions.enabled', true, 'boolean');
     if (!enabled) {
-        response.status(400).send('Bad Request: Extensions are disabled.');
+        response.sendStatus(404);
         return;
     }
     next();
