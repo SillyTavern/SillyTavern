@@ -694,6 +694,33 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
+        // MiniMax uses a proprietary tokenizer; fall back to a coarse OpenAI estimation.
+        return 'gpt-3.5-turbo';
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI && oai_settings.workers_ai_model) {
+        const model = oai_settings.workers_ai_model.toLowerCase();
+
+        if (model.includes('deepseek')) {
+            return deepseekTokenizer;
+        } else if (model.includes('qwen') || model.includes('qwq') || model.includes('kimi')) {
+            return qwen2Tokenizer;
+        } else if (model.includes('llama-3') || model.includes('llama-4')) {
+            return llama3Tokenizer;
+        } else if (model.includes('llama')) {
+            return llamaTokenizer;
+        } else if (model.includes('gemma')) {
+            return gemmaTokenizer;
+        } else if (model.includes('mistral')) {
+            return mistralTokenizer;
+        } else if (model.includes('phi')) {
+            return turboTokenizer;
+        } else if (model.includes('gpt-oss')) {
+            return gpt4oTokenizer;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         if (oai_settings.cohere_model.includes('command-a')) {
             return commandATokenizer;

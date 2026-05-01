@@ -15,6 +15,7 @@
 @import url(css/secrets.css);
 @import url(css/backgrounds.css);
 @import url(css/chat-backups.css);
+@import url(css/streaming-display.css);
 
 :root {
     interpolate-size: allow-keywords;
@@ -4788,6 +4789,48 @@ h5 {
     user-select: none;
 }
 
+.swipe_picker_block .select_chat_block_mes {
+    text-align: left;
+}
+
+.swipe_picker_block .select_chat_actions {
+    align-items: baseline;
+}
+
+.swipe_picker_expand_toggle {
+    display: none !important;
+}
+
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .select_chat_block_mes {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.swipe_picker_expand_label {
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.swipe_picker_expand_label:hover {
+    opacity: 1;
+}
+
+.swipe_picker_copy {
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.swipe_picker_copy:hover {
+    opacity: 1;
+}
+
+.swipe_picker_block:has(.swipe_picker_expand_toggle:checked) .swipe_picker_expand_label {
+    transform: rotate(180deg);
+}
+
 .select_chat_block .avatar {
     grid-row: span 2;
 }
@@ -6024,6 +6067,11 @@ body:not(.movingUI) .drawer-content.maximized {
     width: fit-content;
     border-radius: 10px;
     outline: 1px solid var(--SmartThemeBorderColor);
+    transition: filter var(--animation-duration-2x) ease-in-out;
+}
+
+#show_more_messages:hover {
+    filter: brightness(1.25);
 }
 
 .draggable img {
@@ -6350,6 +6398,38 @@ body:not(.movingUI) .drawer-content.maximized {
 .info-block.error {
     border-color: var(--error-color, #e87f7f);
     background-color: rgba(241, 163, 163, 0.2);
+}
+
+.nanogpt_info_btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8em;
+    min-height: 1.8em;
+    margin-left: 0.15em;
+    vertical-align: middle;
+}
+
+.nanogpt-credits-popup {
+    display: grid;
+    gap: 0.25em 1em;
+    grid-template-columns: max-content minmax(0, 1fr);
+    text-align: left;
+}
+
+.nanogpt-credits-popup h3 {
+    grid-column: 1 / -1;
+    margin: 0 0 0.25em;
+}
+
+.nanogpt-credits-popup div:nth-of-type(odd) {
+    opacity: 0.8;
+    white-space: nowrap;
+}
+
+.nanogpt-credits-popup div:nth-of-type(even) {
+    font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 @media (prefers-contrast: more) {

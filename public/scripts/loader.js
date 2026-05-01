@@ -28,6 +28,7 @@ export function showLoader() {
 
     // Create a blocking loader with no toast (matches old behavior)
     legacyLoaderHandle = loader.show({
+        slug: 'legacy-loader',
         blocking: true,
         toastMode: loader.ToastMode.NONE,
     });

@@ -1,5 +1,5 @@
 import { Fuse, DOMPurify } from '../lib.js';
-import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, getBase64Async, ensureImageFormatSupported, supportedImageMimeTypes, isExternalUrl } from './utils.js';
+import { canUseNegativeLookbehind, copyText, findPersona, flashHighlight, resolveAvatarData } from './utils.js';
 
 import {
     Generate,
@@ -70,7 +70,7 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
-import { chat_completion_sources, oai_settings, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
+import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -88,7 +88,7 @@ import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortC
 import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
-import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
+import { commonEnumProviders, enumIcons, commonEnumMatchProviders } from './slash-commands/SlashCommandCommonEnumsProvider.js';
 import { SlashCommandBreakController } from './slash-commands/SlashCommandBreakController.js';
 import { SlashCommandExecutionError } from './slash-commands/SlashCommandExecutionError.js';
 import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
@@ -768,23 +768,6 @@ export function initDefaultSlashCommands() {
         `,
     }));
 
-    /**
-     * Provides autocomplete matching for folder names.
-     * Matches if the input starts with the check or vice versa (case-insensitive).
-     * @param {string} input - The input string to match against
-     * @param {string} check - The check string to match with
-     * @param {object} [options={}] - Options
-     * @param {boolean} [options.trueOnEmpty=true] - Whether to return true when input is empty
-     * @returns {boolean} - True if the strings match according to the folder matching rules
-     */
-    function folderEnumMatchProvider(input, check, { trueOnEmpty = true } = {}) {
-        if (!check) return false;
-        if (!input) return trueOnEmpty;
-        const inputLower = input.toLowerCase();
-        const checkLower = check.toLowerCase();
-        return inputLower.startsWith(checkLower) || checkLower.startsWith(inputLower);
-    }
-
     // Shared character field definitions for char CRUD commands
     const getCharacterFieldArgs = ({ requiredFields = [] } = {}) => [
         SlashCommandNamedArgument.fromProps({
@@ -873,11 +856,11 @@ export function initDefaultSlashCommands() {
             isRequired: requiredFields.includes('avatar'),
             enumList: [
                 new SlashCommandEnumValue('prompt', 'Open file picker to select an image', 'enum', '📁'),
-                new SlashCommandEnumValue('characters/...', 'Character avatars path (e.g., characters/Name.png)', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'characters/'), () => 'characters/'),
-                new SlashCommandEnumValue('backgrounds/...', 'Background image path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'backgrounds/'), () => 'backgrounds/'),
-                new SlashCommandEnumValue('User Avatars/...', 'User avatar path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'User Avatars/'), () => 'User Avatars/'),
-                new SlashCommandEnumValue('assets/...', 'Asset file path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'assets/'), () => 'assets/'),
-                new SlashCommandEnumValue('user/images/...', 'User image path', 'enum', '📄', (input) => folderEnumMatchProvider(input, 'user/images/'), () => 'user/images/'),
+                new SlashCommandEnumValue('characters/...', 'Character avatars path (e.g., characters/Name.png)', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'characters/'), () => 'characters/'),
+                new SlashCommandEnumValue('backgrounds/...', 'Background image path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'backgrounds/'), () => 'backgrounds/'),
+                new SlashCommandEnumValue('User Avatars/...', 'User avatar path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'User Avatars/'), () => 'User Avatars/'),
+                new SlashCommandEnumValue('assets/...', 'Asset file path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'assets/'), () => 'assets/'),
+                new SlashCommandEnumValue('user/images/...', 'User image path', 'enum', '📄', (input) => commonEnumMatchProviders.folderEnum(input, 'user/images/'), () => 'user/images/'),
             ],
         }),
         SlashCommandNamedArgument.fromProps({
@@ -1241,7 +1224,7 @@ export function initDefaultSlashCommands() {
                         modifyAt = chat.length + modifyAt;
                     }
                     return chat[modifyAt]?.is_user
-                        ? commonEnumProviders.personas()
+                        ? commonEnumProviders.personas()()
                         : commonEnumProviders.characters('character')();
                 },
             }),
@@ -1769,7 +1752,7 @@ export function initDefaultSlashCommands() {
                 description: t`display name`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: '{{user}}',
-                enumProvider: commonEnumProviders.personas,
+                enumProvider: commonEnumProviders.personas({ allowPersonaKey: true }),
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'return',
@@ -3103,6 +3086,24 @@ export function initDefaultSlashCommands() {
         helpString: t`Sets the specified prompt manager entry/entries on or off.`,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'pm-render',
+        callback: (args, _) => {
+            const dryRun = !isFalseBoolean(args?.refresh?.toString());
+            promptManager.render(dryRun);
+            return '';
+        },
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'refresh',
+                description: 'Perform a dry run of the generation to refresh token counters before rendering the prompt manager',
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'true',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+        ],
+        helpString: t`Rerenders the prompt manager content. Use this if you have made changes to the prompt entries through slash commands and want to see the changes reflected in the prompt manager UI.`,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'pick-icon',
         callback: async () => ((await showFontAwesomePicker()) ?? false).toString(),
         returns: t`The chosen icon name or false if cancelled.`,
@@ -3133,6 +3134,7 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('zai', 'Z.AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'zai')), 'Z'),
                     new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
                     new SlashCommandEnumValue('siliconflow', 'SiliconFlow', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'siliconflow')), 'S'),
+                    new SlashCommandEnumValue('minimax', 'MiniMax', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'minimax')), 'M'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
                     ...Object.values(textgen_types).filter(api => Object.keys(SERVER_INPUTS).includes(api)).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
@@ -3166,7 +3168,7 @@ export function initDefaultSlashCommands() {
                 ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, SiliconFlow, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, SiliconFlow, MiniMax, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
@@ -5016,23 +5018,6 @@ async function triggerGenerationCallback(args, value) {
 
     return '';
 }
-/**
- * Find persona by name.
- * @param {string} name Name to search for
- * @returns {string} Persona name
- */
-function findPersonaByName(name) {
-    if (!name) {
-        return null;
-    }
-
-    for (const persona of Object.entries(power_user.personas)) {
-        if (equalsIgnoreCaseAndAccents(persona[1], name)) {
-            return persona[0];
-        }
-    }
-    return null;
-}
 
 async function sendUserMessageCallback(args, text) {
     text = String(text ?? '').trim();
@@ -5050,7 +5035,7 @@ async function sendUserMessageCallback(args, text) {
     let message;
     if ('name' in args) {
         const name = args.name || '';
-        const avatar = findPersonaByName(name) || user_avatar;
+        const avatar = findPersona({ name })?.avatar || user_avatar;
         message = await sendMessageAsUser(text, bias, insertAt, compact, name, avatar);
     } else {
         message = await sendMessageAsUser(text, bias, insertAt, compact);
@@ -5126,105 +5111,6 @@ async function openChat(chid) {
     setCharacterId(chid);
     await delay(1);
     await reloadCurrentChat();
-}
-
-/**
- * Opens a file picker dialog for selecting an image.
- * @returns {Promise<string|null>} Base64 data URL of selected image, or null if cancelled
- */
-async function promptForAvatarFile() {
-    return new Promise(resolve => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = supportedImageMimeTypes.join(',');
-        input.onchange = async (e) => {
-            if (!(e.target instanceof HTMLInputElement)) {
-                return '';
-            }
-            const file = e.target?.files?.[0];
-            if (!file) {
-                resolve(null);
-                return;
-            }
-            try {
-                const converted = await ensureImageFormatSupported(file);
-                const base64 = await getBase64Async(converted);
-                resolve(base64);
-            } catch (error) {
-                console.error('Error processing selected image:', error);
-                toastr.error(t`Failed to process selected image: ${error.message}`);
-                resolve(null);
-            }
-        };
-        input.oncancel = () => resolve(null);
-        input.click();
-    });
-}
-
-/**
- * Resolves avatar data from various input formats (base64, local path, or prompt).
- * @param {string} input - "prompt" to open file picker, base64 data URL, or local file path
- * @returns {Promise<string|null>} Base64 data URL or null if invalid/cancelled
- */
-async function resolveAvatarData(input) {
-    if (!input || typeof input !== 'string') {
-        return null;
-    }
-
-    const trimmed = input.trim();
-
-    // Special value "prompt" opens file picker
-    if (trimmed.toLowerCase() === 'prompt') {
-        return await promptForAvatarFile();
-    }
-
-    // Already a base64 data URL
-    if (trimmed.startsWith('data:image/')) {
-        return trimmed;
-    }
-
-    // External URLs are not supported
-    if (isExternalUrl(trimmed)) {
-        toastr.warning(t`External URLs are not supported for avatars. Use a local file path or "prompt" to select a file.`);
-        return null;
-    }
-    // Local path or URL (e.g., characters/name.png) - fetch from ST server or same origin
-    // Supported paths: /characters/*, /backgrounds/*, /User Avatars/*, /assets/*, /user/images/*
-    // Also supports same-origin URLs (e.g., https://localhost:8000/characters/name.png)
-    if (trimmed.includes('/') || trimmed.endsWith('.png')) {
-        try {
-            // Construct the URL to fetch the local file
-            let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-            // Handle same-origin URLs
-            if (trimmed.startsWith(window.location.origin)) {
-                url = new URL(trimmed).pathname;
-            }
-            // If there is no subfolder, we guess this should be a character image
-            if (!url.includes('/', 1)) {
-                url = '/characters/' + trimmed;
-            }
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`File not found or inaccessible: ${response.status}`);
-            }
-            const blob = await response.blob();
-            if (!blob.type.startsWith('image/')) {
-                throw new Error('File is not an image');
-            }
-            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
-            return await getBase64Async(converted);
-        } catch (error) {
-            console.error('Error fetching local avatar:', error);
-            toastr.warning(t`Failed to load avatar from path: ${error.message}`);
-            return null;
-        }
-    }
-
-    // Unknown format
-    console.warn('Unknown avatar format:', trimmed.substring(0, 50));
-    toastr.warning(t`Unknown avatar format. Use "prompt" to select a file, or provide a local file path.`);
-    return null;
 }
 
 /**
@@ -6376,6 +6262,7 @@ function getModelOptions(quiet) {
         { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
         { id: 'model_chutes_select', api: 'openai', type: chat_completion_sources.CHUTES },
         { id: 'model_siliconflow_select', api: 'openai', type: chat_completion_sources.SILICONFLOW },
+        { id: 'model_minimax_select', api: 'openai', type: chat_completion_sources.MINIMAX },
         { id: 'model_electronhub_select', api: 'openai', type: chat_completion_sources.ELECTRONHUB },
         { id: 'model_nanogpt_select', api: 'openai', type: chat_completion_sources.NANOGPT },
         { id: 'model_deepseek_select', api: 'openai', type: chat_completion_sources.DEEPSEEK },
@@ -6386,6 +6273,7 @@ function getModelOptions(quiet) {
         { id: 'model_fireworks_select', api: 'openai', type: chat_completion_sources.FIREWORKS },
         { id: 'model_cometapi_select', api: 'openai', type: chat_completion_sources.COMETAPI },
         { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
+        { id: 'model_workers_ai_select', api: 'openai', type: chat_completion_sources.WORKERS_AI },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -6740,6 +6628,32 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
         }
 
         return oai_settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
+    }
+
+    const isCurrentlyMinimax = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.MINIMAX;
+    if (api === chat_completion_sources.MINIMAX || (!api && isCurrentlyMinimax)) {
+        if (!url) {
+            return oai_settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
+        }
+
+        const permittedValues = Object.values(MINIMAX_ENDPOINT);
+        if (!permittedValues.includes(url)) {
+            !isQuiet && toastr.warning(t`Valid options are: ${permittedValues.join(', ')}`, t`MiniMax endpoint '${url}' is not a valid option.`);
+            return '';
+        }
+
+        if (!isCurrentlyMinimax && autoConnect) {
+            toastr.warning(t`MiniMax is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
+        $('#minimax_endpoint').val(url).trigger('input');
+
+        if (autoConnect) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return oai_settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
     }
 
     const isCurrentlyVertexAI = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.VERTEXAI;

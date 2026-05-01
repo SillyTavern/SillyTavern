@@ -10,6 +10,8 @@
     "mistralai_model": "mistral-large-latest",
     "chutes_model": "deepseek-ai/DeepSeek-V3-0324",
     "chutes_sort_models": "alphabetically",
+    "minimax_model": "MiniMax-M2.7",
+    "minimax_endpoint": "global",
     "electronhub_model": "gpt-4o-mini",
     "electronhub_sort_models": "alphabetically",
     "electronhub_group_models": false,

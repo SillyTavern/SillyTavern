@@ -1742,6 +1742,105 @@ export function loadFileToDocument(url, type) {
 }
 
 /**
+ * Opens a file picker dialog for selecting an image.
+ * @returns {Promise<string|null>} Base64 data URL of selected image, or null if cancelled
+ */
+export async function promptForAvatarFile() {
+    return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = supportedImageMimeTypes.join(',');
+        input.onchange = async (e) => {
+            if (!(e.target instanceof HTMLInputElement)) {
+                return '';
+            }
+            const file = e.target?.files?.[0];
+            if (!file) {
+                resolve(null);
+                return;
+            }
+            try {
+                const converted = await ensureImageFormatSupported(file);
+                const base64 = await getBase64Async(converted);
+                resolve(base64);
+            } catch (error) {
+                console.error('Error processing selected image:', error);
+                toastr.error(t`Failed to process selected image: ${error.message}`);
+                resolve(null);
+            }
+        };
+        input.oncancel = () => resolve(null);
+        input.click();
+    });
+}
+
+/**
+ * Resolves avatar data from various input formats (base64, local path, or prompt).
+ * @param {string} input - "prompt" to open file picker, base64 data URL, or local file path
+ * @returns {Promise<string|null>} Base64 data URL or null if invalid/cancelled
+ */
+export async function resolveAvatarData(input) {
+    if (!input || typeof input !== 'string') {
+        return null;
+    }
+
+    const trimmed = input.trim();
+
+    // Special value "prompt" opens file picker
+    if (trimmed.toLowerCase() === 'prompt') {
+        return await promptForAvatarFile();
+    }
+
+    // Already a base64 data URL
+    if (trimmed.startsWith('data:image/')) {
+        return trimmed;
+    }
+
+    // External URLs are not supported
+    if (isExternalUrl(trimmed)) {
+        toastr.warning(t`External URLs are not supported for avatars. Use a local file path or "prompt" to select a file.`);
+        return null;
+    }
+    // Local path or URL (e.g., characters/name.png) - fetch from ST server or same origin
+    // Supported paths: /characters/*, /backgrounds/*, /User Avatars/*, /assets/*, /user/images/*
+    // Also supports same-origin URLs (e.g., https://localhost:8000/characters/name.png)
+    if (trimmed.includes('/') || trimmed.endsWith('.png')) {
+        try {
+            // Construct the URL to fetch the local file
+            let url = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+            // Handle same-origin URLs
+            if (trimmed.startsWith(window.location.origin)) {
+                url = new URL(trimmed).pathname;
+            }
+            // If there is no subfolder, we guess this should be a character image
+            if (!url.includes('/', 1)) {
+                url = '/characters/' + trimmed;
+            }
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`File not found or inaccessible: ${response.status}`);
+            }
+            const blob = await response.blob();
+            if (!blob.type.startsWith('image/')) {
+                throw new Error('File is not an image');
+            }
+            const converted = await ensureImageFormatSupported(new File([blob], 'avatar.png', { type: blob.type }));
+            return await getBase64Async(converted);
+        } catch (error) {
+            console.error('Error fetching local avatar:', error);
+            toastr.warning(t`Failed to load avatar from path: ${error.message}`);
+            return null;
+        }
+    }
+
+    // Unknown format
+    console.warn('Unknown avatar format:', trimmed.substring(0, 50));
+    toastr.warning(t`Unknown avatar format. Use "prompt" to select a file, or provide a local file path.`);
+    return null;
+}
+
+/**
  *  An array of all supported image MIME types.
  */
 export const supportedImageMimeTypes = Object.freeze([
@@ -2062,6 +2161,23 @@ export function setValueByPath(obj, path, value) {
 }
 
 /**
+ * Deletes a value from a nested object at the given dot-separated path.
+ * @param {object} obj Object to delete from
+ * @param {string} path Dot-separated key path (e.g. "data.extensions.myKey")
+ */
+export function deleteValueByPath(obj, path) {
+    const keyParts = path.split('.');
+    let current = obj;
+    for (let i = 0; i < keyParts.length - 1; i++) {
+        if (!current || typeof current !== 'object') return;
+        current = current[keyParts[i]];
+    }
+    if (current && typeof current === 'object') {
+        delete current[keyParts[keyParts.length - 1]];
+    }
+}
+
+/**
  * Flashes the given HTML element via CSS flash animation for a defined period
  * @param {JQuery<HTMLElement>} element - The element to flash
  * @param {number} timespan - A number in milliseconds how the flash should last (default is 2000ms.  Multiples of 1000ms work best, as they end with the flash animation being at 100% opacity)
@@ -2371,13 +2487,13 @@ export async function checkOverwriteExistingData(type, existingNames, name, { in
         return true;
     }
 
-    const overwrite = interactive && await Popup.show.confirm(`${type} ${actionName}`, `<p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`);
+    const overwrite = interactive && await Popup.show.confirm(`${type} ${actionName}`, `<p>A ${type.toLowerCase()} with the same name already exists:<br />${escapeHtml(existing)}</p>Do you want to overwrite it?`);
     if (!overwrite) {
-        toastr.warning(`${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
+        toastr.warning(`${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${escapeHtml(existing)}`, `${type} ${actionName}`, { escapeHtml: false });
         return false;
     }
 
-    toastr.info(`Overwriting Existing ${type}:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
+    toastr.info(`Overwriting Existing ${type}:<br />${escapeHtml(existing)}`, `${type} ${actionName}`, { escapeHtml: false });
 
     // If there is an action to delete the existing data, do it, as the name might be slightly different so file name would not be the same
     if (deleteAction) {
@@ -2955,7 +3071,7 @@ export function createTimeout(ms, errorMessage = '') {
  * Registers a long-press (touch hold) event as an alternative to modifier+click.
  * Supports event delegation for dynamically created elements.
  * @param {string} selector CSS selector for target elements
- * @param {function} callback Callback to invoke on long-press, `this` is the matched element
+ * @param {(e: TouchEvent) => void} callback Callback to invoke on long-press, `this` is the matched element
  * @param {number} [delay=500] Long-press duration in ms
  */
 export function addLongPressEvent(selector, callback, delay = 500) {
@@ -2964,6 +3080,7 @@ export function addLongPressEvent(selector, callback, delay = 500) {
     let target = null;
 
     document.addEventListener('touchstart', function (event) {
+        if (!(event.target instanceof Element)) return;
         const el = event.target.closest(selector);
         if (!el) return;
         target = el;

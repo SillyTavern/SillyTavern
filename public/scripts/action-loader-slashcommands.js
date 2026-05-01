@@ -1,4 +1,4 @@
-import { ActionLoaderToastMode, getActiveLoaderHandles, getLoaderHandleById, hideActionLoader, showActionLoader } from './action-loader.js';
+import { ActionLoaderToastMode, getActiveLoaderHandles, getLoaderHandleById, loader } from './action-loader.js';
 import { t } from './i18n.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandNamedArgument, ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
@@ -7,6 +7,7 @@ import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCom
 import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { isFalseBoolean } from './utils.js';
+import { DOMPurify } from '../lib.js';
 
 /**
  * Registers slash commands for the action loader module.
@@ -116,6 +117,12 @@ export function registerActionLoaderSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
             }),
             SlashCommandNamedArgument.fromProps({
+                name: 'slug',
+                description: 'Unique slug for the loader (to identify it easily via code or CSS)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'slash-wrap',
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'stopTooltip',
                 description: 'Tooltip text for the stop button (only used when toast=stoppable)',
                 typeList: [ARGUMENT_TYPE.STRING],
@@ -148,7 +155,8 @@ export function registerActionLoaderSlashCommands() {
             const title = args.title ? String(args.title) : '';
             const stopTooltip = String(args.stopTooltip ?? t`Stop`);
 
-            const loader = showActionLoader({
+            const actionLoader = loader.show({
+                slug: typeof args.slug === 'string' ? String(args.slug) : 'slash-wrap',
                 blocking,
                 toastMode,
                 message,
@@ -162,7 +170,7 @@ export function registerActionLoaderSlashCommands() {
                 const result = await closureCopy.execute();
                 return result.pipe;
             } finally {
-                await loader.hide();
+                await actionLoader.hide();
             }
         },
     }));
@@ -232,6 +240,12 @@ export function registerActionLoaderSlashCommands() {
                 typeList: [ARGUMENT_TYPE.STRING],
             }),
             SlashCommandNamedArgument.fromProps({
+                name: 'slug',
+                description: 'Unique slug for the loader (to identify it easily via code or CSS)',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'slash-show',
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'stopTooltip',
                 description: 'Tooltip text for the stop button (only used when toast=stoppable)',
                 typeList: [ARGUMENT_TYPE.STRING],
@@ -258,11 +272,12 @@ export function registerActionLoaderSlashCommands() {
             const title = args.title ? String(args.title) : '';
             const stopTooltip = String(args.stopTooltip ?? t`Stop`);
 
-            const handle = showActionLoader({
+            const handle = loader.show({
+                slug: typeof args.slug === 'string' ? String(args.slug) : 'slash-show',
                 blocking,
                 toastMode,
-                message,
-                title,
+                message: DOMPurify.sanitize(message),
+                title: DOMPurify.sanitize(title),
                 stopTooltip,
                 onStop: createClosureHandler(args.onStop),
                 onHide: createClosureHandler(args.onHide, { argName: 'onHide' }),
@@ -307,7 +322,7 @@ export function registerActionLoaderSlashCommands() {
             }
 
             // No handle provided - hide all active loaders
-            const result = await hideActionLoader();
+            const result = await loader.hide();
             return result ? 'true' : 'false';
         },
     }));
