@@ -2635,7 +2635,7 @@ export async function init() {
     macros.register('defaultExpression', {
         handler: getCurrentFallbackExpression,
         category: macros.category.MISC,
-        description: 'Returns the global fallback expression',
+        description: 'Returns the global fallback expression.',
         returns: 'The global default expression',
         exampleUsage: '{{defaultExpression}}',
     });
@@ -2672,7 +2672,7 @@ export async function init() {
             return getCachedExpressions().join(', ');
         },
         category: macros.category.MISC,
-        description: 'Returns a list with all the available expressions your Classifier API provides.',
+        description: 'Returns a list with all the available expressions provided by the Classifier API.',
         returns: 'Expression label list',
         exampleUsage: '{{availableExpressions}}',
     });
