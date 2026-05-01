@@ -800,6 +800,41 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 }
 
 /**
+ * Get all the currently set expression labels.
+ * @param {Object} args
+ * @param {'true'|'false'|'only'} [args.custom] - Wether to filter out or return only custom expressions
+ * @param {'true'|'false'} [args.filter] - Filter the list to only include expressions that have available sprites for the current character
+ * @param {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} [args.return] - In which format must the expressions be returned
+ * @param {string} characterName
+ * @returns {Promise<string>}
+ */
+async function getExpressionListSlashCommand(args, characterName) {
+    const { custom, filter = 'true', return: returnType = 'pipe' } = args;
+
+    const expressions = await getExpressionsList({ filterAvailable: !isFalseBoolean(filter) });
+    const customExpressions = structuredClone(extension_settings?.expressions?.custom || []);
+    const expressionsMap = {
+        default: expressions.filter(expression => !customExpressions.includes(expression)),
+        custom: customExpressions,
+        all: expressions,
+    };
+
+    let expressionIndex = 'all';
+
+    if (custom === 'false') expressionIndex = 'default';
+    if (custom === 'only') expressionIndex = 'custom';
+
+    try {
+        return await slashCommandReturnHelper.doReturn(returnType, expressionsMap[expressionIndex], {
+            objectToStringFunc: list => list.join(', '),
+        });
+    } catch (err) {
+        console.error(err);
+        return '';
+    }
+}
+
+/**
  * @param {string} expressionName - Label of the expression to set as fallback
  */
 function setFallBackExpressionSlashCommand(args, expressionName) {
@@ -2453,23 +2488,14 @@ export async function init() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-list',
         aliases: ['expressions'],
-        /** @type {(args: {return: string, filter: string}) => Promise<string>} */
-        callback: async (args) => {
-            let returnType =
-                /** @type {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
-                (args.return);
-
-            const list = await getExpressionsList({ filterAvailable: !isFalseBoolean(args.filter) });
-
-            return await slashCommandReturnHelper.doReturn(returnType ?? 'pipe', list, { objectToStringFunc: list => list.join(', ') });
-        },
+        callback: getExpressionListSlashCommand,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'return',
                 description: 'The way how you want the return value to be provided',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'pipe',
-                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true, allowPopup: true }),
                 forceEnum: true,
             }),
             SlashCommandNamedArgument.fromProps({
@@ -2478,6 +2504,21 @@ export async function init() {
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('trueFalse')(),
                 defaultValue: 'true',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'custom',
+                description: t`Wether to include, filter out or return only custom expressions`,
+                typeList: [
+                    ARGUMENT_TYPE.STRING,
+                    ARGUMENT_TYPE.BOOLEAN,
+                ],
+                isRequired: false,
+                defaultValue: 'true',
+                enumList: [
+                    new SlashCommandEnumValue('true', '(default) Custom expressions will be included in the result'),
+                    new SlashCommandEnumValue('false', 'Custom expressions will not be included in the result'),
+                    new SlashCommandEnumValue('only', 'Only custom expressions will be included in the result'),
+                ],
             }),
         ],
         returns: 'The comma-separated list of available expressions, including custom expressions.',
