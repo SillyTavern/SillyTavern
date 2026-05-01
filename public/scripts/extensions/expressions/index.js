@@ -2666,4 +2666,14 @@ export async function init() {
             '{{lastExpression::{{char}}}}',
         ],
     });
+
+    macros.register('availableExpressions', {
+        handler: function () {
+            return getCachedExpressions().join(', ');
+        },
+        category: macros.category.MISC,
+        description: 'Returns a list with all the available expressions your Classifier API provides.',
+        returns: 'Expression label list',
+        exampleUsage: '{{availableExpressions}}',
+    });
 }
