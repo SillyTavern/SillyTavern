@@ -108,6 +108,214 @@ const OPENROUTER_PROVIDERS = [
     'Z.AI',
 ];
 
+/**
+ * List of NanoGPT providers.
+ * Providers endpoint: https://nano-gpt.com/api/models/providers
+ * @type {{id: string, label: string}[]}
+ */
+const NANOGPT_PROVIDERS = [
+    {
+        'id': 'akash',
+        'label': 'Akash',
+    },
+    {
+        'id': 'alibaba',
+        'label': 'Alibaba',
+    },
+    {
+        'id': 'ambient',
+        'label': 'Ambient',
+    },
+    {
+        'id': 'arliai',
+        'label': 'ArliAI',
+    },
+    {
+        'id': 'atlascloud',
+        'label': 'AtlasCloud',
+    },
+    {
+        'id': 'azure',
+        'label': 'Azure',
+    },
+    {
+        'id': 'awsbedrock',
+        'label': 'Amazon Bedrock',
+    },
+    {
+        'id': 'baidu',
+        'label': 'Baidu',
+    },
+    {
+        'id': 'baseten',
+        'label': 'BaseTen',
+    },
+    {
+        'id': 'cerebras',
+        'label': 'Cerebras',
+    },
+    {
+        'id': 'chutes',
+        'label': 'Chutes',
+    },
+    {
+        'id': 'clarifai',
+        'label': 'Clarifai',
+    },
+    {
+        'id': 'cloudflare',
+        'label': 'Cloudflare',
+    },
+    {
+        'id': 'crusoe',
+        'label': 'Crusoe',
+    },
+    {
+        'id': 'dekallm',
+        'label': 'DekaLLM',
+    },
+    {
+        'id': 'deepinfra',
+        'label': 'DeepInfra',
+    },
+    {
+        'id': 'deepseek',
+        'label': 'DeepSeek',
+    },
+    {
+        'id': 'fireworks',
+        'label': 'Fireworks',
+    },
+    {
+        'id': 'friendli',
+        'label': 'Friendli',
+    },
+    {
+        'id': 'gmicloud',
+        'label': 'GMICloud',
+    },
+    {
+        'id': 'lilac',
+        'label': 'Lilac',
+    },
+    {
+        'id': 'google',
+        'label': 'Google',
+    },
+    {
+        'id': 'groq',
+        'label': 'Groq',
+    },
+    {
+        'id': 'hyperbolic',
+        'label': 'Hyperbolic',
+    },
+    {
+        'id': 'ionet',
+        'label': 'Io Net',
+    },
+    {
+        'id': 'inceptron',
+        'label': 'Inceptron',
+    },
+    {
+        'id': 'mancer',
+        'label': 'Mancer',
+    },
+    {
+        'id': 'mara',
+        'label': 'Mara',
+    },
+    {
+        'id': 'meganova',
+        'label': 'MegaNova',
+    },
+    {
+        'id': 'minimax',
+        'label': 'MiniMax',
+    },
+    {
+        'id': 'modelrun',
+        'label': 'ModelRun',
+    },
+    {
+        'id': 'moonshot',
+        'label': 'Moonshot',
+    },
+    {
+        'id': 'morph',
+        'label': 'Morph',
+    },
+    {
+        'id': 'ncompass',
+        'label': 'NCompass',
+    },
+    {
+        'id': 'nebius',
+        'label': 'Nebius',
+    },
+    {
+        'id': 'neuralwatt',
+        'label': 'Neuralwatt',
+    },
+    {
+        'id': 'nextbit',
+        'label': 'NextBit',
+    },
+    {
+        'id': 'novita',
+        'label': 'Novita',
+    },
+    {
+        'id': 'parasail',
+        'label': 'Parasail',
+    },
+    {
+        'id': 'phala',
+        'label': 'Phala',
+    },
+    {
+        'id': 'redpill',
+        'label': 'Redpill',
+    },
+    {
+        'id': 'sambanova',
+        'label': 'SambaNova',
+    },
+    {
+        'id': 'sambanova-high-throughput',
+        'label': 'SambaNova (High Throughput)',
+    },
+    {
+        'id': 'siliconflow',
+        'label': 'SiliconFlow',
+    },
+    {
+        'id': 'streamlake',
+        'label': 'StreamLake',
+    },
+    {
+        'id': 'tinfoil',
+        'label': 'Tinfoil',
+    },
+    {
+        'id': 'together',
+        'label': 'Together',
+    },
+    {
+        'id': 'venice',
+        'label': 'Venice',
+    },
+    {
+        'id': 'wandb',
+        'label': 'Weights & Biases',
+    },
+    {
+        'id': 'zai',
+        'label': 'Z.AI',
+    },
+];
+
 const OPENROUTER_PROVIDER_WARNING_SELECTORS = {
     '#openrouter_providers_text': {
         fallbackSelector: '#openrouter_allow_fallbacks_textgenerationwebui',
@@ -185,6 +393,72 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
         console.error('Failed to fetch OpenRouter providers for model', error);
         refreshWarningState();
     }
+}
+
+export async function syncNanoGptProvidersForModel(modelId, providersSelector) {
+    const $providers = $(providersSelector);
+
+    const refreshWarningState = () => {
+        updateNanoGptProvidersWarning(providersSelector);
+    };
+
+    if (!modelId) {
+        $providers.find('option').prop('disabled', false);
+        $providers.trigger('change.select2');
+        refreshWarningState();
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/nanogpt/models/providers', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ model: modelId }),
+        });
+
+        if (!response.ok) {
+            refreshWarningState();
+            return;
+        }
+
+        const data = await response.json();
+        const providerIds = Array.isArray(data?.providers) ? data.providers : [];
+
+        if (!data?.supportsProviderSelection || providerIds.length === 0) {
+            $providers.find('option').each(function () {
+                $(this).prop('disabled', Boolean($(this).val()));
+            });
+            $providers.trigger('change').trigger('change.select2');
+            refreshWarningState();
+            return;
+        }
+
+        $providers.find('option').each(function () {
+            const value = $(this).val();
+            const isAvailable = !value || providerIds.includes(value);
+            $(this).prop('disabled', !isAvailable);
+        });
+
+        $providers.trigger('change.select2');
+        refreshWarningState();
+    } catch (error) {
+        console.error('Failed to fetch NanoGPT providers for model', error);
+        refreshWarningState();
+    }
+}
+
+export function updateNanoGptProvidersWarning(providersSelector) {
+    const $providers = $(providersSelector);
+
+    if ($providers.length === 0) {
+        return;
+    }
+
+    const selectedCount = $providers.find('option:selected').length;
+    const applicableSelectedCount = $providers.find('option:selected:not(:disabled)').length;
+    const showWarning = selectedCount > 0 && applicableSelectedCount === 0;
+
+    $('#nanogpt_provider_warning').toggleClass('displayNone', !showWarning);
 }
 
 export async function loadOllamaModels(data) {
@@ -1084,6 +1358,14 @@ export function initTextGenModels() {
         }));
     }
 
+    const nanoGptProvidersSelect = $('#nanogpt_provider');
+    for (const provider of NANOGPT_PROVIDERS) {
+        nanoGptProvidersSelect.append($('<option>', {
+            value: provider.id,
+            text: provider.label,
+        }));
+    }
+
     if (!isMobile()) {
         $('#mancer_model').select2({
             placeholder: t`Select a model`,
@@ -1177,6 +1459,14 @@ export function initTextGenModels() {
             $element.detach();
             $(this).append($element);
             $(this).trigger('change');
+        });
+        nanoGptProvidersSelect.select2({
+            sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
+            placeholder: t`Select providers. No selection = all providers.`,
+            searchInputPlaceholder: t`Search providers...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            allowClear: true,
         });
     }
 }

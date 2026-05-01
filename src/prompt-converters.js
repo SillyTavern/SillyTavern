@@ -1040,7 +1040,7 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
                         text: content,
                         cache_control: { type: 'ephemeral', ttl: ttl },
                     }];
-                } else {
+                } else if (content?.length > 0) {
                     const contentPartCount = content.length;
                     content[contentPartCount - 1].cache_control = {
                         type: 'ephemeral',

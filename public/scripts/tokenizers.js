@@ -694,6 +694,11 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
+        // MiniMax uses a proprietary tokenizer; fall back to a coarse OpenAI estimation.
+        return 'gpt-3.5-turbo';
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI && oai_settings.workers_ai_model) {
         const model = oai_settings.workers_ai_model.toLowerCase();
 
