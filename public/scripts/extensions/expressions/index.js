@@ -2639,4 +2639,31 @@ export async function init() {
         returns: 'The global default expression',
         exampleUsage: '{{defaultExpression}}',
     });
+
+    macros.register('lastExpression', {
+        handler: function ({ args: [name = '{{char}}'], resolve }) {
+            try {
+                return getLastExpression(resolve(name || ''));
+            } catch (error) {
+                console.error(error);
+                return '';
+            }
+        },
+        unnamedArgs: [{
+            name: 'name',
+            description: 'The name of the target character',
+            defaultValue: '{{char}}',
+            optional: true,
+            type: macros.valueType.STRING,
+        }],
+        delayArgResolution: true,
+        category: macros.category.MISC,
+        description: 'Returns the last expression used by the selected character. The currently active character is used if no character name is provided.',
+        returns: 'Expression label',
+        exampleUsage: [
+            '{{lastExpression}}',
+            '{{lastExpression::John}}',
+            '{{lastExpression::{{char}}}}',
+        ],
+    });
 }
