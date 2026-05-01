@@ -18,6 +18,7 @@ import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { Popup, POPUP_RESULT } from '../../popup.js';
 import { t } from '../../i18n.js';
 import { removeReasoningFromString } from '../../reasoning.js';
+import { macros } from '../../macros/macro-system.js';
 export { MODULE_NAME };
 
 /**
@@ -2630,4 +2631,12 @@ export async function init() {
             </div>
         `,
     }));
+
+    macros.register('defaultExpression', {
+        handler: getCurrentFallbackExpression,
+        category: macros.category.MISC,
+        description: 'Returns the global fallback expression',
+        returns: 'The global default expression',
+        exampleUsage: '{{defaultExpression}}',
+    });
 }
