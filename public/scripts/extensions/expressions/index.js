@@ -1511,6 +1511,24 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
     }
 }
 
+function getLastExpression(characterName) {
+    if (typeof characterName !== 'string') throw new Error('Character name must be a string');
+
+    if (!characterName) {
+        if (selected_group) {
+            toastr.error(t`In group chats, you must specify a character name.`, t`No character name specified`);
+            return '';
+        }
+        characterName = characters[this_chid]?.avatar;
+    }
+
+    const char = findChar({ name: characterName });
+    if (!char) toastr.warning(t`Couldn't find character ${characterName}.`, t`Character not found`);
+
+    const sprite = lastExpression[char?.name ?? characterName] ?? '';
+    return sprite;
+}
+
 /**
  * Selects a sprite from the given sprite folder for the given expression.
  *
@@ -2458,23 +2476,8 @@ export async function init() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-last',
         aliases: ['lastsprite'],
-        /** @type {(args: object, name: string) => Promise<string>} */
-        callback: async (_, name) => {
-            if (typeof name !== 'string') throw new Error('name must be a string');
-            if (!name) {
-                if (selected_group) {
-                    toastr.error(t`In group chats, you must specify a character name.`, t`No character name specified`);
-                    return '';
-                }
-                name = characters[this_chid]?.avatar;
-            }
-
-            const char = findChar({ name: name });
-            if (!char) toastr.warning(t`Couldn't find character ${name}.`, t`Character not found`);
-
-            const sprite = lastExpression[char?.name ?? name] ?? '';
-            return sprite;
-        },
+        /** @type {(args: object, name: string) => string} */
+        callback: (_, name) => getLastExpression(name),
         returns: 'the last set expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
