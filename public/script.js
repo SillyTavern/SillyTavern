@@ -6248,10 +6248,53 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
     chatCompletionSource = chatCompletionSource ?? oai_settings.chat_completion_source;
 
     const tryParse = (/** @type {string} */ value) => {
+        if (typeof value !== 'string') {
+            return;
+        }
+
+        let normalizedValue = value.trim();
+
+        if (normalizedValue.startsWith('```')) {
+            normalizedValue = normalizedValue.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+        }
+
         try {
-            return JSON.parse(value);
+            return JSON.parse(normalizedValue);
         } catch (e) {
-            console.debug('Failed to parse content as JSON.', e);
+            try {
+                let repairedValue = normalizedValue;
+                const quoteCount = (repairedValue.match(/"/g) || []).length;
+                const escapedQuoteCount = (repairedValue.match(/\\"/g) || []).length;
+                const actualQuoteCount = quoteCount - escapedQuoteCount;
+
+                if (actualQuoteCount % 2 !== 0) {
+                    repairedValue += '"';
+                }
+
+                const openBraces = (repairedValue.match(/\{/g) || []).length;
+                const closeBraces = (repairedValue.match(/\}/g) || []).length;
+                const missingBraces = openBraces - closeBraces;
+
+                const openBrackets = (repairedValue.match(/\[/g) || []).length;
+                const closeBrackets = (repairedValue.match(/\]/g) || []).length;
+                const missingBrackets = openBrackets - closeBrackets;
+
+                // Simple heuristic: close brackets first, then braces.
+                // Works for common cases like `{"key": ["value1", "value2` or `{"key": "value`
+                if (missingBrackets > 0) {
+                    repairedValue += ']'.repeat(missingBrackets);
+                }
+
+                if (missingBraces > 0) {
+                    repairedValue += '}'.repeat(missingBraces);
+                }
+
+                const result = JSON.parse(repairedValue);
+                console.debug('Successfully repaired and parsed truncated JSON.');
+                return result;
+            } catch (repairError) {
+                console.debug('Failed to parse content as JSON.', e);
+            }
         }
     };
 
