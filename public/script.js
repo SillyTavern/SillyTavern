@@ -216,6 +216,7 @@ import {
 import { initSecrets, readSecretState } from './scripts/secrets.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
+import { markdownNestedEmphasisExt } from './scripts/showdown-nested-emphasis.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
@@ -527,7 +528,7 @@ export function reloadMarkdownProcessor() {
         simpleLineBreaks: true,
         strikethrough: true,
         disableForced4SpacesIndentedSublists: true,
-        extensions: [markdownUnderscoreExt()],
+        extensions: [markdownUnderscoreExt(), markdownNestedEmphasisExt()],
     });
 
     // Inject the dinkus extension after creating the converter
