@@ -51,6 +51,7 @@ import EventSourceStream from './sse-stream.js';
  * @property {string} [reverse_proxy] - Optional reverse proxy URL
  * @property {string} [proxy_password] - Optional proxy password
  * @property {string} [custom_prompt_post_processing] - Optional custom prompt post-processing
+ * @property {import('../script.js').JsonSchema} [json_schema] - Optional JSON schema for structured generation
  */
 
 /** @typedef {Record<string, any> & ChatCompletionPayloadBase} ChatCompletionPayload */
