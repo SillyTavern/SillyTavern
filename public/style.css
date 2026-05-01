@@ -5864,6 +5864,91 @@ body:not(.movingUI) .drawer-content.maximized {
     border-radius: 10px;
 }
 
+.zoomed_avatar video.zoomed_avatar_video {
+    height: auto;
+    width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 10px;
+    background-color: #000;
+    display: block;
+}
+
+.zoomed_avatar_toggle {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.zoomed_avatar_toggle:hover {
+    opacity: 1;
+}
+
+/* Avatar + video controls in character edit screen */
+.avatar_with_video {
+    position: relative;
+    display: inline-block;
+}
+
+.character_video_controls {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    display: flex;
+    gap: 4px;
+    z-index: 2;
+}
+
+.character_video_button {
+    width: 28px;
+    height: 28px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.character_video_button:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.character_video_controls.has_video > label.character_video_button {
+    background-color: rgba(40, 130, 220, 0.85);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.character_video_remove {
+    background-color: rgba(180, 50, 50, 0.85);
+}
+
+/* Mobile-friendly zoomed avatar — pin above the chat instead of overlapping */
+@media screen and (max-width: 1000px) {
+    .zoomed_avatar {
+        --maxWidth: min(95vw, 60vh);
+        left: 50% !important;
+        transform: translateX(-50%);
+        top: 8px !important;
+        max-height: 50vh !important;
+    }
+
+    .zoomed_avatar_container {
+        max-height: 50vh;
+        max-width: 95vw;
+    }
+
+    .zoomed_avatar video.zoomed_avatar_video,
+    .zoomed_avatar img {
+        max-height: 50vh !important;
+    }
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
     display: none;

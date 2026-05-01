@@ -6041,10 +6041,17 @@
                                 </div>
                                 <div class="flex-container flexFlowColumn expander flexNoGap">
                                     <div id="avatar_div" class="avatar_div buttons_block alignitemsflexstart justifySpaceBetween flexnowrap">
-                                        <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
-                                            <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
-                                            <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
-                                        </label>
+                                        <div id="avatar_with_video" class="avatar_with_video">
+                                            <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
+                                                <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
+                                                <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
+                                            </label>
+                                            <div id="character_video_controls" class="character_video_controls">
+                                                <label for="add_character_video_button" class="character_video_button menu_button fa-solid fa-video" title="Upload character video" data-i18n="[title]Upload character video"></label>
+                                                <input hidden type="file" id="add_character_video_button" name="avatar" accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v">
+                                                <div id="remove_character_video_button" class="character_video_button character_video_remove menu_button fa-solid fa-trash" style="display: none;" title="Remove character video" data-i18n="[title]Remove character video"></div>
+                                            </div>
+                                        </div>
                                         <div class="flex-container" id="avatar_controls">
                                             <div class="form_create_bottom_buttons_block buttons_block">
                                                 <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
@@ -6426,10 +6433,12 @@
             <div class="zoomed_avatar">
                 <div class="panelControlBar flex-container">
                     <div class="fa-fw fa-solid fa-grip drag-grabber"></div>
+                    <div class="fa-fw fa-solid fa-image zoomed_avatar_toggle" title="Toggle image / video" data-i18n="[title]Toggle image / video" style="display: none;"></div>
                     <div class="fa-fw fa-solid fa-circle-xmark dragClose" id="closeZoom"></div>
                 </div>
                 <div class="zoomed_avatar_container">
                     <img class="zoomed_avatar_img" src="" data-izoomify-url="" data-izoomify-magnify="1.8" data-izoomify-duration="300" alt="">
+                    <video class="zoomed_avatar_video" loop playsinline controls preload="metadata" style="display: none;"></video>
                 </div>
             </div>
         </div>

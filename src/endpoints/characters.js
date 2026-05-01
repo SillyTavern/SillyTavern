@@ -26,6 +26,8 @@ import { ByafParser } from '../byaf.js';
 import { CharXParser, persistCharXAssets } from '../charx.js';
 import cacheBuster from '../middleware/cacheBuster.js';
 
+const ALLOWED_VIDEO_EXTENSIONS = ['.mp4', '.webm', '.ogv', '.ogg', '.mov', '.m4v'];
+
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
 const memoryCache = new MemoryLimitedMap(memoryCacheCapacity);
@@ -1078,6 +1080,21 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
         // Remove the old character file
         fs.unlinkSync(oldAvatarPath);
 
+        // Rename associated character video, if any
+        try {
+            const videosDir = request.user.directories.characterVideos;
+            for (const ext of ALLOWED_VIDEO_EXTENSIONS) {
+                const oldVideoPath = path.join(videosDir, oldInternalName + ext);
+                if (fs.existsSync(oldVideoPath)) {
+                    const newVideoPath = path.join(videosDir, newInternalName + ext);
+                    fs.renameSync(oldVideoPath, newVideoPath);
+                    break;
+                }
+            }
+        } catch (videoErr) {
+            console.warn('Failed to rename character video', videoErr);
+        }
+
         // Return new avatar name to ST
         return response.send({ avatar: newAvatarName });
     } catch (err) {
@@ -1164,6 +1181,109 @@ router.post('/edit-avatar', validateAvatarUrlMiddleware, async function (request
         return response.sendStatus(200);
     } catch (err) {
         console.error('An error occurred while editing avatar', err);
+        return response.sendStatus(500);
+    }
+});
+
+/**
+ * Resolves the existing video path for a given avatar key, or null.
+ * @param {string} videosDir Directory holding character videos
+ * @param {string} avatarUrl Avatar filename, e.g. "MyChar.png"
+ * @returns {string|null} Absolute path to the video, or null if none exists
+ */
+function findCharacterVideoPath(videosDir, avatarUrl) {
+    const baseName = sanitize(avatarUrl.replace(/\.png$/i, ''));
+    if (!baseName.length) return null;
+    for (const ext of ALLOWED_VIDEO_EXTENSIONS) {
+        const candidate = path.join(videosDir, baseName + ext);
+        if (fs.existsSync(candidate)) {
+            return candidate;
+        }
+    }
+    return null;
+}
+
+router.post('/upload-video', validateAvatarUrlMiddleware, async function (request, response) {
+    try {
+        if (!request.file) {
+            return response.status(400).send('Error: no file uploaded');
+        }
+        if (!request.body || !request.body.avatar_url) {
+            return response.status(400).send('Error: no avatar_url in request body');
+        }
+
+        const uploadPath = path.join(request.file.destination, request.file.filename);
+        if (!fs.existsSync(uploadPath)) {
+            return response.status(400).send('Error: uploaded file does not exist');
+        }
+
+        const baseName = sanitize(request.body.avatar_url.replace(/\.png$/i, ''));
+        if (!baseName.length) {
+            try { fs.unlinkSync(uploadPath); } catch { /* ignore */ }
+            return response.status(400).send('Error: invalid avatar_url');
+        }
+
+        const originalName = request.file.originalname || '';
+        const inferredExt = path.extname(originalName).toLowerCase();
+        const ext = ALLOWED_VIDEO_EXTENSIONS.includes(inferredExt) ? inferredExt : '.mp4';
+
+        const videosDir = request.user.directories.characterVideos;
+        if (!fs.existsSync(videosDir)) {
+            fs.mkdirSync(videosDir, { recursive: true });
+        }
+
+        // Remove any existing video for this character (any allowed extension)
+        for (const e of ALLOWED_VIDEO_EXTENSIONS) {
+            const existing = path.join(videosDir, baseName + e);
+            if (fs.existsSync(existing)) {
+                try { fs.unlinkSync(existing); } catch { /* ignore */ }
+            }
+        }
+
+        const targetPath = path.join(videosDir, baseName + ext);
+        await fsPromises.rename(uploadPath, targetPath).catch(async (err) => {
+            // Cross-device move fallback
+            await fsPromises.copyFile(uploadPath, targetPath);
+            await fsPromises.unlink(uploadPath);
+        });
+
+        return response.json({ url: `/character-videos/${encodeURIComponent(baseName + ext)}` });
+    } catch (err) {
+        console.error('An error occurred while uploading character video', err);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/delete-video', validateAvatarUrlMiddleware, async function (request, response) {
+    try {
+        if (!request.body || !request.body.avatar_url) {
+            return response.status(400).send('Error: no avatar_url in request body');
+        }
+        const videoPath = findCharacterVideoPath(request.user.directories.characterVideos, request.body.avatar_url);
+        if (!videoPath) {
+            return response.sendStatus(404);
+        }
+        fs.unlinkSync(videoPath);
+        return response.sendStatus(200);
+    } catch (err) {
+        console.error('An error occurred while deleting character video', err);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/has-video', validateAvatarUrlMiddleware, async function (request, response) {
+    try {
+        if (!request.body || !request.body.avatar_url) {
+            return response.status(400).send('Error: no avatar_url in request body');
+        }
+        const videoPath = findCharacterVideoPath(request.user.directories.characterVideos, request.body.avatar_url);
+        if (!videoPath) {
+            return response.json({ exists: false });
+        }
+        const baseName = path.basename(videoPath);
+        return response.json({ exists: true, url: `/character-videos/${encodeURIComponent(baseName)}` });
+    } catch (err) {
+        console.error('An error occurred while checking character video', err);
         return response.sendStatus(500);
     }
 });
@@ -1282,6 +1402,15 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
 
     fs.unlinkSync(avatarPath);
     invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
+
+    // Remove associated character video, if any
+    try {
+        const videoPath = findCharacterVideoPath(request.user.directories.characterVideos, request.body.avatar_url);
+        if (videoPath) fs.unlinkSync(videoPath);
+    } catch (videoErr) {
+        console.warn('Failed to delete character video', videoErr);
+    }
+
     let dir_name = (request.body.avatar_url.replace('.png', ''));
 
     if (!dir_name.length) {

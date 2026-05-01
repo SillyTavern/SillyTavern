@@ -27,6 +27,7 @@ export const USER_DIRECTORY_TEMPLATE = Object.freeze({
     groupChats: 'group chats',
     chats: 'chats',
     characters: 'characters',
+    characterVideos: 'character-videos',
     backgrounds: 'backgrounds',
     novelAI_Settings: 'NovelAI Settings',
     koboldAI_Settings: 'KoboldAI Settings',

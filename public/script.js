@@ -7441,6 +7441,141 @@ async function read_avatar_load(input) {
 }
 
 /**
+ * Cache of avatar_url -> video URL (with cache-busting) when a character has a video set.
+ * Empty string means "no video".
+ * @type {Map<string, string>}
+ */
+const characterVideoCache = new Map();
+
+/**
+ * Looks up the cached character video URL.
+ * @param {string} avatarUrl Character avatar filename (e.g. "MyChar.png")
+ * @returns {string} Video URL, or empty string if none
+ */
+export function getCharacterVideoUrl(avatarUrl) {
+    return characterVideoCache.get(avatarUrl) || '';
+}
+
+/**
+ * Queries the server for the character video URL and updates the cache.
+ * @param {string} avatarUrl Character avatar filename
+ * @returns {Promise<string>} Video URL or empty string
+ */
+export async function fetchCharacterVideoUrl(avatarUrl) {
+    if (!avatarUrl) return '';
+    try {
+        const response = await fetch('/api/characters/has-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ avatar_url: avatarUrl }),
+        });
+        if (!response.ok) {
+            characterVideoCache.set(avatarUrl, '');
+            return '';
+        }
+        const data = await response.json();
+        const url = data?.exists ? `${data.url}?t=${Date.now()}` : '';
+        characterVideoCache.set(avatarUrl, url);
+        return url;
+    } catch (err) {
+        console.warn('Failed to query character video', err);
+        return '';
+    }
+}
+
+/**
+ * Refreshes the character edit panel video controls based on whether the current character has a video.
+ * @param {string} [avatarUrl] Avatar filename. If omitted, uses the currently selected character.
+ */
+export async function refreshCharacterVideoState(avatarUrl) {
+    if (!avatarUrl && this_chid !== undefined && characters[this_chid]) {
+        avatarUrl = characters[this_chid].avatar;
+    }
+    if (!avatarUrl) {
+        $('#remove_character_video_button').hide();
+        $('#character_video_controls').removeClass('has_video');
+        return;
+    }
+    const url = await fetchCharacterVideoUrl(avatarUrl);
+    if (url) {
+        $('#remove_character_video_button').show();
+        $('#character_video_controls').addClass('has_video');
+    } else {
+        $('#remove_character_video_button').hide();
+        $('#character_video_controls').removeClass('has_video');
+    }
+}
+
+/**
+ * Uploads a video file to associate with the currently selected character.
+ * @param {HTMLInputElement} input File input element
+ */
+async function read_character_video_load(input) {
+    if (!input.files || !input.files[0]) return;
+    if (this_chid === undefined || !characters[this_chid]) {
+        toastr.warning(t`Please select or create a character before uploading a video.`);
+        input.value = '';
+        return;
+    }
+    const file = input.files[0];
+    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-m4v'];
+    if (file.type && !allowedTypes.includes(file.type)) {
+        toastr.error(t`Unsupported video format: ${file.type}`);
+        input.value = '';
+        return;
+    }
+    const avatarUrl = characters[this_chid].avatar;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('avatar_url', avatarUrl);
+
+    try {
+        const response = await fetch('/api/characters/upload-video', {
+            method: 'POST',
+            headers: getRequestHeaders({ omitContentType: true }),
+            cache: 'no-cache',
+            body: formData,
+        });
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json().catch(() => ({}));
+        characterVideoCache.set(avatarUrl, data?.url ? `${data.url}?t=${Date.now()}` : '');
+        toastr.success(t`Character video uploaded.`);
+        await refreshCharacterVideoState(avatarUrl);
+    } catch (err) {
+        console.error(err);
+        toastr.error(t`Failed to upload character video.`);
+    } finally {
+        input.value = '';
+    }
+}
+
+/**
+ * Deletes the video associated with the currently selected character.
+ */
+async function delete_character_video() {
+    if (this_chid === undefined || !characters[this_chid]) return;
+    const avatarUrl = characters[this_chid].avatar;
+    try {
+        const response = await fetch('/api/characters/delete-video', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ avatar_url: avatarUrl }),
+        });
+        if (!response.ok && response.status !== 404) {
+            throw new Error(`Delete failed: ${response.status}`);
+        }
+        characterVideoCache.set(avatarUrl, '');
+        toastr.success(t`Character video removed.`);
+        await refreshCharacterVideoState(avatarUrl);
+    } catch (err) {
+        console.error(err);
+        toastr.error(t`Failed to remove character video.`);
+    }
+}
+
+/**
  * Gets the URL for a thumbnail of a specific type and file.
  * @param {import('../src/endpoints/thumbnails.js').ThumbnailType} type The type of the thumbnail to get
  * @param {string} file The file name or path for which to get the thumbnail URL
@@ -8676,6 +8811,8 @@ export function select_selected_character(chid, { switchMenu = true } = {}) {
     }
 
     $('#add_avatar_button').val('');
+    $('#add_character_video_button').val('');
+    refreshCharacterVideoState(characters[chid].avatar);
 
     $('#character_popup-button-h3').text(characters[chid].name);
     $('#character_name_pole').val(characters[chid].name);
@@ -11295,6 +11432,17 @@ jQuery(async function () {
         read_avatar_load(inputElement);
     });
 
+    $('#add_character_video_button').on('change', function () {
+        const inputElement = /** @type {HTMLInputElement} */ (this);
+        read_character_video_load(inputElement);
+    });
+
+    $('#remove_character_video_button').on('click', async function () {
+        const confirm = await Popup.show.confirm(t`Remove Character Video`, t`Are you sure you want to remove the video for this character?`);
+        if (!confirm) return;
+        await delete_character_video();
+    });
+
     $('#form_create').on('submit', (e) => createOrEditCharacter(e.originalEvent));
 
     $('#delete_button').on('click', async function () {
@@ -12110,7 +12258,7 @@ jQuery(async function () {
         resetMovableStyles(drawerId);
     });
 
-    $(document).on('click', '.mes .avatar', function () {
+    $(document).on('click', '.mes .avatar', async function () {
         const messageElement = $(this).closest('.mes');
         const thumbURL = $(this).children('img').attr('src');
         const charsPath = '/characters/';
@@ -12146,7 +12294,10 @@ jQuery(async function () {
 
             $('body').append(newElement);
             newElement.fadeIn(animation_duration);
-            const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] img`);
+            const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] .zoomed_avatar_img`);
+            const zoomedAvatarVideoElement = $(`.zoomed_avatar[forChar="${charname}"] .zoomed_avatar_video`);
+            const zoomedAvatarToggleElement = $(`.zoomed_avatar[forChar="${charname}"] .zoomed_avatar_toggle`);
+            const isCharAvatar = messageElement.attr('is_user') !== 'true' && !(messageElement.attr('is_system') === 'true' && !isValidCharacter);
             if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) {
                 //handle user and system avatars
                 const isValidPersona = decodeURIComponent(targetAvatarImg) in power_user.personas;
@@ -12162,6 +12313,55 @@ jQuery(async function () {
                 zoomedAvatarImgElement.attr('src', avatarSrc);
                 zoomedAvatarImgElement.attr('data-izoomify-url', avatarSrc);
             }
+
+            // If the character has a video, set up toggle between image and video
+            if (isCharAvatar) {
+                const decodedAvatarUrl = decodeURIComponent(targetAvatarImg);
+                fetchCharacterVideoUrl(decodedAvatarUrl).then(videoUrl => {
+                    if (!videoUrl) return;
+                    // The container may have been closed before this resolves
+                    const container = $(`.zoomed_avatar[forChar="${charname}"]`);
+                    if (!container.length) return;
+                    const videoEl = container.find('.zoomed_avatar_video');
+                    const imgEl = container.find('.zoomed_avatar_img');
+                    const toggleEl = container.find('.zoomed_avatar_toggle');
+                    /** @type {HTMLVideoElement} */
+                    const rawVideo = videoEl.get(0);
+                    rawVideo.src = videoUrl;
+                    rawVideo.muted = false;
+                    rawVideo.loop = true;
+                    toggleEl.show();
+                    let showingVideo = false;
+                    toggleEl.on('click touchend', (e) => {
+                        e.stopPropagation();
+                        showingVideo = !showingVideo;
+                        if (showingVideo) {
+                            imgEl.hide();
+                            videoEl.show();
+                            toggleEl.removeClass('fa-image').addClass('fa-photo-film');
+                            rawVideo.play().catch(err => console.debug('Video play blocked', err));
+                        } else {
+                            rawVideo.pause();
+                            videoEl.hide();
+                            imgEl.show();
+                            toggleEl.removeClass('fa-photo-film').addClass('fa-image');
+                        }
+                    });
+                    // Click on video toggles play/pause
+                    videoEl.on('click', (e) => {
+                        // Don't interfere with the native controls bar
+                        const target = /** @type {HTMLElement} */ (e.target);
+                        if (target.tagName === 'VIDEO') {
+                            if (rawVideo.paused) {
+                                rawVideo.play().catch(() => { });
+                            } else {
+                                rawVideo.pause();
+                            }
+                        }
+                    });
+                });
+            }
+
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
             dragElement(newElement);

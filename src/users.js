@@ -82,6 +82,7 @@ const STORAGE_KEYS = {
  * @property {string} groupChats - The directory where the group chats are stored
  * @property {string} chats - The directory where the chats are stored
  * @property {string} characters - The directory where the characters are stored
+ * @property {string} characterVideos - The directory where the character videos are stored
  * @property {string} backgrounds - The directory where the backgrounds are stored
  * @property {string} novelAI_Settings - The directory where the NovelAI settings are stored
  * @property {string} koboldAI_Settings - The directory where the KoboldAI settings are stored
@@ -1093,6 +1094,7 @@ export async function getAllEnabledUsers() {
 export const router = express.Router();
 router.use('/backgrounds/*', createRouteHandler(req => req.user.directories.backgrounds));
 router.use('/characters/*', createRouteHandler(req => req.user.directories.characters));
+router.use('/character-videos/*', createRouteHandler(req => req.user.directories.characterVideos));
 router.use('/User%20Avatars/*', createRouteHandler(req => req.user.directories.avatars));
 router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
 router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
