@@ -592,8 +592,11 @@ async function moduleWorker({ newChat = false } = {}) {
         const force = !!context.groupId;
 
         // Character won't be angry on you for swiping
-        if (currentLastMessage.mes == '...' && expressionsList.includes(extension_settings.expressions.fallback_expression)) {
-            expression = extension_settings.expressions.fallback_expression;
+        if (currentLastMessage.mes == '...') {
+            const fallback = extension_settings.expressions.disableFallback ? null : extension_settings.expressions.fallback_expression;
+            if (fallback === null || expressionsList.includes(fallback)) {
+                expression = fallback;
+            }
         }
 
         await sendExpressionCall(spriteFolderName, expression, { force: force, vnMode: vnMode });
@@ -1013,9 +1016,11 @@ function onTextGenSettingsReady(args) {
  * @returns {Promise<string?>} - The label of the expression.
  */
 export async function getExpressionLabel(text, expressionsApi = extension_settings.expressions.api, { filterAvailable = null, customPrompt = null } = {}) {
+    const fallback = extension_settings.expressions.disableFallback ? null : extension_settings.expressions.fallback_expression;
+
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && expressionsApi == EXPRESSION_API.extras) || !text) {
-        return extension_settings.expressions.fallback_expression;
+        return fallback;
     }
 
     if (extension_settings.expressions.translate && typeof globalThis.translate === 'function') {
@@ -1050,7 +1055,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                     await waitUntilCondition(() => online_status !== 'no_connection', 3000, 250);
                 } catch (error) {
                     console.warn('No LLM connection. Using fallback expression', error);
-                    return extension_settings.expressions.fallback_expression;
+                    return fallback;
                 }
 
                 const expressionsList = await getExpressionsList({ filterAvailable: filterAvailable });
@@ -1077,7 +1082,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
             case EXPRESSION_API.webllm: {
                 if (!isWebLlmSupported()) {
                     console.warn('WebLLM is not supported. Using fallback expression');
-                    return extension_settings.expressions.fallback_expression;
+                    return fallback;
                 }
 
                 const expressionsList = await getExpressionsList({ filterAvailable: filterAvailable });
@@ -1121,7 +1126,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
     } catch (error) {
         toastr.error('Could not classify expression. Check the console or your backend for more information.');
         console.error(error);
-        return extension_settings.expressions.fallback_expression;
+        return fallback;
     }
 }
 
@@ -2138,6 +2143,11 @@ function migrateSettings() {
         extension_settings.expressions.promptType = PROMPT_TYPE.raw;
         saveSettingsDebounced();
     }
+
+    if (extension_settings.expressions.disableFallback === undefined) {
+        extension_settings.expressions.disableFallback = false;
+        saveSettingsDebounced();
+    }
 }
 
 export async function init() {
@@ -2179,6 +2189,10 @@ export async function init() {
         });
         $('#expressions_filter_available').prop('checked', extension_settings.expressions.filterAvailable).on('input', function () {
             extension_settings.expressions.filterAvailable = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
+        $('#expression_disable_fallback').prop('checked', extension_settings.expressions.disableFallback).on('input', function () {
+            extension_settings.expressions.disableFallback = !!$(this).prop('checked');
             saveSettingsDebounced();
         });
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
