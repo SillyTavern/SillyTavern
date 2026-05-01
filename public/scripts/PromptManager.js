@@ -32,6 +32,12 @@ const DEFAULT_DEPTH = 4;
 const DEFAULT_ORDER = 100;
 
 /**
+ * Generation types that count as a real user-driven chat turn. The 'chat' meta-trigger expands
+ * to this set so a prompt can opt out of Quiet/Impersonate without listing each chat type.
+ */
+const CHAT_GENERATION_TYPES = new Set(['normal', 'continue', 'swipe', 'regenerate']);
+
+/**
  * @enum {number}
  */
 export const INJECTION_POSITION = {
@@ -1549,7 +1555,11 @@ class PromptManager {
     shouldTrigger(prompt, generationType) {
         if (!Array.isArray(prompt?.injection_trigger)) return true;
         if (!prompt.injection_trigger.length) return true;
-        return prompt.injection_trigger.includes(generationType);
+        if (prompt.injection_trigger.includes(generationType)) return true;
+        // Meta-trigger: 'chat' matches any user-driven chat turn.
+        // Lets a prompt opt out of Quiet/Impersonate without listing four triggers individually.
+        if (prompt.injection_trigger.includes('chat') && CHAT_GENERATION_TYPES.has(generationType)) return true;
+        return false;
     }
 
     /**
