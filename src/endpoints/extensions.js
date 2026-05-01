@@ -65,14 +65,20 @@ async function checkIfRepoIsUpToDate(extensionPath) {
 
 export const router = express.Router();
 
-// Feature flag guard: don't allow calling any of the endpoints if extensions are disabled
-router.use((_, response, next) => {
+/**
+ * Feature flag guard: don't allow calling any of the endpoints if extensions are disabled
+ * @type {import('express').RequestHandler}
+ */
+export const extensionsEnabledFeatureGuard = (_, response, next) => {
     const enabled = !!getConfigValue('extensions.enabled', true, 'boolean');
     if (!enabled) {
-        return response.status(400).send('Bad Request: Extensions are disabled.');
+        response.status(400).send('Bad Request: Extensions are disabled.');
+        return;
     }
     next();
-});
+};
+
+router.use(extensionsEnabledFeatureGuard);
 
 /**
  * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
@@ -119,6 +125,7 @@ router.post('/install', async (request, response) => {
         }
 
         const extensionPath = path.join(basePath, extensionNameSanitized);
+        const folderName = path.basename(extensionPath);
 
         if (fs.existsSync(extensionPath)) {
             return response.status(409).send(`Directory already exists at ${extensionPath}`);
@@ -131,10 +138,17 @@ router.post('/install', async (request, response) => {
         await git.clone(parsedUrl.href, extensionPath, cloneOptions);
         console.info(`Extension has been cloned to ${extensionPath} from ${parsedUrl.href} at ${branch || '(default)'} branch`);
 
-        const { version, author, display_name } = await getManifest(extensionPath);
-        const folderName = path.basename(extensionPath);
-
-        return response.send({ version, author, display_name, extensionPath, folderName });
+        try {
+            const manifest = await getManifest(extensionPath);
+            if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+                throw new Error('Manifest is not a valid JSON object.');
+            }
+            const { version, author, display_name } = manifest;
+            return response.send({ version, author, display_name, extensionPath, folderName });
+        } catch (manifestError) {
+            await fs.promises.rm(extensionPath, { recursive: true, force: true });
+            throw manifestError;
+        }
     } catch (error) {
         console.error('Importing extension failed', error);
         return response.status(500).send('Internal Server Error. Check the server logs for more details.');
