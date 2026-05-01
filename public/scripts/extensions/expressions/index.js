@@ -104,6 +104,19 @@ let lastServerResponseTime = 0;
 export let lastExpression = {};
 
 /**
+ * Gets the current fallback expression, including the labels for when it is not set
+ * @returns {string|null}
+ */
+function getCurrentFallbackExpression() {
+    const expression = extension_settings?.expressions.fallback_expression;
+    const showEmojis = extension_settings?.expressions?.showDefault;
+
+    if (!expression && showEmojis) return OPTION_EMOJI_FALLBACK;
+    if (!expression) return OPTION_NO_FALLBACK;
+
+    return expression;
+}
+/**
  * Returns a placeholder image object for a given expression
  * @param {string} expression - The expression label
  * @param {boolean} [isCustom=false] - Whether the expression is custom
@@ -792,7 +805,7 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 function setFallBackExpressionSlashCommand(args, expressionName) {
     expressionName = expressionName.trim().toLowerCase();
 
-    if (!expressionName) return extension_settings?.expressions?.fallback_expression || '';
+    if (!expressionName) return getCurrentFallbackExpression();
 
     const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
     const fallbackExpressions = Array
@@ -2351,15 +2364,15 @@ export async function init() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
                 enumProvider: () => [
-                    new SlashCommandEnumValue('#none', 'Sets the fallback expression to no image'),
-                    new SlashCommandEnumValue('#emoji', 'Sets the fallback expression to emojis'),
+                    new SlashCommandEnumValue(OPTION_NO_FALLBACK, 'Sets the fallback expression to no image'),
+                    new SlashCommandEnumValue(OPTION_EMOJI_FALLBACK, 'Sets the fallback expression to emojis'),
                     ...localEnumProviders.expressions(),
                 ],
             }),
         ],
         helpString: `
             <div>
-                Gets the currently selected expression fallback for all characters.<br />
+                Gets the currently selected global fallback expression.<br />
                 If a valid expression label is sent, it will be set as the new fallback.
             </div>
             <div>
