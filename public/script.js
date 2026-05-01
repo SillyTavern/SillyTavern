@@ -7957,6 +7957,11 @@ export async function getSettings(initLoaderHandle = null) {
             Object.assign(extension_settings, (settings.extension_settings ?? {}));
             $('#third_party_extension_button').addClass('disabled');
             $('#extensions_details').addClass('disabled');
+            $('#extensions_connect').addClass('disabled');
+            $('#extensions_notify_updates').attr('disabled', 'disabled');
+            $('#extensions_autoconnect').attr('disabled', 'disabled');
+            $('#extensions_url').attr('disabled', 'disabled');
+            $('#extensions_api_key').attr('disabled', 'disabled');
         }
 
         firstRun = !!settings.firstRun;
