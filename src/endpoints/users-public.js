@@ -192,6 +192,10 @@ router.post('/recover-step2', async (request, response) => {
             await storage.setItem(toKey(user.handle), user);
         }
 
+        if (request.session && request.session.handle === user.handle) {
+            request.session.version = getAccountVersion(user);
+        }
+
         await recoverLimiter.delete(ip);
         MFA_CACHE.remove(user.handle);
         return response.sendStatus(204);
