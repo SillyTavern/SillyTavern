@@ -6272,6 +6272,9 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                     break;
                 case chat_completion_sources.PERPLEXITY:
                     result = tryParse(removeReasoningFromString(text));
+                    if (!result && returnInvalidJson) {
+                        return text;
+                    }
                     break;
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE:
