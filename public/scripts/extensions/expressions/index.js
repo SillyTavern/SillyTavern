@@ -2636,7 +2636,7 @@ export async function init() {
         handler: getCurrentFallbackExpression,
         category: macros.category.MISC,
         description: 'Returns the global fallback expression.',
-        returns: 'The global default expression',
+        returns: 'Expression label',
         exampleUsage: '{{defaultExpression}}',
     });
 
