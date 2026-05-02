@@ -291,13 +291,11 @@ async function downloadAssetsList(url) {
     try {
         const response = await fetch(url, { cache: 'no-cache' });
         if (!response.ok) {
-            toastr.error('Cannot download the assets list.');
-            return;
+            throw new Error('Cannot download the assets list.');
         }
         const json = await response.json();
         if (!Array.isArray(json)) {
-            toastr.error('Assets list is not an array');
-            return;
+            throw new Error('Assets list is not an array');
         }
         await populateAssetsMenu(json);
     } catch (error) {
