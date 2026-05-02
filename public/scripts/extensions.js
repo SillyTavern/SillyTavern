@@ -1611,6 +1611,9 @@ async function getExtensionVersion(extensionName, abortSignal) {
         const data = await response.json();
         return data;
     } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+            return;
+        }
         console.error('Error:', error);
     }
 }
@@ -1848,6 +1851,9 @@ async function checkForUpdatesManual(sortFn, abortSignal) {
         const promise = enqueueVersionCheck(async () => {
             try {
                 const data = await getExtensionVersion(externalId, abortSignal);
+                if (!data) {
+                    return;
+                }
                 const selector = getNameSelector(externalId, { prefix: '' });
                 const extensionBlock = document.querySelector(`.extension_block[data-name="${selector}"]`);
                 if (extensionBlock && data) {
@@ -1944,6 +1950,9 @@ async function checkForExtensionUpdates(force) {
             const promise = enqueueVersionCheck(async () => {
                 try {
                     const data = await getExtensionVersion(id.replace('third-party', ''));
+                    if (!data) {
+                        return;
+                    }
                     if (!data.isUpToDate) {
                         updatesAvailable.push(manifest.display_name);
                     }
