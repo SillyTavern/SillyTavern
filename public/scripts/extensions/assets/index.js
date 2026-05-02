@@ -306,7 +306,7 @@ async function downloadAssetsList(url) {
 
         // Error logged after, to appear on top
         console.error(error);
-        toastr.error('Problem with assets URL', DEBUG_PREFIX + 'Cannot get assets list');
+        toastr.error('Problem with assets URL', 'Cannot get assets list');
         $('#assets-connect-button').addClass('fa-plug-circle-exclamation');
         $('#assets-connect-button').addClass('redOverlayGlow');
     }
