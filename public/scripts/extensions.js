@@ -935,7 +935,7 @@ function generateExtensionElement(name, manifest, isActive, isDisabled, isExtern
         if (checkboxClass) toggle.classList.add(checkboxClass);
         toggle.checked = isActive;
     } else {
-        toggle.title = 'Cannot enable extension';
+        toggle.title = t`Cannot enable extension`;
         toggle.classList.add('extension_missing');
         if (checkboxClass) toggle.classList.add(checkboxClass);
         toggle.disabled = true;
