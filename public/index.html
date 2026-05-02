@@ -44,6 +44,7 @@
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
     <link rel="stylesheet" type="text/css" href="css/macros.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
+    <link rel="stylesheet" type="text/css" href="css/char-ref-images.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- Scripts are loaded at the end of the body to improve page load speed -->
 </head>
@@ -6162,7 +6163,7 @@
                                     <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                                 </div>
                             </div>
-                            <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
+            <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
                                 <div id="first_message_div" class="title_restorable">
                                     <div class="flex-container alignitemscenter flex1">
                                         <span data-i18n="First message" class="mdhotkey_location">First message</span>
@@ -6522,6 +6523,19 @@
                             <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                         </div>
                     </div>
+                </div>
+            </div>
+            <hr>
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <h4>
+                        <span data-i18n="Reference Media">Reference Media</span>
+                        <small data-i18n="(Sent as a user message to multimodal models)">(Sent as a user message to multimodal models)</small>
+                    </h4>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <div id="char_ref_images_container"></div>
                 </div>
             </div>
             <hr>

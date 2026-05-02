@@ -1,0 +1,115 @@
+.char_ref_images_block {
+    margin-top: 5px;
+}
+
+.char_ref_images_header {
+    gap: 5px;
+    font-size: 0.85em;
+    opacity: 0.8;
+    cursor: default;
+}
+
+.char_ref_images_hint {
+    flex: 1;
+    opacity: 0.7;
+}
+
+.char_ref_images_count:empty {
+    display: none;
+}
+
+.char_ref_images_list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.char_ref_images_list:empty {
+    display: none;
+}
+
+.char_ref_image_item {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--SmartThemeBorderColor, #555);
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.char_ref_image_item img,
+.char_ref_image_item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+}
+
+.char_ref_image_item[data-media-type="audio"] {
+    width: 220px;
+}
+
+.char_ref_image_item audio {
+    width: 100%;
+    height: 100%;
+}
+
+.char_ref_image_item[data-media-type="video"]::before,
+.char_ref_image_item[data-media-type="audio"]::before {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    color: #fff;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+    font-family: "Font Awesome 6 Free", sans-serif;
+    font-weight: 900;
+    font-size: 10px;
+    pointer-events: none;
+}
+
+.char_ref_image_item[data-media-type="video"]::before {
+    content: "\f03d"; /* fa-video */
+}
+
+.char_ref_image_item[data-media-type="audio"]::before {
+    content: "\f028"; /* fa-volume-high */
+}
+
+.char_ref_image_item .char_ref_image_delete {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+.char_ref_image_item:hover .char_ref_image_delete {
+    display: flex;
+}
+
+.char_ref_images_prompt_field {
+    margin-top: 8px;
+}
+
+.char_ref_images_prompt_field h5 {
+    gap: 4px;
+    margin-bottom: 4px;
+}
+
+.char_ref_images_prompt_field h5 small {
+    opacity: 0.7;
+}
