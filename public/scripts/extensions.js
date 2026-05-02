@@ -280,6 +280,18 @@ export async function doExtrasFetch(endpoint, args = {}) {
 }
 
 /**
+ * Generates a CSS selector for an extension based on its name, allowing omission of a common prefix.
+ * @param {string} name Name of the extension, with or without the "third-party" prefix
+ * @param {object} [options] Optional parameters
+ * @param {string} [options.prefix] Optional prefix to ignore when generating the selector (e.g. "third-party")
+ * @returns {string} CSS selector for the extension, with the prefix removed if it was present and specified in options
+ */
+function getNameSelector(name, { prefix = 'third-party' } = {}) {
+    const nameWithoutPrefix = prefix && name.startsWith(prefix) ? name.slice(prefix.length) : name;
+    return CSS.escape(nameWithoutPrefix);
+}
+
+/**
  * Discovers extensions from the API.
  * @returns {Promise<{name: string, type: string}[]>}
  */
@@ -356,7 +368,7 @@ function onToggleAllExtensions(extensionsToToggle, toggleContainer) {
             }
 
             toggleContainer
-                .find(`.extension_block[data-name="${CSS.escape(name.replace('third-party', ''))}"] .extension_toggle input`)
+                .find(`.extension_block[data-name="${getNameSelector(name)}"] .extension_toggle input`)
                 .prop('checked', enable)
                 .toggleClass('toggle_enable', !enable)
                 .toggleClass('toggle_disable', enable)
@@ -1210,7 +1222,7 @@ async function showExtensionsDetails() {
                     const { name } = extension;
 
                     $(externalContainer)
-                        .find(`.extension_block[data-name="${CSS.escape(name.replace('third-party', ''))}"] .extension_toggle input`)
+                        .find(`.extension_block[data-name="${getNameSelector(name)}"] .extension_toggle input`)
                         .off('click')
                         .one('click', () => {
                             extensionsToToggle = extensionsToToggle.filter(ext => ext.name !== name);
@@ -1228,7 +1240,7 @@ async function showExtensionsDetails() {
                     const isDisabled = extension_settings.disabledExtensions.includes(name);
 
                     $(externalContainer)
-                        .find(`.extension_block[data-name="${CSS.escape(name.replace('third-party', ''))}"] .extension_toggle input`)
+                        .find(`.extension_block[data-name="${getNameSelector(name)}"] .extension_toggle input`)
                         .prop('checked', !isDisabled)
                         .toggleClass('toggle_enable', isDisabled)
                         .toggleClass('toggle_disable', !isDisabled)
@@ -1836,7 +1848,8 @@ async function checkForUpdatesManual(sortFn, abortSignal) {
         const promise = enqueueVersionCheck(async () => {
             try {
                 const data = await getExtensionVersion(externalId, abortSignal);
-                const extensionBlock = document.querySelector(`.extension_block[data-name="${CSS.escape(externalId)}"]`);
+                const selector = getNameSelector(externalId, { prefix: '' });
+                const extensionBlock = document.querySelector(`.extension_block[data-name="${selector}"]`);
                 if (extensionBlock && data) {
                     if (data.isUpToDate === false) {
                         const buttonElement = extensionBlock.querySelector('.btn_update');
