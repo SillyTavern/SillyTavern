@@ -445,8 +445,11 @@ const default_settings = {
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
+<<<<<<< HEAD
     nanogpt_provider: '',
     nanogpt_payg_override: false,
+=======
+>>>>>>> 309a5a774 (fix(deepseek): replace deprecated models with deepseek-v4-flash and deepseek-v4-pro)
     deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
@@ -5754,8 +5757,19 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+<<<<<<< HEAD
         const maxContext = oai_settings.max_context_unlocked ? unlocked_max : max_1mil;
         $('#openai_max_context').attr('max', maxContext);
+=======
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else if (['deepseek-reasoner', 'deepseek-v4-flash', 'deepseek-v4-pro'].includes(oai_settings.deepseek_model)) {
+            $('#openai_max_context').attr('max', max_128k);
+        } else {
+            $('#openai_max_context').attr('max', max_64k);
+        }
+
+>>>>>>> 309a5a774 (fix(deepseek): replace deprecated models with deepseek-v4-flash and deepseek-v4-pro)
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
