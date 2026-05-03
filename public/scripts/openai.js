@@ -2745,7 +2745,6 @@ export async function createGenerationParameters(settings, model, type, messages
         'top_p': Number(settings.top_p_openai),
         'max_tokens': settings.openai_max_tokens,
         'stream': stream,
-        'stream_options': stream ? { include_usage: true } : undefined,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': settings.chat_completion_source,
