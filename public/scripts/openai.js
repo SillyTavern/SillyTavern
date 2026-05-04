@@ -47,6 +47,7 @@ import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
+    clamp,
     createThumbnail,
     delay,
     download,
@@ -79,7 +80,7 @@ import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
-import { syncOpenRouterProvidersForModel, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
 
 export {
     openai_messages_count,
@@ -196,6 +197,8 @@ export const chat_completion_sources = {
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
+    WORKERS_AI: 'workers_ai',
+    MINIMAX: 'minimax',
 };
 
 const character_names_behavior = {
@@ -256,6 +259,7 @@ export const tool_reasoning_modes = {
 // Providers that support interleaved reasoning forwarding in tool-call chains.
 const interleaved_reasoning_providers = [
     chat_completion_sources.OPENROUTER,
+    chat_completion_sources.CUSTOM,
 ];
 
 export const ZAI_ENDPOINT = {
@@ -264,6 +268,11 @@ export const ZAI_ENDPOINT = {
 };
 
 export const SILICONFLOW_ENDPOINT = {
+    GLOBAL: 'global',
+    CN: 'cn',
+};
+
+export const MINIMAX_ENDPOINT = {
     GLOBAL: 'global',
     CN: 'cn',
 };
@@ -279,6 +288,7 @@ const sensitiveFields = [
     'vertexai_express_project_id',
     'azure_base_url',
     'azure_deployment_name',
+    'workers_ai_account_id',
 ];
 
 /**
@@ -296,12 +306,12 @@ export const settingsToUpdate = {
     min_p: ['#min_p_openai', 'min_p_openai', false, false],
     repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false, false],
     max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true, false],
+    group_models: ['#cc_group_models', 'group_models', true, true],
+    sort_models: ['#cc_sort_models', 'sort_models', false, true],
     openai_model: ['#model_openai_select', 'openai_model', false, true],
     claude_model: ['#model_claude_select', 'claude_model', false, true],
     openrouter_model: ['#model_openrouter_select', 'openrouter_model', false, true],
     openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true, true],
-    openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false, true],
-    openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false, true],
     openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false, true],
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
@@ -313,13 +323,14 @@ export const settingsToUpdate = {
     perplexity_model: ['#model_perplexity_select', 'perplexity_model', false, true],
     groq_model: ['#model_groq_select', 'groq_model', false, true],
     chutes_model: ['#model_chutes_select', 'chutes_model', false, true],
-    chutes_sort_models: ['#chutes_sort_models', 'chutes_sort_models', false, true],
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     siliconflow_endpoint: ['#siliconflow_endpoint', 'siliconflow_endpoint', false, true],
+    minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
+    minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
-    electronhub_sort_models: ['#electronhub_sort_models', 'electronhub_sort_models', false, true],
-    electronhub_group_models: ['#electronhub_group_models', 'electronhub_group_models', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
+    nanogpt_provider: ['#nanogpt_provider', 'nanogpt_provider', false, true],
+    nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
@@ -337,6 +348,8 @@ export const settingsToUpdate = {
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
+    workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
+    workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
@@ -369,6 +382,7 @@ export const settingsToUpdate = {
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
+    tool_call_recurse_limit: ['#tool_call_recurse_limit', 'tool_call_recurse_limit', false, false],
     show_thoughts: ['#openai_show_thoughts', 'show_thoughts', true, false],
     reasoning_effort: ['#openai_reasoning_effort', 'reasoning_effort', false, false],
     verbosity: ['#openai_verbosity', 'verbosity', false, false],
@@ -413,6 +427,8 @@ const default_settings = {
     group_nudge_prompt: default_group_nudge_prompt,
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
+    sort_models: 'alphabetically',
+    group_models: false,
     openai_model: 'gpt-4-turbo',
     claude_model: 'claude-sonnet-4-5',
     google_model: 'gemini-2.5-pro',
@@ -423,14 +439,15 @@ const default_settings = {
     perplexity_model: 'sonar-pro',
     groq_model: 'llama-3.3-70b-versatile',
     chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
-    chutes_sort_models: 'alphabetically',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
+    minimax_model: 'MiniMax-M2.7',
+    minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
-    electronhub_sort_models: 'alphabetically',
-    electronhub_group_models: false,
     nanogpt_model: 'gpt-4o-mini',
-    deepseek_model: 'deepseek-chat',
+    nanogpt_provider: '',
+    nanogpt_payg_override: false,
+    deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -439,6 +456,8 @@ const default_settings = {
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
+    workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+    workers_ai_account_id: '',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -450,8 +469,6 @@ const default_settings = {
     custom_include_headers: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
-    openrouter_group_models: false,
-    openrouter_sort_models: 'alphabetically',
     openrouter_providers: [],
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
@@ -474,6 +491,7 @@ const default_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     function_calling: false,
+    tool_call_recurse_limit: 5,
     names_behavior: character_names_behavior.DEFAULT,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
@@ -597,8 +615,10 @@ function setOpenAIMessages(chat) {
         const originApi = chat[j]?.extra?.api;
         const originModel = chat[j]?.extra?.model;
         const isSameModel = originApi === currentApi && originModel === currentModel;
-        const signature = isSameModel ? chat[j]?.extra?.reasoning_signature : null;
-        const reasoning = isSameModel ? String(chat[j]?.extra?.reasoning ?? '') : '';
+        // In group chats, only include reasoning from the currently generating character
+        const isOtherGroupMember = selected_group && chat[j].name !== name2;
+        const signature = isSameModel && !isOtherGroupMember ? chat[j]?.extra?.reasoning_signature : null;
+        const reasoning = isSameModel && !isOtherGroupMember ? String(chat[j]?.extra?.reasoning ?? '') : '';
 
         // Remove reasoning metadata from invocations if the API/model don't match
         if (Array.isArray(invocations) && invocations.length > 0) {
@@ -1013,8 +1033,8 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                 const clone = structuredClone(invocation);
                 if (!reasoningIsEligible) {
                     delete clone.reasoning;
-                } else if (previousAssistantReasoning) {
-                    // Prefer currently editable assistant-text reasoning based on forwarding mode over invocation snapshot.
+                } else if (previousAssistantReasoning && !clone.reasoning) {
+                    // Fall back to adjacent assistant-text reasoning only when the invocation has none of its own.
                     clone.reasoning = previousAssistantReasoning;
                 }
                 return clone;
@@ -1703,6 +1723,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.groq_model;
         case chat_completion_sources.SILICONFLOW:
             return settings.siliconflow_model;
+        case chat_completion_sources.MINIMAX:
+            return settings.minimax_model;
         case chat_completion_sources.ELECTRONHUB:
             return settings.electronhub_model;
         case chat_completion_sources.CHUTES:
@@ -1727,6 +1749,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.azure_openai_model;
         case chat_completion_sources.ZAI:
             return settings.zai_model;
+        case chat_completion_sources.WORKERS_AI:
+            return settings.workers_ai_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -1871,35 +1895,6 @@ function getChutesModelTemplate(option) {
     `));
 }
 
-function getNanoGptModelTemplate(option) {
-    const model = model_list.find(x => x.id === option?.element?.value);
-
-    if (!option.id || !model) {
-        return option.text;
-    }
-
-    const inputPrice = model.pricing?.prompt;
-    const outputPrice = model.pricing?.completion;
-
-    let price = 'Unknown';
-    if (inputPrice !== undefined && outputPrice !== undefined) {
-        // Check if both prices are 0 (free model)
-        if (inputPrice === 0 && outputPrice === 0) {
-            price = 'Free';
-        } else {
-            price = `$${Math.round(inputPrice * 100) / 100}/$${Math.round(outputPrice * 100) / 100} in/out Mtoken`;
-        }
-    }
-
-    const contextLength = model.context_length || 'Unknown';
-
-    return $((`
-        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
-            <strong>${DOMPurify.sanitize(model.id)}</strong> | ${contextLength} ctx | <small>${price}</small>
-        </div>
-    `));
-}
-
 function calculateChutesCost() {
     if (oai_settings.chat_completion_source !== chat_completion_sources.CHUTES) {
         return;
@@ -1927,19 +1922,103 @@ function calculateChutesCost() {
     $('#chutes_max_prompt_cost').text(cost);
 }
 
+function getNanoGptModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const inputPrice = model.pricing?.prompt;
+    const outputPrice = model.pricing?.completion;
+    let price = 'Unknown';
+
+    if (inputPrice !== undefined && outputPrice !== undefined) {
+        if (inputPrice === 0 && outputPrice === 0) {
+            price = 'Free';
+        } else {
+            price = `$${Math.round(inputPrice * 100) / 100}/$${Math.round(outputPrice * 100) / 100} in/out Mtoken`;
+        }
+    }
+
+    const visionIcon = model.capabilities?.vision ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.capabilities?.reasoning ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
+    const toolCallsIcon = model.capabilities?.tool_calling ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports tool calling"></i>' : '';
+
+    let subHtml = '';
+    const sub = model.subscription;
+
+    if (sub) {
+        if (sub.included) {
+            let titleText = 'Included in subscription';
+            let multiplierText = '';
+
+            if (sub.inputTokenMultiplier && sub.inputTokenMultiplier !== 1) {
+                multiplierText = ` (${sub.inputTokenMultiplier}x)`;
+                titleText += ` - Input Multiplier: ${sub.inputTokenMultiplier}x`;
+            }
+            subHtml = ` <small title="${titleText}"><i class="fa-solid fa-crown fa-sm"></i> Sub${multiplierText}</small>`;
+        } else if (sub.note) {
+            const safeNote = DOMPurify.sanitize(sub.note);
+            subHtml = ` <small title="${safeNote}"><i class="fa-solid fa-circle-info fa-sm"></i> Not in Sub</small>`;
+        }
+    }
+
+    const iconsContainer = document.createElement('span');
+    iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', reasoningIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', toolCallsIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', subHtml);
+
+    const capabilities = (iconsContainer.children.length) ? ` | ${iconsContainer.innerHTML}` : '';
+
+    const contextLength = model.context_length || 'Unknown';
+    const modelName = model.name || model.id;
+
+    return $((`
+        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
+            <strong>${DOMPurify.sanitize(modelName)}</strong> | ${contextLength} ctx | <small>${price}</small>${capabilities}
+        </div>
+    `));
+}
+
+function getAimlapiModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const vendor = model.id.split('/')[0];
+
+    return $((`
+        <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
+            <div><strong>${DOMPurify.sanitize(model.info?.name || model.name || model.id)}</strong> | ${vendor}</div>
+        </div>
+    `));
+}
+
 function saveModelList(data) {
     model_list = data.map((model) => ({ ...model }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
-        model_list = openRouterSortBy(model_list, oai_settings.openrouter_sort_models);
-
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.OPENROUTER);
         $('#model_openrouter_select').empty();
+        $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: t`Use OpenRouter website setting` }));
 
-        if (true === oai_settings.openrouter_group_models) {
-            appendOpenRouterOptions(openRouterGroupByVendor(model_list), oai_settings.openrouter_group_models);
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.OPENROUTER).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.name }));
+                });
+                $('#model_openrouter_select').append(optgroup);
+            });
         } else {
-            appendOpenRouterOptions(model_list);
+            model_list.forEach((model) => {
+                $('#model_openrouter_select').append($('<option>', { value: model.id, text: model.name }));
+            });
         }
 
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
@@ -1979,13 +2058,26 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
+        model_list = model_list.filter(m => m.type === 'chat-completion');
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.AIMLAPI);
         $('#model_aimlapi_select').empty();
-        const chatModels = model_list.filter(m => m.type === 'chat-completion');
 
-        appendAimlapiOptions(aimlapiGroupByVendor(chatModels));
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.AIMLAPI).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.info?.name || model.id }));
+                });
+                $('#model_aimlapi_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_aimlapi_select').append($('<option>', { value: model.id, text: model.info?.name || model.id }));
+            });
+        }
 
-        if (!oai_settings.aimlapi_model && chatModels.length > 0) {
-            oai_settings.aimlapi_model = chatModels[0].id;
+        if (!oai_settings.aimlapi_model && model_list.length > 0) {
+            oai_settings.aimlapi_model = model_list[0].id;
         }
 
         $('#model_aimlapi_select').val(oai_settings.aimlapi_model).trigger('change');
@@ -2008,13 +2100,22 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         model_list = model_list.filter(model => model?.endpoints?.includes('/v1/chat/completions'));
-
-        model_list = electronHubSortBy(model_list, oai_settings.electronhub_sort_models);
-
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.ELECTRONHUB);
         $('#model_electronhub_select').empty();
 
-        const groupedList = oai_settings.electronhub_group_models ? electronHubGroupByVendor(model_list) : model_list;
-        appendElectronHubOptions(groupedList, oai_settings.electronhub_group_models);
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.ELECTRONHUB).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.name }));
+                });
+                $('#model_electronhub_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_electronhub_select').append($('<option>', { value: model.id, text: model.name }));
+            });
+        }
 
         const selectedModel = model_list.find(model => model.id === oai_settings.electronhub_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.electronhub_model)) {
@@ -2026,15 +2127,21 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
         model_list = model_list.filter(model => typeof model.id === 'string' && !model.id.toLowerCase().includes('affine'));
-
-        model_list = chutesSortBy(model_list, oai_settings.chutes_sort_models);
-
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.CHUTES);
         $('#model_chutes_select').empty();
 
-        for (const model of model_list) {
-            const option = $('<option>').val(model.id).text(model.id);
-            option.attr('data-model', JSON.stringify(model));
-            $('#model_chutes_select').append(option);
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.CHUTES).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.id }));
+                });
+                $('#model_chutes_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_chutes_select').append($('<option>', { value: model.id, text: model.id }));
+            });
         }
 
         const selectedModel = model_list.find(model => model.id === oai_settings.chutes_model);
@@ -2046,14 +2153,22 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.NANOGPT);
         $('#model_nanogpt_select').empty();
-        model_list.forEach((model) => {
-            $('#model_nanogpt_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
-        });
+
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.NANOGPT).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.name || model.id }));
+                });
+                $('#model_nanogpt_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_nanogpt_select').append($('<option>', { value: model.id, text: model.name || model.id }));
+            });
+        }
 
         const selectedModel = model_list.find(model => model.id === oai_settings.nanogpt_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.nanogpt_model)) {
@@ -2066,11 +2181,7 @@ function saveModelList(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').empty();
         model_list.forEach((model) => {
-            $('#model_deepseek_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
+            $('#model_deepseek_select').append($('<option>', { value: model.id, text: model.id }));
         });
 
         const selectedModel = model_list.find(model => model.id === oai_settings.deepseek_model);
@@ -2084,11 +2195,7 @@ function saveModelList(data) {
     if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
         $('#model_pollinations_select').empty();
         model_list.forEach((model) => {
-            $('#model_pollinations_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
+            $('#model_pollinations_select').append($('<option>', { value: model.id, text: model.id }));
         });
 
         const selectedModel = model_list.find(model => model.id === oai_settings.pollinations_model);
@@ -2193,6 +2300,24 @@ function saveModelList(data) {
         $('#model_fireworks_select').val(oai_settings.fireworks_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
+        $('#model_workers_ai_select').empty();
+        model_list.forEach((model) => {
+            $('#model_workers_ai_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.workers_ai_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.workers_ai_model)) {
+            oai_settings.workers_ai_model = model_list[0].id;
+        }
+
+        $('#model_workers_ai_select').val(oai_settings.workers_ai_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').empty();
 
@@ -2259,181 +2384,134 @@ function saveModelList(data) {
     }
 }
 
-function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
-    $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: t`Use OpenRouter website setting` }));
-
-    const appendOption = (model, parent = null) => {
-        (parent || $('#model_openrouter_select')).append(
-            $('<option>', {
-                value: model.id,
-                text: model.name,
-            }));
-    };
-
-    if (groupModels) {
-        model_list.forEach((models, vendor) => {
-            const optgroup = $(`<optgroup label="${vendor}">`);
-
-            models.forEach((model) => {
-                appendOption(model, optgroup);
+/**
+ * Sorts models by the specified property for the given source.
+ * @param {object[]} data - Array of model objects
+ * @param {string} property - Sort property ('alphabetically', 'context_length', 'pricing.prompt', 'pricing.completion')
+ * @param {string} source - Chat Completion source (e.g., 'openrouter', 'chutes', 'electronhub', 'nanogpt')
+ * @returns {object[]} Sorted array of model objects
+ */
+function sortModelsBy(data, property, source) {
+    switch (source) {
+        case chat_completion_sources.OPENROUTER:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.context_length || 0) - (a.context_length || 0);
+                } else if (property === 'pricing.input' || property === 'pricing.prompt') {
+                    return parseFloat(a.pricing?.prompt || 0) - parseFloat(b.pricing?.prompt || 0);
+                } else if (property === 'pricing.output' || property === 'pricing.completion') {
+                    return parseFloat(a.pricing?.completion || 0) - parseFloat(b.pricing?.completion || 0);
+                } else {
+                    return a?.name && b?.name ? a.name.localeCompare(b.name) : 0;
+                }
             });
-
-            $('#model_openrouter_select').append(optgroup);
-        });
-    } else {
-        model_list.forEach((model) => {
-            appendOption(model);
-        });
-    }
-}
-
-const openRouterSortBy = (data, property = 'alphabetically') => {
-    return data.sort((a, b) => {
-        if (property === 'context_length') {
-            return b.context_length - a.context_length;
-        } else if (property === 'pricing.prompt') {
-            return parseFloat(a.pricing.prompt) - parseFloat(b.pricing.prompt);
-        } else {
-            // Alphabetically
-            return a?.name && b?.name && a.name.localeCompare(b.name);
-        }
-    });
-};
-
-function openRouterGroupByVendor(array) {
-    return array.reduce((acc, curr) => {
-        const vendor = curr.id.split('/')[0];
-
-        if (!acc.has(vendor)) {
-            acc.set(vendor, []);
-        }
-
-        acc.get(vendor).push(curr);
-
-        return acc;
-    }, new Map());
-}
-
-function chutesSortBy(data, property = 'alphabetically') {
-    return data.sort((a, b) => {
-        if (property === 'context_length') {
-            return b.context_length - a.context_length;
-        } else if (property === 'pricing.input') {
-            const aPrice = parseFloat(a.pricing?.input || 0);
-            const bPrice = parseFloat(b.pricing?.input || 0);
-            return aPrice - bPrice;
-        } else if (property === 'pricing.output') {
-            const aPrice = parseFloat(a.pricing?.output || 0);
-            const bPrice = parseFloat(b.pricing?.output || 0);
-            return aPrice - bPrice;
-        } else {
-            return a?.id && b?.id && a.id.localeCompare(b.id);
-        }
-    });
-}
-
-function appendElectronHubOptions(model_list, groupModels = false) {
-    const appendOption = (model, parent = null) => {
-        (parent || $('#model_electronhub_select')).append(
-            $('<option>', {
-                value: model.id,
-                text: model.name,
-            }));
-    };
-
-    if (groupModels) {
-        model_list.forEach((models, vendor) => {
-            const optgroup = $('<optgroup>').attr('label', vendor);
-
-            models.forEach((model) => {
-                appendOption(model, optgroup);
+        case chat_completion_sources.CHUTES:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.context_length || 0) - (a.context_length || 0);
+                } else if (property === 'pricing.input' || property === 'pricing.prompt') {
+                    return parseFloat(a.pricing?.input || 0) - parseFloat(b.pricing?.input || 0);
+                } else if (property === 'pricing.output' || property === 'pricing.completion') {
+                    return parseFloat(a.pricing?.output || 0) - parseFloat(b.pricing?.output || 0);
+                } else {
+                    return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
+                }
             });
-
-            $('#model_electronhub_select').append(optgroup);
-        });
-    } else {
-        model_list.forEach((model) => {
-            appendOption(model);
-        });
+        case chat_completion_sources.ELECTRONHUB:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.tokens || 0) - (a.tokens || 0);
+                } else if (property === 'pricing.input' || property === 'pricing.prompt') {
+                    return parseFloat(a.pricing?.input || 0) - parseFloat(b.pricing?.input || 0);
+                } else if (property === 'pricing.output' || property === 'pricing.completion') {
+                    return parseFloat(a.pricing?.output || 0) - parseFloat(b.pricing?.output || 0);
+                } else {
+                    return a?.name && b?.name ? a.name.localeCompare(b.name) : 0;
+                }
+            });
+        case chat_completion_sources.NANOGPT:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.context_length || 0) - (a.context_length || 0);
+                } else if (property === 'pricing.input' || property === 'pricing.prompt') {
+                    return parseFloat(a.pricing?.prompt || 0) - parseFloat(b.pricing?.prompt || 0);
+                } else if (property === 'pricing.output' || property === 'pricing.completion') {
+                    return parseFloat(a.pricing?.completion || 0) - parseFloat(b.pricing?.completion || 0);
+                } else {
+                    return a?.name && b?.name ? a.name.localeCompare(b.name) : 0;
+                }
+            });
+        case chat_completion_sources.AIMLAPI:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.info?.contextLength || 0) - (a.info?.contextLength || 0);
+                } else {
+                    // No pricing information on the API. Sort alphabetically by name.
+                    return a?.info?.name && b?.info?.name ? a.info.name.localeCompare(b.info.name) : 0;
+                }
+            });
+        default:
+            return data;
     }
 }
 
-function electronHubSortBy(data, property = 'alphabetically') {
-    return data.sort((a, b) => {
-        if (property === 'context_length') {
-            return b.tokens - a.tokens;
-        } else if (property === 'pricing.input') {
-            return parseFloat(a.pricing.input) - parseFloat(b.pricing.input);
-        } else if (property === 'pricing.output') {
-            return parseFloat(a.pricing.output) - parseFloat(b.pricing.output);
-        } else {
-            return a?.name && b?.name && a.name.localeCompare(b.name);
-        }
-    });
-}
-
-function electronHubGroupByVendor(array) {
-    return array.reduce((acc, curr) => {
-        const vendor = String(curr?.name || curr?.id || 'Other').split(':')[0].trim() || 'Other';
-
-        if (!acc.has(vendor)) {
-            acc.set(vendor, []);
-        }
-
-        acc.get(vendor).push(curr);
-
-        return acc;
-    }, new Map());
-}
-
-function aimlapiGroupByVendor(array) {
-    return array.reduce((acc, curr) => {
-        const vendor = curr.info.developer;
-
-        if (!acc.has(vendor)) {
-            acc.set(vendor, []);
-        }
-
-        acc.get(vendor).push(curr);
-
-        return acc;
-    }, new Map());
-}
-
-function appendAimlapiOptions(model_list) {
-    const appendOption = (model, parent = null) => {
-        (parent || $('#model_aimlapi_select')).append(
-            $('<option>', {
-                value: model.id,
-                text: model.info?.name || model.name || model.id,
-            }));
-    };
-
-    model_list.forEach((models, vendor) => {
-        const optgroup = $(`<optgroup label="${vendor}">`);
-
-        models.forEach((model) => {
-            appendOption(model, optgroup);
-        });
-
-        $('#model_aimlapi_select').append(optgroup);
-    });
-}
-
-function getAimlapiModelTemplate(option) {
-    const model = model_list.find(x => x.id === option?.element?.value);
-
-    if (!option.id || !model) {
-        return option.text;
+/**
+ * Groups models by vendor for the given source. If not supported, returns a map with a single entry containing all models.
+ * @param {object[]} array Array of model objects
+ * @param {string} source Chat Completion source (e.g., 'openrouter')
+ * @returns {Map<string, object[]>} Map of vendor to array of models
+ */
+function groupModelsByVendor(array, source) {
+    switch (source) {
+        case chat_completion_sources.OPENROUTER:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.id.split('/')[0];
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.ELECTRONHUB:
+            return array.reduce((acc, curr) => {
+                const vendor = String(curr?.name || curr?.id || 'Other').split(':')[0].trim() || 'Other';
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.NANOGPT:
+            return array.reduce((acc, curr) => {
+                const vendorPart = /\//.test(curr.id) ? curr.id.split('/')[0] : curr.id.split('-')[0];
+                const vendor = String(vendorPart?.trim()?.toLowerCase() || 'Other');
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.CHUTES:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.id.split('/')[0];
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.AIMLAPI:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.info?.developer || 'Other';
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        default:
+            return new Map([['', array]]);
     }
-
-    const vendor = model.id.split('/')[0];
-
-    return $((`
-        <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
-            <div><strong>${DOMPurify.sanitize(model.info?.name || model.name || model.id)}</strong> | ${vendor}</div>
-        </div>
-    `));
 }
 
 /**
@@ -2459,6 +2537,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.DEEPSEEK,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2466,6 +2545,36 @@ function getReasoningEffort(settings = null, model = null) {
     }
 
     function resolveReasoningEffort() {
+        if (settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.max:
+                    return reasoning_effort_types.max;
+                default:
+                    return reasoning_effort_types.high;
+            }
+        }
+
+        if (settings.chat_completion_source === chat_completion_sources.CUSTOM && /^koboldcpp\/(.+)$/.test(model)) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return 'minimal';
+                case reasoning_effort_types.low:
+                    return 'low';
+                case reasoning_effort_types.medium:
+                    return 'medium';
+                case reasoning_effort_types.high:
+                    return 'high';
+                case reasoning_effort_types.max:
+                    return 'xhigh';
+                default:
+                    return settings.reasoning_effort;
+            }
+        }
+
         switch (settings.reasoning_effort) {
             case reasoning_effort_types.auto:
                 return undefined;
@@ -2474,9 +2583,16 @@ function getReasoningEffort(settings = null, model = null) {
                     return 'none';
                 }
 
-                return [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source) && /^gpt-5/.test(model)
-                    ? reasoning_effort_types.min
-                    : reasoning_effort_types.low;
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)) {
+                    if (/^gpt-5\.(4|5)/.test(model)) {
+                        return 'none';
+                    }
+                    if (/^gpt-5/.test(model)) {
+                        return reasoning_effort_types.min;
+                    }
+                }
+
+                return reasoning_effort_types.low;
             case reasoning_effort_types.max:
                 return reasoning_effort_types.high;
             default:
@@ -2604,7 +2720,8 @@ export async function createGenerationParameters(settings, model, type, messages
     ];
 
     const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(model);
-    const stream = settings.stream_openai && type !== 'quiet' && !isO1;
+    const isWorkersAIJsonMode = settings.chat_completion_source === chat_completion_sources.WORKERS_AI && jsonSchema;
+    const stream = settings.stream_openai && type !== 'quiet' && !isO1 && !isWorkersAIJsonMode;
 
     const noMultiSwipeTypes = ['quiet', 'impersonate', 'continue'];
     const canMultiSwipe = settings.n > 1 && !noMultiSwipeTypes.includes(type) && multiswipeSources.includes(settings.chat_completion_source);
@@ -2715,6 +2832,11 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.middleout = settings.openrouter_middleout;
     }
 
+    if (settings.chat_completion_source === chat_completion_sources.NANOGPT) {
+        generate_data.nanogpt_provider = settings.nanogpt_provider;
+        generate_data.nanogpt_payg_override = settings.nanogpt_payg_override;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
         const stopStringsLimit = 5;
         generate_data.top_k = Number(settings.top_k_openai);
@@ -2815,6 +2937,24 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.siliconflow_endpoint = settings.siliconflow_endpoint || SILICONFLOW_ENDPOINT.GLOBAL;
     }
 
+    if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
+        // MiniMax requires temperature in (0.0, 1.0]; zero is rejected.
+        if (Number.isFinite(generate_data.temperature)) {
+            generate_data.temperature = clamp(generate_data.temperature, Number.EPSILON, 1.0);
+        }
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
+        generate_data.workers_ai_account_id = settings.workers_ai_account_id;
+        generate_data.top_k = settings.top_k_openai > 0 ? Math.min(Number(settings.top_k_openai), 50) : undefined;
+        generate_data.repetition_penalty = Number(settings.repetition_penalty_openai);
+        generate_data.seed = settings.seed >= 1 ? Number(settings.seed) : undefined;
+        generate_data.top_p = Math.max(Number(settings.top_p_openai), 0.001);
+        delete generate_data.n;
+        delete generate_data.logit_bias;
+    }
+
     // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
     if (settings.chat_completion_source === chat_completion_sources.NANOGPT) {
         generate_data.top_k = Number(settings.top_k_openai);
@@ -2870,7 +3010,7 @@ export async function createGenerationParameters(settings, model, type, messages
         if (/gpt-5-chat-latest/.test(model)) {
             delete generate_data.tools;
             delete generate_data.tool_choice;
-        } else if (/gpt-5\.(1|2|3|4)/.test(model) && !/chat-latest/.test(model)) {
+        } else if (/gpt-5\.(1|2|3|4)/.test(model) && !/chat-latest/.test(model) && !generate_data.reasoning_effort) {
             delete generate_data.frequency_penalty;
             delete generate_data.presence_penalty;
             delete generate_data.logit_bias;
@@ -3052,7 +3192,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -4049,6 +4189,11 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'claude_use_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'use_makersuite_sysprompt', oldValue: true, newKey: 'use_sysprompt', newValue: true },
         { oldKey: 'mistralai_model', oldValue: /^(mistral-medium|mistral-small)$/, newKey: 'mistralai_model', newValue: (settings.mistralai_model + '-latest') },
+        { oldKey: 'deepseek_model', oldValue: /^deepseek-(chat|reasoner|coder)$/, newKey: 'deepseek_model', newValue: 'deepseek-v4-flash' },
+        { oldKey: 'openrouter_sort_models', oldValue: 'alphabetically', newKey: 'sort_models', newValue: 'alphabetically' },
+        { oldKey: 'openrouter_sort_models', oldValue: 'pricing.prompt', newKey: 'sort_models', newValue: 'pricing.prompt' },
+        { oldKey: 'openrouter_sort_models', oldValue: 'context_length', newKey: 'sort_models', newValue: 'context_length' },
+        { oldKey: 'openrouter_group_models', oldValue: true, newKey: 'group_models', newValue: true },
     ];
 
     for (const migration of migrateMap) {
@@ -4150,9 +4295,11 @@ function loadOpenAISettings(data, settings) {
     setNamesBehaviorControls();
     setContinuePostfixControls();
     setToolReasoningControls();
+    ToolManager.RECURSE_LIMIT = oai_settings.tool_call_recurse_limit;
 
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
+    $('#nanogpt_provider').trigger('change');
     $('#chat_completion_source').trigger('change');
 }
 
@@ -4215,6 +4362,7 @@ async function getStatusOpen() {
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.ZAI,
+        chat_completion_sources.MINIMAX,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -4270,6 +4418,14 @@ async function getStatusOpen() {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
         data.siliconflow_endpoint = oai_settings.siliconflow_endpoint;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        data.minimax_endpoint = oai_settings.minimax_endpoint;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
+        data.workers_ai_account_id = oai_settings.workers_ai_account_id;
     }
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
@@ -4791,6 +4947,7 @@ function onSettingsPresetChange() {
             $('#chat_completion_source').trigger('change');
             $('#openrouter_providers_chat').trigger('change');
             $('#openrouter_quantizations_chat').trigger('change');
+            $('#nanogpt_provider').trigger('change');
         }
 
         $('#openai_logit_bias_preset').trigger('change');
@@ -4801,41 +4958,102 @@ function onSettingsPresetChange() {
     });
 }
 
+/**
+ * Get the maximum context size for the OpenAI model
+ * @param {string} value Model identifier
+ * @returns {number} Maximum context size in tokens
+ */
 function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
-    } else if (value.startsWith('gpt-5.4')) {
-        return max_1mil;
-    } else if (value.startsWith('gpt-5')) {
-        return max_400k;
-    } else if (value.includes('gpt-4.1')) {
-        return max_1mil;
-    } else if (value.includes('gpt-audio')) {
-        return max_128k;
-    } else if (value.startsWith('o1')) {
-        return max_128k;
-    } else if (value.startsWith('o4') || value.startsWith('o3')) {
-        return max_200k;
-    } else if (value.includes('chatgpt-4o-latest') || value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
-        return max_128k;
-    } else if (value.includes('gpt-3.5-turbo-1106')) {
-        return max_16k;
-    } else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
-        return max_8k;
-    } else if (['gpt-4-32k', 'gpt-4-32k-0314', 'gpt-4-32k-0613'].includes(value)) {
-        return max_32k;
-    } else if (value.includes('gpt-realtime')) {
-        return max_32k;
-    } else if (['gpt-3.5-turbo-16k', 'gpt-3.5-turbo-16k-0613'].includes(value)) {
-        return max_16k;
-    } else if (value == 'code-davinci-002') {
-        return max_8k;
-    } else if (['text-curie-001', 'text-babbage-001', 'text-ada-001'].includes(value)) {
-        return max_2k;
-    } else {
-        // default to gpt-3 (4095 tokens)
-        return max_4k;
     }
+
+    /** @type {[RegExp, number][]} */
+    const contextMap = [
+        [/^gpt-5\.[45]/, max_1mil],
+        [/^gpt-5/, max_400k],
+        [/gpt-4\.1/, max_1mil],
+        [/gpt-audio/, max_128k],
+        [/^o1/, max_128k],
+        [/^o[34]/, max_200k],
+        [/chatgpt-4o-latest|gpt-4-turbo|gpt-4o|gpt-4-1106|gpt-4-0125|gpt-4-vision/, max_128k],
+        [/gpt-3\.5-turbo-1106/, max_16k],
+        [/^(gpt-4|gpt-4-0314|gpt-4-0613)$/, max_8k],
+        [/^(gpt-4-32k|gpt-4-32k-0314|gpt-4-32k-0613)$/, max_32k],
+        [/gpt-realtime/, max_32k],
+        [/^(gpt-3\.5-turbo-16k|gpt-3\.5-turbo-16k-0613)$/, max_16k],
+        [/^code-davinci-002$/, max_8k],
+        [/^(text-curie-001|text-babbage-001|text-ada-001)$/, max_2k],
+        [/gpt-3/, max_4k],
+    ];
+
+    for (const [regex, max] of contextMap) {
+        if (regex.test(value)) {
+            return max;
+        }
+    }
+
+    // Safe default for most modern models
+    return max_128k;
+}
+
+/**
+ * Get the maximum context size for Gemini models based on model identifier and optional model list.
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getGeminiMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const contextLength = model_list.find((record) => record.id === model)?.inputTokenLimit;
+        if (Number.isFinite(contextLength) && contextLength > 0) {
+            return contextLength;
+        }
+    }
+
+    /** @type {[RegExp, number][]} */
+    const contextMap = [
+        [/gemini-2\.5-flash-image/, max_32k],
+        [/gemini-3-pro-image/, max_64k],
+        [/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
+        [/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/, max_1mil],
+        [/gemma-3-27b-it/, max_128k],
+        [/gemma-3n-e4b-it/, max_8k],
+        [/gemma-3/, max_32k],
+        [/gemma-4/, max_256k],
+    ];
+
+    for (const [regex, max] of contextMap) {
+        if (regex.test(model)) {
+            return max;
+        }
+    }
+
+    return max_128k;
+}
+
+/**
+ * Get the maximum temperature for Gemini models based on model identifier and optional model list.
+ * @param {string} model Model identifier
+ * @returns {number} Maximum temperature for Gemini models
+ */
+function getGeminiMaxTemp(model) {
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const temp = model_list.find((record) => record.id === model)?.maxTemperature;
+        if (Number.isFinite(temp) && temp > 0) {
+            return temp;
+        }
+    }
+
+    if (/(vision|ultra|gemma)/.test(model)) {
+        return 1.0;
+    }
+
+    return 2.0;
 }
 
 /**
@@ -4921,6 +5139,7 @@ function getZaiMaxContext(model, isUnlocked) {
     const contextMap = {
         'glm-5.1': max_200k,
         'glm-5-turbo': max_200k,
+        'glm-5v-turbo': max_200k,
         'glm-5': max_200k,
         'glm-4.7': max_200k,
         'glm-4.7-flash': max_200k,
@@ -5221,6 +5440,15 @@ async function onModelChange() {
         oai_settings.siliconflow_model = value;
     }
 
+    if ($(this).is('#model_minimax_select')) {
+        if (!value) {
+            console.debug('Null MiniMax model selected. Ignoring.');
+            return;
+        }
+        console.log('MiniMax model changed to', value);
+        oai_settings.minimax_model = value;
+    }
+
     if ($(this).is('#model_electronhub_select')) {
         if (!value || !hasModelsLoaded) {
             console.debug('Null ElectronHub model selected. Ignoring.');
@@ -5247,6 +5475,7 @@ async function onModelChange() {
 
         console.log('NanoGPT model changed to', value);
         oai_settings.nanogpt_model = value;
+        syncNanoGptProvidersForModel(value, '#nanogpt_provider');
     }
 
     if ($(this).is('#model_deepseek_select')) {
@@ -5328,29 +5557,21 @@ async function onModelChange() {
         oai_settings.zai_model = value;
     }
 
-    if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', max_2mil);
-        } else if (value.includes('gemini-2.5-flash-image')) {
-            $('#openai_max_context').attr('max', max_32k);
-        } else if (value.includes('gemini-3-pro-image')) {
-            $('#openai_max_context').attr('max', max_64k);
-        } else if (/gemini-3[.\d]*-(pro|flash)/.test(value) || /gemini-2.5-(pro|flash)/.test(value) || /gemini-2.0-(pro|flash)/.test(value)) {
-            $('#openai_max_context').attr('max', max_1mil);
-        } else if (value.includes('gemini-exp') || value.includes('learnlm-2.0-flash') || value.includes('gemini-robotics')) {
-            $('#openai_max_context').attr('max', max_1mil);
-        } else if (value.includes('gemma-3-27b-it')) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (value.includes('gemma-3n-e4b-it')) {
-            $('#openai_max_context').attr('max', max_8k);
-        } else if (value.includes('gemma-3')) {
-            $('#openai_max_context').attr('max', max_32k);
-        } else {
-            $('#openai_max_context').attr('max', max_32k);
+    if ($(this).is('#model_workers_ai_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Workers AI model selected. Ignoring.');
+            return;
         }
-        let makersuite_max_temp = (value.includes('vision') || value.includes('ultra') || value.includes('gemma')) ? 1.0 : 2.0;
-        oai_settings.temp_openai = Math.min(makersuite_max_temp, oai_settings.temp_openai);
-        $('#temp_openai').attr('max', makersuite_max_temp).val(oai_settings.temp_openai).trigger('input');
+        console.log('Workers AI model changed to', value);
+        oai_settings.workers_ai_model = value;
+    }
+
+    if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
+        const contextSize = getGeminiMaxContext(value, oai_settings.max_context_unlocked);
+        const maxTemp = getGeminiMaxTemp(value);
+        $('#openai_max_context').attr('max', contextSize);
+        oai_settings.temp_openai = Math.min(maxTemp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', maxTemp).val(oai_settings.temp_openai).trigger('input');
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
     }
@@ -5383,7 +5604,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6|opus-4-7)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
@@ -5533,19 +5754,27 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
-        if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
-        } else if (['deepseek-reasoner', 'deepseek-chat'].includes(oai_settings.deepseek_model)) {
-            $('#openai_max_context').attr('max', max_128k);
-        } else if (oai_settings.deepseek_model == 'deepseek-coder') {
-            $('#openai_max_context').attr('max', max_16k);
-        } else {
-            $('#openai_max_context').attr('max', max_64k);
-        }
-
+        const maxContext = oai_settings.max_context_unlocked ? unlocked_max : max_1mil;
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        } else {
+            const model = model_list.find(m => m.id === oai_settings.workers_ai_model);
+            const ctxProp = Array.isArray(model?.properties) && model.properties.find(p => p.property_id === 'context_window');
+            const contextLength = ctxProp ? Number(ctxProp.value) : max_8k;
+            $('#openai_max_context').attr('max', contextLength || max_8k);
+        }
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        const workersAiMaxTemp = 5.0;
+        oai_settings.temp_openai = Math.min(workersAiMaxTemp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', workersAiMaxTemp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.COMETAPI) {
@@ -5637,6 +5866,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
+        const maxContext = oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         const maxContext = getZaiMaxContext(oai_settings.zai_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5651,18 +5889,6 @@ async function onModelChange() {
     saveSettingsDebounced();
     updateFeatureSupportFlags();
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
-}
-
-async function onOpenrouterModelSortChange() {
-    await getStatusOpen();
-}
-
-async function onChutesModelSortChange() {
-    await getStatusOpen();
-}
-
-async function onElectronHubModelSortChange() {
-    await getStatusOpen();
 }
 
 async function onNewPresetClick() {
@@ -5709,6 +5935,8 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
+        [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
+        [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -5774,6 +6002,8 @@ function toggleChatCompletionForms() {
         $('#model_chutes_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.SILICONFLOW) {
         $('#model_siliconflow_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
+        $('#model_minimax_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -5798,6 +6028,8 @@ function toggleChatCompletionForms() {
         $('#azure_openai_model').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         $('#model_zai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
+        $('#model_workers_ai_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -5903,6 +6135,10 @@ export function isImageInliningSupported() {
         'gemini-exp-1206',
         'learnlm',
         'gemini-robotics',
+        'gemma-3-27b',
+        'gemma-3-12b',
+        'gemma-3-4b',
+        'gemma-4',
         // MistralAI
         'mistral-small-2503',
         'mistral-small-2506',
@@ -5923,6 +6159,7 @@ export function isImageInliningSupported() {
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
+        'glm-5v-turbo',
         'autoglm-phone',
         // SiliconFlow
         'Qwen/Qwen3-VL-32B-Instruct',
@@ -5978,6 +6215,10 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.WORKERS_AI: {
+            const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
+            return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
+        }
         default:
             return false;
     }
@@ -6002,9 +6243,11 @@ export function isVideoInliningSupported() {
         'gemini-2.5',
         'gemini-exp-1206',
         'gemini-3',
+        'gemma-4',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
+        'glm-5v-turbo',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -6632,16 +6875,6 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
-    $('#openrouter_group_models').on('input', function () {
-        oai_settings.openrouter_group_models = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#openrouter_sort_models').on('input', function () {
-        oai_settings.openrouter_sort_models = String($(this).val());
-        saveSettingsDebounced();
-    });
-
     $('#openrouter_allow_fallbacks').on('input', function () {
         oai_settings.openrouter_allow_fallbacks = !!$(this).prop('checked');
         updateOpenRouterProvidersWarning('#openrouter_providers_chat');
@@ -6650,21 +6883,6 @@ export function initOpenAI() {
 
     $('#openrouter_middleout').on('input', function () {
         oai_settings.openrouter_middleout = String($(this).val());
-        saveSettingsDebounced();
-    });
-
-    $('#electronhub_sort_models').on('input', function () {
-        oai_settings.electronhub_sort_models = String($(this).val());
-        saveSettingsDebounced();
-    });
-
-    $('#chutes_sort_models').on('input', function () {
-        oai_settings.chutes_sort_models = String($(this).val());
-        saveSettingsDebounced();
-    });
-
-    $('#electronhub_group_models').on('input', function () {
-        oai_settings.electronhub_group_models = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
@@ -6692,6 +6910,13 @@ export function initOpenAI() {
     $('#openai_function_calling').on('input', function () {
         oai_settings.function_calling = !!$(this).prop('checked');
         updateFeatureSupportFlags();
+        saveSettingsDebounced();
+    });
+
+    $('#tool_call_recurse_limit').on('input', function () {
+        oai_settings.tool_call_recurse_limit = Number($(this).val());
+        $('#tool_call_recurse_limit_counter').val(oai_settings.tool_call_recurse_limit);
+        ToolManager.RECURSE_LIMIT = oai_settings.tool_call_recurse_limit;
         saveSettingsDebounced();
     });
 
@@ -6921,8 +7146,31 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#nanogpt_provider').on('change', function () {
+        oai_settings.nanogpt_provider = String($(this).val() || '');
+        updateNanoGptProvidersWarning('#nanogpt_provider');
+        saveSettingsDebounced();
+    });
+
+    $('#nanogpt_payg_override').on('input', function () {
+        oai_settings.nanogpt_payg_override = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $('#bind_preset_to_connection').on('input', function () {
         oai_settings.bind_preset_to_connection = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#cc_group_models').on('input', async () => {
+        oai_settings.group_models = $('#cc_group_models').prop('checked');
+        reconnectOpenAi();
+        saveSettingsDebounced();
+    });
+
+    $('#cc_sort_models').on('input', async () => {
+        oai_settings.sort_models = $('#cc_sort_models').val().toString();
+        reconnectOpenAi();
         saveSettingsDebounced();
     });
 
@@ -6949,15 +7197,18 @@ export function initOpenAI() {
         oai_settings.siliconflow_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
+    $('#minimax_endpoint').on('input', function () {
+        oai_settings.minimax_endpoint = String($(this).val());
+        saveSettingsDebounced();
+    });
+    $('#workers_ai_account_id').on('input', function () {
+        oai_settings.workers_ai_account_id = String($(this).val());
+        saveSettingsDebounced();
+    });
     $('#vertexai_service_account_json').on('input', onVertexAIServiceAccountJsonChange);
     $('#vertexai_validate_service_account').on('click', onVertexAIValidateServiceAccount);
     $('#vertexai_clear_service_account').on('click', onVertexAIClearServiceAccount);
     $('#model_openrouter_select').on('change', onModelChange);
-    $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
-    $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
-    $('#chutes_sort_models').on('change', onChutesModelSortChange);
-    $('#electronhub_group_models').on('change', onElectronHubModelSortChange);
-    $('#electronhub_sort_models').on('change', onElectronHubModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
     $('#model_mistralai_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
@@ -6965,6 +7216,7 @@ export function initOpenAI() {
     $('#model_groq_select').on('change', onModelChange);
     $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
+    $('#model_minimax_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
@@ -6977,6 +7229,7 @@ export function initOpenAI() {
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
+    $('#model_workers_ai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

@@ -1,5 +1,7 @@
 import path from 'node:path';
 
+export const forbiddenRegExp = path.sep === '/' ? /[/\x00]/ : /[/\x00\\]/;
+
 /**
  * Checks if an object has a toString method.
  * @param {object} o Object to check
@@ -23,7 +25,6 @@ export function getFileNameValidationFunction(fieldName) {
     */
     return function validateAvatarUrlMiddleware(req, res, next) {
         if (req.body && fieldName in req.body && (typeof req.body[fieldName] === 'string' || hasToString(req.body[fieldName]))) {
-            const forbiddenRegExp = path.sep === '/' ? /[/\x00]/ : /[/\x00\\]/;
             if (forbiddenRegExp.test(req.body[fieldName])) {
                 console.error('An error occurred while validating the request body', {
                     handle: req.user.profile.handle,

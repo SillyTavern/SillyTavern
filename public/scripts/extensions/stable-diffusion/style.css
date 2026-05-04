@@ -1,7 +1,3 @@
-.sd_settings label:not(.checkbox_label) {
-    display: block;
-}
-
 #sd_dropdown {
     z-index: 30000;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));

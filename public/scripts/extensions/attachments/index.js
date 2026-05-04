@@ -243,7 +243,7 @@ function handleCharacterRename(oldAvatar, newAvatar) {
     }
 }
 
-jQuery(async () => {
+export async function init() {
     eventSource.on(event_types.APP_READY, cleanUpAttachments);
     eventSource.on(event_types.CHARACTER_DELETED, cleanUpCharacterAttachments);
     eventSource.on(event_types.CHARACTER_RENAMED, handleCharacterRename);
@@ -407,4 +407,4 @@ jQuery(async () => {
             }),
         ],
     }));
-});
+}

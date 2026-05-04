@@ -213,7 +213,7 @@ import {
     tag_import_setting,
     applyCharacterTagsToMessageDivs,
 } from './scripts/tags.js';
-import { initSecrets, readSecretState } from './scripts/secrets.js';
+import { checkOpenRouterAuth, initSecrets, readSecretState } from './scripts/secrets.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
@@ -718,6 +718,7 @@ async function firstLoadInit() {
     initLoaderOverlay.appendChild(splashMessage);
 
     const initLoaderHandle = loader.show({
+        slug: 'app-init',
         toastMode: loader.ToastMode.NONE,
         overlayContent: initLoaderOverlay,
     });
@@ -742,12 +743,13 @@ async function firstLoadInit() {
     initKoboldSettings();
     initNovelAISettings();
     initSystemPrompts();
-    initExtensions();
+    await initExtensions();
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
     await initPresetManager();
     await initSystemMessages();
     await getSettings(initLoaderHandle);
+    await checkOpenRouterAuth();
     initKeyboard();
     initDynamicStyles();
     initTags();
@@ -1911,17 +1913,32 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 }
 
 /**
+ * Creates an Image element for the given API/model icon.
+ * The image references the matching SVG file from `/img/` and includes a tooltip with API and model info.
+ * The caller is responsible for appending the image to the DOM and optionally calling `SVGInject` on it.
+ *
+ * @param {string} apiName - API identifier matching an SVG file in /img/ (e.g. 'openai', 'openrouter', 'claude')
+ * @param {string} [modelName=''] - Model name shown in the tooltip
+ * @returns {HTMLImageElement} The image element (not yet in the DOM)
+ */
+export function createModelIcon(apiName, modelName = '') {
+    const image = new Image();
+    image.classList.add('icon-svg');
+    image.src = `/img/${apiName}.svg`;
+    image.title = modelName ? `${apiName} - ${modelName}` : apiName;
+    return image;
+}
+
+/**
  * Inserts or replaces an SVG icon adjacent to the provided message's timestamp.
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {ChatMessageExtra} extra - Contains the API and model details.
  */
 function insertSVGIcon(mes, extra) {
-    // Determine the SVG filename
-    let modelName = extra?.api || '';
+    const apiName = extra?.api || '';
 
-    // If there's no API information, we can't determine which SVG to use
-    if (!modelName) {
+    if (!apiName) {
         return;
     }
 
@@ -1938,16 +1955,14 @@ function insertSVGIcon(mes, extra) {
         };
     };
 
-    const createModelImage = (className, targetSelector, insertBefore) => {
-        const image = new Image();
-        image.classList.add('icon-svg', className);
-        image.src = `/img/${modelName}.svg`;
-        image.title = `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`;
+    const insertIcon = (className, targetSelector, insertBefore) => {
+        const image = createModelIcon(apiName, extra?.model);
+        image.classList.add(className);
         insertOrReplaceSVG(image, className, targetSelector, insertBefore);
     };
 
-    createModelImage('timestamp-icon', '.timestamp');
-    createModelImage('thinking-icon', '.mes_reasoning_header_title', true);
+    insertIcon('timestamp-icon', '.timestamp');
+    insertIcon('thinking-icon', '.mes_reasoning_header_title', true);
 }
 
 /**
@@ -2908,6 +2923,11 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
 export function substituteParams(content, options = {}) {
     if (!content) return '';
 
+    if (typeof content !== 'string') {
+        console.warn('substituteParams: content will be coerced to string', content);
+        content = String(content);
+    }
+
     // Handle legacy signature calls to substituteParams
     // We'll simply re-route them to a temporary legacy function. In the future, we'll remove this and cleanly build the options object ourselves.
     const isOptionsObject = options && typeof options === 'object' && !Array.isArray(options);
@@ -3848,9 +3868,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        const message = api === 'openai'
-            ? { role: 'user', content: prompt.trim() }
-            : { role: 'system', content: prompt };
+        const message = { role: 'user', content: prompt.trim() };
         prompt = [message];
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
@@ -3877,7 +3895,12 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
+        systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
+        if (isInstruct && systemPrompt.length > 0 && !systemPrompt.endsWith('\n')) {
+            if (power_user.instruct.wrap && !power_user.instruct.story_string_suffix) {
+                systemPrompt += '\n';
+            }
+        }
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
@@ -3907,7 +3930,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
  * @prop {string} [prefill] An optional prefill for the prompt.
- * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
+ * @prop {JsonSchema} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
  */
 
 /**
@@ -4019,7 +4042,7 @@ export async function generateRawData({ prompt = '', api = null, instructOverrid
         }
 
         if (jsonSchema) {
-            return extractJsonFromData(data, { mainApi: api });
+            return extractJsonFromData(data, { mainApi: api, returnInvalidJson: jsonSchema.returnInvalid });
         }
 
         return data;
@@ -4182,6 +4205,7 @@ function removeLastMessage() {
  * @property {object} value JSON schema value.
  * @property {string} [description] Description of the schema.
  * @property {boolean} [strict] If true, the schema will be used in strict mode, meaning that only the fields defined in the schema will be allowed.
+ * @property {boolean} [returnInvalid] If true, a string that can't be parsed as a JSON will be returned as is, instead of an empty object.
  *
  * @typedef {object} GenerateOptions
  * @property {boolean} [automatic_trigger] If the generation was triggered automatically (e.g. group auto mode).
@@ -4268,7 +4292,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (selected_group && !is_group_generating) {
         if (!dryRun) {
             // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage });
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, jsonSchema });
         }
 
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
@@ -4450,18 +4474,24 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     for (let i = coreChat.length - 1; i >= 0; i--) {
         const depth = coreChat.length - i - (isContinue ? 2 : 1);
         const isPrefix = isContinue && i === coreChat.length - 1;
+
+        // In group chats, only include reasoning from the currently generating character
+        const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
+
         coreChat[i] = {
             ...coreChat[i],
-            mes: promptReasoning.addToMessage(
-                coreChat[i].mes,
-                getRegexedString(
-                    String(coreChat[i].extra?.reasoning ?? ''),
-                    regex_placement.REASONING,
-                    { isPrompt: true, depth: depth },
+            mes: isOtherGroupMember
+                ? coreChat[i].mes
+                : promptReasoning.addToMessage(
+                    coreChat[i].mes,
+                    getRegexedString(
+                        String(coreChat[i].extra?.reasoning ?? ''),
+                        regex_placement.REASONING,
+                        { isPrompt: true, depth: depth },
+                    ),
+                    isPrefix,
+                    coreChat[i].extra?.reasoning_duration,
                 ),
-                isPrefix,
-                coreChat[i].extra?.reasoning_duration,
-            ),
         };
         if (promptReasoning.isLimitReached()) {
             break;
@@ -4698,7 +4728,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
         }
 
-        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct) {
+        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct && !isImpersonate) {
             // Reformat with the last input sequence (if any)
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
         }
@@ -5302,7 +5332,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 streamingProcessor.firstMessageText = '';
             }
 
-            streamingProcessor.generator = await sendStreamingRequest(type, generate_data);
+            streamingProcessor.generator = await sendStreamingRequest(type, generate_data, { jsonSchema });
 
             hideSwipeButtons();
             let getMessage = await streamingProcessor.generate();
@@ -5391,7 +5421,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (jsonSchema) {
             unblockGeneration(type);
-            return extractJsonFromData(data);
+            return extractJsonFromData(data, { returnInvalidJson: jsonSchema.returnInvalid ?? false });
         }
 
         //const getData = await response.json();
@@ -5824,11 +5854,11 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
+        await saveChatConditional();
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
-        await saveChatConditional();
     }
 
     return message;
@@ -6004,7 +6034,7 @@ function setInContextMessages(msgInContextCount, type) {
 
     if (lastMessageBlock.length === 0) {
         const firstMessageId = getFirstDisplayedMessageId();
-        chatElement.find(`.mes[mesid="${firstMessageId}"`).addClass('lastInContext');
+        chatElement.find(`.mes[mesid="${firstMessageId}"]`).addClass('lastInContext');
     }
 
     // Update last id to chat. No metadata save on purpose, gets hopefully saved via another call
@@ -6214,9 +6244,13 @@ export function extractMessageFromData(data, activeApi = null) {
 /**
  * Extracts JSON from the response data.
  * @param {object} data Response data
+ * @param {object} [options] Extraction options
+ * @param {string} [options.mainApi] Main API to use
+ * @param {string} [options.chatCompletionSource] Chat completion source
+ * @param {boolean} [options.returnInvalidJson=false] Whether to return the raw JSON string even if it fails to parse
  * @returns {string} Extracted JSON string from the response data
  */
-export function extractJsonFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
+export function extractJsonFromData(data, { mainApi = null, chatCompletionSource = null, returnInvalidJson = false } = {}) {
     mainApi = mainApi ?? main_api;
     chatCompletionSource = chatCompletionSource ?? oai_settings.chat_completion_source;
 
@@ -6239,6 +6273,9 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                     break;
                 case chat_completion_sources.PERPLEXITY:
                     result = tryParse(removeReasoningFromString(text));
+                    if (!result && returnInvalidJson) {
+                        return text;
+                    }
                     break;
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE:
@@ -6259,6 +6296,9 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.ZAI:
                 default:
                     result = tryParse(text);
+                    if (!result && returnInvalidJson) {
+                        return text;
+                    }
                     break;
             }
         } break;
@@ -8060,6 +8100,15 @@ export async function getSettings(initLoaderHandle = null) {
             const isVersionChanged = settings.currentVersion !== currentVersion;
             await loadExtensionSettings(settings, isVersionChanged, enableAutoUpdate);
             await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+        } else {
+            Object.assign(extension_settings, (settings.extension_settings ?? {}));
+            $('#third_party_extension_button').addClass('disabled');
+            $('#extensions_details').addClass('disabled');
+            $('#extensions_connect').addClass('disabled');
+            $('#extensions_notify_updates').attr('disabled', 'disabled');
+            $('#extensions_autoconnect').attr('disabled', 'disabled');
+            $('#extensions_url').attr('disabled', 'disabled');
+            $('#extensions_api_key').attr('disabled', 'disabled');
         }
 
         firstRun = !!settings.firstRun;
@@ -10703,6 +10752,7 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
     }
 
     const loaderHandle = showLoader ? loader.show({
+        slug: 'chat-rename',
         title: t`Rename Chat`,
         message: t`Renaming chat…`,
         toastMode: loader.ToastMode.STATIC,
@@ -10740,6 +10790,9 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
         if (currentChatId) {
             await reloadCurrentChat();
         }
+
+        const eventData = { avatarId: body.avatar_url, groupId, oldFileName: body.original_file, newFileName: body.renamed_file };
+        await eventSource.emit(event_types.CHAT_RENAMED, eventData);
     } catch {
         await delay(500);
         await callGenericPopup('An error has occurred. Chat was not renamed.', POPUP_TYPE.TEXT);
@@ -11305,6 +11358,7 @@ jQuery(async function () {
         $('#select_chat_cross').trigger('click');
 
         const loaderHandle = loader.show({
+            slug: 'chat-delete',
             title: t`Delete Chat`,
             message: t`Deleting chat…`,
             toastMode: loader.ToastMode.STATIC,
@@ -12662,7 +12716,9 @@ jQuery(async function () {
         $('#avatar-and-name-block').slideToggle();
     });
 
-    $(document).on('mouseup touchend', '#show_more_messages', async function () {
+    $(document).on('click', '#show_more_messages', async function (event) {
+        event.stopPropagation();
+        event.preventDefault();
         await showMoreMessages();
     });
 

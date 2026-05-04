@@ -6,7 +6,7 @@ import Handlebars from 'handlebars';
 import ipMatching from 'ip-matching';
 import isDocker from 'is-docker';
 
-import { getIpFromRequest } from '../express-common.js';
+import { filterValidIpPatterns, getIpFromRequest, getRealOrForwardedIp } from '../express-common.js';
 import { color, getConfigValue, safeReadFileSync } from '../util.js';
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
@@ -16,6 +16,8 @@ const whitelistDockerHosts = !!getConfigValue('whitelistDockerHosts', true, 'boo
 let whitelist = getConfigValue('whitelist', []);
 
 if (fs.existsSync(whitelistPath)) {
+    console.warn(color.yellow('whitelist.txt is deprecated and will be removed in a future release.'));
+    console.warn(color.yellow('Please migrate its contents to the whitelist field in config.yaml. See the documentation for more details.'));
     try {
         let whitelistTxt = fs.readFileSync(whitelistPath, 'utf-8');
         whitelist = whitelistTxt.split('\n').filter(ip => ip).map(ip => ip.trim());
@@ -24,53 +26,7 @@ if (fs.existsSync(whitelistPath)) {
     }
 }
 
-/**
- * Validates and filters the whitelist, removing any invalid entries.
- * @param {string[]} entries - The whitelist entries to validate
- * @returns {string[]} The filtered list of valid whitelist entries
- */
-function validateWhitelist(entries) {
-    const validEntries = [];
-
-    for (const entry of entries) {
-        try {
-            // This will throw if the entry is not a valid IP or CIDR
-            ipMatching.getMatch(entry);
-            validEntries.push(entry);
-        } catch (e) {
-            console.warn(`Whitelist ${color.red('Warning')}: Ignoring invalid entry ${color.yellow(entry)} - ${e.message}`);
-        }
-    }
-
-    return validEntries;
-}
-
-whitelist = validateWhitelist(whitelist);
-
-/**
- * Get the client IP address from the request headers.
- * @param {import('express').Request} req Express request object
- * @returns {string|undefined} The client IP address
- */
-function getForwardedIp(req) {
-    if (!enableForwardedWhitelist) {
-        return undefined;
-    }
-
-    // Check if X-Real-IP is available
-    if (req.headers['x-real-ip']) {
-        return req.headers['x-real-ip'].toString();
-    }
-
-    // Check for X-Forwarded-For and parse if available
-    if (req.headers['x-forwarded-for']) {
-        const ipList = req.headers['x-forwarded-for'].toString().split(',').map(ip => ip.trim());
-        return ipList[0];
-    }
-
-    // If none of the headers are available, return undefined
-    return undefined;
-}
+whitelist = filterValidIpPatterns(whitelist, (entry, message) => `${color.red('Warning')}: Ignoring invalid whitelist entry ${color.yellow(entry)} - ${message}`);
 
 /**
  * Resolves the IP addresses of Docker hostnames and adds them to the whitelist.
@@ -100,7 +56,7 @@ async function addDockerHostsToWhitelist() {
  */
 export default async function getWhitelistMiddleware() {
     const forbiddenWebpage = Handlebars.compile(
-        safeReadFileSync('./public/error/forbidden-by-whitelist.html') ?? '',
+        safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'forbidden-by-whitelist.html')) ?? '',
     );
 
     const noLogPaths = [
@@ -111,7 +67,7 @@ export default async function getWhitelistMiddleware() {
 
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
-        const forwardedIp = getForwardedIp(req);
+        const forwardedIp = enableForwardedWhitelist && getRealOrForwardedIp(req);
         const userAgent = req.headers['user-agent'];
 
         /**
@@ -126,7 +82,7 @@ export default async function getWhitelistMiddleware() {
 
         //clientIp = req.connection.remoteAddress.split(':').pop();
         if (!isIPInWhitelist(whitelist, clientIp)
-            || forwardedIp && !isIPInWhitelist(whitelist, forwardedIp)
+            || (forwardedIp && !isIPInWhitelist(whitelist, forwardedIp))
         ) {
             // Log the connection attempt with real IP address
             const ipDetails = forwardedIp
