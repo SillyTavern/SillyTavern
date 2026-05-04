@@ -3,23 +3,25 @@ import crypto from 'node:crypto';
 import storage from 'node-persist';
 import express from 'express';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
-import { getIpFromRequest, getRealIpFromHeader } from '../express-common.js';
+import { getIpAddress, retryAfter } from '../express-common.js';
 import { color, Cache, getConfigValue } from '../util.js';
-import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } from '../users.js';
+import { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt, getAccountVersion } from '../users.js';
 
 const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false, 'boolean');
 const PREFER_REAL_IP_HEADER = getConfigValue('rateLimiting.preferRealIpHeader', false, 'boolean');
+const LOGIN_POINTS = getConfigValue('rateLimiting.accountsLoginMaxAttempts', 5, 'number');
+const RECOVER_POINTS = getConfigValue('rateLimiting.accountsRecoverMaxAttempts', 5, 'number');
 const MFA_CACHE = new Cache(5 * 60 * 1000);
 
-const getIpAddress = (request) => PREFER_REAL_IP_HEADER ? getRealIpFromHeader(request) : getIpFromRequest(request);
+const generateRecoveryCode = () => Array.from({ length: 6 }, () => crypto.randomInt(0, 10)).join('');
 
 export const router = express.Router();
 const loginLimiter = new RateLimiterMemory({
-    points: 5,
+    points: LOGIN_POINTS > 0 ? LOGIN_POINTS : Number.MAX_SAFE_INTEGER,
     duration: 60,
 });
 const recoverLimiter = new RateLimiterMemory({
-    points: 5,
+    points: RECOVER_POINTS > 0 ? RECOVER_POINTS : Number.MAX_SAFE_INTEGER,
     duration: 300,
 });
 
@@ -63,7 +65,7 @@ router.post('/login', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        const ip = getIpAddress(request);
+        const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
         await loginLimiter.consume(ip);
 
         /** @type {import('../users.js').User} */
@@ -91,12 +93,13 @@ router.post('/login', async (request, response) => {
 
         await loginLimiter.delete(ip);
         request.session.handle = user.handle;
+        request.session.version = getAccountVersion(user);
         console.info('Login successful:', user.handle, 'from', ip, 'at', new Date().toLocaleString());
         return response.json({ handle: user.handle });
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.error('Login failed: Rate limited from', getIpAddress(request));
-            return response.status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
+            console.error('Login failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
+            return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or recover your password.' });
         }
 
         console.error('Login failed:', error);
@@ -111,7 +114,7 @@ router.post('/recover-step1', async (request, response) => {
             return response.status(400).json({ error: 'Missing required fields' });
         }
 
-        const ip = getIpAddress(request);
+        const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
         await recoverLimiter.consume(ip);
 
         /** @type {import('../users.js').User} */
@@ -127,7 +130,7 @@ router.post('/recover-step1', async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        const mfaCode = String(crypto.randomInt(1000, 9999));
+        const mfaCode = generateRecoveryCode();
         console.log();
         console.log(color.blue(`${user.name}, your password recovery code is: `) + color.magenta(mfaCode));
         console.log();
@@ -135,8 +138,8 @@ router.post('/recover-step1', async (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.error('Recover step 1 failed: Rate limited from', getIpAddress(request));
-            return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
+            console.error('Recover step 1 failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
+            return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
         console.error('Recover step 1 failed:', error);
@@ -153,7 +156,12 @@ router.post('/recover-step2', async (request, response) => {
 
         /** @type {import('../users.js').User} */
         const user = await storage.getItem(toKey(request.body.handle));
-        const ip = getIpAddress(request);
+        const ip = getIpAddress(request, PREFER_REAL_IP_HEADER);
+        const rateLimit = await recoverLimiter.get(ip);
+
+        if (rateLimit !== null && rateLimit.consumedPoints > recoverLimiter.points) {
+            throw rateLimit;
+        }
 
         if (!user) {
             console.error('Recover step 2 failed: User', request.body.handle, 'not found');
@@ -184,13 +192,17 @@ router.post('/recover-step2', async (request, response) => {
             await storage.setItem(toKey(user.handle), user);
         }
 
+        if (request.session && request.session.handle === user.handle) {
+            request.session.version = getAccountVersion(user);
+        }
+
         await recoverLimiter.delete(ip);
         MFA_CACHE.remove(user.handle);
         return response.sendStatus(204);
     } catch (error) {
         if (error instanceof RateLimiterRes) {
-            console.error('Recover step 2 failed: Rate limited from', getIpAddress(request));
-            return response.status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
+            console.error('Recover step 2 failed: Rate limited from', getIpAddress(request, PREFER_REAL_IP_HEADER));
+            return retryAfter(response, error).status(429).send({ error: 'Too many attempts. Try again later or contact your admin.' });
         }
 
         console.error('Recover step 2 failed:', error);

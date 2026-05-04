@@ -16,7 +16,7 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groupMembersFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce, findChar } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce, findChar, escapeHtml } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -977,11 +977,12 @@ async function importTags(character, { importSetting = null } = {}) {
 
     const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
     const added = addTagsToEntity(tagsToImport, character.avatar);
+    const tagNames = tagsToImport.map(x => escapeHtml(x.name)).join(', ');
 
     if (added) {
-        toastr.success(t`Imported tags:` + `<br />${tagsToImport.map(x => x.name).join(', ')}`, t`Importing Tags`, { escapeHtml: false });
+        toastr.success(t`Imported tags:` + `<br />${tagNames}`, t`Importing Tags`, { escapeHtml: false });
     } else {
-        toastr.error(t`Couldn't import tags:` + `<br />${tagsToImport.map(x => x.name).join(', ')}`, t`Importing Tags`, { escapeHtml: false });
+        toastr.error(t`Couldn't import tags:` + `<br />${tagNames}`, t`Importing Tags`, { escapeHtml: false });
     }
 
     return added;
@@ -1124,7 +1125,7 @@ function getTag(tagName, { createNew = false } = {}) {
 function createNewTag(tagName) {
     const existing = getTag(tagName);
     if (existing) {
-        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${existing.name}`, 'Creating Tag', { escapeHtml: false });
+        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${escapeHtml(existing.name)}`, 'Creating Tag', { escapeHtml: false });
         return existing;
     }
 
@@ -2762,37 +2763,10 @@ function extractCharacterAvatar(avatarSrc) {
 
 function restoreSavedTagFilters() {
     try {
-        const validStates = new Set(Object.keys(FILTER_STATES));
-        const readState = (/** @type {string} */ storageKey) => {
-            const v = accountStorage.getItem(storageKey);
-            return v && validStates.has(v) ? v : null;
-        };
-
-        const favState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FAV);
-        const groupState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.GROUP);
-        const folderState = readState(ACTIONABLE_FILTER_STORAGE_KEYS.FOLDER);
-
-        if (favState) {
-            ACTIONABLE_TAGS.FAV.filter_state = favState;
-            entitiesFilter.setFilterData(FILTER_TYPES.FAV, favState, true);
-        }
-
         // Load persisted filter states for all contexts (including character list)
         loadFilterStatesForContext(entitiesFilter, 'CharacterList');
         loadFilterStatesForContext(groupCandidatesFilter, 'GroupCandidates');
         loadFilterStatesForContext(groupMembersFilter, 'GroupMembers');
-        if (groupState) {
-            ACTIONABLE_TAGS.GROUP.filter_state = groupState;
-            entitiesFilter.setFilterData(FILTER_TYPES.GROUP, groupState, true);
-        }
-        if (folderState) {
-            ACTIONABLE_TAGS.FOLDER.filter_state = folderState;
-            entitiesFilter.setFilterData(FILTER_TYPES.FOLDER, folderState, true);
-        }
-
-        // Note: Regular tag filter states are now loaded from storage via loadFilterStatesForContext()
-        // The old tag.filter_state property is only maintained for backward compatibility with
-        // the main character list's actionable tags (Favorites, Groups, Folders)
     } catch (e) {
         console.warn('Failed to restore actionable filter states from account storage', e);
     }

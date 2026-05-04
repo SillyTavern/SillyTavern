@@ -1,4 +1,4 @@
-import { CONNECT_API_MAP, getRequestHeaders } from '../../script.js';
+import { CONNECT_API_MAP, createModelIcon, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
 import { oai_settings, proxies, ZAI_ENDPOINT } from '../openai.js';
@@ -124,6 +124,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     if (extension_settings.caption.multimodal_api === 'zai') {
         requestBody.zai_endpoint = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
+    }
+
+    if (extension_settings.caption.multimodal_api === 'workers_ai') {
+        requestBody.workers_ai_account_id = oai_settings.workers_ai_account_id;
     }
 
     function getEndpointUrl() {
@@ -283,6 +287,10 @@ function throwIfInvalidModel(useReverseProxy) {
     if (multimodalApi === 'pollinations' && !secret_state[SECRET_KEYS.POLLINATIONS]) {
         throw new Error('Pollinations API key is not set.');
     }
+
+    if (multimodalApi === 'workers_ai' && (!secret_state[SECRET_KEYS.WORKERS_AI] || !oai_settings.workers_ai_account_id)) {
+        throw new Error('Workers AI API key or account ID is not set.');
+    }
 }
 
 /**
@@ -435,10 +443,12 @@ export class ConnectionManagerRequestService {
                         max_tokens: maxTokens,
                         model: profile.model,
                         chat_completion_source: selectedApiMap.source,
+                        secret_id: profile['secret-id'],
                         custom_url: profile['api-url'],
                         vertexai_region: profile['api-url'],
                         zai_endpoint: profile['api-url'],
                         siliconflow_endpoint: profile['api-url'],
+                        minimax_endpoint: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
                         custom_prompt_post_processing: profile['prompt-post-processing'],
@@ -459,6 +469,7 @@ export class ConnectionManagerRequestService {
                         model: profile.model,
                         api_type: selectedApiMap.type,
                         api_server: profile['api-url'],
+                        secret_id: profile['secret-id'],
                         ...overridePayload,
                     }, {
                         instructName: includeInstruct ? profile.instruct : undefined,
@@ -531,6 +542,29 @@ export class ConnectionManagerRequestService {
         const profile = SillyTavern.getContext().extensionSettings.connectionManager.profiles.find((p) => p.id === profileId);
         if (!profile) throw new Error(`Profile not found (ID: ${profileId})`);
         return profile;
+    }
+
+    /**
+     * Creates a model icon Image element for the given profile (or the currently selected profile).
+     * Returns null if the profile is not found, has no API, or Connection Manager is unavailable.
+     * @param {string} [profileId] - Profile ID. If omitted, uses the currently selected profile.
+     * @returns {HTMLImageElement | null}
+     */
+    static getProfileIcon(profileId) {
+        if ((SillyTavern.getContext()).extensionSettings.disabledExtensions.includes('connection-manager')) {
+            return null;
+        }
+
+        const id = profileId ?? (SillyTavern.getContext()).extensionSettings.connectionManager.selectedProfile;
+        if (!id) return null;
+
+        try {
+            const profile = this.getProfile(id);
+            if (!profile?.api) return null;
+            return createModelIcon(profile.api, profile.model);
+        } catch {
+            return null;
+        }
     }
 
     /**

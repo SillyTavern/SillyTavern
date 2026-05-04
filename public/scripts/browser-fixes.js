@@ -72,6 +72,14 @@ function applyBrowserFixes() {
 
     if (isMobile()) {
         const fixFunkyPositioning = () => {
+            if (isFirefox()) {
+                const active = document.activeElement;
+                if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+                    // The positioning hack below breaks GBoard candidate replacement
+                    // in Firefox Mobile on Android.
+                    return;
+                }
+            }
             console.debug('[Mobile] Device viewport change detected.');
             document.documentElement.style.position = 'fixed';
             requestAnimationFrame(() => document.documentElement.style.position = '');

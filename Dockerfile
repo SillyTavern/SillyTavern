@@ -19,7 +19,7 @@ COPY --chown=node:node . ./
 
 RUN \
   echo "*** Install npm packages ***" && \
-  npm ci --no-audit --no-fund --loglevel=error --no-progress --omit=dev && npm cache clean --force
+  npm ci --no-audit --no-fund --loglevel=error --no-progress --omit=dev --ignore-scripts && npm cache clean --force
 
 # Create config directory and link config.yaml. Added hardcoded dirs(constants.js?)
 # that must be present for Non-Root Mode and volumeless docker runs.

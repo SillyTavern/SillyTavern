@@ -1093,7 +1093,7 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
         switch (request.body.api_type) {
             case TEXTGEN_TYPES.TABBY:
                 url += '/v1/token/encode';
-                args.body = JSON.stringify({ 'text': text, 'add_bos_token': false });
+                args.body = JSON.stringify({ 'text': text, 'add_bos_token': false, 'encode_special_tokens': false });
                 break;
             case TEXTGEN_TYPES.KOBOLDCPP:
                 url += '/api/extra/tokencount';

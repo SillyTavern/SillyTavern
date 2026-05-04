@@ -7,5 +7,8 @@
     "css": "style.css",
     "author": "RossAscends#1779",
     "version": "2.0.0",
-    "homePage": "https://github.com/SillyTavern/SillyTavern"
+    "homePage": "https://github.com/SillyTavern/SillyTavern",
+    "hooks": {
+        "activate": "init"
+    }
 }
