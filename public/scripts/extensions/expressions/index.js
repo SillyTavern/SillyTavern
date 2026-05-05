@@ -803,7 +803,7 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 /**
  * Get all the currently set expression labels.
  * @param {Object} args
- * @param {'true'|'false'|'only'} [args.custom] - Wether to filter out or return only custom expressions
+ * @param {'true'|'false'|'only'} [args.custom] - Whether to filter out or return only custom expressions
  * @param {'true'|'false'} [args.filter] - Filter the list to only include expressions that have available sprites for the current character
  * @param {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} [args.return] - In which format must the expressions be returned
  * @param {string} characterName
@@ -2511,7 +2511,7 @@ export async function init() {
             }),
             SlashCommandNamedArgument.fromProps({
                 name: 'custom',
-                description: t`Wether to include, filter out or return only custom expressions`,
+                description: t`Whether to include, filter out or return only custom expressions`,
                 typeList: [
                     ARGUMENT_TYPE.STRING,
                     ARGUMENT_TYPE.BOOLEAN,
