@@ -19,6 +19,7 @@ import { Popup, POPUP_RESULT } from '../../popup.js';
 import { t } from '../../i18n.js';
 import { removeReasoningFromString } from '../../reasoning.js';
 import { macros } from '../../macros/macro-system.js';
+import { MacrosParser } from '/scripts/macros.js';
 export { MODULE_NAME };
 
 /**
@@ -2632,48 +2633,72 @@ export async function init() {
         `,
     }));
 
-    macros.register('defaultExpression', {
-        handler: getCurrentFallbackExpression,
-        category: macros.category.MISC,
-        description: 'Returns the global fallback expression.',
-        returns: 'Expression label',
-        exampleUsage: '{{defaultExpression}}',
-    });
+    if (power_user.experimental_macro_engine) {
+        macros.register('defaultExpression', {
+            handler: getCurrentFallbackExpression,
+            category: macros.category.MISC,
+            description: 'Returns the global fallback expression.',
+            returns: 'Expression label',
+            exampleUsage: '{{defaultExpression}}',
+        });
 
-    macros.register('lastExpression', {
-        handler: function ({ args: [name = '{{char}}'], resolve }) {
-            try {
-                return getLastExpression(resolve(name || ''));
-            } catch (error) {
-                console.error(error);
-                return '';
-            }
-        },
-        unnamedArgs: [{
-            name: 'name',
-            description: 'The name of the target character',
-            defaultValue: '{{char}}',
-            optional: true,
-            type: macros.valueType.STRING,
-        }],
-        delayArgResolution: true,
-        category: macros.category.MISC,
-        description: 'Returns the last expression used by the selected character. The currently active character is used if no character name is provided.',
-        returns: 'Expression label',
-        exampleUsage: [
-            '{{lastExpression}}',
-            '{{lastExpression::John}}',
-            '{{lastExpression::{{char}}}}',
-        ],
-    });
+        macros.register('lastExpression', {
+            handler: function ({ args: [name = '{{char}}'], resolve }) {
+                try {
+                    return getLastExpression(resolve(name || ''));
+                } catch (error) {
+                    console.error(error);
+                    return '';
+                }
+            },
+            unnamedArgs: [{
+                name: 'name',
+                description: 'The name of the target character',
+                defaultValue: '{{char}}',
+                optional: true,
+                type: macros.valueType.STRING,
+            }],
+            delayArgResolution: true,
+            category: macros.category.MISC,
+            description: 'Returns the last expression used by the selected character. The currently active character is used if no character name is provided.',
+            returns: 'Expression label',
+            exampleUsage: [
+                '{{lastExpression}}',
+                '{{lastExpression::John}}',
+                '{{lastExpression::{{char}}}}',
+            ],
+        });
 
-    macros.register('availableExpressions', {
-        handler: function () {
-            return getCachedExpressions().join(', ');
-        },
-        category: macros.category.MISC,
-        description: 'Returns a list with all the available expressions provided by the Classifier API.',
-        returns: 'Expression label list',
-        exampleUsage: '{{availableExpressions}}',
-    });
+        macros.register('availableExpressions', {
+            handler: function () {
+                return getCachedExpressions().join(', ');
+            },
+            category: macros.category.MISC,
+            description: 'Returns a list with all the available expressions provided by the Classifier API.',
+            returns: 'Expression label list',
+            exampleUsage: '{{availableExpressions}}',
+        });
+    } else {
+        MacrosParser.registerMacro('defaultExpression',
+            getCurrentFallbackExpression,
+            t`Returns the global fallback expression.`,
+        );
+
+        MacrosParser.registerMacro('lastExpression',
+            () => {
+                try {
+                    return getLastExpression(characters[this_chid]?.name || '');
+                } catch (error) {
+                    console.error(error);
+                    return '';
+                }
+            },
+            t`Returns the last expression used.`,
+        );
+
+        MacrosParser.registerMacro('availableExpressions',
+            () => getCachedExpressions().join(', '),
+            t`Returns a list with all the available expressions provided by the Classifier API.`,
+        );
+    }
 }
