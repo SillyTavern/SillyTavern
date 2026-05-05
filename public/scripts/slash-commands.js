@@ -74,7 +74,7 @@ import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, promptManager,
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
+import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer, tokenizers } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { registerActionLoaderSlashCommands } from './action-loader-slashcommands.js';
@@ -2970,9 +2970,13 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'tokens',
-        callback: (_, text) => {
+        callback: async (_, text) => {
             if (text instanceof SlashCommandClosure || Array.isArray(text)) throw new Error(t`Unnamed argument cannot be a closure for command /tokens`);
-            return getTokenCountAsync(text).then(count => String(count));
+            if (main_api === 'openai') {
+                const ids = getTextTokens(tokenizers.OPENAI, text);
+                if (Array.isArray(ids) && ids.length > 0) return String(ids.length);
+            }
+            return String(await getTokenCountAsync(text));
         },
         returns: t`number of tokens`,
         unnamedArgumentList: [
