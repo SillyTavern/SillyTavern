@@ -426,7 +426,7 @@ export class ReasoningHandler {
 
         this.reasoning = getRegexedString(trimSpaces(reasoning) ?? '', regex_placement.REASONING);
 
-        this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
+        this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : reasoning ? ReasoningType.Model : null;
 
         if (reasoningChanged && this.type == ReasoningType.Model && this.state == ReasoningState.None)
             this.state = this.reasoning ? ReasoningState.Thinking : ReasoningState.Done;

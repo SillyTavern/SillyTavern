@@ -3632,10 +3632,12 @@ class StreamingProcessor {
 
         let includeUserPromptBias = true;
         let parsedBias = substituteParams(power_user.user_prompt_bias);
-        if ((this.reasoningHandler.type == ReasoningType.Model && this.reasoningHandler.state != ReasoningState.None) ||
-                parsedBias.startsWith(power_user.reasoning.prefix)) {
-            this.reasoningHandler.reasoning = substituteParams(power_user.user_prompt_bias) + this.reasoningHandler.reasoning;
+        if (this.reasoningHandler.type == ReasoningType.Model && this.reasoningHandler.state != ReasoningState.None) {
+            this.reasoningHandler.reasoning = substituteParams(parsedBias) + this.reasoningHandler.reasoning;
             includeUserPromptBias = false;
+        } else if (this.reasoningHandler.state == ReasoningState.None && parsedBias == power_user.reasoning.prefix) {
+            let reasoning = parsedBias + this.reasoningHandler.reasoning;
+            includeUserPromptBias = !this.reasoningHandler.updateReasoning(messageId, reasoning);
         }
 
         if (this.reasoningHandler.reasoning.startsWith(power_user.reasoning.prefix)) {
