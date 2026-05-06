@@ -292,9 +292,9 @@ export class ReasoningHandler {
         this.reasoning = '';
         /** @type {string?} The reasoning output display in case of translate or other */
         this.reasoningDisplayText = null;
-        /** @type {Date} When the reasoning started */
+        /** @type {Date?} When the reasoning started */
         this.startTime = null;
-        /** @type {Date} When the reasoning ended */
+        /** @type {Date?} When the reasoning ended */
         this.endTime = null;
 
         /** @type {Date} Initial starting time of the generation */
@@ -303,13 +303,13 @@ export class ReasoningHandler {
         this.#isHiddenReasoningModel = isHiddenReasoningModel();
 
         // Cached DOM elements for reasoning
-        /** @type {HTMLElement} Main message DOM element `.mes` */
+        /** @type {HTMLElement?} Main message DOM element `.mes` */
         this.messageDom = null;
-        /** @type {HTMLDetailsElement} Reasoning details DOM element `.mes_reasoning_details` */
+        /** @type {HTMLDetailsElement?} Reasoning details DOM element `.mes_reasoning_details` */
         this.messageReasoningDetailsDom = null;
-        /** @type {HTMLElement} Reasoning content DOM element `.mes_reasoning` */
+        /** @type {HTMLElement?} Reasoning content DOM element `.mes_reasoning` */
         this.messageReasoningContentDom = null;
-        /** @type {HTMLElement} Reasoning header DOM element `.mes_reasoning_header_title` */
+        /** @type {HTMLElement?} Reasoning header DOM element `.mes_reasoning_header_title` */
         this.messageReasoningHeaderDom = null;
     }
 
@@ -415,24 +415,26 @@ export class ReasoningHandler {
             return false;
         }
 
-        reasoning = allowReset ? reasoning ?? this.reasoning : reasoning || this.reasoning;
-        reasoning = trimSpaces(reasoning);
-
         // Ensure the chat extra exists
         if (!chat[messageId].extra) {
             chat[messageId].extra = {};
         }
         const extra = chat[messageId].extra;
 
+        reasoning = allowReset ? reasoning ?? this.reasoning : reasoning || this.reasoning;
         const reasoningChanged = extra.reasoning !== reasoning;
-        this.reasoning = getRegexedString(reasoning ?? '', regex_placement.REASONING);
+
+        this.reasoning = getRegexedString(trimSpaces(reasoning) ?? '', regex_placement.REASONING);
 
         this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
+
+        if (reasoningChanged && this.type == ReasoningType.Model && this.state == ReasoningState.None)
+            this.state = this.reasoning ? ReasoningState.Thinking : ReasoningState.Done;
 
         if (persist) {
             // Build and save the reasoning data to message extras
             extra.reasoning = this.reasoning;
-            extra.reasoning_duration = this.getDuration();
+            extra.reasoning_duration = this.getDuration() ?? undefined;
             extra.reasoning_type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
         }
 
@@ -489,7 +491,7 @@ export class ReasoningHandler {
         const message = chat[messageId];
         if (!message) return mesChanged;
 
-        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes;
+        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes ?? '';
 
         // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
         if (this.#parsingReasoningMesStartIndex) {

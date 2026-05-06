@@ -269,7 +269,7 @@ import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningFromString, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningFromString, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, ReasoningState, ReasoningType, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
@@ -3272,7 +3272,7 @@ export function getExtensionPromptMaxDepth() {
  * @param {boolean} [wrap] Wrap start and end with a separator
  * @returns {Promise<string>} Extension prompt
  */
-export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
+export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n\n', role = undefined, wrap = true) {
     const filterByFunction = async (prompt) => {
         const hasFilter = typeof prompt.filter === 'function';
         if (hasFilter && !await prompt.filter()) {
@@ -3630,12 +3630,37 @@ class StreamingProcessor {
             }
         }
 
+        let includeUserPromptBias = true;
+        if (this.reasoningHandler.type == ReasoningType.Model && this.reasoningHandler.state != ReasoningState.None) {
+            this.reasoningHandler.reasoning = substituteParams(power_user.user_prompt_bias) + this.reasoningHandler.reasoning;
+            includeUserPromptBias = false;
+        }
+
+        if (this.reasoningHandler.reasoning.startsWith(power_user.reasoning.prefix)){
+            if (this.reasoningHandler.reasoning.includes(power_user.reasoning.suffix)) {
+                let reParse = this.reasoningHandler.reasoning + text;
+                ({reasoning: this.reasoningHandler.reasoning, content: text} =
+                    parseReasoningFromString(reParse) ?? {reasoning: this.reasoningHandler.reasoning, content: text});
+            }
+            else {
+                this.reasoningHandler.reasoning = this.reasoningHandler.reasoning.slice(power_user.reasoning.prefix.length);
+            }
+            includeUserPromptBias = false;
+        }
+
+        this.reasoningHandler.reasoning = getRegexedString(this.reasoningHandler.reasoning, regex_placement.REASONING);
+
+        if (power_user.trim_spaces) {
+            this.reasoningHandler.reasoning = this.reasoningHandler.reasoning.trim();
+        }
+
         let processedText = cleanUpMessage({
             getMessage: text,
             isImpersonate: isImpersonate,
             isContinue: isContinue,
             displayIncompleteSentences: !isFinal,
             stoppingStrings: this.stoppingStrings,
+            includeUserPromptBias: includeUserPromptBias,
         });
 
         const charsToBalance = ['*', '"', '```', '~~~'];
