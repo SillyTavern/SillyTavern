@@ -1008,13 +1008,6 @@ async function sendCohereRequest(request, response) {
             }
             const generateResponseJson = await generateResponse.json();
             console.debug('Cohere response:', generateResponseJson);
-
-            // Preserve Cohere's meta.tokens / meta.billed_units as api_usage for display
-            const tokens = generateResponseJson?.meta?.tokens || generateResponseJson?.meta?.billed_units;
-            if (tokens) {
-                generateResponseJson.usage = tokens;
-            }
-
             return response.send(generateResponseJson);
         }
     } catch (error) {

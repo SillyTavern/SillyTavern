@@ -3121,6 +3121,23 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 }
 
 /**
+ * Extracts the completion token count from API-reported usage data,
+ * normalizing across OAI, Claude, Gemini, and Cohere formats.
+ * @param {object|null} apiUsage - Raw API usage object from SSE chunk or response body
+ * @returns {number|null} - Completion token count, or null if not determinable
+ */
+export function getApiCompletionTokens(apiUsage) {
+    if (!apiUsage || typeof apiUsage !== 'object') return null;
+    if (typeof apiUsage.completion_tokens === 'number') return apiUsage.completion_tokens;
+    if (typeof apiUsage.output_tokens === 'number') return apiUsage.output_tokens;
+    if (typeof apiUsage.totalTokenCount === 'number' && typeof apiUsage.promptTokenCount === 'number') {
+        return apiUsage.totalTokenCount - apiUsage.promptTokenCount;
+    }
+    if (typeof apiUsage.candidatesTokenCount === 'number') return apiUsage.candidatesTokenCount;
+    return null;
+}
+
+/**
  * Extracts the reply from the response data from a chat completions-like source
  * @param {object} data Response data from the chat completions-like source
  * @param {object} state Additional state to keep track of
