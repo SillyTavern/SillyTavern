@@ -3636,13 +3636,12 @@ class StreamingProcessor {
             includeUserPromptBias = false;
         }
 
-        if (this.reasoningHandler.reasoning.startsWith(power_user.reasoning.prefix)){
+        if (this.reasoningHandler.reasoning.startsWith(power_user.reasoning.prefix)) {
             if (this.reasoningHandler.reasoning.includes(power_user.reasoning.suffix)) {
                 let reParse = this.reasoningHandler.reasoning + text;
-                ({reasoning: this.reasoningHandler.reasoning, content: text} =
-                    parseReasoningFromString(reParse) ?? {reasoning: this.reasoningHandler.reasoning, content: text});
-            }
-            else {
+                ({ reasoning: this.reasoningHandler.reasoning, content: text } =
+                    parseReasoningFromString(reParse) ?? { reasoning: this.reasoningHandler.reasoning, content: text });
+            } else {
                 this.reasoningHandler.reasoning = this.reasoningHandler.reasoning.slice(power_user.reasoning.prefix.length);
             }
             includeUserPromptBias = false;
