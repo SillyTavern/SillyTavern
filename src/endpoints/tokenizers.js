@@ -545,15 +545,14 @@ export function getTiktokenTokenizer(model) {
  * @returns {number} Number of tokens
  */
 export function countWebTokenizerTokens(tokenizer, messages) {
-    // Should be fine if we use the old conversion method instead of the messages API one i think?
-    const convertedPrompt = convertClaudePrompt(messages, false, '', false, false, '', false);
+    const jsonBody = messages.flatMap(x => Object.values(x)).join('\n\n');
 
     // Fallback to strlen estimation
     if (!tokenizer) {
-        return guesstimate(convertedPrompt);
+        return guesstimate(jsonBody);
     }
 
-    const count = tokenizer.encode(convertedPrompt).length;
+    const count = tokenizer.encode(jsonBody).length;
     return count;
 }
 
