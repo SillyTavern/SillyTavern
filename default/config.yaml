@@ -259,6 +259,10 @@ performance:
     maxPayloadSize: '8mb'
     # Timeout for request compression in milliseconds.
     timeout: 4000
+  # Serializes concurrent save writes to the same target and ignores stale same-client saves.
+  saveQueue:
+    # Enable backend-side save ordering protection.
+    enabled: true
 
 # CACHE BUSTER CONFIGURATION
 # IMPORTANT: Requires localhost or a domain with HTTPS, otherwise will not work!

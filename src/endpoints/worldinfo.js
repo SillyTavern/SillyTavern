@@ -6,6 +6,7 @@ import sanitize from 'sanitize-filename';
 import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { tryParse } from '../util.js';
+import { enqueueSave } from '../save-queue.js';
 
 /**
  * Reads a World Info file and returns its contents
@@ -131,7 +132,7 @@ router.post('/import', (request, response) => {
     return response.send({ name: worldName });
 });
 
-router.post('/edit', (request, response) => {
+router.post('/edit', async (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -151,7 +152,13 @@ router.post('/edit', (request, response) => {
     const filename = sanitize(`${request.body.name}.json`);
     const pathToFile = path.join(request.user.directories.worlds, filename);
 
-    writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
+    const result = await enqueueSave(pathToFile, request, () => {
+        writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
+    });
+
+    if (result.skipped) {
+        return response.status(202).send({ ok: true, skipped: true, reason: result.reason });
+    }
 
     return response.send({ ok: true });
 });

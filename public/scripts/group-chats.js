@@ -52,6 +52,7 @@ import {
     updateChatMetadata,
     getThumbnailUrl,
     getRequestHeaders,
+    getSaveRequestHeaders,
     setMenuType,
     menu_type,
     select_selected_character,
@@ -636,10 +637,14 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     };
     const saveGroupChatRequest = await compressRequest({
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getSaveRequestHeaders(),
         body: JSON.stringify({ id: chatId, chat: [chatHeader, ...chat], force: force }),
     });
     const response = await fetch('/api/chats/group/save', saveGroupChatRequest);
+
+    if (response.status === 202) {
+        return;
+    }
 
     if (!response.ok) {
         const errorData = await response.json();
@@ -732,10 +737,14 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 
                         const saveChatRequest = await compressRequest({
                             method: 'POST',
-                            headers: getRequestHeaders(),
+                            headers: getSaveRequestHeaders(),
                             body: JSON.stringify({ id: chatId, chat: [...messages] }),
                         });
                         const saveChatResponse = await fetch('/api/chats/group/save', saveChatRequest);
+
+                        if (saveChatResponse.status === 202) {
+                            continue;
+                        }
 
                         if (!saveChatResponse.ok) {
                             throw new Error('Group member could not be renamed');
@@ -2382,10 +2391,14 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
 
     const saveChatRequest = await compressRequest({
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getSaveRequestHeaders(),
         body: JSON.stringify({ id: name, chat: [chatHeader, ...trimmedChat] }),
     });
     const response = await fetch('/api/chats/group/save', saveChatRequest);
+
+    if (response.status === 202) {
+        return;
+    }
 
     if (!response.ok) {
         toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Group chat could not be saved`);

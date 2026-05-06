@@ -9,6 +9,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
+import { enqueueSave } from '../save-queue.js';
 import {
     getConfigValue,
     humanizedDateTime,
@@ -479,7 +480,12 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
         }
 
         if (Array.isArray(chatData)) {
-            await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
+            const result = await enqueueSave(chatFilePath, request, () => {
+                return trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
+            });
+            if (result.skipped) {
+                return response.status(202).send({ ok: true, skipped: true, reason: result.reason });
+            }
             return response.send({ ok: true });
         } else {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
@@ -856,7 +862,12 @@ router.post('/group/save', async function (request, response) {
         const chatData = request.body.chat;
 
         if (Array.isArray(chatData)) {
-            await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
+            const result = await enqueueSave(chatFilePath, request, () => {
+                return trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
+            });
+            if (result.skipped) {
+                return response.status(202).send({ ok: true, skipped: true, reason: result.reason });
+            }
             return response.send({ ok: true });
         } else {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });

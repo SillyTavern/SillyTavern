@@ -286,7 +286,6 @@ import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
 import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
-import { enqueueLatestSave, setLatestSaveBaseline } from './scripts/latest-save-queue.js';
 import { canJumpToSwipeForMessage, canOpenSwipePickerForMessage, initSwipePicker } from './scripts/swipe-picker.js';
 
 // API OBJECT FOR EXTERNAL WIRING
@@ -612,7 +611,6 @@ let this_edit_mes_id = undefined;
 
 //settings
 export let settings;
-let lastSavedSettingsPayloadJson = null;
 export let amount_gen = 80; //default max length of AI generated responses
 export let max_context = 2048;
 
@@ -635,6 +633,8 @@ var css_send_form_display = $('<div id=send_form></div>').css('display');
 var kobold_horde_model = '';
 
 export let token;
+const saveClientId = uuidv4();
+let saveRequestSerial = 0;
 
 
 /** The tag of the active character. (NOT the id) */
@@ -655,6 +655,14 @@ export function getRequestHeaders({ omitContentType = false } = {}) {
     }
 
     return headers;
+}
+
+export function getSaveRequestHeaders(options = {}) {
+    return {
+        ...getRequestHeaders(options),
+        'X-ST-Save-Client': saveClientId,
+        'X-ST-Save-Serial': String(++saveRequestSerial),
+    };
 }
 
 export function getSlideToggleOptions() {
@@ -7268,7 +7276,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 
                 const saveChatRequest = await compressRequest({
                     method: 'POST',
-                    headers: getRequestHeaders(),
+                    headers: getSaveRequestHeaders(),
                     body: JSON.stringify({
                         ch_name: newName,
                         file_name: fileNameWithoutExtension,
@@ -7364,74 +7372,25 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
     };
 
     try {
-        const saveChatPayload = {
-            ch_name: characters[this_chid].name,
-            file_name: fileName,
-            chat: [chatHeader, ...trimmedChat],
-            avatar_url: characters[this_chid].avatar,
-            force: force,
-        };
-        const saveChatBody = JSON.stringify(saveChatPayload);
-        const sendSaveChatRequest = async (body) => {
-            const saveChatRequest = await compressRequest({
-                method: 'POST',
-                cache: 'no-cache',
-                headers: getRequestHeaders(),
-                body,
-            });
-            const response = await fetch('/api/chats/save', saveChatRequest);
-
-            return {
-                ok: response.ok,
-                status: response.status,
-                statusText: response.statusText,
-                errorData: response.ok ? null : await response.json(),
-            };
-        };
-
-        const canQueueFullSave = !force && mesId === undefined && chatData === undefined;
-        let result;
-
-        try {
-            if (canQueueFullSave) {
-                const queuedSave = await enqueueLatestSave({
-                    key: `chat:${fileName}`,
-                    fingerprint: saveChatBody,
-                    item: { body: saveChatBody },
-                    save: async ({ body }) => {
-                        const saveResult = await sendSaveChatRequest(body);
-
-                        if (!saveResult.ok) {
-                            const error = new Error(saveResult.statusText);
-                            error.saveChatResult = saveResult;
-                            throw error;
-                        }
-
-                        return saveResult;
-                    },
-                });
-
-                if (queuedSave.status === 'superseded' || queuedSave.status === 'skipped') {
-                    return;
-                }
-
-                result = queuedSave.result;
-            } else {
-                result = await sendSaveChatRequest(saveChatBody);
-            }
-        } catch (error) {
-            if (!error.saveChatResult) {
-                throw error;
-            }
-
-            result = error.saveChatResult;
-        }
+        const saveChatRequest = await compressRequest({
+            method: 'POST',
+            cache: 'no-cache',
+            headers: getSaveRequestHeaders(),
+            body: JSON.stringify({
+                ch_name: characters[this_chid].name,
+                file_name: fileName,
+                chat: [chatHeader, ...trimmedChat],
+                avatar_url: characters[this_chid].avatar,
+                force: force,
+            }),
+        });
+        const result = await fetch('/api/chats/save', saveChatRequest);
 
         if (result.ok) {
             return;
         }
 
-        const errorData = result.errorData;
+        const errorData = await result.json();
         const isIntegrityError = errorData?.error === 'integrity' && !force;
         if (!isIntegrityError) {
             throw new Error(result.statusText);
@@ -8019,15 +7978,30 @@ export async function getSettings(initLoaderHandle = null) {
         }
     }
     await validateDisabledSamplers();
-    lastSavedSettingsPayloadJson = JSON.stringify(getSettingsSavePayload());
-    setLatestSaveBaseline('settings', lastSavedSettingsPayloadJson);
     settingsReady = true;
     await eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
 //MARK: saveSettings()
-function getSettingsSavePayload() {
-    return {
+export async function saveSettings(loopCounter = 0) {
+    if (!settingsReady) {
+        console.warn('Settings not ready, scheduling another save');
+        saveSettingsDebounced();
+        return;
+    }
+
+    const MAX_RETRIES = 3;
+    if (TempResponseLength.isCustomized()) {
+        if (loopCounter < MAX_RETRIES) {
+            console.warn('Response length is currently being overridden, scheduling another save');
+            saveSettingsDebounced(++loopCounter);
+            return;
+        }
+        console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
+        TempResponseLength.restore(null);
+    }
+
+    const payload = {
         firstRun: firstRun,
         accountStorage: accountStorage.getState(),
         currentVersion: currentVersion,
@@ -8053,59 +8027,26 @@ function getSettingsSavePayload() {
         proxies: proxies,
         selected_proxy: selected_proxy,
     };
-}
-
-export async function saveSettings(loopCounter = 0) {
-    if (!settingsReady) {
-        console.warn('Settings not ready, scheduling another save');
-        saveSettingsDebounced();
-        return;
-    }
-
-    const MAX_RETRIES = 3;
-    if (TempResponseLength.isCustomized()) {
-        if (loopCounter < MAX_RETRIES) {
-            console.warn('Response length is currently being overridden, scheduling another save');
-            saveSettingsDebounced(++loopCounter);
-            return;
-        }
-        console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
-        TempResponseLength.restore(null);
-    }
-
-    const payload = getSettingsSavePayload();
-    const payloadJson = JSON.stringify(payload);
 
     try {
-        const saveResult = await enqueueLatestSave({
-            key: 'settings',
-            fingerprint: payloadJson,
-            item: { payload, payloadJson },
-            save: async ({ payload, payloadJson }) => {
-                const saveSettingsRequest = await compressRequest({
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: payloadJson,
-                    cache: 'no-cache',
-                });
-                const result = await fetch('/api/settings/save', saveSettingsRequest);
-
-                if (!result.ok) {
-                    throw new Error(`Failed to save settings: ${result.statusText}`);
-                }
-
-                settings = payload;
-                lastSavedSettingsPayloadJson = payloadJson;
-                setLatestSaveBaseline('settings', payloadJson);
-                await eventSource.emit(event_types.SETTINGS_UPDATED);
-            },
+        const saveSettingsRequest = await compressRequest({
+            method: 'POST',
+            headers: getSaveRequestHeaders(),
+            body: JSON.stringify(payload),
+            cache: 'no-cache',
         });
+        const result = await fetch('/api/settings/save', saveSettingsRequest);
 
-        if (saveResult.status === 'skipped') {
-            settings = payload;
-            lastSavedSettingsPayloadJson = payloadJson;
-            await eventSource.emit(event_types.SETTINGS_UPDATED);
+        if (result.status === 202) {
+            return;
         }
+
+        if (!result.ok) {
+            throw new Error(`Failed to save settings: ${result.statusText}`);
+        }
+
+        settings = payload;
+        await eventSource.emit(event_types.SETTINGS_UPDATED);
     } catch (error) {
         console.error('Error saving settings:', error);
         toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Settings could not be saved`);

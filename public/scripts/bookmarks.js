@@ -7,6 +7,7 @@ import {
     openCharacterChat,
     chat_metadata,
     getRequestHeaders,
+    getSaveRequestHeaders,
     getThumbnailUrl,
     getCharacters,
     chat,
@@ -422,10 +423,14 @@ export async function convertSoloToGroupChat() {
     // Save group chat
     const createChatRequest = await compressRequest({
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: getSaveRequestHeaders(),
         body: JSON.stringify({ id: chatName, chat: [chatHeader, ...groupChat] }),
     });
     const createChatResponse = await fetch('/api/chats/group/save', createChatRequest);
+
+    if (createChatResponse.status === 202) {
+        return;
+    }
 
     if (!createChatResponse.ok) {
         console.error('Group chat creation unsuccessful');
