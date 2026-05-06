@@ -480,6 +480,11 @@ export class ReasoningHandler {
         if (!power_user.reasoning.auto_parse || !power_user.reasoning.prefix || !power_user.reasoning.suffix)
             return mesChanged;
 
+        // If we already have native model reasoning, don't auto-parse the reconstructed text
+        if (this.type === ReasoningType.Model) {
+            return mesChanged;
+        }
+
         /** @type {ChatMessage} */
         const message = chat[messageId];
         if (!message) return mesChanged;
