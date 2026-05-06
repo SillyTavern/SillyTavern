@@ -5470,18 +5470,16 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         if (isContinue) {
             continue_mag = promptReasoning.removePrefix(continue_mag);
             getMessage = continue_mag + getMessage;
-        }
-        else if (reasoning && power_user.user_prompt_bias) {
+        } else if (reasoning && power_user.user_prompt_bias) {
             reasoning = substituteParams(power_user.user_prompt_bias) + reasoning;
             includeUserPromptBias = false;
         }
 
-        if (reasoning.startsWith(power_user.reasoning.prefix)){
+        if (reasoning.startsWith(power_user.reasoning.prefix)) {
             if (reasoning.includes(power_user.reasoning.suffix)) {
                 let reParse = reasoning + getMessage;
-                ({reasoning, content: getMessage} = parseReasoningFromString(reParse) ?? {reasoning, content: getMessage});
-            }
-            else {
+                ({ reasoning, content: getMessage } = parseReasoningFromString(reParse) ?? { reasoning, content: getMessage });
+            } else {
                 reasoning = reasoning.slice(power_user.reasoning.prefix.length);
             }
             includeUserPromptBias = false;
