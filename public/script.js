@@ -269,7 +269,7 @@ import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningFromString, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
@@ -5466,13 +5466,26 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         const swipes = extractMultiSwipes(data, type);
 
-        messageChunk = cleanUpMessage({
-            getMessage: getMessage,
-            isImpersonate: isImpersonate,
-            isContinue: isContinue,
-            displayIncompleteSentences: false,
-        });
+        let includeUserPromptBias = true;
+        if (isContinue) {
+            continue_mag = promptReasoning.removePrefix(continue_mag);
+            getMessage = continue_mag + getMessage;
+        }
+        else if (reasoning && power_user.user_prompt_bias) {
+            reasoning = substituteParams(power_user.user_prompt_bias) + reasoning;
+            includeUserPromptBias = false;
+        }
 
+        if (reasoning.startsWith(power_user.reasoning.prefix)){
+            if (reasoning.includes(power_user.reasoning.suffix)) {
+                let reParse = reasoning + getMessage;
+                ({reasoning, content: getMessage} = parseReasoningFromString(reParse) ?? {reasoning, content: getMessage});
+            }
+            else {
+                reasoning = reasoning.slice(power_user.reasoning.prefix.length);
+            }
+            includeUserPromptBias = false;
+        }
 
         reasoning = getRegexedString(reasoning, regex_placement.REASONING);
 
@@ -5480,10 +5493,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             reasoning = reasoning.trim();
         }
 
-        if (isContinue) {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
-            getMessage = continue_mag + getMessage;
-        }
+        messageChunk = cleanUpMessage({
+            getMessage: getMessage,
+            isImpersonate: isImpersonate,
+            isContinue: isContinue,
+            displayIncompleteSentences: false,
+            includeUserPromptBias: includeUserPromptBias,
+        });
 
         //Formating
         const displayIncomplete = type === 'quiet' && !quietToLoud;
@@ -5492,6 +5508,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             isImpersonate: isImpersonate,
             isContinue: isContinue,
             displayIncompleteSentences: displayIncomplete,
+            includeUserPromptBias: includeUserPromptBias,
         });
 
         if (isImpersonate) {
