@@ -477,9 +477,7 @@ export class ReasoningHandler {
      * @returns {boolean} Whether the message has changed after reasoning parsing
      */
     #autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning) {
-        if (!power_user.reasoning.auto_parse)
-            return;
-        if (!power_user.reasoning.prefix || !power_user.reasoning.suffix)
+        if (!power_user.reasoning.auto_parse || !power_user.reasoning.prefix || !power_user.reasoning.suffix)
             return mesChanged;
 
         /** @type {ChatMessage} */
