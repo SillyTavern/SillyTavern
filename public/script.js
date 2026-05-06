@@ -3630,13 +3630,13 @@ class StreamingProcessor {
             }
         }
 
-        let includeUserPromptBias = true;
+        let includeUserPromptBias = this.reasoningHandler.state == ReasoningState.None || this.reasoningHandler.type == ReasoningType.Parsed;
         let parsedBias = substituteParams(power_user.user_prompt_bias);
-        if (this.reasoningHandler.type == ReasoningType.Model && this.reasoningHandler.state != ReasoningState.None) {
+        if (!includeUserPromptBias && this.reasoningHandler.type == ReasoningType.Model) {
             this.reasoningHandler.reasoning = substituteParams(parsedBias) + this.reasoningHandler.reasoning;
             includeUserPromptBias = false;
-        } else if (this.reasoningHandler.state == ReasoningState.None && parsedBias == power_user.reasoning.prefix) {
-            let reasoning = parsedBias + this.reasoningHandler.reasoning;
+        } else if (includeUserPromptBias && parsedBias.trim() == power_user.reasoning.prefix) {
+            let reasoning = (parsedBias + this.reasoningHandler.reasoning).slice(power_user.reasoning.prefix.length);
             includeUserPromptBias = !this.reasoningHandler.updateReasoning(messageId, reasoning);
         }
 
