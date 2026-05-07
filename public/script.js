@@ -3630,7 +3630,7 @@ class StreamingProcessor {
             }
         }
 
-        let includeUserPromptBias = this.reasoningHandler.state == ReasoningState.None || this.reasoningHandler.type == ReasoningType.Parsed;
+        let includeUserPromptBias = !isContinue && (this.reasoningHandler.state == ReasoningState.None || this.reasoningHandler.type == ReasoningType.Parsed);
         let parsedBias = substituteParams(power_user.user_prompt_bias);
         if (!includeUserPromptBias && this.reasoningHandler.type == ReasoningType.Model) {
             this.reasoningHandler.reasoning = substituteParams(parsedBias) + this.reasoningHandler.reasoning;
