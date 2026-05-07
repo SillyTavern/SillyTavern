@@ -2114,9 +2114,18 @@ function updateDrawTagFolder(element, tag) {
     indicator.css('font-size', `calc(var(--mainFontSize) * ${tagFolder.size})`);
 }
 
+/** * Event handler for deleting a tag and optionally merging its references into another tag.
+ * @this {HTMLElement} // [TYPESCRIPT] Binds 'this' to the clicked DOM element to prevent implicit 'any'
+ */
 async function onTagDeleteClick() {
     const id = $(this).closest('.tag_view_item').attr('id');
+    // [TYPESCRIPT] Early return if ID is undefined, narrowing 'id' to a strict string
+    if (!id) return;
+
     const tag = tags.find(x => x.id === id);
+    // [TYPESCRIPT] Early return if tag is not found, narrowing 'tag' to a guaranteed object
+    if (!tag) return;
+
     const otherTags = sortTags(tags.filter(x => x.id !== id).map(x => ({ id: x.id, name: x.name })));
 
     const popupContent = $(await renderTemplateAsync('deleteTag', { otherTags }));
@@ -2140,6 +2149,8 @@ async function onTagDeleteClick() {
 		}
 	}, 10);
 
+    // [REFACTOR] Hoisted the variable declaration outside the popup await so it can be populated during the onClose event.
+    /** @type {string|null} */
 	let mergeTagId = null;
 
 	// [TYPESCRIPT] Passed 'undefined' instead of 'null' as the 3rd argument to satisfy strict type signatures.
@@ -2174,11 +2185,15 @@ async function onTagDeleteClick() {
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
 
-    toastr.success(`'${tag.name}' deleted${mergeTagId ? ` and merged into '${tags.find(x => x.id === mergeTagId).name}'` : ''}`, 'Delete Tag');
+    // [REFACTOR] Extracted target tag lookup to prevent potential undefined crashes inside the toastr notification string.
+    const targetTag = mergeTagId ? tags.find(x => x.id === mergeTagId) : null;
+
+    // [TYPESCRIPT] Ignored missing global type definitions for the injected toastr library.
+    // @ts-ignore
+    toastr.success(`'${tag.name}' deleted${targetTag ? ` and merged into '${targetTag.name}'` : ''}`, 'Delete Tag');
 
     printCharactersDebounced();
     saveSettingsDebounced();
-
     applyCharacterTagsToMessageDivs();
 
 	// [BUGFIX] Added immediate UI refresh logic. Previously, background merges succeeded but the visual counters didn't update until the menu was reopened.
