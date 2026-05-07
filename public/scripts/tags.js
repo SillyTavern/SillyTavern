@@ -2133,37 +2133,37 @@ async function onTagDeleteClick() {
     appendTagToList(popupContent.find('#tag_to_delete'), tag);
 
     // Make the select control more fancy on not mobile
-	// [BUGFIX] Wrapped Select2 initialization in a setTimeout.
-	// SillyTavern's popup system strips and re-injects HTML; this wait ensures Select2 targets the live DOM, not a detached ghost element.
-	setTimeout(() => {
-		const $liveSelect = $('#merge_tag_select');
+    // [BUGFIX] Wrapped Select2 initialization in a setTimeout.
+    // SillyTavern's popup system strips and re-injects HTML; this wait ensures Select2 targets the live DOM, not a detached ghost element.
+    setTimeout(() => {
+        const $liveSelect = $('#merge_tag_select');
         // Delete the empty option in the dropdown, and make the select2 be empty by default
-		if ($liveSelect.length && !isMobile()) {
-			$liveSelect.find('option[value=""]').remove();
-			$liveSelect.select2({
-				width: '75%', // [UI] Expanded to fit the placeholder text
+        if ($liveSelect.length && !isMobile()) {
+            $liveSelect.find('option[value=""]').remove();
+            $liveSelect.select2({
+                width: '75%', // [UI] Expanded to fit the placeholder text
                 placeholder: 'Select tag to merge into',
                 allowClear: true,
-				dropdownParent: $liveSelect.closest('.popup'),
-			}).val('').trigger('change'); // [TYPESCRIPT] Replaced .val(null) with .val('') to satisfy string-only parameters
-		}
-	}, 10);
+                dropdownParent: $liveSelect.closest('.popup'),
+            }).val('').trigger('change'); // [TYPESCRIPT] Replaced .val(null) with .val('') to satisfy string-only parameters
+        }
+    }, 10);
 
     // [REFACTOR] Hoisted the variable declaration outside the popup await so it can be populated during the onClose event.
     /** @type {string|null} */
-	let mergeTagId = null;
+    let mergeTagId = null;
 
-	// [TYPESCRIPT] Passed 'undefined' instead of 'null' as the 3rd argument to satisfy strict type signatures.
-	const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, undefined, {
-		// [BUGFIX] Added onClose callback. Reading the value after the await fails because the DOM is already destroyed.
-		// This captures the user's selection synchronously right before teardown.
-		onClose: () => {
-			const val = $('#merge_tag_select').val();
-			if (val && val !== 'null' && val !== '') {
-				mergeTagId = Array.isArray(val) ? String(val[0]) : String(val);
-			}
-		},
-	});
+    // [TYPESCRIPT] Passed 'undefined' instead of 'null' as the 3rd argument to satisfy strict type signatures.
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, undefined, {
+        // [BUGFIX] Added onClose callback. Reading the value after the await fails because the DOM is already destroyed.
+        // This captures the user's selection synchronously right before teardown.
+        onClose: () => {
+            const val = $('#merge_tag_select').val();
+            if (val && val !== 'null' && val !== '') {
+                mergeTagId = Array.isArray(val) ? String(val[0]) : String(val);
+            }
+        },
+    });
 
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
         return;
@@ -2172,16 +2172,16 @@ async function onTagDeleteClick() {
     // Remove the tag from all entities that use it
     // If we have a replacement tag, add that one instead
     for (const key of Object.keys(tag_map)) {
-		// [TYPESCRIPT] Added truthiness check on tag_map[key] to prevent crashes if the array is null/undefined.
-		if (tag_map[key] && tag_map[key].includes(id)) {
+        // [TYPESCRIPT] Added truthiness check on tag_map[key] to prevent crashes if the array is null/undefined.
+        if (tag_map[key] && tag_map[key].includes(id)) {
             tag_map[key] = tag_map[key].filter(x => x !== id);
-			// [BUGFIX/TYPESCRIPT] Added strict string check to satisfy the compiler, and an .includes() check to prevent injecting duplicate tags.
-			if (typeof mergeTagId === 'string' && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
+            // [BUGFIX/TYPESCRIPT] Added strict string check to satisfy the compiler, and an .includes() check to prevent injecting duplicate tags.
+            if (typeof mergeTagId === 'string' && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
         }
     }
 
     const index = tags.findIndex(x => x.id === id);
-	if (index > -1) tags.splice(index, 1);
+    if (index > -1) tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
 
@@ -2196,13 +2196,13 @@ async function onTagDeleteClick() {
     saveSettingsDebounced();
     applyCharacterTagsToMessageDivs();
 
-	// [BUGFIX] Added immediate UI refresh logic. Previously, background merges succeeded but the visual counters didn't update until the menu was reopened.
-	if (mergeTagId) {
-		const tagContainer = $('#tag_view_list .tag_view_list_tags');
-		if (tagContainer.length) {
-			printViewTagList(tagContainer);
-		}
-	}
+    // [BUGFIX] Added immediate UI refresh logic. Previously, background merges succeeded but the visual counters didn't update until the menu was reopened.
+    if (mergeTagId) {
+        const tagContainer = $('#tag_view_list .tag_view_list_tags');
+        if (tagContainer.length) {
+            printViewTagList(tagContainer);
+        }
+    }
 }
 
 function onTagRenameInput() {
