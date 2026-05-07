@@ -318,8 +318,15 @@ export class ReasoningHandler {
      * @param {PromptReasoning} promptReasoning Prompt reasoning object
      */
     initContinue(promptReasoning) {
-        this.reasoning = promptReasoning.prefixReasoning;
         this.state = promptReasoning.prefixIncomplete ? ReasoningState.None : ReasoningState.Done;
+        if (this.state == ReasoningState.Done) {
+            this.reasoning = promptReasoning.prefixReasoningFormatted;
+            this.type = ReasoningType.Parsed;
+            this.#parsingReasoningMesStartIndex = this.reasoning.length;
+            promptReasoning.prefixIncomplete = true;
+        } else {
+            this.reasoning = promptReasoning.prefixReasoning;
+        }
         this.startTime = this.initialTime;
         this.endTime = promptReasoning.prefixDuration ? new Date(this.initialTime.getTime() + promptReasoning.prefixDuration) : null;
     }
