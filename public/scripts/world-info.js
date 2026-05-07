@@ -4158,6 +4158,12 @@ async function updateWorldInfoLinks(oldName, newName) {
         saveSettingsDebounced();
     }
 
+    // update the world info key to the new name if it's still set to the old one
+    if (chat_metadata[METADATA_KEY] === oldName) {
+        chat_metadata[METADATA_KEY] = newName;
+        await saveMetadata();
+    }
+
     // find all characters using the old lorebook name as their primary world
     const linkedChIDs = [];
     characters.forEach((character, chid) => {
