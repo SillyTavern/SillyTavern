@@ -2142,9 +2142,9 @@ async function onTagDeleteClick() {
 			$liveSelect.find('option[value=""]').remove();
 			$liveSelect.select2({
 				width: '75%', // [UI] Expanded to fit the placeholder text
-            placeholder: 'Select tag to merge into',
-            allowClear: true,
-				dropdownParent: $liveSelect.closest('.popup')
+                placeholder: 'Select tag to merge into',
+                allowClear: true,
+				dropdownParent: $liveSelect.closest('.popup'),
 			}).val('').trigger('change'); // [TYPESCRIPT] Replaced .val(null) with .val('') to satisfy string-only parameters
 		}
 	}, 10);
@@ -2162,7 +2162,7 @@ async function onTagDeleteClick() {
 			if (val && val !== 'null' && val !== '') {
 				mergeTagId = Array.isArray(val) ? String(val[0]) : String(val);
 			}
-		}
+		},
 	});
 
     if (result !== POPUP_RESULT.AFFIRMATIVE) {
