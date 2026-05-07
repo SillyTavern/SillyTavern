@@ -14,7 +14,8 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { slashCommandReturnHelper } from '../../slash-commands/SlashCommandReturnHelper.js';
-import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
+import { generateWebLlmChatPrompt, isWebLlmSupported, ConnectionManagerRequestService } from '../shared.js';
+import { buildLeanChatPrompt, prepareLeanPromptForTransport, LEAN_PROMPT_CANCELLED } from '../lean-chat-prompt.js';
 import { Popup, POPUP_RESULT } from '../../popup.js';
 import { t } from '../../i18n.js';
 import { removeReasoningFromString } from '../../reasoning.js';
@@ -83,6 +84,7 @@ const EXPRESSION_API = {
     extras: 1,
     llm: 2,
     webllm: 3,
+    connection_profile: 4,
     none: 99,
 };
 
@@ -1115,6 +1117,34 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
                 const emotionResponse = await generateWebLlmChatPrompt(messages);
                 return parseLlmResponse(emotionResponse, expressionsList);
             }
+            // Using a Connection Profile (different model/preset/endpoint than the main API)
+            case EXPRESSION_API.connection_profile: {
+                const profileId = extension_settings.expressions.connectionProfileId;
+                if (!profileId) {
+                    console.warn('No connection profile selected for expressions classifier');
+                    return extension_settings.expressions.fallback_expression;
+                }
+                const expressionsList = await getExpressionsList({ filterAvailable: filterAvailable });
+                const classifierPrompt = substituteParamsExtended(customPrompt, { labels: expressionsList }) || await getLlmPrompt(expressionsList);
+                let emotionResponse;
+                try {
+                    inApiCall = true;
+                    const messages = await buildLeanChatPrompt({
+                        profileId,
+                        systemInstruction: classifierPrompt,
+                        quietPrompt: text,
+                    });
+                    const prepared = await prepareLeanPromptForTransport(messages, profileId);
+                    if (prepared === LEAN_PROMPT_CANCELLED) {
+                        return extension_settings.expressions.fallback_expression;
+                    }
+                    const result = await ConnectionManagerRequestService.sendRequest(profileId, prepared, 256);
+                    emotionResponse = result.content || '';
+                } finally {
+                    inApiCall = false;
+                }
+                return parseLlmResponse(emotionResponse, expressionsList);
+            }
             // Extras
             case EXPRESSION_API.extras: {
                 const url = new URL(getApiUrl());
@@ -1745,8 +1775,9 @@ function onExpressionApiChanged() {
     const tempApi = this.value;
     if (tempApi) {
         extension_settings.expressions.api = Number(tempApi);
-        $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm].includes(extension_settings.expressions.api));
+        $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm, EXPRESSION_API.connection_profile].includes(extension_settings.expressions.api));
         $('.expression_prompt_type_block').toggle(extension_settings.expressions.api === EXPRESSION_API.llm);
+        $('.expression_connection_profile_block').toggle(extension_settings.expressions.api === EXPRESSION_API.connection_profile);
         expressionsList = null;
         spriteCache = {};
         moduleWorker();
@@ -2220,7 +2251,8 @@ export async function init() {
 
         await renderAdditionalExpressionSettings();
         $('#expression_api').val(extension_settings.expressions.api ?? EXPRESSION_API.none);
-        $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm].includes(extension_settings.expressions.api));
+        $('.expression_llm_prompt_block').toggle([EXPRESSION_API.llm, EXPRESSION_API.webllm, EXPRESSION_API.connection_profile].includes(extension_settings.expressions.api));
+        $('.expression_connection_profile_block').toggle(extension_settings.expressions.api === EXPRESSION_API.connection_profile);
         $('#expression_llm_prompt').val(extension_settings.expressions.llmPrompt ?? '');
         $('#expression_llm_prompt').on('input', function () {
             extension_settings.expressions.llmPrompt = String($(this).val());
@@ -2246,6 +2278,21 @@ export async function init() {
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
         $('#expression_fallback').on('change', onExpressionFallbackChanged);
         $('#expression_api').on('change', onExpressionApiChanged);
+
+        // Connection Profile dropdown — populated by ConnectionManagerRequestService.
+        // Wrap in try/catch because the connection-manager extension may be disabled.
+        try {
+            ConnectionManagerRequestService.handleDropdown(
+                '#expression_connection_profile',
+                extension_settings.expressions.connectionProfileId,
+                (profile) => {
+                    extension_settings.expressions.connectionProfileId = profile?.id ?? '';
+                    saveSettingsDebounced();
+                },
+            );
+        } catch (e) {
+            console.warn('[expressions] connection-manager unavailable, profile classifier disabled', e);
+        }
     }
 
     addExpressionImage();
