@@ -292,9 +292,9 @@ export class ReasoningHandler {
         this.reasoning = '';
         /** @type {string?} The reasoning output display in case of translate or other */
         this.reasoningDisplayText = null;
-        /** @type {Date?} When the reasoning started */
+        /** @type {Date|null} When the reasoning started */
         this.startTime = null;
-        /** @type {Date?} When the reasoning ended */
+        /** @type {Date|null} When the reasoning ended */
         this.endTime = null;
 
         /** @type {Date} Initial starting time of the generation */
@@ -398,7 +398,7 @@ export class ReasoningHandler {
     /**
      * Gets the duration of the reasoning in milliseconds.
      *
-     * @returns {number?} The duration in milliseconds, or null if the start or end time is not set
+     * @returns {number|null} The duration in milliseconds, or null if the start or end time is not set
      */
     getDuration() {
         if (this.startTime && this.endTime) {
@@ -441,7 +441,7 @@ export class ReasoningHandler {
         if (persist) {
             // Build and save the reasoning data to message extras
             extra.reasoning = this.reasoning;
-            extra.reasoning_duration = this.getDuration() ?? undefined;
+            extra.reasoning_duration = this.getDuration();
             extra.reasoning_type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
         }
 
