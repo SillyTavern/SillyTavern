@@ -1,3 +1,8 @@
+import {
+    OPENAI_FIXED_REASONING_EFFORT,
+    supportsOpenAIXHighReasoningEffort,
+} from '../public/scripts/openai-reasoning.js';
+
 export const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
     backups: 'backups/',
@@ -493,13 +498,24 @@ export const OPENAI_REASONING_EFFORT_MAP = {
     min: 'minimal',
 };
 
+export { OPENAI_FIXED_REASONING_EFFORT };
+
 /**
- * Models that only accept a single fixed reasoning effort value.
- * @type {Record<string, string>}
+ * @param {string} model Model name
+ * @param {string} reasoningEffort Reasoning effort
+ * @returns {string|undefined} Reasoning effort supported by OpenAI
  */
-export const OPENAI_FIXED_REASONING_EFFORT = {
-    'gpt-5.3-chat-latest': 'medium',
-};
+export function getOpenAIReasoningEffort(model, reasoningEffort) {
+    if (!OPENAI_REASONING_EFFORT_MODELS.includes(model) && !supportsOpenAIXHighReasoningEffort(model)) {
+        return undefined;
+    }
+
+    if (OPENAI_FIXED_REASONING_EFFORT[model]) {
+        return OPENAI_FIXED_REASONING_EFFORT[model];
+    }
+
+    return OPENAI_REASONING_EFFORT_MAP[reasoningEffort] ?? reasoningEffort;
+}
 
 export const NANOGPT_REASONING_EFFORT_MAP = {
     min: 'none',

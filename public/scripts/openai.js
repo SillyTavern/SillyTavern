@@ -81,6 +81,7 @@ import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { supportsOpenAIXHighReasoningEffort } from './openai-reasoning.js';
 
 export {
     openai_messages_count,
@@ -2594,6 +2595,9 @@ function getReasoningEffort(settings = null, model = null) {
 
                 return reasoning_effort_types.low;
             case reasoning_effort_types.max:
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)) {
+                    return supportsOpenAIXHighReasoningEffort(model) ? 'xhigh' : reasoning_effort_types.high;
+                }
                 return reasoning_effort_types.high;
             default:
                 return settings.reasoning_effort;
