@@ -248,6 +248,8 @@ export const verbosity_levels = {
     low: 'low',
     medium: 'medium',
     high: 'high',
+    xhigh: 'xhigh',
+    max: 'max',
 };
 
 export const tool_reasoning_modes = {
