@@ -1,4 +1,4 @@
-import { eventSource, event_types, this_chid, characters } from '../../../script.js';
+import { eventSource, event_types, this_chid, characters, substituteParams } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 
 const SETTINGS_KEY = 'world_forge';
@@ -91,7 +91,8 @@ function onChatCompletionPromptReady(eventData) {
         return;
     }
 
-    const inserted = spliceOverrideIntoChat(eventData.chat, block);
+    const resolvedBlock = substituteParams(block);
+    const inserted = spliceOverrideIntoChat(eventData.chat, resolvedBlock);
     if (settings.debug) {
         if (inserted) console.log(`${tag} → injected style_override after </style_contract> (${applied.join(', ')})`);
         else console.warn(`${tag} → override built but no </style_contract> marker found in any system message; nothing injected`);
