@@ -452,6 +452,14 @@ export async function branchChat(mesId, { swipeId = null } = {}) {
         return null;
     }
 
+    const confirm = await Popup.show.confirm(t`Create Branch`, `<p>${t`Create a new branch from this message?`}</p>`, {
+        okButton: t`Create`,
+        cancelButton: t`Cancel`,
+    });
+    if (!confirm) {
+        return null;
+    }
+
     const fileName = await createBranch(mesId, { swipeId });
     if (!fileName) {
         return null;
