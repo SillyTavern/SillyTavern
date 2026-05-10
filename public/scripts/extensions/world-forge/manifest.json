@@ -1,0 +1,15 @@
+{
+    "display_name": "World Forge",
+    "loading_order": 50,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "author": "AndreiNicu",
+    "version": "0.1.0",
+    "homePage": "https://github.com/AndreiNicu/World-Forge",
+    "auto_update": false,
+    "i18n": {},
+    "hooks": {
+        "activate": "init"
+    }
+}
