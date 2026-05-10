@@ -112,6 +112,11 @@ import {
     selected_proxy,
     initOpenAI,
 } from './scripts/openai.js';
+import {
+    createNanoGptBillingEntryFromResponse,
+    formatNanoGptBillingDisplay,
+    mergeNanoGptBillingMetadata,
+} from './scripts/nanogpt-billing.js';
 
 import {
     generateNovelWithStreaming,
@@ -2547,6 +2552,61 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
     return messageElement;
 }
 
+const NANO_GPT_BILLING_APPEND_TYPES = new Set(['append', 'continue', 'appendFinal']);
+
+/**
+ * Applies a NanoGPT billing request to a message.
+ * @param {ChatMessage} message Message object
+ * @param {object|null} billingRequest NanoGPT billing request
+ * @param {string} type Generation type
+ */
+function applyNanoGptBillingToMessage(message, billingRequest, type) {
+    if (!message) {
+        return;
+    }
+
+    message.extra ??= {};
+    const append = NANO_GPT_BILLING_APPEND_TYPES.has(type);
+    const nanogpt = mergeNanoGptBillingMetadata(message.extra.nanogpt, billingRequest, { append });
+
+    if (nanogpt) {
+        message.extra.nanogpt = nanogpt;
+    } else if (append && message.extra.nanogpt) {
+        message.extra.nanogpt.incomplete = true;
+    } else if (!append) {
+        delete message.extra.nanogpt;
+    }
+}
+
+/**
+ * Updates the NanoGPT billing display for a message element.
+ * @param {JQuery<HTMLElement>} messageElement Message element
+ * @param {ChatMessage} mes Message object
+ */
+function updateNanoGptBillingDisplay(messageElement, mes) {
+    const display = messageElement.find('.nanogptBillingDisplay');
+    if (!display.length) {
+        return;
+    }
+
+    const formatted = formatNanoGptBillingDisplay(mes?.extra?.nanogpt);
+    display.prop('hidden', !formatted);
+
+    if (!formatted) {
+        display.find('.nanogptBillingLinePrimary').attr('title', '');
+        display.find('.nanogptBillingCostValue').text('');
+        display.find('.nanogptBillingCacheCost').prop('hidden', true);
+        return;
+    }
+
+    display.find('.nanogptBillingLinePrimary').attr('title', formatted.title);
+    display.find('.nanogptBillingLinePrimary > .nanogptBillingCostValue').text(formatted.totalCost);
+    display.find('.nanogptBillingCacheCost')
+        .prop('hidden', !formatted.cacheCost)
+        .find('.nanogptBillingCacheCostValue')
+        .text(formatted.cacheCost ?? '');
+}
+
 /**
  * Creates the element of a single message as if it were the last message or at forceMesId
  * @param {ChatMessage} mes Message object
@@ -2605,6 +2665,7 @@ export function updateMessageElement(mes, { messageId = chat.length - 1, message
     tokenCount && messageElement.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     mes.title && messageElement.attr('title', mes.title);
     timerValue && messageElement.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+    updateNanoGptBillingDisplay(messageElement, mes);
     bookmarkLink && updateBookmarkDisplay(messageElement);
 
     if (mes.extra?.bias !== '') {
@@ -3524,6 +3585,8 @@ class StreamingProcessor {
         this.images = [];
         /** @type {string?} */
         this.reasoningSignature = null;
+        /** @type {object|null} */
+        this.nanogptBilling = null;
     }
 
     /**
@@ -3718,6 +3781,8 @@ class StreamingProcessor {
             message.swipe_info.push(...swipeInfoArray);
         }
 
+        applyNanoGptBillingToMessage(message, this.nanogptBilling, this.type);
+        updateNanoGptBillingDisplay(messageElement, message);
         syncMesToSwipe(messageId);
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), this.continueMessage);
 
@@ -3833,6 +3898,7 @@ class StreamingProcessor {
                 this.reasoningHandler.updateReasoning(this.messageId, state?.reasoning);
                 this.images = state?.images ?? [];
                 this.reasoningSignature = state?.signature ?? null;
+                this.nanogptBilling = state?.nanogptBilling ?? this.nanogptBilling;
                 await eventSource.emit(event_types.STREAM_TOKEN_RECEIVED, text);
                 await sw.tick(async () => await this.onProgressStreaming(this.messageId, this.continueMessage + text));
             }
@@ -5432,6 +5498,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         kobold_horde_model = title;
 
         const swipes = extractMultiSwipes(data, type);
+        const nanogptBilling = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.NANOGPT
+            ? createNanoGptBillingEntryFromResponse(data, originalType)
+            : null;
 
         messageChunk = cleanUpMessage({
             getMessage: getMessage,
@@ -5470,9 +5539,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         } else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature, nanogptBilling }));
             } else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature, nanogptBilling }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6575,16 +6644,17 @@ async function processImageAttachment(message, { imageUrls }) {
  * @property {string} [reasoning] Message reasoning
  * @property {string[]} [imageUrls] Links to images
  * @property {string?} [reasoningSignature] Encrypted signature of the reasoning text
+ * @property {object?} [nanogptBilling] NanoGPT billing request metadata
  *
  * @typedef {object} SaveReplyResult
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null, nanogptBilling = null }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
-        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls, reasoningSignature] = arguments;
+        [type, getMessage, fromStreaming, title, swipes, reasoning, imageUrls, reasoningSignature, nanogptBilling] = arguments;
     }
 
     const lastMessage = chat[chat.length - 1];
@@ -6623,6 +6693,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
             lastMessage.extra.reasoning = reasoning;
             lastMessage.extra.reasoning_duration = null;
             lastMessage.extra.reasoning_signature = reasoningSignature;
+            applyNanoGptBillingToMessage(lastMessage, nanogptBilling, type);
             await processImageAttachment(lastMessage, { imageUrls });
             if (power_user.message_token_count_enabled) {
                 const tokenCountText = (reasoning || '') + lastMessage.mes;
@@ -6648,6 +6719,9 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         lastMessage.extra.reasoning = reasoning;
         lastMessage.extra.reasoning_duration = null;
         lastMessage.extra.reasoning_signature = reasoningSignature;
+        if (nanogptBilling || !fromStreaming) {
+            applyNanoGptBillingToMessage(lastMessage, nanogptBilling, type);
+        }
         await processImageAttachment(lastMessage, { imageUrls });
         if (power_user.message_token_count_enabled) {
             const tokenCountText = (reasoning || '') + lastMessage.mes;
@@ -6669,6 +6743,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         lastMessage.extra.model = getGeneratingModel();
         lastMessage.extra.reasoning += reasoning;
         lastMessage.extra.reasoning_signature = reasoningSignature;
+        applyNanoGptBillingToMessage(lastMessage, nanogptBilling, type);
         await processImageAttachment(lastMessage, { imageUrls });
         // We don't know if the reasoning duration extended, so we don't update it here on purpose.
         if (power_user.message_token_count_enabled) {
@@ -6692,6 +6767,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         newMessage.extra.reasoning = reasoning;
         newMessage.extra.reasoning_duration = null;
         newMessage.extra.reasoning_signature = reasoningSignature;
+        applyNanoGptBillingToMessage(newMessage, nanogptBilling, type);
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }

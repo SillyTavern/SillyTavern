@@ -2389,6 +2389,9 @@ router.post('/generate', async function (request, response) {
                 headers['X-Billing-Mode'] = 'paygo';
                 bodyParams['billing_mode'] = 'paygo';
             }
+            if (request.body.stream) {
+                bodyParams['stream_options'] = { include_usage: true };
+            }
             if (request.body.enable_web_search && !/:online$/.test(request.body.model)) {
                 request.body.model = `${request.body.model}:online`;
             }

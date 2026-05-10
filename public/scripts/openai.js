@@ -81,6 +81,7 @@ import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { createNanoGptBillingEntryFromResponse } from './nanogpt-billing.js';
 
 export {
     openai_messages_count,
@@ -331,6 +332,7 @@ export const settingsToUpdate = {
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
     nanogpt_provider: ['#nanogpt_provider', 'nanogpt_provider', false, true],
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
+    nanogpt_show_billing: ['#nanogpt_show_billing', 'nanogpt_show_billing', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
@@ -447,6 +449,7 @@ const default_settings = {
     nanogpt_model: 'gpt-4o-mini',
     nanogpt_provider: '',
     nanogpt_payg_override: false,
+    nanogpt_show_billing: false,
     deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
@@ -3071,7 +3074,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
-            const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
+            const state = { reasoning: '', images: [], signature: '', toolSignatures: {}, nanogptBilling: null };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -3079,6 +3082,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 if (rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
+                if (oai_settings.chat_completion_source === chat_completion_sources.NANOGPT) {
+                    state.nanogptBilling = createNanoGptBillingEntryFromResponse(parsed, type) ?? state.nanogptBilling;
+                }
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
@@ -4211,6 +4217,10 @@ function migrateChatCompletionSettings(settings) {
     }
 }
 
+function setNanoGptBillingDisplayEnabled(enabled) {
+    document.body?.classList.toggle('nanogptShowBilling', Boolean(enabled));
+}
+
 /**
  * Load OpenAI settings from backend data
  * @param {any} data Settings data from backend
@@ -4300,6 +4310,7 @@ function loadOpenAISettings(data, settings) {
     $('#openrouter_providers_chat').trigger('change');
     $('#openrouter_quantizations_chat').trigger('change');
     $('#nanogpt_provider').trigger('change');
+    setNanoGptBillingDisplayEnabled(oai_settings.nanogpt_show_billing);
     $('#chat_completion_source').trigger('change');
 }
 
@@ -7154,6 +7165,12 @@ export function initOpenAI() {
 
     $('#nanogpt_payg_override').on('input', function () {
         oai_settings.nanogpt_payg_override = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#nanogpt_show_billing').on('input', function () {
+        oai_settings.nanogpt_show_billing = !!$(this).prop('checked');
+        setNanoGptBillingDisplayEnabled(oai_settings.nanogpt_show_billing);
         saveSettingsDebounced();
     });
 
