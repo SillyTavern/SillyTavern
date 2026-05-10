@@ -1,9 +1,8 @@
-import { eventSource, event_types, extension_prompt_types, extension_prompt_roles, setExtensionPrompt, this_chid, characters } from '../../../script.js';
+import { eventSource, event_types, this_chid, characters } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 
-const MODULE_NAME = 'world_forge_style_override';
 const SETTINGS_KEY = 'world_forge';
-const INJECTION_DEPTH = 0;
+const STYLE_CONTRACT_CLOSE = '</style_contract>';
 
 const PERSPECTIVE_PROSE = {
     first: 'Narrate in first-person past tense, focal on {{char}} this turn. The narrator speaks as {{char}}; other characters\' interiors are not directly accessible. Reference {{user}} by name or pronoun, never as "you" inside narration.',
@@ -53,42 +52,54 @@ function buildOverrideBlock(styleOverride) {
     return { block: `<style_override>\n${lines.join('\n')}\n</style_override>`, applied, skipped };
 }
 
-function clearInjection() {
-    setExtensionPrompt(MODULE_NAME, '', extension_prompt_types.IN_PROMPT, INJECTION_DEPTH, false, extension_prompt_roles.SYSTEM);
+function getActiveCharacter() {
+    const idx = this_chid;
+    if (idx === undefined || idx === null) return null;
+    return characters?.[idx] ?? null;
 }
 
-function applyForActiveCharacter() {
-    const settings = getSettings();
-    if (!settings.enabled) {
-        clearInjection();
-        return;
+function spliceOverrideIntoChat(chat, block) {
+    if (!Array.isArray(chat)) return false;
+    for (const msg of chat) {
+        if (!msg || msg.role !== 'system' || typeof msg.content !== 'string') continue;
+        const anchor = msg.content.indexOf(STYLE_CONTRACT_CLOSE);
+        if (anchor === -1) continue;
+        const insertAt = anchor + STYLE_CONTRACT_CLOSE.length;
+        msg.content = msg.content.slice(0, insertAt) + '\n\n' + block + msg.content.slice(insertAt);
+        return true;
     }
-    const idx = this_chid;
-    const character = (idx === undefined || idx === null) ? null : characters?.[idx];
-    if (!character) {
-        clearInjection();
-        return;
-    }
-    const wf = character.data?.extensions?.world_forge;
-    const styleOverride = wf?.style_override;
-    const { block, applied, skipped } = buildOverrideBlock(styleOverride);
-    setExtensionPrompt(MODULE_NAME, block, extension_prompt_types.IN_PROMPT, INJECTION_DEPTH, false, extension_prompt_roles.SYSTEM);
+    return false;
+}
 
-    if (settings.debug) {
-        const tag = `[world-forge] ${character.name || `chid#${idx}`}`;
-        if (block) {
-            console.log(`${tag} → injected style_override (${applied.join(', ')})`);
-        } else if (skipped.length) {
-            console.warn(`${tag} → no override emitted; unknown enum values skipped: ${skipped.join(', ')}`);
-        } else {
-            console.log(`${tag} → no override`);
+function onChatCompletionPromptReady(eventData) {
+    const settings = getSettings();
+    if (!settings.enabled) return;
+    if (!eventData || eventData.dryRun) return;
+
+    const character = getActiveCharacter();
+    if (!character) return;
+
+    const styleOverride = character.data?.extensions?.world_forge?.style_override;
+    const { block, applied, skipped } = buildOverrideBlock(styleOverride);
+    const tag = `[world-forge] ${character.name || `chid#${this_chid}`}`;
+
+    if (!block) {
+        if (settings.debug) {
+            if (skipped.length) console.warn(`${tag} → no override emitted; unknown enum values: ${skipped.join(', ')}`);
+            else console.log(`${tag} → no override`);
         }
+        return;
+    }
+
+    const inserted = spliceOverrideIntoChat(eventData.chat, block);
+    if (settings.debug) {
+        if (inserted) console.log(`${tag} → injected style_override after </style_contract> (${applied.join(', ')})`);
+        else console.warn(`${tag} → override built but no </style_contract> marker found in any system message; nothing injected`);
     }
 }
 
 export function init() {
     getSettings();
-    eventSource.on(event_types.GENERATION_STARTED, applyForActiveCharacter);
-    eventSource.on(event_types.CHAT_CHANGED, clearInjection);
+    eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, onChatCompletionPromptReady);
     console.log('[world-forge] runtime extension loaded');
 }
