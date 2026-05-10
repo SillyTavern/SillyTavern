@@ -102,7 +102,7 @@ const prompt_builders = {
     RAW_NON_BLOCKING: 2,
 };
 
-const defaultPrompt = 'Ignore previous instructions. Summarize the most important facts and events in the story so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.';
+const defaultPrompt = 'Ignore previous instructions. Summarize the most important facts and events of the story so far in past tense and chronological order. If a summary already exists in your memory, use it as the base and expand it with new facts only. Do not predict, plan, or describe anything that has not yet happened — omit any "next action", "next step", or other forward-looking content. Do not frame anything as "current", "now", or "ongoing"; the summary may be read several turns later. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.';
 const defaultTemplate = '[Summary: {{summary}}]';
 
 const defaultSettings = {
