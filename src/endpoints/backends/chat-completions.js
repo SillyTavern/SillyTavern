@@ -1806,7 +1806,7 @@ router.post('/status', async function (request, statusResponse) {
                 }
             }
             apiUrl = 'https://gen.pollinations.ai/text';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
@@ -2016,7 +2016,7 @@ router.post('/status', async function (request, statusResponse) {
             /** @type {any} */
             let data = await response.json();
 
-            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS_KEY && Array.isArray(data)) {
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS && Array.isArray(data)) {
                 data = { data: data.map(model => ({ id: model.name, ...model })) };
             }
 
@@ -2432,7 +2432,7 @@ router.post('/generate', async function (request, response) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = isAnonymous ? API_POLLINATIONS_ANON : API_POLLINATIONS;
-            apiKey = isAnonymous ? '' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            apiKey = isAnonymous ? '' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY, request.body.secret_id);
             headers = {};
             bodyParams = {
                 seed: request.body.seed ?? Math.floor(Math.random() * 99999999),

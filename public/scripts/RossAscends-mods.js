@@ -406,7 +406,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.FIREWORKS] && oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS)
                     || (secret_state[SECRET_KEYS.COMETAPI] && oai_settings.chat_completion_source == chat_completion_sources.COMETAPI)
                     || (secret_state[SECRET_KEYS.ZAI] && oai_settings.chat_completion_source == chat_completion_sources.ZAI)
-                    || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS && (oai_settings.pollinations_endpoint === 'anonymous' || secret_state[SECRET_KEYS.POLLINATIONS]))
+                    || (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS && (oai_settings.pollinations_endpoint === 'anonymous' || secret_state[SECRET_KEYS.POLLINATIONS_KEY]))
                     || (secret_state[SECRET_KEYS.WORKERS_AI] && oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI)
                     || (secret_state[SECRET_KEYS.MINIMAX] && oai_settings.chat_completion_source == chat_completion_sources.MINIMAX)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
