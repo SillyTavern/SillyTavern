@@ -2114,16 +2114,15 @@ function updateDrawTagFolder(element, tag) {
     indicator.css('font-size', `calc(var(--mainFontSize) * ${tagFolder.size})`);
 }
 
-/** * Event handler for deleting a tag and optionally merging its references into another tag.
- * @this {HTMLElement} // [TYPESCRIPT] Binds 'this' to the clicked DOM element to prevent implicit 'any'
+/**
+ * Event handler for deleting a tag and optionally merging its references into another tag.
+ * @this {HTMLElement}
  */
 async function onTagDeleteClick() {
     const id = $(this).closest('.tag_view_item').attr('id');
-    // [TYPESCRIPT] Early return if ID is undefined, narrowing 'id' to a strict string
     if (!id) return;
 
     const tag = tags.find(x => x.id === id);
-    // [TYPESCRIPT] Early return if tag is not found, narrowing 'tag' to a guaranteed object
     if (!tag) return;
 
     const otherTags = sortTags(tags.filter(x => x.id !== id).map(x => ({ id: x.id, name: x.name })));
@@ -2133,30 +2132,24 @@ async function onTagDeleteClick() {
     appendTagToList(popupContent.find('#tag_to_delete'), tag);
 
     // Make the select control more fancy on not mobile
-    // [BUGFIX] Wrapped Select2 initialization in a setTimeout.
-    // SillyTavern's popup system strips and re-injects HTML; this wait ensures Select2 targets the live DOM, not a detached ghost element.
     setTimeout(() => {
         const $liveSelect = $('#merge_tag_select');
         // Delete the empty option in the dropdown, and make the select2 be empty by default
         if ($liveSelect.length && !isMobile()) {
             $liveSelect.find('option[value=""]').remove();
             $liveSelect.select2({
-                width: '75%', // [UI] Expanded to fit the placeholder text
+                width: '75%',
                 placeholder: 'Select tag to merge into',
                 allowClear: true,
                 dropdownParent: $liveSelect.closest('.popup'),
-            }).val('').trigger('change'); // [TYPESCRIPT] Replaced .val(null) with .val('') to satisfy string-only parameters
+            }).val('').trigger('change');
         }
     }, 10);
 
-    // [REFACTOR] Hoisted the variable declaration outside the popup await so it can be populated during the onClose event.
     /** @type {string|null} */
     let mergeTagId = null;
 
-    // [TYPESCRIPT] Passed 'undefined' instead of 'null' as the 3rd argument to satisfy strict type signatures.
     const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM, undefined, {
-        // [BUGFIX] Added onClose callback. Reading the value after the await fails because the DOM is already destroyed.
-        // This captures the user's selection synchronously right before teardown.
         onClose: () => {
             const val = $('#merge_tag_select').val();
             if (val && val !== 'null' && val !== '') {
@@ -2172,10 +2165,8 @@ async function onTagDeleteClick() {
     // Remove the tag from all entities that use it
     // If we have a replacement tag, add that one instead
     for (const key of Object.keys(tag_map)) {
-        // [TYPESCRIPT] Added truthiness check on tag_map[key] to prevent crashes if the array is null/undefined.
         if (tag_map[key] && tag_map[key].includes(id)) {
             tag_map[key] = tag_map[key].filter(x => x !== id);
-            // [BUGFIX/TYPESCRIPT] Added strict string check to satisfy the compiler, and an .includes() check to prevent injecting duplicate tags.
             if (typeof mergeTagId === 'string' && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
         }
     }
@@ -2185,10 +2176,8 @@ async function onTagDeleteClick() {
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
 
-    // [REFACTOR] Extracted target tag lookup to prevent potential undefined crashes inside the toastr notification string.
     const targetTag = mergeTagId ? tags.find(x => x.id === mergeTagId) : null;
 
-    // [TYPESCRIPT] Ignored missing global type definitions for the injected toastr library.
     // @ts-ignore
     toastr.success(`'${tag.name}' deleted${targetTag ? ` and merged into '${targetTag.name}'` : ''}`, 'Delete Tag');
 
@@ -2196,7 +2185,6 @@ async function onTagDeleteClick() {
     saveSettingsDebounced();
     applyCharacterTagsToMessageDivs();
 
-    // [BUGFIX] Added immediate UI refresh logic. Previously, background merges succeeded but the visual counters didn't update until the menu was reopened.
     if (mergeTagId) {
         const tagContainer = $('#tag_view_list .tag_view_list_tags');
         if (tagContainer.length) {
