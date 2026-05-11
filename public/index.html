@@ -3697,6 +3697,26 @@
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
+                            <div class="deepseek_cache_section" style="margin-top: 12px;">
+                                <h4>Cache Optimization</h4>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" id="deepseek_cache_optimization" name="deepseek_cache_optimization">
+                                    <span>Enable DeepSeek cache optimization</span>
+                                </label>
+                                <small>Places constant content before chat history to maximize prefix cache hits.</small>
+
+                                <div id="deepseek_cache_diagnostics" style="display:none; margin-top: 8px; padding: 8px; background: var(--black30); border-radius: 4px;">
+                                    <div class="cache_stats" style="display: flex; gap: 16px; font-size: 13px;">
+                                        <span>Cache Hit: <strong id="cache_hit_tokens">0</strong> tokens</span>
+                                        <span>Cache Miss: <strong id="cache_miss_tokens">0</strong> tokens</span>
+                                        <span>Hit Rate: <strong id="cache_hit_rate">0%</strong></span>
+                                    </div>
+                                    <div id="cache_breakpoint_info" style="display:none; margin-top: 6px; font-size: 12px; color: var(--warning);">
+                                        Cache break at message #<span id="cache_breakpoint_index"></span>
+                                        (source: <span id="cache_breakpoint_source"></span>)
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div id="fireworks_form" data-source="fireworks">
                             <h4 data-i18n="Fireworks AI API Key">Fireworks AI API Key</h4>

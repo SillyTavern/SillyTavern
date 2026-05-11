@@ -97,6 +97,15 @@ export {
 };
 
 let openai_messages_count = 0;
+let dsLastSentMessages = [];
+const dsCacheDiag = {
+    enabled: false,
+    breakpointIndex: -1,
+    breakpointSource: '',
+    hitTokens: 0,
+    missTokens: 0,
+    hitRate: 0,
+};
 
 const default_main_prompt = 'Write {{char}}\'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}.';
 const default_nsfw_prompt = '';
@@ -332,6 +341,7 @@ export const settingsToUpdate = {
     nanogpt_provider: ['#nanogpt_provider', 'nanogpt_provider', false, true],
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
+    deepseek_cache_optimization: ['#deepseek_cache_optimization', 'deepseek_cache_optimization', true, false],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
@@ -448,6 +458,7 @@ const default_settings = {
     nanogpt_provider: '',
     nanogpt_payg_override: false,
     deepseek_model: 'deepseek-v4-flash',
+    deepseek_cache_optimization: false,
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -632,7 +643,7 @@ function setOpenAIMessages(chat) {
             });
         }
 
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning };
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning, source: 'chatHistory' };
         j++;
     }
 
@@ -849,7 +860,7 @@ async function populationInjectionPrompts(prompts, messages) {
                 const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
 
                 if (jointPrompt && jointPrompt.length) {
-                    roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
+                    roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true, source: `injection_d${i}` });
                 }
             }
         }
@@ -2634,6 +2645,92 @@ function getVerbosity(settings = null) {
 }
 
 /**
+ * Detect where cache prefix starts diverging from the previous request.
+ * @param {ChatCompletionMessage[]} messages
+ */
+function detectDeepSeekCacheBreakpoint(messages) {
+    if (!dsCacheDiag.enabled || dsLastSentMessages.length === 0) {
+        return;
+    }
+
+    let breakIdx = -1;
+    const maxLen = Math.min(dsLastSentMessages.length, messages.length);
+
+    for (let i = 0; i < maxLen; i++) {
+        const prevContent = typeof dsLastSentMessages[i]?.content === 'string'
+            ? dsLastSentMessages[i].content
+            : JSON.stringify(dsLastSentMessages[i]?.content || '');
+        const currContent = typeof messages[i]?.content === 'string'
+            ? messages[i].content
+            : JSON.stringify(messages[i]?.content || '');
+
+        if (prevContent !== currContent || dsLastSentMessages[i]?.role !== messages[i]?.role) {
+            breakIdx = i;
+            break;
+        }
+    }
+
+    if (breakIdx === -1 && messages.length !== dsLastSentMessages.length) {
+        breakIdx = maxLen;
+    }
+
+    dsCacheDiag.breakpointIndex = breakIdx;
+    dsCacheDiag.breakpointSource = breakIdx >= 0 && breakIdx < messages.length
+        ? (messages[breakIdx]?.source || 'unknown')
+        : '';
+}
+
+/**
+ * Reorder messages to maximize DeepSeek prompt cache prefix match.
+ * @param {ChatCompletionMessage[]} messages
+ * @returns {ChatCompletionMessage[]}
+ */
+function reorderForDeepSeekCache(messages) {
+    // Tool-calling flows require strict chronological ordering of assistant/tool turns.
+    if (messages.some(msg => msg.role === 'tool' || Array.isArray(msg.tool_calls))) {
+        return messages;
+    }
+
+    const constantSystem = [];
+    const dynamicSystem = [];
+    const chatHistory = [];
+    const others = [];
+
+    const volatilePattern = /\{\{(time|date|random|roll|time_UTC|idle_duration|randomString)\}\}/i;
+
+    for (const msg of messages) {
+        if (msg.role === 'system') {
+            if (volatilePattern.test(typeof msg.content === 'string' ? msg.content : '')) {
+                dynamicSystem.push(msg);
+            } else {
+                constantSystem.push(msg);
+            }
+        } else if (msg.role === 'user' || msg.role === 'assistant') {
+            chatHistory.push(msg);
+        } else {
+            others.push(msg);
+        }
+    }
+
+    return [...constantSystem, ...chatHistory, ...dynamicSystem, ...others];
+}
+
+function updateDeepSeekCacheDiagnosticsUI() {
+    $('#cache_hit_tokens').text(dsCacheDiag.hitTokens.toLocaleString());
+    $('#cache_miss_tokens').text(dsCacheDiag.missTokens.toLocaleString());
+    $('#cache_hit_rate').text(`${dsCacheDiag.hitRate}%`);
+
+    const hasBreakpoint = dsCacheDiag.breakpointIndex >= 0;
+    $('#cache_breakpoint_info').toggle(hasBreakpoint);
+    if (hasBreakpoint) {
+        $('#cache_breakpoint_index').text(dsCacheDiag.breakpointIndex);
+        $('#cache_breakpoint_source').text(dsCacheDiag.breakpointSource);
+    }
+
+    $('#deepseek_cache_diagnostics').show();
+}
+
+/**
  * Build the generation parameter object for an OAI request.
  * @param {ChatCompletionSettings} settings Initial chat completion settings
  * @param {string} model Model name
@@ -3049,6 +3146,33 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const model = getChatCompletionModel(oai_settings);
     const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
+    const baseApiMessages = structuredClone(messages);
+    for (const msg of baseApiMessages) {
+        delete msg.source;
+    }
+    generate_data.messages = baseApiMessages;
+
+    const isDeepSeek = oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK;
+    let messagesWithSource = [];
+
+    if (isDeepSeek) {
+        const sourceMessages = structuredClone(messages);
+
+        if (oai_settings.deepseek_cache_optimization) {
+            generate_data.messages = reorderForDeepSeekCache(baseApiMessages);
+            messagesWithSource = reorderForDeepSeekCache(sourceMessages);
+        } else {
+            messagesWithSource = sourceMessages;
+        }
+
+        if (dsCacheDiag.enabled) {
+            dsCacheDiag.breakpointIndex = -1;
+            dsCacheDiag.breakpointSource = '';
+            detectDeepSeekCacheBreakpoint(messagesWithSource);
+            updateDeepSeekCacheDiagnosticsUI();
+        }
+    }
+
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
@@ -3074,11 +3198,30 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) return;
+                if (done) {
+                    if (isDeepSeek && dsCacheDiag.enabled) {
+                        dsLastSentMessages = structuredClone(messagesWithSource);
+                    }
+                    return;
+                }
                 const rawData = value.data;
-                if (rawData === '[DONE]') return;
+                if (rawData === '[DONE]') {
+                    if (isDeepSeek && dsCacheDiag.enabled) {
+                        dsLastSentMessages = structuredClone(messagesWithSource);
+                    }
+                    return;
+                }
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
+
+                // Extract DeepSeek cache usage from the final streaming chunk
+                if (isDeepSeek && dsCacheDiag.enabled && parsed?.usage) {
+                    dsCacheDiag.hitTokens = parsed.usage.prompt_cache_hit_tokens || 0;
+                    dsCacheDiag.missTokens = parsed.usage.prompt_cache_miss_tokens || 0;
+                    const total = dsCacheDiag.hitTokens + dsCacheDiag.missTokens;
+                    dsCacheDiag.hitRate = total > 0 ? Math.round((dsCacheDiag.hitTokens / total) * 100) : 0;
+                    updateDeepSeekCacheDiagnosticsUI();
+                }
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
@@ -3110,6 +3253,18 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             // Delay is required to allow the active message to be updated to
             // the one we are generating (happens right after sendOpenAIRequest)
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
+        }
+
+        if (isDeepSeek && dsCacheDiag.enabled && data?.usage) {
+            dsCacheDiag.hitTokens = data.usage.prompt_cache_hit_tokens || 0;
+            dsCacheDiag.missTokens = data.usage.prompt_cache_miss_tokens || 0;
+            const total = dsCacheDiag.hitTokens + dsCacheDiag.missTokens;
+            dsCacheDiag.hitRate = total > 0 ? Math.round((dsCacheDiag.hitTokens / total) * 100) : 0;
+            updateDeepSeekCacheDiagnosticsUI();
+        }
+
+        if (isDeepSeek && dsCacheDiag.enabled) {
+            dsLastSentMessages = structuredClone(messagesWithSource);
         }
 
         return data;
@@ -3421,6 +3576,8 @@ class Message {
     /** @type {string} */
     identifier;
     /** @type {string} */
+    source;
+    /** @type {string} */
     role;
     /** @type {string|any[]} */
     content;
@@ -3440,8 +3597,9 @@ class Message {
      * @param {string} identifier - A unique identifier for the message.
      * @private Don't use this constructor directly. Use createAsync instead.
      */
-    constructor(role, content, identifier) {
+    constructor(role, content, identifier, source) {
         this.identifier = identifier;
+        this.source = source || identifier;
         this.role = role;
         this.content = content;
 
@@ -3460,8 +3618,8 @@ class Message {
      * @param {string} identifier
      * @returns {Promise<Message>} Message instance
      */
-    static async createAsync(role, content, identifier) {
-        const message = new Message(role, content, identifier);
+    static async createAsync(role, content, identifier, source) {
+        const message = new Message(role, content, identifier, source);
 
         if (typeof message.content === 'string' && message.content.length > 0) {
             message.tokens = await tokenHandler.countAsync({ role: message.role, content: message.content });
@@ -3695,7 +3853,7 @@ class Message {
      * @returns {Promise<Message>} A new instance of Message.
      */
     static fromPromptAsync(prompt) {
-        return Message.createAsync(prompt.role, prompt.content, prompt.identifier);
+        return Message.createAsync(prompt.role, prompt.content, prompt.identifier, prompt.identifier);
     }
 
     /**
@@ -3745,6 +3903,7 @@ class MessageCollection {
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
                     ...(message.signature && { signature: message.signature }),
                     ...(message.reasoning && { reasoning: message.reasoning }),
+                    source: message.source || message.identifier || '',
                 });
             }
             return acc;
@@ -3844,6 +4003,7 @@ export class ChatCompletion {
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
                     lastMessage.content += '\n' + message.content;
+                    lastMessage.source = `${lastMessage.source || ''}+${message.source || ''}`.replace(/^\+|\+$/g, '');
                     lastMessage.tokens = await tokenHandler.countAsync({ role: lastMessage.role, content: lastMessage.content });
                 } else {
                     squashedMessages.push(message);
@@ -4036,6 +4196,7 @@ export class ChatCompletion {
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
                     ...(item.signature ? { signature: item.signature } : {}),
                     ...(item.reasoning ? { reasoning: item.reasoning } : {}),
+                    source: item.source || item.identifier || '',
                 };
                 chat.push(message);
             } else {
@@ -4263,6 +4424,14 @@ function loadOpenAISettings(data, settings) {
                 }
             }
         }
+    }
+
+    dsCacheDiag.enabled = Boolean(oai_settings.deepseek_cache_optimization);
+    if (dsCacheDiag.enabled) {
+        $('#deepseek_cache_optimization').prop('checked', true);
+        updateDeepSeekCacheDiagnosticsUI();
+    } else {
+        $('#deepseek_cache_diagnostics').hide();
     }
 
     $(`#settings_preset_openai option[value="${openai_setting_names[oai_settings.preset_settings_openai]}"]`).prop('selected', true);
@@ -6888,6 +7057,23 @@ export function initOpenAI() {
 
     $('#squash_system_messages').on('input', function () {
         oai_settings.squash_system_messages = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#deepseek_cache_optimization').on('change', function () {
+        oai_settings.deepseek_cache_optimization = !!$(this).prop('checked');
+        dsCacheDiag.enabled = oai_settings.deepseek_cache_optimization;
+        if (!dsCacheDiag.enabled) {
+            dsLastSentMessages = [];
+            dsCacheDiag.breakpointIndex = -1;
+            dsCacheDiag.breakpointSource = '';
+            dsCacheDiag.hitTokens = 0;
+            dsCacheDiag.missTokens = 0;
+            dsCacheDiag.hitRate = 0;
+            $('#deepseek_cache_diagnostics').hide();
+        } else {
+            updateDeepSeekCacheDiagnosticsUI();
+        }
         saveSettingsDebounced();
     });
 
