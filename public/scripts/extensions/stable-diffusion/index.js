@@ -2154,7 +2154,7 @@ async function loadWorkersAIImageModels() {
 }
 
 async function loadPollinationsModels() {
-    $('#sd_pollinations_key').toggleClass('success', !!secret_state[SECRET_KEYS.POLLINATIONS]);
+    $('#sd_pollinations_key').toggleClass('success', !!secret_state[SECRET_KEYS.POLLINATIONS_KEY]);
 
     const result = await fetch('/api/sd/pollinations/models', {
         method: 'POST',
@@ -5106,7 +5106,7 @@ function isValidState() {
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
-            return secret_state[SECRET_KEYS.POLLINATIONS];
+            return secret_state[SECRET_KEYS.POLLINATIONS_KEY];
         case sources.stability:
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.huggingface:
@@ -5938,7 +5938,7 @@ export async function init() {
                 [sources.stability]: SECRET_KEYS.STABILITY,
                 [sources.aimlapi]: SECRET_KEYS.AIMLAPI,
                 [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
-                [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
+                [sources.pollinations]: SECRET_KEYS.POLLINATIONS_KEY,
                 [sources.workersai]: SECRET_KEYS.WORKERS_AI,
             };
             const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);

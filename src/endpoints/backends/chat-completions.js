@@ -83,6 +83,7 @@ const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
 const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://gen.pollinations.ai/v1';
+const API_POLLINATIONS_NOKEY = 'https://text.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
@@ -1788,10 +1789,27 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_AIMLAPI;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
             headers = { ...AIMLAPI_HEADERS };
-        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS_KEY) {
             apiUrl = 'https://gen.pollinations.ai/text';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS_NOKEY) {
+            try {
+                const response = await fetch('https://gen.pollinations.ai/models');
+                if (!response.ok) {
+                    return statusResponse.send({ data: [] });
+                }
+                /** @type {any} */
+                const data = await response.json();
+                if (!Array.isArray(data)) {
+                    return statusResponse.send({ data: [] });
+                }
+                const models = data.map(m => ({ id: m.name, ...m }));
+                return statusResponse.send({ data: models });
+            } catch (error) {
+                console.error('Error fetching Pollinations (No Key) models:', error);
+                return statusResponse.send({ data: [] });
+            }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);
@@ -2000,7 +2018,7 @@ router.post('/status', async function (request, statusResponse) {
             /** @type {any} */
             let data = await response.json();
 
-            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS && Array.isArray(data)) {
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS_KEY && Array.isArray(data)) {
                 data = { data: data.map(model => ({ id: model.name, ...model })) };
             }
 
@@ -2413,9 +2431,9 @@ router.post('/generate', async function (request, response) {
                     'ttl': cacheTTL,
                 };
             }
-        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS_KEY) {
             apiUrl = API_POLLINATIONS;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY, request.body.secret_id);
             headers = {};
             bodyParams = {
                 reasoning_effort: request.body.reasoning_effort,
@@ -2429,6 +2447,13 @@ router.post('/generate', async function (request, response) {
                     },
                 };
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS_NOKEY) {
+            apiUrl = API_POLLINATIONS_NOKEY;
+            apiKey = '';
+            headers = {};
+            bodyParams = {
+                seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
+            };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
@@ -2513,7 +2538,7 @@ router.post('/generate', async function (request, response) {
             }
         }
 
-        if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
+        if (!apiKey && !request.body.reverse_proxy && ![CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.POLLINATIONS_NOKEY].includes(request.body.chat_completion_source)) {
             console.warn('OpenAI API key is missing.');
             return response.status(400).send({ error: true });
         }
@@ -2631,7 +2656,33 @@ router.post('/generate', async function (request, response) {
 
 const multimodalModels = express.Router();
 
-multimodalModels.post('/pollinations', async (_req, res) => {
+multimodalModels.post('/pollinations_key', async (_req, res) => {
+    try {
+        const response = await fetch('https://gen.pollinations.ai/models');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            return res.json([]);
+        }
+
+        const multimodalModels = data
+            .filter(m => Array.isArray(m?.input_modalities))
+            .filter(m => m.input_modalities.includes('image'))
+            .map(m => m.name);
+        return res.json(multimodalModels);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/pollinations_nokey', async (_req, res) => {
     try {
         const response = await fetch('https://gen.pollinations.ai/models');
 

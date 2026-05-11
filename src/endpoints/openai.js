@@ -97,8 +97,13 @@ router.post('/caption-image', async (request, response) => {
             bodyParams.max_tokens = 4096; // default is 1024
         }
 
-        if (request.body.api === 'pollinations') {
-            key = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+        if (request.body.api === 'pollinations_key') {
+            key = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY);
+            bodyParams.seed = Math.floor(Math.random() * Math.pow(2, 32));
+        }
+
+        if (request.body.api === 'pollinations_nokey') {
+            key = '';
             bodyParams.seed = Math.floor(Math.random() * Math.pow(2, 32));
         }
 
@@ -106,7 +111,7 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
         }
 
-        const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp'];
+        const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp', 'pollinations_nokey'];
         if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api)) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
@@ -181,8 +186,12 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = 'https://api.x.ai/v1/chat/completions';
         }
 
-        if (request.body.api === 'pollinations') {
+        if (request.body.api === 'pollinations_key') {
             apiUrl = 'https://gen.pollinations.ai/v1/chat/completions';
+        }
+
+        if (request.body.api === 'pollinations_nokey') {
+            apiUrl = 'https://text.pollinations.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'moonshot' && !request.body.reverse_proxy) {
