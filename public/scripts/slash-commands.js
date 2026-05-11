@@ -2972,10 +2972,6 @@ export function initDefaultSlashCommands() {
         name: 'tokens',
         callback: async (_, text) => {
             if (text instanceof SlashCommandClosure || Array.isArray(text)) throw new Error(t`Unnamed argument cannot be a closure for command /tokens`);
-            if (main_api === 'openai') {
-                const ids = getTextTokens(tokenizers.OPENAI, text);
-                if (Array.isArray(ids) && ids.length > 0) return String(ids.length);
-            }
             return String(await getTokenCountAsync(text));
         },
         returns: t`number of tokens`,
