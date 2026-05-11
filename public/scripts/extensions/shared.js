@@ -1,4 +1,4 @@
-import { CONNECT_API_MAP, createModelIcon, getRequestHeaders } from '../../script.js';
+import { CONNECT_API_MAP, createModelIcon, getRequestHeaders, substituteParams } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
 import { oai_settings, proxies, ZAI_ENDPOINT } from '../openai.js';
@@ -117,9 +117,9 @@ export async function getMultimodalCaption(base64Img, prompt) {
         }
 
         requestBody.server_url = oai_settings.custom_url;
-        requestBody.custom_include_headers = oai_settings.custom_include_headers;
-        requestBody.custom_include_body = oai_settings.custom_include_body;
-        requestBody.custom_exclude_body = oai_settings.custom_exclude_body;
+        requestBody.custom_include_headers = substituteParams(oai_settings.custom_include_headers);
+        requestBody.custom_include_body = substituteParams(oai_settings.custom_include_body);
+        requestBody.custom_exclude_body = substituteParams(oai_settings.custom_exclude_body);
     }
 
     if (extension_settings.caption.multimodal_api === 'zai') {
