@@ -107,6 +107,7 @@ import { addGlobalVariable, addLocalVariable, decrementGlobalVariable, decrement
 import { convertCharacterBook, getWorldInfoPrompt, loadWorldInfo, reloadEditor, saveWorldInfo, updateWorldInfoList, world_names } from './world-info.js';
 import { ChatCompletionService, TextCompletionService } from './custom-request.js';
 import { ConnectionManagerRequestService } from './extensions/shared.js';
+import { buildLeanChatPrompt, prepareLeanPromptForTransport, LEAN_PROMPT_CANCELLED } from './extensions/lean-chat-prompt.js';
 import { updateReasoningUI, parseReasoningFromString, getReasoningTemplateByName } from './reasoning.js';
 import { IGNORE_SYMBOL } from './constants.js';
 import { macros } from './macros/macro-system.js';
@@ -290,6 +291,9 @@ export function getContext() {
         ChatCompletionService,
         TextCompletionService,
         ConnectionManagerRequestService,
+        buildLeanChatPrompt,
+        prepareLeanPromptForTransport,
+        LEAN_PROMPT_CANCELLED,
         updateReasoningUI,
         parseReasoningFromString,
         getReasoningTemplateByName,
