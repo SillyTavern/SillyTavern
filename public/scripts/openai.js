@@ -268,6 +268,11 @@ export const ZAI_ENDPOINT = {
     CODING: 'coding',
 };
 
+export const POLLINATIONS_ENDPOINT = {
+    AUTHENTICATED: 'authenticated',
+    ANONYMOUS: 'anonymous',
+};
+
 export const SILICONFLOW_ENDPOINT = {
     GLOBAL: 'global',
     CN: 'cn',
@@ -335,8 +340,8 @@ export const settingsToUpdate = {
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
-    pollinations_key_model: ['#model_pollinations_key_select', 'pollinations_key_model', false, true],
-    pollinations_nokey_model: ['#model_pollinations_nokey_select', 'pollinations_nokey_model', false, true],
+    pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
+    pollinations_endpoint: ['#pollinations_endpoint', 'pollinations_endpoint', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
@@ -452,8 +457,8 @@ const default_settings = {
     deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
-    pollinations_key_model: 'openai',
-    pollinations_nokey_model: 'openai',
+    pollinations_model: 'openai',
+    pollinations_endpoint: POLLINATIONS_ENDPOINT.ANONYMOUS,
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
@@ -2559,7 +2564,8 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.DEEPSEEK,
     ];
 
-    if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
+    const isPollinationsAnon = settings.chat_completion_source === chat_completion_sources.POLLINATIONS && settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+    if (!reasoningEffortSources.includes(settings.chat_completion_source) || isPollinationsAnon) {
         return settings.reasoning_effort;
     }
 
@@ -2951,6 +2957,10 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.zai_endpoint = settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
         delete generate_data.presence_penalty;
         delete generate_data.frequency_penalty;
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
+        generate_data.pollinations_endpoint = settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.ANONYMOUS;
     }
 
     if (settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
@@ -4446,6 +4456,10 @@ async function getStatusOpen() {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
         data.workers_ai_account_id = oai_settings.workers_ai_account_id;
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
+        data.pollinations_endpoint = oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.ANONYMOUS;
     }
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
@@ -5978,6 +5992,12 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    // Anonymous Pollinations endpoint needs no key
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS &&
+        oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS) {
+        apiSourceConfig[chat_completion_sources.POLLINATIONS].keyless = true;
+    }
+
     // Other generic configs
     const config = apiSourceConfig[oai_settings.chat_completion_source];
     if (config) {
@@ -6042,10 +6062,10 @@ function toggleChatCompletionForms() {
         $('#model_aimlapi_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
         $('#model_xai_select').trigger('change');
-    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS_KEY) {
-        $('#model_pollinations_key_select').trigger('change');
-    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS_NOKEY) {
-        $('#model_pollinations_nokey_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
+        const isAnon = oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+        $('#pollinations_key_section').toggle(!isAnon);
+        $('#model_pollinations_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
@@ -7223,6 +7243,12 @@ export function initOpenAI() {
         oai_settings.zai_endpoint = String($(this).val());
         saveSettingsDebounced();
     });
+    $('#pollinations_endpoint').on('input', function () {
+        oai_settings.pollinations_endpoint = String($(this).val());
+        const isAnon = oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+        $('#pollinations_key_section').toggle(!isAnon);
+        saveSettingsDebounced();
+    });
     $('#siliconflow_endpoint').on('input', function () {
         oai_settings.siliconflow_endpoint = String($(this).val());
         saveSettingsDebounced();
@@ -7278,23 +7304,28 @@ export function initOpenAI() {
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 
+<<<<<<< HEAD
     // Handle Pollinations BYOP OAuth callback (key arrives in URL hash after redirect)
+=======
+    // Pollinations BYOP OAuth callback
+>>>>>>> 2035052 (Add Pollinations anonymous/authenticated endpoint selector)
     const urlHash = window.location.hash;
     if (urlHash) {
         const hashParams = new URLSearchParams(urlHash.slice(1));
         const pollinationsKey = hashParams.get('api_key');
         if (pollinationsKey) {
             history.replaceState(null, '', window.location.pathname + window.location.search);
-            $('#chat_completion_source').val(chat_completion_sources.POLLINATIONS_KEY).trigger('change');
+            $('#chat_completion_source').val(chat_completion_sources.POLLINATIONS).trigger('change');
             setTimeout(() => {
+                $('#pollinations_endpoint').val(POLLINATIONS_ENDPOINT.AUTHENTICATED).trigger('input');
                 $('#api_key_pollinations').val(pollinationsKey).trigger('input');
-                toastr.success('Pollinations API key received! Click Connect to save.');
+                toastr.success(t`Pollinations API key received! Click Connect to save.`);
+
             }, 500);
         }
     }
 
     $('#pollinations_byop_authorize').on('click', function () {
-        const authUrl = 'https://enter.pollinations.ai/authorize?redirect_uri=http://localhost:8000&client_id=pk_Gu8Ta8q6QhS67hSg';
-        window.open(authUrl, '_blank', 'noopener,noreferrer');
+        window.open('https://enter.pollinations.ai/authorize?redirect_uri=http://localhost:8000&client_id=pk_Gu8Ta8q6QhS67hSg', '_blank', 'noopener,noreferrer');
     });
 }

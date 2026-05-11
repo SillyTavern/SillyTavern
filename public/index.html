@@ -3868,33 +3868,31 @@
                             <select id="model_aimlapi_select">
                             </select>
                         </div>
-                        <div id="pollinations_key_form" data-source="pollinations_key">
-                            <h4>
-                                <a href="https://enter.pollinations.ai/" target="_blank" rel="noopener noreferrer">
-                                    Pollinations API Key
-                                </a>
-                            </h4>
-                            <div class="flex-container">
-                                <input id="api_key_pollinations" name="api_key_pollinations" class="text_pole flex1" value="" type="text" autocomplete="off" placeholder="sk_...">
-                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_pollinations"></div>
-                            </div>
-                            <div data-for="api_key_pollinations" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                For privacy reasons, your API key will be hidden after you click 'Connect'.
-                            </div>
-                            <div class="flex-container marginTop5">
-                                <input id="pollinations_byop_authorize" class="menu_button" type="button" value="Authorize with Pollinations (BYOP)" title="Opens Pollinations OAuth — you will be redirected back with your key" data-i18n="[title]Opens Pollinations OAuth — you will be redirected back with your key">
-                            </div>
-                            <h4>Pollinations (Key) Model</h4>
-                            <select id="model_pollinations_key_select">
-                                <!-- Populated by JavaScript -->
+                        <div id="pollinations_form" data-source="pollinations">
+                            <h4 data-i18n="Pollinations Endpoint">Pollinations Endpoint</h4>
+                            <select id="pollinations_endpoint">
+                                <option value="anonymous" data-i18n="Anonymous (No Key)">Anonymous (No Key)</option>
+                                <option value="authenticated" data-i18n="Authenticated (API Key)">Authenticated (API Key)</option>
                             </select>
-                        </div>
-                        <div id="pollinations_nokey_form" data-source="pollinations_nokey">
-                            <div class="neutral_warning">
-                                Uses <strong>text.pollinations.ai</strong> — no API key required.
+                            <div id="pollinations_key_section">
+                                <h4>
+                                    <a href="https://enter.pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Pollinations API Key">
+                                        Pollinations API Key
+                                    </a>
+                                </h4>
+                                <div class="flex-container">
+                                    <input id="api_key_pollinations" name="api_key_pollinations" class="text_pole flex1" value="" type="text" placeholder="sk_..." autocomplete="off">
+                                    <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_pollinations"></div>
+                                </div>
+                                <div data-for="api_key_pollinations" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                    For privacy reasons, your API key will be hidden after you click 'Connect'.
+                                </div>
+                                <div class="flex-container">
+                                    <input id="pollinations_byop_authorize" class="menu_button" type="button" value="Authorize with Pollinations (BYOP)" data-i18n="[value]Authorize with Pollinations (BYOP)">
+                                </div>
                             </div>
-                            <h4>Pollinations (No Key) Model</h4>
-                            <select id="model_pollinations_nokey_select">
+                            <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
+                            <select id="model_pollinations_select">
                                 <!-- Populated by JavaScript -->
                             </select>
                         </div>
