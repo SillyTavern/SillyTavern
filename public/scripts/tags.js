@@ -2167,7 +2167,7 @@ async function onTagDeleteClick() {
     for (const key of Object.keys(tag_map)) {
         if (tag_map[key] && tag_map[key].includes(id)) {
             tag_map[key] = tag_map[key].filter(x => x !== id);
-            if (typeof mergeTagId === 'string' && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
+            if (mergeTagId && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
         }
     }
 
