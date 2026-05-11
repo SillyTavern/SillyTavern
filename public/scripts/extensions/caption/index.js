@@ -506,7 +506,7 @@ export async function init() {
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
-                        'pollinations': SECRET_KEYS.POLLINATIONS,
+                        'pollinations_key': SECRET_KEYS.POLLINATIONS_KEY,
                         'workers_ai': SECRET_KEYS.WORKERS_AI,
                     };
 
@@ -530,8 +530,8 @@ export async function init() {
                         return true;
                     }
 
-                    // Custom API doesn't need additional checks
-                    if (api === 'custom') {
+                    // Custom API and Pollinations (No Key) don't need additional checks
+                    if (api === 'custom' || api === 'pollinations_nokey') {
                         return true;
                     }
                 }
@@ -618,7 +618,8 @@ export async function init() {
 
         await processEndpoint('openrouter', '/api/openrouter/models/multimodal');
         await processEndpoint('aimlapi', '/api/backends/chat-completions/multimodal-models/aimlapi');
-        await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
+        await processEndpoint('pollinations_key', '/api/backends/chat-completions/multimodal-models/pollinations_key');
+        await processEndpoint('pollinations_nokey', '/api/backends/chat-completions/multimodal-models/pollinations_nokey');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
         await processEndpoint('chutes', '/api/backends/chat-completions/multimodal-models/chutes');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');

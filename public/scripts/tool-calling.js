@@ -623,7 +623,8 @@ export class ToolManager {
         const currentModel = Array.isArray(model_list) ? model_list.find(m => m.id === model) : null;
         if (currentModel) {
             switch (settings.chat_completion_source) {
-                case chat_completion_sources.POLLINATIONS:
+                case chat_completion_sources.POLLINATIONS_KEY:
+                case chat_completion_sources.POLLINATIONS_NOKEY:
                     return currentModel.tools;
                 case chat_completion_sources.FIREWORKS:
                     return currentModel.supports_tools;
@@ -656,7 +657,8 @@ export class ToolManager {
             chat_completion_sources.VERTEXAI,
             chat_completion_sources.AI21,
             chat_completion_sources.XAI,
-            chat_completion_sources.POLLINATIONS,
+            chat_completion_sources.POLLINATIONS_KEY,
+            chat_completion_sources.POLLINATIONS_NOKEY,
             chat_completion_sources.MOONSHOT,
             chat_completion_sources.FIREWORKS,
             chat_completion_sources.COMETAPI,

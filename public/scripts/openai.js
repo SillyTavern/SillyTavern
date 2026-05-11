@@ -190,7 +190,8 @@ export const chat_completion_sources = {
     DEEPSEEK: 'deepseek',
     AIMLAPI: 'aimlapi',
     XAI: 'xai',
-    POLLINATIONS: 'pollinations',
+    POLLINATIONS_KEY: 'pollinations_key',
+    POLLINATIONS_NOKEY: 'pollinations_nokey',
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
@@ -334,7 +335,8 @@ export const settingsToUpdate = {
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
-    pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
+    pollinations_key_model: ['#model_pollinations_key_select', 'pollinations_key_model', false, true],
+    pollinations_nokey_model: ['#model_pollinations_nokey_select', 'pollinations_nokey_model', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
@@ -450,7 +452,8 @@ const default_settings = {
     deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
-    pollinations_model: 'openai',
+    pollinations_key_model: 'openai',
+    pollinations_nokey_model: 'openai',
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
@@ -1737,8 +1740,10 @@ export function getChatCompletionModel(settings = null) {
             return settings.aimlapi_model;
         case chat_completion_sources.XAI:
             return settings.xai_model;
-        case chat_completion_sources.POLLINATIONS:
-            return settings.pollinations_model;
+        case chat_completion_sources.POLLINATIONS_KEY:
+            return settings.pollinations_key_model;
+        case chat_completion_sources.POLLINATIONS_NOKEY:
+            return settings.pollinations_nokey_model;
         case chat_completion_sources.COMETAPI:
             return settings.cometapi_model;
         case chat_completion_sources.MOONSHOT:
@@ -2192,18 +2197,32 @@ function saveModelList(data) {
         $('#model_deepseek_select').val(oai_settings.deepseek_model).trigger('change');
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
-        $('#model_pollinations_select').empty();
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS_KEY) {
+        $('#model_pollinations_key_select').empty();
         model_list.forEach((model) => {
-            $('#model_pollinations_select').append($('<option>', { value: model.id, text: model.id }));
+            $('#model_pollinations_key_select').append($('<option>', { value: model.id, text: model.id }));
         });
 
-        const selectedModel = model_list.find(model => model.id === oai_settings.pollinations_model);
-        if (model_list.length > 0 && (!selectedModel || !oai_settings.pollinations_model)) {
-            oai_settings.pollinations_model = model_list[0].id;
+        const selectedModel = model_list.find(model => model.id === oai_settings.pollinations_key_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.pollinations_key_model)) {
+            oai_settings.pollinations_key_model = model_list[0].id;
         }
 
-        $('#model_pollinations_select').val(oai_settings.pollinations_model).trigger('change');
+        $('#model_pollinations_key_select').val(oai_settings.pollinations_key_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS_NOKEY) {
+        $('#model_pollinations_nokey_select').empty();
+        model_list.forEach((model) => {
+            $('#model_pollinations_nokey_select').append($('<option>', { value: model.id, text: model.id }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.pollinations_nokey_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.pollinations_nokey_model)) {
+            oai_settings.pollinations_nokey_model = model_list[0].id;
+        }
+
+        $('#model_pollinations_nokey_select').val(oai_settings.pollinations_nokey_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
@@ -2532,7 +2551,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.OPENROUTER,
-        chat_completion_sources.POLLINATIONS,
+        chat_completion_sources.POLLINATIONS_KEY,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.COMETAPI,
         chat_completion_sources.ELECTRONHUB,
@@ -2668,7 +2687,8 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.NANOGPT,
         chat_completion_sources.XAI,
-        chat_completion_sources.POLLINATIONS,
+        chat_completion_sources.POLLINATIONS_KEY,
+        chat_completion_sources.POLLINATIONS_NOKEY,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
@@ -3192,7 +3212,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS_KEY, chat_completion_sources.POLLINATIONS_NOKEY, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -5494,9 +5514,14 @@ async function onModelChange() {
         $('#custom_model_id').val(value).trigger('input');
     }
 
-    if (value && $(this).is('#model_pollinations_select')) {
-        console.log('Pollinations model changed to', value);
-        oai_settings.pollinations_model = value;
+    if (value && $(this).is('#model_pollinations_key_select')) {
+        console.log('Pollinations (Key) model changed to', value);
+        oai_settings.pollinations_key_model = value;
+    }
+
+    if (value && $(this).is('#model_pollinations_nokey_select')) {
+        console.log('Pollinations (No Key) model changed to', value);
+        oai_settings.pollinations_nokey_model = value;
     }
 
     if ($(this).is('#model_aimlapi_select')) {
@@ -5741,7 +5766,7 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
+    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS_KEY || oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS_NOKEY) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         } else {
@@ -5934,7 +5959,8 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
-        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
+        [chat_completion_sources.POLLINATIONS_KEY]: { key: SECRET_KEYS.POLLINATIONS_KEY, selector: '#api_key_pollinations', proxy: false },
+        [chat_completion_sources.POLLINATIONS_NOKEY]: { key: null, selector: null, proxy: false, keyless: true },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
     };
@@ -6016,8 +6042,10 @@ function toggleChatCompletionForms() {
         $('#model_aimlapi_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
         $('#model_xai_select').trigger('change');
-    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
-        $('#model_pollinations_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS_KEY) {
+        $('#model_pollinations_key_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS_NOKEY) {
+        $('#model_pollinations_nokey_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
@@ -6203,8 +6231,10 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.chutes_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.ELECTRONHUB:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
-        case chat_completion_sources.POLLINATIONS:
-            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.input_modalities?.includes('image'));
+        case chat_completion_sources.POLLINATIONS_KEY:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_key_model)?.input_modalities?.includes('image'));
+        case chat_completion_sources.POLLINATIONS_NOKEY:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_nokey_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.COMETAPI:
             return true;
         case chat_completion_sources.MOONSHOT:
@@ -7223,7 +7253,8 @@ export function initOpenAI() {
     $('#model_aimlapi_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);
-    $('#model_pollinations_select').on('change', onModelChange);
+    $('#model_pollinations_key_select').on('change', onModelChange);
+    $('#model_pollinations_nokey_select').on('change', onModelChange);
     $('#model_cometapi_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
@@ -7246,4 +7277,24 @@ export function initOpenAI() {
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
+
+    // Handle Pollinations BYOP OAuth callback (key arrives in URL hash after redirect)
+    const urlHash = window.location.hash;
+    if (urlHash) {
+        const hashParams = new URLSearchParams(urlHash.slice(1));
+        const pollinationsKey = hashParams.get('api_key');
+        if (pollinationsKey) {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+            $('#chat_completion_source').val(chat_completion_sources.POLLINATIONS_KEY).trigger('change');
+            setTimeout(() => {
+                $('#api_key_pollinations').val(pollinationsKey).trigger('input');
+                toastr.success('Pollinations API key received! Click Connect to save.');
+            }, 500);
+        }
+    }
+
+    $('#pollinations_byop_authorize').on('click', function () {
+        const authUrl = 'https://enter.pollinations.ai/authorize?redirect_uri=http://localhost:8000&client_id=pk_Gu8Ta8q6QhS67hSg';
+        window.open(authUrl, '_blank', 'noopener,noreferrer');
+    });
 }

@@ -116,7 +116,7 @@ pollinations.post('/voices', async (req, res) => {
 
 pollinations.post('/generate', async (req, res) => {
     try {
-        const key = readSecret(req.user.directories, SECRET_KEYS.POLLINATIONS);
+        const key = readSecret(req.user.directories, SECRET_KEYS.POLLINATIONS_KEY);
         if (!key) {
             console.warn('No API key saved for Pollinations TTS.');
             return res.sendStatus(400);
