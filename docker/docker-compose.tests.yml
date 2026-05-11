@@ -1,0 +1,23 @@
+services:
+  playwright-tests:
+    image: mcr.microsoft.com/playwright:v1.56.1-noble
+    network_mode: host
+    working_dir: /workspace/tests
+    environment:
+      - CI=1
+      - ST_BASE_URL=http://host.docker.internal:8000
+      - PLAYWRIGHT_TEST_ARGS=
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ..:/workspace
+      - st_tests_node_modules:/workspace/tests/node_modules
+      - st_tests_npm_cache:/root/.npm
+      - st_tests_playwright_cache:/ms-playwright
+    command: >-
+      bash -lc "npm ci && if [ -n \"$$PLAYWRIGHT_TEST_ARGS\" ]; then npm run test:e2e -- $$PLAYWRIGHT_TEST_ARGS; else npm run test:e2e; fi"
+
+volumes:
+  st_tests_node_modules:
+  st_tests_npm_cache:
+  st_tests_playwright_cache:
