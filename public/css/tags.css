@@ -294,8 +294,8 @@
 
 /* [UI] Center placeholder text and prevent phantom scrollbar. */
 #merge_tag_select+.select2-container .select2-selection--single .select2-selection__rendered {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    height: 100% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 }
