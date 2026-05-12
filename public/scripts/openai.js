@@ -742,8 +742,8 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
         // remove char name
         // strip to remove extra spaces
         let parsed_msg = cur_msg_lines.join('\n');
-        if (!!name) {
-            parsed_msg = parsed_msg.replace(name + ':', '').trim()
+        if (name) {
+            parsed_msg = parsed_msg.replace(name + ':', '').trim();
         }
         parsed_msg = parsed_msg.trim();
 
