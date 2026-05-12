@@ -814,7 +814,7 @@ async function getExpressionListSlashCommand(args, characterName) {
     const { custom, filter = 'true', return: returnType = 'pipe' } = args;
 
     const expressions = await getExpressionsList({ filterAvailable: !isFalseBoolean(filter) });
-    const customExpressions = structuredClone(extension_settings?.expressions?.custom || []);
+    const customExpressions = extension_settings?.expressions?.custom || [];
     const expressionsMap = {
         default: expressions.filter(expression => !customExpressions.includes(expression)),
         custom: customExpressions,
