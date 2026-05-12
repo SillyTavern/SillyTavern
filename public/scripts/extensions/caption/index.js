@@ -530,8 +530,8 @@ export async function init() {
                         return true;
                     }
 
-                    // Custom API and Pollinations (No Key) don't need additional checks
-                    if (api === 'custom' || api === 'pollinations_nokey') {
+                    // Custom API and anonymous Pollinations don't need additional checks
+                    if (api === 'custom' || (api === 'pollinations' && oai_settings.pollinations_endpoint === 'anonymous')) {
                         return true;
                     }
                 }
@@ -618,8 +618,7 @@ export async function init() {
 
         await processEndpoint('openrouter', '/api/openrouter/models/multimodal');
         await processEndpoint('aimlapi', '/api/backends/chat-completions/multimodal-models/aimlapi');
-        await processEndpoint('pollinations_key', '/api/backends/chat-completions/multimodal-models/pollinations_key');
-        await processEndpoint('pollinations_nokey', '/api/backends/chat-completions/multimodal-models/pollinations_nokey');
+        await processEndpoint('pollinations', '/api/backends/chat-completions/multimodal-models/pollinations');
         await processEndpoint('nanogpt', '/api/backends/chat-completions/multimodal-models/nanogpt');
         await processEndpoint('chutes', '/api/backends/chat-completions/multimodal-models/chutes');
         await processEndpoint('electronhub', '/api/backends/chat-completions/multimodal-models/electronhub');
