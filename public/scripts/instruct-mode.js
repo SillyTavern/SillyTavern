@@ -516,7 +516,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
     }
 
     const includeNames = power_user.instruct.names_behavior === names_behavior_types.ALWAYS;
-    const includeGroupNames = selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
+    const includeGroupNames = !!selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
 
     let inputPrefix = power_user.instruct.input_sequence || '';
     let outputPrefix = power_user.instruct.output_sequence || '';

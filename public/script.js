@@ -4806,7 +4806,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let oaiMessageExamples = [];
 
     if (main_api === 'openai') {
-        let appendNamesForGroup = selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
+        let appendNamesForGroup = !!selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
         oaiMessages = setOpenAIMessages(coreChat);
         oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray, appendNamesForGroup);
     }

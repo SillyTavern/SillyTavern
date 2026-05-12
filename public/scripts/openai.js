@@ -741,7 +741,11 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
         // join different newlines (we split them by \n and join by \n)
         // remove char name
         // strip to remove extra spaces
-        let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
+        let parsed_msg = cur_msg_lines.join('\n');
+        if (!!name) {
+            parsed_msg = parsed_msg.replace(name + ':', '').trim()
+        }
+        parsed_msg = parsed_msg.trim();
 
         if (appendNamesForGroup && selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
             parsed_msg = `${name}: ${parsed_msg}`;
@@ -782,6 +786,8 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
         add_msg(name1, 'system', 'example_user');
     } else if (in_bot) {
         add_msg(botName, 'system', 'example_assistant');
+    } else {
+        add_msg(null, 'system', 'example_assistant');
     }
     return result;
 }
