@@ -1523,16 +1523,16 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
 }
 
 /**
- * Gets the last expression used in the chat.
+ * Gets the last expression used in the chat by the active character.
  * @param {Object} [options]
- * @param {string} [options.characterName] Filters last expression to the one of the target character
+ * @param {string} [options.characterName] Filters last expression to the one of the target character instead
  * @returns {string}
  */
 function getLastExpression({ characterName = '' } = {}) {
     if (typeof characterName !== 'string') throw new Error('Character name must be a string');
 
     if (!characterName) {
-        characterName = selected_group ? '' : (characters[this_chid]?.avatar || '');
+        characterName = characters[this_chid]?.avatar || '';
     }
 
     const char = findChar({ name: characterName, quiet: true });
@@ -2658,7 +2658,7 @@ export async function init() {
         });
 
         macros.register('lastExpression', {
-            handler: function ({ args: [name = ''], resolve }) {
+            handler: function ({ args: [name = '{{char}}'], resolve }) {
                 try {
                     return getLastExpression({ characterName: resolve(name || '') });
                 } catch (error) {
