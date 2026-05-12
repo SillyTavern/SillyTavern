@@ -1203,7 +1203,7 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
 
 /**
  * @param {Object} [options]
- * @param {string} [options.characterName] Filters last expression to the one of the target character
+ * @param {string} [options.characterName] Filters last message to the one of the target character
  */
 function getLastCharacterMessage({ characterName = '' } = {}) {
     const context = getContext();
