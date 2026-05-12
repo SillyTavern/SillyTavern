@@ -229,6 +229,7 @@ import {
     formatInstructModeExamples,
     formatInstructModeStoryString,
     getInstructStoppingSequences,
+    names_behavior_types,
 } from './scripts/instruct-mode.js';
 import { initLocales, t } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
@@ -4805,8 +4806,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let oaiMessageExamples = [];
 
     if (main_api === 'openai') {
+        let appendNamesForGroup = selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
         oaiMessages = setOpenAIMessages(coreChat);
-        oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
+        oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray, appendNamesForGroup);
     }
 
     // hack for regeneration of the first message

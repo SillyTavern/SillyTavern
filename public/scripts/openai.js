@@ -650,15 +650,16 @@ function setOpenAIMessages(chat) {
 /**
  * Formats chat examples into chat completion messages.
  * @param {string[]} mesExamplesArray - Array containing all examples.
+ * @param {boolean} appendNamesForGroup - Whether to append the character name for group chats
  * @returns {object[]} - Array containing all examples formatted for chat completion.
  */
-function setOpenAIMessageExamples(mesExamplesArray) {
+function setOpenAIMessageExamples(mesExamplesArray, appendNamesForGroup = true) {
     // get a nice array of all blocks of all example messages = array of arrays (important!)
     const examples = [];
     for (let item of mesExamplesArray) {
         // remove <START> {Example Dialogue:} and replace \r\n with just \n
         let replaced = item.replace(/<START>/i, '{Example Dialogue:}').replace(/\r/gm, '');
-        let parsed = parseExampleIntoIndividual(replaced, true);
+        let parsed = parseExampleIntoIndividual(replaced, appendNamesForGroup);
         // add to the example message blocks array
         examples.push(parsed);
     }
