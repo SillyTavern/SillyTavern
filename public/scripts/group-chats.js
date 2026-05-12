@@ -20,10 +20,11 @@ import {
     uuidv4,
     stripReasoningTags,
     parseJsonArrayFromText,
+    equalsIgnoreCaseAndAccents,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
-import { debounce_timeout } from './constants.js';
+import { debounce_timeout, inject_ids } from './constants.js';
 
 import {
     chat,
@@ -81,8 +82,10 @@ import {
     unshallowCharacter,
     chatElement,
     ensureMessageMediaIsArray,
+    setExtensionPrompt,
+    extension_prompt_types,
 } from '../script.js';
-import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type, tags } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
@@ -149,8 +152,12 @@ If multiple characters are addressed, list them in the order they should speak.
 Do not invent reasons to continue. When in doubt, return [].
 Do not let one character monologue across many consecutive turns.
 
-Output format: a JSON array of character names from the roster, and nothing else.
-Examples: ["Alice"]   ["Alice","Bob"]   []`;
+Some cards are listed under DIRECTORS. A Director voices any character that is NOT in the MAIN CAST — typically NPCs defined in the world's lore. If the latest message names, addresses, or clearly implicates a character that is not in the MAIN CAST, return that character's name in the array even though it is not listed in the roster. The system will route the turn to a Director card so it can perform that character. Prefer naming the off-roster character directly over naming the Director.
+
+Output format: a JSON array of character names, and nothing else.
+Examples: ["Alice"]   ["Alice","Bob"]   ["Bubbles"]   []`;
+
+const DIRECTOR_TAG_NAMES = ['director', 'npc'];
 
 export const group_generation_mode = {
     SWAP: 0,
@@ -1028,7 +1035,12 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
         const enabledMembers = group.members.filter(x => !group.disabled_members.includes(x));
         let activatedMembers = [];
+        /** @type {(string|null)[]} Parallel to activatedMembers — performAs hint for the same index, or null. */
+        const performAsQueue = [];
         let isLlmRouted = false;
+        const padPerformAsQueue = () => {
+            while (performAsQueue.length < activatedMembers.length) performAsQueue.push(null);
+        };
 
         if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
@@ -1055,10 +1067,16 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
             activatedMembers = activatePooledOrder(enabledMembers, lastMessage, isUserInput);
         } else if (activationStrategy === group_activation_strategy.LLM) {
             isLlmRouted = true;
-            activatedMembers = await activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group);
+            const routerEntries = await activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group);
+            for (const entry of routerEntries) {
+                activatedMembers.push(entry.chId);
+                performAsQueue.push(entry.performAs);
+            }
         } else if (activationStrategy === group_activation_strategy.MANUAL && !isUserInput) {
             activatedMembers = shuffle(enabledMembers).slice(0, 1).map(x => characters.findIndex(y => y.avatar === x)).filter(x => x !== -1);
         }
+
+        padPerformAsQueue();
 
         if (activatedMembers.length === 0) {
             //toastr.warning('All group members are disabled. Enable at least one to get a reply.');
@@ -1097,13 +1115,24 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
 
             // Wait for generation to finish
             const generateType = ['swipe', 'impersonate', 'quiet', 'continue'].includes(type) ? type : 'normal';
-            textResult = await Generate(generateType, { automatic_trigger: byAutoMode, ...(params || {}) });
-            let messageChunk = textResult?.messageChunk;
+            const performAs = performAsQueue[i] ?? null;
+            if (performAs) {
+                const note = `[System: For this reply, respond in-character as ${performAs}. Draw their personality, voice, mannerisms, and current state from your world info / lorebook entries. Do not narrate as yourself; speak and act as ${performAs}.]`;
+                setExtensionPrompt(inject_ids.GROUP_PERFORM_AS, note, extension_prompt_types.IN_PROMPT, 0, true);
+            }
+            try {
+                textResult = await Generate(generateType, { automatic_trigger: byAutoMode, ...(params || {}) });
+                let messageChunk = textResult?.messageChunk;
 
-            if (messageChunk) {
-                while (shouldAutoContinue(messageChunk, type === 'impersonate')) {
-                    textResult = await Generate('continue', { automatic_trigger: byAutoMode, ...(params || {}) });
-                    messageChunk = textResult?.messageChunk;
+                if (messageChunk) {
+                    while (shouldAutoContinue(messageChunk, type === 'impersonate')) {
+                        textResult = await Generate('continue', { automatic_trigger: byAutoMode, ...(params || {}) });
+                        messageChunk = textResult?.messageChunk;
+                    }
+                }
+            } finally {
+                if (performAs) {
+                    setExtensionPrompt(inject_ids.GROUP_PERFORM_AS, '', extension_prompt_types.IN_PROMPT, 0, true);
                 }
             }
             if (power_user.show_group_chat_queue) {
@@ -1118,11 +1147,12 @@ async function generateGroupWrapper(byAutoMode, type = null, params = {}) {
                 const triggerText = newLast?.mes ?? '';
                 if (triggerText) {
                     const next = await activateLlmRouter(enabledMembers, newLast, triggerText, false, group, consecutiveTurns);
-                    for (const id of next) {
-                        activatedMembers.push(id);
+                    for (const entry of next) {
+                        activatedMembers.push(entry.chId);
+                        performAsQueue.push(entry.performAs);
                         if (power_user.show_group_chat_queue) {
                             // Position is "turns until this character speaks" relative to current i.
-                            groupChatQueueOrder.set(characters[id].avatar, activatedMembers.length - 1 - i);
+                            groupChatQueueOrder.set(characters[entry.chId].avatar, activatedMembers.length - 1 - i);
                         }
                     }
                     if (power_user.show_group_chat_queue) {
@@ -1373,21 +1403,74 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
 }
 
 /**
- * Build a compact roster string for the router prompt.
- * @param {string[]} memberAvatars Enabled group member avatars
- * @returns {string}
+ * Returns true if the character is tagged as a Director / NPC host card.
+ * @param {object} character Character object
+ * @returns {boolean}
  */
-function buildRouterRoster(memberAvatars) {
-    const lines = [];
+function isDirectorCharacter(character) {
+    if (!character?.avatar) return false;
+    const charTagIds = tag_map[character.avatar];
+    if (!Array.isArray(charTagIds) || charTagIds.length === 0) return false;
+    const directorTagIds = tags
+        .filter(t => DIRECTOR_TAG_NAMES.some(name => equalsIgnoreCaseAndAccents(t.name, name)))
+        .map(t => t.id);
+    if (directorTagIds.length === 0) return false;
+    return charTagIds.some(id => directorTagIds.includes(id));
+}
+
+/**
+ * Split enabled members into main-cast and director avatars (preserving order).
+ * @param {string[]} memberAvatars Enabled group member avatars
+ * @returns {{mainCast: string[], directors: string[]}}
+ */
+function partitionByDirectorRole(memberAvatars) {
+    const mainCast = [];
+    const directors = [];
     for (const avatar of memberAvatars) {
         const character = characters.find(x => x.avatar === avatar);
         if (!character) continue;
-        const description = String(character.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 280);
-        const personality = String(character.personality ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
-        const summary = [personality, description].filter(Boolean).join(' — ');
-        lines.push(summary ? `- ${character.name}: ${summary}` : `- ${character.name}`);
+        if (isDirectorCharacter(character)) directors.push(avatar);
+        else mainCast.push(avatar);
     }
-    return lines.join('\n');
+    return { mainCast, directors };
+}
+
+function rosterLineFor(character) {
+    const description = String(character.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 280);
+    const personality = String(character.personality ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
+    const summary = [personality, description].filter(Boolean).join(' — ');
+    return summary ? `- ${character.name}: ${summary}` : `- ${character.name}`;
+}
+
+/**
+ * Build the roster section(s) for the router prompt.
+ * @param {string[]} memberAvatars Enabled group member avatars
+ * @returns {{rosterText: string, hasDirectors: boolean}}
+ */
+function buildRouterRoster(memberAvatars) {
+    const { mainCast, directors } = partitionByDirectorRole(memberAvatars);
+    const sections = [];
+
+    const mainLines = mainCast
+        .map(avatar => characters.find(x => x.avatar === avatar))
+        .filter(Boolean)
+        .map(rosterLineFor);
+    if (mainLines.length > 0) {
+        sections.push(['MAIN CAST:', ...mainLines].join('\n'));
+    }
+
+    if (directors.length > 0) {
+        const directorLines = directors
+            .map(avatar => characters.find(x => x.avatar === avatar))
+            .filter(Boolean)
+            .map(rosterLineFor);
+        sections.push([
+            'DIRECTORS (each one voices any character not in the MAIN CAST — e.g. world NPCs):',
+            ...directorLines,
+        ].join('\n'));
+    }
+
+    return { rosterText: sections.join('\n\n'), hasDirectors: directors.length > 0 };
 }
 
 /**
@@ -1405,29 +1488,61 @@ function recentSpeakers(limit = 6) {
 }
 
 /**
- * Parse the router model's output into an ordered list of avatars from the enabled set.
+ * Parse the router model's output into an ordered list of routing entries.
  * Tolerant of stray prose: tries JSON first, then falls back to scanning for member names.
+ * Names not in the main cast are routed to a Director card (when one is enabled),
+ * carrying the requested name as a `performAs` hint.
  * @param {string} text Raw model output
  * @param {string[]} enabledMembers Avatars of currently enabled members
- * @returns {string[]} Ordered list of member avatars (subset of enabledMembers, may be empty)
+ * @returns {{avatar: string, performAs: string|null}[]} Ordered routing entries.
  */
 function parseRouterOutput(text, enabledMembers) {
     const cleaned = stripReasoningTags(text);
+    const { mainCast, directors } = partitionByDirectorRole(enabledMembers);
 
-    const nameToAvatar = new Map();
-    for (const avatar of enabledMembers) {
+    const mainNameToAvatar = new Map();
+    for (const avatar of mainCast) {
         const character = characters.find(x => x.avatar === avatar);
-        if (character?.name) nameToAvatar.set(character.name.toLowerCase(), avatar);
+        if (character?.name) mainNameToAvatar.set(character.name.toLowerCase(), avatar);
     }
+    const directorNameToAvatar = new Map();
+    for (const avatar of directors) {
+        const character = characters.find(x => x.avatar === avatar);
+        if (character?.name) directorNameToAvatar.set(character.name.toLowerCase(), avatar);
+    }
+
+    const pickDirector = () => directors[0] ?? null;
 
     const fromNames = (names) => {
         const seen = new Set();
         const result = [];
         for (const raw of names) {
-            const avatar = nameToAvatar.get(String(raw).toLowerCase().trim());
-            if (avatar && !seen.has(avatar)) {
-                seen.add(avatar);
-                result.push(avatar);
+            const key = String(raw).toLowerCase().trim();
+            if (!key) continue;
+            const mainAvatar = mainNameToAvatar.get(key);
+            if (mainAvatar) {
+                if (!seen.has(`m:${mainAvatar}`)) {
+                    seen.add(`m:${mainAvatar}`);
+                    result.push({ avatar: mainAvatar, performAs: null });
+                }
+                continue;
+            }
+            const directorAvatar = directorNameToAvatar.get(key);
+            if (directorAvatar) {
+                if (!seen.has(`m:${directorAvatar}`)) {
+                    seen.add(`m:${directorAvatar}`);
+                    result.push({ avatar: directorAvatar, performAs: null });
+                }
+                continue;
+            }
+            const host = pickDirector();
+            if (host) {
+                const performAs = String(raw).trim();
+                const dedupKey = `d:${host}:${performAs.toLowerCase()}`;
+                if (!seen.has(dedupKey)) {
+                    seen.add(dedupKey);
+                    result.push({ avatar: host, performAs });
+                }
             }
         }
         return result;
@@ -1436,15 +1551,36 @@ function parseRouterOutput(text, enabledMembers) {
     const parsed = parseJsonArrayFromText(cleaned);
     if (parsed) return fromNames(parsed);
 
-    // Fallback: pick names in the order they appear in the post-strip text.
+    // Fallback: scan for known names in order of appearance (off-roster names cannot
+    // be recovered from free-form prose here — JSON output is the reliable path).
     const found = [];
     const lower = cleaned.toLowerCase();
-    for (const [name, avatar] of nameToAvatar) {
+    for (const [name, avatar] of mainNameToAvatar) {
         const idx = lower.indexOf(name);
-        if (idx !== -1) found.push({ avatar, idx });
+        if (idx !== -1) found.push({ avatar, idx, performAs: null });
+    }
+    for (const [name, avatar] of directorNameToAvatar) {
+        const idx = lower.indexOf(name);
+        if (idx !== -1) found.push({ avatar, idx, performAs: null });
     }
     found.sort((a, b) => a.idx - b.idx);
-    return found.map(f => f.avatar);
+    const seenAvatars = new Set();
+    const result = [];
+    for (const f of found) {
+        if (seenAvatars.has(f.avatar)) continue;
+        seenAvatars.add(f.avatar);
+        result.push({ avatar: f.avatar, performAs: f.performAs });
+    }
+    return result;
+}
+
+/**
+ * Wrap a list of character ids as router entries with no performAs hint.
+ * @param {number[]} chIds
+ * @returns {{chId: number, performAs: string|null}[]}
+ */
+function asRouterEntries(chIds) {
+    return chIds.map(chId => ({ chId, performAs: null }));
 }
 
 /**
@@ -1456,13 +1592,13 @@ function parseRouterOutput(text, enabledMembers) {
  * @param {boolean} isUserInput Whether the trigger is fresh user input
  * @param {Group} group The group object
  * @param {number} [consecutiveTurns=0] How many consecutive AI turns have already happened since the last user input
- * @returns {Promise<number[]>} Ordered list of character ids to speak next (may be empty)
+ * @returns {Promise<{chId: number, performAs: string|null}[]>} Ordered routing entries (may be empty)
  */
 async function activateLlmRouter(enabledMembers, lastMessage, activationText, isUserInput, group, consecutiveTurns = 0) {
     const profileId = group?.router_profile_id;
     if (!profileId) {
         console.warn('[group-chats] LLM-routed strategy active but no router profile is set; falling back to natural order.');
-        return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
+        return asRouterEntries(activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput));
     }
 
     const maxConsecutive = Math.max(1, Number(group?.router_max_consecutive ?? DEFAULT_ROUTER_MAX_CONSECUTIVE));
@@ -1470,7 +1606,7 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
 
     try {
         const systemPrompt = String(group?.router_system_prompt || DEFAULT_ROUTER_PROMPT);
-        const roster = buildRouterRoster(enabledMembers);
+        const { rosterText, hasDirectors } = buildRouterRoster(enabledMembers);
         const speakers = recentSpeakers().join(', ') || '(none yet)';
         const lastSpeaker = isUserInput ? '{{user}}' : (lastMessage?.name ?? 'unknown');
         const lastText = String(activationText ?? '').slice(0, 2000);
@@ -1478,11 +1614,15 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             ? 'TURN CONTEXT: The user just spoke. Pick the character(s) who should respond first.'
             : `TURN CONTEXT: This is consecutive AI turn ${consecutiveTurns} of max ${maxConsecutive} since the user last spoke. The user is waiting. Strongly prefer [] unless a character is clearly addressed by name, asked a direct question, or being unmistakably handed off to. The closer ${consecutiveTurns} is to ${maxConsecutive}, the more strongly you should prefer [].`;
 
+        const closing = hasDirectors
+            ? 'Reply with only the JSON array of character names. Off-roster character names (e.g. NPCs voiced by a Director) are allowed.'
+            : 'Reply with only the JSON array of character names.';
+
         prompt = [
             systemPrompt,
             '',
             'CHARACTERS IN SCENE:',
-            roster || '(roster unavailable)',
+            rosterText || '(roster unavailable)',
             '',
             `RECENT SPEAKERS (most recent first): ${speakers}`,
             '',
@@ -1493,15 +1633,18 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             lastText,
             '"""',
             '',
-            'Reply with only the JSON array of character names.',
+            closing,
         ].join('\n');
 
         const result = await ConnectionManagerRequestService.sendRequest(profileId, prompt, DEFAULT_ROUTER_MAX_TOKENS);
         const content = (result && typeof result === 'object' && 'content' in result) ? String(result.content ?? '') : '';
-        const orderedAvatars = parseRouterOutput(content, enabledMembers);
-        const orderedCharIds = orderedAvatars
-            .map(avatar => characters.findIndex(c => c.avatar === avatar))
-            .filter(i => i !== -1);
+        const parsedEntries = parseRouterOutput(content, enabledMembers);
+        const orderedEntries = parsedEntries
+            .map(({ avatar, performAs }) => ({
+                chId: characters.findIndex(c => c.avatar === avatar),
+                performAs,
+            }))
+            .filter(e => e.chId !== -1);
 
         eventSource.emit(event_types.LLM_DECISION_CALL, {
             kind: 'group-router',
@@ -1509,11 +1652,15 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             prompt,
             response: content,
             error: null,
-            parsed: orderedCharIds.map(id => characters[id]?.name).filter(Boolean),
+            parsed: orderedEntries.map(e => {
+                const name = characters[e.chId]?.name;
+                if (!name) return null;
+                return e.performAs ? `${name} (as ${e.performAs})` : name;
+            }).filter(Boolean),
             meta: { consecutiveTurns, maxConsecutive, enabledMembers: enabledMembers.length },
         });
 
-        return orderedCharIds;
+        return orderedEntries;
     } catch (error) {
         const message = error?.message ?? String(error);
         console.error('[group-chats] LLM router failed; falling back to natural order.', error);
@@ -1527,7 +1674,7 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             parsed: null,
             meta: { consecutiveTurns, maxConsecutive, enabledMembers: enabledMembers.length },
         });
-        return activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput);
+        return asRouterEntries(activateNaturalOrder(enabledMembers, activationText, lastMessage, group?.allow_self_responses, isUserInput));
     }
 }
 
