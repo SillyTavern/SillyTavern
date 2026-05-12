@@ -787,7 +787,7 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
     } else if (in_bot) {
         add_msg(botName, 'system', 'example_assistant');
     } else {
-        add_msg(null, 'system', 'example_assistant');
+        add_msg(null, 'system', 'system');
     }
     return result;
 }
