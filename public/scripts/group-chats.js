@@ -84,6 +84,7 @@ import {
     ensureMessageMediaIsArray,
     setExtensionPrompt,
     extension_prompt_types,
+    name1,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type, tags } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -151,8 +152,13 @@ When this is a follow-up round (one or more characters have already replied sinc
 If multiple characters are addressed, list them in the order they should speak.
 Do not invent reasons to continue. When in doubt, return [].
 Do not let one character monologue across many consecutive turns.
+NEVER return {{user}}'s name or any of {{user}}'s personas — {{user}} speaks for themselves.
 
-Some cards are listed under DIRECTORS. A Director voices any character that is NOT in the MAIN CAST — typically NPCs defined in the world's lore. If the latest message names, addresses, or clearly implicates a character that is not in the MAIN CAST, return that character's name in the array even though it is not listed in the roster. The system will route the turn to a Director card so it can perform that character. Prefer naming the off-roster character directly over naming the Director.
+Some cards are listed under DIRECTORS. A Director voices any character that is NOT in the MAIN CAST — typically NPCs defined in the world's lore. Rules for Director picks:
+- Off-roster names are valid ONLY when {{user}}'s most recent message directly addresses or asks a question of that off-roster character. Being mentioned in a Director's own narration, or being the subject of action in narration, does NOT count as being addressed.
+- After a Director has already performed an off-roster NPC this turn, do NOT immediately re-pick the same NPC unless {{user}} has spoken again and addressed them.
+- When both a main-cast member and an off-roster NPC are present in the scene, include the main-cast member in the array if they have reason to react (they were just addressed, asked, handed off to, or visibly affected by what was said). Do not silently drop main-cast members in favor of NPCs.
+- Use the off-roster character's own name (e.g. "Bubbles"), not the Director's card name.
 
 Output format: a JSON array of character names, and nothing else.
 Examples: ["Alice"]   ["Alice","Bob"]   ["Bubbles"]   []`;
@@ -1488,10 +1494,55 @@ function recentSpeakers(limit = 6) {
 }
 
 /**
+ * Build the set of names the router must never return — {{user}}'s current persona name
+ * and any name that has authored a user message in the recent chat tail. Lowercased.
+ * @returns {Set<string>}
+ */
+function buildForbiddenRouterNames() {
+    const forbidden = new Set();
+    const add = (s) => {
+        const v = String(s ?? '').trim().toLowerCase();
+        if (v) forbidden.add(v);
+    };
+    add(name1);
+    const tailStart = Math.max(0, chat.length - 12);
+    for (let i = tailStart; i < chat.length; i++) {
+        const m = chat[i];
+        if (m?.is_user && m.name) add(m.name);
+    }
+    return forbidden;
+}
+
+/**
+ * Try to match a router-returned name against main cast (case-insensitive, then
+ * first-token fuzzy: "Anna" → "Anna Johansson"). Returns null if no match.
+ * @param {string} key Lowercased trimmed name from router
+ * @param {Map<string,string>} mainExact Lowercased full name → avatar
+ * @returns {string|null}
+ */
+function matchMainCast(key, mainExact) {
+    if (!key) return null;
+    const exact = mainExact.get(key);
+    if (exact) return exact;
+    // First-token fuzzy match — only when unambiguous (single main-cast member
+    // whose name starts with the key followed by a word boundary).
+    let candidate = null;
+    for (const [fullLower, avatar] of mainExact) {
+        if (fullLower === key) return avatar;
+        const startsWith = fullLower.startsWith(`${key} `) || fullLower.startsWith(`${key}'`);
+        if (!startsWith) continue;
+        if (candidate && candidate !== avatar) return null; // ambiguous → no match
+        candidate = avatar;
+    }
+    return candidate;
+}
+
+/**
  * Parse the router model's output into an ordered list of routing entries.
  * Tolerant of stray prose: tries JSON first, then falls back to scanning for member names.
  * Names not in the main cast are routed to a Director card (when one is enabled),
- * carrying the requested name as a `performAs` hint.
+ * carrying the requested name as a `performAs` hint. Names matching {{user}}'s persona
+ * are dropped entirely.
  * @param {string} text Raw model output
  * @param {string[]} enabledMembers Avatars of currently enabled members
  * @returns {{avatar: string, performAs: string|null}[]} Ordered routing entries.
@@ -1511,6 +1562,7 @@ function parseRouterOutput(text, enabledMembers) {
         if (character?.name) directorNameToAvatar.set(character.name.toLowerCase(), avatar);
     }
 
+    const forbidden = buildForbiddenRouterNames();
     const pickDirector = () => directors[0] ?? null;
 
     const fromNames = (names) => {
@@ -1519,7 +1571,11 @@ function parseRouterOutput(text, enabledMembers) {
         for (const raw of names) {
             const key = String(raw).toLowerCase().trim();
             if (!key) continue;
-            const mainAvatar = mainNameToAvatar.get(key);
+            if (forbidden.has(key)) {
+                console.warn('[group-chats] router suggested {{user}} persona name; dropping:', raw);
+                continue;
+            }
+            const mainAvatar = matchMainCast(key, mainNameToAvatar);
             if (mainAvatar) {
                 if (!seen.has(`m:${mainAvatar}`)) {
                     seen.add(`m:${mainAvatar}`);
@@ -1608,7 +1664,10 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
         const systemPrompt = String(group?.router_system_prompt || DEFAULT_ROUTER_PROMPT);
         const { rosterText, hasDirectors } = buildRouterRoster(enabledMembers);
         const speakers = recentSpeakers().join(', ') || '(none yet)';
-        const lastSpeaker = isUserInput ? '{{user}}' : (lastMessage?.name ?? 'unknown');
+        const personaName = String(name1 ?? '').trim();
+        const lastSpeaker = isUserInput
+            ? (personaName ? `${personaName} ({{user}})` : '{{user}}')
+            : (lastMessage?.name ?? 'unknown');
         const lastText = String(activationText ?? '').slice(0, 2000);
         const turnContext = consecutiveTurns <= 0
             ? 'TURN CONTEXT: The user just spoke. Pick the character(s) who should respond first.'
@@ -1618,8 +1677,14 @@ async function activateLlmRouter(enabledMembers, lastMessage, activationText, is
             ? 'Reply with only the JSON array of character names. Off-roster character names (e.g. NPCs voiced by a Director) are allowed.'
             : 'Reply with only the JSON array of character names.';
 
+        const userLine = personaName
+            ? `{{user}} is "${personaName}". Never return this name in the array.`
+            : 'Never return {{user}} or any of their persona names in the array.';
+
         prompt = [
             systemPrompt,
+            '',
+            userLine,
             '',
             'CHARACTERS IN SCENE:',
             rosterText || '(roster unavailable)',
