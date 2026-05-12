@@ -2651,33 +2651,7 @@ router.post('/generate', async function (request, response) {
 
 const multimodalModels = express.Router();
 
-multimodalModels.post('/pollinations_key', async (_req, res) => {
-    try {
-        const response = await fetch('https://gen.pollinations.ai/models');
-
-        if (!response.ok) {
-            return res.json([]);
-        }
-
-        /** @type {any} */
-        const data = await response.json();
-
-        if (!Array.isArray(data)) {
-            return res.json([]);
-        }
-
-        const multimodalModels = data
-            .filter(m => Array.isArray(m?.input_modalities))
-            .filter(m => m.input_modalities.includes('image'))
-            .map(m => m.name);
-        return res.json(multimodalModels);
-    } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
-    }
-});
-
-multimodalModels.post('/pollinations_nokey', async (_req, res) => {
+multimodalModels.post('/pollinations', async (_req, res) => {
     try {
         const response = await fetch('https://gen.pollinations.ai/models');
 

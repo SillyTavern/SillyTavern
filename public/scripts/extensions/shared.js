@@ -126,6 +126,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
         requestBody.zai_endpoint = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
     }
 
+    if (extension_settings.caption.multimodal_api === 'pollinations') {
+        requestBody.pollinations_endpoint = oai_settings.pollinations_endpoint || 'anonymous';
+    }
+
     if (extension_settings.caption.multimodal_api === 'workers_ai') {
         requestBody.workers_ai_account_id = oai_settings.workers_ai_account_id;
     }
@@ -284,7 +288,7 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Z.AI API key is not set.');
     }
 
-    if (multimodalApi === 'pollinations_key' && !secret_state[SECRET_KEYS.POLLINATIONS_KEY]) {
+    if (multimodalApi === 'pollinations' && oai_settings.pollinations_endpoint !== 'anonymous' && !secret_state[SECRET_KEYS.POLLINATIONS_KEY]) {
         throw new Error('Pollinations API key is not set.');
     }
 
