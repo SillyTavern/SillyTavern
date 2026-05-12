@@ -1513,21 +1513,33 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
     }
 }
 
-function getLastExpression(characterName) {
+/**
+ * Gets the last expression used in the chat.
+ * @param {Object} [options]
+ * @param {string} [options.characterName] Filters last expression to the one of the target character
+ * @returns {string}
+ */
+function getLastExpression({ characterName = '' } = {}) {
     if (typeof characterName !== 'string') throw new Error('Character name must be a string');
 
+    /** @type {ChatMessage} */
+    let currentLastMessage = getLastCharacterMessage();
+
     if (!characterName) {
-        if (selected_group) {
-            toastr.error(t`In group chats, you must specify a character name.`, t`No character name specified`);
-            return '';
-        }
         characterName = characters[this_chid]?.avatar;
+    } else {
+        const chat = getContext().chat;
+
+        currentLastMessage = chat.findLast((message) => {
+            return message?.name === characterName;
+        });
     }
 
-    const char = findChar({ name: characterName });
-    if (!char) toastr.warning(t`Couldn't find character ${characterName}.`, t`Character not found`);
+    const char = findChar({ name: characterName, quiet: true });
+    const finalCharacterName = currentLastMessage?.name ?? char?.name ?? characterName;
+    const spriteFolderName = getSpriteFolderName(currentLastMessage, finalCharacterName);
+    const sprite = lastExpression[spriteFolderName.split('/')[0]] ?? '';
 
-    const sprite = lastExpression[char?.name ?? characterName] ?? '';
     return sprite;
 }
 
@@ -2479,7 +2491,7 @@ export async function init() {
         name: 'expression-last',
         aliases: ['lastsprite'],
         /** @type {(args: object, name: string) => string} */
-        callback: (_, name) => getLastExpression(name),
+        callback: (_, name) => getLastExpression({ characterName: (name || '') }),
         returns: 'the last set expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -2645,7 +2657,7 @@ export async function init() {
         macros.register('lastExpression', {
             handler: function ({ args: [name = '{{char}}'], resolve }) {
                 try {
-                    return getLastExpression(resolve(name || ''));
+                    return getLastExpression({ characterName: resolve(name || '') });
                 } catch (error) {
                     console.error(error);
                     return '';
@@ -2687,7 +2699,7 @@ export async function init() {
         MacrosParser.registerMacro('lastExpression',
             () => {
                 try {
-                    return getLastExpression(characters[this_chid]?.name || '');
+                    return getLastExpression();
                 } catch (error) {
                     console.error(error);
                     return '';
