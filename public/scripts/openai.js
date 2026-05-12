@@ -6952,6 +6952,13 @@ export function initOpenAI() {
         forceCharacterEditorTokenize();
         updateFeatureSupportFlags();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+            updateDeepSeekCacheDiagnosticsUI();
+        } else {
+            dsLastSentMessages = [];
+            $('#deepseek_cache_diagnostics').hide();
+        }
     });
 
     $('#oai_max_context_unlocked').on('input', function (_e, data) {
