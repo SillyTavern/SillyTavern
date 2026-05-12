@@ -1201,12 +1201,21 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
     }
 }
 
-function getLastCharacterMessage() {
+/**
+ * @param {Object} [options]
+ * @param {string} [options.characterName] Filters last expression to the one of the target character
+ */
+function getLastCharacterMessage({ characterName = '' } = {}) {
     const context = getContext();
     const reversedChat = context.chat.slice().reverse();
+    const ignoreCharName = !characterName;
 
     for (let mes of reversedChat) {
         if (mes.is_user || mes.is_system || mes.extra?.type === system_message_types.NARRATOR) {
+            continue;
+        }
+
+        if (!ignoreCharName && mes.name !== characterName) {
             continue;
         }
 
@@ -1522,21 +1531,15 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
 function getLastExpression({ characterName = '' } = {}) {
     if (typeof characterName !== 'string') throw new Error('Character name must be a string');
 
-    /** @type {ChatMessage} */
-    let currentLastMessage = getLastCharacterMessage();
-
     if (!characterName) {
-        characterName = characters[this_chid]?.avatar;
-    } else {
-        const chat = getContext().chat;
-
-        currentLastMessage = chat.findLast((message) => {
-            return message?.name === characterName;
-        });
+        characterName = selected_group ? '' : (characters[this_chid]?.avatar || '');
     }
 
     const char = findChar({ name: characterName, quiet: true });
+
+    const currentLastMessage = getLastCharacterMessage({ characterName });
     const finalCharacterName = currentLastMessage?.name ?? char?.name ?? characterName;
+
     const spriteFolderName = getSpriteFolderName(currentLastMessage, finalCharacterName);
     const sprite = lastExpression[spriteFolderName.split('/')[0]] ?? '';
 
@@ -2655,7 +2658,7 @@ export async function init() {
         });
 
         macros.register('lastExpression', {
-            handler: function ({ args: [name = '{{char}}'], resolve }) {
+            handler: function ({ args: [name = ''], resolve }) {
                 try {
                     return getLastExpression({ characterName: resolve(name || '') });
                 } catch (error) {
