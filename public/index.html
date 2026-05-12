@@ -3698,22 +3698,22 @@
                                 </select>
                             </div>
                             <div class="deepseek_cache_section" style="margin-top: 12px;">
-                                <h4>Cache Optimization</h4>
+                                <h4 data-i18n="Cache Optimization">Cache Optimization</h4>
                                 <label class="checkbox_label">
                                     <input type="checkbox" id="deepseek_cache_optimization" name="deepseek_cache_optimization">
-                                    <span>Enable DeepSeek cache optimization</span>
+                                    <span data-i18n="Enable DeepSeek cache optimization">Enable DeepSeek cache optimization</span>
                                 </label>
-                                <small>Places constant content before chat history to maximize prefix cache hits.</small>
+                                <small data-i18n="Places constant content before chat history to maximize prefix cache hits.">Places constant content before chat history to maximize prefix cache hits.</small>
 
                                 <div id="deepseek_cache_diagnostics" style="display:none; margin-top: 8px; padding: 8px; background: var(--black30); border-radius: 4px;">
                                     <div class="cache_stats" style="display: flex; gap: 16px; font-size: 13px;">
-                                        <span>Cache Hit: <strong id="cache_hit_tokens">0</strong> tokens</span>
-                                        <span>Cache Miss: <strong id="cache_miss_tokens">0</strong> tokens</span>
-                                        <span>Hit Rate: <strong id="cache_hit_rate">0%</strong></span>
+                                        <span><span data-i18n="Cache Hit:">Cache Hit:</span> <strong id="cache_hit_tokens">0</strong> <span data-i18n="tokens">tokens</span></span>
+                                        <span><span data-i18n="Cache Miss:">Cache Miss:</span> <strong id="cache_miss_tokens">0</strong> <span data-i18n="tokens">tokens</span></span>
+                                        <span><span data-i18n="Hit Rate:">Hit Rate:</span> <strong id="cache_hit_rate">0%</strong></span>
                                     </div>
                                     <div id="cache_breakpoint_info" style="display:none; margin-top: 6px; font-size: 12px; color: var(--warning);">
-                                        Cache break at message #<span id="cache_breakpoint_index"></span>
-                                        (source: <span id="cache_breakpoint_source"></span>)
+                                        <span data-i18n="Cache break at message #">Cache break at message #</span><span id="cache_breakpoint_index"></span>
+                                        <span data-i18n="(source: ">(source: </span><span id="cache_breakpoint_source"></span>)
                                     </div>
                                 </div>
                             </div>
