@@ -99,7 +99,6 @@ export {
 let openai_messages_count = 0;
 let dsLastSentMessages = [];
 const dsCacheDiag = {
-    enabled: false,
     breakpointIndex: -1,
     breakpointSource: '',
     hitTokens: 0,
@@ -341,7 +340,6 @@ export const settingsToUpdate = {
     nanogpt_provider: ['#nanogpt_provider', 'nanogpt_provider', false, true],
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
-    deepseek_cache_optimization: ['#deepseek_cache_optimization', 'deepseek_cache_optimization', true, false],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
@@ -458,7 +456,6 @@ const default_settings = {
     nanogpt_provider: '',
     nanogpt_payg_override: false,
     deepseek_model: 'deepseek-v4-flash',
-    deepseek_cache_optimization: false,
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -2649,7 +2646,7 @@ function getVerbosity(settings = null) {
  * @param {ChatCompletionMessage[]} messages
  */
 function detectDeepSeekCacheBreakpoint(messages) {
-    if (!dsCacheDiag.enabled || dsLastSentMessages.length === 0) {
+    if (dsLastSentMessages.length === 0) {
         return;
     }
 
@@ -2678,41 +2675,6 @@ function detectDeepSeekCacheBreakpoint(messages) {
     dsCacheDiag.breakpointSource = breakIdx >= 0 && breakIdx < messages.length
         ? (messages[breakIdx]?.source || 'unknown')
         : '';
-}
-
-/**
- * Reorder messages to maximize DeepSeek prompt cache prefix match.
- * @param {ChatCompletionMessage[]} messages
- * @returns {ChatCompletionMessage[]}
- */
-function reorderForDeepSeekCache(messages) {
-    // Tool-calling flows require strict chronological ordering of assistant/tool turns.
-    if (messages.some(msg => msg.role === 'tool' || Array.isArray(msg.tool_calls))) {
-        return messages;
-    }
-
-    const constantSystem = [];
-    const dynamicSystem = [];
-    const chatHistory = [];
-    const others = [];
-
-    const volatilePattern = /\{\{(time|date|random|roll|time_UTC|idle_duration|randomString)\}\}/i;
-
-    for (const msg of messages) {
-        if (msg.role === 'system') {
-            if (volatilePattern.test(typeof msg.content === 'string' ? msg.content : '')) {
-                dynamicSystem.push(msg);
-            } else {
-                constantSystem.push(msg);
-            }
-        } else if (msg.role === 'user' || msg.role === 'assistant') {
-            chatHistory.push(msg);
-        } else {
-            others.push(msg);
-        }
-    }
-
-    return [...constantSystem, ...chatHistory, ...dynamicSystem, ...others];
 }
 
 function updateDeepSeekCacheDiagnosticsUI() {
@@ -3151,27 +3113,16 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     let messagesWithSource = [];
 
     if (isDeepSeek) {
-        if (dsCacheDiag.enabled) {
-            messagesWithSource = structuredClone(generate_data.messages);
-        }
+        messagesWithSource = structuredClone(generate_data.messages);
 
         for (const msg of generate_data.messages) {
             delete msg.source;
         }
 
-        if (oai_settings.deepseek_cache_optimization) {
-            generate_data.messages = reorderForDeepSeekCache(generate_data.messages);
-            if (dsCacheDiag.enabled) {
-                messagesWithSource = reorderForDeepSeekCache(messagesWithSource);
-            }
-        }
-
-        if (dsCacheDiag.enabled) {
-            dsCacheDiag.breakpointIndex = -1;
-            dsCacheDiag.breakpointSource = '';
-            detectDeepSeekCacheBreakpoint(messagesWithSource);
-            updateDeepSeekCacheDiagnosticsUI();
-        }
+        dsCacheDiag.breakpointIndex = -1;
+        dsCacheDiag.breakpointSource = '';
+        detectDeepSeekCacheBreakpoint(messagesWithSource);
+        updateDeepSeekCacheDiagnosticsUI();
     }
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
@@ -3200,14 +3151,14 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) {
-                    if (isDeepSeek && dsCacheDiag.enabled) {
+                    if (isDeepSeek) {
                         dsLastSentMessages = structuredClone(messagesWithSource);
                     }
                     return;
                 }
                 const rawData = value.data;
                 if (rawData === '[DONE]') {
-                    if (isDeepSeek && dsCacheDiag.enabled) {
+                    if (isDeepSeek) {
                         dsLastSentMessages = structuredClone(messagesWithSource);
                     }
                     return;
@@ -3216,7 +3167,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 const parsed = JSON.parse(rawData);
 
                 // Extract DeepSeek cache usage from the final streaming chunk
-                if (isDeepSeek && dsCacheDiag.enabled && parsed?.usage) {
+                if (isDeepSeek && parsed?.usage) {
                     dsCacheDiag.hitTokens = parsed.usage.prompt_cache_hit_tokens || 0;
                     dsCacheDiag.missTokens = parsed.usage.prompt_cache_miss_tokens || 0;
                     const total = dsCacheDiag.hitTokens + dsCacheDiag.missTokens;
@@ -3256,7 +3207,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
         }
 
-        if (isDeepSeek && dsCacheDiag.enabled && data?.usage) {
+        if (isDeepSeek && data?.usage) {
             dsCacheDiag.hitTokens = data.usage.prompt_cache_hit_tokens || 0;
             dsCacheDiag.missTokens = data.usage.prompt_cache_miss_tokens || 0;
             const total = dsCacheDiag.hitTokens + dsCacheDiag.missTokens;
@@ -3264,7 +3215,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             updateDeepSeekCacheDiagnosticsUI();
         }
 
-        if (isDeepSeek && dsCacheDiag.enabled) {
+        if (isDeepSeek) {
             dsLastSentMessages = structuredClone(messagesWithSource);
         }
 
@@ -4425,14 +4376,6 @@ function loadOpenAISettings(data, settings) {
                 }
             }
         }
-    }
-
-    dsCacheDiag.enabled = Boolean(oai_settings.deepseek_cache_optimization);
-    if (dsCacheDiag.enabled) {
-        $('#deepseek_cache_optimization').prop('checked', true);
-        updateDeepSeekCacheDiagnosticsUI();
-    } else {
-        $('#deepseek_cache_diagnostics').hide();
     }
 
     $(`#settings_preset_openai option[value="${openai_setting_names[oai_settings.preset_settings_openai]}"]`).prop('selected', true);
@@ -7058,23 +7001,6 @@ export function initOpenAI() {
 
     $('#squash_system_messages').on('input', function () {
         oai_settings.squash_system_messages = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#deepseek_cache_optimization').on('change', function () {
-        oai_settings.deepseek_cache_optimization = !!$(this).prop('checked');
-        dsCacheDiag.enabled = oai_settings.deepseek_cache_optimization;
-        if (!dsCacheDiag.enabled) {
-            dsLastSentMessages = [];
-            dsCacheDiag.breakpointIndex = -1;
-            dsCacheDiag.breakpointSource = '';
-            dsCacheDiag.hitTokens = 0;
-            dsCacheDiag.missTokens = 0;
-            dsCacheDiag.hitRate = 0;
-            $('#deepseek_cache_diagnostics').hide();
-        } else {
-            updateDeepSeekCacheDiagnosticsUI();
-        }
         saveSettingsDebounced();
     });
 
