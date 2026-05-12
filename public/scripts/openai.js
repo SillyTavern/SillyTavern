@@ -3146,23 +3146,24 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const model = getChatCompletionModel(oai_settings);
     const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
-    const baseApiMessages = structuredClone(messages);
-    for (const msg of baseApiMessages) {
-        delete msg.source;
-    }
-    generate_data.messages = baseApiMessages;
 
     const isDeepSeek = oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK;
     let messagesWithSource = [];
 
     if (isDeepSeek) {
-        const sourceMessages = structuredClone(messages);
+        if (dsCacheDiag.enabled) {
+            messagesWithSource = structuredClone(generate_data.messages);
+        }
+
+        for (const msg of generate_data.messages) {
+            delete msg.source;
+        }
 
         if (oai_settings.deepseek_cache_optimization) {
-            generate_data.messages = reorderForDeepSeekCache(baseApiMessages);
-            messagesWithSource = reorderForDeepSeekCache(sourceMessages);
-        } else {
-            messagesWithSource = sourceMessages;
+            generate_data.messages = reorderForDeepSeekCache(generate_data.messages);
+            if (dsCacheDiag.enabled) {
+                messagesWithSource = reorderForDeepSeekCache(messagesWithSource);
+            }
         }
 
         if (dsCacheDiag.enabled) {
