@@ -457,7 +457,7 @@ const default_settings = {
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
-    pollinations_endpoint: POLLINATIONS_ENDPOINT.ANONYMOUS,
+    pollinations_endpoint: POLLINATIONS_ENDPOINT.AUTHENTICATED,
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
@@ -2547,8 +2547,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.DEEPSEEK,
     ];
 
-    const isPollinationsAnon = settings.chat_completion_source === chat_completion_sources.POLLINATIONS && settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
-    if (!reasoningEffortSources.includes(settings.chat_completion_source) || isPollinationsAnon) {
+    if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
         return settings.reasoning_effort;
     }
 
@@ -5957,7 +5956,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
-        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS_KEY, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
+        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
     };

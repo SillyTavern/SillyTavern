@@ -59,7 +59,7 @@ import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnum
 import { ToolManager } from '../../tool-calling.js';
 import { macros, MacroCategory } from '../../macros/macro-system.js';
 import { t, translate } from '../../i18n.js';
-import { oai_settings } from '../../openai.js';
+import { oai_settings, POLLINATIONS_ENDPOINT } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
 import { ActionLoaderHandle, loader } from '/scripts/action-loader.js';
@@ -2154,7 +2154,7 @@ async function loadWorkersAIImageModels() {
 }
 
 async function loadPollinationsModels() {
-    $('#sd_pollinations_key').toggleClass('success', !!secret_state[SECRET_KEYS.POLLINATIONS_KEY]);
+    $('#sd_pollinations_key').toggleClass('success', !!secret_state[SECRET_KEYS.POLLINATIONS]);
 
     const result = await fetch('/api/sd/pollinations/models', {
         method: 'POST',
@@ -5106,7 +5106,7 @@ function isValidState() {
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
         case sources.pollinations:
-            return secret_state[SECRET_KEYS.POLLINATIONS_KEY];
+            return oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS || secret_state[SECRET_KEYS.POLLINATIONS];
         case sources.stability:
             return secret_state[SECRET_KEYS.STABILITY];
         case sources.huggingface:
@@ -5938,7 +5938,7 @@ export async function init() {
                 [sources.stability]: SECRET_KEYS.STABILITY,
                 [sources.aimlapi]: SECRET_KEYS.AIMLAPI,
                 [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
-                [sources.pollinations]: SECRET_KEYS.POLLINATIONS_KEY,
+                [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
                 [sources.workersai]: SECRET_KEYS.WORKERS_AI,
             };
             const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);

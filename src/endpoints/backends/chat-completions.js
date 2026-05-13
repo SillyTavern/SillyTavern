@@ -1806,7 +1806,7 @@ router.post('/status', async function (request, statusResponse) {
                 }
             }
             apiUrl = 'https://gen.pollinations.ai/text';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY, request.body.secret_id);
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
@@ -2432,7 +2432,7 @@ router.post('/generate', async function (request, response) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = isAnonymous ? API_POLLINATIONS_ANON : API_POLLINATIONS;
-            apiKey = isAnonymous ? '' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY, request.body.secret_id);
+            apiKey = isAnonymous ? 'anonymous' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
             bodyParams = {
                 seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
@@ -2532,8 +2532,7 @@ router.post('/generate', async function (request, response) {
             }
         }
 
-        const isPollinationsAnon = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS && request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
-        if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM && !isPollinationsAnon) {
+        if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
             console.warn('OpenAI API key is missing.');
             return response.status(400).send({ error: true });
         }

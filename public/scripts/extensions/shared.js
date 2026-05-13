@@ -1,7 +1,7 @@
 import { CONNECT_API_MAP, createModelIcon, getRequestHeaders } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
-import { oai_settings, proxies, ZAI_ENDPOINT } from '../openai.js';
+import { oai_settings, proxies, ZAI_ENDPOINT, POLLINATIONS_ENDPOINT } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
@@ -127,7 +127,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     if (extension_settings.caption.multimodal_api === 'pollinations') {
-        requestBody.pollinations_endpoint = oai_settings.pollinations_endpoint || 'anonymous';
+        requestBody.pollinations_endpoint = oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.ANONYMOUS;
     }
 
     if (extension_settings.caption.multimodal_api === 'workers_ai') {
@@ -288,7 +288,7 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Z.AI API key is not set.');
     }
 
-    if (multimodalApi === 'pollinations' && oai_settings.pollinations_endpoint !== 'anonymous' && !secret_state[SECRET_KEYS.POLLINATIONS_KEY]) {
+    if (multimodalApi === 'pollinations' && oai_settings.pollinations_endpoint !== POLLINATIONS_ENDPOINT.ANONYMOUS && !secret_state[SECRET_KEYS.POLLINATIONS]) {
         throw new Error('Pollinations API key is not set.');
     }
 
