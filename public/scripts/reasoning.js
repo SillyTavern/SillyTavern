@@ -551,7 +551,12 @@ export class ReasoningHandler {
         setDatasetProperty(this.messageReasoningDetailsDom, 'type', this.type);
 
         // Update the reasoning message
-        const reasoning = trimSpaces(this.reasoningDisplayText ?? this.reasoning);
+        const rawReasoning = this.reasoningDisplayText ?? this.reasoning;
+        const reasoning = trimSpaces(rawReasoning);
+        // Keep whitespace-only saved reasoning editable without showing it as visible content.
+        const hasStoredReasoning = Boolean(this.reasoningDisplayText || this.reasoning);
+        const hasReasoningContent = Boolean(reasoning);
+        setDatasetProperty(this.messageReasoningDetailsDom, 'hasContent', hasReasoningContent ? 'true' : null);
         const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
 
         if (power_user.stream_fade_in) {
@@ -563,7 +568,8 @@ export class ReasoningHandler {
         // Update tooltip for hidden reasoning edit
         /** @type {HTMLElement} */
         const button = this.messageDom.querySelector('.mes_edit_add_reasoning');
-        button.title = this.state === ReasoningState.Hidden ? t`Hidden reasoning - Add reasoning block` : t`Add reasoning block`;
+        const isHiddenLikeReasoning = this.state === ReasoningState.Hidden || (hasStoredReasoning && !hasReasoningContent);
+        button.title = isHiddenLikeReasoning ? t`Hidden reasoning - Add reasoning block` : t`Add reasoning block`;
 
         // Make sure that hidden reasoning headers are collapsed by default, to not show a useless edit button
         if (this.state === ReasoningState.Hidden) {
@@ -1198,8 +1204,8 @@ function setReasoningEventHandlers() {
 
     $(document).on('click', '.mes_reasoning_header', function (e) {
         const details = $(this).closest('.mes_reasoning_details');
-        // Along with the CSS rules to mark blocks not toggle-able when they are empty, prevent them from actually being toggled, or being edited
-        if (details.find('.mes_reasoning').is(':empty')) {
+        // Keep click behavior aligned with CSS: only blocks with backing content can toggle or enter edit mode.
+        if (details.attr('data-has-content') !== 'true') {
             e.preventDefault();
             return;
         }
@@ -1310,7 +1316,8 @@ function setReasoningEventHandlers() {
             return;
         }
 
-        if (message.extra.reasoning) {
+        const details = messageBlock.find('.mes_reasoning_details');
+        if (message.extra.reasoning && details.attr('data-has-content') === 'true') {
             toastr.info(t`Reasoning already exists.`, t`Edit Message`);
             return;
         }
@@ -1324,7 +1331,7 @@ function setReasoningEventHandlers() {
         }
 
         // Open the reasoning area so we can actually edit it
-        messageBlock.find('.mes_reasoning_details').attr('open', '');
+        details.attr('open', '');
         messageBlock.find('.mes_reasoning_edit').trigger('click');
         await saveChatConditional();
     });
