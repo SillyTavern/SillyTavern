@@ -1036,7 +1036,7 @@ pollinations.post('/models', async (_request, response) => {
 
 pollinations.post('/generate', async (request, response) => {
     try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY);
+        const key = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
         if (!key) {
             console.warn('Pollinations API key not found.');
             return response.sendStatus(400);

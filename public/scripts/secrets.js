@@ -75,7 +75,7 @@ export const SECRET_KEYS = {
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
     ELEVENLABS: 'api_key_elevenlabs',
-    POLLINATIONS_KEY: 'api_key_pollinations',
+    POLLINATIONS: 'api_key_pollinations',
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
     WORKERS_AI: 'api_key_workers_ai',
@@ -140,7 +140,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.ZAI]: 'Z.AI',
     [SECRET_KEYS.SILICONFLOW]: 'SiliconFlow',
     [SECRET_KEYS.ELEVENLABS]: 'ElevenLabs TTS',
-    [SECRET_KEYS.POLLINATIONS_KEY]: 'Pollinations (Key)',
+    [SECRET_KEYS.POLLINATIONS]: 'Pollinations',
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
     [SECRET_KEYS.VOLCENGINE_ACCESS_KEY]: 'Volcengine Access Key',
     [SECRET_KEYS.WORKERS_AI]: 'Cloudflare Workers AI',
@@ -187,7 +187,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.ZAI]: '#api_key_zai',
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
     [SECRET_KEYS.MINIMAX]: '#api_key_minimax',
-    [SECRET_KEYS.POLLINATIONS_KEY]: '#api_key_pollinations',
+    [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
     [SECRET_KEYS.WORKERS_AI]: '#api_key_workers_ai',
 };
 

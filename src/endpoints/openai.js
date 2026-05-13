@@ -8,6 +8,7 @@ import express from 'express';
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { POLLINATIONS_ENDPOINT } from '../constants.js';
 import { AIMLAPI_HEADERS, OPENROUTER_HEADERS, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from '../constants.js';
 
 export const router = express.Router();
@@ -98,8 +99,8 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'pollinations') {
-            const isAnonymous = request.body.pollinations_endpoint === 'anonymous';
-            key = isAnonymous ? '' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS_KEY);
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+            key = isAnonymous ? POLLINATIONS_ENDPOINT.ANONYMOUS : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
             bodyParams.seed = Math.floor(Math.random() * Math.pow(2, 32));
         }
 
@@ -108,8 +109,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp'];
-        const isPollinationsAnon = request.body.api === 'pollinations' && request.body.pollinations_endpoint === 'anonymous';
-        if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api) && !isPollinationsAnon) {
+        if (!key && !request.body.reverse_proxy && !noKeyTypes.includes(request.body.api)) {
             console.warn('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -184,7 +184,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'pollinations') {
-            const isAnonymous = request.body.pollinations_endpoint === 'anonymous';
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = isAnonymous ? 'https://text.pollinations.ai/v1/chat/completions' : 'https://gen.pollinations.ai/v1/chat/completions';
         }
 
