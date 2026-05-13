@@ -7295,7 +7295,6 @@ export function initOpenAI() {
                 $('#pollinations_endpoint').val(POLLINATIONS_ENDPOINT.AUTHENTICATED).trigger('input');
                 $('#api_key_pollinations').val(pollinationsKey).trigger('input');
                 toastr.success(t`Pollinations API key received! Click Connect to save.`);
-
             }, 500);
         }
     }
