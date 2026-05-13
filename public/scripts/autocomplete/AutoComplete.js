@@ -126,9 +126,17 @@ export class AutoComplete {
         });
         textarea.addEventListener('blur', () => this.hide());
         if (isFloating) {
-            textarea.addEventListener('scroll', () => this.updateFloatingPositionDebounced());
+            textarea.addEventListener('scroll', () => {
+                if (this.isActive) {
+                    this.updateFloatingPositionDebounced();
+                }
+            });
         }
-        window.addEventListener('resize', () => this.updatePositionDebounced());
+        window.addEventListener('resize', () => {
+            if (this.isActive) {
+                this.updatePositionDebounced();
+            }
+        });
     }
 
     /**
