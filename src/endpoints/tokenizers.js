@@ -1109,10 +1109,12 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
                 url += '/v1/tokenize';
                 args.body = JSON.stringify({ 'model': model, 'prompt': text });
                 break;
-            default:
+            case TEXTGEN_TYPES.OOBA:
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ 'text': text });
                 break;
+            default:
+                return response.sendStatus(400);
         }
 
         const result = await fetch(url, args);
