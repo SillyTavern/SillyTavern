@@ -241,7 +241,7 @@ class MacroCstWalker {
         for (const item of items) {
             if (item.type !== 'macro') continue;
 
-            const info = this.#extractMacroInfo(item.node);
+            const info = this.extractMacroInfo(item.node);
             if (!info) continue;
 
             if (info.isClosing) {
@@ -1188,7 +1188,7 @@ class MacroCstWalker {
             const item = items[i];
             if (item.type !== 'macro') continue;
 
-            const info = this.#extractMacroInfo(item.node);
+            const info = this.extractMacroInfo(item.node);
             if (!info) continue;
 
             macroInfos.push({
@@ -1296,51 +1296,6 @@ class MacroCstWalker {
         return items.filter((_, index) => !itemsToRemove.has(index));
     }
 
-    /**
-     * Extracts macro name and closing flag status from a macro node.
-     *
-     * @param {CstNode} macroNode
-     * @returns {{ name: string, isClosing: boolean } | null}
-     */
-    #extractMacroInfo(macroNode) {
-        const children = macroNode.children || {};
-
-        // Check if this is a variable expression - they can't be scoped
-        const variableExprNode = (children.variableExpr || [])[0];
-        if (variableExprNode) {
-            return null; // Variable expressions don't support scoped content
-        }
-
-        // Regular macro - get info from macroBody
-        const macroBodyNode = /** @type {CstNode?} */ ((children.macroBody || [])[0]);
-        const bodyChildren = macroBodyNode?.children || {};
-
-        const identifierTokens = /** @type {IToken[]} */ (bodyChildren['Macro.identifier'] || []);
-        const name = identifierTokens[0]?.image || '';
-
-        if (!name) return null;
-
-        // Check for closing block flag (inside macroBody)
-        const flagTokens = /** @type {IToken[]} */ (children.flags || []);
-        let isClosing = flagTokens.some(token => token.image === MacroFlagType.CLOSING_BLOCK);
-
-        // Special case for the comment macro (//):
-        // The lexer always greedily tokenizes '//' before a single '/', so {{///}} is parsed as
-        // {{// /}} (comment with arg '/') rather than {{/ //}} (closing block for //).
-        // We detect this by checking if the '//' macro's positionally-first argument token starts with '/'.
-        if (!isClosing && name === '//') {
-            const argumentsNode = /** @type {CstNode?} */ ((bodyChildren.arguments || [])[0]);
-            const firstArgNode = /** @type {CstNode?} */ ((argumentsNode?.children?.argument || [])[0]);
-            if (firstArgNode) {
-                const firstToken = this.#getFirstTokenInNode(firstArgNode);
-                if (firstToken?.image?.startsWith('/')) {
-                    isClosing = true;
-                }
-            }
-        }
-
-        return { name, isClosing };
-    }
 
     /**
      * Checks if a macro can accept scoped content as an additional argument.
