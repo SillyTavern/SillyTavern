@@ -16,6 +16,7 @@ import {
 import { forwardFetchResponse, trimV1, getConfigValue } from '../../util.js';
 import { setAdditionalHeaders } from '../../additional-headers.js';
 import { createHash } from 'node:crypto';
+import { dumpPrompt, isCaptureEnabled } from '../prompt-viewer.js';
 
 export const router = express.Router();
 
@@ -280,6 +281,17 @@ router.post('/generate', async function (request, response) {
         const apiType = request.body.api_type;
         const baseUrl = request.body.api_server;
         console.debug(request.body);
+
+        if (isCaptureEnabled()) {
+            dumpPrompt(request, {
+                kind: 'text-completion',
+                endpoint: '/api/backends/text-completions/generate',
+                api_type: apiType,
+                api_server: baseUrl,
+                model: request.body.model,
+                body: request.body,
+            }, `text-${apiType ?? 'unknown'}`);
+        }
 
         const controller = new AbortController();
         request.socket.removeAllListeners('close');

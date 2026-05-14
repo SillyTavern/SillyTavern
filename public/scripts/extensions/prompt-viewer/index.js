@@ -1,4 +1,4 @@
-import { eventSource, event_types } from '../../../script.js';
+import { eventSource, event_types, getRequestHeaders } from '../../../script.js';
 import { renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { t } from '../../i18n.js';
@@ -255,6 +255,79 @@ function renderRaw($container, capture) {
     $container.find('code').text(text);
 }
 
+async function fetchServerStatus() {
+    try {
+        const res = await fetch('/api/prompt-viewer/status', { headers: getRequestHeaders() });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (err) {
+        console.warn(`[${MODULE}] status fetch failed`, err);
+        return null;
+    }
+}
+
+async function setServerEnabled(enabled) {
+    const res = await fetch('/api/prompt-viewer/toggle', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) throw new Error(`toggle failed: ${res.status}`);
+    return await res.json();
+}
+
+async function fetchDumpList() {
+    try {
+        const res = await fetch('/api/prompt-viewer/list', { headers: getRequestHeaders() });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (err) {
+        console.warn(`[${MODULE}] list fetch failed`, err);
+        return null;
+    }
+}
+
+async function fetchDumpFile(name) {
+    const res = await fetch(`/api/prompt-viewer/file?name=${encodeURIComponent(name)}`, { headers: getRequestHeaders() });
+    if (!res.ok) throw new Error(`file fetch failed: ${res.status}`);
+    return await res.json();
+}
+
+async function clearDumps() {
+    const res = await fetch('/api/prompt-viewer/clear', { method: 'POST', headers: getRequestHeaders() });
+    if (!res.ok) throw new Error(`clear failed: ${res.status}`);
+    return await res.json();
+}
+
+function renderDumpList($container, list, onLoad) {
+    if (!list || !Array.isArray(list.files) || list.files.length === 0) {
+        $container.html(`<i>${escapeHtml(t`No dump files. Enable "Server dump" and trigger a generation.`)}</i>`);
+        return;
+    }
+    const rows = list.files.map(file => {
+        const ts = new Date(file.mtime).toLocaleString();
+        const sizeKb = (file.size / 1024).toFixed(1);
+        return `
+            <div class="pv_dump_row flex-container alignItemsCenter flexGap5">
+                <span class="pv_dump_name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+                <span class="pv_dump_meta">${escapeHtml(ts)} · ${sizeKb} KB</span>
+                <button class="menu_button pv_dump_load" data-name="${escapeHtml(file.name)}">${escapeHtml(t`View`)}</button>
+            </div>
+        `;
+    }).join('');
+    $container.html(rows);
+    $container.find('.pv_dump_load').on('click', async (e) => {
+        const name = $(e.currentTarget).data('name');
+        try {
+            const payload = await fetchDumpFile(name);
+            onLoad(payload, name);
+        } catch (err) {
+            console.warn(`[${MODULE}] failed to load dump`, err);
+            toastr.error(t`Could not load dump file.`);
+        }
+    });
+}
+
 async function openPromptViewer() {
     const html = await renderExtensionTemplateAsync('prompt-viewer', 'window');
     const $dialog = $(html);
@@ -265,20 +338,74 @@ async function openPromptViewer() {
     const $transforms = $dialog.find('.prompt_viewer_transforms');
     const $messages = $dialog.find('.prompt_viewer_messages');
     const $raw = $dialog.find('.prompt_viewer_raw');
+    const $dumps = $dialog.find('.prompt_viewer_dumps');
+    const $toggleInput = $dialog.find('#prompt_viewer_server_toggle_input');
 
-    const refresh = () => {
-        if (!lastCapture) {
+    /**
+     * Adapts a server dump file (which wraps the captured body in an envelope
+     * with `kind`, `endpoint`, `body`, etc.) into the same shape as a
+     * fetch-captured request so the existing renderers work unchanged.
+     */
+    const dumpToCapture = (payload, filename) => ({
+        url: `${payload.endpoint ?? 'server-dump'} (${filename})`,
+        body: payload.body ?? payload,
+        time: new Date(),
+        mode: payload.kind === 'text-completion' ? 'text' : 'chat',
+    });
+
+    const renderCapture = (cap) => {
+        if (!cap) {
             $empty.show();
             $content.hide();
             return;
         }
         $empty.hide();
         $content.show();
-        renderMeta($meta, lastCapture);
-        renderTransforms($transforms, lastCapture);
-        renderMessages($messages, lastCapture);
-        renderRaw($raw, lastCapture);
+        renderMeta($meta, cap);
+        renderTransforms($transforms, cap);
+        renderMessages($messages, cap);
+        renderRaw($raw, cap);
     };
+
+    const refreshDumpList = async () => {
+        const list = await fetchDumpList();
+        if (list && typeof list.enabled === 'boolean') {
+            $toggleInput.prop('checked', list.enabled);
+        }
+        renderDumpList($dumps, list, (payload, filename) => {
+            renderCapture(dumpToCapture(payload, filename));
+        });
+    };
+
+    const refresh = async () => {
+        renderCapture(lastCapture);
+        await refreshDumpList();
+    };
+
+    $toggleInput.on('change', async () => {
+        const enabled = $toggleInput.is(':checked');
+        try {
+            const result = await setServerEnabled(enabled);
+            $toggleInput.prop('checked', result.enabled);
+            toastr.success(result.enabled ? t`Server prompt dumping enabled.` : t`Server prompt dumping disabled.`);
+        } catch (err) {
+            console.warn(`[${MODULE}] toggle failed`, err);
+            toastr.error(t`Could not toggle server dumping.`);
+            const status = await fetchServerStatus();
+            if (status) $toggleInput.prop('checked', status.enabled);
+        }
+    });
+
+    $dialog.find('#prompt_viewer_clear').on('click', async () => {
+        try {
+            const r = await clearDumps();
+            toastr.success(t`Deleted ${r.deleted} dump file(s).`);
+            await refreshDumpList();
+        } catch (err) {
+            console.warn(`[${MODULE}] clear failed`, err);
+            toastr.error(t`Could not clear dumps.`);
+        }
+    });
 
     $dialog.find('#prompt_viewer_refresh').on('click', refresh);
     $dialog.find('#prompt_viewer_copy').on('click', async () => {
@@ -295,8 +422,9 @@ async function openPromptViewer() {
         }
     });
 
-    refresh();
     callGenericPopup($dialog, POPUP_TYPE.TEXT, '', { wide: true, large: true, allowVerticalScrolling: true });
+    // Refresh after popup is in the DOM so jQuery selectors resolve.
+    refresh();
 }
 
 function attachEventFallbacks() {

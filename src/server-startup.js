@@ -24,6 +24,7 @@ import { router as extensionsRouter } from './endpoints/extensions.js';
 import { router as assetsRouter } from './endpoints/assets.js';
 import { router as filesRouter } from './endpoints/files.js';
 import { router as debugLogsRouter } from './endpoints/debug-logs.js';
+import { router as promptViewerRouter } from './endpoints/prompt-viewer.js';
 import { router as charactersRouter } from './endpoints/characters.js';
 import { router as chatsRouter } from './endpoints/chats.js';
 import { router as groupsRouter } from './endpoints/groups.js';
@@ -159,6 +160,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/assets', assetsRouter);
     app.use('/api/files', filesRouter);
     app.use('/api/debug-logs', debugLogsRouter);
+    app.use('/api/prompt-viewer', promptViewerRouter);
     app.use('/api/characters', charactersRouter);
     app.use('/api/chats', chatsRouter);
     app.use('/api/groups', groupsRouter);

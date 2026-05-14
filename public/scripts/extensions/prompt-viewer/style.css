@@ -142,6 +142,41 @@
     font-size: 0.85em;
 }
 
+.prompt_viewer_dumps {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 6px;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.pv_dump_row {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    font-size: 0.9em;
+}
+
+.pv_dump_name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--monoFontFamily, monospace);
+}
+
+.pv_dump_meta {
+    opacity: 0.7;
+    flex: 0 0 auto;
+    margin-right: 8px;
+}
+
+#prompt_viewer_server_toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .prompt_viewer_raw code {
     white-space: pre;
     font-family: var(--monoFontFamily, monospace);

@@ -4,13 +4,21 @@
             <span data-i18n="Prompt Viewer">Prompt Viewer</span>
         </h3>
         <div class="flex-container flexGap5">
-            <div id="prompt_viewer_refresh" class="menu_button" title="Re-read the most recent captured request">
+            <label id="prompt_viewer_server_toggle" class="checkbox_label menu_button" title="Toggle server-side prompt dumping to disk">
+                <input type="checkbox" id="prompt_viewer_server_toggle_input">
+                <span data-i18n="Server dump">Server dump</span>
+            </label>
+            <div id="prompt_viewer_refresh" class="menu_button" title="Re-read the most recent captured request and the server dump list">
                 <i class="fa-solid fa-rotate"></i>
                 <span data-i18n="Refresh">Refresh</span>
             </div>
             <div id="prompt_viewer_copy" class="menu_button" title="Copy the captured request body as JSON">
                 <i class="fa-solid fa-copy"></i>
                 <span data-i18n="Copy JSON">Copy JSON</span>
+            </div>
+            <div id="prompt_viewer_clear" class="menu_button" title="Delete all server-side dump files">
+                <i class="fa-solid fa-trash"></i>
+                <span data-i18n="Clear dumps">Clear dumps</span>
             </div>
         </div>
     </div>
@@ -27,6 +35,11 @@
         <details class="prompt_viewer_section" open>
             <summary><b data-i18n="Server-side transforms">Server-side transforms</b> <small data-i18n="(applied by SillyTavern before posting to the upstream model)">(applied by SillyTavern before posting to the upstream model)</small></summary>
             <div class="prompt_viewer_transforms"></div>
+        </details>
+
+        <details class="prompt_viewer_section">
+            <summary><b data-i18n="Server dumps">Server dumps</b> <small data-i18n="(post-processed bodies written when toggle is on)">(post-processed bodies written when toggle is on)</small></summary>
+            <div class="prompt_viewer_dumps"></div>
         </details>
 
         <details class="prompt_viewer_section" open>

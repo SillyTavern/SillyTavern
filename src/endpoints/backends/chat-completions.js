@@ -65,6 +65,7 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
+import { dumpPrompt, isCaptureEnabled } from '../prompt-viewer.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -2169,6 +2170,18 @@ router.post('/generate', async function (request, response) {
 
         if (request.body.json_schema?.value) {
             request.body.json_schema.value = flattenSchema(request.body.json_schema.value, request.body.chat_completion_source);
+        }
+
+        if (isCaptureEnabled()) {
+            dumpPrompt(request, {
+                kind: 'chat-completion',
+                endpoint: '/api/backends/chat-completions/generate',
+                source: request.body.chat_completion_source,
+                model: request.body.model,
+                post_processing_applied: postProcessingType || null,
+                note: 'Body shown is after server-side postProcessPrompt(); provider-specific format conversion (Claude system extraction, Gemini contents/parts, etc.) has NOT yet been applied here.',
+                body: request.body,
+            }, `chat-${request.body.chat_completion_source ?? 'unknown'}`);
         }
 
         switch (request.body.chat_completion_source) {
