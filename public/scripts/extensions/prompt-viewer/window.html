@@ -1,0 +1,42 @@
+<div id="prompt_viewer_window" class="prompt_viewer_window">
+    <div class="prompt_viewer_header flex-container alignItemsCenter spaceBetween">
+        <h3 class="margin0">
+            <span data-i18n="Prompt Viewer">Prompt Viewer</span>
+        </h3>
+        <div class="flex-container flexGap5">
+            <div id="prompt_viewer_refresh" class="menu_button" title="Re-read the most recent captured request">
+                <i class="fa-solid fa-rotate"></i>
+                <span data-i18n="Refresh">Refresh</span>
+            </div>
+            <div id="prompt_viewer_copy" class="menu_button" title="Copy the captured request body as JSON">
+                <i class="fa-solid fa-copy"></i>
+                <span data-i18n="Copy JSON">Copy JSON</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="prompt_viewer_empty" class="prompt_viewer_empty" style="display: none;">
+        <p data-i18n="No request has been captured yet. Send a message (or trigger a generation), then re-open this window.">
+            No request has been captured yet. Send a message (or trigger a generation), then re-open this window.
+        </p>
+    </div>
+
+    <div id="prompt_viewer_content" class="prompt_viewer_content">
+        <div class="prompt_viewer_meta flex-container flexFlowColumn flexGap5"></div>
+
+        <details class="prompt_viewer_section" open>
+            <summary><b data-i18n="Server-side transforms">Server-side transforms</b> <small data-i18n="(applied by SillyTavern before posting to the upstream model)">(applied by SillyTavern before posting to the upstream model)</small></summary>
+            <div class="prompt_viewer_transforms"></div>
+        </details>
+
+        <details class="prompt_viewer_section" open>
+            <summary><b data-i18n="Messages">Messages</b> <small data-i18n="(what was POSTed to the SillyTavern backend)">(what was POSTed to the SillyTavern backend)</small></summary>
+            <div class="prompt_viewer_messages"></div>
+        </details>
+
+        <details class="prompt_viewer_section">
+            <summary><b data-i18n="Raw request body">Raw request body</b></summary>
+            <pre class="prompt_viewer_raw"><code></code></pre>
+        </details>
+    </div>
+</div>
