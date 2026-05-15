@@ -58,7 +58,11 @@ export const formatting_stage = {
  * A formatting hook function.
  * Receives the current message text (plain Markdown or HTML, depending on
  * the stage) and an immutable context object.  Must return the (possibly
- * modified) message text synchronously.
+ * modified) message text **synchronously** as a `string`.  Passing an async
+ * function to {@link MessageFormatter#addHook} will throw a `TypeError` at
+ * registration time.  If a hook returns a non-string at runtime, a console
+ * warning is emitted and the return value is ignored (the pipeline continues
+ * with the previous text unchanged).
  *
  * @callback MessageFormattingHook
  * @param {string}                    mes - Current message text at this pipeline stage.
@@ -174,10 +178,12 @@ class MessageFormatter {
      *   Options object. `stage` defaults to `'afterMarkdown'`; `order` defaults to `50`.
      * @returns {void}
      *
-     * @throws {TypeError} If `fn` is not a function.
+     * @throws {TypeError} If `fn` is not a function or is an async function.
+     * @throws {RangeError} If `stage` is not a known {@link formatting_stage} value.
      */
     addHook(fn, { stage = formatting_stage.AFTER_MARKDOWN, order = hook_order.NORMAL } = {}) {
         if (typeof fn !== 'function') throw new TypeError('MessageFormatter: hook must be a function');
+        if (fn.constructor?.name === 'AsyncFunction') throw new TypeError(`MessageFormatter: hook registered for stage '${stage}' must be synchronous — async functions are not supported`);
         if (!this.#hooks.has(stage)) throw new RangeError(`MessageFormatter: unknown stage '${stage}'`);
         this.#hooks.get(stage).push({ fn, order });
     }
@@ -199,7 +205,12 @@ class MessageFormatter {
         const sorted = bucket.slice().sort((a, b) => a.order - b.order);
         for (const { fn } of sorted) {
             try {
-                mes = fn(mes, ctx);
+                const result = fn(mes, ctx);
+                if (typeof result !== 'string') {
+                    console.warn(`[MessageFormatter] Hook at stage '${stage}' returned ${/** @type {unknown} */ (result) instanceof Promise ? 'a Promise (hook may be async)' : typeof result} instead of a string. The hook's return value has been ignored.`);
+                } else {
+                    mes = result;
+                }
             } catch (e) {
                 console.error(`[MessageFormatter] Hook error at stage '${stage}':`, e);
             }
