@@ -282,6 +282,7 @@ import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
+import { MessageFormatter } from './scripts/message-formatter.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
@@ -1740,15 +1741,35 @@ export async function sendTextareaMessage() {
 }
 
 /**
- * Formats the message text into an HTML string using Markdown and other formatting.
- * @param {string} mes Message text
- * @param {string} ch_name Character name
- * @param {boolean} isSystem If the message was sent by the system
- * @param {boolean} isUser If the message was sent by the user
- * @param {number} messageId Message index in chat array
- * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] DOMPurify sanitizer option overrides
- * @param {boolean} [isReasoning] If the message is reasoning output
- * @returns {string} HTML string
+ * Formats raw message text into an HTML string ready for DOM insertion.
+ *
+ * The pipeline is, in order:
+ *   1. Prompt-bias stripping (message 0 only)
+ *   2. Comment / hidden-message normalisation
+ *   3. `beforeRegex` extension hooks (see {@link MessageFormatter})
+ *   4. Custom regex rules (`getRegexedString`)
+ *   5. `afterRegex` extension hooks
+ *   6. Markdown auto-fix (`fixMarkdown`)
+ *   7. HTML tag encoding (`encode_tags`)
+ *   8. Showdown Markdown → HTML conversion
+ *   9. `afterMarkdown` extension hooks
+ *  10. Name-prefix stripping (`allow_name2_display`)
+ *  11. DOMPurify sanitization
+ *
+ * All extension hooks run **before** DOMPurify (steps 3, 5, 9) so their
+ * output is always sanitised.
+ *
+ * @param {string} mes - Raw message text.
+ * @param {string} ch_name - Character name associated with the message.
+ * @param {boolean} isSystem - Whether the message is a system message.
+ * @param {boolean} isUser - Whether the message was sent by the user.
+ * @param {number} messageId - Index of the message in the chat array, or -1
+ *   for transient messages (e.g. streaming previews).
+ * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] - DOMPurify option
+ *   overrides. Merged on top of the default config.
+ * @param {boolean} [isReasoning=false] - Whether the message is reasoning/thinking
+ *   output (affects regex placement and some display rules).
+ * @returns {string} Sanitized HTML string ready to assign to `innerHTML`.
  */
 export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false) {
     if (!mes) {
@@ -1805,12 +1826,20 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         const indexOf = usableMessages.findIndex(x => x.index === Number(messageId));
         const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
 
+        mes = MessageFormatter.runStage(MessageFormatter.stage.BEFORE_REGEX, mes,
+            { ch_name, isSystem, isUser, messageId, isReasoning },
+        );
+
         // Always override the character name
         mes = getRegexedString(mes, regexPlacement, {
             characterOverride: ch_name,
             isMarkdown: true,
             depth: depth,
         });
+
+        mes = MessageFormatter.runStage(MessageFormatter.stage.AFTER_REGEX, mes,
+            { ch_name, isSystem, isUser, messageId, isReasoning },
+        );
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -1889,6 +1918,10 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             return match.replace(/&amp;/g, '&');
         });
+
+        mes = MessageFormatter.runStage(MessageFormatter.stage.AFTER_MARKDOWN, mes,
+            { ch_name, isSystem, isUser, messageId, isReasoning },
+        );
     }
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
