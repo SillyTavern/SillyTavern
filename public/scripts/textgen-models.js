@@ -259,8 +259,8 @@ const NANOGPT_PROVIDERS = [
         'label': 'Neuralwatt',
     },
     {
-        "id": "tensorix",
-        "label": "Tensorix"
+        'id': 'tensorix',
+        'label': 'Tensorix',
     },
     {
         'id': 'nextbit',
@@ -315,8 +315,8 @@ const NANOGPT_PROVIDERS = [
         'label': 'Weights & Biases',
     },
     {
-        "id": "xiaomi",
-        "label": "Xiaomi"
+        'id': 'xiaomi',
+        'label': 'Xiaomi',
     },
     {
         'id': 'zai',
