@@ -215,6 +215,22 @@ class MessageFormatter {
      * Extensions that already import `getContext()` can use this instead of
      * importing `messageFormatting` directly from `script.js`.
      *
+     * The pipeline is, in order:
+     *   1. Prompt-bias stripping (message 0 only)
+     *   2. Comment / hidden-message normalisation
+     *   3. `beforeRegex` extension hooks (see {@link MessageFormatter})
+     *   4. Custom regex rules (`getRegexedString`)
+     *   5. `afterRegex` extension hooks
+     *   6. Markdown auto-fix (`fixMarkdown`)
+     *   7. HTML tag encoding (`encode_tags`)
+     *   8. Showdown Markdown → HTML conversion
+     *   9. `afterMarkdown` extension hooks
+     *  10. Name-prefix stripping (`allow_name2_display`)
+     *  11. DOMPurify sanitization
+     *
+     * All extension hooks run **before** DOMPurify (steps 3, 5, 9) so their
+     * output is always sanitised.
+     *
      * @param {string} mes - Raw message text.
      * @param {string} ch_name - Character name.
      * @param {boolean} isSystem - Whether this is a system message.
