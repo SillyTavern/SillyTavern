@@ -115,7 +115,8 @@ export const persona_description_positions = _persona_description_positions;
 
 export const power_user = {
     charListGrid: false,
-    tokenizer: tokenizers.BEST_MATCH,
+    counting_tokenizer: tokenizers.BEST_MATCH,
+    encoding_tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
     collapse_newlines: false,
     pin_examples: false,
@@ -1551,6 +1552,28 @@ function getExampleMessagesBehavior() {
 }
 
 //MARK: loadPowerUser
+
+/**
+ * Normalizes persisted tokenizer settings to options selectable in the UI.
+ * @param {unknown} tokenizer Tokenizer setting value.
+ * @returns {number} Normalized tokenizer setting value.
+ */
+function normalizePowerUserTokenizer(tokenizer) {
+    const tokenizerType = Number(tokenizer);
+
+    // Option #2 was a legacy GPT-2/3 tokenizer setting and is no longer selectable.
+    if (tokenizerType === tokenizers.OPENAI) {
+        return tokenizers.GPT2;
+    }
+
+    if (!Number.isInteger(tokenizerType)) {
+        return tokenizers.BEST_MATCH;
+    }
+
+    const hasOption = $(`#counting_tokenizer option[value="${tokenizerType}"], #encoding_tokenizer option[value="${tokenizerType}"]`).length > 0;
+    return hasOption ? tokenizerType : tokenizers.BEST_MATCH;
+}
+
 export async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
@@ -1562,6 +1585,16 @@ export async function loadPowerUserSettings(settings, data) {
         if (Object.hasOwn(settings.power_user, 'auto_sort_tags') && !Object.hasOwn(settings.power_user, 'tag_sort_mode')) {
             settings.power_user.tag_sort_mode = settings.power_user.auto_sort_tags ? tag_sort_mode.ALPHABETICAL : tag_sort_mode.MANUAL;
             delete settings.power_user.auto_sort_tags;
+        }
+        if (Object.hasOwn(settings.power_user, 'tokenizer')) {
+            const tokenizer = normalizePowerUserTokenizer(settings.power_user.tokenizer);
+            if (typeof settings.power_user.counting_tokenizer !== 'number') {
+                settings.power_user.counting_tokenizer = tokenizer;
+            }
+            if (typeof settings.power_user.encoding_tokenizer !== 'number') {
+                settings.power_user.encoding_tokenizer = tokenizer;
+            }
+            delete settings.power_user.tokenizer;
         }
         Object.assign(power_user, settings.power_user);
     }
@@ -1626,9 +1659,8 @@ export async function loadPowerUserSettings(settings, data) {
         power_user.chat_width = 50;
     }
 
-    if (power_user.tokenizer === tokenizers.LEGACY) {
-        power_user.tokenizer = tokenizers.GPT2;
-    }
+    power_user.counting_tokenizer = normalizePowerUserTokenizer(power_user.counting_tokenizer);
+    power_user.encoding_tokenizer = normalizePowerUserTokenizer(power_user.encoding_tokenizer);
 
     // Clean up old/legacy settings
     if (power_user.import_card_tags !== undefined) {
@@ -1681,7 +1713,8 @@ export async function loadPowerUserSettings(settings, data) {
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
     $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
-    $(`#tokenizer option[value="${power_user.tokenizer}"]`).prop('selected', true);
+    $(`#counting_tokenizer option[value="${power_user.counting_tokenizer}"]`).prop('selected', true);
+    $(`#encoding_tokenizer option[value="${power_user.encoding_tokenizer}"]`).prop('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).prop('selected', true);
     $('#confirm_message_delete').prop('checked', power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $('#spoiler_free_mode').prop('checked', power_user.spoiler_free_mode);
@@ -3624,14 +3657,20 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
-    $('#tokenizer').on('change', function () {
+    $('#counting_tokenizer').on('change', function () {
         const value = $(this).find(':selected').val();
-        power_user.tokenizer = Number(value);
-        BIAS_CACHE.clear();
+        power_user.counting_tokenizer = Number(value);
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize
         forceCharacterEditorTokenize();
+    });
+
+    $('#encoding_tokenizer').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.encoding_tokenizer = Number(value);
+        BIAS_CACHE.clear();
+        saveSettingsDebounced();
     });
 
     $('#send_on_enter').on('change', function () {

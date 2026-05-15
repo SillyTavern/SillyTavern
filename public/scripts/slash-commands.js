@@ -74,7 +74,7 @@ import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_E
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
+import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer, tokenizerSettings } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { registerActionLoaderSlashCommands } from './action-loader-slashcommands.js';
@@ -3177,6 +3177,16 @@ export function initDefaultSlashCommands() {
         name: 'tokenizer',
         callback: selectTokenizerCallback,
         returns: t`current tokenizer`,
+        namedArgumentList: [
+            SlashCommandNamedArgument.fromProps({
+                name: 'target',
+                description: t`tokenizer setting to update`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: tokenizerSettings.BOTH,
+                enumList: [tokenizerSettings.COUNTING, tokenizerSettings.ENCODING, tokenizerSettings.BOTH],
+                forceEnum: true,
+            }),
+        ],
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
                 description: t`tokenizer name`,
@@ -3187,7 +3197,10 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
             <div>
-                ${t`Selects tokenizer by name. Gets the current tokenizer if no name is provided.`}
+                ${t`Selects counting and/or encoding tokenizer by name. Gets the current tokenizers if no name is provided.`}
+            </div>
+            <div>
+                ${t`Use <code>target=counting</code>, <code>target=encoding</code>, or <code>target=both</code> to choose which setting to update.`}
             </div>
             <div>
                 <strong>${t`Available tokenizers:`}</strong>
@@ -3977,7 +3990,7 @@ async function trimTokensCallback(arg, value) {
         return value;
     }
 
-    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api);
+    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, tokenizerSettings.ENCODING);
     console.debug('Requesting tokenization for /trimtokens command', tokenizerName);
 
     try {
@@ -6781,8 +6794,14 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
 }
 
 async function selectTokenizerCallback(_, name) {
+    const target = [tokenizerSettings.COUNTING, tokenizerSettings.ENCODING].includes(_.target)
+        ? _.target
+        : tokenizerSettings.BOTH;
+
     if (!name) {
-        return getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === power_user.tokenizer)?.tokenizerKey ?? '';
+        const counting = getFriendlyTokenizerName(main_api, tokenizerSettings.COUNTING).tokenizerKey;
+        const encoding = getFriendlyTokenizerName(main_api, tokenizerSettings.ENCODING).tokenizerKey;
+        return `counting=${counting}, encoding=${encoding}`;
     }
 
     const tokenizers = getAvailableTokenizers();
@@ -6796,7 +6815,7 @@ async function selectTokenizerCallback(_, name) {
 
     /** @type {import('./tokenizers.js').Tokenizer} */
     const foundTokenizer = result[0].item;
-    selectTokenizer(foundTokenizer.tokenizerId);
+    selectTokenizer(foundTokenizer.tokenizerId, target);
 
     return foundTokenizer.tokenizerKey;
 }

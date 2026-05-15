@@ -85,7 +85,8 @@
         "trusted_workers_only": false
     },
     "power_user": {
-        "tokenizer": 99,
+        "counting_tokenizer": 99,
+        "encoding_tokenizer": 99,
         "token_padding": 64,
         "collapse_newlines": false,
         "pin_examples": false,

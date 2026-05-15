@@ -67,7 +67,7 @@ import {
     textValueMatcher,
     uuidv4,
 } from './utils.js';
-import { countTokensOpenAIAsync, getTokenizerModel } from './tokenizers.js';
+import { countTokensOpenAIAsync, getEncodingTokenizerType, getTokenizerModel, getTokenizerModelForType, tokenizers } from './tokenizers.js';
 import { isMobile } from './RossAscends-mods.js';
 import { saveLogprobsForActiveMessage } from './logprobs.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -3315,22 +3315,44 @@ function parseOpenAITextLogprobs(logprobs) {
 }
 
 async function calculateLogitBias() {
-    const body = JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected]);
-    let result = {};
-
     try {
-        const reply = await fetch(`/api/backends/chat-completions/bias?model=${getTokenizerModel()}`, {
+        const tokenizerModel = getLogitBiasTokenizerModel();
+
+        if (!tokenizerModel) {
+            return {};
+        }
+
+        const reply = await fetch(`/api/backends/chat-completions/bias?model=${encodeURIComponent(tokenizerModel)}`, {
             method: 'POST',
             headers: getRequestHeaders(),
-            body,
+            body: JSON.stringify(oai_settings.bias_presets[oai_settings.bias_preset_selected]),
         });
 
-        result = await reply.json();
+        if (!reply.ok) {
+            console.warn('Failed to calculate logit bias:', reply.status, reply.statusText);
+            return {};
+        }
+
+        return await reply.json();
     } catch (err) {
-        result = {};
         console.error(err);
+        return {};
     }
-    return result;
+}
+
+function getLogitBiasTokenizerModel() {
+    const tokenizerType = getEncodingTokenizerType();
+
+    if ([tokenizers.NONE, tokenizers.API_CURRENT].includes(tokenizerType)) {
+        return null;
+    }
+
+    const tokenizerModel = tokenizerType === tokenizers.BEST_MATCH
+        ? getTokenizerModel()
+        : getTokenizerModelForType(tokenizerType);
+
+    // Match the legacy Chat Completion /bias endpoint behavior.
+    return tokenizerModel === 'claude' ? null : tokenizerModel;
 }
 
 class TokenHandler {
@@ -7258,6 +7280,7 @@ export function initOpenAI() {
     $('#openai_logit_bias_preset').on('change', onLogitBiasPresetChange);
     $('#openai_logit_bias_new_preset').on('click', createNewLogitBiasPreset);
     $('#openai_logit_bias_new_entry').on('click', createNewLogitBiasEntry);
+    $('#encoding_tokenizer').on('change', () => biasCache = undefined);
     $('#openai_logit_bias_import_file').on('input', onLogitBiasPresetImportFileChange);
     $('#openai_preset_import_file').on('input', onPresetImportFileChange);
     $('#export_oai_preset').on('click', onExportPresetClick);
