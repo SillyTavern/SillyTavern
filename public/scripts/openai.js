@@ -199,6 +199,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    FEATHERLESS: 'featherless',
 };
 
 const character_names_behavior = {
@@ -328,6 +329,7 @@ export const settingsToUpdate = {
     minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
     minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
+    featherless_model: ['#model_featherless_chat_select', 'featherless_model', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
     nanogpt_provider: ['#nanogpt_provider', 'nanogpt_provider', false, true],
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
@@ -444,6 +446,7 @@ const default_settings = {
     minimax_model: 'MiniMax-M2.7',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
+    featherless_model: '',
     nanogpt_model: 'gpt-4o-mini',
     nanogpt_provider: '',
     nanogpt_payg_override: false,
@@ -1751,6 +1754,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.zai_model;
         case chat_completion_sources.WORKERS_AI:
             return settings.workers_ai_model;
+        case chat_completion_sources.FEATHERLESS:
+            return settings.featherless_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -2123,6 +2128,18 @@ function saveModelList(data) {
         }
 
         $('#model_electronhub_select').val(oai_settings.electronhub_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.FEATHERLESS) {
+        $('#model_featherless_chat_select').empty();
+        model_list.forEach((model) => {
+            $('#model_featherless_chat_select').append($('<option>', { value: model.id, text: model.id }));
+        });
+        const selectedModel = model_list.find(model => model.id === oai_settings.featherless_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.featherless_model)) {
+            oai_settings.featherless_model = model_list[0].id;
+        }
+        $('#model_featherless_chat_select').val(oai_settings.featherless_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CHUTES) {
@@ -5456,6 +5473,15 @@ async function onModelChange() {
         }
         console.log('ElectronHub model changed to', value);
         oai_settings.electronhub_model = value;
+    }
+
+    if ($(this).is('#model_featherless_chat_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Featherless model selected. Ignoring.');
+            return;
+        }
+        console.log('Featherless model changed to', value);
+        oai_settings.featherless_model = value;
     }
 
     if ($(this).is('#model_chutes_select')) {

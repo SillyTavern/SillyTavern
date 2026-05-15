@@ -2427,7 +2427,7 @@
                                 <select id="textgen_type">
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="dreamgen">DreamGen</option>
-                                    <option value="featherless">Featherless</option>
+                                    <option value="featherless">Featherless (Deprecated)</option>
                                     <option value="generic" data-i18n="Generic (OpenAI-compatible) [LM Studio, LiteLLM, etc.]">Generic (OpenAI-compatible) [LM Studio, LiteLLM, etc.]</option>
                                     <option value="huggingface">HuggingFace (Inference Endpoint)</option>
                                     <option value="infermaticai">InfermaticAI</option>
@@ -2625,6 +2625,9 @@
                                 <input id="custom_model_textgenerationwebui" class="text_pole wide100p" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
                             </div>
                             <div data-tg-type="featherless" class="flex-container flexFlowColumn">
+                                <div class="neutral_warning">
+                                    ⚠️ Featherless Text Completion is deprecated. Please switch to <strong>Chat Completion</strong> API and select <strong>Featherless</strong> as the source.
+                                </div>
                                 <div class="flex-container flexFlowColumn">
                                     <a href="https://featherless.ai/models/" target="_blank" rel="noopener noreferrer">
                                         featherless.ai
@@ -2632,11 +2635,11 @@
                                 </div>
                                 <h4 data-i18n="API key (optional)">API key</h4>
                                 <div class="flex-container">
-                                    <input id="api_key_featherless" name="api_key_featherless" class="text_pole flex1 wide100p" type="text" autocomplete="off">
+                                    <input id="api_key_featherless-tg" name="api_key_featherless" class="text_pole flex1 wide100p api_key_featherless" type="text" autocomplete="off">
                                     <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_featherless">
                                     </div>
                                 </div>
-                                <div data-for="api_key_featherless" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                <div data-for="api_key_featherless-tg" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
                                     For privacy reasons, your API key will be hidden after you click 'Connect'.
                                 </div>
                                 <hr>
@@ -2922,6 +2925,7 @@
                                 <!-- <option value="cometapi">CometAPI</option> -->
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="electronhub">Electron Hub</option>
+                                <option value="featherless">Featherless</option>
                                 <option value="fireworks">Fireworks AI</option>
                                 <option value="groq">Groq</option>
                                 <option value="makersuite">Google AI Studio</option>
@@ -3614,6 +3618,25 @@
                             <div>
                                 <h4 data-i18n="Electron Hub Model">Electron Hub Model</h4>
                                 <select id="model_electronhub_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="featherless_chat_form" data-source="featherless">
+                            <div class="flex-container flexFlowColumn">
+                                <a href="https://featherless.ai" target="_blank" rel="noopener noreferrer">featherless.ai</a>
+                            </div>
+                            <h4>Featherless API Key <small data-i18n="(optional)">(optional)</small></h4>
+                            <div class="flex-container">
+                                <input id="api_key_featherless" name="api_key_featherless" class="text_pole flex1 api_key_featherless" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_featherless"></div>
+                            </div>
+                            <div data-for="api_key_featherless" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Featherless Model">Featherless Model</h4>
+                                <select id="model_featherless_chat_select">
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
