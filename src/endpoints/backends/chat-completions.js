@@ -2526,8 +2526,7 @@ router.post('/generate', async function (request, response) {
             }
         }
 
-        if (!apiKey && !request.body.reverse_proxy
-            && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
+        if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
             console.warn('OpenAI API key is missing.');
             return response.status(400).send({ error: true });
         }
