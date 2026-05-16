@@ -2427,7 +2427,7 @@
                                 <select id="textgen_type">
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="dreamgen">DreamGen</option>
-                                    <option value="featherless">Featherless (Deprecated)</option>
+                                    <option value="featherless">Featherless</option>
                                     <option value="generic" data-i18n="Generic (OpenAI-compatible) [LM Studio, LiteLLM, etc.]">Generic (OpenAI-compatible) [LM Studio, LiteLLM, etc.]</option>
                                     <option value="huggingface">HuggingFace (Inference Endpoint)</option>
                                     <option value="infermaticai">InfermaticAI</option>
@@ -2626,7 +2626,8 @@
                             </div>
                             <div data-tg-type="featherless" class="flex-container flexFlowColumn">
                                 <div class="neutral_warning">
-                                    ⚠️ Featherless Text Completion is deprecated. Please switch to <strong>Chat Completion</strong> API and select <strong>Featherless</strong> as the source.
+                                    ⚠️ Featherless strongly recommends using Chat Completion. The Text Completion API endpoints, though available, have known issues, and are no longer officially supported.
+                                    Please switch to <strong>Chat Completion</strong> API and select <strong>Featherless</strong> as the source.
                                 </div>
                                 <div class="flex-container flexFlowColumn">
                                     <a href="https://featherless.ai/models/" target="_blank" rel="noopener noreferrer">
