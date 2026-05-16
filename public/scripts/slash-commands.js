@@ -74,7 +74,7 @@ import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_E
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer, tokenizerSettings } from './tokenizers.js';
+import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer, tokenizer_settings } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { registerActionLoaderSlashCommands } from './action-loader-slashcommands.js';
@@ -3182,8 +3182,8 @@ export function initDefaultSlashCommands() {
                 name: 'target',
                 description: t`tokenizer setting to update`,
                 typeList: [ARGUMENT_TYPE.STRING],
-                defaultValue: tokenizerSettings.BOTH,
-                enumList: [tokenizerSettings.COUNTING, tokenizerSettings.ENCODING, tokenizerSettings.BOTH],
+                defaultValue: tokenizer_settings.BOTH,
+                enumList: [tokenizer_settings.COUNTING, tokenizer_settings.ENCODING, tokenizer_settings.BOTH],
                 forceEnum: true,
             }),
         ],
@@ -3996,7 +3996,7 @@ async function trimTokensCallback(arg, value) {
         return value;
     }
 
-    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, tokenizerSettings.ENCODING);
+    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, tokenizer_settings.ENCODING);
     console.debug('Requesting tokenization for /trimtokens command', tokenizerName);
 
     try {
@@ -6800,13 +6800,13 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
 }
 
 async function selectTokenizerCallback(_, name) {
-    const target = [tokenizerSettings.COUNTING, tokenizerSettings.ENCODING].includes(_.target)
+    const target = [tokenizer_settings.COUNTING, tokenizer_settings.ENCODING].includes(_.target)
         ? _.target
-        : tokenizerSettings.BOTH;
+        : tokenizer_settings.BOTH;
 
     if (!name) {
-        const counting = getFriendlyTokenizerName(main_api, tokenizerSettings.COUNTING).tokenizerKey;
-        const encoding = getFriendlyTokenizerName(main_api, tokenizerSettings.ENCODING).tokenizerKey;
+        const counting = getFriendlyTokenizerName(main_api, tokenizer_settings.COUNTING).tokenizerKey;
+        const encoding = getFriendlyTokenizerName(main_api, tokenizer_settings.ENCODING).tokenizerKey;
         return `counting=${counting}, encoding=${encoding}`;
     }
 

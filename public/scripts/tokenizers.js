@@ -37,15 +37,15 @@ export const tokenizers = {
     BEST_MATCH: 99,
 };
 
-export const tokenizerSettings = {
+export const tokenizer_settings = {
     COUNTING: 'counting',
     ENCODING: 'encoding',
     BOTH: 'both',
 };
 
 const TOKENIZER_SELECTORS = {
-    [tokenizerSettings.COUNTING]: '#counting_tokenizer',
-    [tokenizerSettings.ENCODING]: '#encoding_tokenizer',
+    [tokenizer_settings.COUNTING]: '#counting_tokenizer',
+    [tokenizer_settings.ENCODING]: '#encoding_tokenizer',
 };
 
 // A list of local tokenizers that support encoding and decoding token ids.
@@ -221,7 +221,7 @@ async function resetTokenCache() {
  * @returns {Tokenizer[]} Tokenizer info.
  */
 export function getAvailableTokenizers() {
-    const tokenizerOptions = $(TOKENIZER_SELECTORS[tokenizerSettings.COUNTING]).find('option').toArray();
+    const tokenizerOptions = $(TOKENIZER_SELECTORS[tokenizer_settings.COUNTING]).find('option').toArray();
     return tokenizerOptions.map(tokenizerOption => ({
         tokenizerId: Number(tokenizerOption.value),
         tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
@@ -244,7 +244,7 @@ function getTokenizerInfo(tokenizerId) {
  * @returns {number} Tokenizer type.
  */
 function getTokenizerSetting(target) {
-    const tokenizerType = target === tokenizerSettings.ENCODING
+    const tokenizerType = target === tokenizer_settings.ENCODING
         ? power_user.encoding_tokenizer
         : power_user.counting_tokenizer;
     return typeof tokenizerType === 'number' ? tokenizerType : tokenizers.BEST_MATCH;
@@ -255,7 +255,7 @@ function getTokenizerSetting(target) {
  * @returns {number} Tokenizer type.
  */
 export function getCountingTokenizerType() {
-    return getTokenizerSetting(tokenizerSettings.COUNTING);
+    return getTokenizerSetting(tokenizer_settings.COUNTING);
 }
 
 /**
@@ -263,22 +263,22 @@ export function getCountingTokenizerType() {
  * @returns {number} Tokenizer type.
  */
 export function getEncodingTokenizerType() {
-    return getTokenizerSetting(tokenizerSettings.ENCODING);
+    return getTokenizerSetting(tokenizer_settings.ENCODING);
 }
 
 /**
  * Selects tokenizer if not already selected.
  * @param {number} tokenizerId Tokenizer ID.
  */
-export function selectTokenizer(tokenizerId, target = tokenizerSettings.BOTH) {
+export function selectTokenizer(tokenizerId, target = tokenizer_settings.BOTH) {
     const tokenizer = getTokenizerInfo(tokenizerId);
     if (!tokenizer) {
         console.warn('Failed to find tokenizer with id', tokenizerId);
         return;
     }
 
-    const targets = target === tokenizerSettings.BOTH
-        ? [tokenizerSettings.COUNTING, tokenizerSettings.ENCODING]
+    const targets = target === tokenizer_settings.BOTH
+        ? [tokenizer_settings.COUNTING, tokenizer_settings.ENCODING]
         : [target];
 
     for (const tokenizerTarget of targets) {
@@ -287,7 +287,7 @@ export function selectTokenizer(tokenizerId, target = tokenizerSettings.BOTH) {
         }
     }
 
-    const targetName = target === tokenizerSettings.BOTH ? 'Tokenizer' : `${target} tokenizer`;
+    const targetName = target === tokenizer_settings.BOTH ? 'Tokenizer' : `${target} tokenizer`;
     toastr.info(`${targetName}: "${tokenizer.tokenizerName}" selected`);
 }
 
@@ -296,7 +296,7 @@ export function selectTokenizer(tokenizerId, target = tokenizerSettings.BOTH) {
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
  * @returns {Tokenizer} Tokenizer info
  */
-export function getFriendlyTokenizerName(forApi, target = tokenizerSettings.COUNTING) {
+export function getFriendlyTokenizerName(forApi, target = tokenizer_settings.COUNTING) {
     if (!forApi) {
         forApi = main_api;
     }
