@@ -117,7 +117,7 @@ router.post('/import', (request, response) => {
             throw new Error('File must contain a world info entries list');
         }
     } catch (err) {
-        return response.status(400).send('Is not a valid world info file');
+        return response.status(400).send(`Is not a valid world info file: ${err}`);
     }
 
     const pathToNewFile = path.join(request.user.directories.worlds, filename);
