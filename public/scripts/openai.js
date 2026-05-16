@@ -67,7 +67,7 @@ import {
     textValueMatcher,
     uuidv4,
 } from './utils.js';
-import { countTokensOpenAIAsync, getEncodingTokenizerType, getTokenizerModel, getTokenizerModelForType, tokenizers } from './tokenizers.js';
+import { countTokensOpenAIAsync, getEncodingTokenizerType, getTokenizerModel, tokenizers } from './tokenizers.js';
 import { isMobile } from './RossAscends-mods.js';
 import { saveLogprobsForActiveMessage } from './logprobs.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -3347,9 +3347,7 @@ function getLogitBiasTokenizerModel() {
         return null;
     }
 
-    const tokenizerModel = tokenizerType === tokenizers.BEST_MATCH
-        ? getTokenizerModel()
-        : getTokenizerModelForType(tokenizerType);
+    const tokenizerModel = getTokenizerModel(tokenizerType);
 
     // Match the legacy Chat Completion /bias endpoint behavior.
     return tokenizerModel === 'claude' ? null : tokenizerModel;

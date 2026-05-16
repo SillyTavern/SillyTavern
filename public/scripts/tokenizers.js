@@ -344,50 +344,6 @@ function resolveTokenizerType(tokenizerType, forApi = main_api) {
 }
 
 /**
- * Maps a tokenizer type to a model name accepted by the OpenAI-compatible tokenizer endpoints.
- * @param {number} tokenizerType Tokenizer type.
- * @returns {string|null} Tokenizer model name.
- */
-export function getTokenizerModelForType(tokenizerType) {
-    switch (tokenizerType) {
-        case tokenizers.GPT2:
-            return 'gpt2';
-        case tokenizers.OPENAI:
-            return getTokenizerModel();
-        case tokenizers.LLAMA:
-            return 'llama';
-        case tokenizers.NERD:
-            return 'nerdstash';
-        case tokenizers.NERD2:
-            return 'nerdstash_v2';
-        case tokenizers.MISTRAL:
-            return 'mistral';
-        case tokenizers.YI:
-            return 'yi';
-        case tokenizers.CLAUDE:
-            return 'claude';
-        case tokenizers.LLAMA3:
-            return 'llama3';
-        case tokenizers.GEMMA:
-            return 'gemma';
-        case tokenizers.JAMBA:
-            return 'jamba';
-        case tokenizers.QWEN2:
-            return 'qwen2';
-        case tokenizers.COMMAND_R:
-            return 'command-r';
-        case tokenizers.COMMAND_A:
-            return 'command-a';
-        case tokenizers.NEMO:
-            return 'nemo';
-        case tokenizers.DEEPSEEK:
-            return 'deepseek';
-        default:
-            return null;
-    }
-}
-
-/**
  * Gets the best tokenizer for the current API.
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
  * @returns {number} Tokenizer type.
@@ -681,7 +637,45 @@ function counterWrapperOpenAIAsync(text) {
     return countTokensOpenAIAsync(message, true);
 }
 
-export function getTokenizerModel() {
+export function getTokenizerModel(tokenizerType = tokenizers.BEST_MATCH) {
+    switch (tokenizerType) {
+        case tokenizers.GPT2:
+            return 'gpt2';
+        case tokenizers.LLAMA:
+            return 'llama';
+        case tokenizers.NERD:
+            return 'nerdstash';
+        case tokenizers.NERD2:
+            return 'nerdstash_v2';
+        case tokenizers.MISTRAL:
+            return 'mistral';
+        case tokenizers.YI:
+            return 'yi';
+        case tokenizers.CLAUDE:
+            return 'claude';
+        case tokenizers.LLAMA3:
+            return 'llama3';
+        case tokenizers.GEMMA:
+            return 'gemma';
+        case tokenizers.JAMBA:
+            return 'jamba';
+        case tokenizers.QWEN2:
+            return 'qwen2';
+        case tokenizers.COMMAND_R:
+            return 'command-r';
+        case tokenizers.COMMAND_A:
+            return 'command-a';
+        case tokenizers.NEMO:
+            return 'nemo';
+        case tokenizers.DEEPSEEK:
+            return 'deepseek';
+        case tokenizers.BEST_MATCH:
+        case tokenizers.OPENAI:
+            break;
+        default:
+            return null;
+    }
+
     // OpenAI models always provide their own tokenizer
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         return oai_settings.openai_model;
@@ -916,7 +910,7 @@ export function countTokensOpenAI(messages, full = false) {
         : resolvedTokenizerType;
     const model = selectedTokenizerType === tokenizers.BEST_MATCH
         ? getTokenizerModel()
-        : getTokenizerModelForType(countingTokenizerType);
+        : getTokenizerModel(countingTokenizerType);
     const tokenizerEndpoint = model ? `/api/tokenizers/openai/count?model=${model}` : null;
     const cacheObject = getTokenCacheObject();
     const modelHash = getTokenizerModelHash(countingTokenizerType);
@@ -984,7 +978,7 @@ export async function countTokensOpenAIAsync(messages, full = false) {
         : resolvedTokenizerType;
     const model = selectedTokenizerType === tokenizers.BEST_MATCH
         ? getTokenizerModel()
-        : getTokenizerModelForType(countingTokenizerType);
+        : getTokenizerModel(countingTokenizerType);
     const tokenizerEndpoint = model ? `/api/tokenizers/openai/count?model=${model}` : null;
     const cacheObject = getTokenCacheObject();
     const modelHash = getTokenizerModelHash(countingTokenizerType);
