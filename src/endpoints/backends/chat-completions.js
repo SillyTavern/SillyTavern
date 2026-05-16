@@ -1985,9 +1985,7 @@ router.post('/status', async function (request, statusResponse) {
             return statusResponse.status(400).send({ error: true });
         }
 
-        if (!apiKey && !request.body.reverse_proxy
-            && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM
-            && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.FEATHERLESS) {
+        if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
             console.warn('Chat Completion API key is missing.');
             return statusResponse.status(400).send({ error: true });
         }
