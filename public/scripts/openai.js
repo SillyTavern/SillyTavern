@@ -3347,7 +3347,7 @@ function getLogitBiasTokenizerModel() {
         return null;
     }
 
-    const tokenizerModel = getTokenizerModel(tokenizerType);
+    const tokenizerModel = getTokenizerModel({ tokenizerType });
 
     // Match the legacy Chat Completion /bias endpoint behavior.
     return tokenizerModel === 'claude' ? null : tokenizerModel;

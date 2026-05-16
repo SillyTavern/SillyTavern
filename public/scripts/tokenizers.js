@@ -269,8 +269,10 @@ export function getEncodingTokenizerType() {
 /**
  * Selects tokenizer if not already selected.
  * @param {number} tokenizerId Tokenizer ID.
+ * @param {object} [options] Options.
+ * @param {string} [options.target] Tokenizer setting target.
  */
-export function selectTokenizer(tokenizerId, target = tokenizer_settings.BOTH) {
+export function selectTokenizer(tokenizerId, { target = tokenizer_settings.BOTH } = {}) {
     const tokenizer = getTokenizerInfo(tokenizerId);
     if (!tokenizer) {
         console.warn('Failed to find tokenizer with id', tokenizerId);
@@ -294,9 +296,11 @@ export function selectTokenizer(tokenizerId, target = tokenizer_settings.BOTH) {
 /**
  * Gets the friendly name of the current tokenizer.
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
+ * @param {object} [options] Options.
+ * @param {string} [options.target] Tokenizer setting target.
  * @returns {Tokenizer} Tokenizer info
  */
-export function getFriendlyTokenizerName(forApi, target = tokenizer_settings.COUNTING) {
+export function getFriendlyTokenizerName(forApi, { target = tokenizer_settings.COUNTING } = {}) {
     if (!forApi) {
         forApi = main_api;
     }
@@ -637,7 +641,7 @@ function counterWrapperOpenAIAsync(text) {
     return countTokensOpenAIAsync(message, true);
 }
 
-export function getTokenizerModel(tokenizerType = tokenizers.BEST_MATCH) {
+export function getTokenizerModel({ tokenizerType = tokenizers.BEST_MATCH } = {}) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
             return 'gpt2';
@@ -910,7 +914,7 @@ export function countTokensOpenAI(messages, full = false) {
         : resolvedTokenizerType;
     const model = selectedTokenizerType === tokenizers.BEST_MATCH
         ? getTokenizerModel()
-        : getTokenizerModel(countingTokenizerType);
+        : getTokenizerModel({ tokenizerType: countingTokenizerType });
     const tokenizerEndpoint = model ? `/api/tokenizers/openai/count?model=${model}` : null;
     const cacheObject = getTokenCacheObject();
     const modelHash = getTokenizerModelHash(countingTokenizerType);
@@ -978,7 +982,7 @@ export async function countTokensOpenAIAsync(messages, full = false) {
         : resolvedTokenizerType;
     const model = selectedTokenizerType === tokenizers.BEST_MATCH
         ? getTokenizerModel()
-        : getTokenizerModel(countingTokenizerType);
+        : getTokenizerModel({ tokenizerType: countingTokenizerType });
     const tokenizerEndpoint = model ? `/api/tokenizers/openai/count?model=${model}` : null;
     const cacheObject = getTokenCacheObject();
     const modelHash = getTokenizerModelHash(countingTokenizerType);

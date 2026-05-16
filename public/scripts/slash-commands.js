@@ -3996,7 +3996,7 @@ async function trimTokensCallback(arg, value) {
         return value;
     }
 
-    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, tokenizer_settings.ENCODING);
+    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, { target: tokenizer_settings.ENCODING });
     console.debug('Requesting tokenization for /trimtokens command', tokenizerName);
 
     try {
@@ -6805,8 +6805,8 @@ async function selectTokenizerCallback(_, name) {
         : tokenizer_settings.BOTH;
 
     if (!name) {
-        const counting = getFriendlyTokenizerName(main_api, tokenizer_settings.COUNTING).tokenizerKey;
-        const encoding = getFriendlyTokenizerName(main_api, tokenizer_settings.ENCODING).tokenizerKey;
+        const counting = getFriendlyTokenizerName(main_api, { target: tokenizer_settings.COUNTING }).tokenizerKey;
+        const encoding = getFriendlyTokenizerName(main_api, { target: tokenizer_settings.ENCODING }).tokenizerKey;
         return `counting=${counting}, encoding=${encoding}`;
     }
 
@@ -6821,7 +6821,7 @@ async function selectTokenizerCallback(_, name) {
 
     /** @type {import('./tokenizers.js').Tokenizer} */
     const foundTokenizer = result[0].item;
-    selectTokenizer(foundTokenizer.tokenizerId, target);
+    selectTokenizer(foundTokenizer.tokenizerId, { target });
 
     return foundTokenizer.tokenizerKey;
 }

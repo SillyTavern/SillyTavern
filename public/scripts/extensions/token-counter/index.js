@@ -10,7 +10,7 @@ import { renderExtensionTemplateAsync } from '../../extensions.js';
 import { t } from '../../i18n.js';
 
 async function doTokenCounter() {
-    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, tokenizer_settings.ENCODING);
+    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api, { target: tokenizer_settings.ENCODING });
     const html = await renderExtensionTemplateAsync('token-counter', 'window', { tokenizerName });
 
     const dialog = $(html);
