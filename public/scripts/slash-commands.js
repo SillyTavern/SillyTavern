@@ -3200,7 +3200,13 @@ export function initDefaultSlashCommands() {
                 ${t`Selects counting and/or encoding tokenizer by name. Gets the current tokenizers if no name is provided.`}
             </div>
             <div>
+                ${t`When getting, returns <code>counting=&lt;name&gt;, encoding=&lt;name&gt;</code>.`}
+            </div>
+            <div>
                 ${t`Use <code>target=counting</code>, <code>target=encoding</code>, or <code>target=both</code> to choose which setting to update.`}
+            </div>
+            <div>
+                ${t`When setting <code>target=both</code>, provide one tokenizer name to apply to both settings.`}
             </div>
             <div>
                 <strong>${t`Available tokenizers:`}</strong>
