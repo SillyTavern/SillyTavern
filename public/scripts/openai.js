@@ -5967,12 +5967,6 @@ async function onConnectButtonClick(e) {
         }
     }
 
-    // Anonymous Pollinations endpoint needs no key
-    if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS &&
-        oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS) {
-        apiSourceConfig[chat_completion_sources.POLLINATIONS].keyless = true;
-    }
-
     // Other generic configs
     const config = apiSourceConfig[oai_settings.chat_completion_source];
     if (config) {
