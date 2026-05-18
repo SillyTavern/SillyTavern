@@ -155,7 +155,6 @@ export function registerVariableMacros() {
         },
     });
 
-
     // {{setelement::name::key::value}} -> ''
     MacroRegistry.registerMacro('setelement', {
         category: MacroCategory.VARIABLE,
