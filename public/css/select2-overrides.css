@@ -241,39 +241,19 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
     background-color: var(--white30a);
 }
 
-/* Character filter state styling — shared base for items with a state prefix icon */
+/* Character filter — selected chip base styling */
 .select2-selection__choice.character_filter_oneOf .select2-selection__choice__display,
 .select2-selection__choice.character_filter_required .select2-selection__choice__display,
 .select2-selection__choice.character_filter_excluded .select2-selection__choice__display {
-    padding-left: 10px;
     cursor: pointer;
 }
 
-.select2-selection__choice.character_filter_oneOf .select2-selection__choice__display::before,
-.select2-selection__choice.character_filter_required .select2-selection__choice__display::before,
-.select2-selection__choice.character_filter_excluded .select2-selection__choice__display::before {
-    font-weight: bold;
-    position: absolute;
-    margin-left: -15px;
-}
-
-/* oneOf (OR) — default state, subtle dot indicator */
-.select2-selection__choice.character_filter_oneOf .select2-selection__choice__display::before {
-    content: '\25CB ';
-    opacity: 0.5;
-}
-
-/* required (AND) — green check, emphasized border */
+/* required (AND) — green border */
 .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_required {
     border-color: var(--active);
 }
 
-.select2-selection__choice.character_filter_required .select2-selection__choice__display::before {
-    content: '\2713 ';
-    color: var(--active);
-}
-
-/* excluded (NOT) — red strikethrough, red X */
+/* excluded (NOT) — red border, strikethrough, reduced opacity */
 .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_excluded {
     border-color: var(--SmartThemeQuoteColor, #e74c3c) !important;
     opacity: 0.85;
@@ -284,7 +264,33 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
     text-decoration-color: var(--SmartThemeQuoteColor, #e74c3c);
 }
 
-.select2-selection__choice.character_filter_excluded .select2-selection__choice__display::before {
-    content: '\2717 ';
+/* Character filter — dropdown state indicators */
+.cf_option {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+.cf_option i {
+    width: 1.2em;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.cf_state_indicator {
+    margin-left: auto;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.cf_state_indicator.cf_state_oneOf {
+    opacity: 0.5;
+}
+
+.cf_state_indicator.cf_state_required {
+    color: var(--active);
+}
+
+.cf_state_indicator.cf_state_excluded {
     color: var(--SmartThemeQuoteColor, #e74c3c);
 }

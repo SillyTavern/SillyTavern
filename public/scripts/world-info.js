@@ -3209,17 +3209,72 @@ function updatePosOrdDisplayHelper({ template, data, uid }) {
     template.find('.world_entry_form_position_value').text(`(${posText} ${entry.order})`);
 }
 
+/** FA icon classes for each character filter type */
+const CHARACTER_FILTER_TYPE_ICONS = {
+    [CHARACTER_FILTER_TYPES.CHARACTER]: 'fa-solid fa-address-card',
+    [CHARACTER_FILTER_TYPES.TAG]: 'fa-solid fa-tags',
+    [CHARACTER_FILTER_TYPES.PERSONA]: 'fa-solid fa-face-smile',
+};
+
+/** State indicator symbols for rendering in dropdown and chips */
+const CHARACTER_FILTER_STATE_INDICATORS = {
+    [CHARACTER_FILTER_STATES.ONE_OF]: { icon: '○', cls: 'cf_state_oneOf' },
+    [CHARACTER_FILTER_STATES.REQUIRED]: { icon: '✓', cls: 'cf_state_required' },
+    [CHARACTER_FILTER_STATES.EXCLUDED]: { icon: '✗', cls: 'cf_state_excluded' },
+};
+
 /**
- * Helper to initialize character filter select2.
+ * Helper to initialize character filter select2 with custom templates.
  * @param {JQuery<HTMLElement>} characterFilter - The select element for character filter.
+ * @param {object} wiData - The world info data object (for reading current filter states).
  */
-function initCharacterFilterSelect2Helper(characterFilter) {
+function initCharacterFilterSelect2Helper(characterFilter, wiData) {
+    /** Gets the current filter state for an option element, or null if not selected */
+    const getItemState = (optionElement) => {
+        const uid = characterFilter.data('uid');
+        const filter = Array.isArray(wiData.entries[uid]?.characterFilter) ? wiData.entries[uid].characterFilter : [];
+        const type = optionElement?.getAttribute('data-type');
+        const value = optionElement?.value;
+        const item = filter.find(f => f.type === type && f.name === value);
+        return item?.state ?? null;
+    };
+
+    /** Renders an option in the dropdown list */
+    const templateResult = (selectData) => {
+        if (!selectData.element) return selectData.text;
+        const type = selectData.element.getAttribute('data-type');
+        if (!type) return selectData.text;
+        const iconClass = CHARACTER_FILTER_TYPE_ICONS[type] || '';
+        const state = getItemState(selectData.element);
+        const $span = $('<span class="cf_option"></span>');
+        $span.append($(`<i class="${iconClass}"></i>`));
+        $span.append(document.createTextNode(` ${selectData.text} `));
+        if (state) {
+            const indicator = CHARACTER_FILTER_STATE_INDICATORS[state];
+            $span.append($(`<span class="cf_state_indicator ${indicator.cls}"></span>`).text(indicator.icon));
+        }
+        return $span;
+    };
+
+    /** Renders a selected item (chip) */
+    const templateSelection = (selectData) => {
+        if (!selectData.element) return selectData.text;
+        const type = selectData.element.getAttribute('data-type');
+        const iconClass = CHARACTER_FILTER_TYPE_ICONS[type] || '';
+        const $el = $('<span></span>').attr('data-filter-type', type).attr('data-filter-value', selectData.id);
+        $el.append($(`<i class="${iconClass}"></i>`));
+        $el.append(document.createTextNode(` ${selectData.text}`));
+        return $el;
+    };
+
     if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
             placeholder: t`Filter to characters, tags, or personas`,
             allowClear: true,
             closeOnSelect: false,
+            templateResult,
+            templateSelection,
         });
     }
 }
@@ -3233,36 +3288,48 @@ function initCharacterFilterSelect2Helper(characterFilter) {
 function fillCharacterFilterOptionsHelper({ characterFilter, entry }) {
     const filterItems = Array.isArray(entry.characterFilter) ? entry.characterFilter : [];
 
+    // Characters optgroup
+    const charGroup = document.createElement('optgroup');
+    charGroup.label = t`Characters`;
     const characters = getContext().characters;
     characters.forEach((character) => {
         const option = document.createElement('option');
         const name = character.avatar.replace(/\.[^/.]+$/, '') ?? character.name;
-        option.innerText = `[Character] ${name}`;
+        option.innerText = name;
         option.value = name;
         option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.CHARACTER && f.name === name);
         option.setAttribute('data-type', CHARACTER_FILTER_TYPES.CHARACTER);
-        characterFilter.append(option);
+        charGroup.append(option);
     });
+    characterFilter.append(charGroup);
 
+    // Tags optgroup
+    const tagGroup = document.createElement('optgroup');
+    tagGroup.label = t`Tags`;
     const tags = getContext().tags;
     tags.forEach((tag) => {
         const option = document.createElement('option');
-        option.innerText = `[Tag] ${tag.name}`;
-        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.TAG && f.name === tag.id);
+        option.innerText = tag.name;
         option.value = tag.id;
+        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.TAG && f.name === tag.id);
         option.setAttribute('data-type', CHARACTER_FILTER_TYPES.TAG);
-        characterFilter.append(option);
+        tagGroup.append(option);
     });
+    characterFilter.append(tagGroup);
 
+    // Personas optgroup
+    const personaGroup = document.createElement('optgroup');
+    personaGroup.label = t`Personas`;
     const personas = power_user.personas;
     Object.entries(personas).forEach(([avatarId, personaName]) => {
         const option = document.createElement('option');
-        option.innerText = `[Persona] ${personaName}`;
-        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.PERSONA && f.name === avatarId);
+        option.innerText = personaName;
         option.value = avatarId;
+        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.PERSONA && f.name === avatarId);
         option.setAttribute('data-type', CHARACTER_FILTER_TYPES.PERSONA);
-        characterFilter.append(option);
+        personaGroup.append(option);
     });
+    characterFilter.append(personaGroup);
 }
 
 /**
@@ -3312,26 +3379,18 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name 
 }
 
 /**
- * Finds the filter item that corresponds to a rendered select2 choice's display text.
+ * Finds the filter item that corresponds to a rendered select2 choice element.
+ * Uses data attributes embedded by templateSelection for robust matching.
  * @param {Array<{type: string, name: string, state: string}>} filterItems - The character filter array.
- * @param {string} displayText - The text displayed in the select2 choice.
+ * @param {JQuery<HTMLElement>} choiceDisplay - The .select2-selection__choice__display element.
  * @returns {object|undefined} The matching filter item, or undefined.
  */
-function getFilterItemForDisplayText(filterItems, displayText) {
-    return filterItems.find(f => {
-        switch (f.type) {
-            case CHARACTER_FILTER_TYPES.CHARACTER:
-                return `[Character] ${f.name}` === displayText;
-            case CHARACTER_FILTER_TYPES.TAG: {
-                const tag = getContext().tags.find(t => t.id === f.name);
-                return tag && `[Tag] ${tag.name}` === displayText;
-            }
-            case CHARACTER_FILTER_TYPES.PERSONA:
-                return `[Persona] ${power_user.personas[f.name]}` === displayText;
-            default:
-                return false;
-        }
-    });
+function getFilterItemForChoice(filterItems, choiceDisplay) {
+    const templateSpan = choiceDisplay.find('span[data-filter-type]');
+    if (!templateSpan.length) return undefined;
+    const type = templateSpan.attr('data-filter-type');
+    const value = templateSpan.attr('data-filter-value');
+    return filterItems.find(f => f.type === type && f.name === value);
 }
 
 /**
@@ -3342,19 +3401,18 @@ function getFilterItemForDisplayText(filterItems, displayText) {
 function updateCharacterFilterStateStyles(characterFilterSelect, entryFilter) {
     const filterItems = Array.isArray(entryFilter) ? entryFilter : [];
     const container = characterFilterSelect.next('span.select2-container');
+    const tooltips = {
+        [CHARACTER_FILTER_STATES.ONE_OF]: t`One of (OR): At least one of these must match`,
+        [CHARACTER_FILTER_STATES.REQUIRED]: t`Required (AND): This must match`,
+        [CHARACTER_FILTER_STATES.EXCLUDED]: t`Excluded (NOT): Must not match`,
+    };
     container.find('.select2-selection__choice').each(function () {
-        const displayText = $(this).find('.select2-selection__choice__display').text();
-        const filterItem = getFilterItemForDisplayText(filterItems, displayText);
+        const display = $(this).find('.select2-selection__choice__display');
+        const filterItem = getFilterItemForChoice(filterItems, display);
         const state = filterItem?.state ?? CHARACTER_FILTER_STATES.ONE_OF;
         // Remove all state classes, then add the current one
-        $(this).removeClass('character_filter_one_of character_filter_required character_filter_excluded');
+        $(this).removeClass('character_filter_oneOf character_filter_required character_filter_excluded');
         $(this).addClass(`character_filter_${state}`);
-        // Set tooltip based on state
-        const tooltips = {
-            [CHARACTER_FILTER_STATES.ONE_OF]: t`One of (OR): At least one of these must match`,
-            [CHARACTER_FILTER_STATES.REQUIRED]: t`Required (AND): This must match`,
-            [CHARACTER_FILTER_STATES.EXCLUDED]: t`Excluded (NOT): Must not match`,
-        };
         $(this).attr('title', tooltips[state] ?? '');
     });
 }
@@ -3829,16 +3887,15 @@ export async function getWorldEntry(name, data, entry) {
         // Character filter
         const characterFilter = editTemplate.find('select[name="characterFilter"]');
         characterFilter.data('uid', entry.uid);
-        initCharacterFilterSelect2Helper(characterFilter);
+        initCharacterFilterSelect2Helper(characterFilter, data);
         fillCharacterFilterOptionsHelper({ characterFilter, entry });
         handleCharacterFilterChangeHelper({ characterFilter, data, entry, name });
 
         // Click-to-toggle filter state on individual character filter choices (oneOf → required → excluded → oneOf)
         select2ChoiceClickSubscribe(characterFilter, async (target) => {
             const uid = characterFilter.data('uid');
-            const displayText = $(target).text();
             const filter = Array.isArray(data.entries[uid].characterFilter) ? data.entries[uid].characterFilter : [];
-            const item = getFilterItemForDisplayText(filter, displayText);
+            const item = getFilterItemForChoice(filter, $(target));
             if (item) {
                 const currentIndex = CHARACTER_FILTER_STATE_CYCLE.indexOf(item.state);
                 const nextIndex = (currentIndex + 1) % CHARACTER_FILTER_STATE_CYCLE.length;
