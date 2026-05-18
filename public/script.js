@@ -1754,6 +1754,8 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
     if (!mes) {
         return '';
     }
+    // Preserved the flag for regex application
+    const isHiddenMessage = isSystem;
 
     if (Number(messageId) === 0 && !isSystem && !isUser && !isReasoning) {
         const mesBeforeReplace = mes;
@@ -1806,11 +1808,13 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
 
         // Always override the character name
-        mes = getRegexedString(mes, regexPlacement, {
-            characterOverride: ch_name,
-            isMarkdown: true,
-            depth: depth,
-        });
+        if(!isHiddenMessage){
+            mes = getRegexedString(mes, regexPlacement, {
+                characterOverride: ch_name,
+                isMarkdown: true,
+                depth: depth,
+            });
+        }
     }
 
     if (power_user.auto_fix_generated_markdown) {
