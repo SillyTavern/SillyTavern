@@ -126,8 +126,7 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.MISTRALAI:
                     return data?.choices?.[0]?.message?.content?.[0]?.thinking?.map(part => part.text)?.filter(x => x)?.join('\n\n') ?? '';
                 case chat_completion_sources.AIMLAPI:
-                case chat_completion_sources.POLLINATIONS_KEY:
-                case chat_completion_sources.POLLINATIONS_NOKEY:
+                case chat_completion_sources.POLLINATIONS:
                 case chat_completion_sources.MOONSHOT:
                 case chat_completion_sources.COMETAPI:
                 case chat_completion_sources.CHUTES:
