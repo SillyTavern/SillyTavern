@@ -155,8 +155,9 @@ export function registerVariableMacros() {
         },
     });
 
-    // {{setelement::name::key::value}} -> ''
-    MacroRegistry.registerMacro('setelement', {
+    // {{setvarkey::name::key::value}} -> ''
+    MacroRegistry.registerMacro('setvarkey', {
+        aliases: [{ alias: 'setvarindex' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -177,15 +178,16 @@ export function registerVariableMacros() {
         ],
         description: 'Sets a value at a specific key or index in a local object or array. If the variable does not exist, it will be created based on the type of the key.',
         returns: '',
-        exampleUsage: ['{{setelement::myarray::0::foo}}', '{{setelement::myobj::uniquekey::somevalue}}'],
+        exampleUsage: ['{{setvarkey::myarray::0::foo}}', '{{setvarkey::myobj::uniquekey::somevalue}}'],
         handler: ({ unnamedArgs: [name, key, value] }) => {
             ctx.variables.local.set(name, value, { index: key });
             return '';
         },
     });
 
-    // {{getelement::name::key}} -> returns value at key
-    MacroRegistry.registerMacro('getelement', {
+    // {{getvarkey::name::key}} -> returns value at key
+    MacroRegistry.registerMacro('getvarkey', {
+        aliases: [{ alias: 'getvarindex' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -202,7 +204,7 @@ export function registerVariableMacros() {
         description: 'Gets a value at a specific key or index in a local object or array variable.',
         returns: 'The value at the specified key or index in the local object or array variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getelement::myarray::0}}', '{{getelement::myobj::uniquekey}}'],
+        exampleUsage: ['{{getvarkey::myarray::0}}', '{{getvarkey::myobj::uniquekey}}'],
         handler: ({ unnamedArgs: [name, key], normalize }) => {
             const result = ctx.variables.local.get(name, { index: key });
             return normalize(result);
@@ -357,8 +359,8 @@ export function registerVariableMacros() {
         },
     });
 
-    // {{setglobalelement::name::key::value}} -> ''
-    MacroRegistry.registerMacro('setglobalelement', {
+    // {{setglobalvarkey::name::key::value}} -> ''
+    MacroRegistry.registerMacro('setglobalvarkey', {
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -379,15 +381,15 @@ export function registerVariableMacros() {
         ],
         description: 'Sets a value at a specific key or index in a global object or array variable. If the variable does not exist, it will be created based on the type of the key.',
         returns: '',
-        exampleUsage: ['{{setglobalelement::myarray::0::foo}}', '{{setglobalelement::myobj::uniquekey::bar}}'],
+        exampleUsage: ['{{setglobalvarkey::myarray::0::foo}}', '{{setglobalvarkey::myobj::uniquekey::bar}}'],
         handler: ({ unnamedArgs: [name, key, value] }) => {
             ctx.variables.global.set(name, value, { index: key });
             return '';
         },
     });
     
-    // {{getglobalelement::name::key}} -> returns value at key
-    MacroRegistry.registerMacro('getglobalelement', {
+    // {{getglobalvarkey::name::key}} -> returns value at key
+    MacroRegistry.registerMacro('getglobalvarkey', {
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -404,7 +406,7 @@ export function registerVariableMacros() {
         description: 'Gets a value at a specific key or index in a global object or array variable.',
         returns: 'The value at the specified key or index in the global object or array variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getglobalelement::myarray::0}}', '{{getglobalelement::myobj::uniquekey}}'],
+        exampleUsage: ['{{getglobalvarkey::myarray::0}}', '{{getglobalvarkey::myobj::uniquekey}}'],
         handler: ({ unnamedArgs: [name, key], normalize }) => {
             const result = ctx.variables.global.get(name, { index: key });
             return normalize(result);
