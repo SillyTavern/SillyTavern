@@ -127,7 +127,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     if (extension_settings.caption.multimodal_api === 'pollinations') {
-        requestBody.pollinations_endpoint = oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.ANONYMOUS;
+        requestBody.pollinations_endpoint = oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.AUTHENTICATED;
     }
 
     if (extension_settings.caption.multimodal_api === 'workers_ai') {
