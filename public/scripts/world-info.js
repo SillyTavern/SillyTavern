@@ -1443,6 +1443,7 @@ function registerWorldInfoSlashCommands() {
                     toastr.warning('characterFilter must be valid JSON');
                     return '';
                 }
+                warnCharacterFilterSingletonConflicts(entry.characterFilter);
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
             }
@@ -3406,6 +3407,21 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name 
 }
 
 /**
+ * Warns about singleton type conflicts in a character filter array.
+ * Character and persona can only be one active at a time, so multiple required items of those types are impossible.
+ * @param {Array<{type: string, name: string, state: string}>} filterItems - The character filter array.
+ */
+function warnCharacterFilterSingletonConflicts(filterItems) {
+    const SINGLETON_TYPES = [CHARACTER_FILTER_TYPES.CHARACTER, CHARACTER_FILTER_TYPES.PERSONA];
+    for (const type of SINGLETON_TYPES) {
+        const requiredCount = filterItems.filter(f => f.type === type && f.state === CHARACTER_FILTER_STATES.REQUIRED).length;
+        if (requiredCount > 1) {
+            toastr.warning(t`Only one ${type} can be active at a time. Multiple required ${type}s will make this filter impossible to match.`);
+        }
+    }
+}
+
+/**
  * Finds the filter item that corresponds to a rendered select2 choice element.
  * Uses data attributes embedded by templateSelection for robust matching.
  * @param {Array<{type: string, name: string, state: string}>} filterItems - The character filter array.
@@ -3968,7 +3984,7 @@ export async function getWorldEntry(name, data, entry) {
                 setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
                 await saveWorldInfo(name, data);
             }
-        });
+        }, { closeDrawer: true });
 
         // Apply initial filter state styles after select2 renders
         setTimeout(() => updateCharacterFilterStateStyles(characterFilter, entry.characterFilter), 0);
