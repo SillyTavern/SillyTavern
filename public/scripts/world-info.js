@@ -3425,7 +3425,7 @@ function warnCharacterFilterSingletonConflicts(filterItems) {
  * Finds the filter item that corresponds to a rendered select2 choice element.
  * Uses data attributes embedded by templateSelection for robust matching.
  * @param {Array<{type: string, name: string, state: string}>} filterItems - The character filter array.
- * @param {JQuery<HTMLElement>} choiceDisplay - The .select2-selection__choice__display element.
+ * @param {JQuery<HTMLElement>} element - The .select2-selection__choice__display element.
  * @returns {object|undefined} The matching filter item, or undefined.
  */
 function getFilterItemForChoice(filterItems, element) {

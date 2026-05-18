@@ -297,5 +297,5 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
 
 /* Character filter — redundant items (singleton type has a required item) */
 .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_redundant {
-    opacity: 0.45;
+    opacity: 0.33;
 }
