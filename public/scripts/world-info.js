@@ -2517,12 +2517,13 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         const warningEl = document.createElement('div');
         contentEl.appendChild(warningEl);
 
-        /** @type {(startInput: HTMLInputElement, ascendingInput: HTMLInputElement) => void} */
-        const updateWarning = (startInput, ascendingInput) => {
+        /** @type {(startInput: HTMLInputElement, stepInput: HTMLInputElement, ascendingInput: HTMLInputElement) => void} */
+        const updateWarning = (startInput, stepInput, ascendingInput) => {
             const startVal = Number(startInput.value);
+            const stepVal = Number(stepInput.value);
             const isAscending = ascendingInput.checked;
-            if (!isAscending && !isNaN(startVal) && startVal < entryCount) {
-                setInfoBlock(warningEl, t`Starting value is lower than the entry count (${entryCount}). Entries that fall below 0 will be clamped to 0, causing collisions at the bottom of the order.`, 'warning');
+            if (!isAscending && !isNaN(startVal) && !isNaN(stepVal) && startVal - (entryCount - 1) * stepVal < 0) {
+                setInfoBlock(warningEl, t`Some entries will be clamped to Order 0, causing collisions at the bottom. The last entry would reach ${startVal - (entryCount - 1) * stepVal} (${entryCount} entries, step ${stepVal}).`, 'warning');
             } else {
                 clearInfoBlock(warningEl);
             }
@@ -2565,10 +2566,12 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
         });
 
         const startInput = /** @type {HTMLInputElement} */ (popup.dlg.querySelector('#wi_sort_start'));
+        const stepInput = /** @type {HTMLInputElement} */ (popup.dlg.querySelector('#wi_sort_step'));
         const ascendingInput = /** @type {HTMLInputElement} */ (popup.dlg.querySelector('#wi_sort_ascending'));
-        startInput.addEventListener('input', () => updateWarning(startInput, ascendingInput));
-        ascendingInput.addEventListener('change', () => updateWarning(startInput, ascendingInput));
-        updateWarning(startInput, ascendingInput);
+        startInput.addEventListener('input', () => updateWarning(startInput, stepInput, ascendingInput));
+        stepInput.addEventListener('input', () => updateWarning(startInput, stepInput, ascendingInput));
+        ascendingInput.addEventListener('change', () => updateWarning(startInput, stepInput, ascendingInput));
+        updateWarning(startInput, stepInput, ascendingInput);
 
         const result = await popup.show();
         if (result !== POPUP_RESULT.AFFIRMATIVE) return;
