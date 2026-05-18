@@ -7267,24 +7267,4 @@ export function initOpenAI() {
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
-
-    // Pollinations BYOP OAuth callback
-    const urlHash = window.location.hash;
-    if (urlHash) {
-        const hashParams = new URLSearchParams(urlHash.slice(1));
-        const pollinationsKey = hashParams.get('api_key');
-        if (pollinationsKey) {
-            history.replaceState(null, '', window.location.pathname + window.location.search);
-            $('#chat_completion_source').val(chat_completion_sources.POLLINATIONS).trigger('change');
-            setTimeout(() => {
-                $('#pollinations_endpoint').val(POLLINATIONS_ENDPOINT.AUTHENTICATED).trigger('input');
-                $('#api_key_pollinations').val(pollinationsKey).trigger('input');
-                toastr.success(t`Pollinations API key received! Click Connect to save.`);
-            }, 500);
-        }
-    }
-
-    $('#pollinations_byop_authorize').on('click', function () {
-        window.open('https://enter.pollinations.ai/authorize?redirect_uri=http://localhost:8000&client_id=pk_Gu8Ta8q6QhS67hSg', '_blank', 'noopener,noreferrer');
-    });
 }
