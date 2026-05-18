@@ -39,7 +39,7 @@ export const formatting_stage = {
  * Does not include `stage` — that is injected by `runStage` itself.
  *
  * @typedef {Object} MessageFormattingBase
- * @property {string} ch_name - Character name associated with the message.
+ * @property {string} characterName - Character name associated with the message.
  * @property {boolean} isSystem - Whether the message is a system message.
  * @property {boolean} isUser - Whether the message was sent by the user.
  * @property {number} messageId - Index of the message in the chat array, or -1 for transient messages (e.g. streaming previews).
@@ -243,7 +243,7 @@ class MessageFormatter {
      * output is always sanitised.
      *
      * @param {string} mes - Raw message text.
-     * @param {string} ch_name - Character name.
+     * @param {string} characterName - Character name.
      * @param {boolean} isSystem - Whether this is a system message.
      * @param {boolean} isUser - Whether this was sent by the user.
      * @param {number} messageId - Message index in the chat array.
@@ -251,8 +251,8 @@ class MessageFormatter {
      * @param {boolean} [isReasoning=false] - Whether this is reasoning output.
      * @returns {string} Formatted HTML string ready for DOM insertion.
      */
-    format(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false) {
-        return messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides, isReasoning);
+    format(mes, characterName, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false) {
+        return messageFormatting(mes, characterName, isSystem, isUser, messageId, sanitizerOverrides, isReasoning);
     }
 }
 
