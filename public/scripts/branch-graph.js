@@ -28,14 +28,24 @@ import { compressRequest } from './request-compression.js';
  */
 export async function fetchChatMetadata(chatName) {
     try {
-        const metaResponse = await fetch('/api/chats/get', {
+        const request = selected_group
+            ? {
+                url: '/api/chats/group/get',
+                body: { id: chatName },
+            }
+            : {
+                url: '/api/chats/get',
+                body: {
+                    ch_name: characters[this_chid]?.name,
+                    file_name: chatName,
+                    avatar_url: characters[this_chid]?.avatar,
+                },
+            };
+
+        const metaResponse = await fetch(request.url, {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({
-                ch_name: selected_group ? null : characters[this_chid]?.name,
-                file_name: chatName,
-                avatar_url: selected_group ? null : characters[this_chid]?.avatar,
-            }),
+            body: JSON.stringify(request.body),
         });
 
         if (!metaResponse.ok) {
@@ -82,7 +92,7 @@ export async function fetchChatMetadata(chatName) {
  * Traverses the branch tree starting from a chat to collect all related chats.
  * @param {string} startChatName Starting chat filename
  * @param {Map<string, any>} chatMap Map of all available chats
- * @returns {Promise<{relatedChats: Set<string>, metadataCache: Map<string, any>}>}
+ * @returns {Promise<{relatedChats: Set<string>, metadataCache: Map<string, any>, rootChatName: string}>}
  */
 export async function traverseBranchTree(startChatName, chatMap) {
     const relatedChats = new Set([startChatName]);
@@ -142,7 +152,7 @@ export async function traverseBranchTree(startChatName, chatMap) {
 
     await collectChildren(rootChatName);
 
-    return { relatedChats, metadataCache };
+    return { relatedChats, metadataCache, rootChatName };
 }
 
 /**
@@ -583,17 +593,7 @@ export async function showBranchGraph() {
         }
 
         const chatMap = await fetchAllChats();
-        const { relatedChats, metadataCache } = await traverseBranchTree(currentChatName, chatMap);
-
-        // Find root chat
-        let rootChatName = currentChatName;
-        for (const chatName of relatedChats) {
-            const metadata = metadataCache.get(chatName);
-            if (metadata && !metadata.main_chat) {
-                rootChatName = chatName;
-                break;
-            }
-        }
+        const { relatedChats, metadataCache, rootChatName } = await traverseBranchTree(currentChatName, chatMap);
 
         const tree = buildTree(rootChatName, chatMap, metadataCache);
 
