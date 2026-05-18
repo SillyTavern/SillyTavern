@@ -1795,10 +1795,10 @@ router.post('/status', async function (request, statusResponse) {
                 try {
                     const response = await fetch('https://gen.pollinations.ai/models');
                     if (!response.ok) return statusResponse.send({ data: [] });
-                    /** @type {any[]} */
+                    /** @type {any} */
                     const data = await response.json();
                     if (!Array.isArray(data)) return statusResponse.send({ data: [] });
-                    const models = data.filter(m => m.type === 'text').map(m => ({ id: m.name, ...m }));
+                    const models = data.filter(m => Array.isArray(m.output_modalities) && m.output_modalities.includes('text')).map(m => ({ id: m.name, ...m }));
                     return statusResponse.send({ data: models });
                 } catch (error) {
                     console.error('Error fetching Pollinations anonymous models:', error);
