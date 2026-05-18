@@ -490,6 +490,7 @@ input[type='checkbox']:focus-visible {
 .mes_reasoning_details:not(:has(.reasoning_edit_textarea)) .mes_reasoning_actions .edit_button,
 .mes_block:has(.edit_textarea):has(.reasoning_edit_textarea) .mes_reasoning_actions,
 .mes.reasoning:has(.mes_reasoning_details[data-has-content="true"]) .mes_edit_add_reasoning,
+.mes:has(.mes_reasoning_details .reasoning_edit_textarea) .mes_edit_add_reasoning,
 .mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning_arrow,
 .mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning,
 .mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning_copy {

@@ -1234,6 +1234,10 @@ function setReasoningEventHandlers() {
             return;
         }
 
+        if (messageBlock.find('.reasoning_edit_textarea').length > 0) {
+            return;
+        }
+
         const reasoning = String(message?.extra?.reasoning ?? '');
         const chatElement = document.getElementById('chat');
         const textarea = document.createElement('textarea');
@@ -1317,6 +1321,10 @@ function setReasoningEventHandlers() {
         }
 
         const details = messageBlock.find('.mes_reasoning_details');
+        if (details.find('.reasoning_edit_textarea').length > 0) {
+            return;
+        }
+
         if (message.extra.reasoning && details.attr('data-has-content') === 'true') {
             toastr.info(t`Reasoning already exists.`, t`Edit Message`);
             return;
