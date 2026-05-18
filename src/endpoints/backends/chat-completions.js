@@ -1791,22 +1791,9 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
             headers = { ...AIMLAPI_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
-            if (request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS) {
-                try {
-                    const response = await fetch('https://gen.pollinations.ai/models');
-                    if (!response.ok) return statusResponse.send({ data: [] });
-                    /** @type {any} */
-                    const data = await response.json();
-                    if (!Array.isArray(data)) return statusResponse.send({ data: [] });
-                    const models = data.filter(m => Array.isArray(m.output_modalities) && m.output_modalities.includes('text')).map(m => ({ id: m.name, ...m }));
-                    return statusResponse.send({ data: models });
-                } catch (error) {
-                    console.error('Error fetching Pollinations anonymous models:', error);
-                    return statusResponse.send({ data: [] });
-                }
-            }
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = 'https://gen.pollinations.ai/text';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            apiKey = isAnonymous ? 'anonymous' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
