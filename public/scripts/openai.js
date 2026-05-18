@@ -6032,8 +6032,7 @@ function toggleChatCompletionForms() {
     } else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
         $('#model_xai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
-        const isAnon = oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
-        $('#pollinations_key_section').toggle(!isAnon);
+        $('#pollinations_key_section').toggle(oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.AUTHENTICATED);
         $('#model_pollinations_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MOONSHOT) {
         $('#model_moonshot_select').trigger('change');
@@ -7212,8 +7211,7 @@ export function initOpenAI() {
     });
     $('#pollinations_endpoint').on('input', function () {
         oai_settings.pollinations_endpoint = String($(this).val());
-        const isAnon = oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
-        $('#pollinations_key_section').toggle(!isAnon);
+        $('#pollinations_key_section').toggle(oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.AUTHENTICATED);
         saveSettingsDebounced();
     });
     $('#siliconflow_endpoint').on('input', function () {
