@@ -156,56 +156,56 @@ export function registerVariableMacros() {
     });
 
 
-    // {{setarray::name::index::value}} -> ''
-    MacroRegistry.registerMacro('setarray', {
+    // {{setelement::name::key::value}} -> ''
+    MacroRegistry.registerMacro('setelement', {
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
                 name: 'name',
                 type: MacroValueType.STRING,
-                description: 'The name of the local array variable.',
+                description: 'The name of the local object or array.',
             },
             {
-                name: 'index',
-                type: MacroValueType.NUMBER,
-                description: 'The index of the array element to set.',
+                name: 'key',
+                type: [MacroValueType.STRING, MacroValueType.NUMBER],
+                description: 'The key of an object or the index of an array.',
             },
             {
                 name: 'value',
                 type: [MacroValueType.STRING, MacroValueType.NUMBER],
-                description: 'The value to set at the specified index.',
+                description: 'The value to set at the specified key or index.',
             },
         ],
-        description: 'Sets a value at a specific index in a local array variable. If the variable does not exist, it will be created as an array.',
+        description: 'Sets a value at a specific key or index in a local object or array. If the variable does not exist, it will be created based on the type of the key.',
         returns: '',
-        exampleUsage: ['{{setarrayvar::myarray::0::foo}}', '{{setarrayvar::myarray::1::3}}'],
-        handler: ({ unnamedArgs: [name, index, value] }) => {
-            ctx.variables.local.set(name, value, { index });
+        exampleUsage: ['{{setelement::myarray::0::foo}}', '{{setelement::myobj::uniquekey::somevalue}}'],
+        handler: ({ unnamedArgs: [name, key, value] }) => {
+            ctx.variables.local.set(name, value, { index: key });
             return '';
         },
     });
 
-    // {{getarray::name::index}} -> returns value at index
-    MacroRegistry.registerMacro('getarray', {
+    // {{getelement::name::key}} -> returns value at key
+    MacroRegistry.registerMacro('getelement', {
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
                 name: 'name',
                 type: MacroValueType.STRING,
-                description: 'The name of the local array variable to get from.',
+                description: 'The name of the local object or array variable to get from.',
             },
             {
-                name: 'index',
-                type: MacroValueType.NUMBER,
-                description: 'The index of the array element to get.',
+                name: 'key',
+                type: [MacroValueType.STRING, MacroValueType.NUMBER],
+                description: 'The key of an object or the index of an array.',
             },
         ],
-        description: 'Gets a value at a specific index in a local array variable.',
-        returns: 'The value at the specified index in the local array variable.',
+        description: 'Gets a value at a specific key or index in a local object or array variable.',
+        returns: 'The value at the specified key or index in the local object or array variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getarrayvar::myarray::0}}', '{{getarrayvar::myarray::1}}'],
-        handler: ({ unnamedArgs: [name, index], normalize }) => {
-            const result = ctx.variables.local.get(name, { index });
+        exampleUsage: ['{{getelement::myarray::0}}', '{{getelement::myobj::uniquekey}}'],
+        handler: ({ unnamedArgs: [name, key], normalize }) => {
+            const result = ctx.variables.local.get(name, { index: key });
             return normalize(result);
         },
     });
@@ -358,56 +358,56 @@ export function registerVariableMacros() {
         },
     });
 
-    // {{setglobalarray::name::index::value}} -> ''
-    MacroRegistry.registerMacro('setglobalarray', {
+    // {{setglobalelement::name::key::value}} -> ''
+    MacroRegistry.registerMacro('setglobalelement', {
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
                 name: 'name',
                 type: MacroValueType.STRING,
-                description: 'The name of the global array variable.',
+                description: 'The name of the global object or array variable.',
             },
             {
-                name: 'index',
-                type: MacroValueType.NUMBER,
-                description: 'The index of the array element to set.',
+                name: 'key',
+                type: [MacroValueType.STRING, MacroValueType.NUMBER],
+                description: 'The key of an object or the index of an array element to set.',
             },
             {
                 name: 'value',
                 type: [MacroValueType.STRING, MacroValueType.NUMBER],
-                description: 'The value to set at the specified index.',
+                description: 'The value to set at the specified key or index.',
             },
         ],
-        description: 'Sets a value at a specific index in a global array variable. If the variable does not exist, it will be created as an array.',
+        description: 'Sets a value at a specific key or index in a global object or array variable. If the variable does not exist, it will be created based on the type of the key.',
         returns: '',
-        exampleUsage: ['{{setglobalarrayvar::myarray::0::foo}}', '{{setglobalarrayvar::myarray::1::3}}'],
-        handler: ({ unnamedArgs: [name, index, value] }) => {
-            ctx.variables.global.set(name, value, { index });
+        exampleUsage: ['{{setglobalelement::myarray::0::foo}}', '{{setglobalelement::myobj::uniquekey::bar}}'],
+        handler: ({ unnamedArgs: [name, key, value] }) => {
+            ctx.variables.global.set(name, value, { index: key });
             return '';
         },
     });
     
-    // {{getglobalarray::name::index}} -> returns value at index
-    MacroRegistry.registerMacro('getglobalarray', {
+    // {{getglobalelement::name::key}} -> returns value at key
+    MacroRegistry.registerMacro('getglobalelement', {
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
                 name: 'name',
                 type: MacroValueType.STRING,
-                description: 'The name of the global array variable to get from.',
+                description: 'The name of the global object or array variable to get from.',
             },
             {
-                name: 'index',
-                type: MacroValueType.NUMBER,
-                description: 'The index of the array element to get.',
+                name: 'key',
+                type: [MacroValueType.STRING, MacroValueType.NUMBER],
+                description: 'The key of an object or the index of an array element to get.',
             },
         ],
-        description: 'Gets a value at a specific index in a global array variable.',
-        returns: 'The value at the specified index in the global array variable.',
+        description: 'Gets a value at a specific key or index in a global object or array variable.',
+        returns: 'The value at the specified key or index in the global object or array variable.',
         returnType: [MacroValueType.STRING, MacroValueType.NUMBER],
-        exampleUsage: ['{{getglobalarrayvar::myarray::0}}', '{{getglobalarrayvar::myarray::1}}'],
-        handler: ({ unnamedArgs: [name, index], normalize }) => {
-            const result = ctx.variables.global.get(name, { index });
+        exampleUsage: ['{{getglobalelement::myarray::0}}', '{{getglobalelement::myobj::uniquekey}}'],
+        handler: ({ unnamedArgs: [name, key], normalize }) => {
+            const result = ctx.variables.global.get(name, { index: key });
             return normalize(result);
         },
     });
