@@ -3412,8 +3412,14 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name 
  * @param {JQuery<HTMLElement>} choiceDisplay - The .select2-selection__choice__display element.
  * @returns {object|undefined} The matching filter item, or undefined.
  */
-function getFilterItemForChoice(filterItems, choiceDisplay) {
-    const templateSpan = choiceDisplay.find('span[data-filter-type]');
+function getFilterItemForChoice(filterItems, element) {
+    const $el = $(element);
+    // Navigate up to .select2-selection__choice__display if target is a child element
+    const display = $el.hasClass('select2-selection__choice__display')
+        ? $el
+        : $el.closest('.select2-selection__choice__display');
+    const searchRoot = display.length ? display : $el;
+    const templateSpan = searchRoot.find('span[data-filter-type]');
     if (!templateSpan.length) return undefined;
     const type = templateSpan.attr('data-filter-type');
     const value = templateSpan.attr('data-filter-value');
@@ -3433,14 +3439,31 @@ function updateCharacterFilterStateStyles(characterFilterSelect, entryFilter) {
         [CHARACTER_FILTER_STATES.REQUIRED]: t`Required (AND): This must match`,
         [CHARACTER_FILTER_STATES.EXCLUDED]: t`Excluded (NOT): Must not match`,
     };
+
+    // Singleton types: only one can be active at a time, so having a required item makes others redundant
+    const SINGLETON_TYPES = [CHARACTER_FILTER_TYPES.CHARACTER, CHARACTER_FILTER_TYPES.PERSONA];
+    const hasRequiredSingleton = new Set(
+        SINGLETON_TYPES.filter(type => filterItems.some(f => f.type === type && f.state === CHARACTER_FILTER_STATES.REQUIRED)),
+    );
+
     container.find('.select2-selection__choice').each(function () {
         const display = $(this).find('.select2-selection__choice__display');
         const filterItem = getFilterItemForChoice(filterItems, display);
         const state = filterItem?.state ?? CHARACTER_FILTER_STATES.ONE_OF;
+        const type = filterItem?.type;
+
         // Remove all state classes, then add the current one
-        $(this).removeClass('character_filter_oneOf character_filter_required character_filter_excluded');
+        $(this).removeClass('character_filter_oneOf character_filter_required character_filter_excluded character_filter_redundant');
         $(this).addClass(`character_filter_${state}`);
-        $(this).attr('title', tooltips[state] ?? '');
+
+        // Mark non-required items of singleton types as redundant when a required item of the same type exists
+        const isRedundant = type && hasRequiredSingleton.has(type) && state !== CHARACTER_FILTER_STATES.REQUIRED;
+        if (isRedundant) {
+            $(this).addClass('character_filter_redundant');
+            $(this).attr('title', t`Redundant: another ${type} is already required (only one can be active)`);
+        } else {
+            $(this).attr('title', tooltips[state] ?? '');
+        }
     });
 }
 
@@ -3919,6 +3942,7 @@ export async function getWorldEntry(name, data, entry) {
         handleCharacterFilterChangeHelper({ characterFilter, data, entry, name });
 
         // Click-to-toggle filter state on individual character filter choices (oneOf → required → excluded → oneOf)
+        const SINGLETON_TYPES = [CHARACTER_FILTER_TYPES.CHARACTER, CHARACTER_FILTER_TYPES.PERSONA];
         select2ChoiceClickSubscribe(characterFilter, async (target) => {
             const uid = characterFilter.data('uid');
             const filter = Array.isArray(data.entries[uid].characterFilter) ? data.entries[uid].characterFilter : [];
@@ -3926,7 +3950,20 @@ export async function getWorldEntry(name, data, entry) {
             if (item) {
                 const currentIndex = CHARACTER_FILTER_STATE_CYCLE.indexOf(item.state);
                 const nextIndex = (currentIndex + 1) % CHARACTER_FILTER_STATE_CYCLE.length;
-                item.state = CHARACTER_FILTER_STATE_CYCLE[nextIndex];
+                const newState = CHARACTER_FILTER_STATE_CYCLE[nextIndex];
+
+                // Warn about singleton type conflicts when setting to REQUIRED
+                if (newState === CHARACTER_FILTER_STATES.REQUIRED && SINGLETON_TYPES.includes(item.type)) {
+                    const othersOfType = filter.filter(f => f.type === item.type && f !== item);
+                    const otherRequired = othersOfType.find(f => f.state === CHARACTER_FILTER_STATES.REQUIRED);
+                    if (otherRequired) {
+                        toastr.warning(t`Only one ${item.type} can be active at a time. Multiple required ${item.type}s will make this filter impossible to match.`);
+                    } else if (othersOfType.length > 0) {
+                        toastr.info(t`Only one ${item.type} can be active at a time. Other ${item.type} items become redundant when one is required.`);
+                    }
+                }
+
+                item.state = newState;
                 updateCharacterFilterStateStyles(characterFilter, data.entries[uid].characterFilter);
                 setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
                 await saveWorldInfo(name, data);
