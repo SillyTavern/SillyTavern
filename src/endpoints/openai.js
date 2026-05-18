@@ -100,7 +100,7 @@ router.post('/caption-image', async (request, response) => {
 
         if (request.body.api === 'pollinations') {
             const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
-            key = isAnonymous ? POLLINATIONS_ENDPOINT.ANONYMOUS : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+            key = isAnonymous ? 'anonymous' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
             bodyParams.seed = Math.floor(Math.random() * Math.pow(2, 32));
         }
 
