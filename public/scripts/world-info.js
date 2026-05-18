@@ -1306,8 +1306,8 @@ function registerWorldInfoSlashCommands() {
         let fieldValue;
         switch (field) {
             case 'characterFilter':
-                fieldValue = filterItems;
-                break;
+                // Return raw JSON — don't go through substituteParams array path
+                return JSON.stringify(filterItems);
             case 'characterFilterNames':
                 toastr.warning('[WI] characterFilterNames is deprecated. Use characterFilter instead.');
                 fieldValue = filterItems
@@ -2228,15 +2228,42 @@ function migrateCharacterFilter(entry) {
     if (entry.characterFilter && !Array.isArray(entry.characterFilter) && typeof entry.characterFilter === 'object') {
         const oldFilter = entry.characterFilter;
         const newFilter = [];
-        const state = oldFilter.isExclude ? CHARACTER_FILTER_STATES.EXCLUDED : CHARACTER_FILTER_STATES.ONE_OF;
-        if (Array.isArray(oldFilter.names)) {
-            for (const name of oldFilter.names) {
-                newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state });
+        const hasNames = Array.isArray(oldFilter.names) && oldFilter.names.length > 0;
+        const hasTags = Array.isArray(oldFilter.tags) && oldFilter.tags.length > 0;
+
+        if (oldFilter.isExclude) {
+            // Exclude mode: all items become EXCLUDED
+            if (hasNames) {
+                for (const name of oldFilter.names) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.EXCLUDED });
+                }
             }
-        }
-        if (Array.isArray(oldFilter.tags)) {
+            if (hasTags) {
+                for (const tag of oldFilter.tags) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.EXCLUDED });
+                }
+            }
+        } else if (hasNames && hasTags) {
+            // Both names and tags in include mode: old logic was AND between groups.
+            // Names → ONE_OF (character must be one of these)
+            // Tags → REQUIRED (preserves AND relationship: tags must also match)
+            for (const name of oldFilter.names) {
+                newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.ONE_OF });
+            }
             for (const tag of oldFilter.tags) {
-                newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state });
+                newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.REQUIRED });
+            }
+        } else {
+            // Only names or only tags: ONE_OF preserves exact old behavior
+            if (hasNames) {
+                for (const name of oldFilter.names) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.ONE_OF });
+                }
+            }
+            if (hasTags) {
+                for (const tag of oldFilter.tags) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.ONE_OF });
+                }
             }
         }
         console.debug('[WI] Migrated old characterFilter object format for entry', entry.uid);
@@ -3887,8 +3914,8 @@ export async function getWorldEntry(name, data, entry) {
         // Character filter
         const characterFilter = editTemplate.find('select[name="characterFilter"]');
         characterFilter.data('uid', entry.uid);
-        initCharacterFilterSelect2Helper(characterFilter, data);
         fillCharacterFilterOptionsHelper({ characterFilter, entry });
+        initCharacterFilterSelect2Helper(characterFilter, data);
         handleCharacterFilterChangeHelper({ characterFilter, data, entry, name });
 
         // Click-to-toggle filter state on individual character filter choices (oneOf → required → excluded → oneOf)
