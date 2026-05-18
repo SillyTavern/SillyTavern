@@ -506,7 +506,7 @@ export async function init() {
                         'nanogpt': SECRET_KEYS.NANOGPT,
                         'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
-                        'pollinations_key': SECRET_KEYS.POLLINATIONS,
+                        'pollinations': SECRET_KEYS.POLLINATIONS,
                         'workers_ai': SECRET_KEYS.WORKERS_AI,
                     };
 
