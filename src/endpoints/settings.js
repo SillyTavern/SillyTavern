@@ -10,6 +10,7 @@ import { SETTINGS_FILE } from '../constants.js';
 import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
 import { getAllUserHandles, getUserDirectories } from '../users.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { enqueueSave } from '../save-queue.js';
 
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
@@ -203,15 +204,20 @@ function getLatestBackup(handle) {
 
 export const router = express.Router();
 
-router.post('/save', function (request, response) {
+router.post('/save', async function (request, response) {
     try {
         const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
-        writeFileAtomicSync(pathToSettings, JSON.stringify(request.body, null, 4), 'utf8');
-        triggerAutoSave(request.user.profile.handle);
+        const result = await enqueueSave(pathToSettings, request, () => {
+            writeFileAtomicSync(pathToSettings, JSON.stringify(request.body, null, 4), 'utf8');
+            triggerAutoSave(request.user.profile.handle);
+        });
+        if (result.skipped) {
+            return response.status(202).send({ result: 'skipped', reason: result.reason });
+        }
         response.send({ result: 'ok' });
     } catch (err) {
         console.error(err);
-        response.send(err);
+        response.status(500).send(err);
     }
 });
 

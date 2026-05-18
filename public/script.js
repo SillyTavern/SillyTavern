@@ -633,6 +633,8 @@ var css_send_form_display = $('<div id=send_form></div>').css('display');
 var kobold_horde_model = '';
 
 export let token;
+const saveClientId = uuidv4();
+let saveRequestSerial = 0;
 
 
 /** The tag of the active character. (NOT the id) */
@@ -653,6 +655,14 @@ export function getRequestHeaders({ omitContentType = false } = {}) {
     }
 
     return headers;
+}
+
+export function getSaveRequestHeaders(options = {}) {
+    return {
+        ...getRequestHeaders(options),
+        'X-ST-Save-Client': saveClientId,
+        'X-ST-Save-Serial': String(++saveRequestSerial),
+    };
 }
 
 export function getSlideToggleOptions() {
@@ -7277,7 +7287,7 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 
                 const saveChatRequest = await compressRequest({
                     method: 'POST',
-                    headers: getRequestHeaders(),
+                    headers: getSaveRequestHeaders(),
                     body: JSON.stringify({
                         ch_name: newName,
                         file_name: fileNameWithoutExtension,
@@ -7376,7 +7386,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
         const saveChatRequest = await compressRequest({
             method: 'POST',
             cache: 'no-cache',
-            headers: getRequestHeaders(),
+            headers: getSaveRequestHeaders(),
             body: JSON.stringify({
                 ch_name: characters[this_chid].name,
                 file_name: fileName,
@@ -8037,11 +8047,15 @@ export async function saveSettings(loopCounter = 0) {
     try {
         const saveSettingsRequest = await compressRequest({
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: getSaveRequestHeaders(),
             body: JSON.stringify(payload),
             cache: 'no-cache',
         });
         const result = await fetch('/api/settings/save', saveSettingsRequest);
+
+        if (result.status === 202) {
+            return;
+        }
 
         if (!result.ok) {
             throw new Error(`Failed to save settings: ${result.statusText}`);
