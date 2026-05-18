@@ -4205,14 +4205,7 @@ function migrateChatCompletionSettings(settings) {
         { oldKey: 'openrouter_sort_models', oldValue: 'pricing.prompt', newKey: 'sort_models', newValue: 'pricing.prompt' },
         { oldKey: 'openrouter_sort_models', oldValue: 'context_length', newKey: 'sort_models', newValue: 'context_length' },
         { oldKey: 'openrouter_group_models', oldValue: true, newKey: 'group_models', newValue: true },
-        { oldKey: 'chat_completion_source', oldValue: 'pollinations_key', newKey: 'chat_completion_source', newValue: chat_completion_sources.POLLINATIONS },
     ];
-
-    // Migrate pollinations_nokey → pollinations (anonymous endpoint)
-    if (settings.chat_completion_source === 'pollinations_nokey') {
-        settings.chat_completion_source = chat_completion_sources.POLLINATIONS;
-        settings.pollinations_endpoint = POLLINATIONS_ENDPOINT.ANONYMOUS;
-    }
 
     for (const migration of migrateMap) {
         if (Object.hasOwn(settings, migration.oldKey)) {
