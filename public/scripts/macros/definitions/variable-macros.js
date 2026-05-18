@@ -361,6 +361,7 @@ export function registerVariableMacros() {
 
     // {{setglobalvarkey::name::key::value}} -> ''
     MacroRegistry.registerMacro('setglobalvarkey', {
+        aliases: [{ alias: 'setglobalvarindex' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
@@ -390,6 +391,7 @@ export function registerVariableMacros() {
     
     // {{getglobalvarkey::name::key}} -> returns value at key
     MacroRegistry.registerMacro('getglobalvarkey', {
+        aliases: [{ alias: 'getglobalvarindex' }],
         category: MacroCategory.VARIABLE,
         unnamedArgs: [
             {
