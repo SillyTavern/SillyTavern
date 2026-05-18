@@ -7212,6 +7212,7 @@ export function initOpenAI() {
     $('#pollinations_endpoint').on('input', function () {
         oai_settings.pollinations_endpoint = String($(this).val());
         $('#pollinations_key_section').toggle(oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.AUTHENTICATED);
+        reconnectOpenAi();
         saveSettingsDebounced();
     });
     $('#siliconflow_endpoint').on('input', function () {
