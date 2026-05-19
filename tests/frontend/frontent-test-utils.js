@@ -1,3 +1,5 @@
+const baseURL = process.env.ST_BASE_URL || process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:8000';
+
 export const testSetup = {
     /**
      * Navigates to the home page without waiting for SillyTavern to load.
@@ -15,8 +17,24 @@ export const testSetup = {
      */
     awaitST: async ({ page }) => {
         await page.goto('/');
-        await page.click('#userList .userSelect:last-child');
-        await page.waitForURL('http://127.0.0.1:8000');
+        if (await testSetup.isLoginPage({ page })) {
+            // eslint-disable-next-line playwright/no-networkidle
+            await page.waitForLoadState('networkidle');
+            const userSelect = page.locator('#userList .userSelect').last();
+            if (await userSelect.count()) {
+                await userSelect.click();
+            }
+            await page.waitForURL(url => url.toString().startsWith(baseURL) && url.pathname !== '/login');
+        }
         await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
+    },
+
+    /**
+     * Checks if the current page is the login page by looking for a body element with the class 'login'.
+     * @param {Object} params
+     * @param {import('@playwright/test').Page} params.page
+     */
+    isLoginPage: async ({ page }) => {
+        return await page.locator('body.login').count() > 0;
     },
 };
