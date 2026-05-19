@@ -3197,10 +3197,7 @@ export function initDefaultSlashCommands() {
         ],
         helpString: `
             <div>
-                ${t`Selects counting and/or encoding tokenizer by name. Gets the current tokenizers if no name is provided.`}
-            </div>
-            <div>
-                ${t`When getting, returns <code>counting=&lt;name&gt;, encoding=&lt;name&gt;</code>.`}
+                ${t`Selects counting and/or encoding tokenizer by name. Gets the current counting tokenizer if no name is provided.`}
             </div>
             <div>
                 ${t`Use <code>target=counting</code>, <code>target=encoding</code>, or <code>target=both</code> to choose which setting to update.`}
@@ -6805,9 +6802,7 @@ async function selectTokenizerCallback(_, name) {
         : tokenizer_settings.BOTH;
 
     if (!name) {
-        const counting = getFriendlyTokenizerName(main_api, { target: tokenizer_settings.COUNTING }).tokenizerKey;
-        const encoding = getFriendlyTokenizerName(main_api, { target: tokenizer_settings.ENCODING }).tokenizerKey;
-        return `counting=${counting}, encoding=${encoding}`;
+        return getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === power_user.counting_tokenizer)?.tokenizerKey ?? '';
     }
 
     const tokenizers = getAvailableTokenizers();
