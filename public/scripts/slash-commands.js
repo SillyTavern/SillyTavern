@@ -6796,9 +6796,9 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
     return textgenerationwebui_settings.server_urls[type] ?? '';
 }
 
-async function selectTokenizerCallback(_, name) {
-    const target = [tokenizer_settings.COUNTING, tokenizer_settings.ENCODING].includes(_.target)
-        ? _.target
+async function selectTokenizerCallback(args, name) {
+    const target = [tokenizer_settings.COUNTING, tokenizer_settings.ENCODING].includes(args.target)
+        ? args.target
         : tokenizer_settings.BOTH;
 
     if (!name) {
