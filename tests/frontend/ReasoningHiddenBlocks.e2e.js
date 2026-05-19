@@ -1,19 +1,30 @@
 import { test, expect } from '@playwright/test';
 import { testSetup } from './frontent-test-utils.js';
 
-function createEditableReasoningMessageHtml({ detailsAttributes = 'data-has-content="false"', includeMessageContainers = false } = {}) {
+function createEditableReasoningMessageHtml({ detailsAttributes = 'data-has-content="false"', includeMessageContainers = false, includeMessageEditControls = false } = {}) {
     const messageContainers = includeMessageContainers
         ? `
                         <div class="mes_text"></div>
                         <div class="mes_media_wrapper"></div>
                         <div class="mes_file_wrapper"></div>`
         : '';
+    const messageEditControls = includeMessageEditControls
+        ? `
+                            <div class="mes_edit_done menu_button edit_button">Done message</div>
+                            <div class="mes_edit_cancel menu_button edit_button">Cancel message</div>`
+        : '';
+    const messageButtons = includeMessageEditControls
+        ? `
+                        <div class="mes_buttons" style="display: flex;"></div>
+                        <div class="mes_bias"></div>`
+        : '';
 
     return `
                 <div class="mes reasoning" mesid="0" data-reasoning-state="done">
                     <div class="mes_block">
+                        ${messageButtons}
                         <div class="mes_edit_buttons" style="display: inline-flex;">
-                            <div class="mes_edit_add_reasoning menu_button">Add reasoning</div>
+                            <div class="mes_edit_add_reasoning menu_button">Add reasoning</div>${messageEditControls}
                         </div>${messageContainers}
                         <details class="mes_reasoning_details"${detailsAttributes ? ` ${detailsAttributes}` : ''}>
                             <summary class="mes_reasoning_summary">
@@ -369,6 +380,122 @@ test.describe('Reasoning hidden blocks', () => {
         expect(result.beforeCancel.textareaCount).toBe(1);
         expect(result.afterCancel.textareaCount).toBe(0);
         expect(result.afterCancel.detailsOpen).toBe(false);
+    });
+
+    test('collapses whitespace-only reasoning after confirming message edit with reasoning edit open', async ({ page }) => {
+        const result = await page.evaluate(async (messageHtml) => {
+            const [reasoningModule, scriptModule] = await Promise.all([
+                import('/scripts/reasoning.js'),
+                import('/script.js'),
+            ]);
+            reasoningModule.initReasoning();
+
+            const context = window.SillyTavern.getContext();
+            const chat = document.getElementById('chat');
+            if (!chat) {
+                throw new Error('Missing #chat container');
+            }
+
+            context.chat.length = 0;
+            context.chat.push({ extra: { reasoning: '\n' }, name: 'Ilo', mes: 'Foo' });
+            chat.setAttribute('data-show-hidden-reasoning', 'true');
+            chat.innerHTML = messageHtml;
+
+            chat.querySelector('.mes_edit_add_reasoning')?.click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await scriptModule.messageEdit(0);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const editTextarea = chat.querySelector('#curEditTextarea');
+            if (editTextarea) {
+                editTextarea.value = 'Foo edited';
+            }
+            const beforeDone = {
+                detailsOpen: chat.querySelector('.mes_reasoning_details')?.open,
+                reasoningTextareaCount: chat.querySelectorAll('.reasoning_edit_textarea').length,
+                messageTextareaCount: chat.querySelectorAll('#curEditTextarea').length,
+            };
+
+            chat.querySelector('.mes_edit_done')?.click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            return {
+                beforeDone,
+                afterDone: {
+                    detailsOpen: chat.querySelector('.mes_reasoning_details')?.open,
+                    reasoningTextareaCount: chat.querySelectorAll('.reasoning_edit_textarea').length,
+                    messageTextareaCount: chat.querySelectorAll('#curEditTextarea').length,
+                    messageValue: context.chat[0]?.mes,
+                    reasoningValue: context.chat[0]?.extra?.reasoning,
+                },
+            };
+        }, createEditableReasoningMessageHtml({ includeMessageContainers: true, includeMessageEditControls: true }));
+
+        expect(result.beforeDone.detailsOpen).toBe(true);
+        expect(result.beforeDone.reasoningTextareaCount).toBe(1);
+        expect(result.beforeDone.messageTextareaCount).toBe(1);
+        expect(result.afterDone.reasoningTextareaCount).toBe(0);
+        expect(result.afterDone.messageTextareaCount).toBe(0);
+        expect(result.afterDone.detailsOpen).toBe(false);
+        expect(result.afterDone.messageValue).toBe('Foo edited');
+        expect(result.afterDone.reasoningValue).toBe('\n');
+    });
+
+    test('collapses whitespace-only reasoning after canceling message edit with reasoning edit open', async ({ page }) => {
+        const result = await page.evaluate(async (messageHtml) => {
+            const [reasoningModule, scriptModule] = await Promise.all([
+                import('/scripts/reasoning.js'),
+                import('/script.js'),
+            ]);
+            reasoningModule.initReasoning();
+
+            const context = window.SillyTavern.getContext();
+            const chat = document.getElementById('chat');
+            if (!chat) {
+                throw new Error('Missing #chat container');
+            }
+
+            context.chat.length = 0;
+            context.chat.push({ extra: { reasoning: '\n' }, name: 'Ilo', mes: 'Foo' });
+            chat.setAttribute('data-show-hidden-reasoning', 'true');
+            chat.innerHTML = messageHtml;
+
+            chat.querySelector('.mes_edit_add_reasoning')?.click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await scriptModule.messageEdit(0);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const editTextarea = chat.querySelector('#curEditTextarea');
+            if (editTextarea) {
+                editTextarea.value = 'Foo should cancel';
+            }
+            const beforeCancel = {
+                detailsOpen: chat.querySelector('.mes_reasoning_details')?.open,
+                reasoningTextareaCount: chat.querySelectorAll('.reasoning_edit_textarea').length,
+                messageTextareaCount: chat.querySelectorAll('#curEditTextarea').length,
+            };
+
+            chat.querySelector('.mes_edit_cancel')?.click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            return {
+                beforeCancel,
+                afterCancel: {
+                    detailsOpen: chat.querySelector('.mes_reasoning_details')?.open,
+                    reasoningTextareaCount: chat.querySelectorAll('.reasoning_edit_textarea').length,
+                    messageTextareaCount: chat.querySelectorAll('#curEditTextarea').length,
+                    messageValue: context.chat[0]?.mes,
+                    reasoningValue: context.chat[0]?.extra?.reasoning,
+                },
+            };
+        }, createEditableReasoningMessageHtml({ includeMessageContainers: true, includeMessageEditControls: true }));
+
+        expect(result.beforeCancel.detailsOpen).toBe(true);
+        expect(result.beforeCancel.reasoningTextareaCount).toBe(1);
+        expect(result.beforeCancel.messageTextareaCount).toBe(1);
+        expect(result.afterCancel.reasoningTextareaCount).toBe(0);
+        expect(result.afterCancel.messageTextareaCount).toBe(0);
+        expect(result.afterCancel.detailsOpen).toBe(false);
+        expect(result.afterCancel.messageValue).toBe('Foo');
+        expect(result.afterCancel.reasoningValue).toBe('\n');
     });
 
     test('keeps whitespace-only reasoning collapsed when auto-expand is enabled', async ({ page }) => {
