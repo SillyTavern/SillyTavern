@@ -154,6 +154,13 @@ const ttsProviders = {
 let ttsProvider;
 let ttsProviderName;
 
+function getTtsProviderCapabilities() {
+    return {
+        preferredChunking: 'paragraph',
+        supportsStreaming: false,
+        ...(ttsProvider?.capabilities || {}),
+    };
+}
 
 async function onNarrateOneMessage() {
     audioElement.src = '/sounds/silence.mp3';
@@ -270,6 +277,12 @@ function processAndQueueTtsMessage(message, messageId = null, { manual = false }
     const clone = structuredClone(message);
     clone.id = messageId ?? null;
     clone.manual = manual ?? false;
+
+    const capabilities = getTtsProviderCapabilities();
+    if (capabilities.preferredChunking === 'provider') {
+        ttsJobQueue.push(clone);
+        return;
+    }
 
     if (!extension_settings.tts.narrate_by_paragraphs) {
         ttsJobQueue.push(clone);
@@ -1506,8 +1519,10 @@ async function initVoiceMapInternal(unrestricted) {
     let voiceIdsFromProvider;
     try {
         voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceObjects();
-    } catch {
-        toastr.error('TTS Provider failed to return voice ids.');
+    } catch (error) {
+        const message = `TTS Provider failed to return voice ids. ${error}`;
+        setTtsStatus(message, false);
+        voiceIdsFromProvider = [];
     }
 
     // Build UI using VoiceMapEntry objects
