@@ -613,7 +613,15 @@ function filterByFolder(filterHelper) {
 
 function loadTagsSettings(settings) {
     tags = settings.tags !== undefined ? settings.tags : DEFAULT_TAGS;
-    tag_map = settings.tag_map !== undefined ? settings.tag_map : Object.create(null);
+
+    const rawMap = settings.tag_map !== undefined ? settings.tag_map : Object.create(null);
+
+    tag_map = Object.create(null);
+    for (const [key, value] of Object.entries(rawMap)) {
+        if (Array.isArray(value)) {
+            tag_map[key] = value;
+        }
+    }
 }
 
 function renameTagKey(oldKey, newKey) {
@@ -2165,7 +2173,7 @@ async function onTagDeleteClick() {
     // Remove the tag from all entities that use it
     // If we have a replacement tag, add that one instead
     for (const key of Object.keys(tag_map)) {
-        if (tag_map[key] && tag_map[key].includes(id)) {
+        if (tag_map[key].includes(id)) {
             tag_map[key] = tag_map[key].filter(x => x !== id);
             if (mergeTagId && !tag_map[key].includes(mergeTagId)) tag_map[key].push(mergeTagId);
         }
