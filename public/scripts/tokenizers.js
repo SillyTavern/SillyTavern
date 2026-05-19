@@ -48,6 +48,28 @@ const TOKENIZER_SELECTORS = {
     [tokenizer_settings.ENCODING]: '#encoding_tokenizer',
 };
 
+const TOKENIZER_OPTIONS = [
+    { tokenizerId: tokenizers.BEST_MATCH, tokenizerName: 'Best match (recommended)' },
+    { tokenizerId: tokenizers.NONE, tokenizerName: 'None / Estimated' },
+    { tokenizerId: tokenizers.GPT2, tokenizerName: 'GPT-2' },
+    // Option #2 was a legacy GPT-2/3 tokenizer setting and is no longer selectable.
+    { tokenizerId: tokenizers.LLAMA, tokenizerName: 'Llama 1/2' },
+    { tokenizerId: tokenizers.LLAMA3, tokenizerName: 'Llama 3' },
+    { tokenizerId: tokenizers.GEMMA, tokenizerName: 'Gemma / Gemini' },
+    { tokenizerId: tokenizers.JAMBA, tokenizerName: 'Jamba' },
+    { tokenizerId: tokenizers.QWEN2, tokenizerName: 'Qwen2' },
+    { tokenizerId: tokenizers.COMMAND_R, tokenizerName: 'Command-R' },
+    { tokenizerId: tokenizers.COMMAND_A, tokenizerName: 'Command-A' },
+    { tokenizerId: tokenizers.NERD, tokenizerName: 'NerdStash (NovelAI Clio)' },
+    { tokenizerId: tokenizers.NERD2, tokenizerName: 'NerdStash v2 (NovelAI Kayra)' },
+    { tokenizerId: tokenizers.MISTRAL, tokenizerName: 'Mistral V1' },
+    { tokenizerId: tokenizers.NEMO, tokenizerName: 'Mistral Nemo' },
+    { tokenizerId: tokenizers.YI, tokenizerName: 'Yi' },
+    { tokenizerId: tokenizers.CLAUDE, tokenizerName: 'Claude 1/2' },
+    { tokenizerId: tokenizers.DEEPSEEK, tokenizerName: 'DeepSeek V3' },
+    { tokenizerId: tokenizers.API_CURRENT, tokenizerName: 'API (WebUI / koboldcpp)' },
+];
+
 // A list of local tokenizers that support encoding and decoding token ids.
 export const ENCODE_TOKENIZERS = [
     tokenizers.LLAMA,
@@ -221,12 +243,34 @@ async function resetTokenCache() {
  * @returns {Tokenizer[]} Tokenizer info.
  */
 export function getAvailableTokenizers() {
-    const tokenizerOptions = $(TOKENIZER_SELECTORS[tokenizer_settings.COUNTING]).find('option').toArray();
-    return tokenizerOptions.map(tokenizerOption => ({
-        tokenizerId: Number(tokenizerOption.value),
-        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
-        tokenizerName: tokenizerOption.text,
+    return TOKENIZER_OPTIONS.map(tokenizerOption => ({
+        ...tokenizerOption,
+        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === tokenizerOption.tokenizerId)[0].toLocaleLowerCase(),
     }));
+}
+
+/**
+ * Checks if a tokenizer type is selectable in the tokenizer settings UI.
+ * @param {number} tokenizerType Tokenizer type.
+ * @returns {boolean} True if tokenizer is selectable.
+ */
+export function isSelectableTokenizer(tokenizerType) {
+    return TOKENIZER_OPTIONS.some(tokenizerOption => tokenizerOption.tokenizerId === tokenizerType);
+}
+
+export function initTokenizerSelects() {
+    const options = getAvailableTokenizers().map(tokenizer => new Option(tokenizer.tokenizerName, String(tokenizer.tokenizerId)));
+
+    for (const selector of Object.values(TOKENIZER_SELECTORS)) {
+        const select = $(selector);
+        const selected = select.val();
+
+        select.empty().append(options.map(option => option.cloneNode(true)));
+
+        if (selected !== null) {
+            select.val(selected);
+        }
+    }
 }
 
 /**
@@ -1360,6 +1404,8 @@ export function decodeTextTokens(tokenizerType, ids) {
 }
 
 export async function initTokenizers() {
+    initTokenizerSelects();
+
     TEXTGEN_TOKENIZERS.push(
         textgen_types.OOBA,
         textgen_types.TABBY,

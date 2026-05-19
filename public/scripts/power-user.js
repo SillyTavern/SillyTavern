@@ -46,7 +46,7 @@ import {
 } from './instruct-mode.js';
 
 import { getTagsList, tag_import_setting, tag_map, tag_sort_mode, tags } from './tags.js';
-import { tokenizers } from './tokenizers.js';
+import { initTokenizerSelects, isSelectableTokenizer, tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
@@ -1570,12 +1570,13 @@ function normalizePowerUserTokenizer(tokenizer) {
         return tokenizers.BEST_MATCH;
     }
 
-    const hasOption = $(`#counting_tokenizer option[value="${tokenizerType}"], #encoding_tokenizer option[value="${tokenizerType}"]`).length > 0;
-    return hasOption ? tokenizerType : tokenizers.BEST_MATCH;
+    return isSelectableTokenizer(tokenizerType) ? tokenizerType : tokenizers.BEST_MATCH;
 }
 
 export async function loadPowerUserSettings(settings, data) {
     const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
+    initTokenizerSelects();
+
     // Load from settings.json
     if (settings.power_user !== undefined) {
         // Migrate old preference to a new setting
