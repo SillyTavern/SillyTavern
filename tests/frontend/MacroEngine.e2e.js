@@ -124,6 +124,44 @@ test.describe('MacroEngine', () => {
             const output = await evaluateWithEngine(page, input);
             expect(output).toBe('StartEnd');
         });
+
+        test.describe('Scoped comment macro', () => {
+            test('should remove scoped comment block (basic)', async ({ page }) => {
+                const input = 'Before{{//}}This entire block is a comment.{{///}}After';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('BeforeAfter');
+            });
+
+            test('should remove scoped comment block spanning multiple lines', async ({ page }) => {
+                const input = 'Start\n{{//}}\n  This entire block is a comment.\n  It can span multiple lines.\n{{///}}\nEnd';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('Start\n\nEnd');
+            });
+
+            test('should remove scoped comment block with extra slashes in closing tag', async ({ page }) => {
+                const input = 'A{{//}}ignored{{////}}B';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('AB');
+            });
+
+            test('should remove scoped comment block with macros inside (macros not evaluated)', async ({ page }) => {
+                const input = 'X{{//}}{{user}} should be ignored{{///}}Y';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('XY');
+            });
+
+            test('should not treat bare {{//}} without matching closer as scoped', async ({ page }) => {
+                const input = 'A{{// just a comment}}B';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('AB');
+            });
+
+            test('should handle scoped comment adjacent to other text and macros', async ({ page }) => {
+                const input = '{{user}}{{//}}ignored block{{///}}{{user}}';
+                const output = await evaluateWithEngine(page, input);
+                expect(output).toBe('UserUser');
+            });
+        });
     });
 
     test.describe('Trim macro', () => {

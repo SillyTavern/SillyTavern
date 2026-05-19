@@ -809,18 +809,21 @@
                                     <div class="inline-drawer-content">
                                         <div class="range-block m-t-1">
                                             <div class="justifyLeft" data-i18n="Main">Main</div>
+                                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="main_prompt_quick_edit_textarea" data-i18n="[title]Expand the editor"></i>
                                             <div class="wide100p">
                                                 <textarea id="main_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="main"></textarea>
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
                                             <div class="justifyLeft" data-i18n="Auxiliary">Auxiliary</div>
+                                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="nsfw_prompt_quick_edit_textarea" data-i18n="[title]Expand the editor"></i>
                                             <div class="wide100p">
                                                 <textarea id="nsfw_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="nsfw"></textarea>
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
                                             <div class="justifyLeft" data-i18n="Post-History Instructions">Post-History Instructions</div>
+                                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="jailbreak_prompt_quick_edit_textarea" data-i18n="[title]Expand the editor"></i>
                                             <div class="wide100p">
                                                 <textarea id="jailbreak_prompt_quick_edit_textarea" class="text_pole textarea_compact autoSetHeight" rows="6" placeholder="&mdash;" data-pm-prompt="jailbreak"></textarea>
                                             </div>
@@ -2144,6 +2147,9 @@
                                             <span data-i18n="Allows the model to return its thinking process.">
                                                 Allows the model to return its thinking process.
                                             </span>
+                                            <strong data-i18n="This setting enables or disables reasoning generation by the model." data-source="deepseek,zai,moonshot">
+                                                This setting enables or disables reasoning generation by the model.
+                                            </strong>
                                             <strong data-i18n="This setting affects visibility only." data-source-mode="except" data-source="zai,moonshot,openrouter,deepseek">
                                                 This setting affects visibility only.
                                             </strong>
@@ -3649,6 +3655,19 @@
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
+                            <div>
+                                <h4>
+                                    <span data-i18n="Model Providers">Model Providers</span>
+                                    <i id="nanogpt_provider_warning" class="fa-solid fa-circle-exclamation displayNone" title="Deselect inapplicable provider(s) or select an applicable provider to avoid a 404 error."></i>
+                                </h4>
+                                <select id="nanogpt_provider">
+                                    <option value="" data-i18n="Auto">Auto</option>
+                                </select>
+                                <label class="checkbox_label marginTopBot5" for="nanogpt_payg_override" data-i18n="[title]Force NanoGPT pay-as-you-go billing for this request." title="Force NanoGPT pay-as-you-go billing for this request.">
+                                    <input id="nanogpt_payg_override" type="checkbox" />
+                                    <span data-i18n="Use pay-as-you-go billing">Use pay-as-you-go billing</span>
+                                </label>
+                            </div>
                         </div>
                         <div id="workers_ai_form" data-source="workers_ai">
                             <h4><a href="https://dash.cloudflare.com/?to=/:account/ai/workers-ai/api-quick-start" target="_blank" rel="noopener noreferrer" data-i18n="Cloudflare Workers AI API Key">Cloudflare Workers AI API Key</a></h4>
@@ -3876,17 +3895,24 @@
                             </div>
                         </div>
                         <div id="pollinations_form" data-source="pollinations">
-                            <h4>
-                                <a href="https://enter.pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Pollinations API Key">
-                                    Pollinations API Key
-                                </a>
-                            </h4>
-                            <div class="flex-container">
-                                <input id="api_key_pollinations" name="api_key_pollinations" class="text_pole flex1" value="" type="text" autocomplete="off">
-                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_pollinations"></div>
-                            </div>
-                            <div data-for="api_key_pollinations" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
-                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            <h4 data-i18n="Pollinations Endpoint">Pollinations Endpoint</h4>
+                            <select id="pollinations_endpoint">
+                                <option value="anonymous" data-i18n="Anonymous (No Key)">Anonymous (No Key)</option>
+                                <option value="authenticated" data-i18n="Authenticated (API Key)">Authenticated (API Key)</option>
+                            </select>
+                            <div id="pollinations_key_section">
+                                <h4>
+                                    <a href="https://enter.pollinations.ai/" target="_blank" rel="noopener noreferrer" data-i18n="Pollinations API Key">
+                                        Pollinations API Key
+                                    </a>
+                                </h4>
+                                <div class="flex-container">
+                                    <input id="api_key_pollinations" name="api_key_pollinations" class="text_pole flex1" value="" type="text" placeholder="sk_..." autocomplete="off">
+                                    <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_pollinations"></div>
+                                </div>
+                                <div data-for="api_key_pollinations" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                    For privacy reasons, your API key will be hidden after you click 'Connect'.
+                                </div>
                             </div>
                             <h4 data-i18n="Pollinations Model">Pollinations Model</h4>
                             <select id="model_pollinations_select">

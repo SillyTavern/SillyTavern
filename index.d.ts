@@ -42,6 +42,10 @@ declare global {
              */
             handle: string | null;
             /**
+             * Account version tag: shake256 derivative of password hash and salt.
+             */
+            version: string | null;
+            /**
              * Last time the session was extended.
              */
             touch: number;
