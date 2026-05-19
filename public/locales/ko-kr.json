@@ -1633,5 +1633,6 @@
     "Deleting chat…": "채팅 삭제 중…",
     "Loading chat…": "채팅 불러오는 중…",
     "Bulk Delete": "대량 삭제",
-    "Deleting ${0} character(s)…": "${0}개 캐릭터 삭제 중…"
+    "Deleting ${0} character(s)…": "${0}개 캐릭터 삭제 중…",
+    "Select tag to merge into": "병합할 태그를 선택하세요"
 }

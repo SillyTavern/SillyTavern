@@ -2139,7 +2139,7 @@ async function onTagDeleteClick() {
             $liveSelect.find('option[value=""]').remove();
             $liveSelect.select2({
                 width: '75%',
-                placeholder: 'Select tag to merge into',
+                placeholder: t`Select tag to merge into`,
                 allowClear: true,
                 dropdownParent: $liveSelect.closest('.popup'),
             }).val('').trigger('change');

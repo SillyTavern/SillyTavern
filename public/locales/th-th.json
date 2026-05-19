@@ -1471,5 +1471,6 @@
     "Deleting chat…": "กำลังลบแชท…",
     "Loading chat…": "กำลังโหลดแชท…",
     "Bulk Delete": "ลบจำนวนมาก",
-    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…"
+    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…",
+    "Select tag to merge into": "เลือกแท็กที่จะรวมเข้าด้วยกัน"
 }

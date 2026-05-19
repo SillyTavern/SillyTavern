@@ -1452,5 +1452,6 @@
     "Deleting chat…": "Eyði spjalli…",
     "Loading chat…": "Hleð spjalli…",
     "Bulk Delete": "Fjöldaeyðing",
-    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…"
+    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…",
+    "Select tag to merge into": "Veldu merki til að sameinast í"
 }
