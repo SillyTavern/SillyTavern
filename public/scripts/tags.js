@@ -2178,7 +2178,6 @@ async function onTagDeleteClick() {
 
     const targetTag = mergeTagId ? tags.find(x => x.id === mergeTagId) : null;
 
-    // @ts-ignore
     toastr.success(`'${tag.name}' deleted${targetTag ? ` and merged into '${targetTag.name}'` : ''}`, 'Delete Tag');
 
     printCharactersDebounced();
