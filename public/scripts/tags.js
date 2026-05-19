@@ -2146,7 +2146,7 @@ async function onTagDeleteClick() {
         if ($liveSelect.length && !isMobile()) {
             $liveSelect.find('option[value=""]').remove();
             $liveSelect.select2({
-                width: '75%',
+                width: 'auto',
                 placeholder: t`Select tag to merge into`,
                 allowClear: true,
                 dropdownParent: $liveSelect.closest('.popup'),
