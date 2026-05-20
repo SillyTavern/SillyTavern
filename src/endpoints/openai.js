@@ -231,7 +231,7 @@ router.post('/caption-image', async (request, response) => {
             apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/v1/chat/completions`;
         }
 
-        if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
+        if (['custom', 'koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
             apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
         }
 
