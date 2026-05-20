@@ -2177,6 +2177,9 @@ export function appendMediaToMessage(mes, messageElement, scrollBehavior = SCROL
         if (scrollBehavior === SCROLL_BEHAVIOR.NONE) {
             return;
         }
+        if (!power_user.auto_scroll_chat_to_bottom) {
+            return;
+        }
         if (scrollBehavior === SCROLL_BEHAVIOR.KEEP) {
             chatElement.scrollTop(scrollPosition);
             return;
