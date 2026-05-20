@@ -3592,6 +3592,45 @@ export function initDefaultSlashCommands() {
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tools-role',
+        aliases: ['tlr'],
+        helpString: `
+            <div>
+                ${t`Sets a "Tools Role" option in connection profile. Gets the current selection if no value is provided.`}
+            </div>
+            <div>
+                <strong>${t`Examples:`}</strong>
+            </div>
+            <ul>
+                <li><pre><code class="language-stscript">/tools-role tool_reasoning</code></pre></li>
+            </ul>
+        `,
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: t`value`,
+                typeList: [ARGUMENT_TYPE.STRING],
+                acceptsMultiple: false,
+                isRequired: true,
+                forceEnum: false,
+            }),
+        ],
+        callback: (_args, value) => {
+            const stringValue = String(value ?? '');
+            if (!stringValue) {
+                return oai_settings.custom_api_tools_role || 'tool';
+            }
+
+            // 'none' value must be coerced to an empty string
+            oai_settings.custom_api_tools_role = stringValue;
+            $('#custom_api_tools_role').val(oai_settings.custom_api_tools_role);
+            saveSettingsDebounced();
+
+            return oai_settings.custom_api_tools_role;
+        },
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'reroll-pick',
         callback: (_, value) => {
             const currentSeed = chat_metadata.pick_reroll_seed ?? 0;

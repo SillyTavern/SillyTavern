@@ -350,6 +350,7 @@ export const settingsToUpdate = {
     custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false, true],
     custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false, true],
     custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false, true],
+    custom_api_tools_role: ['#custom_api_tools_role', 'custom_api_tools_role', false, true],
     google_model: ['#model_google_select', 'google_model', false, true],
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
@@ -502,6 +503,7 @@ const default_settings = {
     names_behavior: character_names_behavior.DEFAULT,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
+    custom_api_tools_role: 'tool',
     show_thoughts: true,
     reasoning_effort: reasoning_effort_types.auto,
     verbosity: verbosity_levels.auto,
@@ -879,8 +881,9 @@ async function populationInjectionPrompts(prompts, messages) {
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param type
  * @param cyclePrompt
+ * @param toolRole tool message override
  */
-async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
+async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null, toolRole = 'tool') {
     if (!prompts.has('chatHistory')) {
         return;
     }
@@ -1001,7 +1004,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                     // Strict chain mode: skip tool/tool-call messages, then use only the first assistant text boundary.
                     for (let idx = promptIdx - 1; idx > lastUserIdx; idx--) {
                         const candidate = messages[idx];
-                        if (candidate?.role === 'tool') {
+                        if (candidate?.role === toolRole) {
                             continue;
                         }
                         if (candidate?.role === 'assistant' && Array.isArray(candidate.invocations)) {
@@ -1047,7 +1050,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
                 return clone;
             });
             const toolCallMessage = await Message.createAsync(chatMessage.role, undefined, 'toolCall-' + chatMessage.identifier);
-            const toolResultMessages = await Promise.all(invocations.slice().reverse().map((invocation) => Message.createAsync('tool', invocation.result || '[No content]', invocation.id)));
+            const toolResultMessages = await Promise.all(invocations.slice().reverse().map((invocation) => Message.createAsync(toolRole, invocation.result || '[No content]', invocation.id)));
             await toolCallMessage.setToolCalls(invocations, includeSignature, includeToolReasoning);
             if (chatCompletion.canAffordAll([toolCallMessage, ...toolResultMessages])) {
                 for (const resultMessage of toolResultMessages) {
@@ -1180,7 +1183,7 @@ export function getPromptRole(role) {
  * @param {object[]} options.messageExamples - Array containing all message examples.
  * @returns {Promise<void>}
  */
-async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples }) {
+async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples, toolRole = 'tool' }) {
     // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = async (source, target = null) => {
         // We need the prompts array to determine a position for the source.
@@ -1334,9 +1337,9 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
         await populateDialogueExamples(prompts, chatCompletion, messageExamples);
-        await populateChatHistory(messages, prompts, chatCompletion, type, cyclePrompt);
+        await populateChatHistory(messages, prompts, chatCompletion, type, cyclePrompt, toolRole);
     } else {
-        await populateChatHistory(messages, prompts, chatCompletion, type, cyclePrompt);
+        await populateChatHistory(messages, prompts, chatCompletion, type, cyclePrompt, toolRole);
         await populateDialogueExamples(prompts, chatCompletion, messageExamples);
     }
 
@@ -1534,6 +1537,7 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
  * @param {object} content.extensionPrompts - An array of additional prompts.
  * @param {object[]} content.messages - An array of messages to be used as chat history.
  * @param {string[]} content.messageExamples - An array of messages to be used as dialogue examples.
+ * @param {string} toolRole - The role for tool messages
  * @param dryRun - Whether this is a live call or not.
  * @returns {Promise<(any[]|boolean)[]>} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
@@ -1563,6 +1567,7 @@ export async function prepareOpenAIMessages({
 
     const userSettings = promptManager.serviceSettings;
     chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
+    const toolRole = oai_settings.custom_api_tools_role ? oai_settings.custom_api_tools_role : 'tool';
 
     try {
         // Merge markers and ordered user prompts with system prompts
@@ -1582,7 +1587,7 @@ export async function prepareOpenAIMessages({
         });
 
         // Fill the chat completion with as much context as the budget allows
-        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples });
+        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples, toolRole });
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error(t`Mandatory prompts exceed the context size.`);
@@ -1616,7 +1621,7 @@ export async function prepareOpenAIMessages({
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
 
-    openai_messages_count = chat.filter(x => !x?.tool_calls && ['user', 'assistant', 'tool'].includes(x?.role)).length || 0;
+    openai_messages_count = chat.filter(x => !x?.tool_calls && ['user', 'assistant', toolRole].includes(x?.role)).length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -2770,6 +2775,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'request_image_resolution': String(settings.request_image_resolution),
         'request_image_aspect_ratio': String(settings.request_image_aspect_ratio),
         'custom_prompt_post_processing': settings.custom_prompt_post_processing,
+        'custom_api_tools_role': settings.custom_api_tools_role,
         'verbosity': getVerbosity(settings),
     };
 
@@ -6966,6 +6972,12 @@ export function initOpenAI() {
 
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
+        updateFeatureSupportFlags();
+        saveSettingsDebounced();
+    });
+
+    $('#custom_api_tools_role').on('change', function () {
+        oai_settings.custom_api_tools_role = String($(this).val());
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });
