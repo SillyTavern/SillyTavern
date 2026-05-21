@@ -235,6 +235,7 @@ export const TEXTGEN_TYPES = {
     FEATHERLESS: 'featherless',
     HUGGINGFACE: 'huggingface',
     GENERIC: 'generic',
+    MLXLM: 'mlx_lm',
 };
 
 export const INFERMATICAI_KEYS = [

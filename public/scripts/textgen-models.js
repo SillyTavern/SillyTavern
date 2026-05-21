@@ -730,6 +730,28 @@ export async function loadAphroditeModels(data) {
     }
 }
 
+export async function loadMlxLmModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid MLX-LM models data', data);
+        return;
+    }
+
+    data.sort((a, b) => a.id.localeCompare(b.id));
+
+    if (!data.find(x => x.id === textgen_settings.mlx_lm_model)) {
+        textgen_settings.mlx_lm_model = data[0]?.id || '';
+    }
+
+    $('#mlx_lm_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.mlx_lm_model;
+        $('#mlx_lm_model').append(option);
+    }
+}
+
 let featherlessCurrentPage = 1;
 export async function loadFeatherlessModels(data) {
     const searchBar = document.getElementById('featherless_model_search_bar');
@@ -1060,6 +1082,12 @@ function onAphroditeModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
 }
 
+function onMlxLmModelSelect() {
+    const modelId = String($('#mlx_lm_model').val());
+    textgen_settings.mlx_lm_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
+}
+
 function getMancerModelTemplate(option) {
     const model = mancerModels.find(x => x.id === option?.element?.value);
 
@@ -1357,6 +1385,7 @@ export function initTextGenModels() {
     $('#tabby_model').on('change', onTabbyModelSelect);
     $('#llamacpp_model').on('change', onLlamaCppModelSelect);
     $('#featherless_model').on('change', () => onFeatherlessModelSelect(String($('#featherless_model').val())));
+    $('#mlx_lm_model').on('change', onMlxLmModelSelect);
 
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {
@@ -1444,6 +1473,13 @@ export function initTextGenModels() {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
+        });
+        $('#mlx_lm_model').select2({
+            placeholder: t`[Server default]`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            allowClear: true,
         });
         $('.openrouter_quantizations').select2({
             closeOnSelect: false,

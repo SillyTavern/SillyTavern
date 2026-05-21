@@ -724,6 +724,9 @@ class PresetManager {
             'auto_expand',
             'show_hidden',
             'max_additions',
+            'mlx_lm_model',
+            'mlx_lm_adapters',
+            'mlx_lm_draft_model',
         ];
         /** @type {Record<string, any>} */
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));

@@ -6233,6 +6233,10 @@ function parseAndSaveLogprobs(data, continueFrom) {
                 case textgen_types.TABBY: {
                     logprobs = parseTabbyLogprobs(data) || null;
                 } break;
+                case textgen_types.MLXLM: {
+                    // TODO: Token Probabilities panel disabled due to upstream issues. Consider making changes when upstream changes
+                    logprobs = null;
+                } break;
             } break;
         default:
             return;
