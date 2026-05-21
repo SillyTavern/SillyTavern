@@ -937,6 +937,55 @@ async function fetchPerchanceAvatar(avatarUrl, isAvatarBase64) {
 }
 
 /**
+ * Parse BotBooru URL to extract the character slug.
+ * @param {string} url BotBooru character URL
+ * @returns {string} Slug of the character
+ */
+function parseBotBooruSlug(url) {
+    // Example: https://botbooru.com/character/8711
+    // or: 8711
+    return url?.split('character/')[1] || '';
+}
+
+/**
+ * Download BotBooru character card
+ * @param {string} slug Slug of the character
+ * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string} | null>}
+ */
+async function downloadBotBooruCharacter(slug) {
+    // example of slug
+    // 8711
+    const BotBooruBaseURL = 'https://botbooru.com/download/png';
+
+    try {
+        const response = await fetch(`${BotBooruBaseURL}/${slug}`);
+        if (!response.ok) {
+            throw new Error(`Failed to download character: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type') || 'image/png';
+        const buffer = Buffer.from(await response.arrayBuffer());
+        let fileName = `${sanitize(slug)}.png`;
+
+        const contentDisposition = response.headers.get('content-disposition');
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename\s*=\s*(?:["']([^"']+)["']|([^;]+))/i);
+            if (match) {
+                const rawName = match[1] || match[2];
+                if (rawName) {
+                    fileName = sanitize(rawName);
+                }
+            }
+        }
+
+        return { buffer, fileName, fileType: contentType };
+    } catch (error) {
+        console.error('Error downloading BotBooru character:', error);
+        throw error;
+    }
+}
+
+/**
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
@@ -992,6 +1041,7 @@ router.post('/importURL', async (request, response) => {
         const isAICharacterCardsContent = host.includes('aicharactercards.com');
         const isRisu = host.includes('realm.risuai.net');
         const isPerchance = host.includes('perchance.org');
+        const isBotBooru = host.includes('botbooru.com');
         const isGeneric = isHostWhitelisted(host);
 
         if (isPygmalionContent) {
@@ -1045,6 +1095,13 @@ router.post('/importURL', async (request, response) => {
             }
             type = 'character';
             result = await downloadPerchanceCharacter(perchanceSlug);
+        } else if (isBotBooru) {
+            const botbooruSlug = parseBotBooruSlug(url);
+            if (!botbooruSlug) {
+                return response.sendStatus(404);
+            }
+            type = 'character';
+            result = await downloadBotBooruCharacter(botbooruSlug);
         } else if (isGeneric) {
             console.info('Downloading from generic url:', url);
             type = 'character';
