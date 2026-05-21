@@ -293,7 +293,6 @@ export function getContext() {
         ConnectionManagerRequestService,
         buildLeanChatPrompt,
         prepareLeanPromptForTransport,
-        LEAN_PROMPT_CANCELLED,
         updateReasoningUI,
         parseReasoningFromString,
         getReasoningTemplateByName,
@@ -303,6 +302,7 @@ export function getContext() {
         openThirdPartyExtensionMenu,
         symbols: {
             ignore: IGNORE_SYMBOL,
+            leanPromptCancelled: LEAN_PROMPT_CANCELLED,
         },
         constants: {
             unset: UNSET_VALUE,
