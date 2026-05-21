@@ -1,4 +1,4 @@
-# SillyTavern
+# SillyTavernMod
 
 LLM Frontend for Power Users
 
