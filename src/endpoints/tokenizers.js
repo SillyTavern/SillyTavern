@@ -14,7 +14,7 @@ import tiktoken from 'tiktoken';
 
 import { TEXTGEN_TYPES } from '../constants.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
-import { getConfigValue, isValidUrl } from '../util.js';
+import { getConfigValue, isValidUrl, trimV1 } from '../util.js';
 
 /**
  * @typedef { (req: import('express').Request, res: import('express').Response) => Promise<any> } TokenizationHandler
@@ -1086,7 +1086,7 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
         setAdditionalHeaders(request, args, baseUrl);
 
         // Convert to string + remove trailing slash + /v1 suffix
-        let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
+        let url = trimV1(baseUrl);
 
         switch (request.body.api_type) {
             case TEXTGEN_TYPES.TABBY:
@@ -1109,10 +1109,12 @@ router.post('/remote/textgenerationwebui/encode', async function (request, respo
                 url += '/v1/tokenize';
                 args.body = JSON.stringify({ 'model': model, 'prompt': text });
                 break;
-            default:
+            case TEXTGEN_TYPES.OOBA:
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ 'text': text });
                 break;
+            default:
+                return response.sendStatus(400);
         }
 
         const result = await fetch(url, args);

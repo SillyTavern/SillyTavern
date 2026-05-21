@@ -1,7 +1,7 @@
 import { Fuse } from '../lib.js';
 
 import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1, getOneCharacter, select_selected_character } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn, addLongPressEvent, escapeHtml } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn, addLongPressEvent, escapeHtml, setInfoBlock, clearInfoBlock } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -2495,45 +2495,125 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
 
     $('#world_apply_current_sorting').off('click').on('click', async () => {
         const entryCount = Object.keys(data.entries).length;
-        const moreThan100 = entryCount > 100;
 
-        let content = '<span>' + t`Apply your current sorting to the "Order" field. The Order values will go down from the chosen number.` + '</span>';
-        if (moreThan100) {
-            content += '<div class="m-t-1"><i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B;"></i> ' + t`More than 100 entries in this world. If you don't choose a number higher than that, the lower entries will default to 0.<br />(Usual default: 100)<br />Minimum: ${entryCount}` + '</div>';
-        }
+        const contentEl = document.createElement('div');
 
-        const result = await Popup.show.input(t`Apply Current Sorting`, content, '100', { okButton: t`Apply`, cancelButton: 'Cancel' });
-        if (!result) return;
+        const heading = document.createElement('h3');
+        heading.textContent = t`Apply Current Sorting`;
+        contentEl.appendChild(heading);
 
-        const start = Number(result);
+        const description = document.createElement('span');
+        const descriptionText = document.createElement('p');
+        descriptionText.innerHTML = t`Assigns Order values to all entries based on their current sort position.`;
+        contentEl.appendChild(descriptionText);
+        const descriptionDetail = document.createElement('p');
+        descriptionDetail.innerHTML = t`Entries are ordered <b>descending</b> by default — the first entry in the list gets the highest value and will be inserted first into the prompt.`;
+        contentEl.appendChild(descriptionDetail);
+        const entryCountText = document.createElement('small');
+        entryCountText.textContent = t`(${entryCount} entries total)`;
+        contentEl.appendChild(entryCountText);
+        contentEl.appendChild(description);
+
+        const warningEl = document.createElement('div');
+        contentEl.appendChild(warningEl);
+
+        /** @type {(startInput: HTMLInputElement, stepInput: HTMLInputElement, ascendingInput: HTMLInputElement) => void} */
+        const updateWarning = (startInput, stepInput, ascendingInput) => {
+            const startVal = Number(startInput.value);
+            const stepVal = Number(stepInput.value);
+            const isAscending = ascendingInput.checked;
+            if (!isAscending && !isNaN(startVal) && !isNaN(stepVal) && startVal - (entryCount - 1) * stepVal < 0) {
+                setInfoBlock(warningEl, t`Some entries will be clamped to Order 0, causing collisions at the bottom. The last entry would reach ${startVal - (entryCount - 1) * stepVal} (${entryCount} entries, step ${stepVal}).`, 'warning');
+            } else {
+                clearInfoBlock(warningEl);
+            }
+        };
+
+        /** @type {import('./popup.js').CustomPopupInput[]} */
+        const customInputs = [
+            {
+                id: 'wi_sort_start',
+                label: t`Starting value`,
+                tooltip: t`The Order value assigned to the first entry. In descending mode, values count down from here; in ascending mode, values count up from here.` + ' ' + t`(${entryCount} entries total)`,
+                type: 'number',
+                defaultState: '100',
+                min: 0,
+                step: 1,
+                autoFocus: true,
+            },
+            {
+                id: 'wi_sort_step',
+                label: t`Step`,
+                tooltip: t`The gap between each Order value. For example, a step of 5 produces values like 100, 95, 90... (descending) or 0, 5, 10... (ascending).`,
+                type: 'number',
+                defaultState: '1',
+                min: 1,
+                step: 1,
+            },
+            {
+                id: 'wi_sort_ascending',
+                label: t`Ascending order`,
+                tooltip: t`When checked, Order values count upward from the starting value (first sorted entry gets the lowest Order). When unchecked, values count downward (first sorted entry gets the highest Order).`,
+                type: 'checkbox',
+                defaultState: false,
+            },
+        ];
+
+        const popup = new Popup(contentEl, POPUP_TYPE.TEXT, null, {
+            okButton: t`Apply`,
+            cancelButton: t`Cancel`,
+            customInputs,
+        });
+
+        const startInput = /** @type {HTMLInputElement} */ (popup.dlg.querySelector('#wi_sort_start'));
+        const stepInput = /** @type {HTMLInputElement} */ (popup.dlg.querySelector('#wi_sort_step'));
+        const ascendingInput = /** @type {HTMLInputElement} */ (popup.dlg.querySelector('#wi_sort_ascending'));
+        startInput.addEventListener('input', () => updateWarning(startInput, stepInput, ascendingInput));
+        stepInput.addEventListener('input', () => updateWarning(startInput, stepInput, ascendingInput));
+        ascendingInput.addEventListener('change', () => updateWarning(startInput, stepInput, ascendingInput));
+        updateWarning(startInput, stepInput, ascendingInput);
+
+        const result = await popup.show();
+        if (result !== POPUP_RESULT.AFFIRMATIVE) return;
+
+        const start = Number(popup.inputResults.get('wi_sort_start') ?? '100');
+        const step = Number(popup.inputResults.get('wi_sort_step') ?? '1');
+        const ascending = Boolean(popup.inputResults.get('wi_sort_ascending'));
+
         if (isNaN(start) || start < 0) {
-            toastr.error(t`Invalid number: ${result}`, t`Apply Current Sorting`);
+            toastr.error(t`Invalid starting value: ${start}`, t`Apply Current Sorting`);
             return;
         }
-        if (start < entryCount) {
-            toastr.warning(t`A number lower than the entry count has been chosen. All entries below that will default to 0.`, t`Apply Current Sorting`);
+        if (isNaN(step) || step < 1) {
+            toastr.error(t`Invalid step value: ${step}`, t`Apply Current Sorting`);
+            return;
+        }
+        if (!ascending && start < entryCount) {
+            toastr.warning(t`A starting value lower than the entry count has been chosen. All entries below that will default to 0.`, t`Apply Current Sorting`);
         }
 
         // We need to sort the entries here, as the data source isn't sorted
         const entries = Object.values(data.entries);
         sortWorldInfoEntries(entries);
 
-        let updated = 0, current = start;
-        for (const entry of entries) {
-            const newOrder = Math.max(current--, 0);
-            if (entry.order === newOrder) continue;
+        let updated = 0;
+        entries.forEach((entry, index) => {
+            const newOrder = ascending
+                ? start + index * step
+                : Math.max(start - index * step, 0);
+            if (entry.order === newOrder) return;
 
             entry.order = newOrder;
-            setWIOriginalDataValue(data, entry.order, 'order', entry.order);
+            setWIOriginalDataValue(data, entry.uid, 'order', entry.order);
             updated++;
-        }
+        });
 
         if (updated > 0) {
-            toastr.info(`Updated ${updated} Order values`, 'Apply Custom Sorting');
+            toastr.info(t`Updated ${updated} Order values`, t`Apply Current Sorting`);
             await saveWorldInfo(name, data, true);
             updateEditor(navigation_option.previous);
         } else {
-            toastr.info('All values up to date', 'Apply Custom Sorting');
+            toastr.info(t`All values up to date`, t`Apply Current Sorting`);
         }
     });
 

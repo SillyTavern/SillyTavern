@@ -7,7 +7,7 @@ import {
 } from '../lib.js';
 
 import { getContext } from './extensions.js';
-import { characters, getRequestHeaders, processDroppedFiles, this_chid, user_avatar } from '../script.js';
+import { animation_duration, characters, getRequestHeaders, processDroppedFiles, this_chid, user_avatar } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines, power_user } from './power-user.js';
 import { debounce_timeout } from './constants.js';
@@ -2786,32 +2786,54 @@ export function arraysEqual(a, b) {
  * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
  * @param {string | HTMLElement?} content - The message to display inside the information block (supports HTML) or an HTML element
  * @param {'hint' | 'info' | 'warning' | 'error'} [type='info'] - The type of message, which determines the styling of the information block
+ * @param {object} [options={}] - Optional settings
+ * @param {boolean} [options.animate=true] - Whether to animate the block sliding in when first shown
  */
-export function setInfoBlock(target, content, type = 'info') {
+export function setInfoBlock(target, content, type = 'info', { animate = true } = {}) {
     if (!content) {
         clearInfoBlock(target);
         return;
     }
 
     const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
-    if (infoBlock) {
-        infoBlock.className = `info-block ${type}`;
-        if (typeof content === 'string') {
-            infoBlock.innerHTML = content;
-        } else {
-            infoBlock.innerHTML = '';
-            infoBlock.appendChild(content);
-        }
+    if (!infoBlock) return;
+
+    const wasVisible = infoBlock.classList.contains('info-block');
+
+    if (!wasVisible && animate) {
+        $(infoBlock).hide();
+    }
+
+    infoBlock.className = `info-block ${type}`;
+    if (typeof content === 'string') {
+        infoBlock.innerHTML = content;
+    } else {
+        infoBlock.innerHTML = '';
+        infoBlock.appendChild(content);
+    }
+
+    if (!wasVisible && animate) {
+        $(infoBlock).slideDown(animation_duration * 1.5);
     }
 }
 
 /**
  * Clears the content and style of an information block.
  * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
+ * @param {object} [options={}] - Optional settings
+ * @param {boolean} [options.animate=true] - Whether to animate the block fading out before clearing
  */
-export function clearInfoBlock(target) {
+export function clearInfoBlock(target, { animate = true } = {}) {
     const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
-    if (infoBlock && infoBlock.classList.contains('info-block')) {
+    if (!infoBlock || !infoBlock.classList.contains('info-block')) return;
+
+    if (animate) {
+        $(infoBlock).slideUp(animation_duration * 1.5, () => {
+            infoBlock.className = '';
+            infoBlock.innerHTML = '';
+            $(infoBlock).css('display', '');
+        });
+    } else {
         infoBlock.className = '';
         infoBlock.innerHTML = '';
     }
