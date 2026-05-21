@@ -449,6 +449,7 @@ export class ConnectionManagerRequestService {
                         zai_endpoint: profile['api-url'],
                         siliconflow_endpoint: profile['api-url'],
                         minimax_endpoint: profile['api-url'],
+                        featherless_endpoint: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
                         custom_prompt_post_processing: profile['prompt-post-processing'],

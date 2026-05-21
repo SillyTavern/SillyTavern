@@ -2130,7 +2130,7 @@ function saveModelList(data) {
         $('#model_electronhub_select').val(oai_settings.electronhub_model).trigger('change');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.FEATHERLESS) {
+    if (oai_settings.chat_completion_source === chat_completion_sources.FEATHERLESS) {
         $('#model_featherless_chat_select').empty();
         model_list.forEach((model) => {
             $('#model_featherless_chat_select').append($('<option>', { value: model.id, text: model.id }));
@@ -2960,6 +2960,16 @@ export async function createGenerationParameters(settings, model, type, messages
         if (Number.isFinite(generate_data.temperature)) {
             generate_data.temperature = clamp(generate_data.temperature, Number.EPSILON, 1.0);
         }
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.FEATHERLESS) {
+        generate_data.top_k = settings.top_k_openai > 0 ? Number(settings.top_k_openai) : undefined;
+        generate_data.repetition_penalty = Number(settings.repetition_penalty_openai);
+        generate_data.frequency_penalty = Number(settings.freq_pen_openai);
+        generate_data.seed = settings.seed >= 1 ? Number(settings.seed) : undefined;
+        generate_data.top_p = clamp(Number(settings.top_p_openai), 0.001, 1.0);
+        generate_data.stop = getCustomStoppingStrings();
+        generate_data.min_p = clamp(Number(settings.min_p_openai), 0, 1.0);
     }
 
     if (settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
@@ -5963,6 +5973,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.FEATHERLESS]: { key: SECRET_KEYS.FEATHERLESS, selector: '#api_key_featherless', proxy: false, keyless: true },
     };
 
     // Vertex AI Express version - use API key
@@ -6056,6 +6067,8 @@ function toggleChatCompletionForms() {
         $('#model_zai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.FEATHERLESS) {
+        $('#model_featherless_chat_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
