@@ -666,18 +666,7 @@ export function removeOldBackups(directory, prefix, limit = null) {
  * @returns {string[]} List of image file names
  */
 export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_TYPE.IMAGE) {
-    function getSortFunction() {
-        switch (sortBy) {
-            case 'name':
-                return Intl.Collator().compare;
-            case 'date':
-                return (a, b) => fs.statSync(path.join(directoryPath, a)).mtimeMs - fs.statSync(path.join(directoryPath, b)).mtimeMs;
-            default:
-                return (_a, _b) => 0;
-        }
-    }
-
-    return fs
+    const files = fs
         .readdirSync(directoryPath, { withFileTypes: true })
         .filter(dirent => dirent.isFile())
         .map(dirent => dirent.name)
@@ -696,8 +685,28 @@ export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_T
                 return true;
             }
             return false;
-        })
-        .sort(getSortFunction());
+        });
+
+    switch (sortBy) {
+        case 'name':
+            return files.sort(Intl.Collator().compare);
+        case 'date': {
+            const mtimes = new Map();
+            for (const file of files) {
+                try {
+                    mtimes.set(file, fs.statSync(path.join(directoryPath, file)).mtimeMs);
+                } catch (err) {
+                    if (err?.code !== 'ENOENT') {
+                        throw err;
+                    }
+                    mtimes.set(file, 0);
+                }
+            }
+            return files.sort((a, b) => mtimes.get(a) - mtimes.get(b));
+        }
+        default:
+            return files;
+    }
 }
 
 /**
