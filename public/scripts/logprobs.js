@@ -484,7 +484,7 @@ function withVirtualWhitespace(text, span) {
     if (text.match(/^\n(?:.|\n)+\n$/)) {
         result.unshift($('<br>'));
         result.push($('<br>'));
-    } else if (text.match(/^\n/)) {
+    } else if (text.match(/^\n[^\n]/)) { // a fused token that starts with a newline needs a break before it, not after
         result.unshift($('<br>'));
     } else if (text.match(/\n$/)) {
         result.push($('<br>'));

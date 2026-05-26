@@ -1343,6 +1343,58 @@ export async function generateTextGenWithStreaming(generate_data, signal) {
 }
 
 /**
+ * Detects and resolves llama.cpp stopping-string lookahead flushing.
+ * (see https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md, search for "stop:")
+ * Aligns the emitted token with the actual selected vocab piece, recovering 
+ * real candidate lists from empty lookahead steps and stripping flushed prefixes.
+ * @param {string} token - The text of the token
+ * @param {Object[]} logprobs - Logprobs array from the API
+ * @returns {import('./logprobs.js').TokenLogprobs|null} - Resolved logprobs, or null if no lookahead occurred
+ */
+function handleLlamaCppLookahead(token, logprobs) {
+    // in practice there should be no danger of infinite recursion unless llama.cpp produces
+    // really weird outputs, but let's err on the side of caution
+    if (logprobs.is_lookahead) {
+        return null;
+    }
+
+    if (!logprobs || !logprobs.length) {
+        return null;
+    }
+
+    const chosenId = logprobs[0].id;
+    if (chosenId === undefined) {
+        return null;
+    }
+
+    let expectedPiece = null;
+    if (Array.isArray(logprobs[0].top_logprobs)) {
+        const chosenCandidate = logprobs[0].top_logprobs.find(x => x.id === chosenId);
+        if (chosenCandidate) {
+            expectedPiece = chosenCandidate.token;
+        }
+    }
+
+    if (!expectedPiece) {
+        return null;
+    }
+
+    const isLookaheadBuffer = token === "";
+    const isLookaheadFlush = token.length > expectedPiece.length && token.endsWith(expectedPiece);
+    if (!isLookaheadBuffer && !isLookaheadFlush) {
+        return null;
+    }
+	
+	logprobs.is_lookahead = true;
+	const resolvedLogprobs = parseTextgenLogprobs(expectedPiece, logprobs);
+	if (resolvedLogprobs) {
+        resolvedLogprobs.is_lookahead = true;
+    }
+	
+    return resolvedLogprobs;
+}
+
+/**
  * parseTextgenLogprobs converts a logprobs object returned from a textgen API
  * for a single token into a TokenLogprobs object used by the Token
  * Probabilities feature.
@@ -1374,6 +1426,29 @@ export function parseTextgenLogprobs(token, logprobs) {
         case LLAMACPP: {
             if (!logprobs?.length) {
                 return null;
+            }
+
+            // Handle llama.cpp lookahead buffering related to stopping strings.
+            //
+            // When the server generates text that could be part of any of the stopping strings,
+            // it buffers this text, and only flushes it after it generates more, merged into a single token.
+            //
+            // For example, if the server generates "AB\nCD", the following tokens are expected:
+            //
+            // "AB", "\n", "CD"
+            //
+            // However, if a stopping string is specified (for example, by the "stop": ["\nUser:"] array
+            // in the text completions request), you get this:
+            //
+            // "AB", "", "\nCD"
+            //
+            // This is completely fine for just outputting the text, but, for example, in the token
+            // probability window, the probabilities are displayed incorrectly.
+            //
+            // Here, we fix this, splitting the merged token back into its original distinct tokens.
+            const lookahead = handleLlamaCppLookahead(token, logprobs);
+            if (lookahead) {
+                return lookahead;
             }
 
             // 3 cases:
