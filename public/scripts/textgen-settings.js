@@ -1352,13 +1352,13 @@ export async function generateTextGenWithStreaming(generate_data, signal) {
  * @returns {import('./logprobs.js').TokenLogprobs|null} - Resolved logprobs, or null if no lookahead occurred
  */
 function handleLlamaCppLookahead(token, logprobs) {
-    // in practice there should be no danger of infinite recursion unless llama.cpp produces
-    // really weird outputs, but let's err on the side of caution
-    if (logprobs.is_lookahead) {
+    if (!logprobs || !logprobs.length) {
         return null;
     }
 
-    if (!logprobs || !logprobs.length) {
+    // in practice there should be no danger of infinite recursion unless llama.cpp produces
+    // really weird outputs, but let's err on the side of caution
+    if (logprobs.is_lookahead) {
         return null;
     }
 
@@ -1384,13 +1384,13 @@ function handleLlamaCppLookahead(token, logprobs) {
     if (!isLookaheadBuffer && !isLookaheadFlush) {
         return null;
     }
-	
-	logprobs.is_lookahead = true;
-	const resolvedLogprobs = parseTextgenLogprobs(expectedPiece, logprobs);
-	if (resolvedLogprobs) {
+    
+    logprobs.is_lookahead = true;
+    const resolvedLogprobs = parseTextgenLogprobs(expectedPiece, logprobs);
+    if (resolvedLogprobs) {
         resolvedLogprobs.is_lookahead = true;
     }
-	
+
     return resolvedLogprobs;
 }
 
