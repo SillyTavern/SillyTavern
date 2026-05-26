@@ -452,7 +452,7 @@ const default_settings = {
     minimax_model: 'MiniMax-M2.7',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
-    featherless_model: '',
+    featherless_model: 'TheDrummer/Rocinante-X-12B-v1',
     nanogpt_model: 'gpt-4o-mini',
     nanogpt_provider: '',
     nanogpt_payg_override: false,

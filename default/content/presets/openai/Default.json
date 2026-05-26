@@ -12,7 +12,7 @@
     "chutes_sort_models": "alphabetically",
     "minimax_model": "MiniMax-M2.7",
     "minimax_endpoint": "global",
-    "featherless_model": "tbd before merging pr",
+    "featherless_model": "TheDrummer/Rocinante-X-12B-v1",
     "electronhub_model": "gpt-4o-mini",
     "electronhub_sort_models": "alphabetically",
     "electronhub_group_models": false,
