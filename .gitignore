@@ -58,3 +58,15 @@ public/scripts/extensions/third-party
 yarn.lock
 *.code-workspace
 test-results/
+
+# Mobile / Android build artifacts
+android/.gradle/
+android/app/build/
+android/build/
+mobile/node-bin/*.tar.xz
+android/app/src/main/assets/sillytavern/
+android/app/src/main/assets/public/
+android/app/src/main/jniLibs/
+android/app/libnode/bin/
+android/capacitor-cordova-android-plugins/
+release.keystore

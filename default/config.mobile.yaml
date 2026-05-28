@@ -1,0 +1,139 @@
+# SillyTavern Mobile Configuration
+# Optimized for Android APK - no self-hosting required
+
+# -- DATA CONFIGURATION --
+dataRoot: ./data
+
+# -- SERVER CONFIGURATION --
+listen: false
+listenAddress:
+  ipv4: 127.0.0.1
+  ipv6: '::1'
+protocol:
+  ipv4: true
+  ipv6: false
+port: 8000
+
+# -- BROWSER LAUNCH CONFIGURATION --
+browserLaunch:
+  enabled: false
+  browser: 'default'
+
+# -- SECURITY CONFIGURATION --
+# Disable whitelist since we only bind to localhost
+whitelistMode: false
+basicAuthMode: false
+disableCsrfProtection: true
+securityOverride: true
+
+# Enable CORS for the WebView
+enableCorsProxy: false
+cors:
+  enabled: true
+  origin:
+    - "*"
+  methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowedHeaders:
+    - "Content-Type"
+    - "Authorization"
+    - "X-CSRF-Token"
+  credentials: true
+  maxAge: 86400
+
+# No session timeout on mobile
+sessionTimeout: -1
+
+# -- LOGGING CONFIGURATION --
+logging:
+  enableAccessLog: false
+  minLogLevel: 2
+
+# -- RATE LIMITING --
+rateLimiting:
+  preferRealIpHeader: false
+  basicAuthMaxAttempts: 0
+  accountsLoginMaxAttempts: 0
+  accountsRecoverMaxAttempts: 0
+
+# -- BACKUPS --
+backups:
+  allowFullDataBackup: true
+  common:
+    numberOfBackups: 10
+  chat:
+    enabled: true
+    checkIntegrity: true
+    maxTotalBackups: 20
+    throttleInterval: 30000
+
+# -- THUMBNAILS --
+thumbnails:
+  enabled: true
+  format: "jpg"
+  quality: 80
+  dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144] }
+
+# -- PERFORMANCE --
+performance:
+  lazyLoadCharacters: true
+  memoryCacheCapacity: '50mb'
+  useDiskCache: true
+  requestCompression:
+    enabled: false
+
+# -- CACHE BUSTER --
+cacheBuster:
+  enabled: false
+
+# Allow keys exposure (single user device)
+allowKeysExposure: true
+skipContentCheck: true
+
+# -- EXTENSIONS --
+extensions:
+  enabled: true
+  autoUpdate: false
+  models:
+    autoDownload: false
+
+# -- GIT --
+git:
+  backend: builtin
+
+enableDownloadableTokenizers: true
+
+# Disable server plugins on mobile
+enableServerPlugins: false
+enableServerPluginsAutoUpdate: false
+
+# -- SSL --
+ssl:
+  enabled: false
+
+# User accounts not needed on single-device
+enableUserAccounts: false
+enableDiscreetLogin: false
+
+# No proxy on mobile
+requestProxy:
+  enabled: false
+
+# No host whitelist needed
+hostWhitelist:
+  enabled: false
+
+# Disable forwarded headers
+forwardedHeaders:
+  xRealIp: false
+  xForwardedFor: false
+
+# Heartbeat for mobile lifecycle
+heartbeatInterval: 30
+
+# Keep-alive for mobile connections
+enableKeepAlive: true
