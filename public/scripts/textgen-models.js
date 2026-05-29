@@ -212,7 +212,7 @@ const NANOGPT_PROVIDERS = [
     },
     {
         'id': 'ionet',
-        'label': 'Io Net',
+        'label': 'io.net',
     },
     {
         'id': 'inceptron',
@@ -256,7 +256,7 @@ const NANOGPT_PROVIDERS = [
     },
     {
         'id': 'neuralwatt',
-        'label': 'Neuralwatt',
+        'label': 'NeuralWatt',
     },
     {
         'id': 'tensorix',
@@ -307,12 +307,20 @@ const NANOGPT_PROVIDERS = [
         'label': 'Together',
     },
     {
+        'id': 'uomi',
+        'label': 'UOMI',
+    },
+    {
         'id': 'venice',
         'label': 'Venice',
     },
     {
         'id': 'wandb',
         'label': 'Weights & Biases',
+    },
+    {
+        'id': 'wafer',
+        'label': 'Wafer',
     },
     {
         'id': 'xiaomi',
