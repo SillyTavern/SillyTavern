@@ -75,14 +75,6 @@ import { diskCache } from './endpoints/characters.js';
 import { migrateFlatSecrets } from './endpoints/secrets.js';
 import { migrateGroupChatsMetadataFormat } from './endpoints/groups.js';
 
-// Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
-// https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
-// Safe to remove once support for Node v20 is dropped.
-if (process.versions && process.versions.node && process.versions.node.match(/20\.[0-2]\.0/)) {
-    // @ts-ignore
-    if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
-}
-
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
@@ -96,9 +88,30 @@ if (!cliArgs.enableIPv6 && !cliArgs.enableIPv4) {
     process.exit(1);
 }
 
-// Set keep-alive preference for all HTTP/HTTPS requests.
-http.globalAgent = new http.Agent({ keepAlive: cliArgs.enableKeepAlive });
-https.globalAgent = new https.Agent({ keepAlive: cliArgs.enableKeepAlive });
+// Set the default auto-select family (Happy Eyeballs RFC 8305) preference.
+// This ensures dual-stack IPv4/IPv6 works for all outgoing connections.
+// Node v20.0.0–v20.2.0 had a broken implementation (https://github.com/nodejs/node/issues/47822),
+// so we force-disable Happy Eyeballs on those versions regardless of the user's preference.
+const nodeHasBrokenAutoSelectFamily = !!(process.versions?.node?.match(/^20\.[0-2]\.0$/));
+const happyEyeballsEnabled = cliArgs.enableHappyEyeballs && !nodeHasBrokenAutoSelectFamily;
+if (nodeHasBrokenAutoSelectFamily && cliArgs.enableHappyEyeballs) {
+    console.warn('Happy Eyeballs is disabled on Node v20.0.0–v20.2.0 due to a known bug. Upgrade Node to v20.3.0 or later to enable it.');
+}
+if (net.setDefaultAutoSelectFamily) {
+    net.setDefaultAutoSelectFamily(happyEyeballsEnabled);
+}
+if (happyEyeballsEnabled && net.setDefaultAutoSelectFamilyAttemptTimeout && cliArgs.happyEyeballsTimeout > 0) {
+    net.setDefaultAutoSelectFamilyAttemptTimeout(cliArgs.happyEyeballsTimeout);
+}
+
+// Set keep-alive and Happy Eyeballs preferences for all HTTP/HTTPS requests.
+const globalAgentOptions = {
+    keepAlive: cliArgs.enableKeepAlive,
+    autoSelectFamily: happyEyeballsEnabled,
+    ...(happyEyeballsEnabled ? { autoSelectFamilyAttemptTimeout: cliArgs.happyEyeballsTimeout } : {}),
+};
+http.globalAgent = new http.Agent(globalAgentOptions);
+https.globalAgent = new https.Agent(globalAgentOptions);
 
 const app = express();
 app.use(helmet({
@@ -343,11 +356,13 @@ async function preSetupTasks() {
         logAllowed: !!getConfigValue('privateAddressWhitelist.log.allowedRequests', false, 'boolean'),
         allowUnresolvedHosts: !!getConfigValue('privateAddressWhitelist.allowUnresolvedHosts', false, 'boolean'),
         enableKeepAlive: cliArgs.enableKeepAlive,
+        enableHappyEyeballs: cliArgs.enableHappyEyeballs,
+        happyEyeballsTimeout: cliArgs.happyEyeballsTimeout,
     };
     initPrivateRequestFilter(requestFilterOptions);
 
     // Add request proxy.
-    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass, enableKeepAlive: cliArgs.enableKeepAlive, privateRequestFilterEnabled: requestFilterOptions.enabled });
+    initRequestProxy({ enabled: cliArgs.requestProxyEnabled, url: cliArgs.requestProxyUrl, bypass: cliArgs.requestProxyBypass, enableKeepAlive: cliArgs.enableKeepAlive, enableHappyEyeballs: cliArgs.enableHappyEyeballs, happyEyeballsTimeout: cliArgs.happyEyeballsTimeout, privateRequestFilterEnabled: requestFilterOptions.enabled });
 
     // Wait for frontend libs to compile
     await webpackMiddleware.runWebpackCompiler({ pruneCache: true });
@@ -469,6 +484,10 @@ function setDnsResolutionOrder() {
         } else {
             dns.setDefaultResultOrder('ipv4first');
             console.log('Preferring IPv4 for DNS resolution');
+        }
+
+        if (happyEyeballsEnabled) {
+            console.log(`Happy Eyeballs (RFC 8305) enabled - racing IPv4/IPv6 connections (fallback delay: ${cliArgs.happyEyeballsTimeout}ms)`);
         }
     } catch (error) {
         console.warn('Failed to set DNS resolution order. Possibly unsupported in this Node version.');

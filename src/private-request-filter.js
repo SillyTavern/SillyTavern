@@ -63,6 +63,18 @@ class PrivateRequestAgent extends Agent {
     allowUnresolvedHosts = false;
 
     /**
+     * Whether to enable Happy Eyeballs (autoSelectFamily) for connections
+     * @type {boolean}
+     */
+    enableHappyEyeballs = true;
+
+    /**
+     * Happy Eyeballs connection attempt timeout in milliseconds
+     * @type {number}
+     */
+    happyEyeballsTimeout = 250;
+
+    /**
      * Create a new PrivateRequestAgent instance.
      * @param {object} options
      * @param {string[]} options.privateAddressWhitelist List of private IP addresses or CIDR ranges to allow.
@@ -70,8 +82,10 @@ class PrivateRequestAgent extends Agent {
      * @param {boolean} options.logAllowed Whether to log allowed requests to the console.
      * @param {boolean} options.allowUnresolvedHosts Whether to allow requests to hosts that cannot be resolved.
      * @param {boolean} options.enableKeepAlive Whether to enable HTTP/HTTPS keep-alive.
+     * @param {boolean} [options.enableHappyEyeballs] Whether to enable Happy Eyeballs (RFC 8305) for connections.
+     * @param {number} [options.happyEyeballsTimeout] Happy Eyeballs connection attempt timeout in milliseconds.
      */
-    constructor(options = { privateAddressWhitelist: [], logBlocked: true, logAllowed: false, allowUnresolvedHosts: false, enableKeepAlive: false }) {
+    constructor(options = { privateAddressWhitelist: [], logBlocked: true, logAllowed: false, allowUnresolvedHosts: false, enableKeepAlive: false, enableHappyEyeballs: true, happyEyeballsTimeout: 250 }) {
         super({ keepAlive: options.enableKeepAlive });
 
         const logEntryWarning = (entry, message) => `${color.red('Warning')}: Ignoring invalid private whitelist entry ${color.yellow(entry)} - ${message}`;
@@ -80,6 +94,8 @@ class PrivateRequestAgent extends Agent {
         this.allowUnresolvedHosts = options.allowUnresolvedHosts;
         this.logBlocked = options.logBlocked;
         this.logAllowed = options.logAllowed;
+        this.enableHappyEyeballs = options.enableHappyEyeballs ?? true;
+        this.happyEyeballsTimeout = options.happyEyeballsTimeout ?? 250;
     }
 
     /**
@@ -103,6 +119,9 @@ class PrivateRequestAgent extends Agent {
 
     /**
      * Connect method that checks if the target host resolves to a private IP address and blocks the request if it does.
+     * When the host is a name, all DNS-resolved addresses are validated and then handed to net/tls.connect
+     * via a custom `lookup` so Happy Eyeballs (RFC 8305) can race them without re-querying DNS.
+     * Re-using the validated address set is what closes the DNS-rebinding window.
      * @param {http.ClientRequest} _req HTTP request object.
      * @param {import('agent-base').AgentConnectOpts} options Agent connection options.
      */
@@ -121,53 +140,62 @@ class PrivateRequestAgent extends Agent {
 
         /**
          * Establish a connection to the target host using either TLS or a regular socket based on the options provided.
-         * @param {string|null} [hostOverride] Pass a host to override the one in options when connecting.
+         * Uses Happy Eyeballs (autoSelectFamily) when enabled to race IPv4/IPv6 connections.
+         * @param {dns.LookupAddress[]|null} [validatedAddresses] Pre-validated addresses. When provided, a custom
+         *   `lookup` is installed so the socket does not re-resolve DNS (preventing TOCTOU/DNS-rebinding).
          * @returns {net.Socket|tls.TLSSocket} A socket connected to the target host.
          */
-        const connect = (hostOverride = null) => {
-            if (hostOverride) {
-                options.host = hostOverride;
+        const connect = (validatedAddresses = null) => {
+            const connectOptions = { ...options };
+
+            if (this.enableHappyEyeballs) {
+                connectOptions.autoSelectFamily = true;
+                connectOptions.autoSelectFamilyAttemptTimeout = this.happyEyeballsTimeout;
             }
-            if (options.secureEndpoint) {
-                return tls.connect(options);
+
+            if (validatedAddresses && validatedAddresses.length > 0) {
+                connectOptions.lookup = (_hostname, lookupOptions, callback) => {
+                    if (lookupOptions && lookupOptions.all) {
+                        callback(null, validatedAddresses);
+                    } else {
+                        const first = validatedAddresses[0];
+                        callback(null, first.address, first.family);
+                    }
+                };
+            }
+
+            if (connectOptions.secureEndpoint) {
+                return tls.connect(connectOptions);
             } else {
-                return net.connect(options);
+                return net.connect(connectOptions);
             }
         };
 
         /**
-         * Validate the given IP address against the private address whitelist and connect if it's allowed.
+         * Validate the given IP address against the private address whitelist.
          * @param {string} ip The IP address to validate.
-         * @returns {net.Socket|tls.TLSSocket} A socket connected to the target IP address if it's allowed, otherwise an error is raised.
+         * @returns {boolean} Whether the IP address is allowed (not private or whitelisted).
          */
-        const validateIpAddress = (ip) => {
+        const isIpAllowed = (ip) => {
             // Not a private IP address, allow the request
             if (!this.#isPrivateIp(ip)) {
-                return connect(ip);
+                return true;
             }
-
             // Private IP address, check if it's allowed in the whitelist
-            if (this.#isAllowedPrivateAddress(ip)) {
-                if (this.logAllowed) {
-                    console.info(color.green(LOG_HEADER), 'Allowed request to private IP address:', color.blue(ip));
-                }
-
-                return connect(ip);
-            }
-
-            return raiseError(`Blocked request to private IP address: ${ip}`, this.logBlocked);
+            return this.#isAllowedPrivateAddress(ip);
         };
 
         /**
-         * Resolve the given host to an IP address using DNS lookup.
-         * @param {string} host The host to resolve to an IP address.
-         * @returns {Promise<string>} The resolved IP address for the given host, or an empty string if the host cannot be resolved.
+         * Resolve the given host to all IP addresses using DNS lookup.
+         * Returns all addresses for Happy Eyeballs support.
+         * @param {string} host The host to resolve to IP addresses.
+         * @returns {Promise<dns.LookupAddress[]>} All resolved addresses for the given host.
          */
-        const lookupHost = async (host) => {
+        const lookupHostAll = async (host) => {
             try {
-                return (await dns.promises.lookup(host)).address;
+                return await dns.promises.lookup(host, { all: true });
             } catch {
-                return '';
+                return [];
             }
         };
 
@@ -180,19 +208,43 @@ class PrivateRequestAgent extends Agent {
         const isIp = ipRegex.v4({ exact: true }).test(host) || ipRegex.v6({ exact: true }).test(host);
 
         if (isIp) {
-            return validateIpAddress(host);
-        } else {
-            const address = await lookupHost(host);
-            if (!address) {
-                if (this.allowUnresolvedHosts) {
-                    return connect();
-                } else {
-                    return raiseError(`Unable to resolve host: ${host}. Set privateAddressWhitelist.allowUnresolvedHosts to true to bypass this check.`, true);
-                }
+            // Direct IP address - validate and connect
+            if (!isIpAllowed(host)) {
+                return raiseError(`Blocked request to private IP address: ${host}`, this.logBlocked);
             }
-
-            return validateIpAddress(address);
+            if (this.logAllowed && this.#isPrivateIp(host)) {
+                console.info(color.green(LOG_HEADER), 'Allowed request to private IP address:', color.blue(host));
+            }
+            return connect();
         }
+
+        // Hostname - resolve all addresses, validate them, then connect using the validated set.
+        const addresses = await lookupHostAll(host);
+
+        if (addresses.length === 0) {
+            if (this.allowUnresolvedHosts) {
+                return connect();
+            } else {
+                return raiseError(`Unable to resolve host: ${host}. Set privateAddressWhitelist.allowUnresolvedHosts to true to bypass this check.`, true);
+            }
+        }
+
+        // Validate ALL resolved addresses to prevent SSRF via DNS rebinding.
+        // Block if any address is private and not whitelisted.
+        const blockedAddresses = addresses.filter(addr => !isIpAllowed(addr.address));
+        if (blockedAddresses.length > 0) {
+            const blockedIps = blockedAddresses.map(a => a.address).join(', ');
+            return raiseError(`Blocked request to ${host} - resolves to private IP address(es): ${blockedIps}`, this.logBlocked);
+        }
+
+        if (this.logAllowed) {
+            const privateAddrs = addresses.filter(addr => this.#isPrivateIp(addr.address));
+            if (privateAddrs.length > 0) {
+                console.info(color.green(LOG_HEADER), 'Allowed request to host with private address(es):', color.blue(host), '->', color.blue(privateAddrs.map(a => a.address).join(', ')));
+            }
+        }
+
+        return connect(addresses);
     }
 }
 
@@ -206,8 +258,10 @@ class PrivateRequestAgent extends Agent {
  * @param {boolean} options.logAllowed Whether to log allowed requests to the console.
  * @param {boolean} options.allowUnresolvedHosts Whether to allow requests to hosts that cannot be resolved.
  * @param {boolean} options.enableKeepAlive Whether to enable HTTP/HTTPS keep-alive.
+ * @param {boolean} [options.enableHappyEyeballs] Whether to enable Happy Eyeballs (RFC 8305) for connections.
+ * @param {number} [options.happyEyeballsTimeout] Happy Eyeballs connection attempt timeout in milliseconds.
  */
-export default function initPrivateRequestFilter({ listen, enabled, privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts, enableKeepAlive }) {
+export default function initPrivateRequestFilter({ listen, enabled, privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts, enableKeepAlive, enableHappyEyeballs, happyEyeballsTimeout }) {
     if (!enabled) {
         if (listen) {
             console.warn();
@@ -217,7 +271,7 @@ export default function initPrivateRequestFilter({ listen, enabled, privateAddre
         return;
     }
 
-    const agent = new PrivateRequestAgent({ privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts, enableKeepAlive });
+    const agent = new PrivateRequestAgent({ privateAddressWhitelist, logBlocked, logAllowed, allowUnresolvedHosts, enableKeepAlive, enableHappyEyeballs, happyEyeballsTimeout });
 
     http.globalAgent = agent;
     https.globalAgent = agent;

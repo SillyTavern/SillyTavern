@@ -16,6 +16,15 @@ protocol:
     ipv6: false
 # Prefers IPv6 for DNS. Enable this on ISPs that don't have issues with IPv6
 dnsPreferIPv6: false
+# Enable Happy Eyeballs algorithm (RFC 8305) for dual-stack IPv4/IPv6 connections.
+# When enabled, outgoing connections will race IPv6 and IPv4 simultaneously,
+# using whichever connects first. This ensures fast connections on dual-stack networks.
+# Disable only if you experience connection issues on single-stack networks.
+enableHappyEyeballs: true
+# Happy Eyeballs connection attempt timeout in milliseconds.
+# This is the delay before starting a fallback connection attempt on the other address family.
+# Lower values make fallback faster but may cause unnecessary dual connections.
+happyEyeballsTimeout: 250
 # -- BROWSER LAUNCH CONFIGURATION --
 browserLaunch:
   # Open the browser automatically on server startup.
