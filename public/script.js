@@ -1219,7 +1219,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     return entities;
 }
 
-export async function getOneCharacter(avatarUrl) {
+export async function getOneCharacter(avatarUrl, allowCreate = false) {
     const response = await fetch('/api/characters/get', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1237,10 +1237,18 @@ export async function getOneCharacter(avatarUrl) {
 
         if (indexOf !== -1) {
             characters[indexOf] = getData;
+        } else if (allowCreate) {
+            characters.push(getData);
+            await getGroups();
+            await printCharacters(true);
         } else {
             toastr.error(t`Character ${avatarUrl} not found in the list`, t`Error`, { timeOut: 5000, preventDuplicates: true });
         }
+
+        return getData;
     }
+
+    return null;
 }
 
 export function getCharacterSource(chId = this_chid) {
@@ -10446,23 +10454,23 @@ export async function processDroppedFiles(files, data = new Map()) {
         'byaf',
     ];
 
-    const avatarFileNames = [];
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
         if (allowedMimeTypes.some(x => file.type.startsWith(x)) || allowedExtensions.includes(extension)) {
             const preservedName = data instanceof Map && data.get(file);
             const avatarFileName = await importCharacter(file, { preserveFileName: preservedName });
             if (avatarFileName !== undefined) {
-                avatarFileNames.push(avatarFileName);
+                const charData = await getOneCharacter(avatarFileName, true);
+                if (charData) {
+                    if (power_user.tag_import_setting !== tag_import_setting.NONE) {
+                        await importTags(charData);
+                    }
+                    selectImportedChar(avatarFileName);
+                }
             }
         } else {
             toastr.warning(t`Unsupported file type: ` + file.name);
         }
-    }
-
-    if (avatarFileNames.length > 0) {
-        await importCharactersTags(avatarFileNames);
-        selectImportedChar(avatarFileNames[avatarFileNames.length - 1]);
     }
 }
 
@@ -11983,17 +11991,17 @@ jQuery(async function () {
             return;
         }
 
-        const avatarFileNames = [];
         for (const file of e.target.files) {
             const avatarFileName = await importCharacter(file);
             if (avatarFileName !== undefined) {
-                avatarFileNames.push(avatarFileName);
+                const charData = await getOneCharacter(avatarFileName, true);
+                if (charData) {
+                    if (power_user.tag_import_setting !== tag_import_setting.NONE) {
+                        await importTags(charData);
+                    }
+                    selectImportedChar(avatarFileName);
+                }
             }
-        }
-
-        if (avatarFileNames.length > 0) {
-            await importCharactersTags(avatarFileNames);
-            selectImportedChar(avatarFileNames[avatarFileNames.length - 1]);
         }
 
         // Clear the file input value to allow re-uploading the same file
