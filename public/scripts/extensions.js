@@ -51,6 +51,12 @@ const sortManifestsByName = (a, b) => String(a.display_name).localeCompare(Strin
 let connectedToApi = false;
 
 /**
+ * Extension triggers - Used in worldinfo generation
+ * @type {Record<string, string>}
+ */
+const extensionTriggers = {};
+
+/**
  * Holds manifest data for each extension.
  * @type {Record<string, object>}
  */
@@ -2288,6 +2294,63 @@ export function getAuthorFromUrl(url) {
     }
 
     return result;
+}
+
+export function addExtensionTrigger(trigger, displayName) {
+    if (!trigger || !displayName)
+        return false;
+    if (trigger in extensionTriggers)
+        return false;
+    extensionTriggers[trigger] = displayName;
+    refreshTriggers();
+    return true;
+}
+
+export function removeExtensionTrigger(trigger) {
+    if (!trigger)
+        return false;
+    if (!(trigger in extensionTriggers))
+        return false;
+    delete extensionTriggers[trigger];
+    refreshTriggers();
+    return true;
+}
+
+function refreshTriggers() {
+    const $entryEditTemplate = $('#entry_edit_template');
+    const $triggers = $entryEditTemplate.find('select[name="triggers"]');
+
+    const currentValues = $triggers.val() || [];
+
+    $triggers.find('.dynamic-option').remove();
+
+    Object.entries(extensionTriggers).forEach(([value, displayName]) => {
+        $('<option>', {
+            value: value,
+            text: displayName,
+            'data-i18n': displayName,
+            class: 'dynamic-option'
+        }).appendTo($triggers);
+    });
+
+    const builtInValues = $triggers.find('option').not('.dynamic-option').map((_, el) => $(el).val()).get();
+    currentValues.forEach(val => {
+        if (!builtInValues.includes(val) && !(val in extensionTriggers)) {
+            $('<option>', {
+                value: val,
+                text: `${val} (Unloaded Extension)`,
+                class: 'dynamic-option orphan-trigger',
+                disabled: true // Keeps it visible/saved, but stops re-selection
+            }).appendTo($triggers);
+        }
+    });
+
+    $triggers.val(currentValues);
+
+    // sentinel for changing if entry is loaded
+    if ($triggers.data('select2')) {
+        $triggers.trigger('change');
+    }
 }
 
 export async function initExtensions() {

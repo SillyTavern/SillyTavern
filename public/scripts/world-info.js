@@ -3828,6 +3828,20 @@ export async function getWorldEntry(name, data, entry) {
 
         // Generation Type Triggers
         const generationTypeTriggers = editTemplate.find('select[name="triggers"]');
+
+        // Preserve extension triggers for unloaded extensions
+        const builtInValues = generationTypeTriggers.find('option').map((_, el) => $(el).val()).get();
+        const savedTriggers = Array.isArray(entry.triggers) ? entry.triggers : [];
+        savedTriggers.forEach(val => {
+            if (!builtInValues.includes(val) && !(val in extensionTriggers)) {
+                $('<option>', {
+                    value: val,
+                    text: `${val} (Missing Extension)`,
+                    class: 'dynamic-option'
+                }).appendTo(generationTypeTriggers);
+            }
+        });
+
         generationTypeTriggers.data('uid', entry.uid);
         generationTypeTriggers.on('input', async function (_, { noSave = false } = {}) {
             const uid = $(this).data('uid');
@@ -3845,7 +3859,7 @@ export async function getWorldEntry(name, data, entry) {
             });
         }
         generationTypeTriggers
-            .val(Array.isArray(entry.triggers) ? entry.triggers : [])
+            .val(savedTriggers)
             .trigger('input', { noSave: true })
             .trigger('change');
 
