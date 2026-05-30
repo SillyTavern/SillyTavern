@@ -34,6 +34,7 @@ const isAndroid = process.platform === 'android';
 // Use shallow character data for the character list
 const useShallowCharacters = !!getConfigValue('performance.lazyLoadCharacters', false, 'boolean');
 const useDiskCache = !!getConfigValue('performance.useDiskCache', true, 'boolean');
+const characterListConcurrency = Number(getConfigValue('performance.characterListConcurrency', 0, 'number'));
 
 class DiskCache {
     /**
@@ -1462,16 +1463,94 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
  * @return {void}
  */
 router.post('/all', async function (request, response) {
+    let keepAlive = null;
     try {
         const files = fs.readdirSync(request.user.directories.characters);
         const pngFiles = files.filter(file => file.endsWith('.png'));
-        const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
-        const data = (await Promise.all(processingPromises)).filter(c => c.name);
-        return response.send(data);
+
+        if (characterListConcurrency < 1 || pngFiles.length <= characterListConcurrency) {
+            const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
+            const data = (await Promise.all(processingPromises)).filter(c => c.name);
+            return response.send(data);
+        }
+
+        response.writeHead(200, { 'Content-Type': 'application/json', 'Transfer-Encoding': 'chunked' });
+
+        // Stream JSON array incrementally: start array, process files in batches, end array.
+        // This reduces TTFB and peak memory usage by avoiding buffering all results.
+        // Flush once per batch to push data past the compression middleware.
+        const flush = () => typeof response.flush === 'function' && response.flush();
+
+        response.write('[\n');
+        flush();
+
+        // Avoid failures due to network timeouts
+        keepAlive = setInterval(() => {
+            response.write('\n');
+            flush();
+        }, 1000 * 30);
+
+        let firstItem = true;
+
+        for (let i = 0; i < pngFiles.length; i += characterListConcurrency) {
+            if (request.socket.destroyed || request.socket.closed) {
+                console.error('Client disconnected while processing characters');
+                break;
+            }
+
+            const batch = pngFiles.slice(i, i + characterListConcurrency);
+            const results = await Promise.allSettled(
+                batch.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters })),
+            );
+
+            for (const result of results) {
+                if (result.status === 'rejected') {
+                    console.error('Failed to process character:', result.reason);
+                    continue;
+                }
+
+                const char = result.value;
+
+                if (!char?.name) {
+                    continue;
+                }
+
+                if (firstItem) {
+                    firstItem = false;
+                } else {
+                    response.write(',\n');
+                }
+
+                response.write(JSON.stringify(char));
+            }
+
+            // Flush after each batch so the client receives data progressively
+            flush();
+        }
+
+        clearInterval(keepAlive);
+        keepAlive = null;
+
+        response.write('\n]');
+        response.end();
     } catch (err) {
         console.error(err);
         const isRangeError = err instanceof RangeError;
-        response.status(500).send({ overflow: isRangeError, error: true });
+
+        if (!response.headersSent) {
+            response.status(500).send({ overflow: isRangeError, error: true });
+            return;
+        }
+
+        try {
+            response.write('\n]');
+            response.end();
+        } catch {
+            // Response may already be closed
+        }
+    } finally {
+        if (keepAlive)
+            clearInterval(keepAlive);
     }
 });
 
