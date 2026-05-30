@@ -9,6 +9,7 @@ import {
     is_send_press,
     isStreamingEnabled,
     substituteParamsExtended,
+    updateMessageBlock,
 } from '../script.js';
 import { debounce, delay, getStringHash } from './utils.js';
 import { decodeTextTokens, getTokenizerBestMatch } from './tokenizers.js';
@@ -315,9 +316,17 @@ function checkGenerateReady() {
  */
 function addGeneration(prompt) {
     const messageId = chat.length - 1;
+    const msg = chat[messageId];
+    
     if (prompt && prompt.length > 0) {
         createSwipe(messageId, prompt);
-        $('.swipe_right:last').trigger('click');
+        
+        if (msg.is_user) {
+            updateMessageBlock(messageId, msg);
+        } else{
+            $('.swipe_right:last').trigger('click');
+        }
+        
         void Generate('continue');
     } else {
         $('.swipe_right:last').trigger('click');
@@ -424,6 +433,17 @@ function createSwipe(messageId, prompt) {
         gen_finished: msg.gen_finished,
         extra: { ...structuredClone(msg.extra), from_logprobs: new Date().getTime() },
     };
+
+    // User messages cannot be swiped, so we have to just edit the message.
+    if (msg.is_user) {
+        if (shouldRerollReasoning) {
+            newSwipeInfo.extra.reasoning = cleanedPrompt;
+            msg.mes = '';
+        } else {
+            msg.mes = cleanedPrompt;
+        }
+        return;
+    }
 
     msg.swipes = msg.swipes || [];
     msg.swipe_info = msg.swipe_info || [];
