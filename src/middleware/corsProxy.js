@@ -34,6 +34,11 @@ export default async function corsProxyMiddleware(req, res) {
             body: bodyMethods.includes(req.method) ? JSON.stringify(req.body) : undefined,
         });
 
+        const contentType = response.headers.get('content-type');
+        if (contentType) {
+            res.setHeader('Content-Type', contentType);
+        }
+
         // Copy over relevant response params to the proxy response
         await forwardFetchResponse(response, res);
     } catch (error) {
