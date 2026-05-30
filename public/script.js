@@ -10868,8 +10868,9 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
 
         await eventSource.emit(event_types.CHARACTER_DELETED, { id: chid, character: character });
         deleted = true;
-    }
 
+        characters.splice(chid, 1);
+    }
     await removeCharacterFromUI();
     return deleted;
 }
@@ -10878,7 +10879,7 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
  * Function to delete a character from UI after character deletion API success.
  * It manages necessary UI changes such as closing advanced editing popup, unsetting
  * character ID, resetting characters array and chat metadata, deselecting character's tab
- * panel, removing character name from navigation tabs, clearing chat, fetching updated list of characters.
+ * panel, removing character name from navigation tabs, clearing chat, reloading character list.
  * It also ensures to save the settings after all the operations.
  */
 async function removeCharacterFromUI() {
@@ -10888,7 +10889,8 @@ async function removeCharacterFromUI() {
     resetChatState();
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     restoreNeutralChat();
-    await getCharacters();
+    await getGroups();
+    await printCharacters(true);
     await printMessages();
     saveSettingsDebounced();
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
