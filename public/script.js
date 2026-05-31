@@ -7070,7 +7070,7 @@ export function deactivateSendButtons() {
     document.body.dataset.generating = 'true';
 }
 
-export function resetChatState() {
+export function resetChatState(clearCharacters = true) {
     // replaces deleted charcter name with system user since it will be displayed next.
     name2 = (this_chid === undefined && neutralCharacterName) ? neutralCharacterName : systemUserName;
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
@@ -7079,8 +7079,10 @@ export function resetChatState() {
     chat.splice(0, chat.length, ...SAFETY_CHAT);
     // resets chat metadata
     chat_metadata = {};
-    // resets the characters array, forcing getcharacters to reset
-    characters.length = 0;
+    if (clearCharacters) {
+        // resets the characters array, forcing getcharacters to reset
+        characters.length = 0;
+    }
 }
 
 /**
@@ -10886,7 +10888,7 @@ async function removeCharacterFromUI() {
     preserveNeutralChat();
     await clearChat();
     $('#character_cross').trigger('click');
-    resetChatState();
+    resetChatState(false);
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     restoreNeutralChat();
     await getGroups();
