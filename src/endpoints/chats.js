@@ -10,6 +10,13 @@ import _ from 'lodash';
 
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
 import {
+    CHAT_SEARCH_FILE_CONCURRENCY,
+    getChatSearchFragments,
+    getPreviewMessage,
+    getChatSearchResult,
+    mapAsyncLimited,
+} from '../chat-search.js';
+import {
     getConfigValue,
     humanizedDateTime,
     tryParse,
@@ -75,23 +82,6 @@ function getBackupFunction(handle) {
         backupFunctions.set(handle, _.throttle(backupChat, throttleInterval, { leading: true, trailing: true }));
     }
     return backupFunctions.get(handle) || (() => { });
-}
-
-/**
- * Gets a preview message from a chat message string.
- * @param {string} [lastMessage] - The message to truncate
- * @returns {string} A truncated preview of the last message or empty string if no messages
- */
-function getPreviewMessage(lastMessage) {
-    const strlen = 400;
-
-    if (!lastMessage) {
-        return '';
-    }
-
-    return lastMessage.length > strlen
-        ? '...' + lastMessage.substring(lastMessage.length - strlen)
-        : lastMessage;
 }
 
 process.on('exit', () => {
@@ -930,21 +920,46 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
          * @property {string} [preview_message] - A preview of the last message
          */
         const results = [];
+        const fragments = getChatSearchFragments(query);
 
-        /** @type {string[]} */
-        const fragments = query ? query.trim().toLowerCase().split(/\s+/).filter(x => x) : [];
+        if (fragments.length === 0) {
+            const chatInfoResults = await mapAsyncLimited(
+                chatFiles,
+                CHAT_SEARCH_FILE_CONCURRENCY,
+                chatFile => getChatSearchResult(chatFile),
+            );
+
+            for (const chatInfoResult of chatInfoResults) {
+                if (chatInfoResult.status === 'rejected') {
+                    console.warn('Failed to read chat search metadata:', chatInfoResult.reason);
+                    continue;
+                }
+
+                const chatInfo = chatInfoResult.value;
+
+                if (!chatInfo.valid) {
+                    continue;
+                }
+
+                results.push({
+                    file_name: chatInfo.file_name,
+                    file_size: chatInfo.file_size,
+                    message_count: chatInfo.message_count,
+                    last_mes: chatInfo.last_mes,
+                    preview_message: chatInfo.preview_message,
+                });
+            }
+
+            return response.send(results);
+        }
 
         /** @type {ChatMatchFunction} */
         const hasTextMatch = (textArray) => {
-            if (fragments.length === 0) {
-                return true;
-            }
             return fragments.every(fragment => textArray.some(text => String(text ?? '').toLowerCase().includes(fragment)));
         };
 
         for (const chatFile of chatFiles) {
-            const matcher = query ? hasTextMatch : null;
-            const chatInfo = await getChatInfo(chatFile, {}, false, matcher);
+            const chatInfo = await getChatInfo(chatFile, {}, false, hasTextMatch);
             const hasMatch = chatInfo.match || hasTextMatch([chatInfo.file_id ?? '']);
 
             // Skip corrupted or invalid chat files
@@ -953,12 +968,12 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             }
 
             // Empty chats without a file name match are skipped when searching with a query
-            if (query && chatInfo.chat_items === 0 && !hasMatch) {
+            if (chatInfo.chat_items === 0 && !hasMatch) {
                 continue;
             }
 
-            // If no search query or a match was found, include the chat in results
-            if (!query || hasMatch) {
+            // If a match was found, include the chat in results
+            if (hasMatch) {
                 results.push({
                     file_name: chatInfo.file_id,
                     file_size: chatInfo.file_size,
