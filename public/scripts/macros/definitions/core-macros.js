@@ -278,6 +278,53 @@ export function registerCoreMacros() {
         handler: ({ unnamedArgs: [value] }) => Array.from(value).reverse().join(''),
     });
 
+    MacroRegistry.registerMacro('uppercase', {
+        category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'value',
+                type: MacroValueType.STRING,
+                description: 'The string to uppercase.',
+            },
+        ],
+        description: 'Uppercases the characters of the argument provided.',
+        returns: 'Uppercased string.',
+        exampleUsage: ['{{uppercase::I am Lana}}'],
+        handler: ({ unnamedArgs: [value] }) => value.toUpperCase(),
+    });
+
+    MacroRegistry.registerMacro('lowercase', {
+        category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'value',
+                type: MacroValueType.STRING,
+                description: 'The string to lowercase.',
+            },
+        ],
+        description: 'Lowercases the characters of the argument provided.',
+        returns: 'Lowercased string.',
+        exampleUsage: ['{{lowercase::I am Lana}}'], // => "i am lana"`
+        handler: ({ unnamedArgs: [value] }) => value.toLowerCase(),
+    });
+
+    MacroRegistry.registerMacro('titlecase', {
+        category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'value',
+                type: MacroValueType.STRING,
+                description: 'The string to titlecase.',
+            },
+        ],
+        description: 'Uppercases the first character of each word the characters of the argument provided.',
+        returns: 'Titlecased string.',
+        exampleUsage: ['{{titlecase::some TEXT}}'], // => "Some Text"
+        handler: ({ unnamedArgs: [value] }) => value.replace(/\w\S*/g, text => {
+            return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+        }),
+    });
+
     // Comment macro: {{// ...}} -> '' (consumes any arguments)
     MacroRegistry.registerMacro('//', {
         aliases: [{ alias: 'comment', visible: false }],
