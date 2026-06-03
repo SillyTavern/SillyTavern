@@ -1239,7 +1239,6 @@ export async function getOneCharacter(avatarUrl, allowCreate = false) {
             characters[indexOf] = getData;
         } else if (allowCreate) {
             characters.push(getData);
-            await getGroups();
             await printCharacters(true);
         } else {
             toastr.error(t`Character ${avatarUrl} not found in the list`, t`Error`, { timeOut: 5000, preventDuplicates: true });
@@ -6057,7 +6056,14 @@ export async function duplicateCharacter({ avatar = null, silent = false } = {})
     toastr.success(t`Character Duplicated`);
     const data = await response.json();
     await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: targetAvatar, newAvatar: data.path });
-    await getCharacters();
+
+    const newCharData = await getOneCharacter(data.path);
+    if (newCharData) {
+        characters.push(newCharData);
+        await printCharacters(true);
+    } else {
+        await getCharacters();
+    }
 
     return data.path;
 }
@@ -9838,7 +9844,15 @@ export async function createOrEditCharacter(e) {
 
             console.log(`new avatar id: ${avatarId}`);
             createTagMapFromList('#tagList', avatarId);
-            await getCharacters();
+
+            const fileName = getCharaFilename(null, { manualAvatarKey: avatarId });
+            const charData = await getOneCharacter(fileName);
+            if (charData) {
+                characters.push(charData);
+                await printCharacters(true);
+            } else {
+                await getCharacters();
+            }
 
             select_rm_info('char_create', avatarId, oldSelectedChar);
 
@@ -10891,7 +10905,6 @@ async function removeCharacterFromUI() {
     resetChatState(false);
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     restoreNeutralChat();
-    await getGroups();
     await printCharacters(true);
     await printMessages();
     saveSettingsDebounced();
