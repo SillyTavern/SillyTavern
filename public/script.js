@@ -6057,11 +6057,8 @@ export async function duplicateCharacter({ avatar = null, silent = false } = {})
     const data = await response.json();
     await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: targetAvatar, newAvatar: data.path });
 
-    const newCharData = await getOneCharacter(data.path);
-    if (newCharData) {
-        characters.push(newCharData);
-        await printCharacters(true);
-    } else {
+    const charData = await getOneCharacter(data.path, true);
+    if (charData == null) {
         await getCharacters();
     }
 
@@ -9845,12 +9842,8 @@ export async function createOrEditCharacter(e) {
             console.log(`new avatar id: ${avatarId}`);
             createTagMapFromList('#tagList', avatarId);
 
-            const fileName = getCharaFilename(null, { manualAvatarKey: avatarId });
-            const charData = await getOneCharacter(fileName);
-            if (charData) {
-                characters.push(charData);
-                await printCharacters(true);
-            } else {
+            const charData = await getOneCharacter(avatarId, true);
+            if (charData == null) {
                 await getCharacters();
             }
 
