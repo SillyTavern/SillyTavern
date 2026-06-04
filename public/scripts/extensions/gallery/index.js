@@ -6,11 +6,18 @@ import {
     event_types,
     animation_duration,
     animation_easing,
+    chat,
+    addOneMessage,
+    saveChatConditional,
+    name1,
+    user_avatar,
+    getThumbnailUrl,
+    scrollOnMediaLoad,
 } from '../../../script.js';
 import { groups, selected_group } from '../../group-chats.js';
 import { loadFileToDocument, delay, getBase64Async, getSanitizedFilename, saveBase64AsFile, getFileExtension, getVideoThumbnail, clamp } from '../../utils.js';
-import { loadMovingUIState } from '../../power-user.js';
-import { dragElement } from '../../RossAscends-mods.js';
+import { loadMovingUIState, power_user } from '../../power-user.js';
+import { dragElement, getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
@@ -19,7 +26,7 @@ import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnum
 import { t, translate } from '../../i18n.js';
 import { Popup } from '../../popup.js';
 import { deleteMediaFromServer } from '../../chats.js';
-import { MEDIA_REQUEST_TYPE, VIDEO_EXTENSIONS } from '../../constants.js';
+import { MEDIA_REQUEST_TYPE, MEDIA_SOURCE, MEDIA_TYPE, VIDEO_EXTENSIONS } from '../../constants.js';
 
 const isVideo = (/** @type {string} */ url) => VIDEO_EXTENSIONS.some(ext => new RegExp(`.${ext}$`, 'i').test(url));
 const extensionName = 'gallery';
@@ -675,6 +682,15 @@ function makeDragImg(id, url) {
         if (closeButton) {
             closeButton.id = `${uniqueId}close`;
             closeButton.dataset.relatedId = uniqueId;
+
+            // Add an "Insert into chat" button next to the close button so the
+            // image can be dropped back into the chat without re-uploading it.
+            const insertButton = document.createElement('div');
+            insertButton.classList.add('fa-fw', 'fa-solid', 'fa-comment-medical', 'dragInsertToChat', 'interactable');
+            insertButton.tabIndex = 0;
+            insertButton.title = t`Insert into chat`;
+            insertButton.addEventListener('click', () => insertImageToChat(url));
+            closeButton.parentElement?.insertBefore(insertButton, closeButton);
         }
 
         // Find the .drag-grabber and set its matching unique ID
@@ -719,6 +735,58 @@ function sanitizeHTMLId(id) {
         .replace(/\W/g, '');
 
     return id;
+}
+
+/**
+ * Inserts an existing gallery image (or video) into the current chat as a new user
+ * message, reusing the already-uploaded file instead of uploading a fresh copy.
+ *
+ * This lets users drop previously uploaded images from the gallery straight back into
+ * the chat without creating duplicate files in the gallery folder.
+ *
+ * @param {string} url - The URL of the gallery media to insert (e.g. user/images/Folder/file.png).
+ * @returns {Promise<void>} - Promise representing the completion of the message insertion.
+ */
+async function insertImageToChat(url) {
+    if (this_chid === undefined && !selected_group) {
+        toastr.warning(t`Select a character or group chat first.`);
+        return;
+    }
+
+    const mediaType = isVideo(url) ? MEDIA_TYPE.VIDEO : MEDIA_TYPE.IMAGE;
+    const title = url.substring(url.lastIndexOf('/') + 1);
+
+    const message = {
+        name: name1,
+        is_user: true,
+        is_system: false,
+        send_date: getMessageTimeStamp(),
+        mes: '',
+        extra: {
+            media: [{
+                url: url,
+                type: mediaType,
+                title: title,
+                source: MEDIA_SOURCE.UPLOAD,
+            }],
+            media_index: 0,
+            inline_image: true,
+        },
+    };
+
+    // Lock user avatar to a persona, mirroring sendMessageAsUser.
+    if (user_avatar in power_user.personas) {
+        message.force_avatar = getThumbnailUrl('persona', user_avatar);
+    }
+
+    chat.push(message);
+    const chatId = chat.length - 1;
+    await eventSource.emit(event_types.MESSAGE_SENT, chatId);
+    addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chatId);
+    await saveChatConditional();
+    scrollOnMediaLoad();
+    toastr.success(t`Image added to chat.`);
 }
 
 /**
