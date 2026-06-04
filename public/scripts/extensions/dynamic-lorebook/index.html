@@ -1,0 +1,134 @@
+<div class="dlm-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Dynamic Lorebook Manager</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+
+            <!-- Master toggle -->
+            <div class="dlm-row">
+                <label class="checkbox_label">
+                    <input type="checkbox" id="dlm-enabled" />
+                    <span>Enable Dynamic Lorebook Manager</span>
+                </label>
+            </div>
+
+            <!-- API warning (hidden by default) -->
+            <div id="dlm-api-warning" class="dlm-warning" style="display:none;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                The current API type is not supported for analysis. Switch to an OpenAI-compatible or text-completion backend.
+            </div>
+
+            <!-- Update mode -->
+            <div class="dlm-row">
+                <label for="dlm-update-mode">Update Mode</label>
+                <select id="dlm-update-mode" class="text_pole">
+                    <option value="manual">Manual — trigger analysis by right-clicking a message</option>
+                    <option value="auto-suggest">Auto-Suggest — analyze after every AI response</option>
+                    <option value="auto-approve">Auto-Approve — apply high-confidence updates automatically</option>
+                </select>
+            </div>
+
+            <!-- Aggressiveness -->
+            <div class="dlm-row">
+                <label>Aggressiveness</label>
+                <div class="dlm-radio-group">
+                    <label class="radio_label">
+                        <input type="radio" name="dlm-aggressiveness" value="conservative" />
+                        Conservative
+                    </label>
+                    <label class="radio_label">
+                        <input type="radio" name="dlm-aggressiveness" value="balanced" />
+                        Balanced
+                    </label>
+                    <label class="radio_label">
+                        <input type="radio" name="dlm-aggressiveness" value="aggressive" />
+                        Aggressive
+                    </label>
+                </div>
+                <small class="dlm-help">Conservative: expansions only · Balanced: expansions + corrections · Aggressive: all types</small>
+            </div>
+
+            <!-- Confidence threshold -->
+            <div class="dlm-row">
+                <label for="dlm-min-confidence">
+                    Minimum Confidence: <span id="dlm-confidence-value">70%</span>
+                </label>
+                <input type="range" id="dlm-min-confidence" min="0" max="100" value="70" />
+            </div>
+
+            <!-- Update fields -->
+            <div class="dlm-row">
+                <label>Update Fields</label>
+                <div class="dlm-checkbox-group">
+                    <label class="checkbox_label">
+                        <input type="checkbox" name="dlm-update-fields" value="content" />
+                        Entry Content
+                    </label>
+                    <label class="checkbox_label">
+                        <input type="checkbox" name="dlm-update-fields" value="keywords" />
+                        Keywords
+                    </label>
+                </div>
+            </div>
+
+            <!-- Advanced (collapsible) -->
+            <details class="dlm-advanced">
+                <summary>Advanced Settings</summary>
+
+                <div class="dlm-row">
+                    <label for="dlm-analysis-delay">
+                        Analysis Delay (ms): <span id="dlm-delay-value">2000</span>
+                    </label>
+                    <input type="range" id="dlm-analysis-delay" min="0" max="10000" step="500" value="2000" />
+                    <small class="dlm-help">Wait time after a message before running analysis (avoids hammering the API on swipes)</small>
+                </div>
+
+                <div class="dlm-row">
+                    <label for="dlm-history-size">History Size</label>
+                    <input type="number" id="dlm-history-size" class="text_pole" min="10" max="200" step="10" value="50" />
+                    <small class="dlm-help">Number of updates to keep for undo/redo</small>
+                </div>
+
+                <div class="dlm-row">
+                    <label class="checkbox_label">
+                        <input type="checkbox" id="dlm-debug-mode" />
+                        Debug Mode (log prompts and responses to console)
+                    </label>
+                </div>
+
+                <div class="dlm-row">
+                    <label for="dlm-analysis-profile">Analysis Connection</label>
+                    <select id="dlm-analysis-profile" class="text_pole">
+                        <option value="">Use current chat API</option>
+                    </select>
+                    <small class="dlm-help">Use a specific connection profile for lorebook analysis — independent of the chat connection. Requires the Connection Manager extension.</small>
+                </div>
+            </details>
+
+            <!-- Status widget -->
+            <div class="dlm-status-widget" id="dlm-status-widget">
+                <div class="dlm-status-row">
+                    <span id="dlm-pending-badge" class="dlm-badge dlm-badge-info" style="display:none;">
+                        <i class="fa-solid fa-wand-sparkles"></i>
+                        <span id="dlm-pending-count">0</span> suggestion(s) pending
+                    </span>
+                    <span id="dlm-last-update" class="dlm-muted"></span>
+                </div>
+                <div class="dlm-status-actions">
+                    <div id="dlm-review-btn" class="menu_button" style="display:none;">
+                        <i class="fa-solid fa-list-check"></i> Review
+                    </div>
+                    <div id="dlm-history-btn" class="menu_button">
+                        <i class="fa-solid fa-clock-rotate-left"></i> History
+                    </div>
+                    <div id="dlm-undo-btn" class="menu_button" disabled>
+                        <i class="fa-solid fa-rotate-left"></i> Undo
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
