@@ -11,7 +11,7 @@ import {
     lodash,
 } from './lib.js';
 
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, shouldAutoFocusSendTextarea, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -7644,6 +7644,9 @@ export async function getChat() {
 
         // Focus on the textarea if not already focused on a visible text input
         delay(debounce_timeout.short).then(() => {
+            if (!shouldAutoFocusSendTextarea()) {
+                return;
+            }
             if ($(document.activeElement).is('input:visible, textarea:visible')) {
                 return;
             }
@@ -11085,7 +11088,7 @@ jQuery(async function () {
         S_TAPreviouslyFocused = true;
     });
     $('#send_but, #option_regenerate, #option_continue, #mes_continue, #mes_impersonate').on('click', () => {
-        if (S_TAPreviouslyFocused) {
+        if (S_TAPreviouslyFocused && shouldAutoFocusSendTextarea()) {
             $('#send_textarea').trigger('focus');
         }
     });
@@ -12301,13 +12304,17 @@ jQuery(async function () {
             const isEditVisible = $('#curEditTextarea').is(':visible') || $('.reasoning_edit_textarea').length > 0;
             if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor('all');
-                $('#send_textarea').trigger('focus');
+                if (shouldAutoFocusSendTextarea()) {
+                    $('#send_textarea').trigger('focus');
+                }
                 return;
             }
             if (isEditVisible && power_user.auto_save_msg_edits === true) {
                 chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).trigger('click');
                 closeMessageEditor('reasoning');
-                $('#send_textarea').trigger('focus');
+                if (shouldAutoFocusSendTextarea()) {
+                    $('#send_textarea').trigger('focus');
+                }
                 return;
             }
             if (this_edit_mes_id === undefined && $('#mes_stop').is(':visible')) {
