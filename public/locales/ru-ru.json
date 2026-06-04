@@ -2003,6 +2003,8 @@
     "prompt_post_processing_merge": "Объединять идущие подряд сообщения с одной ролью",
     "prompt_post_processing_semi": "Semi-strict (чередовать роли)",
     "prompt_post_processing_strict": "Strict (чередовать роли, сначала пользователь)",
+    "prompt_post_processing_strict_trailing": "Strict (чередовать роли, сначала и в конце пользователь)",
+    "prompt_post_processing_strict_trailing_tools": "Strict (чередовать роли, сначала и в конце пользователь; функции включены)",
     "Select Horde models": "Выберите модель из Horde",
     "Model ID (optional)": "Идентификатор модели (необязательно)",
     "Derive context size from backend": "Использовать бэкенд для определения размера контекста",

@@ -613,8 +613,8 @@ export class ToolManager {
         }
 
         // Post-processing will forcefully remove past tool calls from the prompt, making them useless
-        const { NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS } = custom_prompt_post_processing_types;
-        const allowedPromptPostProcessing = [NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS];
+        const { NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS, STRICT_TRAILING_TOOLS } = custom_prompt_post_processing_types;
+        const allowedPromptPostProcessing = [NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS, STRICT_TRAILING_TOOLS];
         if (!allowedPromptPostProcessing.includes(settings.custom_prompt_post_processing)) {
             return false;
         }

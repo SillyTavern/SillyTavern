@@ -22,6 +22,8 @@ export const PROMPT_PROCESSING_TYPE = {
     SEMI_TOOLS: 'semi_tools',
     STRICT: 'strict',
     STRICT_TOOLS: 'strict_tools',
+    STRICT_TRAILING: 'strict_trailing',
+    STRICT_TRAILING_TOOLS: 'strict_trailing_tools',
     SINGLE: 'single',
 };
 
@@ -97,6 +99,10 @@ export function postProcessPrompt(messages, type, names) {
             return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: false });
         case PROMPT_PROCESSING_TYPE.STRICT_TOOLS:
             return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: true });
+        case PROMPT_PROCESSING_TYPE.STRICT_TRAILING:
+            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: false, trailingUser: true });
+        case PROMPT_PROCESSING_TYPE.STRICT_TRAILING_TOOLS:
+            return mergeMessages(messages, names, { strict: true, placeholders: true, single: false, tools: true, trailingUser: true });
         case PROMPT_PROCESSING_TYPE.SINGLE:
             return mergeMessages(messages, names, { strict: true, placeholders: false, single: true, tools: false });
         default:
@@ -818,9 +824,10 @@ export function convertXAIMessages(messages, names) {
  * @param {boolean} [options.placeholders] Add user placeholders to the messages in strict mode
  * @param {boolean} [options.single] Force every role to be user, merging all messages into one
  * @param {boolean} [options.tools] Allow tool calls in the prompt. If false, tool call messages are removed.
+ * @param {boolean} [options.trailingUser] Ensure the last message is a user message, appending a placeholder if needed.
  * @returns {any[]} Merged messages
  */
-export function mergeMessages(messages, names, { strict = false, placeholders = false, single = false, tools = false } = {}) {
+export function mergeMessages(messages, names, { strict = false, placeholders = false, single = false, tools = false, trailingUser = false } = {}) {
     let mergedMessages = [];
 
     /** @type {Map<string,object>} */
@@ -943,7 +950,12 @@ export function mergeMessages(messages, names, { strict = false, placeholders = 
                 mergedMessages.unshift({ role: 'user', content: PROMPT_PLACEHOLDER });
             }
         }
-        return mergeMessages(mergedMessages, names, { strict: false, placeholders, single: false, tools });
+        return mergeMessages(mergedMessages, names, { strict: false, placeholders, single: false, tools, trailingUser });
+    }
+
+    // Some providers (e.g. Amazon Bedrock) require the conversation to end with a user turn.
+    if (trailingUser && mergedMessages.length && mergedMessages[mergedMessages.length - 1].role !== 'user') {
+        mergedMessages.push({ role: 'user', content: PROMPT_PLACEHOLDER });
     }
 
     return mergedMessages;
