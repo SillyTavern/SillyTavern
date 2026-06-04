@@ -214,6 +214,15 @@ function resetTtsPlayback() {
     // Stop system TTS utterance
     cancelTtsPlay();
 
+    // Let the provider stop any in-flight generation / streaming playback it manages itself
+    if (typeof ttsProvider?.stop === 'function') {
+        try {
+            ttsProvider.stop();
+        } catch (error) {
+            console.warn('Error stopping TTS provider:', error);
+        }
+    }
+
     // Clear currently processing jobs
     currentTtsJob = null;
     currentAudioJob = null;
