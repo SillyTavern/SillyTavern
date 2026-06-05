@@ -7136,7 +7136,7 @@ export function initOpenAI() {
     }
 
     $('#openrouter_providers_chat').on('change', function () {
-        const selectedProviders = $(this).val();
+        const selectedProviders = Array.from(this.selectedOptions).map(option => option.value);
 
         // Not a multiple select?
         if (!Array.isArray(selectedProviders)) {
