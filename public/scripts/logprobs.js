@@ -426,6 +426,12 @@ function createSwipe(messageId, prompt) {
 
     console.debug('cleanedPrompt: ', cleanedPrompt);
 
+    // User messages cannot be swiped, so we have to just edit the message.
+    if (msg.is_user) {
+        msg.mes = cleanedPrompt;
+        return;
+    }
+
     /** @type {SwipeInfo} */
     const newSwipeInfo = {
         send_date: msg.send_date,
@@ -433,17 +439,6 @@ function createSwipe(messageId, prompt) {
         gen_finished: msg.gen_finished,
         extra: { ...structuredClone(msg.extra), from_logprobs: new Date().getTime() },
     };
-
-    // User messages cannot be swiped, so we have to just edit the message.
-    if (msg.is_user) {
-        if (shouldRerollReasoning) {
-            newSwipeInfo.extra.reasoning = cleanedPrompt;
-            msg.mes = '';
-        } else {
-            msg.mes = cleanedPrompt;
-        }
-        return;
-    }
 
     msg.swipes = msg.swipes || [];
     msg.swipe_info = msg.swipe_info || [];
