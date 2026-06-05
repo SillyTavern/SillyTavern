@@ -12,6 +12,7 @@ import {
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { blurSendTextareaOnMobileGenerationStart } from './scripts/mobile-keyboard.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -731,6 +732,11 @@ async function firstLoadInit() {
     addDOMPurifyHooks();
     reloadMarkdownProcessor();
     applyBrowserFixes();
+    eventSource.on(event_types.GENERATION_STARTED, (generationType, generationOptions, isDryRun) => {
+        blurSendTextareaOnMobileGenerationStart(generationType, generationOptions, isDryRun, {
+            isMobileDevice: isMobile(),
+        });
+    });
     await getClientVersion();
     await initSecrets();
     await readSecretState();
