@@ -11,7 +11,7 @@ import {
     lodash,
 } from './lib.js';
 
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, shouldAutoFocusSendTextarea, initRossMods } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, shouldAutoFocusTextInput, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -7644,7 +7644,7 @@ export async function getChat() {
 
         // Focus on the textarea if not already focused on a visible text input
         delay(debounce_timeout.short).then(() => {
-            if (!shouldAutoFocusSendTextarea()) {
+            if (!shouldAutoFocusTextInput()) {
                 return;
             }
             if ($(document.activeElement).is('input:visible, textarea:visible')) {
@@ -8261,13 +8261,21 @@ export async function messageEdit(editMessageId) {
         $editTextArea.height(editTextArea.scrollHeight);
     }
 
-    $editTextArea.trigger('focus');
+    const shouldAutoFocus = shouldAutoFocusTextInput();
 
-    // Sets the cursor at the end of the text
-    editTextArea.setSelectionRange(text.length, text.length);
+    if (shouldAutoFocus) {
+        $editTextArea.trigger('focus');
+
+        // Sets the cursor at the end of the text
+        editTextArea.setSelectionRange(text.length, text.length);
+    }
 
     if (Number(this_edit_mes_id) === chat.length - 1) {
         chatElement.scrollTop(chatScrollPosition);
+    }
+
+    if (!shouldAutoFocus) {
+        scrollTextareaEndIntoChatView(editTextArea);
     }
 
     updateEditArrowClasses();
@@ -9481,6 +9489,35 @@ export function updateEditArrowClasses() {
     downButton.toggleClass('disabled', lastId === Number(this_edit_mes_id));
     // The first message cannot be moved up.
     upButton.toggleClass('disabled', firstId === Number(this_edit_mes_id));
+}
+
+/**
+ * Scrolls the chat view enough to show the bottom of an element.
+ * @param {HTMLElement} element Element inside the chat view.
+ */
+function scrollElementBottomIntoChatView(element) {
+    const chat = chatElement[0];
+    if (!chat) {
+        return;
+    }
+
+    const elementRect = element.getBoundingClientRect();
+    const chatRect = chat.getBoundingClientRect();
+
+    if (elementRect.bottom > chatRect.bottom) {
+        chat.scrollTop += elementRect.bottom - chatRect.bottom;
+    }
+}
+
+/**
+ * Scrolls a textarea to its content end without focusing it.
+ * @param {HTMLTextAreaElement} textarea Textarea inside the chat view.
+ */
+function scrollTextareaEndIntoChatView(textarea) {
+    requestAnimationFrame(() => {
+        textarea.scrollTop = textarea.scrollHeight;
+        scrollElementBottomIntoChatView(textarea);
+    });
 }
 
 /**
@@ -11088,7 +11125,7 @@ jQuery(async function () {
         S_TAPreviouslyFocused = true;
     });
     $('#send_but, #option_regenerate, #option_continue, #mes_continue, #mes_impersonate').on('click', () => {
-        if (S_TAPreviouslyFocused && shouldAutoFocusSendTextarea()) {
+        if (S_TAPreviouslyFocused && shouldAutoFocusTextInput()) {
             $('#send_textarea').trigger('focus');
         }
     });
@@ -12304,7 +12341,7 @@ jQuery(async function () {
             const isEditVisible = $('#curEditTextarea').is(':visible') || $('.reasoning_edit_textarea').length > 0;
             if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor('all');
-                if (shouldAutoFocusSendTextarea()) {
+                if (shouldAutoFocusTextInput()) {
                     $('#send_textarea').trigger('focus');
                 }
                 return;
@@ -12312,7 +12349,7 @@ jQuery(async function () {
             if (isEditVisible && power_user.auto_save_msg_edits === true) {
                 chatElement.find(`.mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).trigger('click');
                 closeMessageEditor('reasoning');
-                if (shouldAutoFocusSendTextarea()) {
+                if (shouldAutoFocusTextInput()) {
                     $('#send_textarea').trigger('focus');
                 }
                 return;

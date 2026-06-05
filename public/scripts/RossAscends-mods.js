@@ -147,10 +147,10 @@ export function isMobile() {
 }
 
 /**
- * Checks if SillyTavern should automatically return focus to the main chat input.
+ * Checks if SillyTavern should automatically focus text inputs.
  * @returns {boolean} True when automatic focus should run.
  */
-export function shouldAutoFocusSendTextarea() {
+export function shouldAutoFocusTextInput() {
     return !isMobile();
 }
 
@@ -1054,14 +1054,14 @@ export function initRossMods() {
             const reasoningMesDone = $('.mes_reasoning_edit_done:visible');
             if (editMesDone.length > 0) {
                 console.debug('Accepting edits with Ctrl+Enter');
-                if (shouldAutoFocusSendTextarea()) {
+                if (shouldAutoFocusTextInput()) {
                     $('#send_textarea').trigger('focus');
                 }
                 editMesDone.trigger('click');
                 return;
             } else if (reasoningMesDone.length > 0) {
                 console.debug('Accepting edits with Ctrl+Enter');
-                if (shouldAutoFocusSendTextarea()) {
+                if (shouldAutoFocusTextInput()) {
                     $('#send_textarea').trigger('focus');
                 }
                 reasoningMesDone.trigger('click');

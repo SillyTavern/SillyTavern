@@ -9,6 +9,7 @@ import { chat_completion_sources, getChatCompletionModel, oai_settings } from '.
 import { Popup } from './popup.js';
 import { performFuzzySearch, power_user } from './power-user.js';
 import { getPresetManager } from './preset-manager.js';
+import { shouldAutoFocusTextInput } from './RossAscends-mods.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { commonEnumProviders, enumIcons } from './slash-commands/SlashCommandCommonEnumsProvider.js';
@@ -1190,6 +1191,26 @@ function setReasoningEventHandlers() {
         message.extra.reasoning_type = message.extra.reasoning_type ? ReasoningType.Edited : ReasoningType.Manual;
     }
 
+    /**
+     * Scrolls a textarea to its content end without focusing it.
+     * @param {HTMLTextAreaElement} textarea Textarea inside the chat view.
+     * @param {HTMLElement} chatElement Chat container.
+     */
+    function scrollTextareaEndIntoChatView(textarea, chatElement) {
+        requestAnimationFrame(() => {
+            textarea.scrollTop = textarea.scrollHeight;
+
+            const textareaRect = textarea.getBoundingClientRect();
+            const chatRect = chatElement.getBoundingClientRect();
+
+            // Scroll if textarea bottom is below visible area
+            if (textareaRect.bottom > chatRect.bottom) {
+                const scrollOffset = textareaRect.bottom - chatRect.bottom;
+                chatElement.scrollTop += scrollOffset;
+            }
+        });
+    }
+
     $(document).on('click', '.mes_reasoning_details', function (e) {
         if (!e.target.closest('.mes_reasoning_actions') && !e.target.closest('.mes_reasoning_header')) {
             e.preventDefault();
@@ -1248,17 +1269,12 @@ function setReasoningEventHandlers() {
             resetHeight();
         }
 
-        textarea.focus();
-        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-
-        const textareaRect = textarea.getBoundingClientRect();
-        const chatRect = chatElement.getBoundingClientRect();
-
-        // Scroll if textarea bottom is below visible area
-        if (textareaRect.bottom > chatRect.bottom) {
-            const scrollOffset = textareaRect.bottom - chatRect.bottom;
-            chatElement.scrollTop += scrollOffset;
+        if (shouldAutoFocusTextInput()) {
+            textarea.focus();
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
         }
+
+        scrollTextareaEndIntoChatView(textarea, chatElement);
     });
 
     $(document).on('click', '.mes_reasoning_close_all', function (e) {
