@@ -709,19 +709,47 @@ class MiniMaxTtsProvider {
 
     async fetchTtsVoiceObjects() {
         try {
-            if (!secret_state[SECRET_KEYS.MINIMAX] || !secret_state[SECRET_KEYS.MINIMAX_GROUP_ID]) {
-                console.warn('MiniMax TTS: API Key and Group ID required for fetching voices');
-                console.warn('Using all available voices (default + custom). Please check your API credentials');
+            if (!secret_state[SECRET_KEYS.MINIMAX]) {
+                console.warn('MiniMax TTS: API Key required for fetching voices');
                 return this.getAllVoices();
             }
 
-            // MiniMax API doesn't provide a voices listing endpoint
-            // Using all available voices (default + custom)
-            console.info('MiniMax TTS: Using all available voices (default + custom)');
+            const response = await fetch('/api/minimax/get-voices', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    apiHost: this.settings.apiHost || 'https://api.minimax.io',
+                    voiceType: 'all',
+                }),
+            });
+
+            if (!response.ok) {
+                console.warn('MiniMax TTS: Failed to fetch voices from API, using defaults');
+                return this.getAllVoices();
+            }
+
+            const data = await response.json();
+            const apiVoices = [];
+
+            if (data.system_voice) {
+                for (const v of data.system_voice) {
+                    apiVoices.push({
+                        name: v.voice_name || v.voice_id,
+                        voice_id: v.voice_id,
+                        lang: 'zh-CN',
+                        preview_url: null,
+                    });
+                }
+            }
+
+            if (apiVoices.length > 0) {
+                console.info(`MiniMax TTS: Fetched ${apiVoices.length} voices from API`);
+                return [...apiVoices, ...this.settings.customVoices];
+            }
+
             return this.getAllVoices();
         } catch (error) {
             console.error('Error fetching MiniMax voices:', error);
-            console.warn('Using all available voices (default + custom). Please check your API credentials');
             return this.getAllVoices();
         }
     }
