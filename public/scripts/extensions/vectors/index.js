@@ -74,6 +74,7 @@ const settings = {
     chutes_model: 'chutes-qwen-qwen3-embedding-8b',
     nanogpt_model: 'text-embedding-3-small',
     siliconflow_model: 'Qwen/Qwen3-Embedding-0.6B',
+    voyageai_model: 'voyage-4-large',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -990,6 +991,9 @@ function getVectorsRequestBody(args = {}) {
             body.model = extension_settings.vectors.workers_ai_model || '@cf/baai/bge-m3';
             body.workers_ai_account_id = oai_settings.workers_ai_account_id;
             break;
+        case 'voyageai':
+            body.model = extension_settings.vectors.voyageai_model || 'voyage-4-large';
+            break;
         default:
             break;
     }
@@ -1084,7 +1088,8 @@ function throwIfSourceInvalid() {
         settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
         settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE] ||
         settings.source === 'workers_ai' && !secret_state[SECRET_KEYS.WORKERS_AI] ||
-        settings.source === 'siliconflow' && !secret_state[SECRET_KEYS.SILICONFLOW]) {
+        settings.source === 'siliconflow' && !secret_state[SECRET_KEYS.SILICONFLOW] ||
+        settings.source === 'voyageai' && !secret_state[SECRET_KEYS.VOYAGEAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -1304,6 +1309,8 @@ function toggleSettings() {
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
     $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
+    $('#voyageai_vectorsModel').toggle(settings.source === 'voyageai');
+    $('#voyageai_apiKey').toggle(settings.source === 'voyageai');
     $('#webllm_vectorsModel').toggle(settings.source === 'webllm');
     $('#koboldcpp_vectorsModel').toggle(settings.source === 'koboldcpp');
     $('#google_vectorsModel').toggle(settings.source === 'palm' || settings.source === 'vertexai');
@@ -1809,6 +1816,11 @@ export async function init() {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+    $('#vectors_voyageai_model').val(settings.voyageai_model).on('change', () => {
+        settings.voyageai_model = String($('#vectors_voyageai_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
     $('#vectors_openrouter_model').val(settings.openrouter_model).on('change', () => {
         settings.openrouter_model = String($('#vectors_openrouter_model').val());
         Object.assign(extension_settings.vectors, settings);
@@ -2079,6 +2091,14 @@ export async function init() {
         eventSource.on(event, (/** @type {string} */ key) => {
             if (key !== SECRET_KEYS.NOMICAI) return;
             $('#api_key_nomicai').toggleClass('success', !!secret_state[SECRET_KEYS.NOMICAI]);
+        });
+    });
+
+    $('#api_key_voyageai').toggleClass('success', !!secret_state[SECRET_KEYS.VOYAGEAI]);
+    [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach(event => {
+        eventSource.on(event, (/** @type {string} */ key) => {
+            if (key !== SECRET_KEYS.VOYAGEAI) return;
+            $('#api_key_voyageai').toggleClass('success', !!secret_state[SECRET_KEYS.VOYAGEAI]);
         });
     });
 
