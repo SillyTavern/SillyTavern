@@ -420,6 +420,11 @@ router.post('/visit', async (request, response) => {
             if (ipRegex.v4({ exact: true }).test(urlObj.hostname) || ipRegex.v6({ exact: true }).test(urlObj.hostname)) {
                 throw new Error('Invalid hostname');
             }
+
+            // Reject localhost and .localhost domains to prevent SSRF bypass
+            if (urlObj.hostname === 'localhost' || urlObj.hostname.endsWith('.localhost')) {
+                throw new Error('Invalid hostname');
+            }
         } catch (error) {
             console.error('Invalid url provided for /visit', url);
             return response.sendStatus(400);
