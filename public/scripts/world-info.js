@@ -4524,6 +4524,7 @@ export async function getSortedEntries() {
         console.debug(`[WI] Found ${entries.length} world lore entries. Sorted by strategy`, Object.entries(world_info_insertion_strategy).find((x) => x[1] === world_info_character_strategy));
 
         // Need to deep clone the entries to avoid modifying the cached data
+        addMissingWorldInfoFields(entries);
         return structuredClone(entries);
     } catch (e) {
         console.error(e);
