@@ -357,6 +357,10 @@ const defaultSettings = {
     // BFL API settings
     bfl_upsampling: false,
 
+    // MiniMax API settings
+    minimax_optimizer: false,
+    minimax_style_type: '漫画',
+
     // Google settings
     google_api: 'makersuite',
     google_enhance: true,
@@ -3414,6 +3418,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.bfl:
                 result = await generateBflImage(prefixedPrompt, signal);
                 break;
+            case sources.minimax:
+                result = await generateMinimaxImage(prefixedPrompt, signal);
+                break;
             case sources.falai:
                 result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -4507,6 +4514,44 @@ async function generateBflImage(prompt, signal) {
     if (result.ok) {
         const data = await result.json();
         return { format: 'jpg', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image using the MiniMax API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves with the generated image.
+ */
+async function generateMinimaxImage(prompt, signal) {
+    const body = {
+        prompt: prompt,
+        model: extension_settings.sd.model,
+        aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'minimax'),
+        prompt_optimizer: !!extension_settings.sd.minimax_optimizer,
+    };
+
+    if (Number.isInteger(extension_settings.sd.seed) && extension_settings.sd.seed >= 0) {
+        body.seed = extension_settings.sd.seed;
+    }
+
+    if (extension_settings.sd.model === 'image-01-live') {
+        body.style_type = extension_settings.sd.minimax_style_type;
+    }
+
+    const result = await fetch('/api/sd/minimax/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify(body),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: data.format || 'jpeg', data: data.image };
     } else {
         const text = await result.text();
         throw new Error(text);
