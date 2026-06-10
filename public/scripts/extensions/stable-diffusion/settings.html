@@ -53,6 +53,7 @@
                 <option value="google">Google AI</option>
                 <option value="huggingface">HuggingFace Inference API (serverless)</option>
                 <option value="nanogpt">NanoGPT</option>
+                <option value="minimax">MiniMax</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI</option>
                 <option value="openrouter">OpenRouter</option>
@@ -584,6 +585,28 @@
                     <small data-i18n="(-1 for random)">(-1 for random)</small>
                 </label>
                 <input id="sd_seed" type="number" class="text_pole" min="-1" max="9999999999" step="1" />
+            </div>
+
+            <div data-sd-source="minimax" class="marginTop5">
+                <div class="flex-container">
+                    <div id="sd_minimax_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_minimax">
+                        <i class="fa-solid fa-key"></i>
+                        <span data-i18n="Manage API Keys">Manage API Keys</span>
+                    </div>
+                </div>
+                <div class="flex-container marginTopBot5" data-minimax-model="image-01-live">
+                    <label for="sd_minimax_style_type" data-i18n="Style type">Style type</label>
+                    <select id="sd_minimax_style_type" class="text_pole flex1">
+                        <option value="漫画">漫画</option>
+                        <option value="元气">元气</option>
+                        <option value="中世纪">中世纪</option>
+                        <option value="水彩">水彩</option>
+                    </select>
+                </div>
+                <label class="flex1 checkbox_label" for="sd_minimax_optimizer" data-i18n="[title]Let MiniMax optimize the prompt before sending it." title="Let MiniMax optimize the prompt before sending it.">
+                    <input id="sd_minimax_optimizer" type="checkbox" />
+                    <span data-i18n="Enable prompt optimizer">Enable prompt optimizer</span>
+                </label>
             </div>
 
             <hr>
