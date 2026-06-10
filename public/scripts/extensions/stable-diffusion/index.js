@@ -1507,6 +1507,7 @@ async function onModelChange() {
     const selectedModel = $('#sd_model').find(':selected');
     extension_settings.sd.model = selectedModel.val();
     saveSettingsDebounced();
+    toggleMinimaxModelControls();
 
     if (extension_settings.sd.model && extension_settings.sd.source === sources.electronhub) {
         const cachedModel = selectedModel.data('model');
