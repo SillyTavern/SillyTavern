@@ -2189,6 +2189,72 @@ workersai.post('/generate', async (request, response) => {
     }
 });
 
+const minimax = express.Router();
+
+minimax.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+
+        if (!key) {
+            console.warn('MiniMax key not found.');
+            return response.sendStatus(400);
+        }
+
+        /** @type {Record<string, any>} */
+        const body = {
+            model: request.body.model,
+            prompt: request.body.prompt,
+            aspect_ratio: request.body.aspect_ratio,
+            response_format: 'base64',
+            n: 1,
+            prompt_optimizer: !!request.body.prompt_optimizer,
+        };
+
+        if (Number.isInteger(request.body.seed) && request.body.seed >= 0) {
+            body.seed = request.body.seed;
+        }
+
+        if (request.body.model === 'image-01-live' && request.body.style_type) {
+            body.style = {
+                style_type: request.body.style_type,
+                style_weight: 0.8,
+            };
+        }
+
+        console.debug('MiniMax request:', body);
+
+        const result = await fetch('https://api.minimaxi.com/v1/image_generation', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        /** @type {any} */
+        const data = await result.json().catch(() => ({}));
+
+        if (!result.ok || (data?.base_resp && data.base_resp.status_code !== 0)) {
+            const message = data?.base_resp?.status_msg
+                || data?.message
+                || await result.text().catch(() => `HTTP ${result.status}`);
+            console.error('MiniMax error:', message);
+            return response.status(500).json({ error: message });
+        }
+
+        const image = data?.data?.image_base64?.[0];
+        if (!image) {
+            return response.status(500).json({ error: 'MiniMax did not return image data.' });
+        }
+
+        return response.send({ image, format: 'jpeg' });
+    } catch (error) {
+        console.error('MiniMax error:', error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
@@ -2206,3 +2272,4 @@ router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
 router.use('/zai', zai);
 router.use('/workersai', workersai);
+router.use('/minimax', minimax);
