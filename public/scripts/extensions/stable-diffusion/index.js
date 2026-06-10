@@ -5204,6 +5204,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NANOGPT];
         case sources.bfl:
             return secret_state[SECRET_KEYS.BFL];
+        case sources.minimax:
+            return secret_state[SECRET_KEYS.MINIMAX];
         case sources.falai:
             return secret_state[SECRET_KEYS.FALAI];
         case sources.xai:
