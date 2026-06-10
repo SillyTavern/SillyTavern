@@ -88,6 +88,7 @@ const sources = {
     chutes: 'chutes',
     electronhub: 'electronhub',
     nanogpt: 'nanogpt',
+    minimax: 'minimax',
     bfl: 'bfl',
     falai: 'falai',
     xai: 'xai',
@@ -1746,6 +1747,9 @@ async function loadSamplers() {
         case sources.workersai:
             samplers = ['N/A'];
             break;
+        case sources.minimax:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1999,6 +2003,9 @@ async function loadModels() {
         case sources.workersai:
             models = await loadWorkersAIImageModels();
             break;
+        case sources.minimax:
+            models = await loadMinimaxModels();
+            break;
     }
 
     if (extension_settings.sd.source === sources.electronhub) {
@@ -2101,6 +2108,13 @@ async function loadBflModels() {
         { value: 'flux-pro-1.1', text: 'flux-pro-1.1' },
         { value: 'flux-pro', text: 'flux-pro' },
         { value: 'flux-dev', text: 'flux-dev' },
+    ];
+}
+
+async function loadMinimaxModels() {
+    return [
+        { value: 'image-01', text: 'image-01' },
+        { value: 'image-01-live', text: 'image-01-live' },
     ];
 }
 
