@@ -3576,7 +3576,7 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'|'zai'|'xai'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'|'xai'|'minimax'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
@@ -3623,6 +3623,17 @@ function getClosestAspectRatio(width, height, source) {
                     '20:9': 20 / 9,
                     '1:2': 1 / 2,
                     '2:1': 2 / 1,
+                };
+            case 'minimax':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '4:3': 4 / 3,
+                    '3:2': 3 / 2,
+                    '2:3': 2 / 3,
+                    '3:4': 3 / 4,
+                    '9:16': 9 / 16,
+                    '21:9': 21 / 9,
                 };
             default:
                 console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
