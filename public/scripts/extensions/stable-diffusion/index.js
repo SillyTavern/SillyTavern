@@ -464,6 +464,17 @@ function toggleSourceControls() {
     });
 }
 
+function toggleMinimaxModelControls() {
+    const currentModel = extension_settings.sd.model || '';
+    $('[data-minimax-model]').each(function () {
+        const match = $(this).data('minimax-model').split(',');
+        $(this).toggle(match.includes(currentModel));
+    });
+    const isMinimax = extension_settings.sd.source === sources.minimax;
+    $('#sd_negative_prompt').closest('label, .flex-container, .marginTopBot5, div').first().toggle(!isMinimax);
+    $('#sd_character_negative_prompt').closest('label, .flex-container, .marginTopBot5, div').first().toggle(!isMinimax);
+}
+
 async function loadSettings() {
     // Initialize settings
     if (Object.keys(extension_settings.sd).length === 0) {
@@ -562,6 +573,8 @@ async function loadSettings() {
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
     $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
+    $('#sd_minimax_optimizer').prop('checked', !!extension_settings.sd.minimax_optimizer);
+    $('#sd_minimax_style_type').val(extension_settings.sd.minimax_style_type);
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
     $('#sd_google_duration').val(extension_settings.sd.google_duration);
@@ -1144,6 +1157,7 @@ async function onSourceChange() {
     extension_settings.sd.scheduler = null;
     extension_settings.sd.vae = null;
     toggleSourceControls();
+    toggleMinimaxModelControls();
     saveSettingsDebounced();
     await loadSettingOptions();
 }
@@ -5950,6 +5964,16 @@ export async function init() {
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
     $('#sd_function_tool').on('input', onFunctionToolInput);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
+
+    $('#sd_minimax_optimizer').on('input', function () {
+        extension_settings.sd.minimax_optimizer = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#sd_minimax_style_type').on('change', function () {
+        extension_settings.sd.minimax_style_type = String($(this).val() || '漫画');
+        saveSettingsDebounced();
+    });
 
     $('#sd_google_api').on('input', function () {
         extension_settings.sd.google_api = String($(this).val());
