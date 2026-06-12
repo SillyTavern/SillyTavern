@@ -2,6 +2,9 @@
 
 LLM Frontend for Power Users
 
+TrustedRouter can be used through the Custom OpenAI-compatible connection with
+the base URL `https://api.trustedrouter.com/v1`.
+
 ## Resources
 
 - GitHub: <https://github.com/SillyTavern/SillyTavern>
