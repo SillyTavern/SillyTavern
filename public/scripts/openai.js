@@ -31,6 +31,7 @@ import {
     substituteParamsExtended,
     system_message_types,
     this_chid,
+    chat_metadata,
 } from '../script.js';
 import { getGroupNames, selected_group } from './group-chats.js';
 
@@ -97,6 +98,122 @@ export {
 };
 
 let openai_messages_count = 0;
+
+// ============================================================================
+// Dynamic Context Window for Cache Optimization (v2 — anchor-based)
+// ============================================================================
+// PURPOSE: keep Claude's prefix cache hot by avoiding per-turn sliding of the
+// chat-history window. Sliding (dropping the oldest message every turn)
+// invalidates the ENTIRE chat-history cache because Claude matches by exact
+// byte-prefix — once msg[0] disappears, every subsequent cache_control segment
+// misses. Instead, we "anchor" the oldest included message and ONLY append new
+// messages at the tail. When the window finally reaches the cap, we drop a
+// chunk back to the minimum in one shot (sawtooth pattern). Over a ~N-turn
+// growth cycle this gives ~(N-1)/(N+1) cache-hit rate vs sliding's ~5%.
+//
+// WHY ANCHOR, NOT BUDGET: ST's populateChatHistory (~line 898) always fills the
+// token budget with the MOST RECENT messages and `break`s when it runs out.
+// Toggling the budget number between min/cap (the v1 approach) just yo-yo'd
+// the window every turn and thrashed the cache to ~4%. The only way to exclude
+// old messages without sliding is to slice messages[anchor:] BEFORE population,
+// so the budget (= cap) always has room for the entire slice.
+//
+// PER-CHARACTER STATE: In SWAP-mode group chats, charDescription alternates per
+// speaker (group-chats.js ~line 1057). Each character is an independent Claude
+// cache line (requests are prefixed by that character's description), so each
+// gets its own anchor + sawtooth cycle. APPEND-mode group chats and single
+// chats naturally degrade to a single Map entry.
+//
+// charDescription is INTENTIONALLY EXCLUDED from the fixed-prefix hash so SWAP
+// speaker rotation is inert. Other fixed parts (WI, scenario, personality,
+// system/jailbreak prompts, author's note, summary, vectors — all on equal
+// footing per design) ARE hashed: if any of them changes the cache prefix is
+// dead anyway, so we reset every character's anchor to cold-start (min window)
+// to minimize uncached-token cost, then re-grow.
+//
+// DELETE / EDIT of messages does NOT reset state (by design): such changes
+// typically land within the last ~5 messages — already covered by the near-end
+// cache_control breakpoints which naturally invalidate and rebuild. A full
+// reset would needlessly kill the valuable long-prefix cache. Size overruns
+// from edits self-correct via the `actual >= cap` check on the next turn.
+//
+// State shape:
+//   { chatSig: number,              // identity signature; mismatch => full reset
+//     fixedHash: number|null,       // hash of fixed prefix (excludes charDesc)
+//     perChar: Map<number, {        // keyed by hash(charDescription)
+//       anchor: number|null,        // null = (re)establish at min; number = active
+//       prevTokens: number|null,    // last actual prompt size, for cap detection
+//     }>
+//   }
+let _dyctx = null;
+
+/**
+ * Cheap 32-bit string hash (djb2-variant). Used only for (in)equality
+ * comparison of prompt/chat signatures — NOT a cryptographic primitive.
+ * @param {string} s
+ * @returns {number}
+ */
+function _dyctxHash(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    }
+    return h;
+}
+
+/**
+ * Build a fresh top-level state object. Called on first use and on chat switch.
+ * @param {number} chatSig
+ * @returns {{chatSig: number, fixedHash: number|null, perChar: Map<number, {anchor: number|null, prevTokens: number|null}>}}
+ */
+function _dyctxCreate(chatSig) {
+    return { chatSig, fixedHash: null, perChar: new Map() };
+}
+
+/**
+ * Compute the signature identifying "same streaming context". A mismatch
+ * triggers a full state reset (all character anchors cleared). Uses
+ * chat_metadata.chat_id_hash (populated by macros.js) when available; falls
+ * back to a composite of this_chid + selected_group so char/group switches
+ * are still caught when the hash is not yet set.
+ * @returns {number}
+ */
+function _dyctxChatSig() {
+    const hash = chat_metadata?.chat_id_hash;
+    if (hash !== undefined && hash !== null && hash !== '') {
+        return Number(hash);
+    }
+    return _dyctxHash(`${this_chid ?? 'none'}::${selected_group ?? 'none'}`);
+}
+
+/**
+ * After a cold-start / truncation turn (budget = minContext, full message array
+ * passed), find the oldest chat message that populateChatHistory actually
+ * included, and return its 0-based index into the full array.
+ *
+ * populateChatHistory adds messages to the 'chatHistory' MessageCollection inside
+ * chatCompletion. We count how many it included (K), then the oldest included
+ * message's index is (totalMsgs - K): populateChatHistory iterates newest-first
+ * and `break`s when budget runs out, so the included set is always the K most
+ * recent messages of the array it received.
+ *
+ * NOTE: we intentionally read from chatCompletion (the live, per-message
+ * collection) rather than promptManager.tokenHandler.counts, because the latter
+ * only stores a single aggregate key 'chatHistory' (= sum of all included chat
+ * tokens), NOT per-message keys like 'chatHistory-N'.
+ *
+ * @param {number} totalMsgs  messages.length of the full array passed in
+ * @param {object} chatCompletion  the ChatCompletion instance used this turn
+ * @returns {number} 0-based index of the oldest included message
+ */
+function _dyctxOldestIncludedIndex(totalMsgs, chatCompletion) {
+    const collections = chatCompletion?.getMessages?.()?.getCollection?.();
+    if (!Array.isArray(collections)) return Math.max(0, totalMsgs - 1);
+    const chatHistory = collections.find(c => c?.identifier === 'chatHistory');
+    const includedCount = chatHistory?.collection?.length ?? 0;
+    if (includedCount === 0) return Math.max(0, totalMsgs - 1);
+    return Math.max(0, totalMsgs - includedCount);
+}
 
 const default_main_prompt = 'Write {{char}}\'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}.';
 const default_nsfw_prompt = '';
@@ -357,6 +474,7 @@ export const settingsToUpdate = {
     workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
     workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
+    openai_max_context_cap: ['#openai_max_context_cap', 'openai_max_context_cap', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
     send_if_empty: ['#send_if_empty_textarea', 'send_if_empty', false, false],
@@ -418,6 +536,7 @@ const default_settings = {
     repetition_penalty_openai: 1,
     stream_openai: false,
     openai_max_context: max_4k,
+    openai_max_context_cap: null, // null = same as openai_max_context (original behavior)
     openai_max_tokens: 300,
     ...chatCompletionDefaultPrompts,
     ...promptManagerDefaultPromptOrders,
@@ -1562,10 +1681,70 @@ export async function prepareOpenAIMessages({
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
     const userSettings = promptManager.serviceSettings;
-    chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
+    const minContext = userSettings.openai_max_context;
+    const capContext = userSettings.openai_max_context_cap ?? minContext;
+    const dyctxEnabled = capContext > minContext;
+
+    // --- Dynamic Context Window state (hoisted for the post-generation update) ---
+    let windowMessages = messages;
+    let _dyctxCharKey = 0;
+    let _dyctxCharState = null;
+    let _dyctxNeedEstablish = false;
+    let _dyctxEstablishedAnchor = null;
+
+    if (!dyctxEnabled) {
+        // Feature off — vanilla ST behavior.
+        chatCompletion.setTokenBudget(minContext, userSettings.openai_max_tokens);
+    } else {
+        // 1) Chat-switch guard: full state reset when identity changes.
+        const sig = _dyctxChatSig();
+        if (!_dyctx || _dyctx.chatSig !== sig) {
+            _dyctx = _dyctxCreate(sig);
+        }
+
+        // 2) Fixed-prefix hash (EXCLUDES charDescription so SWAP rotation is inert).
+        //    Includes WI, scenario, personality, system/jailbreak, author's note,
+        //    summary, vectors — all on equal footing ("WI treatment").
+        const fixedPartsKey = [
+            worldInfoBefore, worldInfoAfter,
+            scenario, charPersonality,
+            systemPromptOverride, jailbreakPromptOverride,
+            extensionPrompts?.['1_memory']?.value,
+            extensionPrompts?.['2_floating_prompt']?.value,
+            extensionPrompts?.['3_vectors']?.value,
+            extensionPrompts?.['4_vectors_data_bank']?.value,
+            extensionPrompts?.chromadb?.value,
+        ].join('::ST_DYNCTX::');
+        const fixedHash = _dyctxHash(fixedPartsKey);
+        if (!dryRun) {
+            if (_dyctx.fixedHash !== null && fixedHash !== _dyctx.fixedHash) {
+                _dyctx.perChar.clear(); // prefix dead → reset all chars to cold-start
+            }
+            _dyctx.fixedHash = fixedHash;
+        }
+
+        // 3) Per-character state (keyed by charDescription → SWAP = separate lines).
+        _dyctxCharKey = Number(this_chid ?? -1);
+        _dyctxCharState = _dyctx.perChar.get(_dyctxCharKey) ?? { anchor: null, prevTokens: null };
+
+        // 4) Mode selection: cold/post-truncation vs growth.
+        const atCap = _dyctxCharState.prevTokens !== null && _dyctxCharState.prevTokens >= capContext;
+        if (_dyctxCharState.anchor === null || atCap) {
+            // (Re)establish: minContext budget on the FULL array. After population
+            // we'll observe which messages made the cut and record that as the anchor.
+            _dyctxNeedEstablish = true;
+            chatCompletion.setTokenBudget(minContext, userSettings.openai_max_tokens);
+        } else {
+            // Growth: cap budget on the newest messages. The messages array from
+            // setOpenAIMessages is NEWEST-FIRST (reversed), so we slice from the
+            // start (index 0 = newest), keeping (messages.length - anchor) items.
+            const a = Math.max(0, Math.min(_dyctxCharState.anchor, messages.length - 1));
+            windowMessages = messages.slice(0, messages.length - a);
+            chatCompletion.setTokenBudget(capContext, userSettings.openai_max_tokens);
+        }
+    }
 
     try {
-        // Merge markers and ordered user prompts with system prompts
         const prompts = await preparePromptsForChatCompletion({
             scenario,
             charPersonality,
@@ -1582,7 +1761,11 @@ export async function prepareOpenAIMessages({
         });
 
         // Fill the chat completion with as much context as the budget allows
-        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples });
+        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages: windowMessages, messageExamples });
+
+        if (!dryRun && dyctxEnabled && _dyctxNeedEstablish) {
+            _dyctxEstablishedAnchor = _dyctxOldestIncludedIndex(messages.length, chatCompletion);
+        }
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error(t`Mandatory prompts exceed the context size.`);
@@ -1617,6 +1800,20 @@ export async function prepareOpenAIMessages({
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
 
     openai_messages_count = chat.filter(x => !x?.tool_calls && ['user', 'assistant', 'tool'].includes(x?.role)).length || 0;
+
+    if (!dryRun && dyctxEnabled && _dyctxCharState) {
+        const tokenCounts = promptManager.tokenHandler.counts;
+        const actualTokens = Object.values(tokenCounts).reduce(
+            (sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+
+        if (_dyctxNeedEstablish && _dyctxEstablishedAnchor !== null) {
+            _dyctxCharState.anchor = _dyctxEstablishedAnchor;
+        }
+        // prevTokens drives the `atCap` check NEXT turn: if we just filled the cap,
+        // next turn will (re)establish at min instead of growing into a slide.
+        _dyctxCharState.prevTokens = actualTokens;
+        _dyctx.perChar.set(_dyctxCharKey, _dyctxCharState);
+    }
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -5901,6 +6098,22 @@ async function onModelChange() {
 
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
 
+    // Sync cap slider: ensure cap >= context, update max attribute
+    const currentContextMax = Number($('#openai_max_context').attr('max'));
+    const $cap = $('#openai_max_context_cap');
+    const $capCounter = $('#openai_max_context_cap_counter');
+    // Cap slider max should be at least as large as the model's max context
+    const capSliderMax = Number($cap.attr('max') || 131072);
+    $cap.attr('max', Math.max(currentContextMax, capSliderMax));
+    $capCounter.attr('max', Number($cap.attr('max')));
+    // If cap is unset or lower than context, default cap to context (no dynamic window)
+    if (!oai_settings.openai_max_context_cap || oai_settings.openai_max_context_cap < oai_settings.openai_max_context) {
+        oai_settings.openai_max_context_cap = oai_settings.openai_max_context;
+    }
+    // Clamp cap to the new slider max
+    oai_settings.openai_max_context_cap = Math.min(oai_settings.openai_max_context_cap, Number($cap.attr('max')));
+    $cap.val(oai_settings.openai_max_context_cap).trigger('input');
+
     saveSettingsDebounced();
     updateFeatureSupportFlags();
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
@@ -6705,10 +6918,30 @@ export function initOpenAI() {
     $('#openai_max_context').on('input', function () {
         oai_settings.openai_max_context = Number($(this).val());
         $('#openai_max_context_counter').val(`${$(this).val()}`);
+        // Ensure cap >= context
+        if (oai_settings.openai_max_context_cap && oai_settings.openai_max_context_cap < oai_settings.openai_max_context) {
+            oai_settings.openai_max_context_cap = oai_settings.openai_max_context;
+            $('#openai_max_context_cap').val(oai_settings.openai_max_context_cap).trigger('input', { source: 'sync' });
+            $('#openai_max_context_cap_counter').val(oai_settings.openai_max_context_cap);
+        }
         calculateOpenRouterCost();
         calculateElectronHubCost();
         calculateChutesCost();
         saveSettingsDebounced();
+    });
+
+    $('#openai_max_context_cap').on('input', function (e, extra) {
+        let val = Number($(this).val());
+        // Enforce cap >= context
+        if (val < oai_settings.openai_max_context) {
+            val = oai_settings.openai_max_context;
+            $(this).val(val);
+        }
+        oai_settings.openai_max_context_cap = val;
+        $('#openai_max_context_cap_counter').val(val);
+        if (extra?.source !== 'sync') {
+            saveSettingsDebounced();
+        }
     });
 
     $('#openai_max_tokens').on('input', function () {
