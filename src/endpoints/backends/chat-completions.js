@@ -2347,8 +2347,21 @@ router.post('/generate', async function (request, response) {
         });
 
         if (!isTextCompletion && Array.isArray(request.body.tools) && request.body.tools.length > 0) {
-            bodyParams['tools'] = request.body.tools;
-            bodyParams['tool_choice'] = request.body.tool_choice;
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && /^claude/i.test(request.body.model)) {
+                bodyParams['tools'] = request.body.tools.map(tool => {
+                    if (tool.type === 'function' && tool.function) {
+                        return {
+                            name: tool.function.name,
+                            description: tool.function.description,
+                            input_schema: tool.function.parameters,
+                        };
+                    }
+                    return tool;
+                });
+            } else {
+                bodyParams['tools'] = request.body.tools;
+                bodyParams['tool_choice'] = request.body.tool_choice;
+            }
         }
 
         if (request.body.json_schema && !bodyParams['response_format']) {
