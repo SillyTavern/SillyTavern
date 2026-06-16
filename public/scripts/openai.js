@@ -199,6 +199,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    ORCAROUTER: 'orcarouter',
 };
 
 const character_names_behavior = {
@@ -356,6 +357,7 @@ export const settingsToUpdate = {
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
     workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
     workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
+    orcarouter_model: ['#model_orcarouter_select', 'orcarouter_model', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
@@ -465,6 +467,7 @@ const default_settings = {
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     workers_ai_account_id: '',
+    orcarouter_model: 'openai/gpt-5.5',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -1758,6 +1761,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.zai_model;
         case chat_completion_sources.WORKERS_AI:
             return settings.workers_ai_model;
+        case chat_completion_sources.ORCAROUTER:
+            return settings.orcarouter_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -2029,6 +2034,29 @@ function saveModelList(data) {
         }
 
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.ORCAROUTER) {
+        // Only keep models reachable through the OpenAI-compatible chat endpoint.
+        model_list = model_list.filter(m => Array.isArray(m.supported_endpoint_types) && m.supported_endpoint_types.includes('openai'));
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.ORCAROUTER);
+        $('#model_orcarouter_select').empty();
+
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.ORCAROUTER).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.id }));
+                });
+                $('#model_orcarouter_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_orcarouter_select').append($('<option>', { value: model.id, text: model.id }));
+            });
+        }
+
+        $('#model_orcarouter_select').val(oai_settings.orcarouter_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
@@ -2424,6 +2452,15 @@ function sortModelsBy(data, property, source) {
                     return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
                 }
             });
+        case chat_completion_sources.ORCAROUTER:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.context_length || 0) - (a.context_length || 0);
+                } else {
+                    // The model list endpoint carries no pricing, so sort alphabetically by ID.
+                    return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
+                }
+            });
         case chat_completion_sources.ELECTRONHUB:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
@@ -2507,6 +2544,15 @@ function groupModelsByVendor(array, source) {
                 acc.get(vendor).push(curr);
                 return acc;
             }, new Map());
+        case chat_completion_sources.ORCAROUTER:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.id.split('/')[0];
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
         case chat_completion_sources.AIMLAPI:
             return array.reduce((acc, curr) => {
                 const vendor = curr.info?.developer || 'Other';
@@ -2545,6 +2591,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.ORCAROUTER,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -5464,6 +5511,15 @@ async function onModelChange() {
         oai_settings.minimax_model = value;
     }
 
+    if ($(this).is('#model_orcarouter_select')) {
+        if (!value) {
+            console.debug('Null OrcaRouter model selected. Ignoring.');
+            return;
+        }
+        console.log('OrcaRouter model changed to', value);
+        oai_settings.orcarouter_model = value;
+    }
+
     if ($(this).is('#model_electronhub_select')) {
         if (!value || !hasModelsLoaded) {
             console.debug('Null ElectronHub model selected. Ignoring.');
@@ -5952,6 +6008,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.ORCAROUTER]: { key: SECRET_KEYS.ORCAROUTER, selector: '#api_key_orcarouter', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -6019,6 +6076,8 @@ function toggleChatCompletionForms() {
         $('#model_siliconflow_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
         $('#model_minimax_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.ORCAROUTER) {
+        $('#model_orcarouter_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -7128,6 +7187,13 @@ export function initOpenAI() {
             templateResult: getNanoGptModelTemplate,
             matcher: textValueMatcher,
         });
+        $('#model_orcarouter_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            matcher: textValueMatcher,
+        });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
             placeholder: t`All types (default)`,
             width: '100%',
@@ -7252,6 +7318,7 @@ export function initOpenAI() {
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
     $('#model_workers_ai_select').on('change', onModelChange);
+    $('#model_orcarouter_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
