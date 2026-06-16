@@ -94,6 +94,7 @@ const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
+const API_ANYAPI = 'https://api.anyapi.ai/v1';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -1931,6 +1932,10 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
             headers = {};
             queryParams = { type: 'text', sub_type: 'chat' };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ANYAPI) {
+            apiUrl = API_ANYAPI;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ANYAPI, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
 
@@ -2474,6 +2479,14 @@ router.post('/generate', async function (request, response) {
             if (request.body.json_schema) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ANYAPI) {
+            apiUrl = API_ANYAPI;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ANYAPI, request.body.secret_id);
+            headers = {};
+            bodyParams = {};
+            if (request.body.json_schema) {
+                setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+            }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
             const accountId = String(request.body.workers_ai_account_id || '').trim();
@@ -2869,6 +2882,26 @@ multimodalModels.post('/workers_ai', async (req, res) => {
                 .map(m => m.name)
             : [];
         return res.json(models);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+multimodalModels.post('/anyapi', async (_req, res) => {
+    try {
+        const response = await fetch('https://api.anyapi.ai/v1/models');
+
+        if (!response.ok) {
+            return res.json([]);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const multimodalModels = Array.isArray(data?.data)
+            ? data.data.filter(m => m.metadata?.vision).map(m => m.id)
+            : [];
+        return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);

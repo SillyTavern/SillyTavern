@@ -2911,6 +2911,7 @@
                                 <option value="chutes">Chutes</option>
                                 <option value="claude">Claude</option>
                                 <option value="workers_ai">Cloudflare Workers AI</option>
+                                <option value="anyapi">AnyAPI</option>
                                 <option value="cohere">Cohere</option>
                                 <!-- Temporarily disabled. -->
                                 <!-- <option value="cometapi">CometAPI</option> -->
@@ -3678,6 +3679,22 @@
                             <div>
                                 <h4 data-i18n="Workers AI Model">Workers AI Model</h4>
                                 <select id="model_workers_ai_select">
+                                    <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="anyapi_form" data-source="anyapi">
+                            <h4 data-i18n="AnyAPI API Key">AnyAPI API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_anyapi" name="api_key_anyapi" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_anyapi"></div>
+                            </div>
+                            <div data-for="api_key_anyapi" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <div>
+                                <h4 data-i18n="AnyAPI Model">AnyAPI Model</h4>
+                                <select id="model_anyapi_select">
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
