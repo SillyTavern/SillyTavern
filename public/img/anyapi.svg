@@ -1,5 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <rect width="100" height="100" rx="20" fill="#4F46E5"/>
-  <text x="50" y="45" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white">Any</text>
-  <text x="50" y="73" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#A5B4FC">API</text>
+<svg width="338" height="300" viewBox="0 0 338 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M230.448 83.0439L0 299.998L180.622 0L230.448 83.0439ZM249.405 150.521C251.167 150.521 252.799 151.448 253.701 152.962L337.643 293.863C338.436 295.196 337.475 296.887 335.924 296.887H248.86C247.098 296.887 245.466 295.959 244.564 294.445L158.822 150.521H249.405Z" fill="url(#paint0_linear_2086_138)"/>
+<defs>
+<linearGradient id="paint0_linear_2086_138" x1="168.964" y1="0" x2="168.964" y2="299.998" gradientUnits="userSpaceOnUse">
+<stop stop-color="#009BF2"/>
+<stop offset="1" stop-color="#03FFFF"/>
+</linearGradient>
+</defs>
 </svg>
