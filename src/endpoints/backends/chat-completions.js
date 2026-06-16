@@ -2323,6 +2323,10 @@ router.post('/generate', async function (request, response) {
             }
 
             bodyParams['include_reasoning'] = Boolean(request.body.include_reasoning);
+
+            // Pass through user-provided routing preferences (e.g. models / route).
+            // See https://www.orcarouter.ai/console/routing
+            mergeObjectWithYaml(bodyParams, request.body.orcarouter_extra_body);
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             apiUrl = request.body.custom_url;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);

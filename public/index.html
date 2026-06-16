@@ -3621,6 +3621,14 @@
                                     <option value="" data-i18n="-- Connect to the API --">-- Connect to the API --</option>
                                 </select>
                             </div>
+                            <div>
+                                <h4 data-i18n="Additional Parameters">Additional Parameters</h4>
+                                <div class="toggle-description justifyLeft marginBot5">
+                                    <span data-i18n="Optional JSON merged into the request body (e.g. OrcaRouter routing preferences).">Optional JSON merged into the request body (e.g. OrcaRouter routing preferences).</span>
+                                    <a href="https://www.orcarouter.ai/console/routing" target="_blank" rel="noopener noreferrer" data-i18n="Routing strategy is configured per-router in the OrcaRouter Console.">Routing strategy is configured per-router in the OrcaRouter Console.</a>
+                                </div>
+                                <textarea id="orcarouter_extra_body" class="text_pole textarea_compact autoSetHeight" rows="2" placeholder='{"models": ["openai/gpt-5.5", "openai/gpt-5"], "route": "fallback"}'></textarea>
+                            </div>
                         </div>
                         <div id="electronhub_form" data-source="electronhub">
                             <h4 data-i18n="Electron Hub API Key">Electron Hub API Key</h4>

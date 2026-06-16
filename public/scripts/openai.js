@@ -358,6 +358,7 @@ export const settingsToUpdate = {
     workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
     workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
     orcarouter_model: ['#model_orcarouter_select', 'orcarouter_model', false, true],
+    orcarouter_extra_body: ['#orcarouter_extra_body', 'orcarouter_extra_body', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
@@ -468,6 +469,7 @@ const default_settings = {
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     workers_ai_account_id: '',
     orcarouter_model: 'openai/gpt-5.5',
+    orcarouter_extra_body: '',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -2913,6 +2915,10 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.custom_include_body = substituteParams(settings.custom_include_body);
         generate_data.custom_exclude_body = substituteParams(settings.custom_exclude_body);
         generate_data.custom_include_headers = substituteParams(settings.custom_include_headers);
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.ORCAROUTER) {
+        generate_data.orcarouter_extra_body = substituteParams(settings.orcarouter_extra_body);
     }
 
     if (settings.chat_completion_source === chat_completion_sources.COHERE) {
@@ -7319,6 +7325,10 @@ export function initOpenAI() {
     $('#model_zai_select').on('change', onModelChange);
     $('#model_workers_ai_select').on('change', onModelChange);
     $('#model_orcarouter_select').on('change', onModelChange);
+    $('#orcarouter_extra_body').on('input', function () {
+        oai_settings.orcarouter_extra_body = String($(this).val());
+        saveSettingsDebounced();
+    });
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
