@@ -205,6 +205,7 @@ export const CHAT_COMPLETION_SOURCES = {
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
+    PINSTRIPES: 'pinstripes',
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',

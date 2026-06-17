@@ -193,6 +193,7 @@ export const chat_completion_sources = {
     POLLINATIONS: 'pollinations',
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
+    PINSTRIPES: 'pinstripes',
     COMETAPI: 'cometapi',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
@@ -337,6 +338,7 @@ export const settingsToUpdate = {
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
+    pinstripes_model: ['#model_pinstripes_select', 'pinstripes_model', false, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
@@ -454,6 +456,7 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    pinstripes_model: 'ps/deepseek-v4-flash',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -1745,6 +1748,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
             return settings.fireworks_model;
+        case chat_completion_sources.PINSTRIPES:
+            return settings.pinstripes_model;
         case chat_completion_sources.AZURE_OPENAI:
             return settings.azure_openai_model;
         case chat_completion_sources.ZAI:
@@ -2298,6 +2303,24 @@ function saveModelList(data) {
         }
 
         $('#model_fireworks_select').val(oai_settings.fireworks_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.PINSTRIPES) {
+        $('#model_pinstripes_select').empty();
+        model_list.forEach((model) => {
+            $('#model_pinstripes_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.pinstripes_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.pinstripes_model)) {
+            oai_settings.pinstripes_model = model_list[0].id;
+        }
+
+        $('#model_pinstripes_select').val(oai_settings.pinstripes_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
@@ -5283,6 +5306,30 @@ function getFireworksMaxContext(model, isUnlocked) {
 }
 
 /**
+ * Get the maximum context size for the Pinstripes model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getPinstripesMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list) && model_list.length > 0) {
+        const modelInfo = model_list.find((record) => record.id === model);
+        if (modelInfo?.context_length) {
+            return modelInfo.context_length;
+        }
+        if (modelInfo?.context_window) {
+            return modelInfo.context_window;
+        }
+    }
+
+    return max_32k;
+}
+
+/**
  * Get the maximum context size for the Chutes model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked Whether context limits are unlocked
@@ -5533,6 +5580,15 @@ async function onModelChange() {
         }
         console.log('Fireworks model changed to', value);
         oai_settings.fireworks_model = value;
+    }
+
+    if ($(this).is('#model_pinstripes_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Pinstripes model selected. Ignoring.');
+            return;
+        }
+        console.log('Pinstripes model changed to', value);
+        oai_settings.pinstripes_model = value;
     }
 
     if ($(this).is('#model_cometapi_select')) {
@@ -5857,6 +5913,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.PINSTRIPES) {
+        const maxContext = getPinstripesMaxContext(oai_settings.pinstripes_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
         const maxContext = getSiliconflowMaxContext(oai_settings.siliconflow_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5930,6 +5995,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.AIMLAPI]: { key: SECRET_KEYS.AIMLAPI, selector: '#api_key_aimlapi', proxy: false },
         [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: true },
         [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
+        [chat_completion_sources.PINSTRIPES]: { key: SECRET_KEYS.PINSTRIPES, selector: '#api_key_pinstripes', proxy: false },
         [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
@@ -6022,6 +6088,8 @@ function toggleChatCompletionForms() {
         $('#model_moonshot_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.PINSTRIPES) {
+        $('#model_pinstripes_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
@@ -7227,6 +7295,7 @@ export function initOpenAI() {
     $('#model_cometapi_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
+    $('#model_pinstripes_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
     $('#model_workers_ai_select').on('change', onModelChange);
