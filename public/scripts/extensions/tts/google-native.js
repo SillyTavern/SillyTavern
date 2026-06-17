@@ -12,7 +12,7 @@ export class GoogleNativeTtsProvider {
 
     defaultSettings = {
         voiceMap: {},
-        model: 'gemini-2.5-flash-preview-tts',
+        model: 'gemini-3.1-flash-tts-preview',
         apiType: 'makersuite',
     };
 
@@ -32,6 +32,7 @@ export class GoogleNativeTtsProvider {
                 <select id="google-tts-model">
                     <option value="gemini-2.5-flash-preview-tts">Gemini 2.5 Flash Preview TTS</option>
                     <option value="gemini-2.5-pro-preview-tts">Gemini 2.5 Pro Preview TTS</option>
+                    <option value="gemini-3.1-flash-tts-preview">Gemini 3.1 Flash TTS Preview</option>
                 </select>
             </div>
         </div>`;
