@@ -85,6 +85,7 @@ const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://gen.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
+const API_PINSTRIPES = 'https://pinstripes.io/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
@@ -1809,6 +1810,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PINSTRIPES) {
+            apiUrl = API_PINSTRIPES;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.PINSTRIPES, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE, request.body.secret_id);
             apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
@@ -2377,6 +2382,11 @@ router.post('/generate', async function (request, response) {
                     },
                 };
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PINSTRIPES) {
+            apiUrl = API_PINSTRIPES;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.PINSTRIPES, request.body.secret_id);
+            headers = {};
+            bodyParams = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT, request.body.secret_id);
