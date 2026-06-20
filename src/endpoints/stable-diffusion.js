@@ -586,7 +586,7 @@ comfy.post('/generate', async (request, response) => {
         /** @type {any} */
         const data = await promptResult.json();
         const id = data.prompt_id;
-        const historyUrl = new URL(urlJoin(request.body.url, '/history'));
+        const historyUrl = new URL(urlJoin(request.body.url, `/history/${id}`));
         while (true) {
             const result = await fetch(historyUrl);
             if (!result.ok) {
