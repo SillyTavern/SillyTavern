@@ -896,6 +896,7 @@ async function sendMistralAIRequest(request, response) {
             'safe_prompt': request.body.safe_prompt,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
             'stop': Array.isArray(request.body.stop) && request.body.stop.length > 0 ? request.body.stop : undefined,
+            'reasoning_effort': /^(mistral-medium|mistral-small)/.test(request.body.model) ? 'high' : undefined,
         };
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
