@@ -1,4 +1,5 @@
 /* eslint-disable dot-notation */
+import { createHmac } from 'node:crypto';
 import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
@@ -66,6 +67,7 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
+import { getCookieSecret } from '../../users.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -107,6 +109,18 @@ const cachingAtDepth = (() => {
     return Number.isInteger(value) && value >= 0 ? value : -1;
 })();
 const enableAdaptiveThinking = getConfigValue('claude.enableAdaptiveThinking', true, 'boolean');
+
+/**
+ * Lazily-cached HMAC key (instance cookie secret) for session-affinity hashing.
+ * @type {string|undefined}
+ */
+let affinityKey;
+function getAffinityKey() {
+    if (affinityKey === undefined) {
+        affinityKey = getCookieSecret(globalThis.DATA_ROOT);
+    }
+    return affinityKey;
+}
 
 /**
  * Cache for cacheable (writing) OpenRouter model IDs.
@@ -2452,6 +2466,9 @@ router.post('/generate', async function (request, response) {
                         strict: request.body.json_schema.strict ?? true,
                     },
                 };
+            }
+            if (request.body.chat_id) {
+                headers['x-session-affinity'] = createHmac('sha256', getAffinityKey()).update(request.body.chat_id).digest('hex').slice(0, 16);
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;

@@ -14,6 +14,7 @@ import {
     extension_prompt_roles,
     extension_prompt_types,
     Generate,
+    getCurrentChatId,
     getExtensionPrompt,
     getExtensionPromptMaxDepth,
     getMediaDisplay,
@@ -2865,6 +2866,10 @@ export async function createGenerationParameters(settings, model, type, messages
     if (settings.chat_completion_source === chat_completion_sources.NANOGPT) {
         generate_data.nanogpt_provider = settings.nanogpt_provider;
         generate_data.nanogpt_payg_override = settings.nanogpt_payg_override;
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.FIREWORKS && type !== 'quiet') {
+        generate_data.chat_id = getCurrentChatId();
     }
 
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
