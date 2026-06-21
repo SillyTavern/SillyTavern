@@ -819,13 +819,6 @@ async function sendAI21Request(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
-            for (const choice of generateResponseJson.choices ?? []) {
-                if (Array.isArray(choice.message?.content)) {
-                    const n = normalizeMistralContent(choice.message.content);
-                    choice.message.content = n.text;
-                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
-                }
-            }
             console.debug('AI21 response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
