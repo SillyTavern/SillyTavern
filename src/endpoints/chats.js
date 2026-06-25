@@ -308,6 +308,89 @@ function importRisuChat(userName, characterName, jsonData) {
 }
 
 /**
+ * Imports a chat from JanitorAI format.
+ * @param {string} userName User name
+ * @param {string} characterName Character name
+ * @param {object} jsonData Imported chat data
+ * @returns {string} Converted data
+ */
+function importJanitorChat(userName, characterName, jsonData) {
+    const curTime = new Date().toISOString(); // Saved here so we don't call it a ton of times if we need it.
+
+    /**
+     * Converts the chat data to suitable format.
+     * @param {object} history Imported chat data
+     * @returns {object} Converted chat data
+     */
+    function convert(message) {
+        // Saves origin message unhandled info in extra via shallow copy, just in case
+        const janitorai_origin = Object.assign({}, message);
+        // Removes extra data guaranteed to be saved elsewhere
+        delete janitorai_origin.message;
+        delete janitorai_origin.is_bot;
+        delete janitorai_origin.created_at;
+        return {
+            // Uses message username due to Janitor support for mid-chat persona switching
+            name: !message.is_bot ? (message.metadata.persona_name ?? userName) : characterName,
+            is_user: !message.is_bot,
+            send_date: message.created_at ?? curTime, // Date is already ISOString
+            mes: message.message ?? '',
+            extra: {
+                janitorai_origin: janitorai_origin
+            },
+        };
+    }
+    
+    /** @type {object[]} */
+    const chat = jsonData.chatMessages.map(convert);
+
+    // JanitorAI saves most recent swipes as back to back non-user messages.
+    // JanitorAI also saves chat in reverse order
+    let swipeCount = 0;
+    for (const entry of chat) {
+        if (!entry.is_user) {
+            swipeCount += 1;
+        } else {
+            break;
+        }
+    }
+    chat.length += 1; // So it doesn't need to reindex the array later when we add the header to the front
+    chat.reverse(); // Reverse messages so they're in correct order, leaving index 0 empty
+    if (swipeCount > 1) {
+        const swipes = chat.slice(-swipeCount);
+        chat.length -= swipeCount - 1; // Trim all messages after the first swipe
+        const finalMes = chat.at(-1);
+        let temp = finalMes.mes;
+        finalMes.swipes = swipes.map(obj => obj.mes);
+        finalMes.swipe_id = 0;
+        finalMes.swipe_info = swipes.map(obj => {
+            return {
+                send_date: obj.send_date,
+                extra: obj.extra,
+            }
+        }); // Currently selected swipe is also included in the array
+    }
+
+    // Origin data blocks other than chat messages are added as metadata via shallow copy if they exist, just in case
+    const janitorai_origin = Object.assign({}, jsonData);
+    delete janitorai_origin.chatMessages;
+    const header = {
+        chat_metadata: {
+            janitorai_origin: janitorai_origin
+        },
+        user_name: 'unused',
+        character_name: 'unused',
+    };
+    // if created_at exists, make it the chat creation date.
+    if (jsonData.chat !== undefined && jsonData.chat.created_at !== undefined) {
+        header.create_date = jsonData.chat.created_at;
+    }
+    chat[0] = header; // We place the header in the blank index 0 here.
+
+    return chat.map(obj => JSON.stringify(obj)).join('\n');
+}
+
+/**
  * Checks if the chat being saved has the same integrity as the one being loaded.
  * @param {string} filePath Path to the chat file
  * @param {string} integritySlug Integrity slug
@@ -732,6 +815,8 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
                 importFunc = importAgnaiChat;
             } else if (jsonData.type === 'risuChat') { // RisuAI format
                 importFunc = importRisuChat;
+            } else if (Array.isArray(jsonData.chatMessages)) { // JanitorAI format
+                importFunc = importJanitorChat;
             } else { // Unknown format
                 console.error('Incorrect chat format .json');
                 return response.send({ error: true });
