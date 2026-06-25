@@ -32,7 +32,6 @@ function getOpenAiImageRequestParams(request) {
         };
     }
 
-    // The reverse proxy field is shared by several chat completion sources, so only honor it for the OpenAI provider.
     const useReverseProxy = Boolean(reverse_proxy) && (!chat_completion_source || chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI);
 
     return {
