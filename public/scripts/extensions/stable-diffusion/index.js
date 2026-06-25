@@ -59,7 +59,7 @@ import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnum
 import { ToolManager } from '../../tool-calling.js';
 import { macros, MacroCategory } from '../../macros/macro-system.js';
 import { t, translate } from '../../i18n.js';
-import { oai_settings } from '../../openai.js';
+import { chat_completion_sources, oai_settings } from '../../openai.js';
 import { power_user } from '/scripts/power-user.js';
 import { MacrosParser } from '/scripts/macros.js';
 import { ActionLoaderHandle, loader } from '/scripts/action-loader.js';
@@ -2381,7 +2381,7 @@ async function loadDrawthingsModels() {
 }
 
 async function loadOpenAiModels() {
-    return [
+    const defaultModels = [
         { value: 'gpt-image-2', text: 'gpt-image-2' },
         { value: 'gpt-image-2-2026-04-21', text: 'gpt-image-2-2026-04-21' },
         { value: 'gpt-image-1.5', text: 'gpt-image-1.5' },
@@ -2393,6 +2393,42 @@ async function loadOpenAiModels() {
         { value: 'sora-2', text: 'sora-2' },
         { value: 'sora-2-pro', text: 'sora-2-pro' },
     ];
+
+    const isCustom = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM && !!oai_settings.custom_url;
+    const isProxy = !!oai_settings.reverse_proxy && oai_settings.chat_completion_source === chat_completion_sources.OPENAI;
+
+    if (!isProxy && !isCustom) {
+        return defaultModels;
+    }
+
+    try {
+        const result = await fetch('/api/openai/image-models', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                chat_completion_source: oai_settings.chat_completion_source,
+                reverse_proxy: oai_settings.reverse_proxy,
+                proxy_password: oai_settings.proxy_password,
+                custom_url: oai_settings.custom_url,
+                custom_include_headers: oai_settings.custom_include_headers,
+            }),
+        });
+
+        if (!result.ok) {
+            return defaultModels;
+        }
+
+        const data = await result.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+            return defaultModels;
+        }
+
+        return data.filter(model => model?.id).map(model => ({ value: model.id, text: model.id }));
+    } catch (error) {
+        console.log('Error loading OpenAI image models:', error);
+        return defaultModels;
+    }
 }
 
 async function loadAimlapiModels() {
@@ -4130,6 +4166,11 @@ async function generateOpenAiImage(prompt, signal) {
                 model: extension_settings.sd.model,
                 size: `${width}x${height}`,
                 seconds: extension_settings.sd.openai_duration,
+                chat_completion_source: oai_settings.chat_completion_source,
+                reverse_proxy: oai_settings.reverse_proxy,
+                proxy_password: oai_settings.proxy_password,
+                custom_url: oai_settings.custom_url,
+                custom_include_headers: oai_settings.custom_include_headers,
             }),
         });
 
@@ -4154,6 +4195,11 @@ async function generateOpenAiImage(prompt, signal) {
             style: isDalle3 ? extension_settings.sd.openai_style : undefined,
             response_format: isDalle2 || isDalle3 ? 'b64_json' : undefined,
             moderation: isGptImg ? 'low' : undefined,
+            chat_completion_source: oai_settings.chat_completion_source,
+            reverse_proxy: oai_settings.reverse_proxy,
+            proxy_password: oai_settings.proxy_password,
+            custom_url: oai_settings.custom_url,
+            custom_include_headers: oai_settings.custom_include_headers,
         }),
     });
 
@@ -5090,6 +5136,12 @@ function isValidState() {
         case sources.novel:
             return secret_state[SECRET_KEYS.NOVEL];
         case sources.openai:
+            if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
+                return !!oai_settings.custom_url && secret_state[SECRET_KEYS.CUSTOM];
+            }
+            if (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.reverse_proxy) {
+                return !!oai_settings.proxy_password;
+            }
             return secret_state[SECRET_KEYS.OPENAI];
         case sources.aimlapi:
             return secret_state[SECRET_KEYS.AIMLAPI];

@@ -4,11 +4,43 @@ import { Buffer } from 'node:buffer';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import express from 'express';
+import urlJoin from 'url-join';
 
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
-import { AIMLAPI_HEADERS, OPENROUTER_HEADERS, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from '../constants.js';
+import { AIMLAPI_HEADERS, CHAT_COMPLETION_SOURCES, OPENROUTER_HEADERS, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from '../constants.js';
+
+const API_OPENAI = 'https://api.openai.com/v1';
+
+/**
+ * Resolves the API URL, key and extra headers to use for OpenAI-compatible image/video generation,
+ * taking into account a configured reverse proxy or a fully custom OpenAI-compatible endpoint.
+ * @param {import('express').Request} request Express request
+ * @returns {{ apiUrl: string, apiKey: string, headers: Record<string, string> }} Resolved request params
+ */
+function getOpenAiImageRequestParams(request) {
+    const { chat_completion_source, reverse_proxy, proxy_password, custom_url, custom_include_headers } = request.body;
+    const headers = {};
+
+    if (chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && custom_url) {
+        mergeObjectWithYaml(headers, custom_include_headers);
+        return {
+            apiUrl: new URL(custom_url).toString(),
+            apiKey: readSecret(request.user.directories, SECRET_KEYS.CUSTOM),
+            headers,
+        };
+    }
+
+    // The reverse proxy field is shared by several chat completion sources, so only honor it for the OpenAI provider.
+    const useReverseProxy = Boolean(reverse_proxy) && (!chat_completion_source || chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI);
+
+    return {
+        apiUrl: new URL(useReverseProxy ? reverse_proxy : API_OPENAI).toString(),
+        apiKey: useReverseProxy ? proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI),
+        headers,
+    };
+}
 
 export const router = express.Router();
 
@@ -628,22 +660,29 @@ router.post('/workers-ai/models/embedding', async (request, response) => {
 
 router.post('/generate-image', async (request, response) => {
     try {
-        const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
+        const bodyParams = { ...request.body };
+        delete bodyParams.chat_completion_source;
+        delete bodyParams.reverse_proxy;
+        delete bodyParams.proxy_password;
+        delete bodyParams.custom_url;
+        delete bodyParams.custom_include_headers;
+        const { apiUrl, apiKey, headers } = getOpenAiImageRequestParams(request);
 
-        if (!key) {
+        if (!apiKey) {
             console.warn('No OpenAI key found');
             return response.sendStatus(400);
         }
 
-        console.debug('OpenAI request', request.body);
+        console.debug('OpenAI request', bodyParams);
 
-        const result = await fetch('https://api.openai.com/v1/images/generations', {
+        const result = await fetch(urlJoin(apiUrl, '/images/generations'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${key}`,
+                Authorization: `Bearer ${apiKey}`,
+                ...headers,
             },
-            body: JSON.stringify(request.body),
+            body: JSON.stringify(bodyParams),
         });
 
         if (!result.ok) {
@@ -660,6 +699,49 @@ router.post('/generate-image', async (request, response) => {
     }
 });
 
+router.post('/image-models', async (request, response) => {
+    try {
+        const { chat_completion_source, reverse_proxy, custom_url } = request.body;
+        const isCustom = chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM && !!custom_url;
+        const isProxy = Boolean(reverse_proxy) && (!chat_completion_source || chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI);
+
+        // The default OpenAI API doesn't support model discovery filtered by type, so only proxies/custom endpoints are queried.
+        if (!isCustom && !isProxy) {
+            return response.json([]);
+        }
+
+        const { apiUrl, apiKey, headers } = getOpenAiImageRequestParams(request);
+
+        if (!apiKey) {
+            return response.json([]);
+        }
+
+        const modelsUrl = new URL(urlJoin(apiUrl, '/models'));
+        modelsUrl.searchParams.append('type', 'image');
+
+        const result = await fetch(modelsUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                ...headers,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('OpenAI image models request failed', result.statusText, text);
+            return response.status(result.status).send(text);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+        return response.json(data?.data ?? data ?? []);
+    } catch (error) {
+        console.error(error);
+        response.status(500).send('Internal server error');
+    }
+});
+
 router.post('/generate-video', async (request, response) => {
     try {
         const controller = new AbortController();
@@ -668,20 +750,21 @@ router.post('/generate-video', async (request, response) => {
             controller.abort();
         });
 
-        const key = readSecret(request.user.directories, SECRET_KEYS.OPENAI);
+        const { apiUrl, apiKey, headers } = getOpenAiImageRequestParams(request);
 
-        if (!key) {
+        if (!apiKey) {
             console.warn('No OpenAI key found');
             return response.sendStatus(400);
         }
 
         console.debug('OpenAI video generation request', request.body);
 
-        const videoJobResponse = await fetch('https://api.openai.com/v1/videos', {
+        const videoJobResponse = await fetch(urlJoin(apiUrl, '/videos'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`,
+                'Authorization': `Bearer ${apiKey}`,
+                ...headers,
             },
             body: JSON.stringify({
                 prompt: request.body.prompt,
@@ -715,10 +798,11 @@ router.post('/generate-video', async (request, response) => {
             await delay(5000 + attempt * 1000);
             console.debug(`Polling OpenAI video job ${videoJob.id}, attempt ${attempt + 1}`);
 
-            const pollResponse = await fetch(`https://api.openai.com/v1/videos/${videoJob.id}`, {
+            const pollResponse = await fetch(urlJoin(apiUrl, `/videos/${videoJob.id}`), {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${key}`,
+                    'Authorization': `Bearer ${apiKey}`,
+                    ...headers,
                 },
             });
 
@@ -738,10 +822,11 @@ router.post('/generate-video', async (request, response) => {
             }
 
             if (pollResult.status === 'completed') {
-                const contentResponse = await fetch(`https://api.openai.com/v1/videos/${videoJob.id}/content`, {
+                const contentResponse = await fetch(urlJoin(apiUrl, `/videos/${videoJob.id}/content`), {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${key}`,
+                        'Authorization': `Bearer ${apiKey}`,
+                        ...headers,
                     },
                 });
 
