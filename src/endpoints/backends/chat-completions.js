@@ -9,6 +9,7 @@ import {
     AIMLAPI_HEADERS,
     AZURE_OPENAI_KEYS,
     CHAT_COMPLETION_SOURCES,
+    FEATHERLESS_HEADERS,
     GEMINI_SAFETY,
     NANOGPT_REASONING_EFFORT_MAP,
     OPENAI_FIXED_REASONING_EFFORT,
@@ -79,6 +80,7 @@ const API_VERTEX_AI = 'https://us-central1-aiplatform.googleapis.com';
 const API_AI21 = 'https://api.ai21.com/studio/v1';
 const API_CHUTES = 'https://llm.chutes.ai/v1';
 const API_ELECTRONHUB = 'https://api.electronhub.ai/v1';
+const API_FEATHERLESS = 'https://api.featherless.ai/v1';
 const API_NANOGPT = 'https://nano-gpt.com/api/v1';
 const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
@@ -1773,6 +1775,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_ELECTRONHUB;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FEATHERLESS) {
+            apiUrl = API_FEATHERLESS;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.FEATHERLESS, request.body.secret_id);
+            headers = { ...FEATHERLESS_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT, request.body.secret_id);
@@ -2380,6 +2386,11 @@ router.post('/generate', async function (request, response) {
                     },
                 };
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FEATHERLESS) {
+            apiUrl = API_FEATHERLESS;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.FEATHERLESS, request.body.secret_id);
+            headers = { ...FEATHERLESS_HEADERS };
+            bodyParams = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.NANOGPT, request.body.secret_id);
