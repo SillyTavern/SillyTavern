@@ -337,16 +337,35 @@ describe('market and wallet MVP endpoints', () => {
         });
         expect(missingResolve.status).toBe(404);
 
+        const maxResolutionNote = 'R'.repeat(1000);
+        const overlongResolve = await request(aliceApp, `/api/market/reports/${reportResult.body.report.id}/resolve`, {
+            method: 'POST',
+            body: { note: `${maxResolutionNote}!` },
+        });
+        expect(overlongResolve.status).toBe(400);
+        expect(overlongResolve.body).toMatchObject({
+            error: 'Invalid report resolution',
+            details: ['note must be 1000 characters or less'],
+        });
+
+        const adminReportsAfterOverlongResolve = await request(aliceApp, '/api/market/reports/admin', { method: 'GET' });
+        expect(adminReportsAfterOverlongResolve.status).toBe(200);
+        expect(adminReportsAfterOverlongResolve.body.reports).toHaveLength(1);
+        expect(adminReportsAfterOverlongResolve.body.reports[0]).toMatchObject({
+            id: reportResult.body.report.id,
+            status: 'open',
+        });
+
         const resolveReport = await request(aliceApp, `/api/market/reports/${reportResult.body.report.id}/resolve`, {
             method: 'POST',
-            body: { note: 'Reviewed' },
+            body: { note: maxResolutionNote },
         });
         expect(resolveReport.status).toBe(200);
         expect(resolveReport.body.report).toMatchObject({
             id: reportResult.body.report.id,
             status: 'resolved',
             resolved_by: 'alice',
-            resolution_note: 'Reviewed',
+            resolution_note: maxResolutionNote,
         });
         expect(resolveReport.body.report.resolved_at).toBeTruthy();
 

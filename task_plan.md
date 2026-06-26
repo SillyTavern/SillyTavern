@@ -676,6 +676,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 72：举报处理备注长度边界
+- [x] 后端测试覆盖 1001 字符 resolve note 返回 400
+- [x] 后端测试确认超长 note 不会关闭 open report
+- [x] 后端测试覆盖 1000 字符 resolve note 成功保存
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -728,6 +736,7 @@
 | Creator Center 应显示审核状态细节 | 后端 creator asset item 已返回 submitted_at、approved_at 和 rejection_reason，前端显示后能让创作者知道何时提交、通过或被拒原因 |
 | Details 应显示 entitlement 摘要 | 详情接口已返回当前用户 entitlement，展示来源/日期/购买引用能帮助用户确认自己何时领取或购买资产 |
 | Report Queue 应显示举报日期 | 后端 report item 已返回 created_at，管理员需要看到举报时间来判断积压和处理优先级 |
+| Report resolve note 长度必须有边界测试 | 后端以 1000 字符限制 resolution note；超长请求应 400 且保持 report open，避免误关闭举报 |
 | Marketplace 搜索应覆盖展示元数据 | language 和 content_rating 已在列表/详情数据中存在，搜索覆盖它们能让用户按语言和分级找到资产 |
 | Snapshot 应导出审核生命周期 | submitted_at、approved_at、delisted_at 不含 payload，但能帮助迁移和备份校验市场资产状态 |
 | API reference 测试应锁定路由集合 | 导出脚本从源码解析路由，测试覆盖完整 MVP 路由可以尽早发现文档导出漂移 |

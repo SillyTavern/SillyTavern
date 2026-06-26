@@ -132,6 +132,7 @@
 - runtime smoke 现在覆盖举报处理真实闭环：用户对可见资产创建 open report，管理员队列可见但不带 asset payload/metadata，resolve 后记录 resolved metadata 且队列清空。
 - marketplace-wallet Report 前端现在提交短 reason 和可选 body，管理员 Report Queue 会显示详细正文，避免审核员只看到一句原因。
 - marketplace-wallet Report Queue 会显示举报创建日期，帮助管理员判断 open reports 的积压时间。
+- report resolve 的 `note` 上限是 1000 字符；超长 note 应返回 `Invalid report resolution` 并保持 report 为 open。
 - API reference 导出脚本从当前 market/wallet endpoint 源码和公开 health route 生成 Markdown，适合作为发布前检查点，减少 README/设计文档里的端点清单和实现漂移。
 - API reference 单测锁定当前完整 MVP 路由集合，包括 library、reports admin、submit/approve/reject/delist/purchase/install 和 wallet ledger。
 - API reference 现在包含关键权限/隐私标注：payload redaction、admin-only 队列/审核/赠币、Library scope 和 Wallet read scope。

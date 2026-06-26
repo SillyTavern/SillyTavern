@@ -21,7 +21,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Installable PWA shell for mobile browsers using the existing web app and static shell cache.
 - Admin review queue with creator, price, tag, summary, inspect/approve/reject actions.
 - Admin delist action to remove listed assets from public purchase while preserving existing entitlements.
-- User report action with reason/details body and admin report queue with reported dates and resolve workflow for marketplace moderation.
+- User report action with reason/details body and admin report queue with reported dates, bounded resolution notes, and resolve workflow for marketplace moderation.
 - Admin coin grants for `bonus`, `paid`, and `earnings`, with `handle`, `userHandle`, or `targetHandle` recipient aliases.
 - Free and fixed-price purchase flow with `bonus -> paid` spending order.
 - Fixed-price cards show the missing bonus/paid coin amount when the buyer cannot afford them.
