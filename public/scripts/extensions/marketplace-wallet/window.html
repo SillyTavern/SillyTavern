@@ -1,0 +1,75 @@
+<div id="marketplace_wallet_ui">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b data-i18n="Marketplace & Wallet">Marketplace &amp; Wallet</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="marketplace-wallet-layout">
+                <section class="marketplace-wallet-balance" aria-label="Wallet balance">
+                    <div class="marketplace-wallet-balance-main">
+                        <i class="fa-solid fa-coins" aria-hidden="true"></i>
+                        <span id="marketplace_wallet_total">0</span>
+                    </div>
+                    <div class="marketplace-wallet-buckets">
+                        <span><b data-marketplace-wallet-bucket="bonus">0</b> bonus</span>
+                        <span><b data-marketplace-wallet-bucket="paid">0</b> paid</span>
+                        <span><b data-marketplace-wallet-bucket="earnings">0</b> earnings</span>
+                    </div>
+                    <button id="marketplace_wallet_refresh" class="menu_button menu_button_icon" type="button" title="Refresh marketplace" data-i18n="[title]Refresh marketplace">
+                        <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                    </button>
+                </section>
+
+                <section class="marketplace-wallet-controls" aria-label="Marketplace filters">
+                    <select id="marketplace_wallet_type_filter" class="text_pole" aria-label="Asset type">
+                        <option value="" data-i18n="All types">All types</option>
+                        <option value="character_card" data-i18n="Character cards">Character cards</option>
+                        <option value="world_book" data-i18n="World books">World books</option>
+                    </select>
+                    <input id="marketplace_wallet_search" class="text_pole" type="search" placeholder="Search" data-i18n="[placeholder]Search" aria-label="Search marketplace">
+                </section>
+
+                <div id="marketplace_wallet_assets" class="marketplace-wallet-assets" aria-live="polite"></div>
+
+                <section class="marketplace-wallet-upload" aria-label="Upload market asset">
+                    <div class="marketplace-wallet-upload-header">
+                        <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                        <b data-i18n="Upload to Marketplace">Upload to Marketplace</b>
+                    </div>
+                    <div class="marketplace-wallet-upload-grid">
+                        <select id="marketplace_wallet_upload_type" class="text_pole" aria-label="Upload type">
+                            <option value="character_card" data-i18n="Character card">Character card</option>
+                            <option value="world_book" data-i18n="World book">World book</option>
+                        </select>
+                        <input id="marketplace_wallet_upload_title" class="text_pole" maxlength="160" placeholder="Title" data-i18n="[placeholder]Title" aria-label="Title">
+                        <select id="marketplace_wallet_upload_price_type" class="text_pole" aria-label="Price type">
+                            <option value="free" data-i18n="Free">Free</option>
+                            <option value="fixed_price" data-i18n="Fixed price">Fixed price</option>
+                        </select>
+                        <input id="marketplace_wallet_upload_price" class="text_pole" type="number" min="0" step="1" value="0" aria-label="Price coins">
+                    </div>
+                    <input id="marketplace_wallet_upload_summary" class="text_pole" maxlength="280" placeholder="Summary" data-i18n="[placeholder]Summary" aria-label="Summary">
+                    <div class="marketplace-wallet-file-row">
+                        <input id="marketplace_wallet_upload_file" type="file" accept=".json,application/json">
+                        <label for="marketplace_wallet_upload_file" class="menu_button menu_button_icon">
+                            <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                            <span data-i18n="Load JSON">Load JSON</span>
+                        </label>
+                    </div>
+                    <textarea id="marketplace_wallet_upload_payload" class="text_pole textarea_compact monospace" rows="8" placeholder="{ }" aria-label="Payload JSON"></textarea>
+                    <div class="marketplace-wallet-upload-actions">
+                        <button class="menu_button menu_button_icon" type="button" data-marketplace-wallet-upload="draft">
+                            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                            <span data-i18n="Save Draft">Save Draft</span>
+                        </button>
+                        <button class="menu_button menu_button_icon" type="button" data-marketplace-wallet-upload="review">
+                            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                            <span data-i18n="Submit">Submit</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,200 @@
+#marketplace_wallet_ui .inline-drawer-content {
+    padding-top: 8px;
+}
+
+.marketplace-wallet-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.marketplace-wallet-balance {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    padding-bottom: 8px;
+}
+
+.marketplace-wallet-balance-main {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+    font-size: 1.1em;
+    min-width: 80px;
+}
+
+.marketplace-wallet-balance-main i {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.marketplace-wallet-buckets {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: calc(var(--mainFontSize) * 0.85);
+    opacity: 0.9;
+}
+
+.marketplace-wallet-controls,
+.marketplace-wallet-upload-grid,
+.marketplace-wallet-file-row,
+.marketplace-wallet-upload-actions,
+.marketplace-wallet-asset-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.marketplace-wallet-controls > * {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.marketplace-wallet-assets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: min(42vh, 420px);
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.marketplace-wallet-asset {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    padding: 8px 2px;
+}
+
+.marketplace-wallet-asset-main {
+    min-width: 0;
+}
+
+.marketplace-wallet-asset-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.marketplace-wallet-asset h4 {
+    margin: 0;
+    font-size: 1em;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.marketplace-wallet-asset p {
+    margin: 4px 0;
+    font-size: calc(var(--mainFontSize) * 0.9);
+    opacity: 0.9;
+    overflow-wrap: anywhere;
+}
+
+.marketplace-wallet-asset-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: calc(var(--mainFontSize) * 0.82);
+    opacity: 0.75;
+}
+
+.marketplace-wallet-type,
+.marketplace-wallet-badge {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 2px 5px;
+    font-size: calc(var(--mainFontSize) * 0.78);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.marketplace-wallet-type {
+    background-color: var(--black30a);
+}
+
+.marketplace-wallet-badge[data-marketplace-wallet-status="listed"] {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.marketplace-wallet-badge[data-marketplace-wallet-status="rejected"] {
+    color: var(--warning);
+}
+
+.marketplace-wallet-asset-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.marketplace-wallet-asset-actions .menu_button,
+.marketplace-wallet-upload-actions .menu_button,
+#marketplace_wallet_refresh {
+    min-height: 32px;
+}
+
+.marketplace-wallet-empty {
+    text-align: center;
+    opacity: 0.75;
+    padding: 16px 4px;
+}
+
+.marketplace-wallet-upload {
+    border-top: 1px solid var(--SmartThemeBorderColor);
+    padding-top: 8px;
+}
+
+.marketplace-wallet-upload-header {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 4px;
+}
+
+.marketplace-wallet-upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1fr 90px;
+}
+
+#marketplace_wallet_upload_file {
+    display: none;
+}
+
+.marketplace-wallet-file-row {
+    justify-content: flex-start;
+}
+
+#marketplace_wallet_upload_payload {
+    min-height: 140px;
+    resize: vertical;
+}
+
+@media screen and (max-width: 700px) {
+    .marketplace-wallet-balance,
+    .marketplace-wallet-asset {
+        grid-template-columns: 1fr;
+    }
+
+    .marketplace-wallet-controls,
+    .marketplace-wallet-upload-actions,
+    .marketplace-wallet-asset-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .marketplace-wallet-upload-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .marketplace-wallet-asset-actions .menu_button,
+    .marketplace-wallet-upload-actions .menu_button,
+    #marketplace_wallet_refresh {
+        width: 100%;
+        justify-content: center;
+    }
+}
