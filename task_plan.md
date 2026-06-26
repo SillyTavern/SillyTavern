@@ -743,6 +743,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 80：API reference 上传边界说明
+- [x] API reference note 覆盖 POST asset create body shape
+- [x] API reference note 覆盖 PATCH asset revision 复用 create validation
+- [x] API reference 测试锁定 upload validation notes
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -777,6 +785,7 @@
 | tags 后端边界必须有契约测试 | 前端校验不能替代服务端约束；POST 资产时应锁定 tags 数组、数量、类型、长度和去重行为 |
 | 文本元数据后端边界必须有契约测试 | title、summary、description、language、content_rating 是市场展示和搜索字段，长度与 trim 行为应由后端测试锁定 |
 | 资产创建 payload shape 必须有契约测试 | 托管上传入口必须拒绝非 object、未知类型、未知价格类型和非 object payload/metadata |
+| API reference 必须记录上传边界 | 托管 API 使用者需要从生成文档看到 create/revision 的 body shape、tags/text 和 fixed_price 价格约束 |
 | Load JSON 应自动识别资产类型 | 角色卡和世界书 payload 形状可本地判断，自动设置类型能减少用户选错后才报错的摩擦 |
 | 粘贴 JSON 应复用文件导入识别逻辑 | 创作者可能直接粘贴角色卡/世界书 JSON；只在文件导入时自动识别会造成体验不一致 |
 | 余额不足原因应在移动端可见 | 仅靠 disabled 按钮的 title 提示不适合手机和读屏，需要在卡片动作区显示缺口金额 |

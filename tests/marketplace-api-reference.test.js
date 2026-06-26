@@ -46,6 +46,8 @@ describe('marketplace API reference export script', () => {
         expect(markdown).toContain('- GET /api/market/assets/:id: Payload is returned only to the creator, admins, or entitled users; other readers receive redacted metadata.');
         expect(markdown).toContain('- GET /api/market/library: Returns only the authenticated user\'s active entitlements and install summaries.');
         expect(markdown).toContain('- GET /api/market/reports/admin: Admin-only report queue; report bodies are visible here but asset payloads remain excluded.');
+        expect(markdown).toContain('- POST /api/market/assets: Creates a draft character_card or world_book asset; body must be a JSON object with object metadata and normalized_payload, bounded text metadata/tags, supported price_type free/fixed_price, and positive safe integer price_coins for fixed_price assets.');
+        expect(markdown).toContain('- PATCH /api/market/assets/:id: Creator-only revision for draft or rejected assets; uses the same asset body validation as create and resets the asset to private draft before resubmission.');
         expect(markdown).toContain('- POST /api/market/assets/:id/report: Creates an open report with required reason up to 120 characters and optional body up to 2000 characters.');
         expect(markdown).toContain('- POST /api/market/reports/:id/resolve: Admin-only report resolution with optional note up to 1000 characters.');
         expect(markdown).toContain('- POST /api/market/assets/:id/delist: Admin-only moderation action; existing entitlements are preserved.');

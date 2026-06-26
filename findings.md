@@ -129,6 +129,7 @@
 - 后端 asset create 会校验 `tags` 必须是数组、最多 20 个、每个字符串最多 40 字符，并会 trim、过滤空值和去重。
 - 后端 asset create 会校验并 trim 市场展示文本：title 120、summary 500、description 10000、language 16、content_rating 40 字符。
 - 后端 asset create 会拒绝非 JSON object 请求体、未知 asset type/price_type、非 object metadata 以及非 object normalized_payload。
+- Marketplace API reference 导出现在记录 asset create/revision 的 body shape、metadata/payload、tags/text 和 fixed_price 价格约束。
 - marketplace-wallet Load JSON 会按 payload 形状自动切换 `character_card` 或 `world_book`，减少用户上传角色卡/世界书时选错类型。
 - marketplace-wallet 粘贴 JSON textarea 也复用同一类型/标题识别逻辑，且已有标题不会被 payload name 覆盖。
 - runtime smoke 现在也覆盖真实 creator upload 状态机：POST 创建 draft world_book、Creator Center 看到 draft、submit 后进入 review、creator detail 可读 payload、approve 后 listed/public、市场列表不泄漏 payload、创作者可安装并刷新 install_count。
