@@ -1,0 +1,195 @@
+import { test, expect } from '@playwright/test';
+
+function makeWallet(overrides = {}) {
+    return {
+        handle: 'default-user',
+        balance: {
+            total: 175,
+            buckets: {
+                bonus: 100,
+                paid: 50,
+                earnings: 25,
+            },
+        },
+        ...overrides,
+    };
+}
+
+function makeSubmittedAsset(overrides = {}) {
+    return {
+        id: 'submitted-character',
+        type: 'character_card',
+        title: 'Submitted Character',
+        summary: 'Awaiting review.',
+        creator_id: 'creator-handle',
+        status: 'submitted',
+        owned: false,
+        price_type: 'fixed_price',
+        price_coins: 25,
+        sales_count: 0,
+        updated_at: '2026-06-26T10:00:00.000Z',
+        ...overrides,
+    };
+}
+
+function makeListedAsset(overrides = {}) {
+    return {
+        id: 'listed-world',
+        type: 'world_book',
+        title: 'Listed World',
+        summary: 'Ready to install.',
+        creator_id: 'creator-handle',
+        status: 'listed',
+        owned: false,
+        price_type: 'fixed_price',
+        price_coins: 125,
+        sales_count: 3,
+        listed_at: '2026-06-26T11:00:00.000Z',
+        updated_at: '2026-06-26T11:00:00.000Z',
+        ...overrides,
+    };
+}
+
+async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()] } = {}) {
+    const apiCalls = {
+        approve: [],
+        grants: [],
+    };
+
+    await page.route('**/api/wallet', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(makeWallet()),
+        });
+    });
+
+    await page.route('**/api/market/assets', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ assets }),
+        });
+    });
+
+    await page.route('**/api/market/assets/*/approve', route => {
+        const assetId = route.request().url().split('/').at(-2);
+        apiCalls.approve.push(assetId);
+        assets = assets.map(asset => asset.id === assetId
+            ? { ...asset, status: 'listed', listed_at: '2026-06-26T12:00:00.000Z' }
+            : asset);
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ asset: assets.find(asset => asset.id === assetId) }),
+        });
+    });
+
+    await page.route('**/api/wallet/grants/admin', async route => {
+        const payload = JSON.parse(route.request().postData() || '{}');
+        apiCalls.grants.push(payload);
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                handle: payload.targetHandle,
+                balance: makeWallet({
+                    handle: payload.targetHandle,
+                    balance: {
+                        total: payload.amount,
+                        buckets: {
+                            bonus: payload.bucket === 'bonus' ? payload.amount : 0,
+                            paid: payload.bucket === 'paid' ? payload.amount : 0,
+                            earnings: payload.bucket === 'earnings' ? payload.amount : 0,
+                        },
+                    },
+                }).balance,
+            }),
+        });
+    });
+
+    return apiCalls;
+}
+
+async function loadSillyTavern(page) {
+    await page.goto('/');
+    await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
+    await expect(page.locator('#marketplace_wallet_ui')).toBeAttached({ timeout: 30_000 });
+}
+
+test.describe('marketplace wallet extension', () => {
+    test('renders admin review queue and posts approve/grant actions', async ({ page }) => {
+        const apiCalls = await mockMarketplaceApis(page);
+
+        await loadSillyTavern(page);
+
+        const admin = page.locator('#marketplace_wallet_admin');
+        await expect(admin).toBeVisible();
+        await expect(page.locator('#marketplace_wallet_total')).toHaveText('175');
+        await expect(page.locator('[data-marketplace-wallet-bucket="bonus"]')).toHaveText('100');
+        await expect(page.locator('[data-marketplace-wallet-bucket="paid"]')).toHaveText('50');
+        await expect(page.locator('[data-marketplace-wallet-bucket="earnings"]')).toHaveText('25');
+
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('Submitted Character');
+        await expect(page.locator('#marketplace_wallet_review_queue [data-marketplace-wallet-action="approve"]')).toHaveCount(1);
+        await expect(page.locator('#marketplace_wallet_assets [data-marketplace-wallet-action="approve"]')).toHaveCount(0);
+
+        await page.locator('#marketplace_wallet_review_queue [data-marketplace-wallet-action="approve"]').click();
+        await expect.poll(() => apiCalls.approve).toEqual(['submitted-character']);
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('No assets awaiting review.');
+
+        await page.locator('#marketplace_wallet_grant_handle').fill('target-user');
+        await page.locator('#marketplace_wallet_grant_amount').fill('42');
+        await page.locator('#marketplace_wallet_grant_bucket').selectOption('paid');
+        await page.locator('#marketplace_wallet_grant_reason').fill('');
+        await page.locator('#marketplace_wallet_grant_submit').click();
+
+        await expect.poll(() => apiCalls.grants).toEqual([{
+            targetHandle: 'target-user',
+            amount: 42,
+            bucket: 'paid',
+            reason: 'Admin grant',
+        }]);
+    });
+
+    test('keeps review controls compact on mobile width', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await mockMarketplaceApis(page, { assets: [makeSubmittedAsset()] });
+
+        await loadSillyTavern(page);
+
+        const layout = await page.locator('#marketplace_wallet_ui').evaluate(element => {
+            const adminGrid = element.querySelector('.marketplace-wallet-admin-grid');
+            const grantGrid = element.querySelector('.marketplace-wallet-grant');
+            const reviewItem = element.querySelector('.marketplace-wallet-review-item');
+            const reviewActions = element.querySelector('.marketplace-wallet-review-actions');
+            const viewportWidth = document.documentElement.clientWidth;
+            const overflowing = [...element.querySelectorAll('*')]
+                .filter(child => {
+                    const rect = child.getBoundingClientRect();
+                    return rect.width > 0 && (rect.left < -1 || rect.right > viewportWidth + 1);
+                })
+                .map(child => ({
+                    tag: child.tagName,
+                    id: child.id,
+                    className: String(child.className),
+                }));
+
+            return {
+                adminColumns: getComputedStyle(adminGrid).gridTemplateColumns.split(' ').length,
+                grantColumns: getComputedStyle(grantGrid).gridTemplateColumns.split(' ').length,
+                reviewItemColumns: getComputedStyle(reviewItem).gridTemplateColumns.split(' ').length,
+                reviewActionColumns: getComputedStyle(reviewActions).gridTemplateColumns.split(' ').length,
+                overflowing,
+            };
+        });
+
+        expect(layout).toMatchObject({
+            adminColumns: 1,
+            grantColumns: 1,
+            reviewItemColumns: 1,
+            reviewActionColumns: 2,
+            overflowing: [],
+        });
+    });
+});

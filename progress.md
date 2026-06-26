@@ -129,6 +129,26 @@
   - progress.md
   - findings.md
 
+### 阶段 11：仓库交付闭环与基础测试
+- **状态：** complete
+- 执行的操作：
+  - 将用户目标明确为持续推进仓库，直到代码、README、基础测试和可运行脚本形成可交付闭环。
+  - 新增 `tests/marketplace-wallet.e2e.js`，覆盖 admin review queue、approve 调用、admin grant POST 和移动端 review 布局。
+  - 新增 `tests/marketplace-wallet-ui.test.js`，用稳定的 Jest 契约测试覆盖 manifest 版本化、admin 模板、`isAdmin()` gate、grant 校验和移动 CSS。
+  - 在根 `package.json` 增加 `test:marketplace` 和 `test:marketplace:e2e` 脚本。
+  - 扩展 `README.md`，补充 Hosted AI Tavern MVP 功能、安装、启动、测试和生产化限制。
+  - 验证 `npm run test:marketplace` 可从仓库根目录运行并通过 10 个 marketplace/wallet 测试。
+  - 验证 `npm run test:marketplace:e2e -- --list` 可列出 2 个 browser E2E 测试。
+  - 验证 `npm run start -- --help` 可运行并输出服务器 CLI 帮助。
+- 创建/修改的文件：
+  - README.md
+  - package.json
+  - tests/marketplace-wallet-ui.test.js
+  - tests/marketplace-wallet.e2e.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -153,6 +173,10 @@
 | admin UI 回归单测 | `npm --prefix tests run test:unit -- market-wallet.test.js` | 5 个用例通过 | 通过：5 passed | 通过 |
 | admin UI 浏览器 smoke | 打开 `http://localhost:8000/` | 加载 `v=0.2.0` 脚本/CSS，admin 面板可见，grant 和 review queue 存在 | 通过 | 通过 |
 | admin UI 移动端检查 | 窄屏 viewport 验证 | 控件不溢出 | 未完整执行：in-app browser 未暴露 viewport 设置，本地无 Playwright 包；已做 CSS 结构调整 | 部分 |
+| marketplace 根脚本基础测试 | `npm run test:marketplace` | backend + frontend contract 测试通过 | 通过：2 suites / 10 tests | 通过 |
+| marketplace E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
+| 启动脚本帮助 | `npm run start -- --help` | 服务器 CLI 正常输出帮助 | 通过 | 通过 |
+| marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -166,15 +190,16 @@
 | 2026-06-26 | 列表接口 `owned` 不是“已购买”状态 | 1 | 前端非创作者只展示“购买/领取并安装”，重复购买交给后端 already_owned 幂等处理 |
 | 2026-06-26 | admin 面板 DOM 已渲染但仍保留 `hidden` 属性 | 1 | 改为显式移除/恢复 `hidden` 属性，并给扩展 JS/CSS 入口加版本 query 避免旧 ESM 模块缓存 |
 | 2026-06-26 | admin 前端 gate 曾尝试用 `default-user` handle 兜底 | 1 | 按并发审查反馈改回仅使用 `isAdmin()`，与后端 admin 权限模型一致 |
+| 2026-06-26 | Playwright Chromium 下载被中断后留下半安装缓存 | 2 | 不再阻塞基础交付；保留 E2E 测试与脚本，新增稳定 Jest UI 契约测试，E2E 需完整安装 `chromium-headless-shell` 后运行 |
 
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场与货币系统设计 |
-| 我要去哪里？ | 下一步可做完整 UI 自动化测试、数据库迁移、真实支付和移动端封装 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口，并正在补仓库交付闭环 |
+| 我要去哪里？ | 下一步完成基础验证、提交推送，然后继续数据库迁移、真实支付和移动端封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展和管理员审核/赠币入口 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、README 和 marketplace 基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

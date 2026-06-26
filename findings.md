@@ -37,6 +37,7 @@
 | 购买按钮不能使用 `balance.total` 判定可消费余额 | `total` 包含 earnings，购买只消耗 bonus 和 paid，因此前端使用 `bonus + paid` |
 | 管理员前端 gate 必须和后端 admin 模型一致 | 后端按 `request.user.profile.admin` 授权，前端应使用 `isAdmin()`，不能根据 `default-user` handle 推断 |
 | 扩展 JS/CSS 入口需要版本化 | 浏览器会复用 ESM 模块；manifest 中加入 `?v=0.2.0` 可以让刷新加载新 admin UI |
+| 基础交付需要根目录可运行脚本 | `npm run test:marketplace` 聚合后端和前端契约测试，方便从仓库根目录验证市场/钱包闭环 |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -47,6 +48,8 @@
 - admin 面板初始模板带 `hidden`，需要显式 `removeAttr('hidden')` 才能在真实浏览器里可靠显示。
 - 浏览器 smoke test 已确认 `marketplace-wallet` 加载 `index.js?v=0.2.0` 和 `style.css?v=0.2.0` 后，admin 面板可见，grant 控件和 review queue 存在。
 - in-app browser 当前未暴露 viewport 设置，本地也没有 Playwright 包；本轮移动端仅完成 CSS 结构调整，后续应补真实窄屏截图或 UI 自动化。
+- 新增 Playwright E2E 覆盖 admin review/grant 和移动布局；当前本机 Playwright Chromium 缓存半安装，完整 E2E 需先成功安装 `chromium-headless-shell`。
+- 新增 Jest UI 契约测试作为稳定基础测试，已覆盖 manifest 版本化、admin 模板、`isAdmin()` gate、grant 校验和移动 CSS。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

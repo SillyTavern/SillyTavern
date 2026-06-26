@@ -125,6 +125,8 @@
         "start:deno": "deno run --allow-run --allow-net --allow-read --allow-write --allow-sys --allow-env server.js",
         "start:bun": "bun server.js",
         "start:no-csrf": "node server.js --disableCsrf",
+        "test:marketplace": "npm --prefix tests run test:unit -- market-wallet.test.js marketplace-wallet-ui.test.js",
+        "test:marketplace:e2e": "npm --prefix tests run test:e2e -- marketplace-wallet.e2e.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
         "plugins:update": "node plugins update",

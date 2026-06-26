@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 11
+阶段 12
 
 ## 各阶段
 
@@ -95,6 +95,16 @@
 - [x] 增加扩展 manifest 版本化入口，避免前端模块缓存旧脚本
 - [x] 补充 grant bucket/reason 本地校验和移动端 review 按钮布局
 - [x] 运行目标语法检查、manifest JSON 检查、空白检查、市场/钱包单测和浏览器 smoke
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
+### 阶段 12：仓库交付闭环与基础测试
+- [x] 明确持续目标：代码、README、基础测试和可运行脚本形成可交付闭环
+- [x] 新增 marketplace-wallet Playwright E2E 测试，覆盖 admin queue、grant POST 和移动布局
+- [x] 新增 marketplace-wallet Jest 前端契约测试，覆盖 manifest、模板、admin gate、grant 校验和移动 CSS
+- [x] 新增根目录测试脚本 `test:marketplace` 和 `test:marketplace:e2e`
+- [x] 扩展 README，写明市场钱包功能、安装启动、测试命令和生产化边界
+- [x] 运行基础测试和可运行脚本验证
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
