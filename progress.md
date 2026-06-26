@@ -369,7 +369,7 @@
   - progress.md
   - findings.md
 
-### 阶段 22：市场浏览筛选与排序
+### 阶段 23：市场浏览筛选与排序
 - **状态：** complete
 - 执行的操作：
   - 选择客户端筛选/排序作为当前 JSON-store MVP 的最小浏览增强。
@@ -386,6 +386,21 @@
   - public/scripts/extensions/marketplace-wallet/index.js
   - public/scripts/extensions/marketplace-wallet/style.css
   - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
+### 阶段 24：市场基础脚本语法门禁
+- **状态：** complete
+- 执行的操作：
+  - 新增 `scripts/check-marketplace-syntax.mjs`，集中检查 marketplace/wallet/PWA/health 相关 JS 文件是否存在并通过 `node --check`。
+  - 新增根命令 `npm run test:marketplace:syntax`。
+  - 更新 `npm run test:marketplace`，先运行语法门禁，再运行市场、钱包、PWA、health Jest 契约测试。
+  - 更新 README Useful Scripts，补充 syntax gate 用法。
+- 创建/修改的文件：
+  - scripts/check-marketplace-syntax.mjs
+  - package.json
+  - README.md
   - task_plan.md
   - progress.md
   - findings.md
@@ -432,6 +447,9 @@
 | health endpoint 契约 | `npm run test:marketplace` | `/api/health` 公开且返回服务级状态字段 | 通过：4 suites / 16 tests | 通过 |
 | asset details 回归 | `npm run test:marketplace` | 未授权详情不泄漏 payload，付费购买后详情可读 payload，前端 Details 走统一弹窗 | 通过：4 suites / 16 tests | 通过 |
 | marketplace filters 回归 | `npm run test:marketplace` | 类型/价格/访问状态/排序控件与前端过滤分支存在 | 通过：4 suites / 16 tests | 通过 |
+| marketplace syntax 门禁 | `npm run test:marketplace:syntax` | market/wallet/PWA/health 相关 JS 文件存在且无语法错误 | 通过：11 files checked | 通过 |
+| marketplace 聚合脚本串联 | `npm run test:marketplace` | 先跑 syntax gate，再跑 Jest 契约测试 | 通过：syntax gate + 4 suites / 16 tests | 通过 |
+| marketplace E2E 列表复核 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -451,7 +469,7 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗和市场筛选排序 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序和 marketplace 语法门禁 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |

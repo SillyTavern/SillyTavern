@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 23
+阶段 24
 
 ## 各阶段
 
@@ -235,6 +235,17 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 24：市场基础脚本语法门禁
+- [x] 确认根目录需要更稳定的一键验证脚本
+- [x] 新增 `scripts/check-marketplace-syntax.mjs`
+- [x] 覆盖 market/wallet/PWA/health 相关服务端、前端和测试文件的 `node --check`
+- [x] 新增 `npm run test:marketplace:syntax`
+- [x] 让 `npm run test:marketplace` 先运行语法门禁再运行 Jest 契约测试
+- [x] 更新 README 和规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -270,6 +281,7 @@
 | Health endpoint 公开但不含用户数据 | 部署平台和移动壳需要未登录探活，响应只能包含服务级状态 |
 | 资产详情复用 payload 权限 | Details 统一使用 asset detail API；未授权用户看元数据，已授权/创建者/管理员才看 payload |
 | MVP 浏览先做客户端筛选排序 | 当前 JSON store 数据量有限，先补 UI 可用性；正式 SaaS 再上服务端搜索、排序和索引 |
+| marketplace 根测试先跑语法门禁 | 低成本捕捉服务端、前端扩展、PWA 和测试文件语法破损，再进入较慢 Jest 契约 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

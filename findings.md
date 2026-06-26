@@ -53,6 +53,7 @@
 | Health endpoint 只做 liveness | `/api/health` 公开且无需登录，但只报告服务存活，不检查数据库、插件或外部模型 readiness |
 | 资产详情弹窗复用详情权限 | 购买前只显示元数据；创建者、管理员和已授权用户才看到 `normalized_payload` |
 | 市场浏览 MVP 使用客户端筛选排序 | 当前数据量小，先用前端组合筛选；正式 SaaS 需要服务端搜索、分页和排序索引 |
+| marketplace 验证入口应先跑语法门禁 | 服务端 endpoint、PWA、扩展脚本和 Jest 契约文件分散在不同目录，集中 `node --check` 能更早暴露破损 |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -76,6 +77,7 @@
 - 托管探活新增 `GET /api/health`；响应包含服务级状态、版本、uptime 和时间戳，不返回用户、市场或钱包数据。
 - marketplace-wallet 新增 Details；市场列表、用户库和审核预览共用 asset detail 弹窗，未授权时不渲染 payload JSON。
 - marketplace-wallet 市场筛选条新增价格、访问状态和排序控件，继续使用本地列表做客户端过滤。
+- 新增 `scripts/check-marketplace-syntax.mjs` 作为 marketplace/wallet/PWA/health 基础语法门禁，并接入根目录 `npm run test:marketplace`。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

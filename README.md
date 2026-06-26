@@ -60,8 +60,11 @@ npm start
 # Start with CSRF disabled for local API smoke testing
 npm run start:no-csrf
 
-# Run marketplace/wallet/PWA/health backend and frontend-contract tests
+# Run marketplace/wallet/PWA/health syntax and contract tests
 npm run test:marketplace
+
+# Run only the marketplace/wallet/PWA/health syntax gate
+npm run test:marketplace:syntax
 
 # Run only the mobile/PWA shell contract test
 npm run test:pwa
