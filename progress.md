@@ -483,6 +483,19 @@
   - progress.md
   - findings.md
 
+### 阶段 30：Marketplace Wallet GitHub Actions 门禁
+- **状态：** complete
+- 执行的操作：
+  - 新增 `.github/workflows/marketplace-wallet-checks.yml`。
+  - workflow 在 PR 相关路径变化时运行，并在 `codex/marketplace-wallet-mvp` 分支 push 时运行。
+  - workflow 使用 Node 24，安装根依赖和 `tests/` 依赖。
+  - workflow 执行 `npm run test:marketplace:syntax`、`npm run test:marketplace`、`npm run test:marketplace:smoke` 和 `npm run test:marketplace:e2e -- --list`。
+- 创建/修改的文件：
+  - .github/workflows/marketplace-wallet-checks.yml
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -545,6 +558,11 @@
 | Report Queue E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现新增 Report Queue resolve browser 用例 | 通过：3 tests listed | 通过 |
 | Report Queue marketplace 回归 | `npm run test:marketplace` | frontend contract 与 marketplace 根测试通过 | 通过：5 suites / 19 tests | 通过 |
 | Report Queue 指定 E2E 实跑 | `npm --prefix tests run test:e2e -- marketplace-wallet.e2e.js -g "resolves reports"` | 浏览器级 resolve 流程通过 | 未通过：本机 Playwright 缺 `chromium_headless_shell-1194/headless_shell`；尝试安装后进程卡在解压/注册阶段，已终止 | 环境阻塞 |
+| Marketplace workflow YAML 解析 | `node --input-type=module -e "import YAML..."` | workflow 可被 YAML parser 解析 | 通过：`Marketplace Wallet Checks` / job `marketplace-wallet` | 通过 |
+| Marketplace workflow syntax step | `npm run test:marketplace:syntax` | workflow 第一个脚本门禁通过 | 通过：14 files checked | 通过 |
+| Marketplace workflow Jest step | `npm run test:marketplace` | workflow Jest/contract step 通过 | 通过：5 suites / 19 tests | 通过 |
+| Marketplace workflow smoke step | `npm run test:marketplace:smoke` | workflow runtime smoke step 通过 | 通过 | 通过 |
+| Marketplace workflow E2E discovery step | `npm run test:marketplace:e2e -- --list` | workflow E2E discovery step 通过 | 通过：3 tests listed | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -565,11 +583,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试和 Report Queue resolve 前端覆盖 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖和 GitHub Actions 门禁 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试和 Report Queue resolve 前端覆盖 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖和 GitHub Actions 门禁 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

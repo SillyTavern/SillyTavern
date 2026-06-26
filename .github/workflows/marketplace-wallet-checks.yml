@@ -1,0 +1,98 @@
+name: Marketplace Wallet Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/marketplace-wallet-checks.yml'
+      - 'README.md'
+      - 'docs/marketplace-currency-design.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/check-marketplace-syntax.mjs'
+      - 'scripts/smoke-marketplace-runtime.mjs'
+      - 'src/endpoints/market.js'
+      - 'src/endpoints/wallet.js'
+      - 'src/server-main.js'
+      - 'src/server-startup.js'
+      - 'public/manifest.json'
+      - 'public/service-worker.js'
+      - 'public/scripts/pwa.js'
+      - 'public/scripts/extensions/marketplace-wallet/**'
+      - 'tests/market-wallet.test.js'
+      - 'tests/marketplace-wallet-filters.test.js'
+      - 'tests/marketplace-wallet-ui.test.js'
+      - 'tests/marketplace-wallet.e2e.js'
+      - 'tests/pwa.test.js'
+      - 'tests/health.test.js'
+      - 'tests/package.json'
+      - 'tests/package-lock.json'
+  push:
+    branches:
+      - codex/marketplace-wallet-mvp
+    paths:
+      - '.github/workflows/marketplace-wallet-checks.yml'
+      - 'README.md'
+      - 'docs/marketplace-currency-design.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/check-marketplace-syntax.mjs'
+      - 'scripts/smoke-marketplace-runtime.mjs'
+      - 'src/endpoints/market.js'
+      - 'src/endpoints/wallet.js'
+      - 'src/server-main.js'
+      - 'src/server-startup.js'
+      - 'public/manifest.json'
+      - 'public/service-worker.js'
+      - 'public/scripts/pwa.js'
+      - 'public/scripts/extensions/marketplace-wallet/**'
+      - 'tests/market-wallet.test.js'
+      - 'tests/marketplace-wallet-filters.test.js'
+      - 'tests/marketplace-wallet-ui.test.js'
+      - 'tests/marketplace-wallet.e2e.js'
+      - 'tests/pwa.test.js'
+      - 'tests/health.test.js'
+      - 'tests/package.json'
+      - 'tests/package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  marketplace-wallet:
+    name: Marketplace Wallet MVP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts --prefix tests
+
+      - name: Run marketplace syntax gate
+        run: npm run test:marketplace:syntax
+
+      - name: Run marketplace unit and contract tests
+        run: npm run test:marketplace
+
+      - name: Run marketplace runtime smoke
+        run: npm run test:marketplace:smoke
+
+      - name: Verify marketplace E2E discovery
+        run: npm run test:marketplace:e2e -- --list

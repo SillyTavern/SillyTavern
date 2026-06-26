@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 29
+阶段 30
 
 ## 各阶段
 
@@ -297,6 +297,16 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 30：Marketplace Wallet GitHub Actions 门禁
+- [x] 确认当前本地脚本已覆盖 syntax、Jest、runtime smoke 和 E2E discovery
+- [x] 新增 marketplace-wallet 专用 workflow
+- [x] PR 仅在 marketplace/wallet/PWA/health 相关路径变更时触发
+- [x] 当前 MVP 分支 push 时触发
+- [x] workflow 安装 root/tests 依赖并运行 marketplace 脚本闭环
+- [x] 运行 workflow 语法和基础验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -328,6 +338,7 @@
 | 运行态 smoke 必须隔离本地数据 | 临时启动真实 server 时使用临时 config/data，只请求公开 health/PWA 端点，避免写入用户工作数据 |
 | 前端筛选排序应有可执行测试 | 筛选逻辑抽为纯函数后，Jest 能直接验证类型、价格、访问状态、搜索和排序，不依赖浏览器环境 |
 | 举报队列前端需要覆盖 resolve 流程 | 后端 resolve 测试不足以保证管理员点击后 UI 队列清空，需要浏览器 mock 或契约测试覆盖 |
+| Marketplace MVP 需要独立 CI 门禁 | 相关路径变更时自动跑 syntax、Jest、runtime smoke 和 E2E discovery，避免只依赖本地验证 |
 | 下架不撤销既有 entitlement | 下架阻止新购买和公开浏览，但已购买用户的安装副本能力保留，避免破坏已有体验 |
 | 举报先只创建 open report | MVP 需要可审计入口，自动处罚和处理队列等管理策略后续再加 |
 | 举报处理先做队列和 resolve | 管理员需要能清理 open reports；封禁、自动处罚和申诉规则仍需产品策略 |

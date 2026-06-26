@@ -48,6 +48,7 @@
 | 运行态 smoke 使用临时 config/data | 从根目录启动真实 server 验证公开端点时，必须传入临时 `configPath` 和 `dataRoot`，避免污染仓库或用户数据 |
 | 筛选排序逻辑适合抽成纯函数测试 | marketplace-wallet 的 DOM 只负责读取控件值，核心筛选排序可在 Jest 里直接用资产样本断言 |
 | Report Queue resolve 需要前端流程测试 | 管理员队列点击 Resolve 后应 POST resolve endpoint 并从本地队列移除 report |
+| Marketplace CI 适合路径触发 | 专用 GitHub Actions workflow 只在 marketplace/wallet/PWA/health 相关文件变化时运行，减少普通 PR 负担 |
 | 下架不等于撤销授权 | delisted 资产不再公开售卖，但已领取/购买用户仍可查看 payload 并安装副本，避免破坏已有体验 |
 | 举报入口先不做自动处罚 | 先留下 open report 审计记录；封禁、自动处罚和申诉流会牵涉策略，后续再加 |
 | 举报处理先做管理员队列和 resolve | 让人工审核可以清理 open reports，同时避免提前固化处罚规则 |
@@ -88,6 +89,7 @@
 - 新增运行态 smoke 脚本，临时启动真实 SillyTavern server 并校验 `/api/health`、`/manifest.json`、`/service-worker.js`。
 - marketplace-wallet 筛选排序逻辑抽为 `filters.js` 纯函数，新增 Jest 可执行测试覆盖筛选、搜索、排序和不变性。
 - marketplace-wallet E2E mock 扩展 Report Queue resolve 流程，覆盖管理员点击 Resolve 后队列变空。
+- 新增 Marketplace Wallet GitHub Actions 门禁，覆盖 syntax、Jest contract、runtime smoke 和 E2E discovery。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*
