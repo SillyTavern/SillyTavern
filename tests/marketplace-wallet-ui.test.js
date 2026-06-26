@@ -92,6 +92,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('async function loadWalletLedger()');
         expect(script).toContain('ledgerLoading: false');
         expect(script).toContain('state.ledger = Array.isArray(result.ledger) ? result.ledger : []');
+        const loadWalletLedgerBlock = script.slice(script.indexOf('async function loadWalletLedger()'), script.indexOf('async function loadMarketplace'));
+        expect(loadWalletLedgerBlock).not.toContain('state.wallet.balance = result.balance');
         expect(script).toMatch(/Loading (recent )?wallet activity\.\.\./);
         expect(script).toContain('No wallet activity yet.');
         expect(script).toContain("amount > 0 ? '+' : ''");

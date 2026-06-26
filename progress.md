@@ -607,6 +607,10 @@
 | 阶段 38 syntax gate | `npm run test:marketplace:syntax` | ledger UI、runtime smoke 和并发测试语法门禁 | 通过：19 files checked | 通过 |
 | 阶段 38 marketplace 聚合 | `npm run test:marketplace` | syntax + marketplace/PWA/health/seed/filter/UI 契约通过 | 通过：6 suites / 23 tests | 通过 |
 | 阶段 38 runtime smoke | `npm run test:marketplace:smoke` | 真实 server 校验 health/PWA/wallet/assets/free purchase/install/library/文件落盘 | 通过 | 通过 |
+| Wallet ledger E2E 修复目标验证 | `npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js` | `loadWalletLedger()` 不覆盖主钱包余额 | 通过：1 suite / 5 tests | 通过 |
+| Wallet ledger E2E 修复 marketplace 回归 | `npm run test:marketplace` | syntax + marketplace/PWA/health/seed/filter/UI 契约通过 | 通过：6 suites / 23 tests | 通过 |
+| Wallet ledger E2E 修复 runtime smoke | `npm run test:marketplace:smoke` | 真实 server free purchase/install/library/文件落盘仍通过 | 通过 | 通过 |
+| Wallet ledger E2E 修复本机 Chrome | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | 真实浏览器 admin/report/free-claim/mobile 四用例 | 通过：4 passed (1.7m)；本机父进程延迟退出后 Ctrl-C 清理 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -625,6 +629,7 @@
 | 2026-06-26 | Runner Chrome 真实 E2E 中 admin、report、purchase 按钮隐藏或不可点击 | 1 | E2E helper 打开外层 Extensions drawer、展开内层 Marketplace inline drawer，并 mock admin 当前用户 |
 | 2026-06-26 | 临时 data root 首次启动 onboarding 弹窗遮挡测试交互 | 1 | E2E helper 等待欢迎弹窗并点击 Save |
 | 2026-06-26 | 本机 Chrome channel E2E 通过后父进程延迟退出 | 1 | 手动 Ctrl-C 后 wrapper 清理 server；以 GitHub runner 作为并行 E2E 退出行为最终裁决 |
+| 2026-06-26 | Wallet ledger 降级请求覆盖 E2E mock 钱包余额，导致真实 Chrome E2E 看到 0 而非 175 | 1 | `loadWalletLedger()` 只更新最近流水，不再用 `/api/wallet/ledger` 响应覆盖 `state.wallet.balance` |
 
 ## 2026-06-26 阶段 38：钱包流水 UI 与真实运行闭环
 - 启动并行 worker `019f040f-2485-7a31-9e82-15ca33bfc3fe`，限定其只补测试/文档契约，主线程负责 UI/样式/runtime smoke。
@@ -634,6 +639,7 @@
 - runtime smoke 增加 `--disableCsrf` 并实际 POST 免费领取、安装，随后校验 Library 和临时 dataRoot 内 world book 文件。
 - `market-wallet.test.js` 新增固定价并发购买测试：两次并发 purchase 只生成一条 entitlement、一笔 buyer debit 和一笔 creator earning。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- market-wallet.test.js marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、`git diff --check`。
+- GitHub run `28240670891` 的真实 Chrome E2E 暴露 ledger 降级请求会用真实 `/api/wallet/ledger` 的 0 余额覆盖 mocked `/api/wallet` 的 175 余额；已修复为 ledger 请求只更新最近流水，余额继续由 `/api/wallet` 和 grant/purchase 主流程返回维护。
 
 ## 五问重启检查
 | 问题 | 答案 |

@@ -609,10 +609,6 @@ async function loadWalletLedger() {
     try {
         const result = await fetchJson('/api/wallet/ledger');
         state.ledger = Array.isArray(result.ledger) ? result.ledger : [];
-        if (result.balance && state.wallet) {
-            state.wallet.balance = result.balance;
-            renderWallet();
-        }
     } catch (error) {
         state.ledger = [];
         console.warn('Wallet ledger could not be loaded', error);
