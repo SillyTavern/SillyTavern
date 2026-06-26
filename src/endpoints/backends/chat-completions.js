@@ -17,6 +17,7 @@ import {
     OPENAI_REASONING_EFFORT_MODELS,
     OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
+    REQUESTY_HEADERS,
     VERTEX_SAFETY,
     SILICONFLOW_ENDPOINT,
     MINIMAX_ENDPOINT,
@@ -98,6 +99,7 @@ const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_REQUESTY = 'https://router.requesty.ai/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
 /**
@@ -1783,6 +1785,10 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER, request.body.secret_id);
             // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
             headers = { ...OPENROUTER_HEADERS };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.REQUESTY) {
+            apiUrl = API_REQUESTY;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.REQUESTY, request.body.secret_id);
+            headers = { ...REQUESTY_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI, request.body.secret_id);
@@ -2288,6 +2294,11 @@ router.post('/generate', async function (request, response) {
             }
 
             embedOpenRouterMedia(request.body.messages, { audio: true, video: false });
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.REQUESTY) {
+            apiUrl = API_REQUESTY;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.REQUESTY, request.body.secret_id);
+            // Requesty supports the same optional Referer and X-Title analytics headers as OpenRouter.
+            headers = { ...REQUESTY_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
             apiUrl = 'https://openrouter.ai/api/v1';
             apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER, request.body.secret_id);
