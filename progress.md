@@ -667,6 +667,7 @@
 | 阶段 50 E2E discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 能发现 PWA + marketplace 8 个浏览器用例 | 通过：8 tests listed | 通过 |
 | 阶段 50 本机 Chrome E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | PWA service worker、admin、report、free、fixed-price、creator upload、rejected revise/resubmit、mobile 八个用例 | 通过：8 passed (2.2m)；本机父进程延迟退出后 Ctrl-C 清理，无残留 server | 通过 |
 | 阶段 50 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
+| GitHub 阶段 50 PWA browser E2E 验证 | `gh run watch 28247412731 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m37s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -798,6 +799,7 @@
 - 新增根脚本 `npm run test:pwa:e2e`，默认使用临时 server、grep PWA 用例并固定 `--workers=1`，减少同 origin Service Worker 并行串扰。
 - README 验证矩阵和设计文档已更新，说明浏览器级 PWA E2E 覆盖 service worker 激活、shell cache 和 API cache exclusion。
 - 已通过 `npm run test:marketplace:syntax`、`npm run test:pwa`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:pwa:e2e`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1`（8 passed，本机父进程延迟退出后 Ctrl-C 清理）和 `git diff --check`。
+- GitHub run `28247412731` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |

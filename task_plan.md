@@ -503,8 +503,8 @@
 - [x] 新增单独 `test:pwa:e2e` 可运行脚本
 - [x] 验证 shell cache 注册且 `/api/*` 不被缓存
 - [x] 补充 README、设计文档和规划记录
-- [ ] 运行基础验证并提交推送
-- **状态：** in_progress
+- [x] 运行基础验证并提交推送
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
