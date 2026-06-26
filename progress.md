@@ -64,6 +64,17 @@
 - 创建/修改的文件：
   - progress.md
 
+### 阶段 7：GitHub 同步
+- **状态：** complete
+- 执行的操作：
+  - 创建分支 `codex/marketplace-wallet-mvp`。
+  - 提交 `4a711de82 Add marketplace and wallet MVP endpoints`。
+  - 上游 `SillyTavern/SillyTavern` 对当前账号无写权限，改为创建 fork `Angelidiot/SillyTavern`。
+  - 推送分支到 `fork/codex/marketplace-wallet-mvp`。
+- 创建/修改的文件：
+  - task_plan.md
+  - progress.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|

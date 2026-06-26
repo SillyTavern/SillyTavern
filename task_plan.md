@@ -62,9 +62,9 @@
 - [x] 补充审核权限、授权记录、安装记录和钱包 ledger 断言
 - [x] 运行 marketplace/wallet 目标单测
 - [x] 运行 endpoint 语法检查和 diff 空白检查
-- [ ] 创建开发分支并提交
-- [ ] 推送到 GitHub 远端仓库
-- **状态：** in_progress
+- [x] 创建开发分支并提交
+- [x] 推送到 GitHub fork 仓库
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
