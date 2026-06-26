@@ -409,8 +409,8 @@
 - [x] 补充脚本测试、README 和设计文档说明
 - [x] 将脚本纳入 syntax gate 和 marketplace 聚合测试
 - [x] 运行基础测试和 smoke 验证
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
