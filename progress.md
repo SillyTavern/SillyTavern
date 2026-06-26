@@ -999,6 +999,7 @@
 - `tests/marketplace-scripts.test.js` 新增契约断言，锁定静态资产门禁目标。
 - README 和 findings 已补充 syntax gate 覆盖 marketplace-wallet 静态资产的边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28255982574` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
