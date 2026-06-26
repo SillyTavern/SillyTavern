@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 34
+阶段 35
 
 ## 各阶段
 
@@ -350,6 +350,15 @@
 - [x] 运行基础测试和脚本验证
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
+
+### 阶段 35：Playwright CI 安装策略修复
+- [x] 确认 GitHub runner 卡在 `chromium-headless-shell` 安装步骤
+- [x] 将 Playwright 配置切到 `channel: chromium`
+- [x] 将 CI 安装命令切到 `playwright install --with-deps --no-shell chromium`
+- [x] 更新 README 的本地浏览器安装说明
+- [ ] 运行基础测试和脚本验证
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？

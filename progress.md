@@ -593,6 +593,8 @@
 | GitHub Demo Seed Checks | `gh run watch 28237551217 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions marketplace workflow 通过 | 通过：Marketplace Wallet MVP job 39s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
 | E2E server wrapper discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 启动后 Playwright 能发现 marketplace browser 用例 | 通过：4 tests listed | 通过 |
 | E2E server wrapper 本地实跑 | `npm run test:marketplace:e2e:server` | 本机真实浏览器 E2E 通过 | 未通过：本机 Playwright cache 缺 `chromium_headless_shell-1194/chrome-mac/headless_shell`；CI 已改为先安装 chromium-headless-shell 再实跑 | 环境阻塞 |
+| GitHub E2E headless-shell 安装 | `gh run watch 28237783793` | CI 安装 chromium-headless-shell 后实跑 E2E | 已取消：runner 长时间停在 `Install Playwright browser`；改用 Chromium channel + `--no-shell` 策略 | 环境阻塞 |
+| Chromium channel E2E discovery | `npm run test:marketplace:e2e:server -- --list` | `channel: chromium` 配置下 wrapper 仍能启动临时 server 并发现用例 | 通过：4 tests listed | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |

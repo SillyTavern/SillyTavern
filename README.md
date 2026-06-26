@@ -84,7 +84,7 @@ npm run test:pwa
 
 # Run marketplace/wallet browser E2E tests
 # Requires Playwright browsers:
-#   tests/node_modules/.bin/playwright install chromium-headless-shell
+#   tests/node_modules/.bin/playwright install --no-shell chromium
 # Starts a temporary local server automatically:
 npm run test:marketplace:e2e:server
 

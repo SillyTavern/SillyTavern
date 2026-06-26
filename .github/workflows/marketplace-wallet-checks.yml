@@ -107,7 +107,7 @@ jobs:
         run: npm run test:marketplace:smoke
 
       - name: Install Playwright browser
-        run: npm --prefix tests exec -- playwright install chromium-headless-shell
+        run: npm --prefix tests exec -- playwright install --with-deps --no-shell chromium
 
       - name: Run marketplace browser E2E
         run: npm run test:marketplace:e2e:server
