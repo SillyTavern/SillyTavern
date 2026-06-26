@@ -592,7 +592,7 @@ describe('market and wallet MVP endpoints', () => {
         });
         expect(rejectedGrant.status).toBe(403);
 
-        const grantResult = await request(aliceApp, '/api/wallet/grants/admin', {
+        const targetHandleGrant = await request(aliceApp, '/api/wallet/grants/admin', {
             method: 'POST',
             body: {
                 targetHandle: 'bob',
@@ -600,26 +600,84 @@ describe('market and wallet MVP endpoints', () => {
                 bucket: 'bonus',
             },
         });
-        expect(grantResult.status).toBe(201);
-        expect(grantResult.body.entry.userHandle).toBe('bob');
-        expect(grantResult.body.entry.actorHandle).toBe('alice');
-        expect(grantResult.body.entry.bucket).toBe('bonus');
-        expect(grantResult.body.entry.amount).toBe(10);
-        expect(grantResult.body.balance.buckets.bonus).toBe(10);
-
-        const walletResult = await request(bobApp, '/api/wallet', { method: 'GET' });
-        expect(walletResult.status).toBe(200);
-        expect(walletResult.body.balance.buckets.bonus).toBe(10);
-
-        const ledgerResult = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
-        expect(ledgerResult.status).toBe(200);
-        expect(ledgerResult.body.ledger).toHaveLength(1);
-        expect(ledgerResult.body.ledger[0]).toMatchObject({
+        expect(targetHandleGrant.status).toBe(201);
+        expect(targetHandleGrant.body.handle).toBe('bob');
+        expect(targetHandleGrant.body.entry).toMatchObject({
             userHandle: 'bob',
             actorHandle: 'alice',
             bucket: 'bonus',
             amount: 10,
         });
+        expect(targetHandleGrant.body.balance.buckets.bonus).toBe(10);
+
+        const handleGrant = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                handle: 'bob',
+                amount: 7,
+                bucket: 'paid',
+            },
+        });
+        expect(handleGrant.status).toBe(201);
+        expect(handleGrant.body.handle).toBe('bob');
+        expect(handleGrant.body.entry).toMatchObject({
+            userHandle: 'bob',
+            actorHandle: 'alice',
+            bucket: 'paid',
+            amount: 7,
+        });
+        expect(handleGrant.body.balance.buckets.bonus).toBe(10);
+        expect(handleGrant.body.balance.buckets.paid).toBe(7);
+
+        const userHandleGrant = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                userHandle: 'bob',
+                amount: 3,
+                bucket: 'earnings',
+            },
+        });
+        expect(userHandleGrant.status).toBe(201);
+        expect(userHandleGrant.body.handle).toBe('bob');
+        expect(userHandleGrant.body.entry).toMatchObject({
+            userHandle: 'bob',
+            actorHandle: 'alice',
+            bucket: 'earnings',
+            amount: 3,
+        });
+        expect(userHandleGrant.body.balance.buckets.bonus).toBe(10);
+        expect(userHandleGrant.body.balance.buckets.paid).toBe(7);
+        expect(userHandleGrant.body.balance.buckets.earnings).toBe(3);
+
+        const walletResult = await request(bobApp, '/api/wallet', { method: 'GET' });
+        expect(walletResult.status).toBe(200);
+        expect(walletResult.body.balance.buckets.bonus).toBe(10);
+        expect(walletResult.body.balance.buckets.paid).toBe(7);
+        expect(walletResult.body.balance.buckets.earnings).toBe(3);
+
+        const ledgerResult = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(ledgerResult.status).toBe(200);
+        expect(ledgerResult.body.ledger).toHaveLength(3);
+        expect(ledgerResult.body.ledger).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                userHandle: 'bob',
+                actorHandle: 'alice',
+                bucket: 'bonus',
+                amount: 10,
+            }),
+            expect.objectContaining({
+                userHandle: 'bob',
+                actorHandle: 'alice',
+                bucket: 'paid',
+                amount: 7,
+            }),
+            expect.objectContaining({
+                userHandle: 'bob',
+                actorHandle: 'alice',
+                bucket: 'earnings',
+                amount: 3,
+            }),
+        ]));
     });
 
     test('enforces wallet read scope and validates admin grant input', async () => {

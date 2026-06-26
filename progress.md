@@ -1001,6 +1001,13 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28255982574` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 71：钱包管理员发放别名覆盖
+- 根据 API reference 已标注的 admin grant alias，补齐后端契约测试覆盖。
+- `allows only admins to grant wallet balance` 现在依次通过 `targetHandle`、`handle` 和 `userHandle` 给 bob 发放 bonus/paid/earnings。
+- 测试断言三次 grant 响应都返回顶层 `handle: bob`，并写入 bob 的余额分桶与三条 actor 为 alice 的 wallet ledger 记录。
+- README 和 findings 已补充 admin grant 收款人字段别名边界。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'allows only admins to grant wallet balance'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
