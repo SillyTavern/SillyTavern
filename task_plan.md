@@ -692,6 +692,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 74：举报提交长度边界
+- [x] 后端测试覆盖 121 字符 reason 和 2001 字符 body 返回 400
+- [x] 后端测试确认超长 report 不会写入管理员队列
+- [x] 后端测试覆盖 120 字符 reason 和 2000 字符 body 成功入队
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -745,6 +753,7 @@
 | Details 应显示 entitlement 摘要 | 详情接口已返回当前用户 entitlement，展示来源/日期/购买引用能帮助用户确认自己何时领取或购买资产 |
 | Report Queue 应显示举报日期 | 后端 report item 已返回 created_at，管理员需要看到举报时间来判断积压和处理优先级 |
 | Report resolve note 长度必须有边界测试 | 后端以 1000 字符限制 resolution note；超长请求应 400 且保持 report open，避免误关闭举报 |
+| Report reason/body 长度必须有边界测试 | 后端以 120/2000 字符限制举报原因和正文；超长请求应 400 且不能污染管理员队列 |
 | Marketplace 搜索应覆盖展示元数据 | language 和 content_rating 已在列表/详情数据中存在，搜索覆盖它们能让用户按语言和分级找到资产 |
 | Snapshot 应导出审核生命周期 | submitted_at、approved_at、delisted_at 不含 payload，但能帮助迁移和备份校验市场资产状态 |
 | API reference 测试应锁定路由集合 | 导出脚本从源码解析路由，测试覆盖完整 MVP 路由可以尽早发现文档导出漂移 |

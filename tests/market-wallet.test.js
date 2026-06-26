@@ -601,6 +601,70 @@ describe('market and wallet MVP endpoints', () => {
         expect(listedAsset.normalized_payload).toBeUndefined();
     });
 
+    test('validates marketplace report reason and body length', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+        const assetId = await createSubmittedAsset(aliceApp, {
+            type: 'character_card',
+            title: 'Report Bounds',
+            normalized_payload: createCharacterPayload(),
+        });
+
+        const approveResult = await request(aliceApp, `/api/market/assets/${assetId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approveResult.status).toBe(200);
+
+        const maxReason = 'R'.repeat(120);
+        const maxBody = 'B'.repeat(2000);
+        const overlongReport = await request(bobApp, `/api/market/assets/${assetId}/report`, {
+            method: 'POST',
+            body: {
+                reason: `${maxReason}!`,
+                body: `${maxBody}!`,
+            },
+        });
+        expect(overlongReport.status).toBe(400);
+        expect(overlongReport.body).toMatchObject({
+            error: 'Invalid market report',
+            details: [
+                'reason must be 120 characters or less',
+                'body must be 2000 characters or less',
+            ],
+        });
+
+        const adminReportsAfterRejectedReport = await request(aliceApp, '/api/market/reports/admin', { method: 'GET' });
+        expect(adminReportsAfterRejectedReport.status).toBe(200);
+        expect(adminReportsAfterRejectedReport.body.reports).toHaveLength(0);
+
+        const boundaryReport = await request(bobApp, `/api/market/assets/${assetId}/report`, {
+            method: 'POST',
+            body: {
+                reason: maxReason,
+                body: maxBody,
+            },
+        });
+        expect(boundaryReport.status).toBe(201);
+        expect(boundaryReport.body.report).toMatchObject({
+            asset_id: assetId,
+            reporter_id: 'bob',
+            reason: maxReason,
+            body: maxBody,
+            status: 'open',
+        });
+
+        const adminReportsAfterBoundaryReport = await request(aliceApp, '/api/market/reports/admin', { method: 'GET' });
+        expect(adminReportsAfterBoundaryReport.status).toBe(200);
+        expect(adminReportsAfterBoundaryReport.body.reports).toHaveLength(1);
+        expect(adminReportsAfterBoundaryReport.body.reports[0]).toMatchObject({
+            id: boundaryReport.body.report.id,
+            reason: maxReason,
+            body: maxBody,
+            status: 'open',
+        });
+    });
+
     test('allows only admins to grant wallet balance', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));

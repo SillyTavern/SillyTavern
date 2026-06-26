@@ -1025,6 +1025,13 @@
 - 已通过 `npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28257000239` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 74：举报提交长度边界
+- 新增 `validates marketplace report reason and body length` 后端契约测试。
+- 121 字符 reason 加 2001 字符 body 断言返回 `400 Invalid market report`，错误详情包含 reason/body 长度限制，并确认管理员 reports 队列仍为空。
+- 120 字符 reason 加 2000 字符 body 断言可成功创建 open report，且管理员队列中 reason/body 原样可见。
+- README 和 findings 已补充 Report reason/body 长度边界。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates marketplace report reason and body length'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
