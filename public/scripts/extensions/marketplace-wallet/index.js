@@ -217,20 +217,28 @@ function renderLibrary() {
         const isBusy = state.busyAssetIds.has(asset.id);
         const $row = $('<div class="marketplace-wallet-library-item"></div>');
         const $main = $('<div class="marketplace-wallet-library-main"></div>');
+        const $actions = $('<div class="marketplace-wallet-library-actions"></div>');
         const $title = $('<span></span>').text(asset.title || 'Untitled asset');
         const source = item.entitlement?.source === 'purchase' ? 'Purchased' : 'Claimed';
         const installText = item.install_count ? `${formatCoins(item.install_count)} installs` : 'not installed';
         const $meta = $('<small></small>').text(`${source} · ${MARKET_TYPES[asset.type] || asset.type || 'Asset'} · ${installText}`);
 
         $main.append($title, $meta);
-        $row.append($main);
-        $row.append(createAssetButton({
+        $actions.append(createAssetButton({
+            asset,
+            action: 'details',
+            icon: 'fa-circle-info',
+            label: isBusy ? 'Loading' : 'Details',
+            disabled: isBusy || !asset.id,
+        }));
+        $actions.append(createAssetButton({
             asset,
             action: 'install',
             icon: 'fa-box-open',
             label: isBusy ? 'Installing' : 'Install',
             disabled: isBusy || !asset.id,
         }));
+        $row.append($main, $actions);
         $list.append($row);
     }
 }

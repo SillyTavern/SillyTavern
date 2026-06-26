@@ -795,6 +795,16 @@ test.describe('marketplace wallet extension', () => {
         await expect(library).toContainText('Free World');
         await expect(library).toContainText('Claimed');
         await expect(library).toContainText('1 installs');
+
+        const libraryRow = library.locator('.marketplace-wallet-library-item', { hasText: 'Free World' });
+        await expect(libraryRow.locator('[data-marketplace-wallet-action="details"]')).toHaveCount(1);
+        await libraryRow.locator('[data-marketplace-wallet-action="details"]').click();
+
+        await expect.poll(() => apiCalls.details).toEqual(['free-world']);
+        const detailsPopup = page.getByRole('dialog').filter({ hasText: 'Free World' });
+        await expect(detailsPopup).toBeVisible();
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Language');
+        await detailsPopup.locator('.popup-button-ok').click();
     });
 
     test('clears active marketplace filters after an empty result', async ({ page }) => {
@@ -1083,6 +1093,14 @@ test.describe('marketplace wallet extension', () => {
                     price_coins: 300,
                 }),
             ],
+            library: [
+                makeLibraryItem(makeListedAsset({
+                    id: 'mobile-library-world',
+                    title: 'Mobile Library World',
+                    price_type: 'free',
+                    price_coins: 0,
+                })),
+            ],
         });
 
         await loadSillyTavern(page);
@@ -1092,6 +1110,7 @@ test.describe('marketplace wallet extension', () => {
             const grantGrid = element.querySelector('.marketplace-wallet-grant');
             const reviewItem = element.querySelector('.marketplace-wallet-review-item');
             const reviewActions = element.querySelector('.marketplace-wallet-review-actions');
+            const libraryActions = element.querySelector('.marketplace-wallet-library-actions');
             const affordability = element.querySelector('.marketplace-wallet-affordability');
             const viewportWidth = document.documentElement.clientWidth;
             const overflowing = [...element.querySelectorAll('*')]
@@ -1110,6 +1129,7 @@ test.describe('marketplace wallet extension', () => {
                 grantColumns: getComputedStyle(grantGrid).gridTemplateColumns.split(' ').length,
                 reviewItemColumns: getComputedStyle(reviewItem).gridTemplateColumns.split(' ').length,
                 reviewActionColumns: getComputedStyle(reviewActions).gridTemplateColumns.split(' ').length,
+                libraryActionColumns: getComputedStyle(libraryActions).gridTemplateColumns.split(' ').length,
                 affordabilityTextAlign: getComputedStyle(affordability).textAlign,
                 overflowing,
             };
@@ -1120,6 +1140,7 @@ test.describe('marketplace wallet extension', () => {
             grantColumns: 1,
             reviewItemColumns: 1,
             reviewActionColumns: 2,
+            libraryActionColumns: 2,
             affordabilityTextAlign: 'center',
             overflowing: [],
         });

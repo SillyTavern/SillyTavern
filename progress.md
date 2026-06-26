@@ -879,6 +879,17 @@
 - 完整本机 Chrome E2E 已通过 12 个用例；父进程延迟退出后 Ctrl-C 清理，临时 server 无残留。
 - GitHub run `28251336091` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 58：用户库详情入口补齐
+- 启动只读 explorer `019f04c7-7ac8-78e1-9500-dc3ac2c56965` 扫描下一步低风险候选；它建议优先补 My Library 细节、Creator Center 细分统计和 Review Queue 元信息。
+- 发现阶段 22/文档已记录“Marketplace 和 Library 条目增加 Details”，但当前 `renderLibrary()` 只渲染 Install，属于实现漂移。
+- marketplace-wallet My Library 条目新增 Details + Install action 组，Details 继续复用 `viewAssetDetails()` 和现有 payload 权限。
+- 移动端 `.marketplace-wallet-library-actions` 采用两列按钮网格，避免 Details/Install 在窄屏横向溢出。
+- `marketplace-wallet` manifest bump 到 `0.2.5`，避免浏览器缓存旧 JS/CSS。
+- 浏览器 E2E 在免费领取进入 Library 后，从库条目点击 Details 并断言详情弹窗出现；移动布局用例加入 library action 两列断言。
+- README、设计文档和 findings 已补充 Library details/reinstall 当前边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'claims and installs a free asset'`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
+- 首次 `npm run test:marketplace` 中 `market-wallet.test.js` 的 `requires review before purchase...` 出现一次 `TypeError: fetch failed / SocketError: other side closed`；同用例单独复跑通过，完整聚合随后复跑通过，判断为瞬时本地 socket 抖动。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

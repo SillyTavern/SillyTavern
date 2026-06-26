@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.4');
+        expect(manifest.version).toBe('0.2.5');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -111,6 +111,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('libraryLoading: false');
         expect(script).toContain('state.library = Array.isArray(result.items) ? result.items : []');
         expect(script).toContain('No library assets yet.');
+        expect(script).toContain('class="marketplace-wallet-library-actions"');
+        expect(script).toContain("label: isBusy ? 'Loading' : 'Details'");
         expect(script).toContain('void loadLibrary();');
         expect(script).toContain('void loadWalletLedger();');
         expect(script).toContain('await requestInstall(assetId);');
@@ -217,6 +219,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('.marketplace-wallet-controls .menu_button');
         expect(css).toContain('.marketplace-wallet-library-items');
         expect(css).toContain('.marketplace-wallet-library-item');
+        expect(css).toContain('.marketplace-wallet-library-actions');
         expect(css).toContain('data-marketplace-wallet-status="delisted"');
         expect(css).toContain('grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));');
         expect(css).toContain('.marketplace-wallet-review-actions');

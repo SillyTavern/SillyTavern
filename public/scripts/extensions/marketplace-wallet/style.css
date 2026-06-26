@@ -392,6 +392,14 @@
     gap: 5px;
 }
 
+.marketplace-wallet-library-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
 .marketplace-wallet-asset-preview h3 {
     margin: 0 0 6px;
 }
@@ -468,11 +476,13 @@
         justify-content: center;
     }
 
+    .marketplace-wallet-library-actions,
     .marketplace-wallet-review-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
     }
 
+    .marketplace-wallet-library-actions .menu_button,
     .marketplace-wallet-review-actions .menu_button {
         justify-content: center;
         min-width: 0;
