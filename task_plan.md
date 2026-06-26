@@ -617,6 +617,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 65：市场搜索元数据覆盖
+- [x] 市场搜索匹配 language
+- [x] 市场搜索匹配 content_rating
+- [x] 补充 filters 单测和 UI contract 版本覆盖
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -669,6 +677,7 @@
 | Creator Center 应显示审核状态细节 | 后端 creator asset item 已返回 submitted_at、approved_at 和 rejection_reason，前端显示后能让创作者知道何时提交、通过或被拒原因 |
 | Details 应显示 entitlement 摘要 | 详情接口已返回当前用户 entitlement，展示来源/日期/购买引用能帮助用户确认自己何时领取或购买资产 |
 | Report Queue 应显示举报日期 | 后端 report item 已返回 created_at，管理员需要看到举报时间来判断积压和处理优先级 |
+| Marketplace 搜索应覆盖展示元数据 | language 和 content_rating 已在列表/详情数据中存在，搜索覆盖它们能让用户按语言和分级找到资产 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 | Library Details 入口必须真实存在 | 计划和设计文档已把 My Library 作为找回/查看入口，库中只提供 Install 会迫使用户回市场列表找详情 |
 | Library 安装摘要应可见 | 后端已返回 entitlement 时间和 last_install 摘要，前端显示这些信息能让用户确认何时领取/购买以及最近安装到哪里 |

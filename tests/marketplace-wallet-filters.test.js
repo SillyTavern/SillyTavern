@@ -39,6 +39,8 @@ describe('marketplace wallet asset filters', () => {
             type: 'world_book',
             title: 'Paid World',
             summary: 'Cyberpunk district lore',
+            language: 'ja',
+            content_rating: 'teen',
             price_type: 'fixed_price',
             price_coins: 80,
             sales_count: 12,
@@ -90,6 +92,12 @@ describe('marketplace wallet asset filters', () => {
         ]);
         expect(filterAndSortAssets(assets, { search: 'friendly' }).map(asset => asset.id)).toEqual([
             'free-character',
+        ]);
+        expect(filterAndSortAssets(assets, { search: 'ja' }).map(asset => asset.id)).toEqual([
+            'paid-world',
+        ]);
+        expect(filterAndSortAssets(assets, { search: 'teen' }).map(asset => asset.id)).toEqual([
+            'paid-world',
         ]);
     });
 

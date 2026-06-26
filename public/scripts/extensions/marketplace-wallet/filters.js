@@ -28,6 +28,8 @@ export function filterAndSortAssets(assets, filters = {}) {
                 asset.title,
                 asset.summary,
                 asset.creator_id,
+                asset.language,
+                asset.content_rating,
                 ...(Array.isArray(asset.tags) ? asset.tags : []),
             ].filter(Boolean).join(' ').toLowerCase().includes(search);
         })
