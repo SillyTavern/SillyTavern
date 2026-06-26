@@ -468,8 +468,8 @@
 - [x] 补充非管理员不可 approve、管理员可 approve 测试
 - [x] 运行目标单测、marketplace 聚合和 syntax gate
 - [x] 更新规划记录
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
