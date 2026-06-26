@@ -89,6 +89,10 @@ npm run test:marketplace:smoke
 # Run only the mobile/PWA shell contract test
 npm run test:pwa
 
+# Run only the browser-level mobile/PWA service worker E2E
+# Uses a temporary local server and one Playwright worker for service worker isolation.
+PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:pwa:e2e
+
 # Run marketplace/wallet browser E2E tests
 # Requires Playwright browsers:
 #   tests/node_modules/.bin/playwright install --no-shell chromium
@@ -114,7 +118,8 @@ Validation matrix:
 | `npm run test:marketplace:syntax` | Fast JS syntax gate for marketplace/wallet endpoints, PWA files, scripts, and targeted tests. |
 | `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, snapshot export, API reference export, filter, and UI contract tests. |
 | `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, creator upload/submit/approve, Creator Center stats, report create/queue/resolve, free and fixed-price claim/install, buyer debit, creator earning, Library, and file write. |
-| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for admin, reports, creator upload/submit, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
+| `npm run test:pwa:e2e` | Temporary local server plus Playwright service worker E2E for shell cache registration and `/api/*` cache exclusion; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
+| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for PWA service worker, admin, reports, creator upload/submit, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
 
 ### Development Notes
 

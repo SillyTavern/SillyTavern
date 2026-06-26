@@ -659,6 +659,14 @@
 | 阶段 49 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/API reference/filter/UI 契约 | 通过：8 suites / 34 tests | 通过 |
 | 阶段 49 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
 | GitHub 阶段 49 API reference 验证 | `gh run watch 28246518305 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m38s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
+| 阶段 50 syntax gate | `npm run test:marketplace:syntax` | PWA browser E2E 用例和脚本入口语法门禁 | 通过：23 files checked | 通过 |
+| 阶段 50 PWA 静态契约 | `npm run test:pwa` | manifest、PWA 注册脚本、SW API 排除和预缓存清单仍通过 | 通过：1 suite / 4 tests | 通过 |
+| 阶段 50 PWA browser E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:pwa:e2e` | 真实 Chrome 验证 service worker activated、shell CacheStorage 和 `/api/health` 不缓存 | 通过：1 passed | 通过 |
+| 阶段 50 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/API reference/filter/UI 契约 | 通过：8 suites / 34 tests | 通过 |
+| 阶段 50 runtime smoke | `npm run test:marketplace:smoke` | 真实 server health/PWA/wallet/market/creator/report/free/fixed-price/library 闭环仍通过 | 通过 | 通过 |
+| 阶段 50 E2E discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 能发现 PWA + marketplace 8 个浏览器用例 | 通过：8 tests listed | 通过 |
+| 阶段 50 本机 Chrome E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | PWA service worker、admin、report、free、fixed-price、creator upload、rejected revise/resubmit、mobile 八个用例 | 通过：8 passed (2.2m)；本机父进程延迟退出后 Ctrl-C 清理，无残留 server | 通过 |
+| 阶段 50 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -682,6 +690,7 @@
 | 2026-06-26 | snapshot export 测试在未初始化 node-persist 的用例后调用 `storage.clear` 抛 `storage.clear is not a function` | 1 | afterEach 中先判断 `typeof storage.clear === 'function'`，只在存在时执行清理 |
 | 2026-06-26 | 阶段 48 并行跑 runtime smoke 和 marketplace Jest 聚合时，`market-wallet.test.js` delist 断言短暂返回 404 | 1 | 单独复跑 `market-wallet.test.js` 和串行 `npm run test:marketplace` 均通过；后续避免将真实 server smoke 与 Jest 聚合并行执行 |
 | 2026-06-26 | 阶段 49 API reference 测试最初按 3 空格断言 `GET` 对齐 | 1 | 脚本按 6 字符 method column 输出，测试改为断言 `GET    /...` 并新增缺失 `--out` 路径校验 |
+| 2026-06-26 | 阶段 50 PWA browser E2E 首跑时 active service worker 短暂为 `activating` | 1 | 改用 `expect.poll` 等待 `readyRegistration.active.state === 'activated'` 后再断言和 reload |
 
 ## 2026-06-26 阶段 38：钱包流水 UI 与真实运行闭环
 - 启动并行 worker `019f040f-2485-7a31-9e82-15ca33bfc3fe`，限定其只补测试/文档契约，主线程负责 UI/样式/runtime smoke。
@@ -781,14 +790,23 @@
 - 已通过 `npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run test:marketplace:syntax`、`npm run marketplace:export:api` CLI smoke、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28246518305` 已确认 Marketplace Wallet Checks 全链路通过。
 
+## 2026-06-26 阶段 50：PWA service worker 浏览器 E2E
+- 启动只读 explorer `019f0479-b6aa-7621-b7ca-7d74958342c6` 复核 PWA/Service Worker E2E 风险，确认应避免 API mock、等待 `navigator.serviceWorker.ready`、reload 后确认 controller，并清理 CacheStorage/registrations。
+- `tests/marketplace-wallet.e2e.js` 新增 `hosted tavern PWA browser shell` 用例，打开 `/login.html` 触发真实 `scripts/pwa.js` 注册 `/service-worker.js`。
+- 用例会清理当前 context 的 service worker 和 cache，等待 active state 进入 `activated`，reload 后确认页面受 `/service-worker.js` controller 控制。
+- 用例断言 `sillytavern-shell-v1` 包含 `/`、`/login.html`、`/manifest.json`、`/style.css` 和 `/scripts/pwa.js`，然后请求真实 `/api/health` 并确认 CacheStorage 不包含 `/api/health`。
+- 新增根脚本 `npm run test:pwa:e2e`，默认使用临时 server、grep PWA 用例并固定 `--workers=1`，减少同 origin Service Worker 并行串扰。
+- README 验证矩阵和设计文档已更新，说明浏览器级 PWA E2E 覆盖 service worker 激活、shell cache 和 API cache exclusion。
+- 已通过 `npm run test:marketplace:syntax`、`npm run test:pwa`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:pwa:e2e`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1`（8 passed，本机父进程延迟退出后 Ctrl-C 清理）和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环，以及 Marketplace API reference 导出脚本 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环、Marketplace API reference 导出脚本，以及 PWA service worker 浏览器 E2E |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环和 Marketplace API reference 导出脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环、Marketplace API reference 导出脚本和 PWA service worker 浏览器 E2E |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

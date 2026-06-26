@@ -126,6 +126,7 @@
         "start:bun": "bun server.js",
         "start:no-csrf": "node server.js --disableCsrf",
         "test:pwa": "npm --prefix tests run test:unit -- pwa.test.js",
+        "test:pwa:e2e": "node scripts/run-marketplace-e2e.mjs -g \"hosted tavern PWA browser shell\" --workers=1",
         "marketplace:seed:demo": "node scripts/seed-marketplace-demo.mjs",
         "marketplace:export:snapshot": "node scripts/export-marketplace-snapshot.mjs",
         "marketplace:export:api": "node scripts/export-marketplace-api-reference.mjs",

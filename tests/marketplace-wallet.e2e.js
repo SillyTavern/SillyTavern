@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const SHELL_CACHE_NAME = 'sillytavern-shell-v1';
+
 function makeWallet(overrides = {}) {
     return {
         handle: 'default-user',
@@ -526,6 +528,94 @@ async function loadSillyTavern(page) {
     await expect(drawerContent).toBeVisible();
     await expect(walletUi.locator('#marketplace_wallet_total')).toHaveText('175');
 }
+
+async function resetPwaState(page) {
+    await page.evaluate(async () => {
+        await Promise.all((await caches.keys()).map(cacheName => caches.delete(cacheName)));
+
+        if ('serviceWorker' in navigator) {
+            await Promise.all((await navigator.serviceWorker.getRegistrations()).map(registration => registration.unregister()));
+        }
+    });
+}
+
+test.describe('hosted tavern PWA browser shell', () => {
+    test.describe.configure({ mode: 'serial' });
+
+    test.afterEach(async ({ page }) => {
+        await resetPwaState(page).catch(() => {});
+    });
+
+    test('registers the service worker shell cache and leaves API responses uncached', async ({ page }) => {
+        await page.goto('/login.html', { waitUntil: 'load' });
+        await resetPwaState(page);
+        await page.reload({ waitUntil: 'load' });
+
+        await expect.poll(() => page.evaluate(async () => {
+            if (!('serviceWorker' in navigator)) {
+                return '';
+            }
+
+            const readyRegistration = await navigator.serviceWorker.ready;
+            return readyRegistration.active?.state || '';
+        })).toBe('activated');
+
+        const registration = await page.evaluate(async () => {
+            const readyRegistration = await navigator.serviceWorker.ready;
+            return {
+                origin: location.origin,
+                scope: readyRegistration.scope,
+                activeScript: readyRegistration.active?.scriptURL || '',
+                state: readyRegistration.active?.state || '',
+            };
+        });
+        expect(registration).toMatchObject({
+            scope: `${registration.origin}/`,
+            state: 'activated',
+        });
+        expect(registration.activeScript).toContain('/service-worker.js');
+
+        await page.reload({ waitUntil: 'load' });
+        await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller?.scriptURL.includes('/service-worker.js')))).toBe(true);
+
+        const shellCache = await page.evaluate(async cacheName => {
+            const cacheNames = await caches.keys();
+            const cache = await caches.open(cacheName);
+            const shellPaths = ['/', '/login.html', '/manifest.json', '/style.css', '/scripts/pwa.js'];
+            const cachedShell = Object.fromEntries(await Promise.all(shellPaths.map(async shellPath => [
+                shellPath,
+                Boolean(await cache.match(shellPath)),
+            ])));
+            return { cacheNames, cachedShell };
+        }, SHELL_CACHE_NAME);
+        expect(shellCache.cacheNames).toContain(SHELL_CACHE_NAME);
+        expect(shellCache.cachedShell).toEqual({
+            '/': true,
+            '/login.html': true,
+            '/manifest.json': true,
+            '/style.css': true,
+            '/scripts/pwa.js': true,
+        });
+
+        const health = await page.evaluate(async () => {
+            const response = await fetch('/api/health', { cache: 'no-store' });
+            return {
+                status: response.status,
+                body: await response.json(),
+            };
+        });
+        expect(health).toMatchObject({
+            status: 200,
+            body: {
+                ok: true,
+                status: 'ok',
+            },
+        });
+
+        const apiCached = await page.evaluate(async () => Boolean(await caches.match('/api/health')));
+        expect(apiCached).toBe(false);
+    });
+});
 
 test.describe('marketplace wallet extension', () => {
     test('renders admin review queue and posts approve/grant actions', async ({ page }) => {

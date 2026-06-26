@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 49
+阶段 50
 
 ## 各阶段
 
@@ -498,6 +498,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 50：PWA service worker 浏览器 E2E
+- [x] 新增真实浏览器 PWA service worker/cache 用例
+- [x] 新增单独 `test:pwa:e2e` 可运行脚本
+- [x] 验证 shell cache 注册且 `/api/*` 不被缓存
+- [x] 补充 README、设计文档和规划记录
+- [ ] 运行基础验证并提交推送
+- **状态：** in_progress
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -525,6 +533,7 @@
 | 手机版先走 PWA 安装壳 | 最少代码满足手机打开即用；原生 iOS/Android 壳等支付、推送、商店策略明确后再做 |
 | PWA service worker 不缓存 API | 钱包、市场、聊天和账号请求必须保持实时，静态壳缓存即可 |
 | PWA 预缓存清单必须可验证 | `cache.addAll()` 遇到任一缺失资源会让 install 失败，基础测试要覆盖文件存在性 |
+| PWA service worker 需要浏览器级验证 | 静态 Jest 只能读文件，真实 Chrome E2E 才能证明注册、激活、CacheStorage 和 API cache exclusion 同时成立 |
 | 设计文档必须区分当前 MVP 与 Future SaaS | 避免 README/设计文档承诺当前代码尚未实现的充值、退款、版本、评论和独立后台 API |
 | 运行态 smoke 必须隔离本地数据 | 临时启动真实 server 时使用临时 config/data，只请求公开 health/PWA 端点，避免写入用户工作数据 |
 | 前端筛选排序应有可执行测试 | 筛选逻辑抽为纯函数后，Jest 能直接验证类型、价格、访问状态、搜索和排序，不依赖浏览器环境 |

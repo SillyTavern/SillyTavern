@@ -15,7 +15,7 @@
 - 钱包账本：运营赠币、购买扣款、创作者收益入账。
 - 创作者中心：查看作品、领取/销量、安装数、收入和审核状态聚合。
 - 管理员工具：审核、拒绝、下架、赠币、举报队列和举报 resolve。
-- 手机入口：响应式 Web/PWA 安装壳，静态 shell 缓存不缓存业务 API。
+- 手机入口：响应式 Web/PWA 安装壳，静态 shell 缓存不缓存业务 API，并有浏览器级 service worker E2E 覆盖。
 
 正式 SaaS 第一版可以继续扩展：
 
@@ -478,6 +478,7 @@ Library 接口只返回当前用户 active entitlements 对应的资产摘要、
 资产详情弹窗复用 `GET /api/market/assets/:id`；未授权用户只能看到元数据，创建者、管理员或已授权用户才会看到 payload。
 本地 MVP 的市场浏览先用客户端筛选和排序，支持类型、价格、访问状态、搜索、最新、热门和价格排序；正式 SaaS 需要服务端搜索与排序索引。
 托管探活使用公开 `GET /api/health`，返回 `ok/status/service/version/uptime/timestamp`，不需要登录、不返回用户或账务数据。
+`npm run test:pwa:e2e` 会用临时 server 和真实浏览器验证 `/login.html` 注册 `/service-worker.js`、`sillytavern-shell-v1` 缓存包含静态 shell 资源，并确认 `/api/health` 不会进入 CacheStorage。
 
 该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。
 
@@ -600,6 +601,7 @@ content_rating:
 - 做响应式 Web 和 PWA。
 - 市场购买、充值都走 Web。
 - 手机浏览器可完整使用。
+- 浏览器级 E2E 验证 service worker 已激活、静态 shell 已缓存、`/api/*` 不进入缓存。
 
 第二阶段：
 
