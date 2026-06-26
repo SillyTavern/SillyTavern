@@ -21,7 +21,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Installable PWA shell for mobile browsers using the existing web app and static shell cache.
 - Admin review queue with inspect/approve/reject actions.
 - Admin delist action to remove listed assets from public purchase while preserving existing entitlements.
-- User report action and admin report queue with resolve workflow for marketplace moderation.
+- User report action with reason/details body and admin report queue with resolve workflow for marketplace moderation.
 - Admin coin grants for `bonus`, `paid`, and `earnings`.
 - Free and fixed-price purchase flow with `bonus -> paid` spending order.
 - Install flow copies approved/purchased assets into the user's private data directory.
@@ -122,7 +122,7 @@ Validation matrix:
 | `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, snapshot export, API reference export, filter, upload tags, and UI contract tests. |
 | `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, creator upload/submit/approve, Creator Center stats, report create/queue/resolve, free and fixed-price claim/install, buyer debit, creator earning, Library, and file write. |
 | `npm run test:pwa:e2e` | Temporary local server plus Playwright service worker E2E for shell cache registration and `/api/*` cache exclusion; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
-| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for PWA service worker, admin, reports, creator upload tags/type auto-detect/submit, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
+| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for PWA service worker, admin, report submit/resolve, creator upload tags/type auto-detect/submit, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
 | `npm run test:marketplace:all` | Slow pre-release loop that runs `test:marketplace`, `test:marketplace:smoke`, and `test:marketplace:e2e:server` in sequence. |
 
 ### Development Notes

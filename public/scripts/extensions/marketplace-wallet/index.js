@@ -12,6 +12,8 @@ const MARKET_TYPES = {
 };
 const MAX_UPLOAD_TAGS = 20;
 const MAX_UPLOAD_TAG_LENGTH = 40;
+const MAX_REPORT_REASON_LENGTH = 120;
+const MAX_REPORT_BODY_LENGTH = 2000;
 
 const state = {
     assets: [],
@@ -790,22 +792,36 @@ async function delistAsset(assetId) {
 }
 
 async function reportAsset(assetId) {
-    const reason = await callGenericPopup('Report this marketplace asset:', POPUP_TYPE.INPUT, '', {
-        okButton: 'Report',
+    const reason = await callGenericPopup('Report reason:', POPUP_TYPE.INPUT, '', {
+        okButton: 'Next',
         cancelButton: 'Cancel',
-        rows: 4,
+        rows: 2,
     });
 
     if (reason === null || reason === false) {
         return;
     }
 
+    const details = await callGenericPopup('Add report details (optional):', POPUP_TYPE.INPUT, '', {
+        okButton: 'Report',
+        cancelButton: 'Cancel',
+        rows: 6,
+    });
+
+    if (details === null || details === false) {
+        return;
+    }
+
     await withBusyAsset(assetId, async () => {
         await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/report`, {
             method: 'POST',
-            body: JSON.stringify({ reason: String(reason || '').slice(0, 120) }),
+            body: JSON.stringify({
+                reason: String(reason || '').slice(0, MAX_REPORT_REASON_LENGTH),
+                body: String(details || '').slice(0, MAX_REPORT_BODY_LENGTH),
+            }),
         });
         toastr.success('Report submitted');
+        void loadReportQueue();
     });
 }
 

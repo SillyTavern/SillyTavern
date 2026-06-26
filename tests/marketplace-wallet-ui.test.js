@@ -158,7 +158,12 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("action: 'report'");
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/delist`");
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/report`");
-        expect(script).toContain("reason: String(reason || '').slice(0, 120)");
+        expect(script).toContain('MAX_REPORT_REASON_LENGTH = 120');
+        expect(script).toContain('MAX_REPORT_BODY_LENGTH = 2000');
+        expect(script).toContain("const details = await callGenericPopup('Add report details (optional):'");
+        expect(script).toContain("reason: String(reason || '').slice(0, MAX_REPORT_REASON_LENGTH)");
+        expect(script).toContain("body: String(details || '').slice(0, MAX_REPORT_BODY_LENGTH)");
+        expect(script).toContain('void loadReportQueue();');
         expect(script).toContain("fetchJson('/api/market/reports/admin')");
         expect(script).toContain("fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`");
         expect(script).toContain('state.reports = state.reports.filter(report => report.id !== reportId)');

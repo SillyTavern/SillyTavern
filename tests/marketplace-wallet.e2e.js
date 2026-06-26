@@ -109,6 +109,7 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
         grants: [],
         installs: [],
         purchases: [],
+        reports: [],
         revisions: [],
         resolveReports: [],
         submits: [],
@@ -438,6 +439,29 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
         });
     });
 
+    await page.route('**/api/market/assets/*/report', route => {
+        const assetId = route.request().url().split('/').at(-2);
+        const asset = assets.find(item => item.id === assetId) || library.find(item => item.asset.id === assetId)?.asset;
+        const payload = JSON.parse(route.request().postData() || '{}');
+        apiCalls.reports.push({ assetId, payload });
+        const report = {
+            id: `report-${assetId}-${apiCalls.reports.length}`,
+            asset_id: assetId,
+            reporter_id: 'default-user',
+            reason: payload.reason,
+            body: payload.body || '',
+            status: 'open',
+            created_at: '2026-06-26T13:05:00.000Z',
+            asset,
+        };
+        reports = [report, ...reports];
+        route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify({ report }),
+        });
+    });
+
     await page.route('**/api/market/reports/admin', route => {
         route.fulfill({
             status: 200,
@@ -670,6 +694,41 @@ test.describe('marketplace wallet extension', () => {
 
         await expect.poll(() => apiCalls.resolveReports).toEqual(['report-listed-world']);
         await expect(reportQueue).toContainText('No reports queued.');
+    });
+
+    test('submits a report with reviewer details into the admin queue', async ({ page }) => {
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [makeListedAsset()],
+            reports: [],
+        });
+
+        await loadSillyTavern(page);
+
+        const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Listed World' });
+        await assetRow.locator('[data-marketplace-wallet-action="report"]').click();
+
+        const reasonPopup = page.getByRole('dialog').filter({ hasText: 'Report reason:' });
+        await expect(reasonPopup).toBeVisible();
+        await reasonPopup.locator('.popup-input').fill('unsafe_prompt');
+        await reasonPopup.locator('.popup-button-ok').click();
+
+        const detailsPopup = page.getByRole('dialog').filter({ hasText: 'Add report details (optional):' });
+        await expect(detailsPopup).toBeVisible();
+        await detailsPopup.locator('.popup-input').fill('Contains a jailbreak style lore instruction.');
+        await detailsPopup.locator('.popup-button-ok').click();
+
+        await expect.poll(() => apiCalls.reports).toEqual([{
+            assetId: 'listed-world',
+            payload: {
+                reason: 'unsafe_prompt',
+                body: 'Contains a jailbreak style lore instruction.',
+            },
+        }]);
+
+        const reportQueue = page.locator('#marketplace_wallet_report_queue');
+        await expect(reportQueue).toContainText('Listed World');
+        await expect(reportQueue).toContainText('unsafe_prompt');
+        await expect(reportQueue).toContainText('Contains a jailbreak style lore instruction.');
     });
 
     test('claims and installs a free asset into the library', async ({ page }) => {
