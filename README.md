@@ -66,6 +66,9 @@ npm run test:marketplace
 # Run only the marketplace/wallet/PWA/health syntax gate
 npm run test:marketplace:syntax
 
+# Start a temporary server and smoke-test health/PWA public endpoints
+npm run test:marketplace:smoke
+
 # Run only the mobile/PWA shell contract test
 npm run test:pwa
 

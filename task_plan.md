@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 26
+阶段 27
 
 ## 各阶段
 
@@ -265,6 +265,18 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 27：托管运行态 Smoke 脚本
+- [x] 确认需要从根目录验证真实 server 可启动
+- [x] 新增 `scripts/smoke-marketplace-runtime.mjs`
+- [x] 使用临时 `configPath` 和 `dataRoot`，避免触碰本地用户数据
+- [x] 自动分配本地端口并只启用 IPv4 localhost
+- [x] 校验 `/api/health`、`/manifest.json`、`/service-worker.js`
+- [x] 新增 `npm run test:marketplace:smoke`
+- [x] 将 smoke 脚本纳入 `test:marketplace:syntax`
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -293,6 +305,7 @@
 | PWA service worker 不缓存 API | 钱包、市场、聊天和账号请求必须保持实时，静态壳缓存即可 |
 | PWA 预缓存清单必须可验证 | `cache.addAll()` 遇到任一缺失资源会让 install 失败，基础测试要覆盖文件存在性 |
 | 设计文档必须区分当前 MVP 与 Future SaaS | 避免 README/设计文档承诺当前代码尚未实现的充值、退款、版本、评论和独立后台 API |
+| 运行态 smoke 必须隔离本地数据 | 临时启动真实 server 时使用临时 config/data，只请求公开 health/PWA 端点，避免写入用户工作数据 |
 | 下架不撤销既有 entitlement | 下架阻止新购买和公开浏览，但已购买用户的安装副本能力保留，避免破坏已有体验 |
 | 举报先只创建 open report | MVP 需要可审计入口，自动处罚和处理队列等管理策略后续再加 |
 | 举报处理先做队列和 resolve | 管理员需要能清理 open reports；封禁、自动处罚和申诉规则仍需产品策略 |

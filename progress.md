@@ -431,6 +431,23 @@
   - progress.md
   - findings.md
 
+### 阶段 27：托管运行态 Smoke 脚本
+- **状态：** complete
+- 执行的操作：
+  - 新增 `scripts/smoke-marketplace-runtime.mjs`，从仓库根目录临时启动真实 `server.js`。
+  - 脚本自动分配 `127.0.0.1` 端口，并传入临时 `configPath` 和 `dataRoot`。
+  - 启动参数禁用浏览器自动打开、SSL、heartbeat、IPv6、whitelist 和 basic auth，降低 smoke 环境噪音。
+  - 轮询 `/api/health` 到 ready，再校验 `/manifest.json` 和 `/service-worker.js`。
+  - 新增根命令 `npm run test:marketplace:smoke`，并把 smoke 脚本加入 syntax gate。
+- 创建/修改的文件：
+  - scripts/smoke-marketplace-runtime.mjs
+  - scripts/check-marketplace-syntax.mjs
+  - package.json
+  - README.md
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -481,6 +498,10 @@
 | 文档边界校准基础验证 | `rg ... docs/marketplace-currency-design.md` | 当前 MVP 与 Future SaaS API 分区存在，关键 future 项仍保留但不混入 MVP | 通过 | 通过 |
 | 文档阶段 marketplace 回归 | `npm run test:marketplace` | 代码基础闭环不受文档更新影响 | 通过：4 suites / 17 tests | 通过 |
 | 文档阶段 E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
+| marketplace runtime smoke | `npm run test:marketplace:smoke` | 临时启动真实 server 并校验 health/PWA 公开端点 | 通过：`/api/health`、`/manifest.json`、`/service-worker.js` | 通过 |
+| smoke 脚本语法门禁 | `npm run test:marketplace:syntax` | smoke 脚本纳入 marketplace syntax gate | 通过：12 files checked | 通过 |
+| smoke 阶段 marketplace 回归 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health 契约通过 | 通过：4 suites / 17 tests | 通过 |
+| smoke 阶段 E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -500,11 +521,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查和设计文档 MVP/API 边界校准 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准和运行态 smoke 脚本 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试和文档边界校准 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准和运行态 smoke 脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

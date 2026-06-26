@@ -13,6 +13,7 @@ const files = [
     'public/scripts/pwa.js',
     'public/service-worker.js',
     'public/scripts/extensions/marketplace-wallet/index.js',
+    'scripts/smoke-marketplace-runtime.mjs',
     'tests/market-wallet.test.js',
     'tests/marketplace-wallet-ui.test.js',
     'tests/pwa.test.js',
