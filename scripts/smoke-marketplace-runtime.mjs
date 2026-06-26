@@ -485,6 +485,65 @@ async function run() {
         });
         console.log('runtime ok: POST /api/market/assets/:id/purchase');
 
+        let reportId = '';
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/smoke_asset_demo/report`, 'POST /api/market/assets/:id/report', payload => {
+            const report = payload.report;
+            if (!report?.id || report.asset_id !== 'smoke_asset_demo' || report.reporter_id !== 'default-user') {
+                throw new Error(`Unexpected marketplace report payload: ${JSON.stringify(payload)}`);
+            }
+            if (report.reason !== 'runtime_smoke_report' || report.body !== 'Runtime smoke report body.' || report.status !== 'open') {
+                throw new Error(`Marketplace report did not preserve expected fields: ${JSON.stringify(payload)}`);
+            }
+            reportId = report.id;
+        }, {
+            method: 'POST',
+            body: JSON.stringify({
+                reason: 'runtime_smoke_report',
+                body: 'Runtime smoke report body.',
+            }),
+            expectedStatus: 201,
+        });
+        console.log('runtime ok: POST /api/market/assets/:id/report');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/reports/admin`, '/api/market/reports/admin', payload => {
+            if (!Array.isArray(payload.reports)) {
+                throw new Error(`Unexpected report queue payload: ${JSON.stringify(payload)}`);
+            }
+            const report = payload.reports.find(item => item.id === reportId);
+            if (!report || report.status !== 'open' || report.asset?.id !== 'smoke_asset_demo' || report.asset?.title !== 'Smoke Demo World') {
+                throw new Error(`Open marketplace report missing from admin queue: ${JSON.stringify(payload)}`);
+            }
+            const assetKeys = Object.keys(report.asset || {}).sort();
+            const expectedAssetKeys = ['creator_id', 'id', 'price_coins', 'price_type', 'status', 'title', 'type'];
+            if (JSON.stringify(assetKeys) !== JSON.stringify(expectedAssetKeys)) {
+                throw new Error(`Admin report queue returned unexpected asset fields: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/reports/admin');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/reports/${reportId}/resolve`, 'POST /api/market/reports/:id/resolve', payload => {
+            const report = payload.report;
+            if (report?.id !== reportId || report.status !== 'resolved' || report.resolved_by !== 'default-user') {
+                throw new Error(`Unexpected report resolve payload: ${JSON.stringify(payload)}`);
+            }
+            if (report.resolution_note !== 'Runtime smoke resolved.' || !report.resolved_at) {
+                throw new Error(`Report resolve did not preserve resolution metadata: ${JSON.stringify(payload)}`);
+            }
+        }, {
+            method: 'POST',
+            body: JSON.stringify({
+                note: 'Runtime smoke resolved.',
+            }),
+        });
+        console.log('runtime ok: POST /api/market/reports/:id/resolve');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/reports/admin`, '/api/market/reports/admin after resolve', payload => {
+            if (!Array.isArray(payload.reports) || payload.reports.some(report => report.id === reportId)) {
+                throw new Error(`Resolved marketplace report remained in admin queue: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/reports/admin after resolve');
+
         await assertJsonEndpoint(`${baseUrl}/api/wallet/grants/admin`, 'POST /api/wallet/grants/admin', payload => {
             if (payload.entry?.userHandle !== 'default-user' || payload.entry?.bucket !== 'paid' || payload.entry?.amount !== 7) {
                 throw new Error(`Unexpected admin grant payload: ${JSON.stringify(payload)}`);
