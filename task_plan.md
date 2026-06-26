@@ -520,8 +520,8 @@
 - [x] Load JSON 时自动识别角色卡或世界书 payload 并设置上传类型
 - [x] 补充 UI contract、filters 和浏览器 E2E 覆盖
 - [x] 更新 README、设计文档和规划记录
-- [ ] 运行基础验证并提交推送
-- **状态：** in_progress
+- [x] 运行基础验证并提交推送
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？

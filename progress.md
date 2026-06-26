@@ -825,6 +825,8 @@
 - `tests/marketplace-wallet.e2e.js` 的 creator upload 用例覆盖角色卡 JSON 自动识别、世界书 JSON 自动识别、tags 去重提交和列表 tags 展示。
 - README 验证矩阵和设计文档已更新 tags 上传、列表展示、搜索命中和 JSON type auto-detect 的当前 MVP 边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-filters.test.js marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a world book upload'`、`npm run test:marketplace:smoke`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
+- 完整本机 Chrome E2E 已通过 8 个用例；父进程延迟退出后 Ctrl-C 清理，临时 server 无残留。
+- GitHub run `28248891425` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
