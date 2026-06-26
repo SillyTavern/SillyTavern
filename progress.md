@@ -837,6 +837,7 @@
 - README 和设计文档已补充 report body 当前 API/前端边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a report with reviewer details'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
 - 完整本机 Chrome E2E 已通过 9 个用例；父进程延迟退出后 Ctrl-C 清理，临时 server 无残留。
+- GitHub run `28249528500` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
