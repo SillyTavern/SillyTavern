@@ -1047,6 +1047,7 @@
 - API reference 现在标注 `POST /api/market/reports/:id/resolve` 的 note 1000 字符限制。
 - `tests/marketplace-api-reference.test.js` 已锁定这两条 notes，README 和 findings 已同步说明。
 - 已通过 `npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run marketplace:export:api -- --out <tmpfile>` smoke、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28257786482` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
