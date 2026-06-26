@@ -524,6 +524,14 @@ MVP 可以先做单体模块化服务，不必一开始拆微服务。关键是�
 
 当前本地 MVP 仍使用 JSON 文件保存 market store，并用 node-persist 保存 wallet ledger；同进程购买已按资产和用户做轻量串行化，但正式 SaaS 仍需要迁移到数据库事务，保证 entitlement、销量、扣款和创作者收益跨存储一致。
 
+为迁移演练和备份检查，仓库提供只读快照命令：
+
+```bash
+npm run marketplace:export:snapshot -- --dataRoot ./data --out ./marketplace-snapshot.json
+```
+
+该快照只导出市场资产、授权、安装、举报和钱包流水的白名单字段，不导出角色/世界书 payload、举报正文、安装本地路径、完整 ledger reason/metadata 或绝对 data root；`--out` 也会拒绝写入 data root 内部，避免备份动作修改用户数据目录。
+
 ## 和现有 SillyTavern 的接法
 
 当前 SillyTavern 已经有用户目录模型，市场资产安装时可以适配到现有目录：

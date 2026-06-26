@@ -71,6 +71,9 @@ npm run start:no-csrf
 # Seed demo marketplace assets into an explicit data root
 npm run marketplace:seed:demo -- --dataRoot ./data
 
+# Export a redacted market/wallet snapshot outside the data root
+npm run marketplace:export:snapshot -- --dataRoot ./data --out ./marketplace-snapshot.json
+
 # Run marketplace/wallet/PWA/health syntax and contract tests
 npm run test:marketplace
 
@@ -106,13 +109,14 @@ Validation matrix:
 | Command | Coverage |
 |---------|----------|
 | `npm run test:marketplace:syntax` | Fast JS syntax gate for marketplace/wallet endpoints, PWA files, scripts, and targeted tests. |
-| `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, filter, and UI contract tests. |
+| `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, snapshot export, filter, and UI contract tests. |
 | `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, free claim/install, Library, and file write. |
 | `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
 
 ### Development Notes
 
 - The MVP still uses JSON/node-persist storage and is intended for local validation, not production SaaS scale.
+- `npm run marketplace:export:snapshot` creates a redacted read-only market/wallet snapshot for backup checks and migration rehearsals; output files must be outside the data root.
 - Production deployment should migrate market assets, entitlements, installs, wallet accounts, and wallet ledger entries to a transactional database.
 - Real payment, refunds, creator withdrawals, search/ranking, automated abuse enforcement, object storage, and mobile app packaging remain future work.
 - The codebase is AGPL-3.0. Hosted modifications should be reviewed for license compliance before commercial launch.

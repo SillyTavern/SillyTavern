@@ -617,6 +617,12 @@
 | 阶段 39 marketplace workflow YAML 解析 | `node --input-type=module -e 'import YAML from "yaml"; ...'` | workflow 支持 `workflow_dispatch`，push 分支为 `codex/**`，且 marketplace job 存在 | 通过 | 通过 |
 | 阶段 39 README diff 检查 | `node --input-type=module -e '... git diff -- README.md ...'` | README diff 包含验证矩阵和 4 个 marketplace 验证命令 | 通过 | 通过 |
 | GitHub 阶段 39 权限测试验证 | `gh run watch 28241497439 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m4s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
+| 阶段 40 snapshot export 目标测试 | `npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js` | 显式 dataRoot、stdout、--out、只读 data root、隐私字段过滤和空 store 行为 | 通过：1 suite / 5 tests | 通过 |
+| 阶段 40 syntax gate | `npm run test:marketplace:syntax` | snapshot 脚本和测试纳入 marketplace 语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 40 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
+| 阶段 40 runtime smoke | `npm run test:marketplace:smoke` | 真实 server health/PWA/wallet/assets/free purchase/install/library 仍通过 | 通过 | 通过 |
+| 阶段 40 snapshot CLI smoke | `node scripts/export-marketplace-snapshot.mjs --dataRoot "$tmp_data" --out "$tmp_out/snapshot.json"` | 空 dataRoot 可导出到外部文件，且不泄露 data_root | 通过 | 通过 |
+| 阶段 40 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -637,6 +643,7 @@
 | 2026-06-26 | 本机 Chrome channel E2E 通过后父进程延迟退出 | 1 | 手动 Ctrl-C 后 wrapper 清理 server；以 GitHub runner 作为并行 E2E 退出行为最终裁决 |
 | 2026-06-26 | Wallet ledger 降级请求覆盖 E2E mock 钱包余额，导致真实 Chrome E2E 看到 0 而非 175 | 1 | `loadWalletLedger()` 只更新最近流水，不再用 `/api/wallet/ledger` 响应覆盖 `state.wallet.balance` |
 | 2026-06-26 | YAML workflow 检查脚本把空 `workflow_dispatch:` 当成缺失 | 2 | 改用 `Object.hasOwn(triggers, 'workflow_dispatch')` 检查键存在，而不是检查 truthy 值 |
+| 2026-06-26 | snapshot export 测试在未初始化 node-persist 的用例后调用 `storage.clear` 抛 `storage.clear is not a function` | 1 | afterEach 中先判断 `typeof storage.clear === 'function'`，只在存在时执行清理 |
 
 ## 2026-06-26 阶段 38：钱包流水 UI 与真实运行闭环
 - 启动并行 worker `019f040f-2485-7a31-9e82-15ca33bfc3fe`，限定其只补测试/文档契约，主线程负责 UI/样式/runtime smoke。
@@ -657,14 +664,23 @@
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace`、workflow YAML 键存在性检查、`git diff --check`。
 - GitHub run `28241497439` 已确认阶段 39 权限坏输入测试和 workflow/README 改动通过 Marketplace Wallet Checks 全链路。
 
+## 2026-06-26 阶段 40：市场与钱包导出快照脚本
+- Explorer `019f0426-8600-7843-bff6-d98443e5a18c` 完成只读审查，建议用 node-persist API 读 ledger，并默认导出白名单字段，避免 payload、举报正文、本地路径、完整 ledger reason/metadata 和绝对 data root 泄漏。
+- 新增 `scripts/export-marketplace-snapshot.mjs` 和 `npm run marketplace:export:snapshot`，要求显式 `--dataRoot`，支持 stdout JSON 和 `--out` 文件输出。
+- 快照输出包含 `market.summary/assets/entitlements/installs/reports` 与 `wallet.summary/ledger`；wallet ledger 只读取 `wallet:ledger:v1:`，并过滤合法 bucket 与 safe integer amount。
+- `--out` 指向 data root 内部时会拒绝执行，保证导出动作不修改用户数据目录。
+- 新增 `tests/marketplace-snapshot-export.test.js`，覆盖缺失 dataRoot、stdout 摘要、隐私字段过滤、外部 `--out`、dataRoot 内 `--out` 拒绝和无 `_storage` 时不创建钱包目录。
+- README Useful Scripts 和验证矩阵加入 snapshot export；设计文档记录它作为迁移演练和备份检查工具。
+- 已通过 `npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、snapshot CLI smoke、`git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复，以及真实 Chrome E2E UI 状态修复 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复，以及市场/钱包只读快照导出脚本 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复和真实 Chrome E2E UI 状态修复 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复和 marketplace/wallet 快照导出脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

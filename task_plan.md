@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 39
+阶段 40
 
 ## 各阶段
 
@@ -401,6 +401,17 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 40：市场与钱包导出快照脚本
+- [x] 使用多 agent 并发审查导出边界
+- [x] 新增只读 marketplace/wallet 导出脚本
+- [x] 支持显式 `--dataRoot`、stdout 和 `--out` 文件输出
+- [x] 导出 market store 摘要和 wallet ledger，避免修改用户数据
+- [x] 补充脚本测试、README 和设计文档说明
+- [x] 将脚本纳入 syntax gate 和 marketplace 聚合测试
+- [x] 运行基础测试和 smoke 验证
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -450,6 +461,8 @@
 | Runtime smoke 应覆盖真实领取安装 | 真实 server smoke 需要验证 free purchase、install、Library 和文件落盘，避免只证明服务能启动 |
 | 固定价购买必须有并发回归 | 同一用户同一资产并发购买只应结算一次，避免重复扣款和创作者重复入账 |
 | Marketplace workflow push 分支放宽到 `codex/**` | 后续并行 Codex 工作分支仍应触发同一 marketplace 门禁；path filter 已限制只在相关文件变更时运行，避免扩大到无关分支 |
+| 市场/钱包快照默认导出白名单字段 | 备份和迁移检查需要资产/授权/安装/举报/账本摘要，但不应默认导出 payload、举报正文、本地安装路径、完整 ledger reason/metadata 或绝对 dataRoot |
+| 快照 `--out` 不允许写入 dataRoot | 导出命令应保持用户数据目录只读，避免备份检查动作改变正在运行的本地数据根 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |
@@ -461,6 +474,7 @@
 | admin 面板 DOM 已渲染但仍保留 `hidden` | 1 | 改为显式 `removeAttr('hidden')`/`attr('hidden', '')`，并提高扩展入口版本避免模块缓存 |
 | Runner Chrome E2E 中 marketplace admin 和按钮不可见 | 1 | E2E helper 打开外层 Extensions drawer、展开内层 inline drawer，并 mock admin 用户 |
 | Runner Chrome E2E 首次启动被 onboarding 弹窗遮挡 | 1 | E2E helper 等待并点击 onboarding Save |
+| marketplace snapshot 测试未初始化 node-persist 时 `storage.clear` 不是函数 | 1 | afterEach 中先判断 `storage.clear` 是否存在，再执行清理 |
 
 ## 备注
 - 设计文档阶段已完成。
