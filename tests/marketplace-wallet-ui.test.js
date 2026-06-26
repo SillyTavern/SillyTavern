@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.9');
+        expect(manifest.version).toBe('0.2.10');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -155,7 +155,11 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("['Created', formatAssetDate(asset.created_at) || 'unknown']");
         expect(script).toContain("['Listed', formatAssetDate(asset.listed_at) || 'not listed']");
         expect(script).toContain("['Updated', formatAssetDate(asset.updated_at) || 'unknown']");
+        expect(script).toContain("['Entitlement', entitlementSource || 'not in library']");
+        expect(script).toContain("['Entitled on', entitlementDate || 'not entitled']");
+        expect(script).toContain("['Purchase ref', purchaseRef || 'none']");
         expect(script).toContain("['Payload', hasPayload ? 'available' : 'available after claim or purchase']");
+        expect(script).toContain('createAssetPreview(result.asset || {}, result.entitlement || null)');
         expect(script).toContain('if (hasPayload)');
         expect(script).toContain('editingAssetId: null');
         expect(script).toContain("action: 'revise'");
@@ -191,7 +195,10 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("tags.length ? `tags: ${tags.join(', ')}` : ''");
         expect(script).toContain('class="marketplace-wallet-review-summary"');
         expect(script).toContain('inspectAsset = viewAssetDetails');
-        expect(script).toContain('function createAssetPreview(asset)');
+        expect(script).toContain('function createAssetPreview(asset, entitlement = null)');
+        expect(script).toContain('const entitlementSource = entitlement?.source ? String(entitlement.source) : \'\'');
+        expect(script).toContain('const entitlementDate = entitlement?.created_at ? formatAssetDate(entitlement.created_at) : \'\'');
+        expect(script).toContain('const purchaseRef = entitlement?.purchase_id ? String(entitlement.purchase_id) : \'\'');
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`");
         expect(script).toContain('asset.normalized_payload');
         expect(script).toContain('function getAssetTags(asset)');

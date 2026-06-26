@@ -93,6 +93,7 @@
 - 托管探活新增 `GET /api/health`；响应包含服务级状态、版本、uptime 和时间戳，不返回用户、市场或钱包数据。
 - marketplace-wallet 新增 Details；市场列表、用户库和审核预览共用 asset detail 弹窗，未授权时不渲染 payload JSON。
 - marketplace-wallet Details 弹窗现在展示 language、content rating 和创建/上架/更新时间；日期使用 `YYYY-MM-DD` 稳定格式，避免浏览器 locale 影响自动化断言。
+- marketplace-wallet Details 弹窗现在展示当前用户 entitlement 来源、授权日期和购买引用；未授权资产显示 not in library/not entitled。
 - marketplace-wallet 市场筛选条新增价格、访问状态和排序控件，继续使用本地列表做客户端过滤。
 - marketplace-wallet 空结果且存在激活筛选时会显示 Clear filters，避免移动端用户被空搜索困住。
 - 新增 `scripts/check-marketplace-syntax.mjs` 作为 marketplace/wallet/PWA/health 基础语法门禁，并接入根目录 `npm run test:marketplace`。

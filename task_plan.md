@@ -602,6 +602,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 63：详情弹窗授权信息摘要
+- [x] 在 Details 弹窗展示当前用户 entitlement 来源
+- [x] 展示授权日期和购买引用摘要
+- [x] 补充 UI contract 和浏览器 E2E 覆盖
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -652,6 +660,7 @@
 | Review Queue 应展示安全元数据 | 审核员不应只看标题和类型；列表已有 creator/price/tags/summary/updated_at，前端可展示摘要但 payload 仍需 Inspect 懒加载 |
 | 创作者修订只允许 draft/rejected | listed 资产已有购买/授权关系，原地改 payload 会破坏买家预期；后续需要版本化发布 |
 | Creator Center 应显示审核状态细节 | 后端 creator asset item 已返回 submitted_at、approved_at 和 rejection_reason，前端显示后能让创作者知道何时提交、通过或被拒原因 |
+| Details 应显示 entitlement 摘要 | 详情接口已返回当前用户 entitlement，展示来源/日期/购买引用能帮助用户确认自己何时领取或购买资产 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 | Library Details 入口必须真实存在 | 计划和设计文档已把 My Library 作为找回/查看入口，库中只提供 Install 会迫使用户回市场列表找详情 |
 | Library 安装摘要应可见 | 后端已返回 entitlement 时间和 last_install 摘要，前端显示这些信息能让用户确认何时领取/购买以及最近安装到哪里 |

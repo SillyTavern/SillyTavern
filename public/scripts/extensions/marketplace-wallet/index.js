@@ -357,12 +357,15 @@ function createStatusBadge(asset) {
     return $badge;
 }
 
-function createAssetPreview(asset) {
+function createAssetPreview(asset, entitlement = null) {
     const $preview = $('<div class="marketplace-wallet-asset-preview"></div>');
     const $title = $('<h3></h3>').text(asset.title || 'Untitled asset');
     const $summary = $('<p></p>').text(asset.summary || 'No summary provided.');
     const $meta = $('<dl class="marketplace-wallet-preview-meta"></dl>');
     const hasPayload = asset.payload_available && asset.normalized_payload;
+    const entitlementSource = entitlement?.source ? String(entitlement.source) : '';
+    const entitlementDate = entitlement?.created_at ? formatAssetDate(entitlement.created_at) : '';
+    const purchaseRef = entitlement?.purchase_id ? String(entitlement.purchase_id) : '';
     const rows = [
         ['Type', MARKET_TYPES[asset.type] || asset.type || 'Asset'],
         ['Status', asset.status || 'draft'],
@@ -374,6 +377,9 @@ function createAssetPreview(asset) {
         ['Created', formatAssetDate(asset.created_at) || 'unknown'],
         ['Listed', formatAssetDate(asset.listed_at) || 'not listed'],
         ['Updated', formatAssetDate(asset.updated_at) || 'unknown'],
+        ['Entitlement', entitlementSource || 'not in library'],
+        ['Entitled on', entitlementDate || 'not entitled'],
+        ['Purchase ref', purchaseRef || 'none'],
         ['Payload', hasPayload ? 'available' : 'available after claim or purchase'],
     ];
 
@@ -941,7 +947,7 @@ async function viewAssetDetails(assetId) {
         const result = await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`, {
             method: 'GET',
         });
-        await callGenericPopup(createAssetPreview(result.asset || {}), POPUP_TYPE.TEXT, '', {
+        await callGenericPopup(createAssetPreview(result.asset || {}, result.entitlement || null), POPUP_TYPE.TEXT, '', {
             okButton: 'Close',
             wide: true,
             large: true,

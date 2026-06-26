@@ -255,6 +255,7 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
 
         if (method === 'GET') {
             apiCalls.details.push(assetId);
+            const libraryItem = library.find(item => item.asset?.id === assetId || item.entitlement?.asset_id === assetId);
             route.fulfill({
                 status: 200,
                 contentType: 'application/json',
@@ -263,7 +264,7 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
                         ...existingAsset,
                         payload_available: true,
                     },
-                    entitlement: null,
+                    entitlement: libraryItem?.entitlement || null,
                 }),
             });
             return;
@@ -338,8 +339,17 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
         assets = assets.map(item => item.id === assetId
             ? { ...item, entitled: true, sales_count: Number(item.sales_count || 0) + 1 }
             : item);
+        const entitlement = {
+            id: `ent-${assetId}`,
+            user_id: 'default-user',
+            asset_id: assetId,
+            source: asset?.price_type === 'free' ? 'free' : 'purchase',
+            purchase_id: purchaseId,
+            created_at: '2026-06-26T12:45:00.000Z',
+            revoked_at: null,
+        };
         if (asset && !library.some(item => item.asset.id === assetId)) {
-            library = [makeLibraryItem({ ...asset, entitled: true }), ...library];
+            library = [makeLibraryItem({ ...asset, entitled: true }, { entitlement }), ...library];
         }
         let purchase = null;
         if (asset?.price_type === 'fixed_price') {
@@ -402,15 +412,7 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
             status: 201,
             contentType: 'application/json',
             body: JSON.stringify({
-                entitlement: {
-                    id: `ent-${assetId}`,
-                    user_id: 'default-user',
-                    asset_id: assetId,
-                    source: asset?.price_type === 'free' ? 'free' : 'purchase',
-                    purchase_id: purchaseId,
-                    created_at: '2026-06-26T12:45:00.000Z',
-                    revoked_at: null,
-                },
+                entitlement,
                 already_owned: false,
                 purchase,
             }),
@@ -786,6 +788,10 @@ test.describe('marketplace wallet extension', () => {
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-25');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Updated');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-26');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Entitlement');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('not in library');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Entitled on');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('not entitled');
         await detailsPopup.locator('.popup-button-ok').click();
     });
 
@@ -825,6 +831,12 @@ test.describe('marketplace wallet extension', () => {
         const detailsPopup = page.getByRole('dialog').filter({ hasText: 'Free World' });
         await expect(detailsPopup).toBeVisible();
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Language');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Entitlement');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('free');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Entitled on');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-26');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Purchase ref');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('none');
         await detailsPopup.locator('.popup-button-ok').click();
     });
 

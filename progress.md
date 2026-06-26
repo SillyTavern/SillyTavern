@@ -934,6 +934,14 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a world book upload'`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'revises a rejected creator asset'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
 - GitHub run `28253684795` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 63：详情弹窗授权信息摘要
+- 根据只读 explorer `019f04ea-a25b-7df1-9393-5b99bc4ce616` 的候选建议，补齐 asset detail API 已返回但前端未展示的 entitlement。
+- marketplace-wallet Details 弹窗新增当前用户 entitlement 来源、授权日期和购买引用摘要；未授权资产显示 not in library/not entitled/none。
+- `marketplace-wallet` manifest bump 到 `0.2.10`，避免浏览器缓存旧 JS/CSS。
+- 浏览器 E2E mock 的 asset detail 现在从 Library 状态返回 entitlement，贴近真实后端 `/api/market/assets/:id`。
+- README、设计文档和 findings 已补充 Details entitlement 展示边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'shows asset detail metadata'`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'claims and installs a free asset'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
