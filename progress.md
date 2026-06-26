@@ -1049,6 +1049,15 @@
 - 已通过 `npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run marketplace:export:api -- --out <tmpfile>` smoke、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28257786482` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 77：市场资产 tags 后端边界
+- 新增 `validates and normalizes marketplace asset tags` 后端契约测试。
+- 测试覆盖 tags 非数组返回 `tags must be an array`，超过 20 个返回 `tags must contain 20 items or less`。
+- 测试覆盖非字符串 tag 和超过 40 字符 tag 的错误详情。
+- 测试覆盖成功创建时 tags 会 trim、过滤空字符串、去重，并保留正好 40 字符的 tag。
+- 根据只读 explorer 复核，同一用例补充 PATCH 入口最小覆盖，确认 draft asset 修订时 bad tags 返回同样 error shape，valid tags 会重新归一化写入资产。
+- README 和 findings 已补充 bounded tags 后端边界。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates and normalizes marketplace asset tags'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

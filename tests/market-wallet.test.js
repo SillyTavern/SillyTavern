@@ -665,6 +665,101 @@ describe('market and wallet MVP endpoints', () => {
         });
     });
 
+    test('validates and normalizes marketplace asset tags', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const createBody = {
+            type: 'character_card',
+            title: 'Tagged Asset',
+            normalized_payload: createCharacterPayload(),
+        };
+
+        const nonArrayTags = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                ...createBody,
+                tags: 'solo',
+            },
+        });
+        expect(nonArrayTags.status).toBe(400);
+        expect(nonArrayTags.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: ['tags must be an array'],
+        });
+
+        const invalidTagValues = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                ...createBody,
+                tags: [
+                    ...Array.from({ length: 20 }, (_, index) => `tag-${index}`),
+                    123,
+                    'x'.repeat(41),
+                ],
+            },
+        });
+        expect(invalidTagValues.status).toBe(400);
+        expect(invalidTagValues.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: [
+                'tags must contain 20 items or less',
+            ],
+        });
+
+        const invalidTagTypes = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                ...createBody,
+                tags: [123, 'x'.repeat(41)],
+            },
+        });
+        expect(invalidTagTypes.status).toBe(400);
+        expect(invalidTagTypes.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: [
+                'tags must contain only strings',
+                'tags must be 40 characters or less',
+            ],
+        });
+
+        const validTags = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                ...createBody,
+                tags: [' lore ', 'lore', '', 'scenario', 'x'.repeat(40)],
+            },
+        });
+        expect(validTags.status).toBe(201);
+        expect(validTags.body.asset.tags).toEqual(['lore', 'scenario', 'x'.repeat(40)]);
+
+        const patchInvalidTags = await request(aliceApp, `/api/market/assets/${validTags.body.asset.id}`, {
+            method: 'PATCH',
+            body: {
+                ...createBody,
+                title: 'Tagged Asset Patch',
+                tags: 'solo',
+            },
+        });
+        expect(patchInvalidTags.status).toBe(400);
+        expect(patchInvalidTags.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: ['tags must be an array'],
+        });
+
+        const patchValidTags = await request(aliceApp, `/api/market/assets/${validTags.body.asset.id}`, {
+            method: 'PATCH',
+            body: {
+                ...createBody,
+                title: 'Tagged Asset Patch',
+                tags: [' patched ', 'patched', 'draft'],
+            },
+        });
+        expect(patchValidTags.status).toBe(200);
+        expect(patchValidTags.body.asset).toMatchObject({
+            title: 'Tagged Asset Patch',
+            tags: ['patched', 'draft'],
+        });
+    });
+
     test('allows only admins to grant wallet balance', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));
