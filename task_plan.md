@@ -708,6 +708,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 76：API reference 举报边界标注
+- [x] API reference 标注 report reason/body 长度边界
+- [x] API reference 标注 report resolve note 长度边界
+- [x] 补充 API reference 单测断言
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -767,6 +775,7 @@
 | API reference 测试应锁定路由集合 | 导出脚本从源码解析路由，测试覆盖完整 MVP 路由可以尽早发现文档导出漂移 |
 | Details 应展示下架日期 | delisted_at 是安全生命周期元数据，已授权用户和管理员查看详情时需要知道资产何时从公开市场下架 |
 | API reference 应包含权限/隐私标注 | 路由清单不足以说明 admin-only、payload redaction 和 wallet scope，导出文档应携带这些关键边界 |
+| API reference 应包含举报长度边界 | Report 创建和处理备注都有后端长度限制，导出文档应记录这些可调用契约 |
 | Syntax gate 应覆盖扩展静态资产 | marketplace-wallet 依赖 manifest/window/style，JS 语法通过不代表这些关键资产存在且可解析 |
 | admin grant 目标字段别名必须锁定 | API reference 已标注 `handle`、`userHandle`、`targetHandle`，后端契约测试要保证三种别名都能正确发到目标用户 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |

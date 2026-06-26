@@ -138,7 +138,7 @@
 - report 提交的 `reason` 上限是 120 字符，`body` 上限是 2000 字符；超长举报应返回 `Invalid market report` 且不进入管理员队列。
 - API reference 导出脚本从当前 market/wallet endpoint 源码和公开 health route 生成 Markdown，适合作为发布前检查点，减少 README/设计文档里的端点清单和实现漂移。
 - API reference 单测锁定当前完整 MVP 路由集合，包括 library、reports admin、submit/approve/reject/delist/purchase/install 和 wallet ledger。
-- API reference 现在包含关键权限/隐私标注：payload redaction、admin-only 队列/审核/赠币、Library scope 和 Wallet read scope。
+- API reference 现在包含关键权限/隐私标注：payload redaction、admin-only 队列/审核/赠币、Library scope、Wallet read scope 和 report 长度边界。
 - PWA 浏览器 E2E 需要等待 service worker 从 `activating` 进入 `activated`，再 reload 确认页面受 controller 控制；这样才能稳定验证 shell cache 和 `/api/*` 不缓存。
 - `test:marketplace:all` 作为慢速发布前闭环命令，顺序跑 contract/Jest、runtime smoke 和 browser E2E；日常快速反馈仍用 `test:marketplace`。
 

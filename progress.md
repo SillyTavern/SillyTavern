@@ -1041,6 +1041,13 @@
 - 已通过 `npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28257569504` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 76：API reference 举报边界标注
+- `scripts/export-marketplace-api-reference.mjs` 的 route notes 新增 report 创建和 resolve 长度边界。
+- API reference 现在标注 `POST /api/market/assets/:id/report` 的 reason 120 字符、body 2000 字符限制。
+- API reference 现在标注 `POST /api/market/reports/:id/resolve` 的 note 1000 字符限制。
+- `tests/marketplace-api-reference.test.js` 已锁定这两条 notes，README 和 findings 已同步说明。
+- 已通过 `npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run marketplace:export:api -- --out <tmpfile>` smoke、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
