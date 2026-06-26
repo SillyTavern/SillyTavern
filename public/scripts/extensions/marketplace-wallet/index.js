@@ -376,6 +376,7 @@ function createAssetPreview(asset, entitlement = null) {
         ['Tags', getAssetTags(asset).length ? getAssetTags(asset).join(', ') : 'none'],
         ['Created', formatAssetDate(asset.created_at) || 'unknown'],
         ['Listed', formatAssetDate(asset.listed_at) || 'not listed'],
+        ['Delisted', formatAssetDate(asset.delisted_at) || 'not delisted'],
         ['Updated', formatAssetDate(asset.updated_at) || 'unknown'],
         ['Entitlement', entitlementSource || 'not in library'],
         ['Entitled on', entitlementDate || 'not entitled'],

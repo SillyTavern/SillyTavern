@@ -93,6 +93,7 @@
 - 托管探活新增 `GET /api/health`；响应包含服务级状态、版本、uptime 和时间戳，不返回用户、市场或钱包数据。
 - marketplace-wallet 新增 Details；市场列表、用户库和审核预览共用 asset detail 弹窗，未授权时不渲染 payload JSON。
 - marketplace-wallet Details 弹窗现在展示 language、content rating 和创建/上架/更新时间；日期使用 `YYYY-MM-DD` 稳定格式，避免浏览器 locale 影响自动化断言。
+- marketplace-wallet Details 弹窗现在展示 delisted 日期；未下架资产显示 not delisted。
 - marketplace-wallet Details 弹窗现在展示当前用户 entitlement 来源、授权日期和购买引用；未授权资产显示 not in library/not entitled。
 - marketplace-wallet 市场筛选条新增价格、访问状态和排序控件，继续使用本地列表做客户端过滤。
 - marketplace-wallet 搜索现在会匹配资产 language 和 content_rating，和 Details 里已展示的元数据保持一致。

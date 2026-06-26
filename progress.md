@@ -976,6 +976,13 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28255165232` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 68：详情弹窗下架日期
+- marketplace-wallet Details 弹窗新增 `Delisted` 行，显示 `delisted_at` 的稳定 `YYYY-MM-DD` 日期；未下架资产显示 `not delisted`。
+- `marketplace-wallet` manifest bump 到 `0.2.13`，避免浏览器缓存旧 JS/CSS。
+- UI contract 锁定 Delisted 元信息行，浏览器详情 E2E 覆盖 delisted 日期可见。
+- README、设计文档和 findings 已补充 Details delisted date 边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'shows asset detail metadata'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

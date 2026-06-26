@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.12');
+        expect(manifest.version).toBe('0.2.13');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -154,6 +154,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("['Content rating', asset.content_rating || 'unrated']");
         expect(script).toContain("['Created', formatAssetDate(asset.created_at) || 'unknown']");
         expect(script).toContain("['Listed', formatAssetDate(asset.listed_at) || 'not listed']");
+        expect(script).toContain("['Delisted', formatAssetDate(asset.delisted_at) || 'not delisted']");
         expect(script).toContain("['Updated', formatAssetDate(asset.updated_at) || 'unknown']");
         expect(script).toContain("['Entitlement', entitlementSource || 'not in library']");
         expect(script).toContain("['Entitled on', entitlementDate || 'not entitled']");

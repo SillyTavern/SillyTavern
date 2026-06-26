@@ -766,6 +766,7 @@ test.describe('marketplace wallet extension', () => {
             content_rating: 'teen',
             created_at: '2026-06-24T09:00:00.000Z',
             listed_at: '2026-06-25T10:00:00.000Z',
+            delisted_at: '2026-06-26T09:30:00.000Z',
             updated_at: '2026-06-26T11:00:00.000Z',
         });
         const apiCalls = await mockMarketplaceApis(page, {
@@ -788,6 +789,8 @@ test.describe('marketplace wallet extension', () => {
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-24');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Listed');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-25');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Delisted');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-26');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Updated');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-26');
         await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Entitlement');
