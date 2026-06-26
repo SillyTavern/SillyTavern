@@ -72,8 +72,8 @@
 - [x] 购买时按 `bonus -> paid` 扣款，并给创作者写入 `earnings`
 - [x] 对同一资产和用户增加购买幂等与同进程串行化保护
 - [x] 补充余额不足、免费领取不写账、重复购买、创作者收益和价格校验测试
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
