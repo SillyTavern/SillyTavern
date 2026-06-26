@@ -393,8 +393,8 @@
 - **状态：** complete
 
 ### 阶段 39：权限坏输入与验证入口补强
-- [ ] 使用多 agent 并发补强测试和 CI/README 验证说明
-- [ ] 补充 wallet/market 权限与坏输入基础测试
+- [x] 使用多 agent 并发补强测试和 CI/README 验证说明
+- [x] 补充 wallet/market 权限与坏输入基础测试
 - [x] 增加 marketplace workflow 手动触发或更通用分支触发
 - [x] 增加 README 本地验证矩阵
 - [x] 运行基础测试、workflow 解析和 diff 检查

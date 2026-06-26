@@ -635,6 +635,7 @@
 | 2026-06-26 | 临时 data root 首次启动 onboarding 弹窗遮挡测试交互 | 1 | E2E helper 等待欢迎弹窗并点击 Save |
 | 2026-06-26 | 本机 Chrome channel E2E 通过后父进程延迟退出 | 1 | 手动 Ctrl-C 后 wrapper 清理 server；以 GitHub runner 作为并行 E2E 退出行为最终裁决 |
 | 2026-06-26 | Wallet ledger 降级请求覆盖 E2E mock 钱包余额，导致真实 Chrome E2E 看到 0 而非 175 | 1 | `loadWalletLedger()` 只更新最近流水，不再用 `/api/wallet/ledger` 响应覆盖 `state.wallet.balance` |
+| 2026-06-26 | YAML workflow 检查脚本把空 `workflow_dispatch:` 当成缺失 | 2 | 改用 `Object.hasOwn(triggers, 'workflow_dispatch')` 检查键存在，而不是检查 truthy 值 |
 
 ## 2026-06-26 阶段 38：钱包流水 UI 与真实运行闭环
 - 启动并行 worker `019f040f-2485-7a31-9e82-15ca33bfc3fe`，限定其只补测试/文档契约，主线程负责 UI/样式/runtime smoke。
@@ -652,7 +653,7 @@
 - `market-wallet.test.js` 新增 wallet read scope/admin grant input 回归：普通用户不能用 `handle` query 读别人钱包或 ledger，管理员可读指定用户，invalid bucket、0 amount、unknown user 分别返回 400/400/404。
 - `.github/workflows/marketplace-wallet-checks.yml` 增加 `workflow_dispatch`，并将 push 分支从 `codex/marketplace-wallet-mvp` 放宽到 `codex/**`，继续依赖 path filter 限制无关改动。
 - README 新增 marketplace 本地验证矩阵，覆盖 syntax、contract、runtime smoke 和临时 server E2E 命令。
-- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace`、`git diff --check`。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace`、workflow YAML 键存在性检查、`git diff --check`。
 
 ## 五问重启检查
 | 问题 | 答案 |

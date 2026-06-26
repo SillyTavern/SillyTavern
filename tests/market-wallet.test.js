@@ -513,6 +513,84 @@ describe('market and wallet MVP endpoints', () => {
         });
     });
 
+    test('enforces wallet read scope and validates admin grant input', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+
+        const grantResult = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 15,
+                bucket: 'paid',
+            },
+        });
+        expect(grantResult.status).toBe(201);
+
+        const forbiddenWallet = await request(bobApp, '/api/wallet?handle=alice', { method: 'GET' });
+        expect(forbiddenWallet.status).toBe(403);
+        expect(forbiddenWallet.body.error).toBe('Unauthorized');
+
+        const forbiddenLedger = await request(bobApp, '/api/wallet/ledger?handle=alice', { method: 'GET' });
+        expect(forbiddenLedger.status).toBe(403);
+        expect(forbiddenLedger.body.error).toBe('Unauthorized');
+
+        const adminWallet = await request(aliceApp, '/api/wallet?handle=bob', { method: 'GET' });
+        expect(adminWallet.status).toBe(200);
+        expect(adminWallet.body).toMatchObject({
+            handle: 'bob',
+            balance: {
+                buckets: {
+                    paid: 15,
+                },
+            },
+        });
+
+        const adminLedger = await request(aliceApp, '/api/wallet/ledger?handle=bob', { method: 'GET' });
+        expect(adminLedger.status).toBe(200);
+        expect(adminLedger.body.handle).toBe('bob');
+        expect(adminLedger.body.ledger).toHaveLength(1);
+        expect(adminLedger.body.ledger[0]).toMatchObject({
+            userHandle: 'bob',
+            actorHandle: 'alice',
+            bucket: 'paid',
+            amount: 15,
+        });
+
+        const invalidBucket = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 10,
+                bucket: 'coupons',
+            },
+        });
+        expect(invalidBucket.status).toBe(400);
+        expect(invalidBucket.body.error).toBe('Invalid wallet bucket');
+
+        const invalidAmount = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 0,
+                bucket: 'bonus',
+            },
+        });
+        expect(invalidAmount.status).toBe(400);
+        expect(invalidAmount.body.error).toBe('Amount must be a positive safe integer');
+
+        const unknownUser = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'missing-user',
+                amount: 10,
+                bucket: 'bonus',
+            },
+        });
+        expect(unknownUser.status).toBe(404);
+        expect(unknownUser.body.error).toBe('User not found');
+    });
+
     test('purchases fixed price assets with wallet ledger and creator earnings', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));
