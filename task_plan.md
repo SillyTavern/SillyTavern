@@ -486,8 +486,8 @@
 - [x] 验证 resolve report 后队列清空且响应记录 resolved metadata
 - [x] 更新 README、设计文档和规划记录
 - [x] 运行 runtime smoke、marketplace 聚合和 syntax gate
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
