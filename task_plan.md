@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 38
+阶段 39
 
 ## 各阶段
 
@@ -392,6 +392,15 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 39：权限坏输入与验证入口补强
+- [ ] 使用多 agent 并发补强测试和 CI/README 验证说明
+- [ ] 补充 wallet/market 权限与坏输入基础测试
+- [x] 增加 marketplace workflow 手动触发或更通用分支触发
+- [x] 增加 README 本地验证矩阵
+- [x] 运行基础测试、workflow 解析和 diff 检查
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -440,6 +449,7 @@
 | 钱包流水 UI 是最近视图 | 前端展示最近 wallet ledger 方便用户核对余额；完整审计账本仍以 `/api/wallet/ledger` 为准 |
 | Runtime smoke 应覆盖真实领取安装 | 真实 server smoke 需要验证 free purchase、install、Library 和文件落盘，避免只证明服务能启动 |
 | 固定价购买必须有并发回归 | 同一用户同一资产并发购买只应结算一次，避免重复扣款和创作者重复入账 |
+| Marketplace workflow push 分支放宽到 `codex/**` | 后续并行 Codex 工作分支仍应触发同一 marketplace 门禁；path filter 已限制只在相关文件变更时运行，避免扩大到无关分支 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

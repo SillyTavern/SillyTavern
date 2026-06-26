@@ -101,6 +101,15 @@ npm --prefix tests run test:unit
 npm --prefix tests run test:e2e
 ```
 
+Validation matrix:
+
+| Command | Coverage |
+|---------|----------|
+| `npm run test:marketplace:syntax` | Fast JS syntax gate for marketplace/wallet endpoints, PWA files, scripts, and targeted tests. |
+| `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, filter, and UI contract tests. |
+| `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, free claim/install, Library, and file write. |
+| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
+
 ### Development Notes
 
 - The MVP still uses JSON/node-persist storage and is intended for local validation, not production SaaS scale.

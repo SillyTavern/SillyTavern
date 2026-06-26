@@ -612,6 +612,10 @@
 | Wallet ledger E2E 修复 runtime smoke | `npm run test:marketplace:smoke` | 真实 server free purchase/install/library/文件落盘仍通过 | 通过 | 通过 |
 | Wallet ledger E2E 修复本机 Chrome | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | 真实浏览器 admin/report/free-claim/mobile 四用例 | 通过：4 passed (1.7m)；本机父进程延迟退出后 Ctrl-C 清理 | 通过 |
 | GitHub Wallet ledger E2E 修复验证 | `gh run watch 28240992614 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m38s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
+| 阶段 39 wallet 权限坏输入目标测试 | `npm --prefix tests run test:unit -- market-wallet.test.js` | 普通用户跨钱包读取禁止、管理员可读、invalid bucket/amount/unknown user 明确失败 | 通过：1 suite / 9 tests | 通过 |
+| 阶段 39 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/PWA/health/seed/filter/UI 契约通过 | 通过：6 suites / 24 tests | 通过 |
+| 阶段 39 marketplace workflow YAML 解析 | `node --input-type=module -e 'import YAML from "yaml"; ...'` | workflow 支持 `workflow_dispatch`，push 分支为 `codex/**`，且 marketplace job 存在 | 通过 | 通过 |
+| 阶段 39 README diff 检查 | `node --input-type=module -e '... git diff -- README.md ...'` | README diff 包含验证矩阵和 4 个 marketplace 验证命令 | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -642,6 +646,13 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- market-wallet.test.js marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、`git diff --check`。
 - GitHub run `28240670891` 的真实 Chrome E2E 暴露 ledger 降级请求会用真实 `/api/wallet/ledger` 的 0 余额覆盖 mocked `/api/wallet` 的 175 余额；已修复为 ledger 请求只更新最近流水，余额继续由 `/api/wallet` 和 grant/purchase 主流程返回维护。
 - GitHub run `28240992614` 已确认修复有效，Marketplace Wallet Checks 全链路通过。
+
+## 2026-06-26 阶段 39：权限坏输入与验证入口补强
+- 启动 worker `019f041d-ef72-77d3-a4f4-b78ff0e21bbf` 负责 workflow 手动触发和 README 验证矩阵，主线程负责钱包/市场权限坏输入测试。
+- `market-wallet.test.js` 新增 wallet read scope/admin grant input 回归：普通用户不能用 `handle` query 读别人钱包或 ledger，管理员可读指定用户，invalid bucket、0 amount、unknown user 分别返回 400/400/404。
+- `.github/workflows/marketplace-wallet-checks.yml` 增加 `workflow_dispatch`，并将 push 分支从 `codex/marketplace-wallet-mvp` 放宽到 `codex/**`，继续依赖 path filter 限制无关改动。
+- README 新增 marketplace 本地验证矩阵，覆盖 syntax、contract、runtime smoke 和临时 server E2E 命令。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace`、`git diff --check`。
 
 ## 五问重启检查
 | 问题 | 答案 |

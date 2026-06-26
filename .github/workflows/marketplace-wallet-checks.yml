@@ -1,6 +1,7 @@
 name: Marketplace Wallet Checks
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -35,7 +36,7 @@ on:
       - 'tests/package-lock.json'
   push:
     branches:
-      - codex/marketplace-wallet-mvp
+      - codex/**
     paths:
       - '.github/workflows/marketplace-wallet-checks.yml'
       - 'README.md'
