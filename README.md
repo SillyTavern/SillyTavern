@@ -80,6 +80,9 @@ npm run marketplace:export:api -- --out ./marketplace-api-reference.md
 # Run marketplace/wallet/PWA/health syntax and contract tests
 npm run test:marketplace
 
+# Run the slow pre-release marketplace loop: contract tests, runtime smoke, browser E2E
+PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:all
+
 # Run only the marketplace/wallet/PWA/health syntax gate
 npm run test:marketplace:syntax
 
@@ -120,6 +123,7 @@ Validation matrix:
 | `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, creator upload/submit/approve, Creator Center stats, report create/queue/resolve, free and fixed-price claim/install, buyer debit, creator earning, Library, and file write. |
 | `npm run test:pwa:e2e` | Temporary local server plus Playwright service worker E2E for shell cache registration and `/api/*` cache exclusion; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
 | `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for PWA service worker, admin, reports, creator upload/submit, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
+| `npm run test:marketplace:all` | Slow pre-release loop that runs `test:marketplace`, `test:marketplace:smoke`, and `test:marketplace:e2e:server` in sequence. |
 
 ### Development Notes
 

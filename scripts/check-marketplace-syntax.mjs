@@ -24,6 +24,7 @@ const files = [
     'tests/marketplace-wallet-ui.test.js',
     'tests/marketplace-demo-seed.test.js',
     'tests/marketplace-api-reference.test.js',
+    'tests/marketplace-scripts.test.js',
     'tests/marketplace-snapshot-export.test.js',
     'tests/marketplace-wallet.e2e.js',
     'tests/playwright.config.js',
