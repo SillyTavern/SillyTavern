@@ -430,8 +430,8 @@
 - [x] 验证付费资产可安装、Library 可见和文件落盘
 - [x] 更新 README、设计文档和规划记录
 - [x] 运行 syntax、marketplace 聚合和 runtime smoke
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
