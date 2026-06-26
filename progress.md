@@ -866,6 +866,7 @@
 - UI contract 锁定 Clear filters 模板、显示逻辑和事件绑定；浏览器 E2E 覆盖空结果、按钮显示、清空后资产恢复和控件默认值。
 - README、设计文档和 findings 已补充 clear-filter 浏览体验。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'clears active marketplace filters'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+- GitHub run `28250680898` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
