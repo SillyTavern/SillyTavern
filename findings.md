@@ -113,7 +113,7 @@
 - marketplace-wallet 新增 Wallet Activity 面板，最近流水从 `/api/wallet/ledger` 降级加载，正数用 `+` 标识，负数标为 purchase/debit。
 - runtime smoke 现在会实际 POST 免费领取和安装 demo world book，并确认 Library 里 install_count 为 1 且文件写入临时用户 worlds 目录。
 - 新增 `scripts/export-marketplace-snapshot.mjs`，用显式 `--dataRoot` 只读导出市场与钱包快照；stdout 输出 JSON，`--out` 写文件但拒绝写入 data root 内部。
-- marketplace/wallet 快照默认只导出白名单字段：market assets/entitlements/installs/reports 摘要与安全明细、wallet ledger 的 id/type/userHandle/actorHandle/bucket/amount/createdAt 和少量迁移 metadata；不导出 normalized payload、举报正文、本地安装路径、完整 ledger reason/metadata 或绝对 data root。
+- marketplace/wallet 快照默认只导出白名单字段：market assets 的生命周期摘要、entitlements/installs/reports 安全明细、wallet ledger 的 id/type/userHandle/actorHandle/bucket/amount/createdAt 和少量迁移 metadata；不导出 normalized payload、举报正文、本地安装路径、完整 ledger reason/metadata 或绝对 data root。
 - wallet snapshot 使用和 wallet endpoint 一致的 node-persist key prefix，并过滤合法 bucket 与 safe integer amount，避免损坏或非钱包记录进入余额摘要。
 - paid purchase API 响应现在只返回 entitlement、`already_owned`、purchase id 和 buyer balance；完整 ledger entries 与 creator balance 不再通过购买响应暴露，仍可由买家/创作者通过各自 Wallet API 和 Creator Center 查询。
 - runtime smoke 现在同时覆盖免费和固定价 world book：真实 server 下执行 admin grant、fixed-price purchase、buyer paid debit、creator earnings ledger、purchase response 隐私 shape、安装落盘和 Library 可见性。

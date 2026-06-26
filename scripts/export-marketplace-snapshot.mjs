@@ -166,7 +166,10 @@ function createMarketSnapshot(store) {
             'install_count',
             'created_at',
             'updated_at',
+            'submitted_at',
+            'approved_at',
             'listed_at',
+            'delisted_at',
         ])),
         entitlements: store.entitlements.map(entitlement => compactObject(entitlement, [
             'id',

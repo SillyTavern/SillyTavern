@@ -961,6 +961,13 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-filters.test.js`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
 - GitHub run `28254669365` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 66：快照导出审核生命周期字段
+- 根据 explorer 的候选建议，补齐 snapshot export 未包含但市场资产已有的审核生命周期字段。
+- `scripts/export-marketplace-snapshot.mjs` 的 asset 白名单新增 `submitted_at`、`approved_at` 和 `delisted_at`，保留既有 `listed_at`。
+- snapshot export 单测 fixture 和断言新增 submitted/approved/listed/delisted lifecycle 字段，同时继续确认 payload、举报正文、本地路径和私有 metadata 不导出。
+- README、设计文档和 findings 已补充 snapshot asset lifecycle 白名单边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

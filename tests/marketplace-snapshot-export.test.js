@@ -52,6 +52,10 @@ function writeMarketStore(dataRoot) {
                 },
                 created_at: timestamp,
                 updated_at: timestamp,
+                submitted_at: '2026-01-01T00:10:00.000Z',
+                approved_at: '2026-01-01T00:20:00.000Z',
+                listed_at: '2026-01-01T00:30:00.000Z',
+                delisted_at: null,
             },
         ],
         entitlements: [
@@ -230,6 +234,10 @@ describe('marketplace snapshot export script', () => {
                 install_count: 1,
                 created_at: '2026-01-01T00:00:00.000Z',
                 updated_at: '2026-01-01T00:00:00.000Z',
+                submitted_at: '2026-01-01T00:10:00.000Z',
+                approved_at: '2026-01-01T00:20:00.000Z',
+                listed_at: '2026-01-01T00:30:00.000Z',
+                delisted_at: null,
             },
         ]);
         expect(snapshot.market.entitlements).toEqual([
