@@ -358,6 +358,30 @@ function toCreatorAssetItem(asset, currentUserId) {
     };
 }
 
+function toLibraryItem(entitlement, asset, store, currentUserId) {
+    const userInstalls = store.installs
+        .filter(install => install.asset_id === asset.id && install.user_id === currentUserId)
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+    return {
+        entitlement: {
+            id: entitlement.id,
+            source: entitlement.source,
+            purchase_id: entitlement.purchase_id,
+            created_at: entitlement.created_at,
+        },
+        asset: toAssetListItem(asset, currentUserId, store),
+        install_count: userInstalls.length,
+        last_install: userInstalls[0]
+            ? {
+                type: userInstalls[0].installed_type,
+                local_ref: userInstalls[0].local_ref,
+                created_at: userInstalls[0].created_at,
+            }
+            : null,
+    };
+}
+
 function getStatusCounts(assets) {
     return assets.reduce((counts, asset) => {
         const status = asset.status || 'draft';
@@ -575,6 +599,21 @@ router.get('/creator/summary', async (request, response) => {
         console.error('Market creator summary failed:', error);
         return response.sendStatus(500);
     }
+});
+
+router.get('/library', (request, response) => {
+    const currentUserId = getUserId(request);
+    const store = readStore(request);
+    const items = store.entitlements
+        .filter(entitlement => entitlement.user_id === currentUserId && !entitlement.revoked_at)
+        .map(entitlement => {
+            const asset = store.assets.find(item => item.id === entitlement.asset_id);
+            return asset ? toLibraryItem(entitlement, asset, store, currentUserId) : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => String(b.entitlement.created_at || '').localeCompare(String(a.entitlement.created_at || '')));
+
+    return response.json({ items });
 });
 
 router.get('/reports/admin', requireAdminMiddleware, (request, response) => {

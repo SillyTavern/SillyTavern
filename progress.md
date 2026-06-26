@@ -305,6 +305,31 @@
   - progress.md
   - findings.md
 
+### 阶段 19：用户资产库
+- **状态：** complete
+- 执行的操作：
+  - 选择 My Library 作为购买/领取后的最小找回入口，避免用户只能从市场列表找已拥有资产。
+  - 新增 `GET /api/market/library`，返回当前用户 active entitlements 对应资产。
+  - Library 响应包含授权来源、资产摘要、用户安装次数和最近安装摘要，不返回 payload、ledger ids 或绝对路径。
+  - 已下架但仍授权资产会继续保留在 Library 中，可重新安装。
+  - marketplace-wallet 增加 My Library 面板，放在 Creator Center 与市场筛选之间。
+  - Library 后台降级加载，失败只 warn，不阻塞钱包和市场主列表。
+  - Library 安装按钮复用现有 install action，安装成功后后台刷新 Library 计数。
+  - 扩展后端测试，覆盖当前用户隔离、下架后可见、排序、安装摘要和敏感字段不泄漏。
+  - 扩展前端契约测试，覆盖 Library 模板、加载、降级、安装事件和移动样式。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - src/endpoints/market.js
+  - public/scripts/extensions/marketplace-wallet/window.html
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/style.css
+  - tests/market-wallet.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -343,6 +368,7 @@
 | marketplace E2E 列表复核 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | admin inspect 回归 | `npm run test:marketplace` | 管理员可读取 payload，Review Queue 有 Inspect 预览契约 | 通过：3 suites / 14 tests | 通过 |
 | creator revise 回归 | `npm run test:marketplace` | draft/rejected 可修订重提，submitted/listed/delisted 禁止原地改 | 通过：3 suites / 15 tests | 通过 |
+| My Library 回归 | `npm run test:marketplace` | 用户库返回当前用户授权资产、下架后仍可见、安装摘要更新且不泄漏 payload | 通过：3 suites / 15 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -362,11 +388,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览和创作者修订重提 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提和用户资产库 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、README 和基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

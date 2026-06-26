@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 19
+阶段 20
 
 ## 各阶段
 
@@ -187,6 +187,20 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 20：用户资产库
+- [x] 确认购买/领取后需要 My Library 视图，避免资产只能从市场列表找回
+- [x] 新增 `GET /api/market/library`，返回当前用户 active entitlements
+- [x] Library 只返回资产摘要、授权来源和安装摘要，不返回 payload、ledger 明细或绝对路径
+- [x] 已下架但仍授权的资产保留在 Library，可继续安装
+- [x] 在 marketplace-wallet 增加 My Library 面板和 Install 操作
+- [x] Library 后台降级加载，不阻塞钱包和市场主列表
+- [x] 安装成功后后台刷新 Library 安装计数
+- [x] 补充后端和前端契约测试
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -218,6 +232,7 @@
 | 举报处理先做队列和 resolve | 管理员需要能清理 open reports；封禁、自动处罚和申诉规则仍需产品策略 |
 | 审核预览复用管理员 asset detail | 管理员已有 payload 读取权限，Inspect 只需要前端拉详情并用安全 DOM 展示 |
 | 创作者修订只允许 draft/rejected | listed 资产已有购买/授权关系，原地改 payload 会破坏买家预期；后续需要版本化发布 |
+| Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

@@ -30,6 +30,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('id="marketplace_wallet_creator_sales"');
         expect(html).toContain('id="marketplace_wallet_creator_earnings"');
         expect(html).toContain('id="marketplace_wallet_creator_assets_list"');
+        expect(html).toContain('id="marketplace_wallet_library_items"');
+        expect(html).toContain('My Library');
         expect(html).toContain('claims</span>');
         expect(html).toContain('earned</span>');
         expect(html).toContain('id="marketplace_wallet_admin"');
@@ -63,9 +65,19 @@ describe('marketplace wallet extension UI contract', () => {
         const script = readExtensionFile('index.js');
 
         expect(script).toContain("fetchJson('/api/market/creator/summary')");
+        expect(script).toContain("fetchJson('/api/market/library')");
         expect(script).toContain('async function loadCreatorSummary()');
+        expect(script).toContain('async function loadLibrary()');
         expect(script).toContain("console.warn('Creator summary could not be loaded'");
+        expect(script).toContain("console.warn('Library could not be loaded'");
         expect(script).toContain('function renderCreatorSummary()');
+        expect(script).toContain('function renderLibrary()');
+        expect(script).toContain('libraryLoading: false');
+        expect(script).toContain('state.library = Array.isArray(result.items) ? result.items : []');
+        expect(script).toContain('No library assets yet.');
+        expect(script).toContain('void loadLibrary();');
+        expect(script).toContain('await requestInstall(assetId);');
+        expect(script).toContain("$root.find('#marketplace_wallet_library_items').on('click', onAssetAction)");
         expect(script).toContain('stats.total_claims');
         expect(script).toContain('stats.gross_revenue_coins');
         expect(script).toContain("$('#marketplace_wallet_creator_earnings')");
@@ -121,6 +133,8 @@ describe('marketplace wallet extension UI contract', () => {
 
         expect(css).toContain('@media screen and (max-width: 700px)');
         expect(css).toContain('.marketplace-wallet-creator-stats');
+        expect(css).toContain('.marketplace-wallet-library-items');
+        expect(css).toContain('.marketplace-wallet-library-item');
         expect(css).toContain('data-marketplace-wallet-status="delisted"');
         expect(css).toContain('grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));');
         expect(css).toContain('.marketplace-wallet-review-actions');

@@ -219,6 +219,72 @@ describe('market and wallet MVP endpoints', () => {
         expect(purchaseResult.body.entitlement.purchase_id).toBeNull();
         expect(purchaseResult.body.purchase).toBeNull();
 
+        const bobLibrary = await request(bobApp, '/api/market/library', { method: 'GET' });
+        expect(bobLibrary.status).toBe(200);
+        expect(bobLibrary.body.items).toHaveLength(1);
+        expect(bobLibrary.body.items[0]).toMatchObject({
+            entitlement: {
+                id: purchaseResult.body.entitlement.id,
+                source: 'free',
+            },
+            asset: {
+                id: assetId,
+                title: 'Market Alice',
+                status: 'listed',
+                entitled: true,
+                owned: false,
+            },
+            install_count: 0,
+            last_install: null,
+        });
+        expect(bobLibrary.body.items[0].asset.normalized_payload).toBeUndefined();
+        expect(bobLibrary.body.items[0].entitlement.ledger_entry_ids).toBeUndefined();
+        expect(bobLibrary.body.items[0].last_install?.absolute_path).toBeUndefined();
+
+        const charlieLibrary = await request(createApp(createUser('charlie', false)), '/api/market/library', { method: 'GET' });
+        expect(charlieLibrary.status).toBe(200);
+        expect(charlieLibrary.body.items).toHaveLength(0);
+
+        const freeLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(freeLedger.status).toBe(200);
+        expect(freeLedger.body.ledger).toHaveLength(0);
+
+        const paidAssetId = await createSubmittedAsset(aliceApp, {
+            type: 'world_book',
+            title: 'Paid Library World',
+            price_type: 'fixed_price',
+            price_coins: 5,
+            normalized_payload: {
+                name: 'Paid Library World',
+                entries: {},
+            },
+        });
+        const approvePaidAsset = await request(aliceApp, `/api/market/assets/${paidAssetId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approvePaidAsset.status).toBe(200);
+        const grantForPaidAsset = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 5,
+                bucket: 'paid',
+            },
+        });
+        expect(grantForPaidAsset.status).toBe(201);
+        const paidPurchase = await request(bobApp, `/api/market/assets/${paidAssetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(paidPurchase.status).toBe(201);
+
+        const bobLibraryAfterPaidPurchase = await request(bobApp, '/api/market/library', { method: 'GET' });
+        expect(bobLibraryAfterPaidPurchase.status).toBe(200);
+        expect(bobLibraryAfterPaidPurchase.body.items.map(item => item.asset.id)).toEqual([paidAssetId, assetId]);
+        expect(bobLibraryAfterPaidPurchase.body.items[0].entitlement.source).toBe('purchase');
+        expect(bobLibraryAfterPaidPurchase.body.items[0].entitlement.ledger_entry_ids).toBeUndefined();
+
         const reportResult = await request(bobApp, `/api/market/assets/${assetId}/report`, {
             method: 'POST',
             body: {
@@ -322,10 +388,6 @@ describe('market and wallet MVP endpoints', () => {
         });
         expect(hiddenReportAfterDelist.status).toBe(404);
 
-        const freeLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
-        expect(freeLedger.status).toBe(200);
-        expect(freeLedger.body.ledger).toHaveLength(0);
-
         const ownedDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
         expect(ownedDetail.status).toBe(200);
         expect(ownedDetail.body.asset.payload_available).toBe(true);
@@ -351,6 +413,22 @@ describe('market and wallet MVP endpoints', () => {
         expect(installResult.body.install.user_id).toBe('bob');
         expect(installResult.body.install.asset_id).toBe(assetId);
         expect(fs.existsSync(path.join(dataRoot, 'bob', 'characters', `${installResult.body.installed.file_name}.png`))).toBe(true);
+
+        const bobLibraryAfterInstall = await request(bobApp, '/api/market/library', { method: 'GET' });
+        expect(bobLibraryAfterInstall.status).toBe(200);
+        expect(bobLibraryAfterInstall.body.items).toHaveLength(2);
+        const freeLibraryItemAfterInstall = bobLibraryAfterInstall.body.items.find(item => item.asset.id === assetId);
+        expect(freeLibraryItemAfterInstall).toMatchObject({
+            asset: {
+                id: assetId,
+                status: 'delisted',
+                entitled: true,
+            },
+            install_count: 1,
+            last_install: {
+                type: 'character_card',
+            },
+        });
 
         const store = JSON.parse(fs.readFileSync(path.join(dataRoot, 'market-assets.json'), 'utf8'));
         const storedAsset = store.assets.find(asset => asset.id === assetId);

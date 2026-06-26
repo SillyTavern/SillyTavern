@@ -14,11 +14,13 @@ const state = {
     assets: [],
     creator: null,
     editingAssetId: null,
+    library: [],
     reports: [],
     wallet: null,
     loaded: false,
     loading: false,
     creatorLoading: false,
+    libraryLoading: false,
     reportsLoading: false,
     granting: false,
     busyAssetIds: new Set(),
@@ -103,6 +105,46 @@ function renderCreatorSummary() {
         $main.append($title, $meta);
         $item.append($main, $price);
         $list.append($item);
+    }
+}
+
+function renderLibrary() {
+    const $list = $('#marketplace_wallet_library_items');
+    if (!$list.length) {
+        return;
+    }
+
+    $list.empty();
+    if (state.libraryLoading) {
+        $list.append($('<div class="marketplace-wallet-empty"></div>').text('Loading library...'));
+        return;
+    }
+
+    if (state.library.length === 0) {
+        $list.append($('<div class="marketplace-wallet-empty"></div>').text('No library assets yet.'));
+        return;
+    }
+
+    for (const item of state.library.slice(0, 6)) {
+        const asset = item.asset || {};
+        const isBusy = state.busyAssetIds.has(asset.id);
+        const $row = $('<div class="marketplace-wallet-library-item"></div>');
+        const $main = $('<div class="marketplace-wallet-library-main"></div>');
+        const $title = $('<span></span>').text(asset.title || 'Untitled asset');
+        const source = item.entitlement?.source === 'purchase' ? 'Purchased' : 'Claimed';
+        const installText = item.install_count ? `${formatCoins(item.install_count)} installs` : 'not installed';
+        const $meta = $('<small></small>').text(`${source} · ${MARKET_TYPES[asset.type] || asset.type || 'Asset'} · ${installText}`);
+
+        $main.append($title, $meta);
+        $row.append($main);
+        $row.append(createAssetButton({
+            asset,
+            action: 'install',
+            icon: 'fa-box-open',
+            label: isBusy ? 'Installing' : 'Install',
+            disabled: isBusy || !asset.id,
+        }));
+        $list.append($row);
     }
 }
 
@@ -456,6 +498,21 @@ async function loadReportQueue() {
     }
 }
 
+async function loadLibrary() {
+    state.libraryLoading = true;
+    renderLibrary();
+    try {
+        const result = await fetchJson('/api/market/library');
+        state.library = Array.isArray(result.items) ? result.items : [];
+    } catch (error) {
+        state.library = [];
+        console.warn('Library could not be loaded', error);
+    } finally {
+        state.libraryLoading = false;
+        renderLibrary();
+    }
+}
+
 async function loadCreatorSummary() {
     state.creatorLoading = true;
     renderCreatorSummary();
@@ -489,6 +546,7 @@ async function loadMarketplace({ silent = false } = {}) {
         renderWallet();
         renderAssets();
         void loadCreatorSummary();
+        void loadLibrary();
         void loadReportQueue();
         if (!silent) {
             toastr.success('Marketplace refreshed');
@@ -535,6 +593,7 @@ async function requestInstall(assetId) {
 async function installAsset(assetId) {
     await withBusyAsset(assetId, async () => {
         await requestInstall(assetId);
+        void loadLibrary();
     });
 }
 
@@ -865,6 +924,7 @@ function bindEvents($root) {
     $root.find('#marketplace_wallet_refresh').on('click', () => loadMarketplace());
     $root.find('#marketplace_wallet_search, #marketplace_wallet_type_filter').on('input change', renderAssets);
     $root.find('#marketplace_wallet_assets').on('click', onAssetAction);
+    $root.find('#marketplace_wallet_library_items').on('click', onAssetAction);
     $root.find('#marketplace_wallet_review_queue').on('click', onAssetAction);
     $root.find('#marketplace_wallet_report_queue').on('click', onReportAction);
     $root.find('#marketplace_wallet_grant_submit').on('click', grantCoins);
