@@ -913,6 +913,16 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a world book upload'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
 - GitHub run `28252716889` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 61：审核队列元信息摘要
+- 根据 explorer 的 Review Queue 元信息建议，补齐管理员审核列表中已有安全字段的前端展示。
+- Review Queue 现在展示创作者 handle、价格、更新时间、最多 3 个标签和摘要片段。
+- payload 继续只在点击 Inspect 时通过 asset detail 权限懒加载，队列本身不展示 `normalized_payload`。
+- 新增 `.marketplace-wallet-review-summary`，摘要使用可换行文本避免移动端溢出。
+- `marketplace-wallet` manifest bump 到 `0.2.8`，避免浏览器缓存旧 JS/CSS。
+- 浏览器 E2E 的 admin review 用例断言 creator/price/updated/tags/summary 可见，并继续覆盖 approve/grant。
+- README、设计文档和 findings 已补充 Review Queue 元信息边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'renders admin review queue'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

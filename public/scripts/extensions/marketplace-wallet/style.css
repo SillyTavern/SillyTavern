@@ -388,6 +388,10 @@
     opacity: 0.75;
 }
 
+.marketplace-wallet-review-summary {
+    overflow-wrap: anywhere;
+}
+
 .marketplace-wallet-review-actions {
     display: flex;
     align-items: center;

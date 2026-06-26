@@ -24,7 +24,7 @@ function makeSubmittedAsset(overrides = {}) {
         title: 'Submitted Character',
         summary: 'Awaiting review.',
         creator_id: 'creator-handle',
-        tags: [],
+        tags: ['review', 'avatar', 'scenario'],
         status: 'submitted',
         owned: false,
         price_type: 'fixed_price',
@@ -674,6 +674,11 @@ test.describe('marketplace wallet extension', () => {
         await expect(page.locator('[data-marketplace-wallet-bucket="earnings"]')).toHaveText('25');
 
         await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('Submitted Character');
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('by creator-handle');
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('25 coins');
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('updated 2026-06-26');
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('tags: review, avatar, scenario');
+        await expect(page.locator('#marketplace_wallet_review_queue')).toContainText('Awaiting review.');
         await expect(page.locator('#marketplace_wallet_review_queue [data-marketplace-wallet-action="approve"]')).toHaveCount(1);
         await expect(page.locator('#marketplace_wallet_assets [data-marketplace-wallet-action="approve"]')).toHaveCount(0);
 

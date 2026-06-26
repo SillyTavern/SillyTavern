@@ -19,7 +19,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Creator Center summary for owned assets, draft/submitted/listed/rejected status counts, claims, paid sales, installs, earned coins, and earnings balance.
 - My Library view for claimed or purchased assets with entitlement dates, recent install summaries, details, and reinstall actions.
 - Installable PWA shell for mobile browsers using the existing web app and static shell cache.
-- Admin review queue with inspect/approve/reject actions.
+- Admin review queue with creator, price, tag, summary, inspect/approve/reject actions.
 - Admin delist action to remove listed assets from public purchase while preserving existing entitlements.
 - User report action with reason/details body and admin report queue with resolve workflow for marketplace moderation.
 - Admin coin grants for `bonus`, `paid`, and `earnings`.

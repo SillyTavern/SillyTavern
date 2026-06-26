@@ -517,9 +517,24 @@ function renderReviewQueue() {
         const $meta = $('<div class="marketplace-wallet-review-meta"></div>');
         const $title = $('<span></span>').text(asset.title || 'Untitled asset');
         const $type = $('<small></small>').text(MARKET_TYPES[asset.type] || asset.type || 'Asset');
+        const tags = getAssetTags(asset).slice(0, 3);
+        const updated = formatAssetDate(asset.updated_at);
+        const summary = String(asset.summary || '').trim();
+        const $details = $('<small></small>').text([
+            asset.creator_id ? `by ${asset.creator_id}` : '',
+            getPriceLabel(asset),
+            updated ? `updated ${updated}` : '',
+            tags.length ? `tags: ${tags.join(', ')}` : '',
+        ].filter(Boolean).join(' · '));
+        const $summary = summary
+            ? $('<small class="marketplace-wallet-review-summary"></small>').text(summary.slice(0, 120))
+            : null;
         const $actions = $('<div class="marketplace-wallet-review-actions"></div>');
 
-        $meta.append($title, $type);
+        $meta.append($title, $type, $details);
+        if ($summary) {
+            $meta.append($summary);
+        }
         $actions.append(createAssetButton({
             asset,
             action: 'inspect',
