@@ -419,8 +419,8 @@
 - [x] 保留 entitlement 内部 ledger ids 和买家余额摘要
 - [x] 补充后端契约测试和 README/设计文档说明
 - [x] 运行基础测试和 smoke 验证
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
