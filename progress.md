@@ -330,6 +330,25 @@
   - progress.md
   - findings.md
 
+### 阶段 20：托管健康检查
+- **状态：** complete
+- 执行的操作：
+  - 选择公开 `GET /api/health` 作为托管 Web/PWA 的最小探活端点。
+  - 将 health 路由放在 `requireLoginMiddleware` 之前，避免部署平台未登录探活失败。
+  - Health 响应只返回 `ok/status/service/version/uptime/timestamp`，不包含用户、市场、钱包或 git 细节。
+  - 新增 `tests/health.test.js` 契约测试，确认 health 路由公开且字段稳定。
+  - 将 health 契约测试纳入根目录 `npm run test:marketplace`。
+  - 更新 README 和设计文档中的 API/脚本说明。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - package.json
+  - src/server-main.js
+  - tests/health.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -369,6 +388,7 @@
 | admin inspect 回归 | `npm run test:marketplace` | 管理员可读取 payload，Review Queue 有 Inspect 预览契约 | 通过：3 suites / 14 tests | 通过 |
 | creator revise 回归 | `npm run test:marketplace` | draft/rejected 可修订重提，submitted/listed/delisted 禁止原地改 | 通过：3 suites / 15 tests | 通过 |
 | My Library 回归 | `npm run test:marketplace` | 用户库返回当前用户授权资产、下架后仍可见、安装摘要更新且不泄漏 payload | 通过：3 suites / 15 tests | 通过 |
+| health endpoint 契约 | `npm run test:marketplace` | `/api/health` 公开且返回服务级状态字段 | 通过：4 suites / 16 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -388,11 +408,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提和用户资产库 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库和托管健康检查 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、README 和基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

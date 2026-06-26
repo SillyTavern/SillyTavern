@@ -46,7 +46,7 @@ npm start
 
 Open `http://127.0.0.1:8000` and use the Extensions panel to find `Marketplace & Wallet`.
 
-The local MVP APIs live under `/api/market` and `/api/wallet`. Creator Center uses `GET /api/market/creator/summary`; full wallet balances and ledger history remain available through `/api/wallet` and `/api/wallet/ledger`.
+The local MVP APIs live under `/api/market` and `/api/wallet`. Creator Center uses `GET /api/market/creator/summary`; full wallet balances and ledger history remain available through `/api/wallet` and `/api/wallet/ledger`. Hosted probes can use `GET /api/health` without a logged-in session.
 
 On mobile, open the same URL in a browser and use the browser's Add to Home Screen / Install action. The PWA service worker caches only the static shell and never caches `/api/*` wallet, market, or chat requests.
 
@@ -59,7 +59,7 @@ npm start
 # Start with CSRF disabled for local API smoke testing
 npm run start:no-csrf
 
-# Run marketplace/wallet backend and frontend-contract tests
+# Run marketplace/wallet/PWA/health backend and frontend-contract tests
 npm run test:marketplace
 
 # Run only the mobile/PWA shell contract test

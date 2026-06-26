@@ -242,6 +242,17 @@ app.use(userCssMiddleware);
 app.use(express.static(path.join(serverDirectory, 'public'), {}));
 
 // Public API
+app.get('/api/health', async (_, response) => {
+    const version = await getVersion();
+    response.json({
+        ok: true,
+        status: 'ok',
+        service: 'sillytavern',
+        version: version.pkgVersion,
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+    });
+});
 app.use('/api/users', usersPublicRouter);
 
 // Everything below this line requires authentication

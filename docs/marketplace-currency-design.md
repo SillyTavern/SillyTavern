@@ -415,6 +415,7 @@ resolved_at
 ### Market API
 
 ```text
+GET    /api/health
 GET    /api/market/assets
 GET    /api/market/assets/:id
 GET    /api/market/library
@@ -447,6 +448,7 @@ GET    /api/market/creator/summary
 举报会写入 market store 的 open report 记录，管理员可在 marketplace-wallet 的 Report Queue 中查看并 resolve；MVP 暂不做自动处罚。
 创作者可修改自己的 draft/rejected 资产，修改后回到 draft/private，再重新 submit 进入审核；submitted/listed/delisted 资产不允许原地修改，后续应改走版本化发布。
 Library 接口只返回当前用户 active entitlements 对应的资产摘要、授权来源和安装记录摘要，不返回 `normalized_payload`；已下架但仍授权的资产也会保留在用户库中，便于重新安装。
+托管探活使用公开 `GET /api/health`，返回 `ok/status/service/version/uptime/timestamp`，不需要登录、不返回用户或账务数据。
 
 该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。
 

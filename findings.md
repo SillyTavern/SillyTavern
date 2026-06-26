@@ -50,6 +50,7 @@
 | 用户上传 JSON 预览用 DOM text 渲染 | payload 不能拼成 HTML；使用 `.text(JSON.stringify(...))` 降低 XSS 风险 |
 | 创作者只能修订 draft/rejected 资产 | submitted/listed/delisted 不允许原地 PATCH，避免审核中或已售内容静默变化 |
 | 用户库只基于 active entitlements | My Library 展示已领取/购买资产和安装摘要，包含已下架但仍授权内容，不返回 payload 或账本明细 |
+| Health endpoint 只做 liveness | `/api/health` 公开且无需登录，但只报告服务存活，不检查数据库、插件或外部模型 readiness |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -70,6 +71,7 @@
 - marketplace-wallet Review Queue 新增 Inspect；管理员通过 asset detail 懒加载 payload，并在可滚动 TEXT popup 中预览。
 - marketplace-wallet 创作者资产新增 Revise；后端 `PATCH /api/market/assets/:id` 只允许 owner 修改 draft/rejected，保存后回 draft 并可重新 submit。
 - marketplace-wallet 新增 My Library；后端 `GET /api/market/library` 返回当前用户 active entitlements 的资产摘要、授权来源和安装摘要。
+- 托管探活新增 `GET /api/health`；响应包含服务级状态、版本、uptime 和时间戳，不返回用户、市场或钱包数据。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*
