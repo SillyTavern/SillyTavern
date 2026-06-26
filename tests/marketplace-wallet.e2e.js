@@ -100,10 +100,12 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     let ledger = [];
     const apiCalls = {
         approve: [],
+        creates: [],
         grants: [],
         installs: [],
         purchases: [],
         resolveReports: [],
+        submits: [],
     };
 
     await page.route('**/api/users/me', route => {
@@ -135,6 +137,11 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     });
 
     await page.route('**/api/market/assets', route => {
+        if (route.request().method() !== 'GET') {
+            route.fallback();
+            return;
+        }
+
         route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -143,18 +150,20 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     });
 
     await page.route('**/api/market/creator/summary', route => {
+        const ownAssets = assets.filter(asset => asset.creator_id === 'default-user');
+        const listedAssets = ownAssets.filter(asset => asset.status === 'listed');
         route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
                 handle: 'default-user',
                 stats: {
-                    total_assets: 0,
-                    listed_assets: 0,
-                    total_claims: 0,
+                    total_assets: ownAssets.length,
+                    listed_assets: listedAssets.length,
+                    total_claims: ownAssets.reduce((sum, asset) => sum + Number(asset.sales_count || 0), 0),
                     gross_revenue_coins: 0,
                 },
-                assets: [],
+                assets: ownAssets,
             }),
         });
     });
@@ -164,6 +173,64 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({ items: library }),
+        });
+    });
+
+    await page.route('**/api/market/assets', async route => {
+        if (route.request().method() !== 'POST') {
+            route.fallback();
+            return;
+        }
+
+        const payload = JSON.parse(route.request().postData() || '{}');
+        apiCalls.creates.push(payload);
+        const createdAsset = {
+            id: `created-${apiCalls.creates.length}`,
+            creator_id: 'default-user',
+            type: payload.type,
+            title: payload.title,
+            summary: payload.summary,
+            language: 'en',
+            tags: [],
+            status: 'draft',
+            owned: true,
+            entitled: false,
+            price_type: payload.price_type,
+            price_coins: payload.price_coins,
+            sales_count: 0,
+            install_count: 0,
+            normalized_payload: payload.normalized_payload,
+            created_at: '2026-06-26T13:00:00.000Z',
+            updated_at: '2026-06-26T13:00:00.000Z',
+        };
+        assets = [createdAsset, ...assets];
+        route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify({ asset: createdAsset }),
+        });
+    });
+
+    await page.route('**/api/market/assets/*/submit', route => {
+        const assetId = route.request().url().split('/').at(-2);
+        apiCalls.submits.push(assetId);
+        let submittedAsset = null;
+        assets = assets.map(asset => {
+            if (asset.id !== assetId) {
+                return asset;
+            }
+            submittedAsset = {
+                ...asset,
+                status: 'submitted',
+                updated_at: '2026-06-26T13:01:00.000Z',
+                submitted_at: '2026-06-26T13:01:00.000Z',
+            };
+            return submittedAsset;
+        });
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ asset: submittedAsset }),
         });
     });
 
@@ -514,6 +581,53 @@ test.describe('marketplace wallet extension', () => {
         await expect(library).toContainText('Paid World');
         await expect(library).toContainText('Purchased');
         await expect(library).toContainText('1 installs');
+    });
+
+    test('submits a world book upload into the review queue and creator center', async ({ page }) => {
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [],
+        });
+
+        await loadSillyTavern(page);
+
+        await page.locator('#marketplace_wallet_upload_type').selectOption('world_book');
+        await page.locator('#marketplace_wallet_upload_title').fill('Creator Browser World');
+        await page.locator('#marketplace_wallet_upload_summary').fill('Submitted from the browser E2E flow.');
+        await page.locator('#marketplace_wallet_upload_price_type').selectOption('free');
+        await page.locator('#marketplace_wallet_upload_payload').fill(JSON.stringify({
+            name: 'Creator Browser World',
+            entries: {
+                '0': {
+                    uid: 0,
+                    key: ['browser-e2e'],
+                    content: 'This lore entry came from the browser upload flow.',
+                },
+            },
+        }, null, 2));
+        await page.locator('[data-marketplace-wallet-upload="review"]').click();
+
+        await expect.poll(() => apiCalls.creates).toHaveLength(1);
+        expect(apiCalls.creates[0]).toMatchObject({
+            type: 'world_book',
+            title: 'Creator Browser World',
+            summary: 'Submitted from the browser E2E flow.',
+            price_type: 'free',
+            price_coins: 0,
+            normalized_payload: {
+                name: 'Creator Browser World',
+            },
+        });
+        await expect.poll(() => apiCalls.submits).toEqual(['created-1']);
+
+        const reviewQueue = page.locator('#marketplace_wallet_review_queue');
+        await expect(reviewQueue).toContainText('Creator Browser World');
+        await expect(reviewQueue.locator('[data-marketplace-wallet-action="approve"]')).toHaveCount(1);
+
+        await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Creator Browser World');
+        await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_upload_payload')).toHaveValue('');
     });
 
     test('keeps review controls compact on mobile width', async ({ page }) => {
