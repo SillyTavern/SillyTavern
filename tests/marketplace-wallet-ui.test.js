@@ -25,6 +25,13 @@ describe('marketplace wallet extension UI contract', () => {
     test('defines the admin grant form and review queue surface', () => {
         const html = readExtensionFile('window.html');
 
+        expect(html).toContain('id="marketplace_wallet_creator_assets"');
+        expect(html).toContain('id="marketplace_wallet_creator_listed"');
+        expect(html).toContain('id="marketplace_wallet_creator_sales"');
+        expect(html).toContain('id="marketplace_wallet_creator_earnings"');
+        expect(html).toContain('id="marketplace_wallet_creator_assets_list"');
+        expect(html).toContain('claims</span>');
+        expect(html).toContain('earned</span>');
         expect(html).toContain('id="marketplace_wallet_admin"');
         expect(html).toContain('hidden>');
         expect(html).toContain('id="marketplace_wallet_grant_handle"');
@@ -50,6 +57,15 @@ describe('marketplace wallet extension UI contract', () => {
     test('posts approve/reject actions from the review queue and validates admin grants', () => {
         const script = readExtensionFile('index.js');
 
+        expect(script).toContain("fetchJson('/api/market/creator/summary')");
+        expect(script).toContain('async function loadCreatorSummary()');
+        expect(script).toContain("console.warn('Creator summary could not be loaded'");
+        expect(script).toContain('function renderCreatorSummary()');
+        expect(script).toContain('stats.total_claims');
+        expect(script).toContain('stats.gross_revenue_coins');
+        expect(script).toContain("$('#marketplace_wallet_creator_earnings')");
+        expect(script).toContain("`${formatCoins(asset.sales_count)} claims`");
+        expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
         expect(script).toContain("action: 'approve'");
         expect(script).toContain("action: 'reject'");
         expect(script).toContain("$root.find('#marketplace_wallet_review_queue').on('click', onAssetAction)");
@@ -62,8 +78,13 @@ describe('marketplace wallet extension UI contract', () => {
         const css = readExtensionFile('style.css');
 
         expect(css).toContain('@media screen and (max-width: 700px)');
+        expect(css).toContain('.marketplace-wallet-creator-stats');
+        expect(css).toContain('grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));');
         expect(css).toContain('.marketplace-wallet-review-actions');
         expect(css).toContain('grid-template-columns: 1fr 1fr;');
-        expect(css).toContain('.marketplace-wallet-admin-grid,\n    .marketplace-wallet-grant,\n    .marketplace-wallet-review-item,\n    .marketplace-wallet-upload-grid');
+        expect(css).toContain('.marketplace-wallet-admin-grid');
+        expect(css).toContain('.marketplace-wallet-creator-asset');
+        expect(css).toContain('.marketplace-wallet-grant');
+        expect(css).toContain('.marketplace-wallet-review-item');
     });
 });

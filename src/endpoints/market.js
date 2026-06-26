@@ -12,7 +12,7 @@ import { serverDirectory } from '../server-directory.js';
 import { getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { requireAdminMiddleware } from '../users.js';
-import { purchaseWithWallet } from './wallet.js';
+import { getWalletBalance, getWalletLedger, purchaseWithWallet } from './wallet.js';
 
 const MARKET_STORE_FILE = 'market-assets.json';
 const DEFAULT_MARKET_AVATAR_PATH = path.resolve(serverDirectory, DEFAULT_AVATAR_PATH);
@@ -299,12 +299,60 @@ function toAssetListItem(asset, currentUserId) {
         price_type: asset.price_type,
         price_coins: asset.price_coins,
         sales_count: asset.sales_count,
+        install_count: Number(asset.install_count || 0),
         rating_avg: asset.rating_avg,
         rating_count: asset.rating_count,
         created_at: asset.created_at,
         updated_at: asset.updated_at,
         listed_at: asset.listed_at,
         owned: asset.creator_id === currentUserId,
+    };
+}
+
+function toCreatorAssetItem(asset, currentUserId) {
+    const item = toAssetListItem(asset, currentUserId);
+    return {
+        ...item,
+        submitted_at: asset.submitted_at ?? null,
+        approved_at: asset.approved_at ?? null,
+        rejection_reason: asset.status === 'rejected' ? asset.review_notes ?? '' : '',
+    };
+}
+
+function getStatusCounts(assets) {
+    return assets.reduce((counts, asset) => {
+        const status = asset.status || 'draft';
+        counts[status] = (counts[status] || 0) + 1;
+        return counts;
+    }, {});
+}
+
+function getCreatorSummary(store, currentUserId, balance, ledger) {
+    const creatorAssets = store.assets.filter(asset => asset.creator_id === currentUserId);
+    const creatorAssetIds = new Set(creatorAssets.map(asset => asset.id));
+    const statusCounts = getStatusCounts(creatorAssets);
+    const marketEarnings = ledger.filter(entry => entry.type === 'market_creator_earning' && entry.bucket === 'earnings');
+    const paidEntitlements = store.entitlements.filter(entitlement => {
+        return !entitlement.revoked_at && entitlement.source === 'purchase' && creatorAssetIds.has(entitlement.asset_id);
+    });
+
+    return {
+        handle: currentUserId,
+        stats: {
+            total_assets: creatorAssets.length,
+            draft_assets: statusCounts.draft || 0,
+            submitted_assets: statusCounts.submitted || 0,
+            listed_assets: statusCounts.listed || 0,
+            rejected_assets: statusCounts.rejected || 0,
+            total_claims: creatorAssets.reduce((sum, asset) => sum + Number(asset.sales_count || 0), 0),
+            paid_sales: paidEntitlements.length,
+            total_installs: creatorAssets.reduce((sum, asset) => sum + Number(asset.install_count || 0), 0),
+            gross_revenue_coins: marketEarnings.reduce((sum, entry) => sum + Math.max(0, Number(entry.amount || 0)), 0),
+            earnings_balance: Number(balance.buckets?.earnings || 0),
+        },
+        assets: creatorAssets
+            .map(asset => toCreatorAssetItem(asset, currentUserId))
+            .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || ''))),
     };
 }
 
@@ -471,6 +519,22 @@ router.get('/assets/:id', (request, response) => {
     });
 });
 
+router.get('/creator/summary', async (request, response) => {
+    try {
+        const currentUserId = getUserId(request);
+        const store = readStore(request);
+        const [balance, ledger] = await Promise.all([
+            getWalletBalance(currentUserId),
+            getWalletLedger(currentUserId),
+        ]);
+
+        return response.json(getCreatorSummary(store, currentUserId, balance, ledger));
+    } catch (error) {
+        console.error('Market creator summary failed:', error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/assets', (request, response) => {
     const normalized = normalizeCreateBody(request.body);
     if (normalized.errors.length > 0) {
@@ -486,6 +550,7 @@ router.post('/assets', (request, response) => {
         visibility: 'private',
         status: 'draft',
         sales_count: 0,
+        install_count: 0,
         rating_avg: 0,
         rating_count: 0,
         created_at: timestamp,

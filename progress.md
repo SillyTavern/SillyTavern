@@ -149,6 +149,31 @@
   - progress.md
   - findings.md
 
+### 阶段 12：创作者中心与收益概览
+- **状态：** complete
+- 执行的操作：
+  - 启动两个并发 agent 复核 creator API 与前端入口边界，采纳“summary 只返回聚合视图”和“creator 请求可降级”的反馈。
+  - 新增 `GET /api/market/creator/summary`，返回当前创作者自己的资产、草稿/待审核/上架/拒绝数量、claims、paid sales、installs、gross revenue 和 earnings balance。
+  - 收紧 creator summary 边界，不返回原始 `wallet`、`recent_earnings` ledger 或资产 `normalized_payload`。
+  - 在 `marketplace-wallet` 扩展中新增 Creator Center，放在余额区下方，展示 assets/listed/claims/earned 和最近资产状态。
+  - 将 Creator Center summary 改为后台降级加载，钱包和市场列表只依赖 `/api/wallet` 与 `/api/market/assets`。
+  - 将公开市场和创作者资产里的计数文案从混用 installs 改为 claims + installs。
+  - 扩展后端 Jest 测试，覆盖 creator draft/submitted/listed/rejected 状态、收益聚合、buyer 空 summary 和 payload/ledger 隐私边界。
+  - 扩展前端契约测试，覆盖 Creator Center 模板、`total_claims`/`gross_revenue_coins` 绑定、降级加载函数和 responsive stats grid。
+  - 更新 `README.md` 和 `docs/marketplace-currency-design.md`，记录 Creator Center API 与 Wallet API 的职责边界。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - src/endpoints/market.js
+  - public/scripts/extensions/marketplace-wallet/window.html
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/style.css
+  - tests/market-wallet.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -173,9 +198,12 @@
 | admin UI 回归单测 | `npm --prefix tests run test:unit -- market-wallet.test.js` | 5 个用例通过 | 通过：5 passed | 通过 |
 | admin UI 浏览器 smoke | 打开 `http://localhost:8000/` | 加载 `v=0.2.0` 脚本/CSS，admin 面板可见，grant 和 review queue 存在 | 通过 | 通过 |
 | admin UI 移动端检查 | 窄屏 viewport 验证 | 控件不溢出 | 未完整执行：in-app browser 未暴露 viewport 设置，本地无 Playwright 包；已做 CSS 结构调整 | 部分 |
-| marketplace 根脚本基础测试 | `npm run test:marketplace` | backend + frontend contract 测试通过 | 通过：2 suites / 10 tests | 通过 |
+| marketplace 根脚本基础测试 | `npm run test:marketplace` | backend + frontend contract 测试通过 | 通过：2 suites / 11 tests | 通过 |
 | marketplace E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | 启动脚本帮助 | `npm run start -- --help` | 服务器 CLI 正常输出帮助 | 通过 | 通过 |
+| Creator Center 语法检查 | `node --check src/endpoints/market.js && node --check public/scripts/extensions/marketplace-wallet/index.js && node --check tests/market-wallet.test.js && node --check tests/marketplace-wallet-ui.test.js` | 无语法错误 | 通过 | 通过 |
+| Creator summary API 回归 | `npm run test:marketplace` | 资产状态、claims、paid sales、installs、earnings、payload/ledger 隐私边界通过 | 通过：新增 creator summary 用例 | 通过 |
+| Creator Center E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -195,11 +223,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口，并正在补仓库交付闭环 |
-| 我要去哪里？ | 下一步完成基础验证、提交推送，然后继续数据库迁移、真实支付和移动端封装 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本和 Creator Center summary |
+| 我要去哪里？ | 下一步完成提交推送，然后继续数据库迁移、真实支付、搜索审核和移动端封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、README 和 marketplace 基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、README 和 marketplace 基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

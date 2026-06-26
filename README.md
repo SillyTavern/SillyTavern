@@ -13,6 +13,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Immutable wallet ledger for grants, purchases, debits, and creator earnings.
 - Marketplace assets for character cards and world books.
 - Creator upload flow for draft assets, JSON payload validation, and submit-for-review.
+- Creator Center summary for owned assets, review status counts, claims, installs, and earned coins.
 - Admin review queue with approve/reject actions.
 - Admin coin grants for `bonus`, `paid`, and `earnings`.
 - Free and fixed-price purchase flow with `bonus -> paid` spending order.
@@ -39,6 +40,8 @@ npm start
 ```
 
 Open `http://127.0.0.1:8000` and use the Extensions panel to find `Marketplace & Wallet`.
+
+The local MVP APIs live under `/api/market` and `/api/wallet`. Creator Center uses `GET /api/market/creator/summary`; full wallet balances and ledger history remain available through `/api/wallet` and `/api/wallet/ledger`.
 
 ### Useful Scripts
 

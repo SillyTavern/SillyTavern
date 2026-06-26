@@ -426,6 +426,14 @@ POST   /api/market/assets/:id/reviews
 POST   /api/market/assets/:id/report
 ```
 
+当前本地 MVP 额外在 Market API 下提供创作者中心聚合：
+
+```text
+GET    /api/market/creator/summary
+```
+
+该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。
+
 ### Wallet API
 
 ```text

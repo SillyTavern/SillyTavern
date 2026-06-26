@@ -44,6 +44,7 @@
 .marketplace-wallet-file-row,
 .marketplace-wallet-upload-actions,
 .marketplace-wallet-asset-actions,
+.marketplace-wallet-creator-header,
 .marketplace-wallet-admin-header,
 .marketplace-wallet-review-title {
     display: flex;
@@ -147,6 +148,7 @@
 }
 
 .marketplace-wallet-upload,
+.marketplace-wallet-creator,
 .marketplace-wallet-admin {
     border-top: 1px solid var(--SmartThemeBorderColor);
     padding-top: 8px;
@@ -160,8 +162,63 @@
 }
 
 .marketplace-wallet-admin-header,
+.marketplace-wallet-creator-header,
 .marketplace-wallet-review-title {
     margin-bottom: 6px;
+}
+
+.marketplace-wallet-creator-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.marketplace-wallet-creator-stats span {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 5px;
+    text-align: center;
+    min-width: 0;
+}
+
+.marketplace-wallet-creator-stats b {
+    display: block;
+    font-size: 1.05em;
+}
+
+.marketplace-wallet-creator-assets {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.marketplace-wallet-creator-asset {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px 0;
+}
+
+.marketplace-wallet-creator-asset-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.marketplace-wallet-creator-asset-main span {
+    overflow-wrap: anywhere;
+}
+
+.marketplace-wallet-creator-asset-main small {
+    opacity: 0.75;
+}
+
+.marketplace-wallet-creator-asset b {
+    white-space: nowrap;
 }
 
 .marketplace-wallet-admin-grid {
@@ -263,6 +320,7 @@
     }
 
     .marketplace-wallet-admin-grid,
+    .marketplace-wallet-creator-asset,
     .marketplace-wallet-grant,
     .marketplace-wallet-review-item,
     .marketplace-wallet-upload-grid {

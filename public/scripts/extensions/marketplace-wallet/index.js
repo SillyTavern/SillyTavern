@@ -12,9 +12,11 @@ const MARKET_TYPES = {
 
 const state = {
     assets: [],
+    creator: null,
     wallet: null,
     loaded: false,
     loading: false,
+    creatorLoading: false,
     granting: false,
     busyAssetIds: new Set(),
 };
@@ -61,6 +63,43 @@ function renderWallet() {
     $('[data-marketplace-wallet-bucket="bonus"]').text(formatCoins(balance.buckets?.bonus));
     $('[data-marketplace-wallet-bucket="paid"]').text(formatCoins(balance.buckets?.paid));
     $('[data-marketplace-wallet-bucket="earnings"]').text(formatCoins(balance.buckets?.earnings));
+}
+
+function renderCreatorSummary() {
+    const stats = state.creator?.stats ?? {};
+    $('#marketplace_wallet_creator_assets').text(formatCoins(stats.total_assets));
+    $('#marketplace_wallet_creator_listed').text(formatCoins(stats.listed_assets));
+    $('#marketplace_wallet_creator_sales').text(formatCoins(stats.total_claims));
+    $('#marketplace_wallet_creator_earnings').text(formatCoins(stats.gross_revenue_coins));
+
+    const $list = $('#marketplace_wallet_creator_assets_list');
+    if (!$list.length) {
+        return;
+    }
+
+    $list.empty();
+    if (state.creatorLoading) {
+        $list.append($('<div class="marketplace-wallet-empty"></div>').text('Loading creator assets...'));
+        return;
+    }
+
+    const assets = Array.isArray(state.creator?.assets) ? state.creator.assets.slice(0, 5) : [];
+    if (assets.length === 0) {
+        $list.append($('<div class="marketplace-wallet-empty"></div>').text('No creator assets yet.'));
+        return;
+    }
+
+    for (const asset of assets) {
+        const $item = $('<div class="marketplace-wallet-creator-asset"></div>');
+        const $main = $('<div class="marketplace-wallet-creator-asset-main"></div>');
+        const $title = $('<span></span>').text(asset.title || 'Untitled asset');
+        const $meta = $('<small></small>').text(`${asset.status || 'draft'} · ${formatCoins(asset.sales_count)} claims · ${formatCoins(asset.install_count)} installs`);
+        const $price = $('<b></b>').text(getPriceLabel(asset));
+
+        $main.append($title, $meta);
+        $item.append($main, $price);
+        $list.append($item);
+    }
 }
 
 function canUseAdminTools() {
@@ -234,13 +273,28 @@ function renderAssets() {
 
         $titleRow.append($type, $title, createStatusBadge(asset));
         $meta.append($('<span></span>').text(getPriceLabel(asset)));
-        $meta.append($('<span></span>').text(`${formatCoins(asset.sales_count)} installs`));
+        $meta.append($('<span></span>').text(`${formatCoins(asset.sales_count)} claims`));
+        $meta.append($('<span></span>').text(`${formatCoins(asset.install_count)} installs`));
         if (asset.creator_id) {
             $meta.append($('<span></span>').text(`by ${asset.creator_id}`));
         }
         $main.append($titleRow, $summary, $meta);
         $asset.append($main, createAssetAction(asset));
         $list.append($asset);
+    }
+}
+
+async function loadCreatorSummary() {
+    state.creatorLoading = true;
+    renderCreatorSummary();
+    try {
+        state.creator = await fetchJson('/api/market/creator/summary');
+    } catch (error) {
+        state.creator = null;
+        console.warn('Creator summary could not be loaded', error);
+    } finally {
+        state.creatorLoading = false;
+        renderCreatorSummary();
     }
 }
 
@@ -262,6 +316,7 @@ async function loadMarketplace({ silent = false } = {}) {
         renderAdminVisibility();
         renderWallet();
         renderAssets();
+        void loadCreatorSummary();
         if (!silent) {
             toastr.success('Marketplace refreshed');
         }

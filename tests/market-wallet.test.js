@@ -452,6 +452,121 @@ describe('market and wallet MVP endpoints', () => {
         expect(store.entitlements.filter(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toHaveLength(1);
     });
 
+    test('returns creator summary with owned assets and earnings', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+        const charlieApp = createApp(createUser('charlie', false));
+        const draftResult = await request(charlieApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                type: 'character_card',
+                title: 'Creator Draft',
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(draftResult.status).toBe(201);
+
+        const submittedAssetId = await createSubmittedAsset(charlieApp, {
+            type: 'world_book',
+            title: 'Creator Submitted World',
+            normalized_payload: {
+                name: 'Creator Submitted World',
+                entries: {},
+            },
+        });
+        expect(submittedAssetId).toBeTruthy();
+
+        const rejectedAssetId = await createSubmittedAsset(charlieApp, {
+            type: 'character_card',
+            title: 'Creator Rejected Card',
+            normalized_payload: createCharacterPayload(),
+        });
+        const rejectResult = await request(aliceApp, `/api/market/assets/${rejectedAssetId}/reject`, {
+            method: 'POST',
+            body: { reason: 'Needs a stronger summary' },
+        });
+        expect(rejectResult.status).toBe(200);
+
+        const assetId = await createSubmittedAsset(charlieApp, {
+            type: 'character_card',
+            title: 'Creator Summary Card',
+            price_type: 'fixed_price',
+            price_coins: 20,
+            normalized_payload: createCharacterPayload(),
+        });
+
+        const approveResult = await request(aliceApp, `/api/market/assets/${assetId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approveResult.status).toBe(200);
+
+        const grantResult = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 20,
+                bucket: 'paid',
+            },
+        });
+        expect(grantResult.status).toBe(201);
+
+        const purchaseResult = await request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(purchaseResult.status).toBe(201);
+
+        const installResult = await request(bobApp, `/api/market/assets/${assetId}/install`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(installResult.status).toBe(201);
+
+        const creatorSummary = await request(charlieApp, '/api/market/creator/summary', { method: 'GET' });
+        expect(creatorSummary.status).toBe(200);
+        expect(creatorSummary.body.handle).toBe('charlie');
+        expect(creatorSummary.body.stats).toMatchObject({
+            total_assets: 4,
+            draft_assets: 1,
+            submitted_assets: 1,
+            listed_assets: 1,
+            rejected_assets: 1,
+            total_claims: 1,
+            paid_sales: 1,
+            total_installs: 1,
+            gross_revenue_coins: 20,
+            earnings_balance: 20,
+        });
+        expect(creatorSummary.body.wallet).toBeUndefined();
+        expect(creatorSummary.body.recent_earnings).toBeUndefined();
+        expect(creatorSummary.body.assets).toHaveLength(4);
+        const paidAsset = creatorSummary.body.assets.find(asset => asset.id === assetId);
+        expect(paidAsset).toMatchObject({
+            id: assetId,
+            title: 'Creator Summary Card',
+            owned: true,
+            status: 'listed',
+            sales_count: 1,
+            install_count: 1,
+        });
+        expect(paidAsset.normalized_payload).toBeUndefined();
+
+        const rejectedAsset = creatorSummary.body.assets.find(asset => asset.id === rejectedAssetId);
+        expect(rejectedAsset).toMatchObject({
+            status: 'rejected',
+            rejection_reason: 'Needs a stronger summary',
+        });
+
+        const buyerSummary = await request(bobApp, '/api/market/creator/summary', { method: 'GET' });
+        expect(buyerSummary.status).toBe(200);
+        expect(buyerSummary.body.handle).toBe('bob');
+        expect(buyerSummary.body.stats.total_assets).toBe(0);
+        expect(buyerSummary.body.assets).toHaveLength(0);
+        expect(buyerSummary.body.stats.gross_revenue_coins).toBe(0);
+        expect(buyerSummary.body.wallet).toBeUndefined();
+    });
+
     test('validates fixed price asset pricing', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const invalidFixedPrice = await request(aliceApp, '/api/market/assets', {

@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 12
+阶段 13
 
 ## 各阶段
 
@@ -108,6 +108,17 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 13：创作者中心与收益概览
+- [x] 使用多 agent 并发复核 creator API 和前端入口边界
+- [x] 新增创作者资产/收益 API，返回我的上传资产、统计和 earnings 余额
+- [x] 在 marketplace-wallet 扩展增加 Creator 面板，展示上传数、上架数、claims、安装数和 earned coins
+- [x] 将 creator summary 设为前端降级加载，避免附属请求阻断钱包和市场列表
+- [x] 补充创作者中心单测和前端契约测试
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -123,6 +134,7 @@
 | 使用多 agent 并发切片开发 | 后端钱包、市场、安装适配和代码调查可以并行推进，主 agent 负责集成 |
 | 市场资产必须审核后才能购买 | submitted 状态仅进入审核队列，listed 后才对普通用户可购买 |
 | admin grant 只允许管理员调用 | 避免测试赠币接口成为公开刷币入口 |
+| Creator Center summary 只返回聚合视图 | 钱包原始余额和 ledger 由 Wallet API 负责，市场接口不暴露流水明细或资产 payload |
 | 默认角色卡头像路径使用 serverDirectory 解析 | Jest 和生产运行目录可能不同，不能依赖相对 cwd |
 | listed 资产详情默认不返回 payload | 防止未购买用户绕过购买/安装直接获得角色卡或世界书正文 |
 | fixed_price 购买按 bonus 后 paid 扣款 | 符合设计文档中赠送币优先消耗的产品策略 |
