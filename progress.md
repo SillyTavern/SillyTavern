@@ -846,6 +846,7 @@
 - UI contract 锁定粘贴识别 helper 和事件绑定；浏览器 E2E 的 creator upload 用例覆盖粘贴 world book、粘贴 character card、已有标题不覆盖，以及原有文件导入提交路径。
 - README、设计文档和 findings 已补充文件/粘贴 JSON 都支持 type auto-detect。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a world book upload'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
+- GitHub run `28249861787` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
