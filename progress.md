@@ -1023,6 +1023,7 @@
 - 根据只读 explorer 复核，README 检查限制在 Useful Scripts/Validation matrix 段落，并使用命令边界正则，避免短脚本被长脚本假命中。
 - README Development Notes 已说明该契约用于防止托管版 marketplace/PWA 命令与文档漂移。
 - 已通过 `npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28257000239` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
