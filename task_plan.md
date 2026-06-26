@@ -634,6 +634,13 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 67：API reference 路由覆盖锁定
+- [x] 增加 market 当前完整 MVP 路由断言
+- [x] 增加 wallet ledger 路由断言
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -688,6 +695,7 @@
 | Report Queue 应显示举报日期 | 后端 report item 已返回 created_at，管理员需要看到举报时间来判断积压和处理优先级 |
 | Marketplace 搜索应覆盖展示元数据 | language 和 content_rating 已在列表/详情数据中存在，搜索覆盖它们能让用户按语言和分级找到资产 |
 | Snapshot 应导出审核生命周期 | submitted_at、approved_at、delisted_at 不含 payload，但能帮助迁移和备份校验市场资产状态 |
+| API reference 测试应锁定路由集合 | 导出脚本从源码解析路由，测试覆盖完整 MVP 路由可以尽早发现文档导出漂移 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 | Library Details 入口必须真实存在 | 计划和设计文档已把 My Library 作为找回/查看入口，库中只提供 Install 会迫使用户回市场列表找详情 |
 | Library 安装摘要应可见 | 后端已返回 entitlement 时间和 last_install 摘要，前端显示这些信息能让用户确认何时领取/购买以及最近安装到哪里 |

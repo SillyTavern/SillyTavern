@@ -969,6 +969,12 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28254941882` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 67：API reference 路由覆盖锁定
+- 根据 explorer 的候选建议，补齐 API reference 单测对当前 MVP 路由集合的覆盖。
+- `tests/marketplace-api-reference.test.js` 现在断言 assets detail、creator summary、library、reports admin、asset create/submit/approve/reject/delist/report/purchase/install、report resolve、wallet ledger 和 admin grant 都出现在导出的 Markdown 中。
+- README、设计文档和 findings 已补充 API reference 测试锁定完整 MVP 路由集合的边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
