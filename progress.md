@@ -611,6 +611,7 @@
 | Wallet ledger E2E 修复 marketplace 回归 | `npm run test:marketplace` | syntax + marketplace/PWA/health/seed/filter/UI 契约通过 | 通过：6 suites / 23 tests | 通过 |
 | Wallet ledger E2E 修复 runtime smoke | `npm run test:marketplace:smoke` | 真实 server free purchase/install/library/文件落盘仍通过 | 通过 | 通过 |
 | Wallet ledger E2E 修复本机 Chrome | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | 真实浏览器 admin/report/free-claim/mobile 四用例 | 通过：4 passed (1.7m)；本机父进程延迟退出后 Ctrl-C 清理 | 通过 |
+| GitHub Wallet ledger E2E 修复验证 | `gh run watch 28240992614 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m38s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -640,6 +641,7 @@
 - `market-wallet.test.js` 新增固定价并发购买测试：两次并发 purchase 只生成一条 entitlement、一笔 buyer debit 和一笔 creator earning。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- market-wallet.test.js marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、`git diff --check`。
 - GitHub run `28240670891` 的真实 Chrome E2E 暴露 ledger 降级请求会用真实 `/api/wallet/ledger` 的 0 余额覆盖 mocked `/api/wallet` 的 175 余额；已修复为 ledger 请求只更新最近流水，余额继续由 `/api/wallet` 和 grant/purchase 主流程返回维护。
+- GitHub run `28240992614` 已确认修复有效，Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
