@@ -44,6 +44,7 @@
 | 手机端 MVP 优先走 PWA | 现有 HTML 已有移动 meta、manifest 和 touch icons；补 service worker 比原生壳更小、更快可验证 |
 | PWA 缓存只覆盖静态壳 | `/api/*`、POST 和动态业务请求不能进 shell cache，避免钱包、市场、聊天出现旧数据 |
 | PWA 预缓存资源需要文件存在性测试 | `cache.addAll(SHELL_ASSETS)` 是全有或全无，任一路径丢失都会影响手机安装壳离线缓存 |
+| 设计文档需要拆分当前 MVP 与 Future SaaS | 当前代码只实现本地 market/wallet/health 路由；充值、退款、版本、评论、独立 Creator/Admin API 都应明确为后续 |
 | 下架不等于撤销授权 | delisted 资产不再公开售卖，但已领取/购买用户仍可查看 payload 并安装副本，避免破坏已有体验 |
 | 举报入口先不做自动处罚 | 先留下 open report 审计记录；封禁、自动处罚和申诉流会牵涉策略，后续再加 |
 | 举报处理先做管理员队列和 resolve | 让人工审核可以清理 open reports，同时避免提前固化处罚规则 |
@@ -80,6 +81,7 @@
 - marketplace-wallet 市场筛选条新增价格、访问状态和排序控件，继续使用本地列表做客户端过滤。
 - 新增 `scripts/check-marketplace-syntax.mjs` 作为 marketplace/wallet/PWA/health 基础语法门禁，并接入根目录 `npm run test:marketplace`。
 - PWA 契约测试新增 service worker 预缓存清单解析，确认 `/` 映射到 `index.html` 且所有 shell assets 都存在于 `public/`。
+- 设计文档的 API 模块已拆为“当前本地 MVP 已实现 API”和“Future SaaS API”，并明确当前上传流接收规范化 JSON payload。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

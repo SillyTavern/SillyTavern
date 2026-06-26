@@ -6,15 +6,24 @@
 
 ## MVP 范围
 
-第一版建议只做这些：
+当前本地 MVP 已落地这些能力：
 
-- 市场浏览：角色卡、世界书、预设包、资源包。
-- 用户上传：支持角色卡 PNG/JSON、世界书 JSON、预设 JSON，限制文件大小和字段。
+- 市场浏览：角色卡、世界书。
+- 用户上传：提交已经规范化的 JSON payload，不做 multipart 文件解析。
 - 审核发布：上传后进入草稿/待审核/上架/下架状态。
 - 购买安装：免费领取或用站内币购买，一键安装到用户自己的酒馆空间。
-- 钱包账本：充值、赠送、消费、退款、创作者收益全部入账。
-- 创作者中心：查看作品、销量、收入、审核状态。
-- 管理后台：审核、下架、封禁、退款、精选推荐。
+- 钱包账本：运营赠币、购买扣款、创作者收益入账。
+- 创作者中心：查看作品、领取/销量、安装数、收入和审核状态聚合。
+- 管理员工具：审核、拒绝、下架、赠币、举报队列和举报 resolve。
+- 手机入口：响应式 Web/PWA 安装壳，静态 shell 缓存不缓存业务 API。
+
+正式 SaaS 第一版可以继续扩展：
+
+- 预设包、资源包和组合场景包。
+- 角色卡 PNG/JSON、世界书 JSON、预设 JSON 的文件上传解析。
+- 充值、退款、提现、KYC 和税务流程。
+- 独立 Creator API、Admin API、推荐位和精选运营。
+- 用户评分、文字评论和收藏。
 
 暂不建议第一版做：
 
@@ -28,11 +37,11 @@
 
 | 角色 | 能力 |
 |------|------|
-| 游客 | 浏览公开市场、查看详情、注册登录 |
-| 普通用户 | 领取/购买资产、安装到酒馆、评分、举报 |
-| 创作者 | 上传资产、管理版本、查看收益 |
-| 审核员 | 审核资产、处理举报、下架违规内容 |
-| 管理员 | 配置价格、费率、活动、封禁、退款、推荐位 |
+| 游客 | 访问公开页面、安装 PWA、注册登录；游客公开市场浏览属于 Future SaaS |
+| 普通用户 | 领取/购买资产、安装到酒馆、举报；评分属于 Future SaaS |
+| 创作者 | 上传资产、修订草稿/拒绝资产、查看收益；版本化发布属于 Future SaaS |
+| 审核员 | 审核资产、处理举报、下架违规内容；当前本地 MVP 由管理员工具承担 |
+| 管理员 | 审核、拒绝、下架、赠币、处理举报；封禁、退款、推荐位属于 Future SaaS |
 
 ## 市场资产
 
@@ -42,8 +51,8 @@
 |------|-----|------|
 | character_card | 是 | 角色卡，兼容 SillyTavern PNG/JSON |
 | world_book | 是 | 世界书 JSON |
-| preset_pack | 是 | 模型预设、上下文模板、系统提示词组合 |
-| asset_pack | 是 | 背景图、头像、音效等静态资源 |
+| preset_pack | 后续 | 模型预设、上下文模板、系统提示词组合 |
+| asset_pack | 后续 | 背景图、头像、音效等静态资源 |
 | scenario_pack | 后续 | 角色 + 世界书 + 开场白 + 玩法说明 |
 | extension | 后续 | 风险高，需要独立沙箱和代码审核 |
 
@@ -79,6 +88,8 @@ listed -> suspended
   -> 人工审核或自动通过
   -> 上架
 ```
+
+当前本地 MVP 不做 multipart 文件上传解析；内置 marketplace-wallet 扩展提交已经规范化的 `normalized_payload` JSON。正式 SaaS 再补角色卡 PNG/JSON、世界书 JSON、预设 JSON 的解析、对象存储和安全扫描流水线。
 
 ### 上传校验
 
@@ -412,36 +423,42 @@ resolved_at
 
 ## API 模块
 
-### Market API
+### 当前本地 MVP 已实现 API
+
+除 `GET /api/health` 外，以下接口均运行在当前 SillyTavern 登录会话之后。
+
+Market API：
 
 ```text
-GET    /api/health
 GET    /api/market/assets
 GET    /api/market/assets/:id
 GET    /api/market/library
+GET    /api/market/creator/summary
+GET    /api/market/reports/admin
 POST   /api/market/assets
-POST   /api/market/assets/:id/versions
 PATCH  /api/market/assets/:id
 POST   /api/market/assets/:id/submit
+POST   /api/market/assets/:id/approve
+POST   /api/market/assets/:id/reject
 POST   /api/market/assets/:id/delist
 POST   /api/market/assets/:id/purchase
 POST   /api/market/assets/:id/install
-POST   /api/market/assets/:id/reviews
 POST   /api/market/assets/:id/report
-GET    /api/market/reports/admin
 POST   /api/market/reports/:id/resolve
 ```
 
-当前本地 MVP 也在 Market API 下提供管理员下架、用户举报、举报队列和创作者中心聚合：
+Wallet API：
 
 ```text
-POST   /api/market/assets/:id/delist
-PATCH  /api/market/assets/:id
-GET    /api/market/library
-POST   /api/market/assets/:id/report
-GET    /api/market/reports/admin
-POST   /api/market/reports/:id/resolve
-GET    /api/market/creator/summary
+GET    /api/wallet
+GET    /api/wallet/ledger
+POST   /api/wallet/grants/admin
+```
+
+Public health API：
+
+```text
+GET    /api/health
 ```
 
 下架只阻止新用户公开浏览和购买，不撤销既有 entitlement；已授权用户仍可查看 payload 并安装自己的副本。
@@ -454,17 +471,16 @@ Library 接口只返回当前用户 active entitlements 对应的资产摘要、
 
 该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。
 
-### Wallet API
+### Future SaaS API
 
 ```text
-GET    /api/wallet
-GET    /api/wallet/ledger
+POST   /api/market/assets/:id/versions
+POST   /api/market/assets/:id/reviews
 POST   /api/wallet/recharge-session
-POST   /api/wallet/grants/admin
 POST   /api/wallet/refunds/admin
 ```
 
-### Creator API
+独立 Creator API：
 
 ```text
 GET    /api/creator/profile
@@ -475,7 +491,7 @@ GET    /api/creator/payouts
 POST   /api/creator/payouts
 ```
 
-### Admin API
+独立 Admin API：
 
 ```text
 GET    /api/admin/review-queue
@@ -485,6 +501,8 @@ POST   /api/admin/assets/:id/suspend
 POST   /api/admin/reports/:id/resolve
 POST   /api/admin/users/:id/ban
 ```
+
+当前本地 MVP 的 approve/reject 已在 `/api/market/assets/:id/approve|reject` 下实现；独立 `/api/admin/*` 路径、版本发布、评论、充值、退款、封禁和提现都属于 Future SaaS。
 
 ## 服务边界
 
@@ -512,8 +530,8 @@ MVP 可以先做单体模块化服务，不必一开始拆微服务。关键是�
 |----------|----------|
 | character_card | 用户 characters 目录 |
 | world_book | 用户 worlds 目录 |
-| preset_pack | 用户 sysprompt/context/instruct/openAI_Settings 等目录 |
-| asset_pack | 用户 backgrounds/assets/userImages 等目录 |
+| preset_pack | Future SaaS：用户 sysprompt/context/instruct/openAI_Settings 等目录 |
+| asset_pack | Future SaaS：用户 backgrounds/assets/userImages 等目录 |
 
 长期建议不要让市场直接写文件，而是做一个 `installMarketAsset(user, assetVersion)` 适配层：
 

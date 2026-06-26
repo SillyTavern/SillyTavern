@@ -417,6 +417,20 @@
   - progress.md
   - findings.md
 
+### 阶段 26：设计文档 MVP/API 边界校准
+- **状态：** complete
+- 执行的操作：
+  - 根据并行 agent 只读扫描结果，校准 `docs/marketplace-currency-design.md` 的当前 MVP 范围。
+  - 将 API 模块拆成当前本地 MVP 已实现 API 和 Future SaaS API。
+  - 把版本、评论、充值、退款、独立 Creator/Admin API、preset_pack、asset_pack 标为后续。
+  - 明确当前 marketplace-wallet 上传端点提交规范化 JSON payload，不做 multipart 文件解析。
+  - 校准角色能力表，区分当前管理员工具能力和 Future SaaS 能力。
+- 创建/修改的文件：
+  - docs/marketplace-currency-design.md
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -464,6 +478,9 @@
 | marketplace E2E 列表复核 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | PWA 缓存清单完整性 | `npm run test:pwa` | 预缓存资源均存在且 `/` 映射到 `index.html` | 通过：1 suite / 4 tests | 通过 |
 | marketplace 聚合含 PWA 缓存检查 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health 契约通过 | 通过：4 suites / 17 tests | 通过 |
+| 文档边界校准基础验证 | `rg ... docs/marketplace-currency-design.md` | 当前 MVP 与 Future SaaS API 分区存在，关键 future 项仍保留但不混入 MVP | 通过 | 通过 |
+| 文档阶段 marketplace 回归 | `npm run test:marketplace` | 代码基础闭环不受文档更新影响 | 通过：4 suites / 17 tests | 通过 |
+| 文档阶段 E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -483,11 +500,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁和 PWA 缓存清单完整性检查 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查和设计文档 MVP/API 边界校准 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本和 PWA 缓存完整性测试 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试和文档边界校准 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

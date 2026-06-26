@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 25
+阶段 26
 
 ## 各阶段
 
@@ -255,6 +255,16 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 26：设计文档 MVP/API 边界校准
+- [x] 对照当前 market/wallet/health 实现梳理已实现 API
+- [x] 将当前本地 MVP API 与 Future SaaS API 拆分
+- [x] 将 preset_pack、asset_pack、版本、评论、充值、退款、独立 Creator/Admin API 标为后续
+- [x] 说明当前上传端点接收规范化 JSON payload，不做 multipart 文件解析
+- [x] 校准角色能力中的当前能力与 Future SaaS 能力
+- [x] 运行文档和基础验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -282,6 +292,7 @@
 | 手机版先走 PWA 安装壳 | 最少代码满足手机打开即用；原生 iOS/Android 壳等支付、推送、商店策略明确后再做 |
 | PWA service worker 不缓存 API | 钱包、市场、聊天和账号请求必须保持实时，静态壳缓存即可 |
 | PWA 预缓存清单必须可验证 | `cache.addAll()` 遇到任一缺失资源会让 install 失败，基础测试要覆盖文件存在性 |
+| 设计文档必须区分当前 MVP 与 Future SaaS | 避免 README/设计文档承诺当前代码尚未实现的充值、退款、版本、评论和独立后台 API |
 | 下架不撤销既有 entitlement | 下架阻止新购买和公开浏览，但已购买用户的安装副本能力保留，避免破坏已有体验 |
 | 举报先只创建 open report | MVP 需要可审计入口，自动处罚和处理队列等管理策略后续再加 |
 | 举报处理先做队列和 resolve | 管理员需要能清理 open reports；封禁、自动处罚和申诉规则仍需产品策略 |
