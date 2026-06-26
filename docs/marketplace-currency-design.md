@@ -474,7 +474,7 @@ npm run marketplace:export:api -- --out ./marketplace-api-reference.md
 ```
 
 下架只阻止新用户公开浏览和购买，不撤销既有 entitlement；已授权用户仍可查看 payload 并安装自己的副本。
-举报会写入 market store 的 open report 记录，管理员可在 marketplace-wallet 的 Report Queue 中查看并 resolve；MVP 暂不做自动处罚。
+举报会写入 market store 的 open report 记录，管理员可在 marketplace-wallet 的 Report Queue 中查看举报日期并 resolve；MVP 暂不做自动处罚。
 `POST /api/market/assets/:id/report` 请求体使用必填 `reason` 和可选 `body`，前端 Report 操作会把短原因和详细正文一起提交给管理员队列。
 创作者可修改自己的 draft/rejected 资产，修改后回到 draft/private，再重新 submit 进入审核；submitted/listed/delisted 资产不允许原地修改，后续应改走版本化发布。
 Review Queue 展示资产类型、创作者、价格、更新时间、标签和安全摘要片段；payload 仍只在管理员点击 Inspect 后通过资产详情权限懒加载。

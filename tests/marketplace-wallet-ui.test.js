@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.10');
+        expect(manifest.version).toBe('0.2.11');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -223,6 +223,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`");
         expect(script).toContain('state.reports = state.reports.filter(report => report.id !== reportId)');
         expect(script).toContain('function renderReportQueue()');
+        expect(script).toContain('const created = formatAssetDate(report.created_at)');
+        expect(script).toContain("created ? `reported ${created}` : ''");
         expect(script).toContain('async function loadReportQueue()');
         expect(script).toContain('async function resolveReport(reportId)');
         expect(script).toContain('busyReportIds: new Set()');

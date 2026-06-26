@@ -713,6 +713,7 @@ test.describe('marketplace wallet extension', () => {
         const reportQueue = page.locator('#marketplace_wallet_report_queue');
         await expect(reportQueue).toContainText('Listed World');
         await expect(reportQueue).toContainText('unsafe_prompt');
+        await expect(reportQueue).toContainText('reported 2026-06-26');
 
         await reportQueue.locator('[data-marketplace-wallet-report-action="resolve"]').click();
 
@@ -752,6 +753,7 @@ test.describe('marketplace wallet extension', () => {
         const reportQueue = page.locator('#marketplace_wallet_report_queue');
         await expect(reportQueue).toContainText('Listed World');
         await expect(reportQueue).toContainText('unsafe_prompt');
+        await expect(reportQueue).toContainText('reported 2026-06-26');
         await expect(reportQueue).toContainText('Contains a jailbreak style lore instruction.');
     });
 

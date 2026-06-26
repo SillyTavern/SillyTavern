@@ -634,11 +634,17 @@ function renderReportQueue() {
         const $meta = $('<div class="marketplace-wallet-review-meta"></div>');
         const title = report.asset?.title || report.asset_id || 'Unknown asset';
         const type = MARKET_TYPES[report.asset?.type] || report.asset?.type || 'Asset';
+        const created = formatAssetDate(report.created_at);
         const reason = report.reason ? `${report.reason} · by ${report.reporter_id}` : `Reported by ${report.reporter_id}`;
         const $actions = $('<div class="marketplace-wallet-review-actions"></div>');
 
         $meta.append($('<span></span>').text(title));
-        $meta.append($('<small></small>').text(`${type} · ${report.asset?.status || 'missing'} · ${reason}`));
+        $meta.append($('<small></small>').text([
+            type,
+            report.asset?.status || 'missing',
+            created ? `reported ${created}` : '',
+            reason,
+        ].filter(Boolean).join(' · ')));
         if (report.body) {
             $meta.append($('<small></small>').text(String(report.body).slice(0, 180)));
         }
