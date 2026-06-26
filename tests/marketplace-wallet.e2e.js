@@ -162,6 +162,14 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     await page.route('**/api/market/creator/summary', route => {
         const ownAssets = assets.filter(asset => asset.creator_id === 'default-user');
         const listedAssets = ownAssets.filter(asset => asset.status === 'listed');
+        const statusCounts = ownAssets.reduce((counts, asset) => {
+            const status = asset.status || 'draft';
+            counts[status] = (counts[status] || 0) + 1;
+            return counts;
+        }, {});
+        const paidSales = ownAssets.reduce((sum, asset) => {
+            return asset.price_type === 'fixed_price' ? sum + Number(asset.sales_count || 0) : sum;
+        }, 0);
         route.fulfill({
             status: 200,
             contentType: 'application/json',
@@ -169,9 +177,15 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
                 handle: 'default-user',
                 stats: {
                     total_assets: ownAssets.length,
+                    draft_assets: statusCounts.draft || 0,
+                    submitted_assets: statusCounts.submitted || 0,
                     listed_assets: listedAssets.length,
+                    rejected_assets: statusCounts.rejected || 0,
                     total_claims: ownAssets.reduce((sum, asset) => sum + Number(asset.sales_count || 0), 0),
+                    paid_sales: paidSales,
+                    total_installs: ownAssets.reduce((sum, asset) => sum + Number(asset.install_count || 0), 0),
                     gross_revenue_coins: 0,
+                    earnings_balance: wallet.balance.buckets.earnings,
                 },
                 assets: ownAssets,
             }),
@@ -997,8 +1011,15 @@ test.describe('marketplace wallet extension', () => {
         await expect(createdAssetRow.locator('.marketplace-wallet-tag')).toContainText(['browser', 'lore']);
 
         await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_drafts')).toHaveText('0');
+        await expect(page.locator('#marketplace_wallet_creator_submitted')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_listed')).toHaveText('0');
+        await expect(page.locator('#marketplace_wallet_creator_rejected')).toHaveText('0');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Creator Browser World');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
+        await expect(page.locator('#marketplace_wallet_creator_paid_sales')).toHaveText('0');
+        await expect(page.locator('#marketplace_wallet_creator_installs')).toHaveText('0');
+        await expect(page.locator('#marketplace_wallet_creator_earnings_balance')).toHaveText('25');
         await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('');
         await expect(page.locator('#marketplace_wallet_upload_tags')).toHaveValue('');
         await expect(page.locator('#marketplace_wallet_upload_payload')).toHaveValue('');

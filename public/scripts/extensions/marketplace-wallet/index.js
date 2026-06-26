@@ -161,9 +161,15 @@ function renderWalletLedger() {
 function renderCreatorSummary() {
     const stats = state.creator?.stats ?? {};
     $('#marketplace_wallet_creator_assets').text(formatCoins(stats.total_assets));
+    $('#marketplace_wallet_creator_drafts').text(formatCoins(stats.draft_assets));
+    $('#marketplace_wallet_creator_submitted').text(formatCoins(stats.submitted_assets));
     $('#marketplace_wallet_creator_listed').text(formatCoins(stats.listed_assets));
+    $('#marketplace_wallet_creator_rejected').text(formatCoins(stats.rejected_assets));
     $('#marketplace_wallet_creator_sales').text(formatCoins(stats.total_claims));
+    $('#marketplace_wallet_creator_paid_sales').text(formatCoins(stats.paid_sales));
+    $('#marketplace_wallet_creator_installs').text(formatCoins(stats.total_installs));
     $('#marketplace_wallet_creator_earnings').text(formatCoins(stats.gross_revenue_coins));
+    $('#marketplace_wallet_creator_earnings_balance').text(formatCoins(stats.earnings_balance));
 
     const $list = $('#marketplace_wallet_creator_assets_list');
     if (!$list.length) {

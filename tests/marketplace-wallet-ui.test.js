@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.6');
+        expect(manifest.version).toBe('0.2.7');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -26,9 +26,15 @@ describe('marketplace wallet extension UI contract', () => {
         const html = readExtensionFile('window.html');
 
         expect(html).toContain('id="marketplace_wallet_creator_assets"');
+        expect(html).toContain('id="marketplace_wallet_creator_drafts"');
+        expect(html).toContain('id="marketplace_wallet_creator_submitted"');
         expect(html).toContain('id="marketplace_wallet_creator_listed"');
+        expect(html).toContain('id="marketplace_wallet_creator_rejected"');
         expect(html).toContain('id="marketplace_wallet_creator_sales"');
+        expect(html).toContain('id="marketplace_wallet_creator_paid_sales"');
+        expect(html).toContain('id="marketplace_wallet_creator_installs"');
         expect(html).toContain('id="marketplace_wallet_creator_earnings"');
+        expect(html).toContain('id="marketplace_wallet_creator_earnings_balance"');
         expect(html).toContain('id="marketplace_wallet_creator_assets_list"');
         expect(html).toContain('id="marketplace_wallet_ledger_items"');
         expect(html).toContain('id="marketplace_wallet_library_items"');
@@ -123,8 +129,15 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('await requestInstall(assetId);');
         expect(script).toContain("$root.find('#marketplace_wallet_library_items').on('click', onAssetAction)");
         expect(script).toContain('stats.total_claims');
+        expect(script).toContain('stats.draft_assets');
+        expect(script).toContain('stats.submitted_assets');
+        expect(script).toContain('stats.rejected_assets');
+        expect(script).toContain('stats.paid_sales');
+        expect(script).toContain('stats.total_installs');
         expect(script).toContain('stats.gross_revenue_coins');
+        expect(script).toContain('stats.earnings_balance');
         expect(script).toContain("$('#marketplace_wallet_creator_earnings')");
+        expect(script).toContain("$('#marketplace_wallet_creator_earnings_balance')");
         expect(script).toContain("`${formatCoins(asset.sales_count)} claims`");
         expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
         expect(script).toContain("action: 'details'");

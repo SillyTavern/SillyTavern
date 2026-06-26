@@ -903,6 +903,15 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'claims and installs a free asset'`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
 - GitHub run `28252365512` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 60：创作者中心细分统计
+- 根据 explorer 的 Creator Center 细分统计建议，补齐后端 summary 已返回但前端未展示的聚合字段。
+- Creator Center 统计网格新增 drafts、submitted、rejected、paid sales、installs 和 earnings balance。
+- marketplace-wallet E2E mock 的 creator summary 现在返回 draft/submitted/rejected、paid_sales、total_installs 和 earnings_balance，贴近真实后端响应。
+- `marketplace-wallet` manifest bump 到 `0.2.7`，避免浏览器缓存旧 JS/CSS。
+- 浏览器 E2E 的 creator upload 流程断言提交后 assets=1、submitted=1、其他状态为 0、paid sales/install 为 0，以及 earnings balance 保持 25。
+- README、设计文档和 findings 已补充 Creator Center 细分统计当前边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a world book upload'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

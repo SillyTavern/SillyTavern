@@ -16,7 +16,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Asset details popup with tags, language, content rating, stable lifecycle dates, and payload visibility; visible type, price, access, search, sort, and clear-filter controls for marketplace browsing.
 - Creator upload flow for draft assets, tags, JSON payload validation, file/pasted JSON type auto-detect, and submit-for-review.
 - Creator revision flow for draft or rejected assets before resubmission.
-- Creator Center summary for owned assets, review status counts, claims, installs, and earned coins.
+- Creator Center summary for owned assets, draft/submitted/listed/rejected status counts, claims, paid sales, installs, earned coins, and earnings balance.
 - My Library view for claimed or purchased assets with entitlement dates, recent install summaries, details, and reinstall actions.
 - Installable PWA shell for mobile browsers using the existing web app and static shell cache.
 - Admin review queue with inspect/approve/reject actions.
