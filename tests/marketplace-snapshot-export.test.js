@@ -82,13 +82,25 @@ function writeMarketStore(dataRoot) {
         ],
         reports: [
             {
-                id: 'report_demo',
+                id: 'report_open_demo',
                 asset_id: 'asset_demo',
                 reporter_id: 'bob',
                 status: 'open',
                 reason: 'test',
                 body: 'private report body',
                 created_at: timestamp,
+            },
+            {
+                id: 'report_resolved_demo',
+                asset_id: 'asset_demo',
+                reporter_id: 'charlie',
+                status: 'resolved',
+                reason: 'resolved test',
+                body: 'resolved private report body',
+                resolution_note: 'private moderation note',
+                resolved_by: 'alice',
+                created_at: timestamp,
+                resolved_at: '2026-01-01T01:00:00.000Z',
             },
         ],
     };
@@ -194,7 +206,7 @@ describe('marketplace snapshot export script', () => {
                     asset_count: 1,
                     entitlement_count: 1,
                     install_count: 1,
-                    report_count: 1,
+                    report_count: 2,
                     assets_by_status: {
                         listed: 1,
                     },
@@ -203,6 +215,7 @@ describe('marketplace snapshot export script', () => {
                     },
                     reports_by_status: {
                         open: 1,
+                        resolved: 1,
                     },
                 },
             },
@@ -263,11 +276,19 @@ describe('marketplace snapshot export script', () => {
         ]);
         expect(snapshot.market.reports).toEqual([
             {
-                id: 'report_demo',
+                id: 'report_open_demo',
                 asset_id: 'asset_demo',
                 reporter_id: 'bob',
                 status: 'open',
                 created_at: '2026-01-01T00:00:00.000Z',
+            },
+            {
+                id: 'report_resolved_demo',
+                asset_id: 'asset_demo',
+                reporter_id: 'charlie',
+                status: 'resolved',
+                created_at: '2026-01-01T00:00:00.000Z',
+                resolved_at: '2026-01-01T01:00:00.000Z',
             },
         ]);
         expect(snapshot.wallet.ledger.map(entry => entry.id)).toEqual(['grant_demo', 'debit_demo']);
@@ -306,6 +327,9 @@ describe('marketplace snapshot export script', () => {
         expect(output).not.toContain('Admin grant');
         expect(output).not.toContain('private_note');
         expect(output).not.toContain('private report body');
+        expect(output).not.toContain('resolved private report body');
+        expect(output).not.toContain('private moderation note');
+        expect(output).not.toContain('resolved_by');
     });
 
     test('writes snapshots to an explicit output file', async () => {

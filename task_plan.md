@@ -700,6 +700,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 75：快照举报处理生命周期覆盖
+- [x] snapshot export 测试覆盖 open report
+- [x] snapshot export 测试覆盖 resolved report 的 `resolved_at`
+- [x] snapshot export 测试确认不导出 report body、resolution note 或 resolver
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -776,6 +784,7 @@
 | 固定价购买必须有并发回归 | 同一用户同一资产并发购买只应结算一次，避免重复扣款和创作者重复入账 |
 | Marketplace workflow push 分支放宽到 `codex/**` | 后续并行 Codex 工作分支仍应触发同一 marketplace 门禁；path filter 已限制只在相关文件变更时运行，避免扩大到无关分支 |
 | 市场/钱包快照默认导出白名单字段 | 备份和迁移检查需要资产/授权/安装/举报/账本摘要，但不应默认导出 payload、举报正文、本地安装路径、完整 ledger reason/metadata 或绝对 dataRoot |
+| 快照应保留 report 处理时间但不泄漏处理内容 | resolved report 的 `resolved_at` 有迁移价值；`body`、`resolution_note` 和 `resolved_by` 属于审核隐私，不应进入默认快照 |
 | 快照 `--out` 不允许写入 dataRoot | 导出命令应保持用户数据目录只读，避免备份检查动作改变正在运行的本地数据根 |
 | 购买 API 响应应只返回买家需要的信息 | 买家需要 entitlement、是否已拥有和自己的余额摘要；创作者余额和完整 ledger entries 属于更敏感的账务审计数据，应通过各自 wallet/creator 接口读取 |
 | runtime smoke 需要覆盖固定价货币闭环 | 免费领取能证明安装路径，固定价购买才能证明真实 server 下 admin grant、扣款、创作者收益和响应隐私 shape 同时可用 |
