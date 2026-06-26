@@ -563,6 +563,7 @@
 | Marketplace workflow Jest step | `npm run test:marketplace` | workflow Jest/contract step 通过 | 通过：5 suites / 19 tests | 通过 |
 | Marketplace workflow smoke step | `npm run test:marketplace:smoke` | workflow runtime smoke step 通过 | 通过 | 通过 |
 | Marketplace workflow E2E discovery step | `npm run test:marketplace:e2e -- --list` | workflow E2E discovery step 通过 | 通过：3 tests listed | 通过 |
+| GitHub Marketplace Wallet Checks | `gh run watch 28236597364 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions 新 workflow 通过 | 通过：Marketplace Wallet MVP job 47s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但被 runner 强制 Node 24 | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
