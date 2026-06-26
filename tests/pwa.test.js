@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, test } from '@jest/globals';
@@ -10,6 +11,20 @@ const publicDir = path.join(rootDir, 'public');
 
 function readPublicFile(fileName) {
     return fs.readFileSync(path.join(publicDir, fileName), 'utf8');
+}
+
+function readServiceWorkerShellAssets() {
+    const serviceWorker = readPublicFile('service-worker.js');
+    const sandbox = {
+        self: {
+            addEventListener: () => {},
+        },
+    };
+
+    vm.createContext(sandbox);
+    vm.runInContext(`${serviceWorker}\nthis.__SHELL_ASSETS__ = SHELL_ASSETS;`, sandbox);
+
+    return sandbox.__SHELL_ASSETS__;
 }
 
 describe('hosted tavern PWA shell', () => {
@@ -36,5 +51,22 @@ describe('hosted tavern PWA shell', () => {
         expect(serviceWorker).toContain("request.method !== 'GET'");
         expect(serviceWorker).toContain("url.pathname.startsWith('/api/')");
         expect(serviceWorker).toContain('sillytavern-shell-v1');
+    });
+
+    test('precache shell assets exist in the public directory', () => {
+        const shellAssets = readServiceWorkerShellAssets();
+
+        expect(shellAssets).toEqual(expect.arrayContaining([
+            '/',
+            '/manifest.json',
+            '/scripts/pwa.js',
+        ]));
+
+        for (const asset of shellAssets) {
+            expect(asset).toMatch(/^\//);
+
+            const relativePath = asset === '/' ? 'index.html' : asset.slice(1);
+            expect(fs.existsSync(path.join(publicDir, relativePath))).toBe(true);
+        }
     });
 });
