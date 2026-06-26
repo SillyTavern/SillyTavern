@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 33
+阶段 34
 
 ## 各阶段
 
@@ -336,6 +336,17 @@
 - [x] 补充 README E2E 运行前置条件
 - [x] 补充 mocked E2E buyer 主路径，覆盖 free asset claim/install 后进入 Library
 - [x] 将 marketplace E2E 文件纳入 syntax gate
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
+### 阶段 34：真实浏览器 E2E CI 闭环
+- [x] 新增临时 server E2E wrapper `scripts/run-marketplace-e2e.mjs`
+- [x] Playwright config 支持 `PLAYWRIGHT_BASE_URL`
+- [x] 新增根脚本 `test:marketplace:e2e:server`
+- [x] 将 wrapper 和 Playwright config 纳入 syntax gate
+- [x] CI 安装 `chromium-headless-shell`
+- [x] CI 从 E2E discovery 升级为真实运行 marketplace browser E2E
 - [x] 运行基础测试和脚本验证
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete

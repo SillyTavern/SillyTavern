@@ -590,6 +590,9 @@
 | 收尾阶段 syntax gate | `npm run test:marketplace:syntax` | seed、smoke、E2E 文件均纳入语法门禁 | 通过：17 files checked | 通过 |
 | 收尾阶段 marketplace 回归 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health/seed 契约通过 | 通过：6 suites / 22 tests；一次并发验证中 `market-wallet.test.js` 举报断言短暂 404，单测和串行全量复跑均通过 | 通过 |
 | Workflow YAML 收尾验证 | `node --input-type=module -e "import YAML..."` | marketplace 和 merge-conflict workflows 都可解析 | 通过 | 通过 |
+| GitHub Demo Seed Checks | `gh run watch 28237551217 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions marketplace workflow 通过 | 通过：Marketplace Wallet MVP job 39s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
+| E2E server wrapper discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 启动后 Playwright 能发现 marketplace browser 用例 | 通过：4 tests listed | 通过 |
+| E2E server wrapper 本地实跑 | `npm run test:marketplace:e2e:server` | 本机真实浏览器 E2E 通过 | 未通过：本机 Playwright cache 缺 `chromium_headless_shell-1194/chrome-mac/headless_shell`；CI 已改为先安装 chromium-headless-shell 再实跑 | 环境阻塞 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |

@@ -10,6 +10,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/check-marketplace-syntax.mjs'
+      - 'scripts/run-marketplace-e2e.mjs'
       - 'scripts/seed-marketplace-demo.mjs'
       - 'scripts/smoke-marketplace-runtime.mjs'
       - 'src/endpoints/market.js'
@@ -42,6 +43,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/check-marketplace-syntax.mjs'
+      - 'scripts/run-marketplace-e2e.mjs'
       - 'scripts/seed-marketplace-demo.mjs'
       - 'scripts/smoke-marketplace-runtime.mjs'
       - 'src/endpoints/market.js'
@@ -104,5 +106,8 @@ jobs:
       - name: Run marketplace runtime smoke
         run: npm run test:marketplace:smoke
 
-      - name: Verify marketplace E2E discovery
-        run: npm run test:marketplace:e2e -- --list
+      - name: Install Playwright browser
+        run: npm --prefix tests exec -- playwright install chromium-headless-shell
+
+      - name: Run marketplace browser E2E
+        run: npm run test:marketplace:e2e:server
