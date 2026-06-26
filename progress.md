@@ -959,6 +959,7 @@
 - filters Jest 单测新增 `ja` 和 `teen` 搜索断言，锁定元数据搜索行为。
 - README、设计文档和 findings 已补充 language/rating search 边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-filters.test.js`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+- GitHub run `28254669365` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
