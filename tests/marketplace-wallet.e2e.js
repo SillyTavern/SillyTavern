@@ -758,6 +758,39 @@ test.describe('marketplace wallet extension', () => {
         await expect(library).toContainText('1 installs');
     });
 
+    test('clears active marketplace filters after an empty result', async ({ page }) => {
+        await mockMarketplaceApis(page, {
+            assets: [
+                makeListedAsset({
+                    id: 'filter-world',
+                    title: 'Filter World',
+                    price_type: 'free',
+                    price_coins: 0,
+                }),
+            ],
+        });
+
+        await loadSillyTavern(page);
+
+        const assets = page.locator('#marketplace_wallet_assets');
+        const clearFilters = page.locator('#marketplace_wallet_clear_filters');
+        await expect(assets).toContainText('Filter World');
+        await expect(clearFilters).toBeHidden();
+
+        await page.locator('#marketplace_wallet_search').fill('missing asset');
+        await expect(assets).toContainText('No marketplace assets found.');
+        await expect(clearFilters).toBeVisible();
+
+        await clearFilters.click();
+        await expect(page.locator('#marketplace_wallet_search')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_type_filter')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_price_filter')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_access_filter')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_sort')).toHaveValue('recent');
+        await expect(assets).toContainText('Filter World');
+        await expect(clearFilters).toBeHidden();
+    });
+
     test('buys a fixed-price asset, refreshes wallet activity, and installs it', async ({ page }) => {
         const paidAsset = makeListedAsset({
             id: 'paid-world',

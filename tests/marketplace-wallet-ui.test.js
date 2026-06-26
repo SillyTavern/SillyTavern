@@ -35,6 +35,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('id="marketplace_wallet_price_filter"');
         expect(html).toContain('id="marketplace_wallet_access_filter"');
         expect(html).toContain('id="marketplace_wallet_sort"');
+        expect(html).toContain('id="marketplace_wallet_clear_filters"');
+        expect(html).toContain('Clear filters');
         expect(html).toContain('<option value="available"');
         expect(html).toContain('<option value="library"');
         expect(html).toContain('<option value="mine"');
@@ -84,6 +86,11 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("priceType: $('#marketplace_wallet_price_filter').val()");
         expect(script).toContain("access: $('#marketplace_wallet_access_filter').val()");
         expect(script).toContain("sort: $('#marketplace_wallet_sort').val()");
+        expect(script).toContain('function hasActiveMarketplaceFilters()');
+        expect(script).toContain('function clearMarketplaceFilters()');
+        expect(script).toContain("setClearFiltersVisibility(hasFilters && assets.length === 0)");
+        expect(script).toContain('$button.toggle(show)');
+        expect(script).toContain("$root.find('#marketplace_wallet_clear_filters').on('click', clearMarketplaceFilters)");
         expect(script).toContain('async function loadCreatorSummary()');
         expect(script).toContain('async function loadLibrary()');
         expect(script).toContain("console.warn('Creator summary could not be loaded'");
@@ -200,6 +207,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('@media screen and (max-width: 700px)');
         expect(css).toContain('.marketplace-wallet-creator-stats');
         expect(css).toContain('.marketplace-wallet-controls .text_pole');
+        expect(css).toContain('.marketplace-wallet-controls .menu_button');
         expect(css).toContain('.marketplace-wallet-library-items');
         expect(css).toContain('.marketplace-wallet-library-item');
         expect(css).toContain('data-marketplace-wallet-status="delisted"');

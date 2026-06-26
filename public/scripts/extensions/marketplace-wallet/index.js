@@ -249,6 +249,29 @@ function getFilteredAssets() {
     });
 }
 
+function hasActiveMarketplaceFilters() {
+    return Boolean(String($('#marketplace_wallet_search').val() || '').trim()
+        || $('#marketplace_wallet_type_filter').val()
+        || $('#marketplace_wallet_price_filter').val()
+        || $('#marketplace_wallet_access_filter').val()
+        || String($('#marketplace_wallet_sort').val() || 'recent') !== 'recent');
+}
+
+function setClearFiltersVisibility(show) {
+    const $button = $('#marketplace_wallet_clear_filters');
+    $button.attr('hidden', show ? null : '');
+    $button.toggle(show);
+}
+
+function clearMarketplaceFilters() {
+    $('#marketplace_wallet_search').val('');
+    $('#marketplace_wallet_type_filter').val('');
+    $('#marketplace_wallet_price_filter').val('');
+    $('#marketplace_wallet_access_filter').val('');
+    $('#marketplace_wallet_sort').val('recent');
+    renderAssets();
+}
+
 function getPriceLabel(asset) {
     if (asset.price_type === 'fixed_price') {
         return `${formatCoins(asset.price_coins)} coins`;
@@ -565,6 +588,8 @@ function renderAssets() {
     }
 
     const assets = getFilteredAssets();
+    const hasFilters = hasActiveMarketplaceFilters();
+    setClearFiltersVisibility(hasFilters && assets.length === 0);
     if (assets.length === 0) {
         $list.append($('<div class="marketplace-wallet-empty"></div>').text('No marketplace assets found.'));
         return;
@@ -1160,6 +1185,7 @@ function onReportAction(event) {
 function bindEvents($root) {
     $root.find('#marketplace_wallet_refresh').on('click', () => loadMarketplace());
     $root.find('#marketplace_wallet_search, #marketplace_wallet_type_filter, #marketplace_wallet_price_filter, #marketplace_wallet_access_filter, #marketplace_wallet_sort').on('input change', renderAssets);
+    $root.find('#marketplace_wallet_clear_filters').on('click', clearMarketplaceFilters);
     $root.find('#marketplace_wallet_assets').on('click', onAssetAction);
     $root.find('#marketplace_wallet_library_items').on('click', onAssetAction);
     $root.find('#marketplace_wallet_review_queue').on('click', onAssetAction);

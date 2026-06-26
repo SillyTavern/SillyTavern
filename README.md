@@ -13,7 +13,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Immutable wallet ledger for grants, purchases, debits, and creator earnings.
 - Recent wallet activity in the wallet panel, including grants, purchases, debits, and creator earnings.
 - Marketplace assets for character cards and world books.
-- Asset details popup plus visible tags, type, price, access, search, and sort controls for marketplace browsing.
+- Asset details popup plus visible tags, type, price, access, search, sort, and clear-filter controls for marketplace browsing.
 - Creator upload flow for draft assets, tags, JSON payload validation, file/pasted JSON type auto-detect, and submit-for-review.
 - Creator revision flow for draft or rejected assets before resubmission.
 - Creator Center summary for owned assets, review status counts, claims, installs, and earned coins.
@@ -123,7 +123,7 @@ Validation matrix:
 | `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, snapshot export, API reference export, filter, upload tags, and UI contract tests. |
 | `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, creator upload/submit/approve, Creator Center stats, report create/queue/resolve, free and fixed-price claim/install, buyer debit, creator earning, Library, and file write. |
 | `npm run test:pwa:e2e` | Temporary local server plus Playwright service worker E2E for shell cache registration and `/api/*` cache exclusion; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
-| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for PWA service worker, admin, report submit/resolve, creator upload tags/type auto-detect/submit, unaffordable fixed-price cards, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
+| `npm run test:marketplace:e2e:server` | Temporary local server plus Playwright marketplace browser E2E for PWA service worker, admin, report submit/resolve, creator upload tags/type auto-detect/submit, empty-filter reset, unaffordable fixed-price cards, rejected asset revise/resubmit, free and fixed-price buy/install, wallet activity, Library, and mobile layout; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |
 | `npm run test:marketplace:all` | Slow pre-release loop that runs `test:marketplace`, `test:marketplace:smoke`, and `test:marketplace:e2e:server` in sequence. |
 
 ### Development Notes

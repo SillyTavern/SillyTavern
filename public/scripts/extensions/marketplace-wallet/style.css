@@ -460,6 +460,7 @@
     }
 
     .marketplace-wallet-asset-actions .menu_button,
+    .marketplace-wallet-controls .menu_button,
     .marketplace-wallet-upload-actions .menu_button,
     #marketplace_wallet_grant_submit,
     #marketplace_wallet_refresh {
