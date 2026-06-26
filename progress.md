@@ -856,6 +856,7 @@
 - 浏览器 E2E 新增 unaffordable fixed-price 用例，断言按钮 disabled、缺口金额、aria 关联和不会触发 purchase；移动布局用例加入 affordability 文案无溢出检查。
 - README、设计文档和 findings 已补充余额不足提示和 bonus/paid 消费边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'missing spendable balance'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
+- GitHub run `28250265735` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
