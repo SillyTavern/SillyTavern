@@ -661,6 +661,90 @@ describe('market and wallet MVP endpoints', () => {
         expect(store.entitlements.filter(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toHaveLength(1);
     });
 
+    test('settles concurrent fixed price purchases once per buyer and asset', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+        const charlieApp = createApp(createUser('charlie', false));
+        const assetId = await createSubmittedAsset(charlieApp, {
+            type: 'character_card',
+            title: 'Concurrent Paid Charlie',
+            price_type: 'fixed_price',
+            price_coins: 30,
+            normalized_payload: createCharacterPayload(),
+        });
+
+        const approveResult = await request(aliceApp, `/api/market/assets/${assetId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approveResult.status).toBe(200);
+
+        const grantResult = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 30,
+                bucket: 'paid',
+            },
+        });
+        expect(grantResult.status).toBe(201);
+
+        const results = await Promise.all([
+            request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+                method: 'POST',
+                body: {},
+            }),
+            request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+                method: 'POST',
+                body: {},
+            }),
+        ]);
+
+        expect(results.map(result => result.status).sort()).toEqual([200, 201]);
+        const createdPurchase = results.find(result => result.status === 201);
+        const repeatedPurchase = results.find(result => result.status === 200);
+        expect(createdPurchase.body).toMatchObject({
+            already_owned: false,
+            entitlement: {
+                asset_id: assetId,
+                user_id: 'bob',
+                source: 'purchase',
+            },
+        });
+        expect(repeatedPurchase.body).toMatchObject({
+            already_owned: true,
+            entitlement: {
+                asset_id: assetId,
+                user_id: 'bob',
+                source: 'purchase',
+            },
+        });
+        expect(repeatedPurchase.body.entitlement.id).toBe(createdPurchase.body.entitlement.id);
+
+        const bobLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(bobLedger.status).toBe(200);
+        expect(bobLedger.body.balance.buckets.paid).toBe(0);
+        expect(bobLedger.body.ledger.filter(entry => entry.type === 'market_purchase_debit')).toHaveLength(1);
+        expect(bobLedger.body.ledger.filter(entry => entry.type === 'market_purchase_debit')[0]).toMatchObject({
+            amount: -30,
+            metadata: expect.objectContaining({
+                asset_id: assetId,
+                buyer_handle: 'bob',
+                creator_handle: 'charlie',
+            }),
+        });
+
+        const charlieLedger = await request(charlieApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(charlieLedger.status).toBe(200);
+        expect(charlieLedger.body.balance.buckets.earnings).toBe(30);
+        expect(charlieLedger.body.ledger.filter(entry => entry.type === 'market_creator_earning')).toHaveLength(1);
+
+        const store = JSON.parse(fs.readFileSync(path.join(dataRoot, 'market-assets.json'), 'utf8'));
+        const storedAsset = store.assets.find(asset => asset.id === assetId);
+        expect(storedAsset.sales_count).toBe(1);
+        expect(store.entitlements.filter(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toHaveLength(1);
+    });
+
     test('returns creator summary with owned assets and earnings', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));

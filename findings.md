@@ -63,6 +63,9 @@
 | marketplace 验证入口应先跑语法门禁 | 服务端 endpoint、PWA、扩展脚本和 Jest 契约文件分散在不同目录，集中 `node --check` 能更早暴露破损 |
 | Demo seed 应只写市场 store | 开箱体验需要示例资产；钱包余额仍通过 admin grant 流程验证，避免 seed 脚本绕过 ledger |
 | Runtime smoke 需要覆盖业务路由 | health/PWA 只能证明服务启动；`/api/wallet` 和 `/api/market/assets` 能验证登录中间件、默认用户和 market/wallet 路由注册 |
+| 钱包最近流水适合作为前端降级视图 | marketplace-wallet 可展示当前用户最近 ledger 帮助核对余额，但完整审计仍以 `/api/wallet/ledger` 为准 |
+| Runtime smoke 应覆盖真实安装落盘 | 真实 server 验证需要包含 free purchase、install、Library 和文件存在性，才能证明市场最小闭环可运行 |
+| 固定价购买必须防并发双扣 | 同一用户同一资产并发 purchase 应只结算一次，重复请求返回 already_owned 并复用 entitlement |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -99,6 +102,8 @@
 - Runner Chrome 真实 E2E 会暴露两层可见性：SillyTavern 外层 Extensions drawer 需要打开，Marketplace Wallet 自身的 inline drawer 也需要展开，否则 admin、Report Queue 和购买按钮都在隐藏父级下。
 - 临时 data root 首次启动会出现 onboarding persona 弹窗；浏览器 E2E 必须等待并确认 Save，避免欢迎弹窗遮挡 Extensions 面板点击。
 - E2E 中 mock `/api/users/me` 为 admin 用户能防止账号配置漂移影响前端 `isAdmin()` gate；真实后端权限仍由接口单测覆盖。
+- marketplace-wallet 新增 Wallet Activity 面板，最近流水从 `/api/wallet/ledger` 降级加载，正数用 `+` 标识，负数标为 purchase/debit。
+- runtime smoke 现在会实际 POST 免费领取和安装 demo world book，并确认 Library 里 install_count 为 1 且文件写入临时用户 worlds 目录。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

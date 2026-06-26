@@ -603,6 +603,10 @@
 | E2E UI 状态修复 discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 能发现 4 个 browser E2E 用例 | 通过：4 tests listed | 通过 |
 | 本机 Chrome 单 worker E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | 用系统 Chrome 验证 admin queue、report resolve、free claim/install 和 mobile layout | 通过：4 passed (1.5m)；本机 Chrome channel 在测试结束后父进程延迟退出，手动 Ctrl-C 后清理，无残留 server | 通过 |
 | GitHub Runner Chrome E2E 修复验证 | `gh run watch 28239958010 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m2s，browser E2E step 成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
+| Wallet Activity 目标验证 | `npm --prefix tests run test:unit -- market-wallet.test.js marketplace-wallet-ui.test.js` | 钱包流水 UI 契约和固定价并发购买幂等测试通过 | 通过：2 suites / 13 tests | 通过 |
+| 阶段 38 syntax gate | `npm run test:marketplace:syntax` | ledger UI、runtime smoke 和并发测试语法门禁 | 通过：19 files checked | 通过 |
+| 阶段 38 marketplace 聚合 | `npm run test:marketplace` | syntax + marketplace/PWA/health/seed/filter/UI 契约通过 | 通过：6 suites / 23 tests | 通过 |
+| 阶段 38 runtime smoke | `npm run test:marketplace:smoke` | 真实 server 校验 health/PWA/wallet/assets/free purchase/install/library/文件落盘 | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -621,6 +625,15 @@
 | 2026-06-26 | Runner Chrome 真实 E2E 中 admin、report、purchase 按钮隐藏或不可点击 | 1 | E2E helper 打开外层 Extensions drawer、展开内层 Marketplace inline drawer，并 mock admin 当前用户 |
 | 2026-06-26 | 临时 data root 首次启动 onboarding 弹窗遮挡测试交互 | 1 | E2E helper 等待欢迎弹窗并点击 Save |
 | 2026-06-26 | 本机 Chrome channel E2E 通过后父进程延迟退出 | 1 | 手动 Ctrl-C 后 wrapper 清理 server；以 GitHub runner 作为并行 E2E 退出行为最终裁决 |
+
+## 2026-06-26 阶段 38：钱包流水 UI 与真实运行闭环
+- 启动并行 worker `019f040f-2485-7a31-9e82-15ca33bfc3fe`，限定其只补测试/文档契约，主线程负责 UI/样式/runtime smoke。
+- Explorer `019f040c-2e25-7113-96c4-e05768f0562b` 完成只读审查，推荐优先补 runtime smoke 的真实免费领取/安装/文件落盘闭环，并补固定价购买并发幂等测试。
+- 新开阶段 38，目标是让钱包流水在 UI 可见，同时强化真实 server smoke 和钱包双扣风险回归。
+- marketplace-wallet 新增 Wallet Activity 面板，降级加载 `/api/wallet/ledger` 的最近 6 条流水，展示正负金额、bucket、类型和时间；manifest 升到 `0.2.2`。
+- runtime smoke 增加 `--disableCsrf` 并实际 POST 免费领取、安装，随后校验 Library 和临时 dataRoot 内 world book 文件。
+- `market-wallet.test.js` 新增固定价并发购买测试：两次并发 purchase 只生成一条 entitlement、一笔 buyer debit 和一笔 creator earning。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- market-wallet.test.js marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、`git diff --check`。
 
 ## 五问重启检查
 | 问题 | 答案 |

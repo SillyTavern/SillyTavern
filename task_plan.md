@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 37
+阶段 38
 
 ## 各阶段
 
@@ -72,8 +72,8 @@
 - [x] 购买时按 `bonus -> paid` 扣款，并给创作者写入 `earnings`
 - [x] 对同一资产和用户增加购买幂等与同进程串行化保护
 - [x] 补充余额不足、免费领取不写账、重复购买、创作者收益和价格校验测试
-- [x] 提交并推送到 GitHub fork
-- **状态：** complete
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
 
 ### 阶段 10：前端市场与钱包入口
 - [x] 使用多 agent 并发复核前端挂载点和 API 契约
@@ -381,6 +381,17 @@
 - [x] 等待 GitHub Actions 真实 Chrome E2E 通过
 - **状态：** complete
 
+### 阶段 38：钱包流水 UI 与真实运行闭环
+- [x] 使用多 agent 并发审查下一步交付缺口
+- [x] 在 marketplace-wallet UI 展示最近钱包流水
+- [x] 从 `/api/wallet/ledger` 降级加载账本，不阻断市场主列表
+- [x] 扩展 runtime smoke，覆盖免费领取、安装、Library 可见和文件落盘
+- [x] 补充固定价购买并发幂等回归测试
+- [x] 更新 README、设计文档、规划记录
+- [x] 运行基础测试、smoke 和 CI 相关验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -426,6 +437,9 @@
 | marketplace 根测试先跑语法门禁 | 低成本捕捉服务端、前端扩展、PWA 和测试文件语法破损，再进入较慢 Jest 契约 |
 | Demo seed 必须显式指定 dataRoot | 本地体验需要可见市场内容，但脚本不应悄悄写入真实用户目录 |
 | Runtime smoke 应触达私有 market/wallet API | 只测 health/PWA 无法发现 marketplace 路由注册、默认用户上下文或存储初始化问题 |
+| 钱包流水 UI 是最近视图 | 前端展示最近 wallet ledger 方便用户核对余额；完整审计账本仍以 `/api/wallet/ledger` 为准 |
+| Runtime smoke 应覆盖真实领取安装 | 真实 server smoke 需要验证 free purchase、install、Library 和文件落盘，避免只证明服务能启动 |
+| 固定价购买必须有并发回归 | 同一用户同一资产并发购买只应结算一次，避免重复扣款和创作者重复入账 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

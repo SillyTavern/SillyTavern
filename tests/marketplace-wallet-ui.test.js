@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.1');
+        expect(manifest.version).toBe('0.2.2');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -30,6 +30,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('id="marketplace_wallet_creator_sales"');
         expect(html).toContain('id="marketplace_wallet_creator_earnings"');
         expect(html).toContain('id="marketplace_wallet_creator_assets_list"');
+        expect(html).toContain('id="marketplace_wallet_ledger_items"');
         expect(html).toContain('id="marketplace_wallet_library_items"');
         expect(html).toContain('id="marketplace_wallet_price_filter"');
         expect(html).toContain('id="marketplace_wallet_access_filter"');
@@ -75,6 +76,7 @@ describe('marketplace wallet extension UI contract', () => {
 
         expect(script).toContain("fetchJson('/api/market/creator/summary')");
         expect(script).toContain("fetchJson('/api/market/library')");
+        expect(script).toMatch(/fetchJson\(\s*['"]\/api\/wallet\/ledger['"]/);
         expect(script).toContain("import { filterAndSortAssets } from './filters.js';");
         expect(script).toContain('return filterAndSortAssets(state.assets');
         expect(script).toContain("priceType: $('#marketplace_wallet_price_filter').val()");
@@ -86,10 +88,20 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("console.warn('Library could not be loaded'");
         expect(script).toContain('function renderCreatorSummary()');
         expect(script).toContain('function renderLibrary()');
+        expect(script).toContain('function renderWalletLedger()');
+        expect(script).toContain('async function loadWalletLedger()');
+        expect(script).toContain('ledgerLoading: false');
+        expect(script).toContain('state.ledger = Array.isArray(result.ledger) ? result.ledger : []');
+        expect(script).toMatch(/Loading (recent )?wallet activity\.\.\./);
+        expect(script).toContain('No wallet activity yet.');
+        expect(script).toContain("amount > 0 ? '+' : ''");
+        expect(script).toContain("amount < 0 ? 'negative'");
+        expect(script).toContain("data-marketplace-wallet-amount");
         expect(script).toContain('libraryLoading: false');
         expect(script).toContain('state.library = Array.isArray(result.items) ? result.items : []');
         expect(script).toContain('No library assets yet.');
         expect(script).toContain('void loadLibrary();');
+        expect(script).toContain('void loadWalletLedger();');
         expect(script).toContain('await requestInstall(assetId);');
         expect(script).toContain("$root.find('#marketplace_wallet_library_items').on('click', onAssetAction)");
         expect(script).toContain('stats.total_claims');

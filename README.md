@@ -11,6 +11,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Built-in `marketplace-wallet` extension in the Extensions panel.
 - Wallet balances split into `bonus`, `paid`, and `earnings` buckets.
 - Immutable wallet ledger for grants, purchases, debits, and creator earnings.
+- Recent wallet activity in the wallet panel, including grants, purchases, debits, and creator earnings.
 - Marketplace assets for character cards and world books.
 - Asset details popup plus type, price, access, search, and sort controls for marketplace browsing.
 - Creator upload flow for draft assets, JSON payload validation, and submit-for-review.
@@ -51,7 +52,7 @@ Start the app:
 npm start
 ```
 
-Open `http://127.0.0.1:8000` and use the Extensions panel to find `Marketplace & Wallet`.
+Open `http://127.0.0.1:8000` and use the Extensions panel to find `Marketplace & Wallet`. Users can view recent wallet ledger activity from the wallet panel.
 The demo seed command writes two listed assets into the explicit data root: a free character card and a fixed-price world book. Run it against the same data root your local config uses.
 
 The local MVP APIs live under `/api/market` and `/api/wallet`. Creator Center uses `GET /api/market/creator/summary`; full wallet balances and ledger history remain available through `/api/wallet` and `/api/wallet/ledger`. Hosted probes can use `GET /api/health` without a logged-in session.

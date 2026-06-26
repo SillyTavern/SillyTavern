@@ -455,6 +455,8 @@ GET    /api/wallet/ledger
 POST   /api/wallet/grants/admin
 ```
 
+marketplace-wallet 钱包面板展示当前用户的最近流水，包含运营赠币、购买扣款、创作者收益等正负金额记录；完整账本仍以 `GET /api/wallet/ledger` 为准。
+
 Public health API：
 
 ```text

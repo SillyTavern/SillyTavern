@@ -15,12 +15,14 @@ const state = {
     assets: [],
     creator: null,
     editingAssetId: null,
+    ledger: [],
     library: [],
     reports: [],
     wallet: null,
     loaded: false,
     loading: false,
     creatorLoading: false,
+    ledgerLoading: false,
     libraryLoading: false,
     reportsLoading: false,
     granting: false,
@@ -30,6 +32,36 @@ const state = {
 
 function formatCoins(value) {
     return Number(value || 0).toLocaleString();
+}
+
+function formatSignedCoins(value) {
+    const amount = Number(value || 0);
+    const prefix = amount > 0 ? '+' : '';
+    return `${prefix}${formatCoins(amount)}`;
+}
+
+function formatLedgerDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return date.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function getLedgerTypeLabel(entry) {
+    const labels = {
+        admin_grant: 'Grant',
+        market_purchase_debit: 'Purchase',
+        market_creator_earning: 'Earning',
+    };
+
+    return labels[entry?.type] || String(entry?.type || 'Wallet');
 }
 
 function getSpendableBalance() {
@@ -70,6 +102,47 @@ function renderWallet() {
     $('[data-marketplace-wallet-bucket="bonus"]').text(formatCoins(balance.buckets?.bonus));
     $('[data-marketplace-wallet-bucket="paid"]').text(formatCoins(balance.buckets?.paid));
     $('[data-marketplace-wallet-bucket="earnings"]').text(formatCoins(balance.buckets?.earnings));
+}
+
+function renderWalletLedger() {
+    const $list = $('#marketplace_wallet_ledger_items');
+    if (!$list.length) {
+        return;
+    }
+
+    $list.empty();
+    if (state.ledgerLoading) {
+        $list.append($('<div class="marketplace-wallet-empty"></div>').text('Loading wallet activity...'));
+        return;
+    }
+
+    if (state.ledger.length === 0) {
+        $list.append($('<div class="marketplace-wallet-empty"></div>').text('No wallet activity yet.'));
+        return;
+    }
+
+    const entries = state.ledger
+        .slice()
+        .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0) || String(b.id || '').localeCompare(String(a.id || '')))
+        .slice(0, 6);
+
+    for (const entry of entries) {
+        const amount = Number(entry.amount || 0);
+        const direction = amount > 0 ? 'positive' : amount < 0 ? 'negative' : 'zero';
+        const $item = $('<div class="marketplace-wallet-ledger-item"></div>');
+        const $main = $('<div class="marketplace-wallet-ledger-main"></div>');
+        const reason = String(entry.reason || getLedgerTypeLabel(entry));
+        const bucket = String(entry.bucket || 'wallet');
+        const dateLabel = formatLedgerDate(entry.createdAt);
+
+        $main.append($('<span></span>').text(reason));
+        $main.append($('<small></small>').text([getLedgerTypeLabel(entry), bucket, dateLabel].filter(Boolean).join(' · ')));
+        $item.append($main);
+        $item.append($('<b class="marketplace-wallet-ledger-amount"></b>')
+            .attr('data-marketplace-wallet-amount', direction)
+            .text(formatSignedCoins(amount)));
+        $list.append($item);
+    }
 }
 
 function renderCreatorSummary() {
@@ -530,6 +603,25 @@ async function loadCreatorSummary() {
     }
 }
 
+async function loadWalletLedger() {
+    state.ledgerLoading = true;
+    renderWalletLedger();
+    try {
+        const result = await fetchJson('/api/wallet/ledger');
+        state.ledger = Array.isArray(result.ledger) ? result.ledger : [];
+        if (result.balance && state.wallet) {
+            state.wallet.balance = result.balance;
+            renderWallet();
+        }
+    } catch (error) {
+        state.ledger = [];
+        console.warn('Wallet ledger could not be loaded', error);
+    } finally {
+        state.ledgerLoading = false;
+        renderWalletLedger();
+    }
+}
+
 async function loadMarketplace({ silent = false } = {}) {
     if (state.loading) {
         return;
@@ -547,7 +639,9 @@ async function loadMarketplace({ silent = false } = {}) {
         state.loaded = true;
         renderAdminVisibility();
         renderWallet();
+        renderWalletLedger();
         renderAssets();
+        void loadWalletLedger();
         void loadCreatorSummary();
         void loadLibrary();
         void loadReportQueue();
@@ -865,6 +959,7 @@ async function grantCoins() {
         if (state.wallet?.handle === result.handle) {
             state.wallet.balance = result.balance;
             renderWallet();
+            void loadWalletLedger();
         }
     } catch (error) {
         console.error('Failed to grant coins', error);
