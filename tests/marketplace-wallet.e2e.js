@@ -831,6 +831,27 @@ test.describe('marketplace wallet extension', () => {
         };
 
         await page.locator('#marketplace_wallet_upload_type').selectOption('character_card');
+        await page.locator('#marketplace_wallet_upload_payload').fill(JSON.stringify(worldBookPayload, null, 2));
+        await page.locator('#marketplace_wallet_upload_payload').blur();
+        await expect(page.locator('#marketplace_wallet_upload_type')).toHaveValue('world_book');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('Creator Browser World');
+
+        await page.locator('#marketplace_wallet_upload_title').fill('Manual Title Stays');
+        await page.locator('#marketplace_wallet_upload_type').selectOption('world_book');
+        await page.locator('#marketplace_wallet_upload_payload').fill(JSON.stringify({
+            name: 'Pasted Browser Character',
+            description: 'A pasted character card used to verify type detection.',
+            personality: 'Curious',
+            scenario: 'A compact tavern',
+            first_mes: 'Hi.',
+            mes_example: '<START>',
+        }, null, 2));
+        await page.locator('#marketplace_wallet_upload_payload').blur();
+        await expect(page.locator('#marketplace_wallet_upload_type')).toHaveValue('character_card');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('Manual Title Stays');
+        await page.locator('#marketplace_wallet_upload_title').fill('');
+
+        await page.locator('#marketplace_wallet_upload_type').selectOption('character_card');
         await page.locator('#marketplace_wallet_upload_file').setInputFiles({
             name: 'creator-browser-world.json',
             mimeType: 'application/json',

@@ -132,9 +132,14 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("$('#marketplace_wallet_upload_tags').val(getAssetTags(asset).join(', '))");
         expect(script).toContain("$('#marketplace_wallet_upload_tags').val('')");
         expect(script).toContain('function inferPayloadType(payload)');
+        expect(script).toContain('function getPayloadTitleHint(payload');
+        expect(script).toContain('function applyUploadPayloadHints(payload');
+        expect(script).toContain('function applyUploadPayloadTextHints(text');
         expect(script).toContain('const inferredType = inferPayloadType(payload)');
         expect(script).toContain("$('#marketplace_wallet_upload_type').val(inferredType)");
-        expect(script).toContain("payload?.data?.name || payload?.name || file.name.replace");
+        expect(script).toContain("applyUploadPayloadHints(payload, file.name.replace");
+        expect(script).toContain("$root.find('#marketplace_wallet_upload_payload').on('change blur'");
+        expect(script).toContain('Pasted payloads are still validated on submit');
         expect(script).toContain("method: editingAssetId ? 'PATCH' : 'POST'");
         expect(script).toContain("state.editingAssetId = asset?.id ?? null");
         expect(script).toContain("$('#marketplace_wallet_upload_payload').val(JSON.stringify(asset.normalized_payload ?? {}, null, 2))");

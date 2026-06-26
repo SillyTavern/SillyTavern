@@ -917,6 +917,40 @@ function inferPayloadType(payload) {
     return '';
 }
 
+function getPayloadTitleHint(payload, fallback = '') {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return fallback;
+    }
+
+    return String(payload?.data?.name || payload?.name || fallback).slice(0, 160);
+}
+
+function applyUploadPayloadHints(payload, fallbackTitle = '') {
+    const inferredType = inferPayloadType(payload);
+    if (inferredType) {
+        $('#marketplace_wallet_upload_type').val(inferredType);
+    }
+
+    if (!$('#marketplace_wallet_upload_title').val()) {
+        const title = getPayloadTitleHint(payload, fallbackTitle);
+        if (title) {
+            $('#marketplace_wallet_upload_title').val(title);
+        }
+    }
+}
+
+function applyUploadPayloadTextHints(text, fallbackTitle = '') {
+    if (!String(text || '').trim()) {
+        return;
+    }
+
+    try {
+        applyUploadPayloadHints(JSON.parse(text), fallbackTitle);
+    } catch {
+        // Pasted payloads are still validated on submit; avoid noisy toasts while editing.
+    }
+}
+
 function parseTagInput(value) {
     const tags = [];
     const seen = new Set();
@@ -1130,19 +1164,15 @@ function bindEvents($root) {
             const text = await getFileText(file);
             const payload = JSON.parse(text);
             $('#marketplace_wallet_upload_payload').val(text);
-            const inferredType = inferPayloadType(payload);
-            if (inferredType) {
-                $('#marketplace_wallet_upload_type').val(inferredType);
-            }
-            if (!$('#marketplace_wallet_upload_title').val()) {
-                const title = payload?.data?.name || payload?.name || file.name.replace(/\.[^.]+$/, '');
-                $('#marketplace_wallet_upload_title').val(String(title).slice(0, 160));
-            }
+            applyUploadPayloadHints(payload, file.name.replace(/\.[^.]+$/, ''));
         } catch (error) {
             toastr.error(error.message || 'File is not valid JSON');
         } finally {
             this.value = '';
         }
+    });
+    $root.find('#marketplace_wallet_upload_payload').on('change blur', function () {
+        applyUploadPayloadTextHints($(this).val());
     });
     $root.find('[data-marketplace-wallet-upload]').on('click', function () {
         createAsset($(this).attr('data-marketplace-wallet-upload') === 'review');
