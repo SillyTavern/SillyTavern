@@ -473,6 +473,115 @@ describe('market and wallet MVP endpoints', () => {
         expect(fs.existsSync(path.join(dataRoot, 'bob', 'worlds', `${installResult.body.installed.name}.json`))).toBe(true);
     });
 
+    test('keeps submitted creator assets hidden from non-owners until admin approval', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+        const charlieApp = createApp(createUser('charlie', false));
+
+        const createResult = await request(charlieApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                type: 'world_book',
+                title: 'Private Review World',
+                normalized_payload: {
+                    name: 'Private Review World',
+                    entries: {},
+                },
+            },
+        });
+        expect(createResult.status).toBe(201);
+        expect(createResult.body.asset.creator_id).toBe('charlie');
+        expect(createResult.body.asset.status).toBe('draft');
+        expect(createResult.body.asset.visibility).toBe('private');
+
+        const assetId = createResult.body.asset.id;
+        const hiddenDraftList = await request(bobApp, '/api/market/assets', { method: 'GET' });
+        expect(hiddenDraftList.status).toBe(200);
+        expect(hiddenDraftList.body.assets.some(asset => asset.id === assetId)).toBe(false);
+
+        const hiddenDraftDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(hiddenDraftDetail.status).toBe(404);
+
+        const submitResult = await request(charlieApp, `/api/market/assets/${assetId}/submit`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(submitResult.status).toBe(200);
+        expect(submitResult.body.asset.status).toBe('submitted');
+        expect(submitResult.body.asset.visibility).toBe('review');
+        expect(submitResult.body.asset.submitted_at).toBeTruthy();
+
+        const ownerDetail = await request(charlieApp, `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(ownerDetail.status).toBe(200);
+        expect(ownerDetail.body.asset.payload_available).toBe(true);
+        expect(ownerDetail.body.asset.normalized_payload.name).toBe('Private Review World');
+
+        const ownerApproveWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            const blockedOwnerApproval = await request(charlieApp, `/api/market/assets/${assetId}/approve`, {
+                method: 'POST',
+                body: {},
+            });
+            expect(blockedOwnerApproval.status).toBe(403);
+        } finally {
+            ownerApproveWarnSpy.mockRestore();
+        }
+
+        const hiddenSubmittedList = await request(bobApp, '/api/market/assets', { method: 'GET' });
+        expect(hiddenSubmittedList.status).toBe(200);
+        expect(hiddenSubmittedList.body.assets.some(asset => asset.id === assetId)).toBe(false);
+
+        const hiddenSubmittedDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(hiddenSubmittedDetail.status).toBe(404);
+
+        const hiddenSubmittedPurchase = await request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(hiddenSubmittedPurchase.status).toBe(404);
+
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            const blockedApproval = await request(bobApp, `/api/market/assets/${assetId}/approve`, {
+                method: 'POST',
+                body: {},
+            });
+            expect(blockedApproval.status).toBe(403);
+        } finally {
+            warnSpy.mockRestore();
+        }
+
+        const adminDetail = await request(aliceApp, `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(adminDetail.status).toBe(200);
+        expect(adminDetail.body.asset.payload_available).toBe(true);
+        expect(adminDetail.body.asset.normalized_payload.name).toBe('Private Review World');
+
+        const approveResult = await request(aliceApp, `/api/market/assets/${assetId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approveResult.status).toBe(200);
+        expect(approveResult.body.asset.status).toBe('listed');
+        expect(approveResult.body.asset.visibility).toBe('public');
+        expect(approveResult.body.asset.reviewed_by).toBe('alice');
+
+        const publicDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(publicDetail.status).toBe(200);
+        expect(publicDetail.body.asset.payload_available).toBe(false);
+        expect(publicDetail.body.asset.normalized_payload).toBeUndefined();
+
+        const publicList = await request(bobApp, '/api/market/assets', { method: 'GET' });
+        expect(publicList.status).toBe(200);
+        const listedAsset = publicList.body.assets.find(asset => asset.id === assetId);
+        expect(listedAsset).toMatchObject({
+            id: assetId,
+            status: 'listed',
+            owned: false,
+            entitled: false,
+        });
+        expect(listedAsset.normalized_payload).toBeUndefined();
+    });
+
     test('allows only admins to grant wallet balance', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));

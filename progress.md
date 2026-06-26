@@ -643,6 +643,9 @@
 | 阶段 45 syntax gate | `npm run test:marketplace:syntax` | creator upload runtime smoke 脚本语法门禁 | 通过：21 files checked | 通过 |
 | 阶段 45 runtime smoke | `npm run test:marketplace:smoke` | 真实 server creator upload/create/submit/detail/approve/list/install 与既有 purchase/install 闭环 | 通过 | 通过 |
 | 阶段 45 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
+| 阶段 46 角色隔离目标单测 | `npm --prefix tests run test:unit -- market-wallet.test.js` | submitted/private asset 对非 owner 隐藏、owner 自审批禁止、非 admin 不可 approve、owner/admin payload 权限、公开后只返回元数据 | 通过：1 suite / 10 tests | 通过 |
+| 阶段 46 syntax gate | `npm run test:marketplace:syntax` | market-wallet 新增测试语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 46 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 30 tests | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -731,14 +734,21 @@
 - README 验证矩阵和设计文档已更新 runtime smoke 覆盖范围，明确 creator upload/submit/approve 已纳入真实 server 闭环。
 - 已通过 `npm run test:marketplace:syntax`、`npm run test:marketplace:smoke` 和 `npm run test:marketplace`。
 
+## 2026-06-26 阶段 46：Creator/Admin 角色隔离后端契约
+- 启动只读 explorer `019f0458-acc4-77d2-b61e-50734d66c322` 复核 market endpoint 与测试 helper 的角色隔离缺口，主线程先补现有单测覆盖。
+- `tests/market-wallet.test.js` 新增 `keeps submitted creator assets hidden from non-owners until admin approval`，使用 Charlie 普通创作者、Bob 普通旁观者、Alice 管理员三类身份。
+- 新测试断言 Bob 看不到 Charlie 的 draft/submitted asset 列表和详情，不能 purchase，且非管理员 approve 返回 403。
+- 新测试断言 Charlie 作为 owner 可读取 submitted detail payload 但不能自审批，Alice 作为 admin 可读取 payload 并 approve，approve 后 Bob 只能看到公开元数据且拿不到 normalized payload。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace:syntax` 和 `npm run test:marketplace`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环，以及 Creator 上传审核 runtime smoke 闭环 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环，以及 Creator/Admin 角色隔离后端契约 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环和 Creator 上传审核 runtime smoke 闭环 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环和 Creator/Admin 角色隔离后端契约 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

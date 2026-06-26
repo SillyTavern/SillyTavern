@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 45
+阶段 46
 
 ## 各阶段
 
@@ -461,6 +461,15 @@
 - [x] 运行 syntax、marketplace 聚合和 runtime smoke
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
+
+### 阶段 46：Creator/Admin 角色隔离后端契约
+- [x] 补充 submitted/private 资产对非拥有者不可见测试
+- [x] 补充 owner submitted detail payload 可读测试
+- [x] 补充非管理员不可 approve、管理员可 approve 测试
+- [x] 运行目标单测、marketplace 聚合和 syntax gate
+- [x] 更新规划记录
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
