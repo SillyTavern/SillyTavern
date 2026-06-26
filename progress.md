@@ -653,6 +653,11 @@
 | 阶段 48 syntax gate | `npm run test:marketplace:syntax` | report runtime smoke 脚本语法门禁 | 通过：21 files checked | 通过 |
 | 阶段 48 runtime smoke | `npm run test:marketplace:smoke` | 真实 server report create/admin queue/resolve/queue clear 与既有 purchase/install 闭环 | 通过 | 通过 |
 | 阶段 48 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 初次与 smoke 并行运行时出现一次 delist 404；随后单独 `market-wallet.test.js` 和串行 `test:marketplace` 均通过：7 suites / 30 tests | 通过 |
+| 阶段 49 API reference 目标测试 | `npm --prefix tests run test:unit -- marketplace-api-reference.test.js` | API reference Markdown 生成、`--out` 写文件、未知参数和缺失 `--out` 路径校验 | 通过：1 suite / 4 tests | 通过 |
+| 阶段 49 syntax gate | `npm run test:marketplace:syntax` | API reference 脚本和测试纳入 marketplace 语法门禁 | 通过：23 files checked | 通过 |
+| 阶段 49 API reference CLI smoke | `npm run marketplace:export:api > /tmp/st-marketplace-api-reference.md && rg ...` | 生成 Markdown 包含 market report、wallet admin grant 和 public health 端点 | 通过 | 通过 |
+| 阶段 49 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/API reference/filter/UI 契约 | 通过：8 suites / 34 tests | 通过 |
+| 阶段 49 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -675,6 +680,7 @@
 | 2026-06-26 | YAML workflow 检查脚本把空 `workflow_dispatch:` 当成缺失 | 2 | 改用 `Object.hasOwn(triggers, 'workflow_dispatch')` 检查键存在，而不是检查 truthy 值 |
 | 2026-06-26 | snapshot export 测试在未初始化 node-persist 的用例后调用 `storage.clear` 抛 `storage.clear is not a function` | 1 | afterEach 中先判断 `typeof storage.clear === 'function'`，只在存在时执行清理 |
 | 2026-06-26 | 阶段 48 并行跑 runtime smoke 和 marketplace Jest 聚合时，`market-wallet.test.js` delist 断言短暂返回 404 | 1 | 单独复跑 `market-wallet.test.js` 和串行 `npm run test:marketplace` 均通过；后续避免将真实 server smoke 与 Jest 聚合并行执行 |
+| 2026-06-26 | 阶段 49 API reference 测试最初按 3 空格断言 `GET` 对齐 | 1 | 脚本按 6 字符 method column 输出，测试改为断言 `GET    /...` 并新增缺失 `--out` 路径校验 |
 
 ## 2026-06-26 阶段 38：钱包流水 UI 与真实运行闭环
 - 启动并行 worker `019f040f-2485-7a31-9e82-15ca33bfc3fe`，限定其只补测试/文档契约，主线程负责 UI/样式/runtime smoke。
@@ -765,14 +771,22 @@
 - README 验证矩阵和设计文档已更新 runtime smoke 覆盖范围，明确 report create/queue/resolve 已纳入真实 server 闭环。
 - 已通过 `npm run test:marketplace:syntax`、`npm run test:marketplace:smoke`、`npm --prefix tests run test:unit -- market-wallet.test.js` 和串行 `npm run test:marketplace`。
 
+## 2026-06-26 阶段 49：Marketplace API reference 导出脚本
+- 启动只读 explorer `019f0471-97ac-74f3-b15a-1a478dd5a0aa` 复核下一阶段交付缺口；其首要建议是收尾 API reference README/文档闭环，后续建议是浏览器级 PWA/service worker E2E 和慢速全闭环脚本。
+- 新增 `scripts/export-marketplace-api-reference.mjs` 和 `npm run marketplace:export:api`，从 `src/endpoints/market.js`、`src/endpoints/wallet.js` 与公开 health route 生成 Markdown API reference。
+- CLI 支持 stdout、`--out <file>`、`--out=<file>`、环境变量输出路径、`--help`，并对未知参数和缺失 `--out` 路径明确报错。
+- 新增 `tests/marketplace-api-reference.test.js`，覆盖 Market API、Wallet API、Public health API 端点输出、显式 `--out` 写文件和参数错误。
+- README Useful Scripts、验证矩阵和设计文档已加入 API reference 导出命令，说明它用于发布前核对当前本地 MVP 路由。
+- 已通过 `npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run test:marketplace:syntax`、`npm run marketplace:export:api` CLI smoke、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环，以及举报处理 runtime smoke 闭环 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环，以及 Marketplace API reference 导出脚本 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环和举报处理 runtime smoke 闭环 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环和 Marketplace API reference 导出脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

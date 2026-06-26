@@ -465,6 +465,12 @@ Public health API：
 GET    /api/health
 ```
 
+可用 `npm run marketplace:export:api` 从 `src/endpoints/market.js`、`src/endpoints/wallet.js` 和公开 health route 重新生成 Markdown 版 API reference，减少手写端点清单漂移：
+
+```bash
+npm run marketplace:export:api -- --out ./marketplace-api-reference.md
+```
+
 下架只阻止新用户公开浏览和购买，不撤销既有 entitlement；已授权用户仍可查看 payload 并安装自己的副本。
 举报会写入 market store 的 open report 记录，管理员可在 marketplace-wallet 的 Report Queue 中查看并 resolve；MVP 暂不做自动处罚。
 创作者可修改自己的 draft/rejected 资产，修改后回到 draft/private，再重新 submit 进入审核；submitted/listed/delisted 资产不允许原地修改，后续应改走版本化发布。
@@ -533,6 +539,12 @@ npm run marketplace:export:snapshot -- --dataRoot ./data --out ./marketplace-sna
 ```
 
 该快照只导出市场资产、授权、安装、举报和钱包流水的白名单字段，不导出角色/世界书 payload、举报正文、安装本地路径、完整 ledger reason/metadata 或绝对 data root；`--out` 也会拒绝写入 data root 内部，避免备份动作修改用户数据目录。
+
+仓库也提供 API reference 导出命令，用于发布前核对当前本地 MVP 暴露的市场、钱包和探活路由：
+
+```bash
+npm run marketplace:export:api -- --out ./marketplace-api-reference.md
+```
 
 ## 和现有 SillyTavern 的接法
 

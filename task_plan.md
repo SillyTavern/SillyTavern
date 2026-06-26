@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 48
+阶段 49
 
 ## 各阶段
 
@@ -488,6 +488,15 @@
 - [x] 运行 runtime smoke、marketplace 聚合和 syntax gate
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
+
+### 阶段 49：Marketplace API reference 导出脚本
+- [x] 新增只读 API reference 导出脚本
+- [x] 从 market/wallet/health 实现中提取当前端点清单
+- [x] 支持 stdout 和显式 `--out` 写入 Markdown
+- [x] 补充脚本测试、README 和设计文档说明
+- [x] 将脚本纳入 syntax gate 和 marketplace 聚合测试
+- [ ] 运行基础验证并提交推送
+- **状态：** in_progress
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？

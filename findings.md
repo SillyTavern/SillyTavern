@@ -115,6 +115,7 @@
 - 后端契约测试现在明确覆盖角色隔离：普通用户看不到他人的 draft/submitted asset，不能 purchase 或 approve；owner 可以读取 submitted detail payload 但不能自审批，admin 可以审核，approved 后普通用户只能看元数据。
 - marketplace-wallet 浏览器 E2E 现在覆盖 rejected 资产修订重提：Revise 先 GET detail 填充表单，Save & Submit 走 PATCH 后 submit，Review Queue 和 Creator Center 刷新为 submitted。
 - runtime smoke 现在覆盖举报处理真实闭环：用户对可见资产创建 open report，管理员队列可见但不带 asset payload/metadata，resolve 后记录 resolved metadata 且队列清空。
+- API reference 导出脚本从当前 market/wallet endpoint 源码和公开 health route 生成 Markdown，适合作为发布前检查点，减少 README/设计文档里的端点清单和实现漂移。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*
