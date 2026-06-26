@@ -547,7 +547,7 @@ npm run marketplace:export:snapshot -- --dataRoot ./data --out ./marketplace-sna
 
 该快照只导出市场资产、授权、安装、举报和钱包流水的白名单字段；资产白名单包含创建、更新、提交、通过、上架和下架时间，便于迁移时核对审核生命周期。快照不导出角色/世界书 payload、举报正文、安装本地路径、完整 ledger reason/metadata 或绝对 data root；`--out` 也会拒绝写入 data root 内部，避免备份动作修改用户数据目录。
 
-仓库也提供 API reference 导出命令，用于发布前核对当前本地 MVP 暴露的市场、钱包和探活路由；对应测试会锁定当前完整 MVP 路由集合，降低文档导出和实现漂移：
+仓库也提供 API reference 导出命令，用于发布前核对当前本地 MVP 暴露的市场、钱包和探活路由；导出内容包含关键权限/隐私标注，对应测试会锁定当前完整 MVP 路由集合，降低文档导出和实现漂移：
 
 ```bash
 npm run marketplace:export:api -- --out ./marketplace-api-reference.md

@@ -649,6 +649,15 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 69：API reference 权限隐私标注
+- [x] 标注 asset detail payload redaction
+- [x] 标注 admin-only 队列、审核、下架和赠币路由
+- [x] 标注 Library 和 Wallet 读取 scope
+- [x] 补充 API reference 单测
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -705,6 +714,7 @@
 | Snapshot 应导出审核生命周期 | submitted_at、approved_at、delisted_at 不含 payload，但能帮助迁移和备份校验市场资产状态 |
 | API reference 测试应锁定路由集合 | 导出脚本从源码解析路由，测试覆盖完整 MVP 路由可以尽早发现文档导出漂移 |
 | Details 应展示下架日期 | delisted_at 是安全生命周期元数据，已授权用户和管理员查看详情时需要知道资产何时从公开市场下架 |
+| API reference 应包含权限/隐私标注 | 路由清单不足以说明 admin-only、payload redaction 和 wallet scope，导出文档应携带这些关键边界 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 | Library Details 入口必须真实存在 | 计划和设计文档已把 My Library 作为找回/查看入口，库中只提供 Install 会迫使用户回市场列表找详情 |
 | Library 安装摘要应可见 | 后端已返回 entitlement 时间和 last_install 摘要，前端显示这些信息能让用户确认何时领取/购买以及最近安装到哪里 |

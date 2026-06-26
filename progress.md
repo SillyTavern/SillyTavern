@@ -984,6 +984,14 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'shows asset detail metadata'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
 - GitHub run `28255464078` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 69：API reference 权限隐私标注
+- 根据只读 explorer `019f0509-4be1-7bc3-a5d6-1e4fcd3ccbb1` 的候选建议，给 API reference 导出增加关键权限/隐私 notes。
+- `scripts/export-marketplace-api-reference.mjs` 新增 route notes 映射，继续从源码解析路由，同时在 Markdown 中标注 payload redaction、Library scope、admin-only reports/review/delist/grant、Wallet read scope 和 grant alias。
+- API reference 单测新增 notes 断言，锁定这些权限/隐私边界。
+- README、设计文档和 findings 已补充 API reference permission/privacy notes 边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run marketplace:export:api -- --out <tmpfile>` smoke、`npm --prefix tests run test:unit -- market-wallet.test.js -t 'requires review before purchase'`、`npm run test:marketplace` 复跑和 `git diff --check`。
+- 首次 `npm run test:marketplace` 中 `market-wallet.test.js` 的 `requires review before purchase...` 出现一次 `TypeError: fetch failed / SocketError: other side closed`；该用例单独复跑通过，完整聚合随后复跑通过，判断为瞬时本地 socket 抖动。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

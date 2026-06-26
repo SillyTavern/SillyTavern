@@ -24,6 +24,19 @@ const staticRoutes = [
     },
 ];
 
+const routeNotes = new Map([
+    ['GET /api/market/assets/:id', 'Payload is returned only to the creator, admins, or entitled users; other readers receive redacted metadata.'],
+    ['GET /api/market/library', 'Returns only the authenticated user\'s active entitlements and install summaries.'],
+    ['GET /api/market/reports/admin', 'Admin-only report queue; report bodies are visible here but asset payloads remain excluded.'],
+    ['POST /api/market/reports/:id/resolve', 'Admin-only report resolution.'],
+    ['POST /api/market/assets/:id/approve', 'Admin-only review action.'],
+    ['POST /api/market/assets/:id/reject', 'Admin-only review action.'],
+    ['POST /api/market/assets/:id/delist', 'Admin-only moderation action; existing entitlements are preserved.'],
+    ['GET /api/wallet', 'Authenticated users can read their own wallet; admins may pass handle to inspect another wallet.'],
+    ['GET /api/wallet/ledger', 'Authenticated users can read their own ledger; admins may pass handle to inspect another ledger.'],
+    ['POST /api/wallet/grants/admin', 'Admin-only grant endpoint; target can be handle, userHandle, or targetHandle.'],
+]);
+
 function parseArgs(argv) {
     const options = {
         out: process.env.MARKETPLACE_API_REFERENCE_OUT || '',
@@ -95,6 +108,10 @@ function formatRoutes(routes) {
         .join('\n');
 }
 
+function getRouteNote(route) {
+    return routeNotes.get(`${route.method} ${route.path}`) || '';
+}
+
 export async function generateMarketplaceApiReference({ generatedAt = new Date().toISOString() } = {}) {
     const sections = [];
 
@@ -123,6 +140,16 @@ export async function generateMarketplaceApiReference({ generatedAt = new Date()
         lines.push('```text');
         lines.push(formatRoutes(section.routes));
         lines.push('```', '');
+        const notes = section.routes
+            .map(route => ({ route, note: getRouteNote(route) }))
+            .filter(item => item.note);
+        if (notes.length > 0) {
+            lines.push('Notes:', '');
+            for (const { route, note } of notes) {
+                lines.push(`- ${route.method} ${route.path}: ${note}`);
+            }
+            lines.push('');
+        }
     }
 
     return `${lines.join('\n').trimEnd()}\n`;

@@ -42,6 +42,14 @@ describe('marketplace API reference export script', () => {
         expect(markdown).toContain('POST   /api/wallet/grants/admin');
         expect(markdown).toContain('## Public health API');
         expect(markdown).toContain('GET    /api/health');
+        expect(markdown).toContain('Notes:');
+        expect(markdown).toContain('- GET /api/market/assets/:id: Payload is returned only to the creator, admins, or entitled users; other readers receive redacted metadata.');
+        expect(markdown).toContain('- GET /api/market/library: Returns only the authenticated user\'s active entitlements and install summaries.');
+        expect(markdown).toContain('- GET /api/market/reports/admin: Admin-only report queue; report bodies are visible here but asset payloads remain excluded.');
+        expect(markdown).toContain('- POST /api/market/assets/:id/delist: Admin-only moderation action; existing entitlements are preserved.');
+        expect(markdown).toContain('- GET /api/wallet: Authenticated users can read their own wallet; admins may pass handle to inspect another wallet.');
+        expect(markdown).toContain('- GET /api/wallet/ledger: Authenticated users can read their own ledger; admins may pass handle to inspect another ledger.');
+        expect(markdown).toContain('- POST /api/wallet/grants/admin: Admin-only grant endpoint; target can be handle, userHandle, or targetHandle.');
     });
 
     test('writes markdown to an explicit output path', async () => {
