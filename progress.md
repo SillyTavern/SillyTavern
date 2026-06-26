@@ -469,6 +469,20 @@
   - progress.md
   - findings.md
 
+### 阶段 29：Report Queue Resolve 前端覆盖
+- **状态：** complete
+- 执行的操作：
+  - 在 `tests/marketplace-wallet.e2e.js` 中新增 `makeOpenReport()` fixture。
+  - 扩展 `mockMarketplaceApis()`，支持 report 列表、resolve POST 记录和本地 report 移除。
+  - 新增浏览器级用例，等待 Report Queue 渲染后点击 Resolve，断言 POST 和空队列文案。
+  - 在 `tests/marketplace-wallet-ui.test.js` 中补充契约，确认 resolve 成功后从 `state.reports` 本地移除记录。
+- 创建/修改的文件：
+  - tests/marketplace-wallet.e2e.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -527,6 +541,10 @@
 | filters 阶段 marketplace 回归 | `npm run test:marketplace` | filters 测试纳入 marketplace 根命令 | 通过：5 suites / 19 tests | 通过 |
 | filters 阶段 runtime smoke | `npm run test:marketplace:smoke` | 临时 server health/PWA 公开端点仍可访问 | 通过 | 通过 |
 | filters 阶段 E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
+| Report Queue UI 契约 | `npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js` | resolve endpoint、事件绑定和本地移除契约存在 | 通过：1 suite / 5 tests | 通过 |
+| Report Queue E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现新增 Report Queue resolve browser 用例 | 通过：3 tests listed | 通过 |
+| Report Queue marketplace 回归 | `npm run test:marketplace` | frontend contract 与 marketplace 根测试通过 | 通过：5 suites / 19 tests | 通过 |
+| Report Queue 指定 E2E 实跑 | `npm --prefix tests run test:e2e -- marketplace-wallet.e2e.js -g "resolves reports"` | 浏览器级 resolve 流程通过 | 未通过：本机 Playwright 缺 `chromium_headless_shell-1194/headless_shell`；尝试安装后进程卡在解压/注册阶段，已终止 | 环境阻塞 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -542,15 +560,16 @@
 | 2026-06-26 | admin 面板 DOM 已渲染但仍保留 `hidden` 属性 | 1 | 改为显式移除/恢复 `hidden` 属性，并给扩展 JS/CSS 入口加版本 query 避免旧 ESM 模块缓存 |
 | 2026-06-26 | admin 前端 gate 曾尝试用 `default-user` handle 兜底 | 1 | 按并发审查反馈改回仅使用 `isAdmin()`，与后端 admin 权限模型一致 |
 | 2026-06-26 | Playwright Chromium 下载被中断后留下半安装缓存 | 2 | 不再阻塞基础交付；保留 E2E 测试与脚本，新增稳定 Jest UI 契约测试，E2E 需完整安装 `chromium-headless-shell` 后运行 |
+| 2026-06-26 | Playwright `chromium-headless-shell` 安装下载完成后长时间卡住 | 1 | 终止卡住的安装进程；保留 E2E 列表验证和 Jest 契约，完整 E2E 仍待本机浏览器缓存修复 |
 
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本和筛选排序可执行测试 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试和 Report Queue resolve 前端覆盖 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本和筛选排序可执行测试 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试和 Report Queue resolve 前端覆盖 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

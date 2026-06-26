@@ -50,10 +50,25 @@ function makeListedAsset(overrides = {}) {
     };
 }
 
-async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()] } = {}) {
+function makeOpenReport(overrides = {}) {
+    return {
+        id: 'report-listed-world',
+        asset_id: 'listed-world',
+        reporter_id: 'reporter-handle',
+        reason: 'unsafe_prompt',
+        body: 'This world needs a moderation pass.',
+        status: 'open',
+        created_at: '2026-06-26T12:30:00.000Z',
+        asset: makeListedAsset(),
+        ...overrides,
+    };
+}
+
+async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()], reports = [] } = {}) {
     const apiCalls = {
         approve: [],
         grants: [],
+        resolveReports: [],
     };
 
     await page.route('**/api/wallet', route => {
@@ -82,6 +97,25 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({ asset: assets.find(asset => asset.id === assetId) }),
+        });
+    });
+
+    await page.route('**/api/market/reports/admin', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ reports }),
+        });
+    });
+
+    await page.route('**/api/market/reports/*/resolve', route => {
+        const reportId = route.request().url().split('/').at(-2);
+        apiCalls.resolveReports.push(reportId);
+        reports = reports.filter(report => report.id !== reportId);
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ report: { id: reportId, status: 'resolved' } }),
         });
     });
 
@@ -150,6 +184,24 @@ test.describe('marketplace wallet extension', () => {
             bucket: 'paid',
             reason: 'Admin grant',
         }]);
+    });
+
+    test('resolves reports from the admin report queue', async ({ page }) => {
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [makeListedAsset()],
+            reports: [makeOpenReport()],
+        });
+
+        await loadSillyTavern(page);
+
+        const reportQueue = page.locator('#marketplace_wallet_report_queue');
+        await expect(reportQueue).toContainText('Listed World');
+        await expect(reportQueue).toContainText('unsafe_prompt');
+
+        await reportQueue.locator('[data-marketplace-wallet-report-action="resolve"]').click();
+
+        await expect.poll(() => apiCalls.resolveReports).toEqual(['report-listed-world']);
+        await expect(reportQueue).toContainText('No reports queued.');
     });
 
     test('keeps review controls compact on mobile width', async ({ page }) => {

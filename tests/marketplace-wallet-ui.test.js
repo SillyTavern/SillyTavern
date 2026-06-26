@@ -130,6 +130,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("reason: String(reason || '').slice(0, 120)");
         expect(script).toContain("fetchJson('/api/market/reports/admin')");
         expect(script).toContain("fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`");
+        expect(script).toContain('state.reports = state.reports.filter(report => report.id !== reportId)');
         expect(script).toContain('function renderReportQueue()');
         expect(script).toContain('async function loadReportQueue()');
         expect(script).toContain('async function resolveReport(reportId)');
