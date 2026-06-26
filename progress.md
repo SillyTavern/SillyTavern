@@ -630,6 +630,11 @@
 | 阶段 42 runtime smoke 固定价闭环 | `npm run test:marketplace:smoke` | 真实 server fixed-price purchase、admin grant、buyer debit、creator earning、响应隐私、安装和 Library | 通过 | 通过 |
 | 阶段 42 syntax gate | `npm run test:marketplace:syntax` | 扩展后的 runtime smoke 脚本语法门禁 | 通过：21 files checked | 通过 |
 | 阶段 42 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
+| 阶段 43 syntax gate | `npm run test:marketplace:syntax` | fixed-price browser E2E mock 语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 43 E2E discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 能发现 5 个 marketplace 浏览器用例 | 通过：5 tests listed | 通过 |
+| 阶段 43 本机 Chrome E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | admin、report、free、fixed-price buy/install/wallet activity、mobile 五个用例 | 通过：5 passed；本机父进程延迟退出后 Ctrl-C 清理 | 通过 |
+| 阶段 43 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
+| 阶段 43 runtime smoke | `npm run test:marketplace:smoke` | 真实 server fixed-price purchase runtime smoke 仍通过 | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -696,14 +701,21 @@
 - README 验证矩阵和设计文档已更新 runtime smoke 覆盖范围。
 - 已通过 `npm run test:marketplace:smoke`、`npm run test:marketplace:syntax`、`npm run test:marketplace`、`git diff --check`。
 
+## 2026-06-26 阶段 43：浏览器固定价购买与钱包活动 E2E
+- 按 Gibbs 的第二推荐补 fixed-price Buy & Install 浏览器路径，让 UI 自动化覆盖余额刷新和 Wallet Activity，而不是只依赖后端单测/runtime smoke。
+- `tests/marketplace-wallet.e2e.js` 的 mock 现在维护可变 `wallet`、`ledger` 和 `library`，`/api/wallet` 与 `/api/wallet/ledger` 会随 purchase/grant 更新。
+- 新增浏览器用例 `buys a fixed-price asset, refreshes wallet activity, and installs it`：点击 125 coins 资产后断言 purchase/install API 调用、总额 50、bonus 0、paid 25、earnings 25、Wallet Activity 显示 Purchase/-100/-25，Library 显示 Purchased/1 installs。
+- README 验证矩阵更新 `test:marketplace:e2e:server` 覆盖范围，包含 fixed-price buy/install、wallet activity 和 Library。
+- 已通过 `npm run test:marketplace:syntax`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1`（5 passed，父进程延迟退出后 Ctrl-C 清理）、`npm run test:marketplace`、`npm run test:marketplace:smoke`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧，以及固定价购买 runtime smoke 闭环 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环，以及固定价购买浏览器 E2E |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧和固定价购买 runtime smoke 闭环 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环和固定价购买浏览器 E2E |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

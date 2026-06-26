@@ -109,6 +109,7 @@
 - wallet snapshot 使用和 wallet endpoint 一致的 node-persist key prefix，并过滤合法 bucket 与 safe integer amount，避免损坏或非钱包记录进入余额摘要。
 - paid purchase API 响应现在只返回 entitlement、`already_owned`、purchase id 和 buyer balance；完整 ledger entries 与 creator balance 不再通过购买响应暴露，仍可由买家/创作者通过各自 Wallet API 和 Creator Center 查询。
 - runtime smoke 现在同时覆盖免费和固定价 world book：真实 server 下执行 admin grant、fixed-price purchase、buyer paid debit、creator earnings ledger、purchase response 隐私 shape、安装落盘和 Library 可见性。
+- marketplace-wallet 浏览器 E2E mock 现在维护可变 wallet/ledger/library 状态，覆盖 fixed-price Buy & Install 后余额刷新、Purchase 负流水、Library 安装数和移动布局。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

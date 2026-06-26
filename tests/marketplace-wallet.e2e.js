@@ -96,6 +96,8 @@ function makeCurrentUser(overrides = {}) {
 }
 
 async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()], reports = [], library = [] } = {}) {
+    let wallet = makeWallet();
+    let ledger = [];
     const apiCalls = {
         approve: [],
         grants: [],
@@ -116,7 +118,19 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
         route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(makeWallet()),
+            body: JSON.stringify(wallet),
+        });
+    });
+
+    await page.route('**/api/wallet/ledger', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                handle: wallet.handle,
+                ledger,
+                balance: wallet.balance,
+            }),
         });
     });
 
@@ -169,12 +183,70 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     await page.route('**/api/market/assets/*/purchase', route => {
         const assetId = route.request().url().split('/').at(-2);
         const asset = assets.find(item => item.id === assetId);
+        const purchaseId = asset?.price_type === 'free' ? null : `market:${assetId}:default-user:v1`;
         apiCalls.purchases.push(assetId);
         assets = assets.map(item => item.id === assetId
             ? { ...item, entitled: true, sales_count: Number(item.sales_count || 0) + 1 }
             : item);
         if (asset && !library.some(item => item.asset.id === assetId)) {
             library = [makeLibraryItem({ ...asset, entitled: true }), ...library];
+        }
+        let purchase = null;
+        if (asset?.price_type === 'fixed_price') {
+            const price = Number(asset.price_coins || 0);
+            const bonusDebit = Math.min(wallet.balance.buckets.bonus, price);
+            const paidDebit = price - bonusDebit;
+            wallet = makeWallet({
+                balance: {
+                    buckets: {
+                        bonus: wallet.balance.buckets.bonus - bonusDebit,
+                        paid: wallet.balance.buckets.paid - paidDebit,
+                        earnings: wallet.balance.buckets.earnings,
+                    },
+                },
+            });
+            wallet.balance.total = wallet.balance.buckets.bonus + wallet.balance.buckets.paid + wallet.balance.buckets.earnings;
+            ledger = [
+                ...ledger,
+                ...(bonusDebit > 0
+                    ? [{
+                        id: `ledger-${assetId}-bonus`,
+                        type: 'market_purchase_debit',
+                        userHandle: 'default-user',
+                        actorHandle: 'default-user',
+                        bucket: 'bonus',
+                        amount: -bonusDebit,
+                        reason: `Market purchase: ${asset.title}`,
+                        createdAt: Date.now(),
+                        metadata: {
+                            purchase_id: purchaseId,
+                            asset_id: assetId,
+                            price_coins: price,
+                        },
+                    }]
+                    : []),
+                ...(paidDebit > 0
+                    ? [{
+                        id: `ledger-${assetId}-paid`,
+                        type: 'market_purchase_debit',
+                        userHandle: 'default-user',
+                        actorHandle: 'default-user',
+                        bucket: 'paid',
+                        amount: -paidDebit,
+                        reason: `Market purchase: ${asset.title}`,
+                        createdAt: Date.now() + 1,
+                        metadata: {
+                            purchase_id: purchaseId,
+                            asset_id: assetId,
+                            price_coins: price,
+                        },
+                    }]
+                    : []),
+            ];
+            purchase = {
+                id: purchaseId,
+                buyer_balance: wallet.balance,
+            };
         }
         route.fulfill({
             status: 201,
@@ -185,12 +257,12 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
                     user_id: 'default-user',
                     asset_id: assetId,
                     source: asset?.price_type === 'free' ? 'free' : 'purchase',
-                    purchase_id: asset?.price_type === 'free' ? null : `market:${assetId}:default-user:v1`,
+                    purchase_id: purchaseId,
                     created_at: '2026-06-26T12:45:00.000Z',
                     revoked_at: null,
                 },
                 already_owned: false,
-                purchase: null,
+                purchase,
             }),
         });
     });
@@ -256,22 +328,39 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     await page.route('**/api/wallet/grants/admin', async route => {
         const payload = JSON.parse(route.request().postData() || '{}');
         apiCalls.grants.push(payload);
+        if (payload.targetHandle === wallet.handle) {
+            wallet = makeWallet({
+                balance: {
+                    buckets: {
+                        ...wallet.balance.buckets,
+                        [payload.bucket]: Number(wallet.balance.buckets[payload.bucket] || 0) + Number(payload.amount || 0),
+                    },
+                },
+            });
+            wallet.balance.total = wallet.balance.buckets.bonus + wallet.balance.buckets.paid + wallet.balance.buckets.earnings;
+            ledger = [
+                ...ledger,
+                {
+                    id: `ledger-grant-${ledger.length + 1}`,
+                    type: 'admin_grant',
+                    userHandle: wallet.handle,
+                    actorHandle: wallet.handle,
+                    bucket: payload.bucket,
+                    amount: Number(payload.amount || 0),
+                    reason: payload.reason || 'Admin grant',
+                    createdAt: Date.now(),
+                    metadata: {
+                        source: 'wallet.grants.admin',
+                    },
+                },
+            ];
+        }
         route.fulfill({
-            status: 200,
+            status: 201,
             contentType: 'application/json',
             body: JSON.stringify({
                 handle: payload.targetHandle,
-                balance: makeWallet({
-                    handle: payload.targetHandle,
-                    balance: {
-                        total: payload.amount,
-                        buckets: {
-                            bonus: payload.bucket === 'bonus' ? payload.amount : 0,
-                            paid: payload.bucket === 'paid' ? payload.amount : 0,
-                            earnings: payload.bucket === 'earnings' ? payload.amount : 0,
-                        },
-                    },
-                }).balance,
+                balance: wallet.balance,
             }),
         });
     });
@@ -387,6 +476,43 @@ test.describe('marketplace wallet extension', () => {
         const library = page.locator('#marketplace_wallet_library_items');
         await expect(library).toContainText('Free World');
         await expect(library).toContainText('Claimed');
+        await expect(library).toContainText('1 installs');
+    });
+
+    test('buys a fixed-price asset, refreshes wallet activity, and installs it', async ({ page }) => {
+        const paidAsset = makeListedAsset({
+            id: 'paid-world',
+            title: 'Paid World',
+            price_type: 'fixed_price',
+            price_coins: 125,
+            sales_count: 0,
+        });
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [paidAsset],
+        });
+
+        await loadSillyTavern(page);
+
+        const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Paid World' });
+        await expect(assetRow).toContainText('125 coins');
+        await assetRow.locator('[data-marketplace-wallet-action="purchase"]').click();
+
+        await expect.poll(() => apiCalls.purchases).toEqual(['paid-world']);
+        await expect.poll(() => apiCalls.installs).toEqual(['paid-world']);
+
+        await expect(page.locator('#marketplace_wallet_total')).toHaveText('50');
+        await expect(page.locator('[data-marketplace-wallet-bucket="bonus"]')).toHaveText('0');
+        await expect(page.locator('[data-marketplace-wallet-bucket="paid"]')).toHaveText('25');
+        await expect(page.locator('[data-marketplace-wallet-bucket="earnings"]')).toHaveText('25');
+
+        const walletActivity = page.locator('#marketplace_wallet_ledger_items');
+        await expect(walletActivity).toContainText('Purchase');
+        await expect(walletActivity).toContainText('-100');
+        await expect(walletActivity).toContainText('-25');
+
+        const library = page.locator('#marketplace_wallet_library_items');
+        await expect(library).toContainText('Paid World');
+        await expect(library).toContainText('Purchased');
         await expect(library).toContainText('1 installs');
     });
 
