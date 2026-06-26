@@ -595,6 +595,8 @@
 | E2E server wrapper 本地实跑 | `npm run test:marketplace:e2e:server` | 本机真实浏览器 E2E 通过 | 未通过：本机 Playwright cache 缺 `chromium_headless_shell-1194/chrome-mac/headless_shell`；CI 已改为先安装 chromium-headless-shell 再实跑 | 环境阻塞 |
 | GitHub E2E headless-shell 安装 | `gh run watch 28237783793` | CI 安装 chromium-headless-shell 后实跑 E2E | 已取消：runner 长时间停在 `Install Playwright browser`；改用 Chromium channel + `--no-shell` 策略 | 环境阻塞 |
 | Chromium channel E2E discovery | `npm run test:marketplace:e2e:server -- --list` | `channel: chromium` 配置下 wrapper 仍能启动临时 server 并发现用例 | 通过：4 tests listed | 通过 |
+| GitHub Chromium install 策略 | `gh run watch 28238257185` | CI 安装 `chromium --no-shell` 后实跑 E2E | 已取消：runner 仍长时间停在 `Install Playwright browser`；改为使用 runner 自带 Chrome channel | 环境阻塞 |
+| Runner Chrome E2E discovery | `npm run test:marketplace:e2e:server -- --list` | `PLAYWRIGHT_BROWSER_CHANNEL` 支持后，wrapper discovery 仍正常 | 通过：4 tests listed | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |

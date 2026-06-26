@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 35
+阶段 36
 
 ## 各阶段
 
@@ -356,6 +356,16 @@
 - [x] 将 Playwright 配置切到 `channel: chromium`
 - [x] 将 CI 安装命令切到 `playwright install --with-deps --no-shell chromium`
 - [x] 更新 README 的本地浏览器安装说明
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
+### 阶段 36：CI 使用 Runner Chrome 跑 E2E
+- [x] 确认 `--no-shell chromium` 在 GitHub runner 上仍停留在浏览器安装步骤
+- [x] Playwright config 支持 `PLAYWRIGHT_BROWSER_CHANNEL`
+- [x] workflow 改为验证并使用 runner 自带 Chrome
+- [x] 删除 CI 中 Playwright 浏览器下载步骤
+- [x] 更新 README，说明可用 `PLAYWRIGHT_BROWSER_CHANNEL=chrome`
 - [ ] 运行基础测试和脚本验证
 - [ ] 提交并推送到 GitHub fork
 - **状态：** in_progress

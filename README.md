@@ -85,6 +85,8 @@ npm run test:pwa
 # Run marketplace/wallet browser E2E tests
 # Requires Playwright browsers:
 #   tests/node_modules/.bin/playwright install --no-shell chromium
+# Or use an installed Chrome browser:
+#   PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server
 # Starts a temporary local server automatically:
 npm run test:marketplace:e2e:server
 
