@@ -622,6 +622,11 @@ describe('market and wallet MVP endpoints', () => {
         });
         expect(purchaseResult.body.purchase.creator_balance.buckets.earnings).toBe(30);
 
+        const paidOwnedDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(paidOwnedDetail.status).toBe(200);
+        expect(paidOwnedDetail.body.asset.payload_available).toBe(true);
+        expect(paidOwnedDetail.body.asset.normalized_payload.data.name).toBe('Market Alice');
+
         const repeatPurchase = await request(bobApp, `/api/market/assets/${assetId}/purchase`, {
             method: 'POST',
             body: {},

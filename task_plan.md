@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 21
+阶段 22
 
 ## 各阶段
 
@@ -211,6 +211,18 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 22：资产详情弹窗
+- [x] 确认购买前和 Library 中需要轻量详情查看入口
+- [x] 复用 `GET /api/market/assets/:id`，不新增后端路由
+- [x] marketplace 和 Library 条目增加 Details 操作
+- [x] Review Queue 的 Inspect 复用同一详情弹窗
+- [x] 未授权详情只显示元数据，不显示空 payload 误导用户
+- [x] 补充前端契约测试和文档
+- [x] 更新规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -244,6 +256,7 @@
 | 创作者修订只允许 draft/rejected | listed 资产已有购买/授权关系，原地改 payload 会破坏买家预期；后续需要版本化发布 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 | Health endpoint 公开但不含用户数据 | 部署平台和移动壳需要未登录探活，响应只能包含服务级状态 |
+| 资产详情复用 payload 权限 | Details 统一使用 asset detail API；未授权用户看元数据，已授权/创建者/管理员才看 payload |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

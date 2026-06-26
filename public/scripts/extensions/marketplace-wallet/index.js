@@ -199,13 +199,14 @@ function createAssetPreview(asset) {
     const $title = $('<h3></h3>').text(asset.title || 'Untitled asset');
     const $summary = $('<p></p>').text(asset.summary || 'No summary provided.');
     const $meta = $('<dl class="marketplace-wallet-preview-meta"></dl>');
-    const payload = asset.normalized_payload ?? {};
+    const hasPayload = asset.payload_available && asset.normalized_payload;
     const rows = [
         ['Type', MARKET_TYPES[asset.type] || asset.type || 'Asset'],
         ['Status', asset.status || 'draft'],
         ['Creator', asset.creator_id || 'unknown'],
         ['Price', getPriceLabel(asset)],
         ['Tags', Array.isArray(asset.tags) && asset.tags.length ? asset.tags.join(', ') : 'none'],
+        ['Payload', hasPayload ? 'available' : 'available after claim or purchase'],
     ];
 
     for (const [label, value] of rows) {
@@ -214,8 +215,10 @@ function createAssetPreview(asset) {
     }
 
     $preview.append($title, $summary, $meta);
-    $preview.append($('<b></b>').text('Payload'));
-    $preview.append($('<pre class="marketplace-wallet-preview-payload"></pre>').text(JSON.stringify(payload, null, 2)));
+    if (hasPayload) {
+        $preview.append($('<b></b>').text('Payload'));
+        $preview.append($('<pre class="marketplace-wallet-preview-payload"></pre>').text(JSON.stringify(asset.normalized_payload, null, 2)));
+    }
     return $preview;
 }
 
@@ -245,6 +248,14 @@ function createReportButton({ report, action, icon, label, disabled = false }) {
 function createAssetAction(asset) {
     const isBusy = state.busyAssetIds.has(asset.id);
     const $actions = $('<div class="marketplace-wallet-asset-actions"></div>');
+
+    $actions.append(createAssetButton({
+        asset,
+        action: 'details',
+        icon: 'fa-circle-info',
+        label: isBusy ? 'Loading' : 'Details',
+        disabled: isBusy,
+    }));
 
     if (asset.owned && ['draft', 'rejected'].includes(asset.status)) {
         $actions.append(createAssetButton({
@@ -688,7 +699,7 @@ async function reportAsset(assetId) {
     });
 }
 
-async function inspectAsset(assetId) {
+async function viewAssetDetails(assetId) {
     await withBusyAsset(assetId, async () => {
         const result = await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`, {
             method: 'GET',
@@ -702,6 +713,8 @@ async function inspectAsset(assetId) {
         });
     });
 }
+
+const inspectAsset = viewAssetDetails;
 
 async function reviseAsset(assetId) {
     await withBusyAsset(assetId, async () => {
@@ -886,6 +899,7 @@ function onAssetAction(event) {
         purchase: purchaseAsset,
         install: installAsset,
         submit: submitAsset,
+        details: viewAssetDetails,
         revise: reviseAsset,
         inspect: inspectAsset,
         approve: approveAsset,

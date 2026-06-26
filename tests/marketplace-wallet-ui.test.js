@@ -83,6 +83,11 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("$('#marketplace_wallet_creator_earnings')");
         expect(script).toContain("`${formatCoins(asset.sales_count)} claims`");
         expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
+        expect(script).toContain("action: 'details'");
+        expect(script).toContain('async function viewAssetDetails(assetId)');
+        expect(script).toContain('const inspectAsset = viewAssetDetails;');
+        expect(script).toContain("['Payload', hasPayload ? 'available' : 'available after claim or purchase']");
+        expect(script).toContain('if (hasPayload)');
         expect(script).toContain('editingAssetId: null');
         expect(script).toContain("action: 'revise'");
         expect(script).toContain('async function reviseAsset(assetId)');
@@ -96,12 +101,12 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("action: 'approve'");
         expect(script).toContain("action: 'reject'");
         expect(script).toContain("action: 'inspect'");
-        expect(script).toContain('async function inspectAsset(assetId)');
+        expect(script).toContain('inspectAsset = viewAssetDetails');
         expect(script).toContain('function createAssetPreview(asset)');
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`");
         expect(script).toContain('asset.normalized_payload');
         expect(script).toContain('POPUP_TYPE.TEXT');
-        expect(script).toContain("JSON.stringify(payload, null, 2)");
+        expect(script).toContain("JSON.stringify(asset.normalized_payload, null, 2)");
         expect(script).toContain("okButton: 'Close'");
         expect(script).toContain('allowVerticalScrolling: true');
         expect(script).toContain("action: 'delist'");

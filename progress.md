@@ -349,6 +349,26 @@
   - progress.md
   - findings.md
 
+### 阶段 21：资产详情弹窗
+- **状态：** complete
+- 执行的操作：
+  - 选择 Details 作为购买前和 Library 中查看资产元数据的最小入口。
+  - marketplace 列表和 My Library 条目增加 Details 操作。
+  - Review Queue 的 Inspect 复用同一 asset detail 弹窗逻辑。
+  - Details 复用 `GET /api/market/assets/:id`；未授权用户只看到元数据，已授权/创建者/管理员可看到 payload。
+  - 调整预览渲染，未授权时显示 payload 获取条件，不再渲染空 JSON。
+  - 扩展前端契约测试，覆盖 details action、统一详情函数和 payload gate。
+  - 扩展后端测试，覆盖 fixed_price 购买后详情可读取 payload。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - tests/market-wallet.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -389,6 +409,7 @@
 | creator revise 回归 | `npm run test:marketplace` | draft/rejected 可修订重提，submitted/listed/delisted 禁止原地改 | 通过：3 suites / 15 tests | 通过 |
 | My Library 回归 | `npm run test:marketplace` | 用户库返回当前用户授权资产、下架后仍可见、安装摘要更新且不泄漏 payload | 通过：3 suites / 15 tests | 通过 |
 | health endpoint 契约 | `npm run test:marketplace` | `/api/health` 公开且返回服务级状态字段 | 通过：4 suites / 16 tests | 通过 |
+| asset details 回归 | `npm run test:marketplace` | 未授权详情不泄漏 payload，付费购买后详情可读 payload，前端 Details 走统一弹窗 | 通过：4 suites / 16 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -408,11 +429,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库和托管健康检查 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查和资产详情弹窗 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、README 和基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*
