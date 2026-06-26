@@ -1057,6 +1057,7 @@
 - 根据只读 explorer 复核，同一用例补充 PATCH 入口最小覆盖，确认 draft asset 修订时 bad tags 返回同样 error shape，valid tags 会重新归一化写入资产。
 - README 和 findings 已补充 bounded tags 后端边界。
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates and normalizes marketplace asset tags'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28258052271` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
