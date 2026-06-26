@@ -121,7 +121,9 @@ async function waitForHealth(baseUrl, child, getLogs) {
 
 async function assertJsonEndpoint(url, label, assertPayload, options = {}) {
     const { response, body } = await fetchWithTimeout(url, options);
-    if (!response.ok) {
+    const expectedStatus = options.expectedStatus;
+    const statusMatches = expectedStatus ? response.status === expectedStatus : response.ok;
+    if (!statusMatches) {
         throw new Error(`${label} returned ${response.status}: ${body.slice(0, 500)}`);
     }
 
@@ -133,6 +135,7 @@ async function assertJsonEndpoint(url, label, assertPayload, options = {}) {
     }
 
     assertPayload(payload);
+    return payload;
 }
 
 async function assertTextEndpoint(url, label, expectedText) {
@@ -320,6 +323,157 @@ async function run() {
             }
         });
         console.log('runtime ok: /api/market/assets');
+
+        let creatorAssetId = '';
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets`, 'POST /api/market/assets creator upload', payload => {
+            const asset = payload.asset;
+            if (!asset?.id || asset.creator_id !== 'default-user') {
+                throw new Error(`Creator upload did not return a default-user asset: ${JSON.stringify(payload)}`);
+            }
+            if (asset.status !== 'draft' || asset.visibility !== 'private' || asset.type !== 'world_book') {
+                throw new Error(`Creator upload did not create a private draft world book: ${JSON.stringify(payload)}`);
+            }
+            if (asset.price_type !== 'free' || asset.price_coins !== 0) {
+                throw new Error(`Creator upload did not normalize free pricing: ${JSON.stringify(payload)}`);
+            }
+            if (asset.submitted_at !== null || asset.listed_at !== null) {
+                throw new Error(`Creator upload should not have submit/list timestamps yet: ${JSON.stringify(payload)}`);
+            }
+            if (asset.normalized_payload?.name !== 'Runtime Uploaded World' || !asset.normalized_payload?.entries?.runtime_entry) {
+                throw new Error(`Creator upload did not preserve world book payload: ${JSON.stringify(payload)}`);
+            }
+            creatorAssetId = asset.id;
+        }, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'world_book',
+                title: 'Runtime Uploaded World',
+                summary: 'Created through the runtime smoke upload API.',
+                description: 'Verifies creator upload, submit, approval, and install against a real server.',
+                language: 'en',
+                content_rating: 'general',
+                price_type: 'free',
+                price_coins: 0,
+                tags: ['smoke', 'upload'],
+                metadata: {
+                    smoke: true,
+                },
+                normalized_payload: {
+                    name: 'Runtime Uploaded World',
+                    entries: {
+                        runtime_entry: {
+                            key: ['runtime'],
+                            content: 'Runtime smoke uploaded world book entry.',
+                            enabled: true,
+                        },
+                    },
+                },
+            }),
+            expectedStatus: 201,
+        });
+        console.log('runtime ok: POST /api/market/assets creator upload');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/creator/summary`, '/api/market/creator/summary draft upload', payload => {
+            if (payload.handle !== 'default-user' || payload.stats?.total_assets !== 1 || payload.stats?.draft_assets !== 1) {
+                throw new Error(`Creator summary did not include uploaded draft: ${JSON.stringify(payload)}`);
+            }
+            const uploaded = payload.assets?.find(asset => asset.id === creatorAssetId);
+            if (!uploaded || uploaded.status !== 'draft' || uploaded.title !== 'Runtime Uploaded World') {
+                throw new Error(`Creator summary missing uploaded draft asset: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/creator/summary draft upload');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/${creatorAssetId}/submit`, 'POST /api/market/assets/:id/submit', payload => {
+            const asset = payload.asset;
+            if (asset?.id !== creatorAssetId || asset.status !== 'submitted' || asset.visibility !== 'review') {
+                throw new Error(`Submit did not move uploaded asset into review: ${JSON.stringify(payload)}`);
+            }
+            if (!asset.submitted_at) {
+                throw new Error(`Submit did not set submitted_at: ${JSON.stringify(payload)}`);
+            }
+            if (asset.listed_at !== null) {
+                throw new Error(`Submit should not set listed_at: ${JSON.stringify(payload)}`);
+            }
+        }, {
+            method: 'POST',
+            body: '{}',
+        });
+        console.log('runtime ok: POST /api/market/assets/:id/submit');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/${creatorAssetId}`, '/api/market/assets/:id submitted creator detail', payload => {
+            const asset = payload.asset;
+            if (asset?.id !== creatorAssetId || asset.status !== 'submitted' || asset.payload_available !== true) {
+                throw new Error(`Submitted creator detail did not expose creator-readable payload: ${JSON.stringify(payload)}`);
+            }
+            if (asset.normalized_payload?.entries?.runtime_entry?.content !== 'Runtime smoke uploaded world book entry.') {
+                throw new Error(`Submitted creator detail lost uploaded payload: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/assets/:id submitted creator detail');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/${creatorAssetId}/approve`, 'POST /api/market/assets/:id/approve', payload => {
+            const asset = payload.asset;
+            if (asset?.id !== creatorAssetId || asset.status !== 'listed' || asset.visibility !== 'public') {
+                throw new Error(`Approve did not list uploaded asset: ${JSON.stringify(payload)}`);
+            }
+            if (asset.reviewed_by !== 'default-user' || !asset.approved_at || !asset.listed_at) {
+                throw new Error(`Approve did not stamp review metadata: ${JSON.stringify(payload)}`);
+            }
+        }, {
+            method: 'POST',
+            body: '{}',
+        });
+        console.log('runtime ok: POST /api/market/assets/:id/approve');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/creator/summary`, '/api/market/creator/summary listed upload', payload => {
+            if (payload.stats?.total_assets !== 1 || payload.stats?.listed_assets !== 1 || payload.stats?.submitted_assets !== 0) {
+                throw new Error(`Creator summary did not reflect approved upload: ${JSON.stringify(payload)}`);
+            }
+            const uploaded = payload.assets?.find(asset => asset.id === creatorAssetId);
+            if (!uploaded || uploaded.status !== 'listed' || !uploaded.approved_at) {
+                throw new Error(`Creator summary missing approved uploaded asset: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/creator/summary listed upload');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets`, '/api/market/assets listed upload', payload => {
+            const uploaded = payload.assets?.find(asset => asset.id === creatorAssetId);
+            if (!uploaded || uploaded.status !== 'listed' || uploaded.owned !== true || uploaded.price_type !== 'free') {
+                throw new Error(`Approved uploaded asset missing from market list: ${JSON.stringify(payload)}`);
+            }
+            if ('normalized_payload' in uploaded) {
+                throw new Error(`Market list leaked uploaded payload: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/assets listed upload');
+
+        let creatorInstalledPath = '';
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/${creatorAssetId}/install`, 'POST /api/market/assets/:id/install creator upload', payload => {
+            if (payload.installed?.type !== 'world_book' || payload.install?.asset_id !== creatorAssetId) {
+                throw new Error(`Unexpected creator upload install payload: ${JSON.stringify(payload)}`);
+            }
+            if (!payload.installed?.path) {
+                throw new Error(`Creator upload install payload missing local path: ${JSON.stringify(payload)}`);
+            }
+            creatorInstalledPath = payload.installed.path;
+        }, {
+            method: 'POST',
+            body: '{}',
+        });
+        await assertPathExists(path.join(dataRoot, 'default-user', creatorInstalledPath), 'creator uploaded marketplace install');
+        console.log('runtime ok: POST /api/market/assets/:id/install creator upload');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/creator/summary`, '/api/market/creator/summary installed upload', payload => {
+            if (payload.stats?.total_installs !== 1) {
+                throw new Error(`Creator summary did not reflect uploaded asset install: ${JSON.stringify(payload)}`);
+            }
+            const uploaded = payload.assets?.find(asset => asset.id === creatorAssetId);
+            if (!uploaded || uploaded.install_count !== 1) {
+                throw new Error(`Creator summary missing uploaded asset install count: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/creator/summary installed upload');
 
         await assertJsonEndpoint(`${baseUrl}/api/market/assets/smoke_asset_demo/purchase`, 'POST /api/market/assets/:id/purchase', payload => {
             if (payload.already_owned !== false || payload.entitlement?.source !== 'free' || payload.entitlement?.asset_id !== 'smoke_asset_demo') {

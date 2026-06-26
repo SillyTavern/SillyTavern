@@ -457,7 +457,7 @@ POST   /api/wallet/grants/admin
 
 marketplace-wallet 钱包面板展示当前用户的最近流水，包含运营赠币、购买扣款、创作者收益等正负金额记录；完整账本仍以 `GET /api/wallet/ledger` 为准。
 付费购买响应只返回 entitlement、`already_owned`、purchase id 和买家余额摘要；完整 ledger entries、创作者余额和收益明细需要通过 Wallet API 或 Creator Center 读取，避免市场购买接口扩大账务数据暴露面。
-`npm run test:marketplace:smoke` 会临时启动真实 server，覆盖免费领取/安装和固定价购买的 admin grant、买家扣款、创作者收益、响应隐私 shape、Library 和文件落盘。
+`npm run test:marketplace:smoke` 会临时启动真实 server，覆盖 creator 上传、提交、审批、Creator Center 统计、免费领取/安装和固定价购买的 admin grant、买家扣款、创作者收益、响应隐私 shape、Library 和文件落盘。
 
 Public health API：
 

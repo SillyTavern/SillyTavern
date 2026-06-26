@@ -111,6 +111,7 @@
 - runtime smoke 现在同时覆盖免费和固定价 world book：真实 server 下执行 admin grant、fixed-price purchase、buyer paid debit、creator earnings ledger、purchase response 隐私 shape、安装落盘和 Library 可见性。
 - marketplace-wallet 浏览器 E2E mock 现在维护可变 wallet/ledger/library 状态，覆盖 fixed-price Buy & Install 后余额刷新、Purchase 负流水、Library 安装数和移动布局。
 - marketplace-wallet 浏览器 E2E 现在覆盖创作者 world_book JSON 上传并 Save & Submit，断言新资产进入 Review Queue，Creator Center 统计和资产列表刷新。
+- runtime smoke 现在也覆盖真实 creator upload 状态机：POST 创建 draft world_book、Creator Center 看到 draft、submit 后进入 review、creator detail 可读 payload、approve 后 listed/public、市场列表不泄漏 payload、创作者可安装并刷新 install_count。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

@@ -640,6 +640,9 @@
 | 阶段 44 本机 Chrome E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | admin、report、free、fixed-price、creator upload submit、mobile 六个用例 | 通过：6 passed (2.4m) | 通过 |
 | 阶段 44 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
 | 阶段 44 runtime smoke | `npm run test:marketplace:smoke` | 真实 server fixed-price purchase runtime smoke 仍通过 | 通过 | 通过 |
+| 阶段 45 syntax gate | `npm run test:marketplace:syntax` | creator upload runtime smoke 脚本语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 45 runtime smoke | `npm run test:marketplace:smoke` | 真实 server creator upload/create/submit/detail/approve/list/install 与既有 purchase/install 闭环 | 通过 | 通过 |
+| 阶段 45 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -720,14 +723,22 @@
 - README 验证矩阵更新 `test:marketplace:e2e:server` 覆盖范围，包含 creator upload/submit。
 - 已通过 `npm run test:marketplace:syntax`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1`（6 passed）、`npm run test:marketplace`、`npm run test:marketplace:smoke`。
 
+## 2026-06-26 阶段 45：Creator 上传审核 runtime smoke 闭环
+- 启动只读 explorer `019f0451-68d3-7243-b9a9-7f189727da6f` 复核真实 market API 上传、提交、审批和 smoke 断言边界，主线程并行实现脚本增强。
+- `scripts/smoke-marketplace-runtime.mjs` 在真实临时 server 中 POST 创建 world_book draft，验证 creator_id、private/draft、free pricing 和 normalized payload 保留。
+- smoke 随后验证 Creator Center draft 统计、POST submit 后 review/submitted、creator detail 可读 payload、POST approve 后 listed/public 与 review metadata。
+- smoke 再验证公开市场列表包含 approved upload 但不泄漏 `normalized_payload`，创作者可安装该世界书并让 Creator Center install_count/total_installs 刷新。
+- README 验证矩阵和设计文档已更新 runtime smoke 覆盖范围，明确 creator upload/submit/approve 已纳入真实 server 闭环。
+- 已通过 `npm run test:marketplace:syntax`、`npm run test:marketplace:smoke` 和 `npm run test:marketplace`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E，以及 Creator 上传到审核队列浏览器闭环 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环，以及 Creator 上传审核 runtime smoke 闭环 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E 和 Creator 上传到审核队列浏览器闭环 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环和 Creator 上传审核 runtime smoke 闭环 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*
