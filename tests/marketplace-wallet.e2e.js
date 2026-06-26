@@ -64,10 +64,30 @@ function makeOpenReport(overrides = {}) {
     };
 }
 
-async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()], reports = [] } = {}) {
+function makeLibraryItem(asset, overrides = {}) {
+    return {
+        entitlement: {
+            id: `ent-${asset.id}`,
+            source: asset.price_type === 'free' ? 'free' : 'purchase',
+            purchase_id: asset.price_type === 'free' ? null : `market:${asset.id}:default-user:v1`,
+            created_at: '2026-06-26T12:45:00.000Z',
+        },
+        asset: {
+            ...asset,
+            entitled: true,
+        },
+        install_count: 0,
+        last_install: null,
+        ...overrides,
+    };
+}
+
+async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()], reports = [], library = [] } = {}) {
     const apiCalls = {
         approve: [],
         grants: [],
+        installs: [],
+        purchases: [],
         resolveReports: [],
     };
 
@@ -87,6 +107,31 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
         });
     });
 
+    await page.route('**/api/market/creator/summary', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                handle: 'default-user',
+                stats: {
+                    total_assets: 0,
+                    listed_assets: 0,
+                    total_claims: 0,
+                    gross_revenue_coins: 0,
+                },
+                assets: [],
+            }),
+        });
+    });
+
+    await page.route('**/api/market/library', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ items: library }),
+        });
+    });
+
     await page.route('**/api/market/assets/*/approve', route => {
         const assetId = route.request().url().split('/').at(-2);
         apiCalls.approve.push(assetId);
@@ -97,6 +142,74 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({ asset: assets.find(asset => asset.id === assetId) }),
+        });
+    });
+
+    await page.route('**/api/market/assets/*/purchase', route => {
+        const assetId = route.request().url().split('/').at(-2);
+        const asset = assets.find(item => item.id === assetId);
+        apiCalls.purchases.push(assetId);
+        assets = assets.map(item => item.id === assetId
+            ? { ...item, entitled: true, sales_count: Number(item.sales_count || 0) + 1 }
+            : item);
+        if (asset && !library.some(item => item.asset.id === assetId)) {
+            library = [makeLibraryItem({ ...asset, entitled: true }), ...library];
+        }
+        route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                entitlement: {
+                    id: `ent-${assetId}`,
+                    user_id: 'default-user',
+                    asset_id: assetId,
+                    source: asset?.price_type === 'free' ? 'free' : 'purchase',
+                    purchase_id: asset?.price_type === 'free' ? null : `market:${assetId}:default-user:v1`,
+                    created_at: '2026-06-26T12:45:00.000Z',
+                    revoked_at: null,
+                },
+                already_owned: false,
+                purchase: null,
+            }),
+        });
+    });
+
+    await page.route('**/api/market/assets/*/install', route => {
+        const assetId = route.request().url().split('/').at(-2);
+        const asset = assets.find(item => item.id === assetId) || library.find(item => item.asset.id === assetId)?.asset;
+        apiCalls.installs.push(assetId);
+        library = library.map(item => item.asset.id === assetId
+            ? {
+                ...item,
+                install_count: Number(item.install_count || 0) + 1,
+                last_install: {
+                    type: asset?.type || 'world_book',
+                    local_ref: `worlds/${assetId}.json`,
+                    created_at: '2026-06-26T12:46:00.000Z',
+                },
+            }
+            : item);
+        assets = assets.map(item => item.id === assetId
+            ? { ...item, entitled: true, install_count: Number(item.install_count || 0) + 1 }
+            : item);
+        route.fulfill({
+            status: 201,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                installed: {
+                    type: asset?.type || 'world_book',
+                    name: asset?.title || 'Market asset',
+                    path: `worlds/${assetId}.json`,
+                },
+                install: {
+                    id: `install-${assetId}`,
+                    user_id: 'default-user',
+                    asset_id: assetId,
+                    installed_type: asset?.type || 'world_book',
+                    local_ref: `worlds/${assetId}.json`,
+                    created_at: '2026-06-26T12:46:00.000Z',
+                },
+            }),
         });
     });
 
@@ -202,6 +315,33 @@ test.describe('marketplace wallet extension', () => {
 
         await expect.poll(() => apiCalls.resolveReports).toEqual(['report-listed-world']);
         await expect(reportQueue).toContainText('No reports queued.');
+    });
+
+    test('claims and installs a free asset into the library', async ({ page }) => {
+        const freeAsset = makeListedAsset({
+            id: 'free-world',
+            title: 'Free World',
+            price_type: 'free',
+            price_coins: 0,
+            sales_count: 0,
+        });
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [freeAsset],
+        });
+
+        await loadSillyTavern(page);
+
+        const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Free World' });
+        await expect(assetRow).toContainText('Free');
+        await assetRow.locator('[data-marketplace-wallet-action="purchase"]').click();
+
+        await expect.poll(() => apiCalls.purchases).toEqual(['free-world']);
+        await expect.poll(() => apiCalls.installs).toEqual(['free-world']);
+
+        const library = page.locator('#marketplace_wallet_library_items');
+        await expect(library).toContainText('Free World');
+        await expect(library).toContainText('Claimed');
+        await expect(library).toContainText('1 installs');
     });
 
     test('keeps review controls compact on mobile width', async ({ page }) => {

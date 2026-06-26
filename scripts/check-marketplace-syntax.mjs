@@ -14,10 +14,13 @@ const files = [
     'public/service-worker.js',
     'public/scripts/extensions/marketplace-wallet/filters.js',
     'public/scripts/extensions/marketplace-wallet/index.js',
+    'scripts/seed-marketplace-demo.mjs',
     'scripts/smoke-marketplace-runtime.mjs',
     'tests/market-wallet.test.js',
     'tests/marketplace-wallet-filters.test.js',
     'tests/marketplace-wallet-ui.test.js',
+    'tests/marketplace-demo-seed.test.js',
+    'tests/marketplace-wallet.e2e.js',
     'tests/pwa.test.js',
     'tests/health.test.js',
 ];

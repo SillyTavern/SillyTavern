@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 31
+阶段 33
 
 ## 各阶段
 
@@ -316,6 +316,30 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 32：Marketplace Demo Seed 脚本
+- [x] 确认本地新市场首屏需要可体验示例资产
+- [x] 新增 `scripts/seed-marketplace-demo.mjs`
+- [x] 要求显式 `--dataRoot`，避免默认污染用户数据
+- [x] 写入一张免费角色卡和一本文付费世界书
+- [x] 保持脚本幂等，二次运行 upsert 不重复创建
+- [x] 新增 Jest 测试覆盖 seed 输出、store 结构和状态保留
+- [x] 将 seed 脚本纳入 README、syntax gate、`test:marketplace` 和 CI path filter
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
+### 阶段 33：Runtime Smoke 与 CI 收尾补强
+- [x] 使用并行审查代理检查交付闭环缺口
+- [x] 扩展 runtime smoke，真实访问 `/api/wallet`
+- [x] 扩展 runtime smoke，预置并读取 `/api/market/assets`
+- [x] 补齐 marketplace workflow path filter 中的 PWA/E2E 依赖文件
+- [x] 补充 README E2E 运行前置条件
+- [x] 补充 mocked E2E buyer 主路径，覆盖 free asset claim/install 后进入 Library
+- [x] 将 marketplace E2E 文件纳入 syntax gate
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -359,6 +383,8 @@
 | 资产详情复用 payload 权限 | Details 统一使用 asset detail API；未授权用户看元数据，已授权/创建者/管理员才看 payload |
 | MVP 浏览先做客户端筛选排序 | 当前 JSON store 数据量有限，先补 UI 可用性；正式 SaaS 再上服务端搜索、排序和索引 |
 | marketplace 根测试先跑语法门禁 | 低成本捕捉服务端、前端扩展、PWA 和测试文件语法破损，再进入较慢 Jest 契约 |
+| Demo seed 必须显式指定 dataRoot | 本地体验需要可见市场内容，但脚本不应悄悄写入真实用户目录 |
+| Runtime smoke 应触达私有 market/wallet API | 只测 health/PWA 无法发现 marketplace 路由注册、默认用户上下文或存储初始化问题 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

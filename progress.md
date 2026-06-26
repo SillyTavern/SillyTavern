@@ -579,6 +579,17 @@
 | Fork bot workflow YAML 验证 | `node --input-type=module -e "import YAML..."` | merge-conflict 和 marketplace workflows 都可解析 | 通过 | 通过 |
 | Fork bot workflow 基础回归 | `npm run test:marketplace:syntax` | 修改 workflow 不影响 marketplace syntax gate | 通过：14 files checked | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
+| Demo seed 脚本 smoke | `npm run marketplace:seed:demo -- --dataRoot $(mktemp -d ...)` | 显式 data root 下生成 demo 市场资产 | 通过：2 个 listed demo assets | 通过 |
+| Demo seed Jest 覆盖 | `npm --prefix tests run test:unit -- marketplace-demo-seed.test.js` | 覆盖必填 dataRoot、资产结构、幂等 upsert 和钱包存储隔离 | 通过：1 suite / 3 tests | 通过 |
+| Demo seed syntax 门禁 | `npm run test:marketplace:syntax` | seed 脚本和测试纳入 syntax gate | 通过：16 files checked | 通过 |
+| Demo seed marketplace 回归 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health/seed 契约通过 | 通过：6 suites / 22 tests | 通过 |
+| Demo seed runtime smoke | `npm run test:marketplace:smoke` | 临时 server health/PWA 公开端点仍可访问 | 通过 | 通过 |
+| Demo seed E2E discovery | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：3 tests listed | 通过 |
+| Runtime smoke API 覆盖 | `npm run test:marketplace:smoke` | 真实 server 校验 health、PWA、wallet 和 marketplace assets | 通过：`/api/wallet`、`/api/market/assets` | 通过 |
+| Buyer E2E discovery | `npm run test:marketplace:e2e -- --list` | 能发现新增 free asset claim/install/browser mock 用例 | 通过：4 tests listed | 通过 |
+| 收尾阶段 syntax gate | `npm run test:marketplace:syntax` | seed、smoke、E2E 文件均纳入语法门禁 | 通过：17 files checked | 通过 |
+| 收尾阶段 marketplace 回归 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health/seed 契约通过 | 通过：6 suites / 22 tests；一次并发验证中 `market-wallet.test.js` 举报断言短暂 404，单测和串行全量复跑均通过 | 通过 |
+| Workflow YAML 收尾验证 | `node --input-type=module -e "import YAML..."` | marketplace 和 merge-conflict workflows 都可解析 | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |

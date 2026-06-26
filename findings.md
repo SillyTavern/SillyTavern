@@ -61,6 +61,8 @@
 | 资产详情弹窗复用详情权限 | 购买前只显示元数据；创建者、管理员和已授权用户才看到 `normalized_payload` |
 | 市场浏览 MVP 使用客户端筛选排序 | 当前数据量小，先用前端组合筛选；正式 SaaS 需要服务端搜索、分页和排序索引 |
 | marketplace 验证入口应先跑语法门禁 | 服务端 endpoint、PWA、扩展脚本和 Jest 契约文件分散在不同目录，集中 `node --check` 能更早暴露破损 |
+| Demo seed 应只写市场 store | 开箱体验需要示例资产；钱包余额仍通过 admin grant 流程验证，避免 seed 脚本绕过 ledger |
+| Runtime smoke 需要覆盖业务路由 | health/PWA 只能证明服务启动；`/api/wallet` 和 `/api/market/assets` 能验证登录中间件、默认用户和 market/wallet 路由注册 |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -92,6 +94,8 @@
 - marketplace-wallet E2E mock 扩展 Report Queue resolve 流程，覆盖管理员点击 Resolve 后队列变空。
 - 新增 Marketplace Wallet GitHub Actions 门禁，覆盖 syntax、Jest contract、runtime smoke 和 E2E discovery。
 - 既有 merge-conflict bot workflow 已限制为官方仓库运行，避免 fork 缺 bot 凭证导致 push checks 失败。
+- 新增 demo marketplace seed 脚本，显式指定 data root 后写入免费角色卡和付费世界书，并保持幂等 upsert。
+- runtime smoke 现在会预置一条临时 listed 市场资产，并通过真实 server 校验 `/api/wallet` 与 `/api/market/assets` JSON shape。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

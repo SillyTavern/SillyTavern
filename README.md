@@ -39,6 +39,12 @@ npm install
 npm --prefix tests install
 ```
 
+Optional demo content:
+
+```bash
+npm run marketplace:seed:demo -- --dataRoot ./data
+```
+
 Start the app:
 
 ```bash
@@ -46,6 +52,7 @@ npm start
 ```
 
 Open `http://127.0.0.1:8000` and use the Extensions panel to find `Marketplace & Wallet`.
+The demo seed command writes two listed assets into the explicit data root: a free character card and a fixed-price world book. Run it against the same data root your local config uses.
 
 The local MVP APIs live under `/api/market` and `/api/wallet`. Creator Center uses `GET /api/market/creator/summary`; full wallet balances and ledger history remain available through `/api/wallet` and `/api/wallet/ledger`. Hosted probes can use `GET /api/health` without a logged-in session.
 
@@ -59,6 +66,9 @@ npm start
 
 # Start with CSRF disabled for local API smoke testing
 npm run start:no-csrf
+
+# Seed demo marketplace assets into an explicit data root
+npm run marketplace:seed:demo -- --dataRoot ./data
 
 # Run marketplace/wallet/PWA/health syntax and contract tests
 npm run test:marketplace
@@ -75,6 +85,8 @@ npm run test:pwa
 # Run marketplace/wallet browser E2E tests
 # Requires Playwright browsers:
 #   tests/node_modules/.bin/playwright install chromium-headless-shell
+# Requires a local app server in another terminal:
+#   npm run start:no-csrf
 npm run test:marketplace:e2e
 
 # Run the existing test package suites

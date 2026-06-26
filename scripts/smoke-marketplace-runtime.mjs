@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -139,6 +139,50 @@ async function assertTextEndpoint(url, label, expectedText) {
     }
 }
 
+async function writeDemoMarketStore(dataRoot) {
+    const timestamp = new Date().toISOString();
+    const store = {
+        version: 1,
+        assets: [
+            {
+                id: 'smoke_asset_demo',
+                creator_id: 'smoke-creator',
+                type: 'world_book',
+                title: 'Smoke Demo World',
+                summary: 'Runtime smoke marketplace asset.',
+                description: '',
+                language: 'en',
+                content_rating: 'general',
+                price_type: 'free',
+                price_coins: 0,
+                tags: ['smoke'],
+                metadata: {},
+                normalized_payload: {
+                    name: 'Smoke Demo World',
+                    entries: {},
+                },
+                visibility: 'public',
+                status: 'listed',
+                sales_count: 0,
+                install_count: 0,
+                rating_avg: 0,
+                rating_count: 0,
+                created_at: timestamp,
+                updated_at: timestamp,
+                submitted_at: timestamp,
+                approved_at: timestamp,
+                listed_at: timestamp,
+            },
+        ],
+        entitlements: [],
+        installs: [],
+        reports: [],
+    };
+
+    await mkdir(dataRoot, { recursive: true });
+    await writeFile(path.join(dataRoot, 'market-assets.json'), JSON.stringify(store, null, 4), 'utf8');
+}
+
 async function run() {
     const port = await findFreePort();
     const tmpRoot = await mkdtemp(path.join(os.tmpdir(), 'sillytavern-marketplace-smoke-'));
@@ -158,6 +202,8 @@ async function run() {
     ].join('\n');
 
     try {
+        await writeDemoMarketStore(dataRoot);
+
         child = spawn(process.execPath, [
             'server.js',
             `--port=${port}`,
@@ -202,6 +248,29 @@ async function run() {
 
         await assertTextEndpoint(`${baseUrl}/service-worker.js`, '/service-worker.js', 'sillytavern-shell');
         console.log('runtime ok: /service-worker.js');
+
+        await assertJsonEndpoint(`${baseUrl}/api/wallet`, '/api/wallet', payload => {
+            if (payload.handle !== 'default-user' || !payload.balance || typeof payload.balance.total !== 'number') {
+                throw new Error(`Unexpected wallet payload: ${JSON.stringify(payload)}`);
+            }
+            for (const bucket of ['bonus', 'paid', 'earnings']) {
+                if (typeof payload.balance.buckets?.[bucket] !== 'number') {
+                    throw new Error(`Wallet payload missing ${bucket} bucket: ${JSON.stringify(payload)}`);
+                }
+            }
+        });
+        console.log('runtime ok: /api/wallet');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets`, '/api/market/assets', payload => {
+            if (!Array.isArray(payload.assets)) {
+                throw new Error(`Unexpected market assets payload: ${JSON.stringify(payload)}`);
+            }
+            const demoAsset = payload.assets.find(asset => asset.id === 'smoke_asset_demo');
+            if (!demoAsset || demoAsset.status !== 'listed' || demoAsset.price_type !== 'free') {
+                throw new Error(`Seeded smoke asset missing from marketplace payload: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/market/assets');
     } finally {
         if (child) {
             await stopServer(child);
