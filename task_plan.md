@@ -377,9 +377,9 @@
 - [x] 在 E2E helper 中打开外层 Extensions drawer，再展开 Marketplace Wallet inline drawer
 - [x] 等待钱包总额渲染完成，避免只等 DOM attached 的竞态
 - [x] 运行 syntax、marketplace Jest 契约、E2E discovery 和本机 Chrome 单 worker 实跑
-- [ ] 提交并推送到 GitHub fork
-- [ ] 等待 GitHub Actions 真实 Chrome E2E 通过
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- [x] 等待 GitHub Actions 真实 Chrome E2E 通过
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
