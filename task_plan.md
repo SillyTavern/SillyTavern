@@ -440,8 +440,8 @@
 - [x] 断言 Library 安装数刷新且购买响应不依赖完整 ledger entries
 - [x] 更新 README/规划记录
 - [x] 运行 syntax、marketplace 聚合和浏览器 E2E
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
