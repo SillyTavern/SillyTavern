@@ -889,6 +889,8 @@
 - README、设计文档和 findings 已补充 Library details/reinstall 当前边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'claims and installs a free asset'`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
 - 首次 `npm run test:marketplace` 中 `market-wallet.test.js` 的 `requires review before purchase...` 出现一次 `TypeError: fetch failed / SocketError: other side closed`；同用例单独复跑通过，完整聚合随后复跑通过，判断为瞬时本地 socket 抖动。
+- 完整本机 Chrome E2E 已通过 12 个用例；父进程延迟退出后 Ctrl-C 清理，临时 server 无残留。
+- GitHub run `28251992376` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
