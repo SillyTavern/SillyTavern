@@ -217,6 +217,26 @@
   - progress.md
   - findings.md
 
+### 阶段 15：市场资产举报入口
+- **状态：** in_progress
+- 执行的操作：
+  - 选择 report 作为 UGC 安全最小补齐项，暂不做自动处罚或完整处理后台。
+  - market store 增加 `reports` 数组，并在读取旧 store 时兜底为空数组。
+  - 新增 `POST /api/market/assets/:id/report`，可见资产才允许举报，举报记录为 `open`。
+  - marketplace-wallet 增加 Report 操作，提交短 reason。
+  - 扩展后端测试，覆盖公开资产举报、空 reason 400、下架后无授权用户不可举报、已授权用户仍可举报。
+  - 扩展前端契约测试，覆盖 Report 按钮和 report POST。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - src/endpoints/market.js
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - tests/market-wallet.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -250,6 +270,7 @@
 | PWA 契约测试 | `npm run test:pwa` | manifest 可安装、页面注册 SW、SW 不缓存 API/非 GET | 通过：1 suite / 3 tests | 通过 |
 | marketplace + PWA 根脚本 | `npm run test:marketplace` | 市场/钱包/PWA 契约测试通过 | 通过：3 suites / 14 tests | 通过 |
 | delist 生命周期回归 | `npm run test:marketplace` | admin 下架、非 admin 禁止、下架后新用户不可买、已授权用户可安装 | 通过：3 suites / 14 tests | 通过 |
+| report 入口回归 | `npm run test:marketplace` | 可见资产可举报、空 reason 拒绝、下架后只允许已授权用户举报 | 通过：3 suites / 14 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -269,11 +290,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳，并正在补市场下架闭环 |
-| 我要去哪里？ | 下一步完成 delist 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环，并正在补举报入口 |
+| 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、README 和基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报入口、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

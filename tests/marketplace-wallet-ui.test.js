@@ -69,8 +69,12 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("action: 'approve'");
         expect(script).toContain("action: 'reject'");
         expect(script).toContain("action: 'delist'");
+        expect(script).toContain("action: 'report'");
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/delist`");
+        expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/report`");
+        expect(script).toContain("reason: String(reason || '').slice(0, 120)");
         expect(script).toContain('POPUP_TYPE.CONFIRM');
+        expect(script).toContain('POPUP_TYPE.INPUT');
         expect(script).toContain('asset.owned || asset.entitled');
         expect(script).toContain("$root.find('#marketplace_wallet_review_queue').on('click', onAssetAction)");
         expect(script).toContain("await fetchJson('/api/wallet/grants/admin'");

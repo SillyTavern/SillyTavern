@@ -26,6 +26,8 @@ const MAX_LANGUAGE_LENGTH = 16;
 const MAX_TAGS = 20;
 const MAX_TAG_LENGTH = 40;
 const MAX_PRICE_COINS = 1000000;
+const MAX_REPORT_REASON_LENGTH = 120;
+const MAX_REPORT_BODY_LENGTH = 2000;
 
 export const router = express.Router();
 const marketPurchaseLocks = new Map();
@@ -49,6 +51,7 @@ function emptyStore() {
         assets: [],
         entitlements: [],
         installs: [],
+        reports: [],
     };
 }
 
@@ -64,6 +67,7 @@ function readStore(request) {
         assets: Array.isArray(parsed.assets) ? parsed.assets : [],
         entitlements: Array.isArray(parsed.entitlements) ? parsed.entitlements : [],
         installs: Array.isArray(parsed.installs) ? parsed.installs : [],
+        reports: Array.isArray(parsed.reports) ? parsed.reports : [],
     };
 }
 
@@ -660,6 +664,40 @@ router.post('/assets/:id/delist', requireAdminMiddleware, (request, response) =>
     writeStore(request, store);
 
     return response.json({ asset });
+});
+
+router.post('/assets/:id/report', (request, response) => {
+    const currentUserId = getUserId(request);
+    const store = readStore(request);
+    const asset = findAsset(store, request.params.id);
+    if (!asset || !canReadAsset(asset, currentUserId, store, !!request.user.profile.admin)) {
+        return response.sendStatus(404);
+    }
+
+    const errors = [];
+    const reason = normalizeString(request.body?.reason, MAX_REPORT_REASON_LENGTH, 'reason', errors, { required: true });
+    const body = normalizeString(request.body?.body ?? '', MAX_REPORT_BODY_LENGTH, 'body', errors);
+    if (errors.length > 0) {
+        return response.status(400).json({ error: 'Invalid market report', details: errors });
+    }
+
+    const timestamp = nowIso();
+    const report = {
+        id: createId('report'),
+        asset_id: asset.id,
+        reporter_id: currentUserId,
+        reason,
+        body,
+        status: 'open',
+        assigned_to: null,
+        created_at: timestamp,
+        resolved_at: null,
+    };
+    store.reports = Array.isArray(store.reports) ? store.reports : [];
+    store.reports.push(report);
+    writeStore(request, store);
+
+    return response.status(201).json({ report });
 });
 
 router.post('/assets/:id/purchase', async (request, response) => {

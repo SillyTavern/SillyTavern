@@ -185,6 +185,16 @@ function createAssetAction(asset) {
         }));
     }
 
+    if (!asset.owned && (asset.status === 'listed' || asset.entitled)) {
+        $actions.append(createAssetButton({
+            asset,
+            action: 'report',
+            icon: 'fa-flag',
+            label: isBusy ? 'Reporting' : 'Report',
+            disabled: isBusy,
+        }));
+    }
+
     if (asset.owned || asset.entitled) {
         $actions.append(createAssetButton({
             asset,
@@ -435,6 +445,26 @@ async function delistAsset(assetId) {
     });
 }
 
+async function reportAsset(assetId) {
+    const reason = await callGenericPopup('Report this marketplace asset:', POPUP_TYPE.INPUT, '', {
+        okButton: 'Report',
+        cancelButton: 'Cancel',
+        rows: 4,
+    });
+
+    if (reason === null || reason === false) {
+        return;
+    }
+
+    await withBusyAsset(assetId, async () => {
+        await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/report`, {
+            method: 'POST',
+            body: JSON.stringify({ reason: String(reason || '').slice(0, 120) }),
+        });
+        toastr.success('Report submitted');
+    });
+}
+
 function parsePayloadJson() {
     const text = String($('#marketplace_wallet_upload_payload').val() || '').trim();
     if (!text) {
@@ -602,6 +632,7 @@ function onAssetAction(event) {
         approve: approveAsset,
         reject: rejectAsset,
         delist: delistAsset,
+        report: reportAsset,
     };
     actions[action]?.(assetId).catch(error => {
         console.error(`Marketplace action failed: ${action}`, error);

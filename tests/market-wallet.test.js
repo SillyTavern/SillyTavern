@@ -214,6 +214,27 @@ describe('market and wallet MVP endpoints', () => {
         expect(purchaseResult.body.entitlement.purchase_id).toBeNull();
         expect(purchaseResult.body.purchase).toBeNull();
 
+        const reportResult = await request(bobApp, `/api/market/assets/${assetId}/report`, {
+            method: 'POST',
+            body: {
+                reason: 'copyright concern',
+                body: 'This looks like it may need review.',
+            },
+        });
+        expect(reportResult.status).toBe(201);
+        expect(reportResult.body.report).toMatchObject({
+            asset_id: assetId,
+            reporter_id: 'bob',
+            reason: 'copyright concern',
+            status: 'open',
+        });
+
+        const invalidReport = await request(bobApp, `/api/market/assets/${assetId}/report`, {
+            method: 'POST',
+            body: { reason: '' },
+        });
+        expect(invalidReport.status).toBe(400);
+
         const delistResult = await request(aliceApp, `/api/market/assets/${assetId}/delist`, {
             method: 'POST',
             body: {},
@@ -230,6 +251,12 @@ describe('market and wallet MVP endpoints', () => {
         });
         expect(blockedPurchaseAfterDelist.status).toBe(404);
 
+        const hiddenReportAfterDelist = await request(createApp(createUser('charlie', false)), `/api/market/assets/${assetId}/report`, {
+            method: 'POST',
+            body: { reason: 'hidden asset' },
+        });
+        expect(hiddenReportAfterDelist.status).toBe(404);
+
         const freeLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
         expect(freeLedger.status).toBe(200);
         expect(freeLedger.body.ledger).toHaveLength(0);
@@ -239,6 +266,12 @@ describe('market and wallet MVP endpoints', () => {
         expect(ownedDetail.body.asset.payload_available).toBe(true);
         expect(ownedDetail.body.asset.normalized_payload.data.name).toBe('Market Alice');
         expect(ownedDetail.body.entitlement.user_id).toBe('bob');
+
+        const entitledReportAfterDelist = await request(bobApp, `/api/market/assets/${assetId}/report`, {
+            method: 'POST',
+            body: { reason: 'post-purchase concern' },
+        });
+        expect(entitledReportAfterDelist.status).toBe(201);
 
         const installResult = await request(bobApp, `/api/market/assets/${assetId}/install`, {
             method: 'POST',
@@ -255,6 +288,7 @@ describe('market and wallet MVP endpoints', () => {
         expect(storedAsset.sales_count).toBe(1);
         expect(storedAsset.install_count).toBe(1);
         expect(storedAsset.status).toBe('delisted');
+        expect(store.reports.filter(report => report.asset_id === assetId && report.reporter_id === 'bob')).toHaveLength(2);
         expect(store.entitlements.some(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toBe(true);
         expect(store.installs.some(install => install.asset_id === assetId && install.user_id === 'bob')).toBe(true);
     });
