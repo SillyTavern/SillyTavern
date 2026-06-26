@@ -42,12 +42,15 @@ function makeListedAsset(overrides = {}) {
         title: 'Listed World',
         summary: 'Ready to install.',
         creator_id: 'creator-handle',
+        language: 'en',
+        content_rating: 'general',
         tags: ['lore'],
         status: 'listed',
         owned: false,
         price_type: 'fixed_price',
         price_coins: 125,
         sales_count: 3,
+        created_at: '2026-06-25T10:00:00.000Z',
         listed_at: '2026-06-26T11:00:00.000Z',
         updated_at: '2026-06-26T11:00:00.000Z',
         ...overrides,
@@ -729,6 +732,42 @@ test.describe('marketplace wallet extension', () => {
         await expect(reportQueue).toContainText('Listed World');
         await expect(reportQueue).toContainText('unsafe_prompt');
         await expect(reportQueue).toContainText('Contains a jailbreak style lore instruction.');
+    });
+
+    test('shows asset detail metadata in the Details popup', async ({ page }) => {
+        const detailAsset = makeListedAsset({
+            id: 'details-world',
+            title: 'Details World',
+            summary: 'Metadata-rich world book.',
+            language: 'ja',
+            content_rating: 'teen',
+            created_at: '2026-06-24T09:00:00.000Z',
+            listed_at: '2026-06-25T10:00:00.000Z',
+            updated_at: '2026-06-26T11:00:00.000Z',
+        });
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [detailAsset],
+        });
+
+        await loadSillyTavern(page);
+
+        const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Details World' });
+        await assetRow.locator('[data-marketplace-wallet-action="details"]').click();
+
+        await expect.poll(() => apiCalls.details).toEqual(['details-world']);
+        const detailsPopup = page.getByRole('dialog').filter({ hasText: 'Details World' });
+        await expect(detailsPopup).toBeVisible();
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Language');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('ja');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Content rating');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('teen');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Created');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-24');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Listed');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-25');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('Updated');
+        await expect(detailsPopup.locator('.marketplace-wallet-preview-meta')).toContainText('2026-06-26');
+        await detailsPopup.locator('.popup-button-ok').click();
     });
 
     test('claims and installs a free asset into the library', async ({ page }) => {

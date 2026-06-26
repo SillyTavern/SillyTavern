@@ -58,6 +58,15 @@ function formatLedgerDate(value) {
     });
 }
 
+function formatAssetDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return date.toISOString().slice(0, 10);
+}
+
 function getLedgerTypeLabel(entry) {
     const labels = {
         admin_grant: 'Grant',
@@ -315,8 +324,13 @@ function createAssetPreview(asset) {
         ['Type', MARKET_TYPES[asset.type] || asset.type || 'Asset'],
         ['Status', asset.status || 'draft'],
         ['Creator', asset.creator_id || 'unknown'],
+        ['Language', asset.language || 'unknown'],
+        ['Content rating', asset.content_rating || 'unrated'],
         ['Price', getPriceLabel(asset)],
         ['Tags', getAssetTags(asset).length ? getAssetTags(asset).join(', ') : 'none'],
+        ['Created', formatAssetDate(asset.created_at) || 'unknown'],
+        ['Listed', formatAssetDate(asset.listed_at) || 'not listed'],
+        ['Updated', formatAssetDate(asset.updated_at) || 'unknown'],
         ['Payload', hasPayload ? 'available' : 'available after claim or purchase'],
     ];
 

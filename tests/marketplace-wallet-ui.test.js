@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.3');
+        expect(manifest.version).toBe('0.2.4');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -123,6 +123,13 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("action: 'details'");
         expect(script).toContain('async function viewAssetDetails(assetId)');
         expect(script).toContain('const inspectAsset = viewAssetDetails;');
+        expect(script).toContain('function formatAssetDate(value)');
+        expect(script).toContain("return date.toISOString().slice(0, 10)");
+        expect(script).toContain("['Language', asset.language || 'unknown']");
+        expect(script).toContain("['Content rating', asset.content_rating || 'unrated']");
+        expect(script).toContain("['Created', formatAssetDate(asset.created_at) || 'unknown']");
+        expect(script).toContain("['Listed', formatAssetDate(asset.listed_at) || 'not listed']");
+        expect(script).toContain("['Updated', formatAssetDate(asset.updated_at) || 'unknown']");
         expect(script).toContain("['Payload', hasPayload ? 'available' : 'available after claim or purchase']");
         expect(script).toContain('if (hasPayload)');
         expect(script).toContain('editingAssetId: null');

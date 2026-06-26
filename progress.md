@@ -868,6 +868,16 @@
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'clears active marketplace filters'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'` 和 `git diff --check`。
 - GitHub run `28250680898` 已确认 Marketplace Wallet Checks 全链路通过。
 
+## 2026-06-26 阶段 57：资产详情元数据补齐
+- 启动只读 explorer `019f04bd-a0fe-7bb3-9ee7-555e92ef1dc7` 复核 Details/Inspect 入口、E2E 落点和 UI contract 字符串，确认市场卡片 Details 与审核 Inspect 都复用 `viewAssetDetails()`。
+- marketplace-wallet Details 弹窗新增语言、内容分级、创建日期、上架日期和更新日期。
+- 新增 `formatAssetDate()`，把资产生命周期时间格式化为稳定 `YYYY-MM-DD`，避免浏览器 locale 造成测试漂移。
+- `marketplace-wallet` manifest bump 到 `0.2.4`，避免浏览器缓存旧 JS/CSS。
+- 浏览器 E2E 新增详情元数据用例，点击资产卡片 Details 后断言 language/content rating/created/listed/updated 出现在弹窗中。
+- README、设计文档和 findings 已补充详情元数据展示边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'shows asset detail metadata'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
+- 完整本机 Chrome E2E 已通过 12 个用例；父进程延迟退出后 Ctrl-C 清理，临时 server 无残留。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
