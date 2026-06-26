@@ -991,6 +991,7 @@
 - README、设计文档和 findings 已补充 API reference permission/privacy notes 边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run marketplace:export:api -- --out <tmpfile>` smoke、`npm --prefix tests run test:unit -- market-wallet.test.js -t 'requires review before purchase'`、`npm run test:marketplace` 复跑和 `git diff --check`。
 - 首次 `npm run test:marketplace` 中 `market-wallet.test.js` 的 `requires review before purchase...` 出现一次 `TypeError: fetch failed / SocketError: other side closed`；该用例单独复跑通过，完整聚合随后复跑通过，判断为瞬时本地 socket 抖动。
+- GitHub run `28255738939` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
