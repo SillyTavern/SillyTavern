@@ -1076,6 +1076,7 @@
 - 首次目标测试用 JSON primitive 字符串请求体尝试触达 `JSON body is required`，但 `express.json()` strict parser 会在路由前返回 HTML 400；已改用 JSON array 请求体触达后端 shape 校验分支。
 - 目标测试第二次暴露同一 invalid shape 还会返回 `price_coins must be a positive safe integer for fixed_price assets`，已把该聚合错误固定进契约测试。
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates marketplace asset create payload shape'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28258662835` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
