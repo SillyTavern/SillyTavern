@@ -296,6 +296,32 @@
     gap: 5px;
 }
 
+.marketplace-wallet-asset-preview h3 {
+    margin: 0 0 6px;
+}
+
+.marketplace-wallet-preview-meta {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 4px 10px;
+}
+
+.marketplace-wallet-preview-meta dt {
+    font-weight: 700;
+}
+
+.marketplace-wallet-preview-meta dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.marketplace-wallet-preview-payload {
+    max-height: min(48vh, 520px);
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .marketplace-wallet-upload-grid {
     display: grid;
     grid-template-columns: 1fr 1.4fr 1fr 90px;
@@ -351,5 +377,9 @@
     .marketplace-wallet-review-actions .menu_button {
         justify-content: center;
         min-width: 0;
+    }
+
+    .marketplace-wallet-preview-meta {
+        grid-template-columns: 1fr;
     }
 }

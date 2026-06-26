@@ -70,6 +70,15 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
         expect(script).toContain("action: 'approve'");
         expect(script).toContain("action: 'reject'");
+        expect(script).toContain("action: 'inspect'");
+        expect(script).toContain('async function inspectAsset(assetId)');
+        expect(script).toContain('function createAssetPreview(asset)');
+        expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`");
+        expect(script).toContain('asset.normalized_payload');
+        expect(script).toContain('POPUP_TYPE.TEXT');
+        expect(script).toContain("JSON.stringify(payload, null, 2)");
+        expect(script).toContain("okButton: 'Close'");
+        expect(script).toContain('allowVerticalScrolling: true');
         expect(script).toContain("action: 'delist'");
         expect(script).toContain("action: 'report'");
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/delist`");
@@ -108,5 +117,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('.marketplace-wallet-grant');
         expect(css).toContain('.marketplace-wallet-review-item');
         expect(css).toContain('.marketplace-wallet-report-title');
+        expect(css).toContain('.marketplace-wallet-asset-preview h3');
+        expect(css).toContain('.marketplace-wallet-preview-payload');
     });
 });

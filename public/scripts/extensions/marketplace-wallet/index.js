@@ -151,6 +151,31 @@ function createStatusBadge(asset) {
     return $badge;
 }
 
+function createAssetPreview(asset) {
+    const $preview = $('<div class="marketplace-wallet-asset-preview"></div>');
+    const $title = $('<h3></h3>').text(asset.title || 'Untitled asset');
+    const $summary = $('<p></p>').text(asset.summary || 'No summary provided.');
+    const $meta = $('<dl class="marketplace-wallet-preview-meta"></dl>');
+    const payload = asset.normalized_payload ?? {};
+    const rows = [
+        ['Type', MARKET_TYPES[asset.type] || asset.type || 'Asset'],
+        ['Status', asset.status || 'draft'],
+        ['Creator', asset.creator_id || 'unknown'],
+        ['Price', getPriceLabel(asset)],
+        ['Tags', Array.isArray(asset.tags) && asset.tags.length ? asset.tags.join(', ') : 'none'],
+    ];
+
+    for (const [label, value] of rows) {
+        $meta.append($('<dt></dt>').text(label));
+        $meta.append($('<dd></dd>').text(String(value)));
+    }
+
+    $preview.append($title, $summary, $meta);
+    $preview.append($('<b></b>').text('Payload'));
+    $preview.append($('<pre class="marketplace-wallet-preview-payload"></pre>').text(JSON.stringify(payload, null, 2)));
+    return $preview;
+}
+
 function createAssetButton({ asset, action, icon, label, disabled = false, title = '' }) {
     const $button = $('<button class="menu_button menu_button_icon" type="button"></button>');
     $button.attr('data-marketplace-wallet-action', action);
@@ -260,6 +285,13 @@ function renderReviewQueue() {
         const $actions = $('<div class="marketplace-wallet-review-actions"></div>');
 
         $meta.append($title, $type);
+        $actions.append(createAssetButton({
+            asset,
+            action: 'inspect',
+            icon: 'fa-magnifying-glass',
+            label: isBusy ? 'Loading' : 'Inspect',
+            disabled: isBusy,
+        }));
         $actions.append(createAssetButton({
             asset,
             action: 'approve',
@@ -555,6 +587,21 @@ async function reportAsset(assetId) {
     });
 }
 
+async function inspectAsset(assetId) {
+    await withBusyAsset(assetId, async () => {
+        const result = await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`, {
+            method: 'GET',
+        });
+        await callGenericPopup(createAssetPreview(result.asset || {}), POPUP_TYPE.TEXT, '', {
+            okButton: 'Close',
+            wide: true,
+            large: true,
+            allowVerticalScrolling: true,
+            leftAlign: true,
+        });
+    });
+}
+
 async function resolveReport(reportId) {
     await withBusyReport(reportId, async () => {
         await fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`, {
@@ -729,6 +776,7 @@ function onAssetAction(event) {
         purchase: purchaseAsset,
         install: installAsset,
         submit: submitAsset,
+        inspect: inspectAsset,
         approve: approveAsset,
         reject: rejectAsset,
         delist: delistAsset,

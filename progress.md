@@ -260,6 +260,26 @@
   - progress.md
   - findings.md
 
+### 阶段 17：管理员审核内容预览
+- **状态：** complete
+- 执行的操作：
+  - 选择 Inspect 作为审核队列的最小预览入口，避免管理员盲批 submitted 资产。
+  - 复用 `GET /api/market/assets/:id` 的管理员 payload 读取权限，不新增后端路由。
+  - Review Queue 增加 Inspect 按钮，点击后拉取 asset detail。
+  - 使用 `POPUP_TYPE.TEXT`、安全 DOM 和 `.text(JSON.stringify(...))` 展示资产摘要与 JSON payload。
+  - 增加预览弹窗 CSS，使 meta 和 payload 在桌面/手机上可滚动、不撑破布局。
+  - 扩展后端测试，确认管理员可读取 payload，普通公开详情仍不泄漏 payload。
+  - 扩展前端契约测试，覆盖 inspect action、detail fetch、TEXT popup、安全 JSON 展示和预览 CSS。
+- 创建/修改的文件：
+  - README.md
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/style.css
+  - tests/market-wallet.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -296,6 +316,7 @@
 | report 入口回归 | `npm run test:marketplace` | 可见资产可举报、空 reason 拒绝、下架后只允许已授权用户举报 | 通过：3 suites / 14 tests | 通过 |
 | report queue 回归 | `npm run test:marketplace` | admin 可查看并 resolve open report，普通用户禁止，重复 resolve 400 | 通过：3 suites / 14 tests | 通过 |
 | marketplace E2E 列表复核 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
+| admin inspect 回归 | `npm run test:marketplace` | 管理员可读取 payload，Review Queue 有 Inspect 预览契约 | 通过：3 suites / 14 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
