@@ -734,6 +734,15 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 79：市场资产创建 payload shape
+- [x] 后端测试覆盖请求体必须是 JSON object
+- [x] 后端测试覆盖 asset type 仅允许 character_card/world_book
+- [x] 后端测试覆盖 price_type 仅允许 free/fixed_price
+- [x] 后端测试覆盖 metadata 和 normalized_payload 必须是 object
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -767,6 +776,7 @@
 | 上传表单应复用后端 tags 约束 | 后端已支持最多 20 个、每个 40 字符的 `tags` 数组；前端提前校验并展示，能让创作者素材更容易被搜索发现 |
 | tags 后端边界必须有契约测试 | 前端校验不能替代服务端约束；POST 资产时应锁定 tags 数组、数量、类型、长度和去重行为 |
 | 文本元数据后端边界必须有契约测试 | title、summary、description、language、content_rating 是市场展示和搜索字段，长度与 trim 行为应由后端测试锁定 |
+| 资产创建 payload shape 必须有契约测试 | 托管上传入口必须拒绝非 object、未知类型、未知价格类型和非 object payload/metadata |
 | Load JSON 应自动识别资产类型 | 角色卡和世界书 payload 形状可本地判断，自动设置类型能减少用户选错后才报错的摩擦 |
 | 粘贴 JSON 应复用文件导入识别逻辑 | 创作者可能直接粘贴角色卡/世界书 JSON；只在文件导入时自动识别会造成体验不一致 |
 | 余额不足原因应在移动端可见 | 仅靠 disabled 按钮的 title 提示不适合手机和读屏，需要在卡片动作区显示缺口金额 |

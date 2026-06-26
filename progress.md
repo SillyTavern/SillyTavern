@@ -1068,6 +1068,15 @@
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates and normalizes marketplace asset text metadata'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28258315683` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 79：市场资产创建 payload shape
+- 新增 `validates marketplace asset create payload shape` 后端契约测试。
+- 测试覆盖非 object JSON 请求体返回 `JSON body is required`。
+- 测试覆盖未知 asset type、空标题、未知 price_type、非 object metadata 和非 object normalized_payload 聚合返回对应错误详情。
+- README 和 findings 已补充 payload shape validation 后端边界。
+- 首次目标测试用 JSON primitive 字符串请求体尝试触达 `JSON body is required`，但 `express.json()` strict parser 会在路由前返回 HTML 400；已改用 JSON array 请求体触达后端 shape 校验分支。
+- 目标测试第二次暴露同一 invalid shape 还会返回 `price_coins must be a positive safe integer for fixed_price assets`，已把该聚合错误固定进契约测试。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates marketplace asset create payload shape'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

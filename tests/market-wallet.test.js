@@ -817,6 +817,43 @@ describe('market and wallet MVP endpoints', () => {
         });
     });
 
+    test('validates marketplace asset create payload shape', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+
+        const missingJsonObject = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: [],
+        });
+        expect(missingJsonObject.status).toBe(400);
+        expect(missingJsonObject.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: ['JSON body is required'],
+        });
+
+        const invalidShape = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                type: 'preset_pack',
+                title: '',
+                price_type: 'auction',
+                metadata: [],
+                normalized_payload: 'not an object',
+            },
+        });
+        expect(invalidShape.status).toBe(400);
+        expect(invalidShape.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: [
+                'type must be one of: character_card, world_book',
+                'title is required',
+                'price_type must be one of: free, fixed_price',
+                'price_coins must be a positive safe integer for fixed_price assets',
+                'metadata must be an object',
+                'normalized_payload must be an object',
+            ],
+        });
+    });
+
     test('allows only admins to grant wallet balance', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));
