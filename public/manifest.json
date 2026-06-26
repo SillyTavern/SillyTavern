@@ -1,7 +1,10 @@
 {
     "name": "SillyTavern",
     "short_name": "SillyTavern",
+    "description": "Hosted AI tavern for chat, marketplace assets, and creator tools.",
+    "id": "/",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "theme_color": "#202124",
     "background_color": "#202124",

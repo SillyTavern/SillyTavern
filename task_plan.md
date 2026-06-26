@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 13
+阶段 14
 
 ## 各阶段
 
@@ -119,6 +119,18 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 14：网页版/手机版 PWA 安装壳
+- [x] 复用现有 web manifest 和移动 meta，不引入原生 App 壳
+- [x] 补充 manifest `id`、`scope` 和描述，满足安装型 PWA 基础元数据
+- [x] 在主页面和登录页注册 service worker
+- [x] 新增保守静态 shell service worker，只缓存静态壳，跳过 `/api/*` 和非 GET 请求
+- [x] 新增 PWA 契约测试和根目录 `test:pwa` 脚本
+- [x] 将 PWA 测试纳入 `test:marketplace`
+- [x] 更新 README 和规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -143,6 +155,8 @@
 | 非创作者购买按钮采用“购买并安装” | 列表接口不暴露 entitlement，直接组合 purchase/install 可以兼容重复购买返回 already_owned |
 | 管理员前端入口只使用 `isAdmin()` 判断 | 后端实际按 `request.user.profile.admin` 授权，前端不能用 `default-user` handle 推断权限 |
 | `marketplace-wallet` manifest 使用版本化 JS/CSS URL | 避免浏览器复用旧 ESM 模块，保证 admin UI 修复刷新后生效 |
+| 手机版先走 PWA 安装壳 | 最少代码满足手机打开即用；原生 iOS/Android 壳等支付、推送、商店策略明确后再做 |
+| PWA service worker 不缓存 API | 钱包、市场、聊天和账号请求必须保持实时，静态壳缓存即可 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

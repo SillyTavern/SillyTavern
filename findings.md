@@ -41,6 +41,8 @@
 | Creator Center summary 应是聚合读模型 | 市场 summary 只返回创作者资产和统计，完整 wallet balance/ledger 继续由 Wallet API 负责，避免前端误用流水明细 |
 | Creator summary 前端请求必须可降级 | 钱包和市场资产是主体验，创作者面板失败不能阻断刷新、购买和安装流程 |
 | claims 和 installs 需要分开展示 | `sales_count` 当前代表免费领取和付费购买的总 claims，`install_count` 才代表安装次数 |
+| 手机端 MVP 优先走 PWA | 现有 HTML 已有移动 meta、manifest 和 touch icons；补 service worker 比原生壳更小、更快可验证 |
+| PWA 缓存只覆盖静态壳 | `/api/*`、POST 和动态业务请求不能进 shell cache，避免钱包、市场、聊天出现旧数据 |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -54,6 +56,7 @@
 - 新增 Playwright E2E 覆盖 admin review/grant 和移动布局；当前本机 Playwright Chromium 缓存半安装，完整 E2E 需先成功安装 `chromium-headless-shell`。
 - 新增 Jest UI 契约测试作为稳定基础测试，已覆盖 manifest 版本化、admin 模板、`isAdmin()` gate、grant 校验和移动 CSS。
 - Creator Center 已移动到钱包余额下方，使用 assets/listed/claims/earned 四项自适应统计，最近资产列表显示 status、claims、installs 和价格。
+- PWA 安装壳复用现有 mobile meta 和 icons；新增 service worker 只缓存静态页面壳，手机用户可通过浏览器 Add to Home Screen / Install 使用。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

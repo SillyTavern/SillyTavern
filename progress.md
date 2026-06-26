@@ -174,6 +174,28 @@
   - progress.md
   - findings.md
 
+### 阶段 13：网页版/手机版 PWA 安装壳
+- **状态：** in_progress
+- 执行的操作：
+  - 复用现有 web manifest、移动 viewport meta 和 Apple touch icons，不引入原生 App 壳。
+  - 补充 PWA manifest `id`、`scope` 和描述，明确安装入口。
+  - 新增 `public/scripts/pwa.js`，在主页面和登录页注册 service worker。
+  - 新增 `public/service-worker.js`，只缓存静态 shell，跳过 `/api/*` 和非 GET 请求，避免钱包/市场/聊天请求被缓存。
+  - 新增 `tests/pwa.test.js` 和根目录 `test:pwa` 脚本，并将 PWA 契约测试纳入 `test:marketplace`。
+  - 更新 README，说明手机浏览器 Add to Home Screen / Install 路径和 service worker 边界。
+- 创建/修改的文件：
+  - README.md
+  - package.json
+  - public/manifest.json
+  - public/index.html
+  - public/login.html
+  - public/scripts/pwa.js
+  - public/service-worker.js
+  - tests/pwa.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -204,6 +226,8 @@
 | Creator Center 语法检查 | `node --check src/endpoints/market.js && node --check public/scripts/extensions/marketplace-wallet/index.js && node --check tests/market-wallet.test.js && node --check tests/marketplace-wallet-ui.test.js` | 无语法错误 | 通过 | 通过 |
 | Creator summary API 回归 | `npm run test:marketplace` | 资产状态、claims、paid sales、installs、earnings、payload/ledger 隐私边界通过 | 通过：新增 creator summary 用例 | 通过 |
 | Creator Center E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
+| PWA 契约测试 | `npm run test:pwa` | manifest 可安装、页面注册 SW、SW 不缓存 API/非 GET | 通过：1 suite / 3 tests | 通过 |
+| marketplace + PWA 根脚本 | `npm run test:marketplace` | 市场/钱包/PWA 契约测试通过 | 通过：3 suites / 14 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -223,11 +247,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本和 Creator Center summary |
-| 我要去哪里？ | 下一步完成提交推送，然后继续数据库迁移、真实支付、搜索审核和移动端封装 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary，并正在补 PWA 手机安装壳 |
+| 我要去哪里？ | 下一步完成 PWA 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、README 和 marketplace 基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*
