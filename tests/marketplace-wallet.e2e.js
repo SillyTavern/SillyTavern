@@ -24,6 +24,7 @@ function makeSubmittedAsset(overrides = {}) {
         title: 'Submitted Character',
         summary: 'Awaiting review.',
         creator_id: 'creator-handle',
+        tags: [],
         status: 'submitted',
         owned: false,
         price_type: 'fixed_price',
@@ -41,6 +42,7 @@ function makeListedAsset(overrides = {}) {
         title: 'Listed World',
         summary: 'Ready to install.',
         creator_id: 'creator-handle',
+        tags: ['lore'],
         status: 'listed',
         owned: false,
         price_type: 'fixed_price',
@@ -195,7 +197,7 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
             title: payload.title,
             summary: payload.summary,
             language: 'en',
-            tags: [],
+            tags: Array.isArray(payload.tags) ? payload.tags : [],
             status: 'draft',
             owned: true,
             entitled: false,
@@ -742,10 +744,23 @@ test.describe('marketplace wallet extension', () => {
         await loadSillyTavern(page);
 
         await page.locator('#marketplace_wallet_upload_type').selectOption('world_book');
-        await page.locator('#marketplace_wallet_upload_title').fill('Creator Browser World');
-        await page.locator('#marketplace_wallet_upload_summary').fill('Submitted from the browser E2E flow.');
-        await page.locator('#marketplace_wallet_upload_price_type').selectOption('free');
-        await page.locator('#marketplace_wallet_upload_payload').fill(JSON.stringify({
+        await page.locator('#marketplace_wallet_upload_file').setInputFiles({
+            name: 'browser-character.json',
+            mimeType: 'application/json',
+            buffer: Buffer.from(JSON.stringify({
+                name: 'Browser Character',
+                description: 'A character card used to verify type detection.',
+                personality: 'Helpful',
+                scenario: 'A cozy tavern',
+                first_mes: 'Hello.',
+                mes_example: '<START>',
+            }, null, 2)),
+        });
+        await expect(page.locator('#marketplace_wallet_upload_type')).toHaveValue('character_card');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('Browser Character');
+        await page.locator('#marketplace_wallet_upload_title').fill('');
+
+        const worldBookPayload = {
             name: 'Creator Browser World',
             entries: {
                 '0': {
@@ -754,7 +769,19 @@ test.describe('marketplace wallet extension', () => {
                     content: 'This lore entry came from the browser upload flow.',
                 },
             },
-        }, null, 2));
+        };
+
+        await page.locator('#marketplace_wallet_upload_type').selectOption('character_card');
+        await page.locator('#marketplace_wallet_upload_file').setInputFiles({
+            name: 'creator-browser-world.json',
+            mimeType: 'application/json',
+            buffer: Buffer.from(JSON.stringify(worldBookPayload, null, 2)),
+        });
+        await expect(page.locator('#marketplace_wallet_upload_type')).toHaveValue('world_book');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('Creator Browser World');
+        await page.locator('#marketplace_wallet_upload_summary').fill('Submitted from the browser E2E flow.');
+        await page.locator('#marketplace_wallet_upload_tags').fill('browser, lore, browser');
+        await page.locator('#marketplace_wallet_upload_price_type').selectOption('free');
         await page.locator('[data-marketplace-wallet-upload="review"]').click();
 
         await expect.poll(() => apiCalls.creates).toHaveLength(1);
@@ -762,6 +789,7 @@ test.describe('marketplace wallet extension', () => {
             type: 'world_book',
             title: 'Creator Browser World',
             summary: 'Submitted from the browser E2E flow.',
+            tags: ['browser', 'lore'],
             price_type: 'free',
             price_coins: 0,
             normalized_payload: {
@@ -774,10 +802,14 @@ test.describe('marketplace wallet extension', () => {
         await expect(reviewQueue).toContainText('Creator Browser World');
         await expect(reviewQueue.locator('[data-marketplace-wallet-action="approve"]')).toHaveCount(1);
 
+        const createdAssetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Creator Browser World' });
+        await expect(createdAssetRow.locator('.marketplace-wallet-tag')).toContainText(['browser', 'lore']);
+
         await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('1');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Creator Browser World');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
         await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_upload_tags')).toHaveValue('');
         await expect(page.locator('#marketplace_wallet_upload_payload')).toHaveValue('');
     });
 

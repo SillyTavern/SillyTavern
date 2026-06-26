@@ -10,6 +10,8 @@ const MARKET_TYPES = {
     character_card: 'Character card',
     world_book: 'World book',
 };
+const MAX_UPLOAD_TAGS = 20;
+const MAX_UPLOAD_TAG_LENGTH = 40;
 
 const state = {
     assets: [],
@@ -252,6 +254,25 @@ function getPriceLabel(asset) {
     return 'Free';
 }
 
+function getAssetTags(asset) {
+    return Array.isArray(asset?.tags)
+        ? asset.tags.map(tag => String(tag || '').trim()).filter(Boolean)
+        : [];
+}
+
+function createTagList(asset) {
+    const tags = getAssetTags(asset).slice(0, MAX_UPLOAD_TAGS);
+    if (tags.length === 0) {
+        return null;
+    }
+
+    const $tags = $('<div class="marketplace-wallet-tags"></div>');
+    for (const tag of tags) {
+        $tags.append($('<span class="marketplace-wallet-tag"></span>').text(tag));
+    }
+    return $tags;
+}
+
 function createStatusBadge(asset) {
     const $badge = $('<span class="marketplace-wallet-badge"></span>');
     $badge.text(asset.status || 'draft');
@@ -270,7 +291,7 @@ function createAssetPreview(asset) {
         ['Status', asset.status || 'draft'],
         ['Creator', asset.creator_id || 'unknown'],
         ['Price', getPriceLabel(asset)],
-        ['Tags', Array.isArray(asset.tags) && asset.tags.length ? asset.tags.join(', ') : 'none'],
+        ['Tags', getAssetTags(asset).length ? getAssetTags(asset).join(', ') : 'none'],
         ['Payload', hasPayload ? 'available' : 'available after claim or purchase'],
     ];
 
@@ -453,6 +474,7 @@ function clearUploadForm() {
     $('#marketplace_wallet_upload_type').val('character_card');
     $('#marketplace_wallet_upload_title').val('');
     $('#marketplace_wallet_upload_summary').val('');
+    $('#marketplace_wallet_upload_tags').val('');
     $('#marketplace_wallet_upload_price_type').val('free').trigger('change');
     $('#marketplace_wallet_upload_price').val(0);
     $('#marketplace_wallet_upload_payload').val('');
@@ -463,6 +485,7 @@ function fillUploadForm(asset) {
     $('#marketplace_wallet_upload_type').val(asset.type || 'character_card');
     $('#marketplace_wallet_upload_title').val(asset.title || '');
     $('#marketplace_wallet_upload_summary').val(asset.summary || '');
+    $('#marketplace_wallet_upload_tags').val(getAssetTags(asset).join(', '));
     $('#marketplace_wallet_upload_price_type').val(asset.price_type || 'free').trigger('change');
     $('#marketplace_wallet_upload_price').val(Number(asset.price_coins || 0));
     $('#marketplace_wallet_upload_payload').val(JSON.stringify(asset.normalized_payload ?? {}, null, 2));
@@ -547,7 +570,12 @@ function renderAssets() {
         if (asset.creator_id) {
             $meta.append($('<span></span>').text(`by ${asset.creator_id}`));
         }
-        $main.append($titleRow, $summary, $meta);
+        const $tags = createTagList(asset);
+        $main.append($titleRow, $summary);
+        if ($tags) {
+            $main.append($tags);
+        }
+        $main.append($meta);
         $asset.append($main, createAssetAction(asset));
         $list.append($asset);
     }
@@ -857,6 +885,51 @@ function validatePayloadShape(type, payload) {
     }
 }
 
+function inferPayloadType(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        return '';
+    }
+
+    if (payload?.entries && typeof payload.entries === 'object' && !Array.isArray(payload.entries)) {
+        return 'world_book';
+    }
+
+    if (looksLikeCharacterCard(payload)) {
+        return 'character_card';
+    }
+
+    return '';
+}
+
+function parseTagInput(value) {
+    const tags = [];
+    const seen = new Set();
+
+    for (const rawTag of String(value || '').split(',')) {
+        const tag = rawTag.trim();
+        if (!tag) {
+            continue;
+        }
+
+        if (tag.length > MAX_UPLOAD_TAG_LENGTH) {
+            throw new Error(`Tags must be ${MAX_UPLOAD_TAG_LENGTH} characters or less`);
+        }
+
+        const key = tag;
+        if (seen.has(key)) {
+            continue;
+        }
+
+        tags.push(tag);
+        seen.add(key);
+        if (tags.length > MAX_UPLOAD_TAGS) {
+            throw new Error(`Tags must contain ${MAX_UPLOAD_TAGS} items or less`);
+        }
+    }
+
+    return tags;
+}
+
 async function createAsset(submitForReview) {
     const type = String($('#marketplace_wallet_upload_type').val() || '');
     const title = String($('#marketplace_wallet_upload_title').val() || '').trim();
@@ -870,7 +943,9 @@ async function createAsset(submitForReview) {
     }
 
     let payload;
+    let tags;
     try {
+        tags = parseTagInput($('#marketplace_wallet_upload_tags').val());
         payload = parsePayloadJson();
         validatePayloadShape(type, payload);
     } catch (error) {
@@ -893,6 +968,7 @@ async function createAsset(submitForReview) {
                 type,
                 title,
                 summary,
+                tags,
                 price_type: priceType,
                 price_coins: priceCoins,
                 normalized_payload: payload,
@@ -1036,10 +1112,15 @@ function bindEvents($root) {
         }
         try {
             const text = await getFileText(file);
-            JSON.parse(text);
+            const payload = JSON.parse(text);
             $('#marketplace_wallet_upload_payload').val(text);
+            const inferredType = inferPayloadType(payload);
+            if (inferredType) {
+                $('#marketplace_wallet_upload_type').val(inferredType);
+            }
             if (!$('#marketplace_wallet_upload_title').val()) {
-                $('#marketplace_wallet_upload_title').val(file.name.replace(/\.[^.]+$/, ''));
+                const title = payload?.data?.name || payload?.name || file.name.replace(/\.[^.]+$/, '');
+                $('#marketplace_wallet_upload_title').val(String(title).slice(0, 160));
             }
         } catch (error) {
             toastr.error(error.message || 'File is not valid JSON');

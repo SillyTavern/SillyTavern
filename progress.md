@@ -815,14 +815,25 @@
 - 已通过 `npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:all`。
 - GitHub run `28247839474` 已确认 Marketplace Wallet Checks 全链路通过。
 
+## 2026-06-26 阶段 52：创作者上传 tags 与 JSON 类型识别
+- 启动只读 explorer `019f048f-c9f5-7420-bc03-223f8f3dfdbf` 复核 tags 后端约束、测试落点和文档落点，确认后端已有 `tags` 字段、最多 20 个、每个 40 字符，不需要后端改动。
+- marketplace-wallet 上传表单新增 `Tags, comma separated` 输入，提交 draft、submit 或 revise 时把 tags 数组写入现有 Market API body。
+- 市场资产卡片新增 tags chips，详情弹窗继续显示 tags，筛选搜索明确覆盖 tags 命中。
+- Load JSON 现在会读取本地 JSON 文件后按 payload 形状自动设置 `character_card` 或 `world_book`，并优先用 payload name 填标题。
+- `marketplace-wallet` manifest bump 到 `0.2.3`，避免浏览器缓存旧 JS/CSS。
+- `tests/marketplace-wallet-ui.test.js` 锁定 tags 输入、提交 payload、回填/清空、tags chips 和 JSON 类型识别代码；`tests/marketplace-wallet-filters.test.js` 补 tags 搜索断言。
+- `tests/marketplace-wallet.e2e.js` 的 creator upload 用例覆盖角色卡 JSON 自动识别、世界书 JSON 自动识别、tags 去重提交和列表 tags 展示。
+- README 验证矩阵和设计文档已更新 tags 上传、列表展示、搜索命中和 JSON type auto-detect 的当前 MVP 边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-filters.test.js marketplace-wallet-ui.test.js`、`npm run test:marketplace`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'submits a world book upload'`、`npm run test:marketplace:smoke`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环、Marketplace API reference 导出脚本、PWA service worker 浏览器 E2E，以及 Marketplace 慢速全闭环脚本 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环、Marketplace API reference 导出脚本、PWA service worker 浏览器 E2E、Marketplace 慢速全闭环脚本，以及创作者上传 tags 与 JSON 类型识别 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环、Marketplace API reference 导出脚本、PWA service worker 浏览器 E2E 和 Marketplace 慢速全闭环脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约、Rejected 资产修订重提浏览器闭环、举报处理 runtime smoke 闭环、Marketplace API reference 导出脚本、PWA service worker 浏览器 E2E、Marketplace 慢速全闭环脚本和创作者上传 tags/JSON 类型识别 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

@@ -114,6 +114,23 @@
     opacity: 0.75;
 }
 
+.marketplace-wallet-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 2px 0 5px;
+}
+
+.marketplace-wallet-tag {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 1px 5px;
+    background-color: var(--black30a);
+    font-size: calc(var(--mainFontSize) * 0.78);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
 .marketplace-wallet-type,
 .marketplace-wallet-badge {
     border: 1px solid var(--SmartThemeBorderColor);

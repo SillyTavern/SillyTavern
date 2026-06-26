@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.2');
+        expect(manifest.version).toBe('0.2.3');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -58,6 +58,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('id="marketplace_wallet_upload_status"');
         expect(html).toContain('id="marketplace_wallet_upload_mode"');
         expect(html).toContain('id="marketplace_wallet_upload_cancel"');
+        expect(html).toContain('id="marketplace_wallet_upload_tags"');
+        expect(html).toContain('Tags, comma separated');
         expect(html).toContain('Report Queue');
     });
 
@@ -122,6 +124,17 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('function fillUploadForm(asset)');
         expect(script).toContain('function clearUploadForm()');
         expect(script).toContain('function renderUploadMode(asset = null)');
+        expect(script).toContain('function parseTagInput(value)');
+        expect(script).toContain('MAX_UPLOAD_TAGS = 20');
+        expect(script).toContain('MAX_UPLOAD_TAG_LENGTH = 40');
+        expect(script).toContain("tags = parseTagInput($('#marketplace_wallet_upload_tags').val())");
+        expect(script).toContain("tags,");
+        expect(script).toContain("$('#marketplace_wallet_upload_tags').val(getAssetTags(asset).join(', '))");
+        expect(script).toContain("$('#marketplace_wallet_upload_tags').val('')");
+        expect(script).toContain('function inferPayloadType(payload)');
+        expect(script).toContain('const inferredType = inferPayloadType(payload)');
+        expect(script).toContain("$('#marketplace_wallet_upload_type').val(inferredType)");
+        expect(script).toContain("payload?.data?.name || payload?.name || file.name.replace");
         expect(script).toContain("method: editingAssetId ? 'PATCH' : 'POST'");
         expect(script).toContain("state.editingAssetId = asset?.id ?? null");
         expect(script).toContain("$('#marketplace_wallet_upload_payload').val(JSON.stringify(asset.normalized_payload ?? {}, null, 2))");
@@ -133,6 +146,10 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('function createAssetPreview(asset)');
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`");
         expect(script).toContain('asset.normalized_payload');
+        expect(script).toContain('function getAssetTags(asset)');
+        expect(script).toContain('function createTagList(asset)');
+        expect(script).toContain('class="marketplace-wallet-tags"');
+        expect(script).toContain('class="marketplace-wallet-tag"');
         expect(script).toContain('POPUP_TYPE.TEXT');
         expect(script).toContain("JSON.stringify(asset.normalized_payload, null, 2)");
         expect(script).toContain("okButton: 'Close'");
@@ -183,5 +200,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('.marketplace-wallet-upload-status');
         expect(css).toContain('.marketplace-wallet-asset-preview h3');
         expect(css).toContain('.marketplace-wallet-preview-payload');
+        expect(css).toContain('.marketplace-wallet-tags');
+        expect(css).toContain('.marketplace-wallet-tag');
     });
 });

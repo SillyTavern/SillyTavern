@@ -88,6 +88,9 @@ describe('marketplace wallet asset filters', () => {
         expect(filterAndSortAssets(assets, { search: 'cyberpunk' }).map(asset => asset.id)).toEqual([
             'paid-world',
         ]);
+        expect(filterAndSortAssets(assets, { search: 'friendly' }).map(asset => asset.id)).toEqual([
+            'free-character',
+        ]);
     });
 
     test('sorts by recency, popularity, and price without mutating source assets', () => {

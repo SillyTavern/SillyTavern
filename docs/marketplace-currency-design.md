@@ -89,7 +89,7 @@ listed -> suspended
   -> 上架
 ```
 
-当前本地 MVP 不做 multipart 文件上传解析；内置 marketplace-wallet 扩展提交已经规范化的 `normalized_payload` JSON。正式 SaaS 再补角色卡 PNG/JSON、世界书 JSON、预设 JSON 的解析、对象存储和安全扫描流水线。
+当前本地 MVP 不做 multipart 服务端文件上传解析；内置 marketplace-wallet 扩展可读取本地 JSON 文件，把内容写入 `normalized_payload`，并按 payload 形状自动选择角色卡或世界书类型。上传表单会提交最多 20 个、每个 40 字符以内的 `tags`，资产卡片和搜索也会使用这些标签。正式 SaaS 再补角色卡 PNG/JSON、世界书 JSON、预设 JSON 的解析、对象存储和安全扫描流水线。
 
 ### 上传校验
 
@@ -278,6 +278,7 @@ summary
 description
 cover_url
 language
+tags
 visibility
 status
 content_rating
