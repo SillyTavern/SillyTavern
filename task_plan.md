@@ -511,8 +511,8 @@
 - [x] 补充脚本契约测试并纳入 syntax gate 与 marketplace 聚合
 - [x] 补齐 marketplace workflow path filter 中的脚本/导出测试文件
 - [x] 更新 README、设计文档和规划记录
-- [ ] 运行基础验证并提交推送
-- **状态：** in_progress
+- [x] 运行基础验证并提交推送
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？

@@ -672,6 +672,7 @@
 | 阶段 51 syntax gate | `npm run test:marketplace:syntax` | marketplace scripts 测试纳入语法门禁 | 通过：24 files checked | 通过 |
 | 阶段 51 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/API reference/scripts/filter/UI 契约 | 通过：9 suites / 36 tests | 通过 |
 | 阶段 51 慢速全闭环脚本 | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:all` | 顺序运行 `test:marketplace`、runtime smoke 和临时 server browser E2E | 通过：contract 9 suites / 36 tests、runtime smoke ok、browser E2E 8 passed | 通过 |
+| GitHub 阶段 51 全闭环脚本验证 | `gh run watch 28247839474 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m25s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -812,6 +813,7 @@
 - 补齐 `.github/workflows/marketplace-wallet-checks.yml` path filter 中的 API reference/snapshot 脚本和新增测试文件，避免纯测试或导出脚本变更漏跑 marketplace CI。
 - README 验证矩阵和设计文档已补充 `test:marketplace:all` 作为发布前慢速验证入口。
 - 已通过 `npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:all`。
+- GitHub run `28247839474` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |
