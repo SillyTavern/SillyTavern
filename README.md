@@ -117,6 +117,7 @@ Validation matrix:
 
 - The MVP still uses JSON/node-persist storage and is intended for local validation, not production SaaS scale.
 - `npm run marketplace:export:snapshot` creates a redacted read-only market/wallet snapshot for backup checks and migration rehearsals; output files must be outside the data root.
+- Paid purchase responses return the entitlement, ownership status, purchase id, and buyer balance only; creator balances and full ledger entries remain behind wallet/creator APIs.
 - Production deployment should migrate market assets, entitlements, installs, wallet accounts, and wallet ledger entries to a transactional database.
 - Real payment, refunds, creator withdrawals, search/ranking, automated abuse enforcement, object storage, and mobile app packaging remain future work.
 - The codebase is AGPL-3.0. Hosted modifications should be reviewed for license compliance before commercial launch.

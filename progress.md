@@ -623,6 +623,10 @@
 | 阶段 40 runtime smoke | `npm run test:marketplace:smoke` | 真实 server health/PWA/wallet/assets/free purchase/install/library 仍通过 | 通过 | 通过 |
 | 阶段 40 snapshot CLI smoke | `node scripts/export-marketplace-snapshot.mjs --dataRoot "$tmp_data" --out "$tmp_out/snapshot.json"` | 空 dataRoot 可导出到外部文件，且不泄露 data_root | 通过 | 通过 |
 | 阶段 40 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
+| 阶段 41 wallet purchase 目标测试 | `npm --prefix tests run test:unit -- market-wallet.test.js` | paid purchase 响应不返回 creator_balance/full ledger entries，账本仍可从 wallet ledger 验证 | 通过：1 suite / 9 tests | 通过 |
+| 阶段 41 syntax gate | `npm run test:marketplace:syntax` | market endpoint 和测试语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 41 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
+| 阶段 41 runtime smoke | `npm run test:marketplace:smoke` | 真实 server health/PWA/wallet/assets/free purchase/install/library 仍通过 | 通过 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -673,14 +677,21 @@
 - README Useful Scripts 和验证矩阵加入 snapshot export；设计文档记录它作为迁移演练和备份检查工具。
 - 已通过 `npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace`、`npm run test:marketplace:smoke`、snapshot CLI smoke、`git diff --check`。
 
+## 2026-06-26 阶段 41：购买响应隐私收紧
+- 选择下一个低风险交付缺口：paid purchase 响应之前会把 `purchase.ledger_entries` 和 `purchase.creator_balance` 返回给买家，账务边界偏宽。
+- `src/endpoints/market.js` 新增 `toPurchaseResult()`，购买响应只保留 purchase id 和 buyer balance；entitlement 内部仍保存 `ledger_entry_ids`，用于审计和后续迁移。
+- `tests/market-wallet.test.js` 改为断言购买响应不含完整 ledger entries 或 creator balance；买家扣款和创作者 earnings 继续通过各自 `/api/wallet/ledger` 响应验证。
+- README 和设计文档补充 paid purchase 响应边界：完整账本、创作者余额和收益明细由 Wallet API / Creator Center 读取。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace`、`npm run test:marketplace:smoke`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复，以及市场/钱包只读快照导出脚本 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本，以及购买响应隐私收紧 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复和 marketplace/wallet 快照导出脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本和购买响应隐私收紧 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

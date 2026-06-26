@@ -664,41 +664,13 @@ describe('market and wallet MVP endpoints', () => {
         expect(purchaseResult.status).toBe(201);
         expect(purchaseResult.body.entitlement.source).toBe('purchase');
         expect(purchaseResult.body.entitlement.purchase_id).toBeTruthy();
-        expect(purchaseResult.body.purchase.ledger_entries).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: 'market_purchase_debit',
-                userHandle: 'bob',
-                bucket: 'bonus',
-                amount: -10,
-            }),
-            expect.objectContaining({
-                type: 'market_purchase_debit',
-                userHandle: 'bob',
-                bucket: 'paid',
-                amount: -20,
-            }),
-            expect.objectContaining({
-                type: 'market_creator_earning',
-                userHandle: 'charlie',
-                bucket: 'earnings',
-                amount: 30,
-                metadata: expect.objectContaining({
-                    asset_id: assetId,
-                    buyer_handle: 'bob',
-                    creator_handle: 'charlie',
-                    price_coins: 30,
-                    debit_breakdown: {
-                        bonus: 10,
-                        paid: 20,
-                    },
-                }),
-            }),
-        ]));
+        expect(purchaseResult.body.purchase.id).toBe(purchaseResult.body.entitlement.purchase_id);
         expect(purchaseResult.body.purchase.buyer_balance.buckets).toMatchObject({
             bonus: 0,
             paid: 5,
         });
-        expect(purchaseResult.body.purchase.creator_balance.buckets.earnings).toBe(30);
+        expect(purchaseResult.body.purchase.ledger_entries).toBeUndefined();
+        expect(purchaseResult.body.purchase.creator_balance).toBeUndefined();
 
         const paidOwnedDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
         expect(paidOwnedDetail.status).toBe(200);
@@ -726,12 +698,42 @@ describe('market and wallet MVP endpoints', () => {
             bonus: 0,
             paid: 5,
         });
-        expect(bobLedger.body.ledger.filter(entry => entry.type === 'market_purchase_debit')).toHaveLength(2);
+        expect(bobLedger.body.ledger.filter(entry => entry.type === 'market_purchase_debit')).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'market_purchase_debit',
+                userHandle: 'bob',
+                bucket: 'bonus',
+                amount: -10,
+            }),
+            expect.objectContaining({
+                type: 'market_purchase_debit',
+                userHandle: 'bob',
+                bucket: 'paid',
+                amount: -20,
+            }),
+        ]));
 
         const charlieLedger = await request(charlieApp, '/api/wallet/ledger', { method: 'GET' });
         expect(charlieLedger.status).toBe(200);
         expect(charlieLedger.body.balance.buckets.earnings).toBe(30);
-        expect(charlieLedger.body.ledger.filter(entry => entry.type === 'market_creator_earning')).toHaveLength(1);
+        expect(charlieLedger.body.ledger.filter(entry => entry.type === 'market_creator_earning')).toEqual([
+            expect.objectContaining({
+                type: 'market_creator_earning',
+                userHandle: 'charlie',
+                bucket: 'earnings',
+                amount: 30,
+                metadata: expect.objectContaining({
+                    asset_id: assetId,
+                    buyer_handle: 'bob',
+                    creator_handle: 'charlie',
+                    price_coins: 30,
+                    debit_breakdown: {
+                        bonus: 10,
+                        paid: 20,
+                    },
+                }),
+            }),
+        ]);
 
         const store = JSON.parse(fs.readFileSync(path.join(dataRoot, 'market-assets.json'), 'utf8'));
         const storedAsset = store.assets.find(asset => asset.id === assetId);

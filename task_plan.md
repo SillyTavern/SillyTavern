@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 40
+阶段 41
 
 ## 各阶段
 
@@ -412,6 +412,16 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 41：购买响应隐私收紧
+- [x] 使用多 agent 并发审查下一阶段交付缺口
+- [x] 将 paid purchase API 响应改为买家可见摘要
+- [x] 不在购买响应中返回创作者余额或完整 ledger entries
+- [x] 保留 entitlement 内部 ledger ids 和买家余额摘要
+- [x] 补充后端契约测试和 README/设计文档说明
+- [x] 运行基础测试和 smoke 验证
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -463,6 +473,7 @@
 | Marketplace workflow push 分支放宽到 `codex/**` | 后续并行 Codex 工作分支仍应触发同一 marketplace 门禁；path filter 已限制只在相关文件变更时运行，避免扩大到无关分支 |
 | 市场/钱包快照默认导出白名单字段 | 备份和迁移检查需要资产/授权/安装/举报/账本摘要，但不应默认导出 payload、举报正文、本地安装路径、完整 ledger reason/metadata 或绝对 dataRoot |
 | 快照 `--out` 不允许写入 dataRoot | 导出命令应保持用户数据目录只读，避免备份检查动作改变正在运行的本地数据根 |
+| 购买 API 响应应只返回买家需要的信息 | 买家需要 entitlement、是否已拥有和自己的余额摘要；创作者余额和完整 ledger entries 属于更敏感的账务审计数据，应通过各自 wallet/creator 接口读取 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

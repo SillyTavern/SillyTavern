@@ -382,6 +382,17 @@ function toLibraryItem(entitlement, asset, store, currentUserId) {
     };
 }
 
+function toPurchaseResult(purchase) {
+    if (!purchase) {
+        return null;
+    }
+
+    return {
+        id: purchase.purchase_id,
+        buyer_balance: purchase.buyer_balance,
+    };
+}
+
 function getStatusCounts(assets) {
     return assets.reduce((counts, asset) => {
         const status = asset.status || 'draft';
@@ -906,14 +917,7 @@ router.post('/assets/:id/purchase', async (request, response) => {
         return response.status(201).json({
             entitlement,
             already_owned: false,
-            purchase: purchase
-                ? {
-                    id: purchase.purchase_id,
-                    ledger_entries: purchase.ledger_entries,
-                    buyer_balance: purchase.buyer_balance,
-                    creator_balance: purchase.creator_balance,
-                }
-                : null,
+            purchase: toPurchaseResult(purchase),
         });
     });
 });

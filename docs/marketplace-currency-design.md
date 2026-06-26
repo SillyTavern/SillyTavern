@@ -456,6 +456,7 @@ POST   /api/wallet/grants/admin
 ```
 
 marketplace-wallet 钱包面板展示当前用户的最近流水，包含运营赠币、购买扣款、创作者收益等正负金额记录；完整账本仍以 `GET /api/wallet/ledger` 为准。
+付费购买响应只返回 entitlement、`already_owned`、purchase id 和买家余额摘要；完整 ledger entries、创作者余额和收益明细需要通过 Wallet API 或 Creator Center 读取，避免市场购买接口扩大账务数据暴露面。
 
 Public health API：
 
