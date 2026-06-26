@@ -1059,6 +1059,14 @@
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates and normalizes marketplace asset tags'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28258052271` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 78：市场资产文本元数据边界
+- 新增 `validates and normalizes marketplace asset text metadata` 后端契约测试。
+- 测试覆盖 title 121、summary 501、description 10001、language 17、content_rating 41 字符时返回对应长度错误。
+- 测试覆盖 title 120、summary 500、description 10000、language 16、content_rating 40 字符可创建，并确认后端 trim 后原样保存。
+- 根据只读 explorer 复核，PATCH 已由 tags 用例证明走同一验证入口，本阶段保持最小 POST 文本元数据覆盖。
+- README 和 findings 已补充 bounded metadata 后端边界。
+- 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates and normalizes marketplace asset text metadata'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

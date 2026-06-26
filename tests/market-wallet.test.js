@@ -760,6 +760,63 @@ describe('market and wallet MVP endpoints', () => {
         });
     });
 
+    test('validates and normalizes marketplace asset text metadata', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const baseBody = {
+            type: 'character_card',
+            title: 'Text Asset',
+            normalized_payload: createCharacterPayload(),
+        };
+
+        const invalidText = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                ...baseBody,
+                title: 'T'.repeat(121),
+                summary: 'S'.repeat(501),
+                description: 'D'.repeat(10001),
+                language: 'L'.repeat(17),
+                content_rating: 'C'.repeat(41),
+            },
+        });
+        expect(invalidText.status).toBe(400);
+        expect(invalidText.body).toMatchObject({
+            error: 'Invalid market asset',
+            details: [
+                'title must be 120 characters or less',
+                'summary must be 500 characters or less',
+                'description must be 10000 characters or less',
+                'language must be 16 characters or less',
+                'content_rating must be 40 characters or less',
+            ],
+        });
+
+        const maxTitle = 'T'.repeat(120);
+        const maxSummary = 'S'.repeat(500);
+        const maxDescription = 'D'.repeat(10000);
+        const maxLanguage = 'L'.repeat(16);
+        const maxContentRating = 'C'.repeat(40);
+        const validText = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                ...baseBody,
+                title: ` ${maxTitle} `,
+                summary: ` ${maxSummary} `,
+                description: ` ${maxDescription} `,
+                language: ` ${maxLanguage} `,
+                content_rating: ` ${maxContentRating} `,
+            },
+        });
+        expect(validText.status).toBe(201);
+        expect(validText.body.asset).toMatchObject({
+            title: maxTitle,
+            summary: maxSummary,
+            description: maxDescription,
+            language: maxLanguage,
+            content_rating: maxContentRating,
+        });
+    });
+
     test('allows only admins to grant wallet balance', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const bobApp = createApp(createUser('bob', false));
