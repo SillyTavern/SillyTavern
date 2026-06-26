@@ -1066,6 +1066,7 @@
 - 根据只读 explorer 复核，PATCH 已由 tags 用例证明走同一验证入口，本阶段保持最小 POST 文本元数据覆盖。
 - README 和 findings 已补充 bounded metadata 后端边界。
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'validates and normalizes marketplace asset text metadata'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28258315683` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
