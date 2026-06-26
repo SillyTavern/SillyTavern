@@ -99,6 +99,7 @@
 - marketplace-wallet 搜索现在会匹配资产 language 和 content_rating，和 Details 里已展示的元数据保持一致。
 - marketplace-wallet 空结果且存在激活筛选时会显示 Clear filters，避免移动端用户被空搜索困住。
 - 新增 `scripts/check-marketplace-syntax.mjs` 作为 marketplace/wallet/PWA/health 基础语法门禁，并接入根目录 `npm run test:marketplace`。
+- marketplace syntax gate 会检查 marketplace-wallet 的 `manifest.json`、`window.html` 和 `style.css` 存在且非空，manifest 还会执行 JSON parse。
 - PWA 契约测试新增 service worker 预缓存清单解析，确认 `/` 映射到 `index.html` 且所有 shell assets 都存在于 `public/`。
 - 设计文档的 API 模块已拆为“当前本地 MVP 已实现 API”和“Future SaaS API”，并明确当前上传流接收规范化 JSON payload。
 - 新增运行态 smoke 脚本，临时启动真实 SillyTavern server 并校验 `/api/health`、`/manifest.json`、`/service-worker.js`。

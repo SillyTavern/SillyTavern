@@ -993,6 +993,13 @@
 - 首次 `npm run test:marketplace` 中 `market-wallet.test.js` 的 `requires review before purchase...` 出现一次 `TypeError: fetch failed / SocketError: other side closed`；该用例单独复跑通过，完整聚合随后复跑通过，判断为瞬时本地 socket 抖动。
 - GitHub run `28255738939` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 70：市场扩展静态资产门禁
+- 根据只读 explorer 的候选建议，扩展 `scripts/check-marketplace-syntax.mjs`，在 JS `node --check` 之外检查 marketplace-wallet 静态资产。
+- syntax gate 现在会确认 `manifest.json`、`window.html` 和 `style.css` 存在且非空，并对 manifest 执行 JSON parse。
+- `tests/marketplace-scripts.test.js` 新增契约断言，锁定静态资产门禁目标。
+- README 和 findings 已补充 syntax gate 覆盖 marketplace-wallet 静态资产的边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

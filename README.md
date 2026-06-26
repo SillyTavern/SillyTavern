@@ -119,7 +119,7 @@ Validation matrix:
 
 | Command | Coverage |
 |---------|----------|
-| `npm run test:marketplace:syntax` | Fast JS syntax gate for marketplace/wallet endpoints, PWA files, scripts, and targeted tests. |
+| `npm run test:marketplace:syntax` | Fast JS syntax gate plus marketplace-wallet manifest/window/style asset checks for marketplace/wallet endpoints, PWA files, scripts, and targeted tests. |
 | `npm run test:marketplace` | Syntax gate plus marketplace, wallet, PWA, health, seed, snapshot export, API reference export, filter, upload tags, and UI contract tests. |
 | `npm run test:marketplace:smoke` | Temporary local server smoke covering health, PWA shell, wallet, market assets, creator upload/submit/approve, Creator Center stats, report create/queue/resolve, free and fixed-price claim/install, buyer debit, creator earning, Library, and file write. |
 | `npm run test:pwa:e2e` | Temporary local server plus Playwright service worker E2E for shell cache registration and `/api/*` cache exclusion; use `PLAYWRIGHT_BROWSER_CHANNEL=chrome` to run with installed Chrome. |

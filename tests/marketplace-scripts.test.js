@@ -29,4 +29,15 @@ describe('marketplace runnable scripts', () => {
         expect(scripts['test:marketplace']).not.toContain('test:marketplace:all');
         expect(scripts['test:marketplace']).not.toContain('test:marketplace:e2e:server');
     });
+
+    test('checks marketplace wallet static extension assets in the syntax gate', () => {
+        const script = fs.readFileSync(path.join(rootDirectory, 'scripts/check-marketplace-syntax.mjs'), 'utf8');
+
+        expect(script).toContain('staticAssets');
+        expect(script).toContain('public/scripts/extensions/marketplace-wallet/manifest.json');
+        expect(script).toContain('public/scripts/extensions/marketplace-wallet/window.html');
+        expect(script).toContain('public/scripts/extensions/marketplace-wallet/style.css');
+        expect(script).toContain('JSON.parse(content)');
+        expect(script).toContain('asset ok: ${asset.file}');
+    });
 });

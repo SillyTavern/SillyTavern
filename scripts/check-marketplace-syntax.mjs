@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,7 +32,13 @@ const files = [
     'tests/health.test.js',
 ];
 
-for (const file of files) {
+const staticAssets = [
+    { file: 'public/scripts/extensions/marketplace-wallet/manifest.json', type: 'json' },
+    { file: 'public/scripts/extensions/marketplace-wallet/window.html', type: 'text' },
+    { file: 'public/scripts/extensions/marketplace-wallet/style.css', type: 'text' },
+];
+
+function ensureExists(file) {
     const absolutePath = path.join(rootDirectory, file);
 
     if (!existsSync(absolutePath)) {
@@ -40,6 +46,11 @@ for (const file of files) {
         process.exit(1);
     }
 
+    return absolutePath;
+}
+
+for (const file of files) {
+    const absolutePath = ensureExists(file);
     const result = spawnSync(process.execPath, ['--check', absolutePath], {
         cwd: rootDirectory,
         encoding: 'utf8',
@@ -53,4 +64,17 @@ for (const file of files) {
     }
 
     console.log(`syntax ok: ${file}`);
+}
+
+for (const asset of staticAssets) {
+    const absolutePath = ensureExists(asset.file);
+    const content = readFileSync(absolutePath, 'utf8');
+    if (!content.trim()) {
+        console.error(`Empty marketplace static asset: ${asset.file}`);
+        process.exit(1);
+    }
+    if (asset.type === 'json') {
+        JSON.parse(content);
+    }
+    console.log(`asset ok: ${asset.file}`);
 }
