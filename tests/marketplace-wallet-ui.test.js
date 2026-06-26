@@ -31,6 +31,15 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('id="marketplace_wallet_creator_earnings"');
         expect(html).toContain('id="marketplace_wallet_creator_assets_list"');
         expect(html).toContain('id="marketplace_wallet_library_items"');
+        expect(html).toContain('id="marketplace_wallet_price_filter"');
+        expect(html).toContain('id="marketplace_wallet_access_filter"');
+        expect(html).toContain('id="marketplace_wallet_sort"');
+        expect(html).toContain('<option value="available"');
+        expect(html).toContain('<option value="library"');
+        expect(html).toContain('<option value="mine"');
+        expect(html).toContain('<option value="popular"');
+        expect(html).toContain('<option value="price_asc"');
+        expect(html).toContain('<option value="price_desc"');
         expect(html).toContain('My Library');
         expect(html).toContain('claims</span>');
         expect(html).toContain('earned</span>');
@@ -66,6 +75,18 @@ describe('marketplace wallet extension UI contract', () => {
 
         expect(script).toContain("fetchJson('/api/market/creator/summary')");
         expect(script).toContain("fetchJson('/api/market/library')");
+        expect(script).toContain("const priceType = String($('#marketplace_wallet_price_filter').val() || '')");
+        expect(script).toContain("const access = String($('#marketplace_wallet_access_filter').val() || '')");
+        expect(script).toContain("const sort = String($('#marketplace_wallet_sort').val() || 'recent')");
+        expect(script).toContain("case 'available':");
+        expect(script).toContain("return asset.status === 'listed' && !asset.owned && !asset.entitled;");
+        expect(script).toContain("case 'library':");
+        expect(script).toContain('return asset.entitled;');
+        expect(script).toContain("case 'mine':");
+        expect(script).toContain('return asset.owned;');
+        expect(script).toContain("case 'popular':");
+        expect(script).toContain("case 'price_asc':");
+        expect(script).toContain("case 'price_desc':");
         expect(script).toContain('async function loadCreatorSummary()');
         expect(script).toContain('async function loadLibrary()');
         expect(script).toContain("console.warn('Creator summary could not be loaded'");
@@ -126,6 +147,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('POPUP_TYPE.CONFIRM');
         expect(script).toContain('POPUP_TYPE.INPUT');
         expect(script).toContain('asset.owned || asset.entitled');
+        expect(script).toContain('#marketplace_wallet_price_filter, #marketplace_wallet_access_filter, #marketplace_wallet_sort');
         expect(script).toContain("$root.find('#marketplace_wallet_review_queue').on('click', onAssetAction)");
         expect(script).toContain("$root.find('#marketplace_wallet_report_queue').on('click', onReportAction)");
         expect(script).toContain("await fetchJson('/api/wallet/grants/admin'");
@@ -138,6 +160,7 @@ describe('marketplace wallet extension UI contract', () => {
 
         expect(css).toContain('@media screen and (max-width: 700px)');
         expect(css).toContain('.marketplace-wallet-creator-stats');
+        expect(css).toContain('.marketplace-wallet-controls .text_pole');
         expect(css).toContain('.marketplace-wallet-library-items');
         expect(css).toContain('.marketplace-wallet-library-item');
         expect(css).toContain('data-marketplace-wallet-status="delisted"');

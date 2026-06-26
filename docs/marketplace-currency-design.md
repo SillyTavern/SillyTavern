@@ -449,6 +449,7 @@ GET    /api/market/creator/summary
 创作者可修改自己的 draft/rejected 资产，修改后回到 draft/private，再重新 submit 进入审核；submitted/listed/delisted 资产不允许原地修改，后续应改走版本化发布。
 Library 接口只返回当前用户 active entitlements 对应的资产摘要、授权来源和安装记录摘要，不返回 `normalized_payload`；已下架但仍授权的资产也会保留在用户库中，便于重新安装。
 资产详情弹窗复用 `GET /api/market/assets/:id`；未授权用户只能看到元数据，创建者、管理员或已授权用户才会看到 payload。
+本地 MVP 的市场浏览先用客户端筛选和排序，支持类型、价格、访问状态、搜索、最新、热门和价格排序；正式 SaaS 需要服务端搜索与排序索引。
 托管探活使用公开 `GET /api/health`，返回 `ok/status/service/version/uptime/timestamp`，不需要登录、不返回用户或账务数据。
 
 该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。

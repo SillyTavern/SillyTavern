@@ -58,6 +58,10 @@
     min-width: 0;
 }
 
+.marketplace-wallet-controls .text_pole {
+    min-width: 110px;
+}
+
 .marketplace-wallet-assets {
     display: flex;
     flex-direction: column;

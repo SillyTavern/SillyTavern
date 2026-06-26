@@ -369,6 +369,27 @@
   - progress.md
   - findings.md
 
+### 阶段 22：市场浏览筛选与排序
+- **状态：** complete
+- 执行的操作：
+  - 选择客户端筛选/排序作为当前 JSON-store MVP 的最小浏览增强。
+  - 市场筛选条新增价格筛选：任意、免费、付费。
+  - 新增访问状态筛选：全部、可获取、已入库、我的上传。
+  - 新增排序：最新、热门、价格低到高、价格高到低。
+  - 扩展 `getFilteredAssets()`，按类型、价格、访问状态、搜索词和排序组合过滤。
+  - 调整筛选控件 CSS，保证移动端可换行且控件不挤压。
+  - 扩展前端契约测试，覆盖新增控件、过滤分支、排序分支和事件绑定。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - public/scripts/extensions/marketplace-wallet/window.html
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/style.css
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -410,6 +431,7 @@
 | My Library 回归 | `npm run test:marketplace` | 用户库返回当前用户授权资产、下架后仍可见、安装摘要更新且不泄漏 payload | 通过：3 suites / 15 tests | 通过 |
 | health endpoint 契约 | `npm run test:marketplace` | `/api/health` 公开且返回服务级状态字段 | 通过：4 suites / 16 tests | 通过 |
 | asset details 回归 | `npm run test:marketplace` | 未授权详情不泄漏 payload，付费购买后详情可读 payload，前端 Details 走统一弹窗 | 通过：4 suites / 16 tests | 通过 |
+| marketplace filters 回归 | `npm run test:marketplace` | 类型/价格/访问状态/排序控件与前端过滤分支存在 | 通过：4 suites / 16 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -429,11 +451,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查和资产详情弹窗 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗和市场筛选排序 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、README 和基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*
