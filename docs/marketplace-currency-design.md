@@ -115,6 +115,13 @@ listed -> suspended
 
 购买后产生授权记录，用户可以重复安装同一资产，不重复扣费。
 
+当前后端 MVP 已支持 `free` 和 `fixed_price`：
+
+- `free` 只创建 entitlement，不写 0 金额钱包账本。
+- `fixed_price` 会先消耗 `bonus`，再消耗 `paid`，不足时返回 402 且不创建 entitlement。
+- 购买成功后给创作者写入 `earnings` 账本，购买 ledger 共享 `purchase_id`，并记录资产、购买者、创作者和扣款拆分。
+- 同一用户重复购买同一资产返回已有 entitlement，不重复扣款或增加销量。
+
 ### 安装模型
 
 购买不是直接修改聊天上下文，而是生成一个“安装副本”：
@@ -466,6 +473,8 @@ web/mobile client
 ```
 
 MVP 可以先做单体模块化服务，不必一开始拆微服务。关键是数据库表和服务边界先按模块隔离。
+
+当前本地 MVP 仍使用 JSON 文件保存 market store，并用 node-persist 保存 wallet ledger；同进程购买已按资产和用户做轻量串行化，但正式 SaaS 仍需要迁移到数据库事务，保证 entitlement、销量、扣款和创作者收益跨存储一致。
 
 ## 和现有 SillyTavern 的接法
 

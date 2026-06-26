@@ -144,6 +144,7 @@ describe('market and wallet MVP endpoints', () => {
         await storage.clear();
         await storage.setItem(toKey('alice'), createUser('alice', true));
         await storage.setItem(toKey('bob'), createUser('bob', false));
+        await storage.setItem(toKey('charlie'), createUser('charlie', false));
     });
 
     afterEach(async () => {
@@ -203,6 +204,13 @@ describe('market and wallet MVP endpoints', () => {
         expect(purchaseResult.body.already_owned).toBe(false);
         expect(purchaseResult.body.entitlement.user_id).toBe('bob');
         expect(purchaseResult.body.entitlement.asset_id).toBe(assetId);
+        expect(purchaseResult.body.entitlement.source).toBe('free');
+        expect(purchaseResult.body.entitlement.purchase_id).toBeNull();
+        expect(purchaseResult.body.purchase).toBeNull();
+
+        const freeLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(freeLedger.status).toBe(200);
+        expect(freeLedger.body.ledger).toHaveLength(0);
 
         const ownedDetail = await request(bobApp, `/api/market/assets/${assetId}`, { method: 'GET' });
         expect(ownedDetail.status).toBe(200);
@@ -299,5 +307,175 @@ describe('market and wallet MVP endpoints', () => {
             bucket: 'bonus',
             amount: 10,
         });
+    });
+
+    test('purchases fixed price assets with wallet ledger and creator earnings', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+        const charlieApp = createApp(createUser('charlie', false));
+        const assetId = await createSubmittedAsset(charlieApp, {
+            type: 'character_card',
+            title: 'Paid Charlie',
+            price_type: 'fixed_price',
+            price_coins: 30,
+            normalized_payload: createCharacterPayload(),
+        });
+
+        const approveResult = await request(aliceApp, `/api/market/assets/${assetId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approveResult.status).toBe(200);
+        expect(approveResult.body.asset.price_type).toBe('fixed_price');
+        expect(approveResult.body.asset.price_coins).toBe(30);
+
+        const insufficientPurchase = await request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(insufficientPurchase.status).toBe(402);
+        expect(insufficientPurchase.body.error).toBe('Insufficient wallet balance');
+
+        const failedStore = JSON.parse(fs.readFileSync(path.join(dataRoot, 'market-assets.json'), 'utf8'));
+        expect(failedStore.assets.find(asset => asset.id === assetId).sales_count).toBe(0);
+        expect(failedStore.entitlements.filter(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toHaveLength(0);
+
+        const failedBobLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(failedBobLedger.status).toBe(200);
+        expect(failedBobLedger.body.ledger).toHaveLength(0);
+
+        const failedCreatorLedger = await request(charlieApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(failedCreatorLedger.status).toBe(200);
+        expect(failedCreatorLedger.body.balance.buckets.earnings).toBe(0);
+
+        const blockedInstall = await request(bobApp, `/api/market/assets/${assetId}/install`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(blockedInstall.status).toBe(403);
+        expect(fs.existsSync(path.join(dataRoot, 'bob', 'characters'))).toBe(false);
+
+        const bonusGrant = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 10,
+                bucket: 'bonus',
+            },
+        });
+        expect(bonusGrant.status).toBe(201);
+
+        const paidGrant = await request(aliceApp, '/api/wallet/grants/admin', {
+            method: 'POST',
+            body: {
+                targetHandle: 'bob',
+                amount: 25,
+                bucket: 'paid',
+            },
+        });
+        expect(paidGrant.status).toBe(201);
+
+        const purchaseResult = await request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(purchaseResult.status).toBe(201);
+        expect(purchaseResult.body.entitlement.source).toBe('purchase');
+        expect(purchaseResult.body.entitlement.purchase_id).toBeTruthy();
+        expect(purchaseResult.body.purchase.ledger_entries).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'market_purchase_debit',
+                userHandle: 'bob',
+                bucket: 'bonus',
+                amount: -10,
+            }),
+            expect.objectContaining({
+                type: 'market_purchase_debit',
+                userHandle: 'bob',
+                bucket: 'paid',
+                amount: -20,
+            }),
+            expect.objectContaining({
+                type: 'market_creator_earning',
+                userHandle: 'charlie',
+                bucket: 'earnings',
+                amount: 30,
+                metadata: expect.objectContaining({
+                    asset_id: assetId,
+                    buyer_handle: 'bob',
+                    creator_handle: 'charlie',
+                    price_coins: 30,
+                    debit_breakdown: {
+                        bonus: 10,
+                        paid: 20,
+                    },
+                }),
+            }),
+        ]));
+        expect(purchaseResult.body.purchase.buyer_balance.buckets).toMatchObject({
+            bonus: 0,
+            paid: 5,
+        });
+        expect(purchaseResult.body.purchase.creator_balance.buckets.earnings).toBe(30);
+
+        const repeatPurchase = await request(bobApp, `/api/market/assets/${assetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(repeatPurchase.status).toBe(200);
+        expect(repeatPurchase.body.already_owned).toBe(true);
+        expect(repeatPurchase.body.entitlement.id).toBe(purchaseResult.body.entitlement.id);
+
+        const installResult = await request(bobApp, `/api/market/assets/${assetId}/install`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(installResult.status).toBe(201);
+        expect(installResult.body.install.asset_id).toBe(assetId);
+
+        const bobLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(bobLedger.status).toBe(200);
+        expect(bobLedger.body.balance.buckets).toMatchObject({
+            bonus: 0,
+            paid: 5,
+        });
+        expect(bobLedger.body.ledger.filter(entry => entry.type === 'market_purchase_debit')).toHaveLength(2);
+
+        const charlieLedger = await request(charlieApp, '/api/wallet/ledger', { method: 'GET' });
+        expect(charlieLedger.status).toBe(200);
+        expect(charlieLedger.body.balance.buckets.earnings).toBe(30);
+        expect(charlieLedger.body.ledger.filter(entry => entry.type === 'market_creator_earning')).toHaveLength(1);
+
+        const store = JSON.parse(fs.readFileSync(path.join(dataRoot, 'market-assets.json'), 'utf8'));
+        const storedAsset = store.assets.find(asset => asset.id === assetId);
+        expect(storedAsset.sales_count).toBe(1);
+        expect(store.entitlements.filter(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toHaveLength(1);
+    });
+
+    test('validates fixed price asset pricing', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const invalidFixedPrice = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                type: 'character_card',
+                title: 'Invalid Paid',
+                price_type: 'fixed_price',
+                price_coins: 0,
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(invalidFixedPrice.status).toBe(400);
+
+        const invalidFreePrice = await request(aliceApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                type: 'character_card',
+                title: 'Invalid Free',
+                price_type: 'free',
+                price_coins: 10,
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(invalidFreePrice.status).toBe(400);
     });
 });

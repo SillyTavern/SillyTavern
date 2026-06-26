@@ -12,11 +12,12 @@ import { serverDirectory } from '../server-directory.js';
 import { getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { requireAdminMiddleware } from '../users.js';
+import { purchaseWithWallet } from './wallet.js';
 
 const MARKET_STORE_FILE = 'market-assets.json';
 const DEFAULT_MARKET_AVATAR_PATH = path.resolve(serverDirectory, DEFAULT_AVATAR_PATH);
 const SUPPORTED_TYPES = new Set(['character_card', 'world_book']);
-const SUPPORTED_PRICE_TYPES = new Set(['free']);
+const SUPPORTED_PRICE_TYPES = new Set(['free', 'fixed_price']);
 const SAFE_ID_PATTERN = /^[a-z0-9_-]{8,64}$/;
 const MAX_TITLE_LENGTH = 120;
 const MAX_SUMMARY_LENGTH = 500;
@@ -24,8 +25,10 @@ const MAX_DESCRIPTION_LENGTH = 10000;
 const MAX_LANGUAGE_LENGTH = 16;
 const MAX_TAGS = 20;
 const MAX_TAG_LENGTH = 40;
+const MAX_PRICE_COINS = 1000000;
 
 export const router = express.Router();
+const marketPurchaseLocks = new Map();
 
 function createId(prefix) {
     return `${prefix}_${crypto.randomBytes(16).toString('hex')}`;
@@ -68,6 +71,26 @@ function writeStore(request, store) {
     const storePath = getStorePath(request);
     fs.mkdirSync(path.dirname(storePath), { recursive: true });
     writeFileAtomicSync(storePath, JSON.stringify(store, null, 4), 'utf8');
+}
+
+async function withMarketPurchaseLock(key, action) {
+    const previous = marketPurchaseLocks.get(key) || Promise.resolve();
+    let release;
+    const gate = new Promise(resolve => {
+        release = resolve;
+    });
+    const tail = previous.then(() => gate, () => gate);
+    marketPurchaseLocks.set(key, tail);
+    await previous.catch(() => {});
+
+    try {
+        return await action();
+    } finally {
+        release();
+        if (marketPurchaseLocks.get(key) === tail) {
+            marketPurchaseLocks.delete(key);
+        }
+    }
 }
 
 function getUserId(request) {
@@ -134,6 +157,30 @@ function normalizeTags(value, errors) {
     return tags;
 }
 
+function normalizePriceCoins(value, priceType, errors) {
+    if (priceType === 'free') {
+        if (value !== undefined && value !== null && Number(value) !== 0) {
+            errors.push('price_coins must be 0 for free assets');
+        }
+        return 0;
+    }
+
+    if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+        value = Number(value);
+    }
+
+    if (!Number.isSafeInteger(value) || value <= 0) {
+        errors.push('price_coins must be a positive safe integer for fixed_price assets');
+        return 0;
+    }
+    if (value > MAX_PRICE_COINS) {
+        errors.push(`price_coins must be ${MAX_PRICE_COINS} or less`);
+        return 0;
+    }
+
+    return value;
+}
+
 function normalizeCreateBody(body) {
     const errors = [];
     if (!isPlainObject(body)) {
@@ -152,8 +199,9 @@ function normalizeCreateBody(body) {
     const contentRating = normalizeString(body.content_rating ?? 'general', 40, 'content_rating', errors) || 'general';
     const priceType = normalizeString(body.price_type ?? 'free', 24, 'price_type', errors) || 'free';
     if (priceType && !SUPPORTED_PRICE_TYPES.has(priceType)) {
-        errors.push('price_type must be free in the market MVP');
+        errors.push(`price_type must be one of: ${Array.from(SUPPORTED_PRICE_TYPES).join(', ')}`);
     }
+    const priceCoins = normalizePriceCoins(body.price_coins, priceType, errors);
 
     const metadata = body.metadata === undefined ? {} : body.metadata;
     if (!isPlainObject(metadata)) {
@@ -175,7 +223,7 @@ function normalizeCreateBody(body) {
             language,
             content_rating: contentRating,
             price_type: priceType,
-            price_coins: 0,
+            price_coins: priceCoins,
             tags: normalizeTags(body.tags, errors),
             metadata: isPlainObject(metadata) ? metadata : {},
             normalized_payload: isPlainObject(normalizedPayload) ? normalizedPayload : {},
@@ -193,6 +241,11 @@ function validateAssetForSubmit(asset) {
     }
     if (!SUPPORTED_TYPES.has(asset.type)) {
         errors.push(`type must be one of: ${Array.from(SUPPORTED_TYPES).join(', ')}`);
+    }
+    if (!SUPPORTED_PRICE_TYPES.has(asset.price_type)) {
+        errors.push(`price_type must be one of: ${Array.from(SUPPORTED_PRICE_TYPES).join(', ')}`);
+    } else {
+        normalizePriceCoins(asset.price_coins, asset.price_type, errors);
     }
     if (!isPlainObject(asset.metadata)) {
         errors.push('metadata must be an object');
@@ -519,38 +572,79 @@ router.post('/assets/:id/reject', requireAdminMiddleware, (request, response) =>
     return response.json({ asset });
 });
 
-router.post('/assets/:id/purchase', (request, response) => {
+router.post('/assets/:id/purchase', async (request, response) => {
     const currentUserId = getUserId(request);
-    const store = readStore(request);
-    const asset = findAsset(store, request.params.id);
-    if (!asset || !canPurchaseAsset(asset, currentUserId)) {
-        return response.sendStatus(404);
-    }
-    if (asset.price_type !== 'free' || Number(asset.price_coins) !== 0) {
-        return response.status(402).json({ error: 'Only free market assets can be purchased in the MVP' });
-    }
+    const lockKey = `${request.params.id}:${currentUserId}`;
 
-    const existing = store.entitlements.find(item => item.asset_id === asset.id && item.user_id === currentUserId && !item.revoked_at);
-    if (existing) {
-        return response.json({ entitlement: existing, already_owned: true });
-    }
+    return withMarketPurchaseLock(lockKey, async () => {
+        const store = readStore(request);
+        const asset = findAsset(store, request.params.id);
+        if (!asset || !canPurchaseAsset(asset, currentUserId)) {
+            return response.sendStatus(404);
+        }
+        if (!SUPPORTED_PRICE_TYPES.has(asset.price_type)) {
+            return response.status(400).json({ error: 'Unsupported market asset price type' });
+        }
 
-    const entitlement = {
-        id: createId('ent'),
-        user_id: currentUserId,
-        asset_id: asset.id,
-        asset_version_id: null,
-        source: 'free',
-        purchase_id: null,
-        created_at: nowIso(),
-        revoked_at: null,
-    };
-    store.entitlements.push(entitlement);
-    asset.sales_count = Number(asset.sales_count || 0) + 1;
-    asset.updated_at = entitlement.created_at;
-    writeStore(request, store);
+        const existing = store.entitlements.find(item => item.asset_id === asset.id && item.user_id === currentUserId && !item.revoked_at);
+        if (existing) {
+            return response.json({ entitlement: existing, already_owned: true });
+        }
 
-    return response.status(201).json({ entitlement, already_owned: false });
+        let purchase = null;
+        if (asset.price_type === 'fixed_price') {
+            purchase = await purchaseWithWallet({
+                buyerHandle: currentUserId,
+                creatorHandle: asset.creator_id,
+                purchaseId: `market:${asset.id}:${currentUserId}:v1`,
+                amount: Number(asset.price_coins),
+                reason: `Market purchase: ${asset.title}`,
+                metadata: {
+                    source: 'market.assets.purchase',
+                    asset_id: asset.id,
+                    asset_version_id: null,
+                    asset_title: asset.title,
+                    creator_id: asset.creator_id,
+                },
+            });
+            if (!purchase.ok) {
+                return response.status(purchase.status).json({
+                    error: purchase.error,
+                    balance: purchase.balance,
+                });
+            }
+        }
+
+        const timestamp = nowIso();
+        const entitlement = {
+            id: createId('ent'),
+            user_id: currentUserId,
+            asset_id: asset.id,
+            asset_version_id: null,
+            source: asset.price_type === 'free' ? 'free' : 'purchase',
+            purchase_id: purchase?.purchase_id ?? null,
+            ledger_entry_ids: purchase?.ledger_entries?.map(entry => entry.id) ?? [],
+            created_at: timestamp,
+            revoked_at: null,
+        };
+        store.entitlements.push(entitlement);
+        asset.sales_count = Number(asset.sales_count || 0) + 1;
+        asset.updated_at = timestamp;
+        writeStore(request, store);
+
+        return response.status(201).json({
+            entitlement,
+            already_owned: false,
+            purchase: purchase
+                ? {
+                    id: purchase.purchase_id,
+                    ledger_entries: purchase.ledger_entries,
+                    buyer_balance: purchase.buyer_balance,
+                    creator_balance: purchase.creator_balance,
+                }
+                : null,
+        });
+    });
 });
 
 router.post('/assets/:id/install', (request, response) => {

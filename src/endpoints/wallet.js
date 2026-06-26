@@ -8,6 +8,7 @@ export const router = express.Router();
 
 const LEDGER_KEY_PREFIX = 'wallet:ledger:v1:';
 const WALLET_BUCKETS = Object.freeze(['paid', 'bonus', 'earnings']);
+const PURCHASE_SPEND_BUCKETS = Object.freeze(['bonus', 'paid']);
 const DEFAULT_GRANT_BUCKET = 'bonus';
 
 /**
@@ -103,7 +104,7 @@ async function getUserLedgerEntries(handle) {
  * @param {WalletLedgerEntry[]} entries Ledger entries
  * @returns {{ buckets: Record<string, number>, total: number }}
  */
-function calculateBalance(entries) {
+export function calculateBalance(entries) {
     const buckets = createEmptyBalance();
 
     for (const entry of entries) {
@@ -113,6 +114,154 @@ function calculateBalance(entries) {
     return {
         buckets,
         total: Object.values(buckets).reduce((sum, amount) => sum + amount, 0),
+    };
+}
+
+function createLedgerEntry({ type, userHandle, actorHandle, bucket, amount, reason, metadata = {} }) {
+    return {
+        id: uuidv4(),
+        type,
+        userHandle,
+        actorHandle,
+        bucket,
+        amount,
+        reason: String(reason || type).slice(0, 200),
+        createdAt: Date.now(),
+        metadata,
+    };
+}
+
+async function persistLedgerEntries(entries) {
+    for (const entry of entries) {
+        await storage.setItem(`${LEDGER_KEY_PREFIX}${entry.id}`, entry);
+    }
+}
+
+export async function getWalletBalance(handle) {
+    const entries = await getUserLedgerEntries(handle);
+    return calculateBalance(entries);
+}
+
+export async function getWalletLedger(handle) {
+    return getUserLedgerEntries(handle);
+}
+
+export function planWalletDebit(balance, amount, order = PURCHASE_SPEND_BUCKETS) {
+    const price = parsePositiveInteger(amount);
+    if (price === null) {
+        return { ok: false, error: 'Amount must be a positive safe integer' };
+    }
+
+    const debits = [];
+    let remaining = price;
+    for (const bucket of order) {
+        const available = Math.max(0, balance.buckets?.[bucket] || 0);
+        const debit = Math.min(available, remaining);
+        if (debit > 0) {
+            debits.push({ bucket, amount: debit });
+            remaining -= debit;
+        }
+    }
+
+    return {
+        ok: remaining === 0,
+        debits,
+        amount: price,
+        remaining,
+    };
+}
+
+export async function grantWalletAmount({ targetHandle, actorHandle, amount, bucket = DEFAULT_GRANT_BUCKET, reason = 'Admin grant', metadata = {}, type = 'admin_grant' }) {
+    const entry = createLedgerEntry({
+        type,
+        userHandle: targetHandle,
+        actorHandle,
+        bucket,
+        amount,
+        reason,
+        metadata,
+    });
+
+    await persistLedgerEntries([entry]);
+
+    return {
+        entry,
+        balance: await getWalletBalance(targetHandle),
+    };
+}
+
+export async function purchaseWithWallet({ buyerHandle, creatorHandle, actorHandle = buyerHandle, amount, purchaseId = uuidv4(), reason = 'Market purchase', metadata = {} }) {
+    const price = parsePositiveInteger(amount);
+    if (price === null) {
+        return { ok: false, status: 400, error: 'Amount must be a positive safe integer' };
+    }
+
+    const existingEntries = (await getLedgerEntries()).filter(entry => entry.metadata?.purchase_id === purchaseId);
+    if (existingEntries.length > 0) {
+        return {
+            ok: true,
+            purchase_id: purchaseId,
+            ledger_entries: existingEntries,
+            buyer_balance: await getWalletBalance(buyerHandle),
+            creator_balance: creatorHandle ? await getWalletBalance(creatorHandle) : null,
+            already_settled: true,
+        };
+    }
+
+    const buyerEntries = await getUserLedgerEntries(buyerHandle);
+    const buyerBalance = calculateBalance(buyerEntries);
+    const debitPlan = planWalletDebit(buyerBalance, price);
+    if (!debitPlan.ok) {
+        return {
+            ok: false,
+            status: 402,
+            error: 'Insufficient wallet balance',
+            balance: buyerBalance,
+        };
+    }
+
+    const purchaseMetadata = {
+        ...metadata,
+        purchase_id: purchaseId,
+        buyer_handle: buyerHandle,
+        creator_handle: creatorHandle,
+        price_coins: price,
+        debit_breakdown: Object.fromEntries(debitPlan.debits.map(debit => [debit.bucket, debit.amount])),
+    };
+
+    const entries = [];
+    for (const { bucket, amount: debit } of debitPlan.debits) {
+        entries.push(createLedgerEntry({
+            type: 'market_purchase_debit',
+            userHandle: buyerHandle,
+            actorHandle,
+            bucket,
+            amount: -debit,
+            reason,
+            metadata: purchaseMetadata,
+        }));
+    }
+
+    if (creatorHandle) {
+        entries.push(createLedgerEntry({
+            type: 'market_creator_earning',
+            userHandle: creatorHandle,
+            actorHandle,
+            bucket: 'earnings',
+            amount: price,
+            reason: 'Market creator earning',
+            metadata: purchaseMetadata,
+        }));
+    }
+
+    await persistLedgerEntries(entries);
+
+    return {
+        ok: true,
+        purchase_id: purchaseId,
+        ledger_entries: entries,
+        buyer_balance: await getWalletBalance(buyerHandle),
+        creator_balance: creatorHandle ? await getWalletBalance(creatorHandle) : null,
     };
 }
 
@@ -220,27 +369,21 @@ router.post('/grants/admin', async (request, response) => {
             return response.status(404).json({ error: 'User not found' });
         }
 
-        const entry = {
-            id: uuidv4(),
-            type: 'admin_grant',
-            userHandle: targetHandle,
+        const grant = await grantWalletAmount({
+            targetHandle,
             actorHandle: currentHandle,
             bucket,
             amount,
-            reason: String(body.reason || 'Admin grant').slice(0, 200),
-            createdAt: Date.now(),
+            reason: body.reason || 'Admin grant',
             metadata: {
                 source: 'wallet.grants.admin',
             },
-        };
+        });
 
-        await storage.setItem(`${LEDGER_KEY_PREFIX}${entry.id}`, entry);
-
-        const entries = await getUserLedgerEntries(targetHandle);
         return response.status(201).json({
-            entry,
+            entry: grant.entry,
             handle: targetHandle,
-            balance: calculateBalance(entries),
+            balance: grant.balance,
         });
     } catch (error) {
         console.error('Wallet admin grant failed:', error);
