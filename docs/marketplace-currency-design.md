@@ -477,7 +477,7 @@ npm run marketplace:export:api -- --out ./marketplace-api-reference.md
 举报会写入 market store 的 open report 记录，管理员可在 marketplace-wallet 的 Report Queue 中查看并 resolve；MVP 暂不做自动处罚。
 `POST /api/market/assets/:id/report` 请求体使用必填 `reason` 和可选 `body`，前端 Report 操作会把短原因和详细正文一起提交给管理员队列。
 创作者可修改自己的 draft/rejected 资产，修改后回到 draft/private，再重新 submit 进入审核；submitted/listed/delisted 资产不允许原地修改，后续应改走版本化发布。
-Library 接口只返回当前用户 active entitlements 对应的资产摘要、授权来源和安装记录摘要，不返回 `normalized_payload`；已下架但仍授权的资产也会保留在用户库中。marketplace-wallet 的 My Library 条目提供 Details 和 Install，用户可从库里查看授权资产元数据并重新安装，不需要回到公开市场列表查找。
+Library 接口只返回当前用户 active entitlements 对应的资产摘要、授权来源和安装记录摘要，不返回 `normalized_payload`；已下架但仍授权的资产也会保留在用户库中。marketplace-wallet 的 My Library 条目展示授权日期、最近安装日期和本地引用摘要，并提供 Details 和 Install，用户可从库里查看授权资产元数据并重新安装，不需要回到公开市场列表查找。
 资产详情弹窗复用 `GET /api/market/assets/:id`；未授权用户只能看到元数据，创建者、管理员或已授权用户才会看到 payload。当前 marketplace-wallet 弹窗会显示类型、状态、创建者、语言、内容分级、价格、标签，以及稳定的创建/上架/更新时间。
 本地 MVP 的市场浏览先用客户端筛选和排序，支持类型、价格、访问状态、搜索、最新、热门和价格排序；正式 SaaS 需要服务端搜索与排序索引。
 当前 marketplace-wallet 在筛选结果为空且存在激活筛选时显示 Clear filters，移动端也可以一键回到默认浏览状态。

@@ -892,6 +892,16 @@
 - 完整本机 Chrome E2E 已通过 12 个用例；父进程延迟退出后 Ctrl-C 清理，临时 server 无残留。
 - GitHub run `28251992376` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 59：用户库安装摘要补齐
+- 根据 explorer 的 Library 细节建议，继续补齐 My Library 中已有后端字段的前端展示。
+- marketplace-wallet My Library 条目现在展示授权日期 `added YYYY-MM-DD`。
+- 若存在 `last_install`，My Library 额外展示最近安装日期、本地引用和安装类型摘要。
+- 新增 `.marketplace-wallet-library-install`，长 `local_ref` 使用 `overflow-wrap: anywhere`，避免移动端横向溢出。
+- `marketplace-wallet` manifest bump 到 `0.2.6`，避免浏览器缓存旧 JS/CSS。
+- 浏览器 E2E 的免费领取/安装用例断言 Library 显示授权日期和最近安装路径。
+- README、设计文档和 findings 已补充 Library 授权日期和最近安装摘要边界。
+- 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-wallet-ui.test.js`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'claims and installs a free asset'`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1 -g 'keeps review controls compact'`、`npm run test:marketplace`、`npm run test:marketplace:e2e:server -- --list` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|

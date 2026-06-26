@@ -305,6 +305,10 @@
     opacity: 0.75;
 }
 
+.marketplace-wallet-library-install {
+    overflow-wrap: anywhere;
+}
+
 .marketplace-wallet-creator-asset b {
     white-space: nowrap;
 }

@@ -87,6 +87,7 @@
 - marketplace-wallet 创作者资产新增 Revise；后端 `PATCH /api/market/assets/:id` 只允许 owner 修改 draft/rejected，保存后回 draft 并可重新 submit。
 - marketplace-wallet 新增 My Library；后端 `GET /api/market/library` 返回当前用户 active entitlements 的资产摘要、授权来源和安装摘要。
 - marketplace-wallet My Library 条目现在同时提供 Details 和 Install；Details 复用 asset detail API，已授权用户可在库里查看 payload 权限内的详情，不必回公开市场列表。
+- marketplace-wallet My Library 会显示授权日期和最近安装摘要；`local_ref` 使用可换行小字展示，避免手机窄屏被本地路径撑宽。
 - 托管探活新增 `GET /api/health`；响应包含服务级状态、版本、uptime 和时间戳，不返回用户、市场或钱包数据。
 - marketplace-wallet 新增 Details；市场列表、用户库和审核预览共用 asset detail 弹窗，未授权时不渲染 payload JSON。
 - marketplace-wallet Details 弹窗现在展示 language、content rating 和创建/上架/更新时间；日期使用 `YYYY-MM-DD` 稳定格式，避免浏览器 locale 影响自动化断言。

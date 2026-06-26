@@ -794,7 +794,9 @@ test.describe('marketplace wallet extension', () => {
         const library = page.locator('#marketplace_wallet_library_items');
         await expect(library).toContainText('Free World');
         await expect(library).toContainText('Claimed');
+        await expect(library).toContainText('added 2026-06-26');
         await expect(library).toContainText('1 installs');
+        await expect(library).toContainText('Last installed 2026-06-26 to worlds/free-world.json');
 
         const libraryRow = library.locator('.marketplace-wallet-library-item', { hasText: 'Free World' });
         await expect(libraryRow.locator('[data-marketplace-wallet-action="details"]')).toHaveCount(1);

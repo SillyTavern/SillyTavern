@@ -221,9 +221,27 @@ function renderLibrary() {
         const $title = $('<span></span>').text(asset.title || 'Untitled asset');
         const source = item.entitlement?.source === 'purchase' ? 'Purchased' : 'Claimed';
         const installText = item.install_count ? `${formatCoins(item.install_count)} installs` : 'not installed';
-        const $meta = $('<small></small>').text(`${source} · ${MARKET_TYPES[asset.type] || asset.type || 'Asset'} · ${installText}`);
+        const entitlementDate = formatAssetDate(item.entitlement?.created_at);
+        const lastInstallDate = formatAssetDate(item.last_install?.created_at);
+        const lastInstallRef = String(item.last_install?.local_ref || '').trim();
+        const lastInstallType = item.last_install?.type ? (MARKET_TYPES[item.last_install.type] || item.last_install.type) : '';
+        const lastInstallLabel = lastInstallRef
+            ? `Last installed ${lastInstallDate || 'recently'} to ${lastInstallRef}`
+            : '';
+        const $meta = $('<small></small>').text([
+            source,
+            MARKET_TYPES[asset.type] || asset.type || 'Asset',
+            entitlementDate ? `added ${entitlementDate}` : '',
+            installText,
+        ].filter(Boolean).join(' · '));
 
         $main.append($title, $meta);
+        if (lastInstallLabel) {
+            $main.append($('<small class="marketplace-wallet-library-install"></small>').text([
+                lastInstallLabel,
+                lastInstallType,
+            ].filter(Boolean).join(' · ')));
+        }
         $actions.append(createAssetButton({
             asset,
             action: 'details',
