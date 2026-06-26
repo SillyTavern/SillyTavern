@@ -22,6 +22,7 @@ import { router as thumbnailRouter } from './endpoints/thumbnails.js';
 import { router as novelAiRouter } from './endpoints/novelai.js';
 import { router as extensionsRouter } from './endpoints/extensions.js';
 import { router as assetsRouter } from './endpoints/assets.js';
+import { router as marketRouter } from './endpoints/market.js';
 import { router as filesRouter } from './endpoints/files.js';
 import { router as charactersRouter } from './endpoints/characters.js';
 import { router as chatsRouter } from './endpoints/chats.js';
@@ -51,6 +52,7 @@ import { router as dataMaidRouter } from './endpoints/data-maid.js';
 import { router as backupsRouter } from './endpoints/backups.js';
 import { router as imageMetadataRouter } from './endpoints/image-metadata.js';
 import { router as volcengineRouter } from './endpoints/volcengine.js';
+import { router as walletRouter } from './endpoints/wallet.js';
 
 /**
  * @typedef {object} ServerStartupResult
@@ -156,6 +158,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/novelai', novelAiRouter);
     app.use('/api/extensions', extensionsRouter);
     app.use('/api/assets', assetsRouter);
+    app.use('/api/market', marketRouter);
     app.use('/api/files', filesRouter);
     app.use('/api/characters', charactersRouter);
     app.use('/api/chats', chatsRouter);
@@ -185,6 +188,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/data-maid', dataMaidRouter);
     app.use('/api/backups', backupsRouter);
     app.use('/api/image-metadata', imageMetadataRouter);
+    app.use('/api/wallet', walletRouter);
 }
 
 /**
