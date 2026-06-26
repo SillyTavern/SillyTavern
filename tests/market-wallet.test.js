@@ -693,6 +693,178 @@ describe('market and wallet MVP endpoints', () => {
         expect(buyerSummary.body.wallet).toBeUndefined();
     });
 
+    test('allows creators to revise draft and rejected assets before resubmission', async () => {
+        const aliceApp = createApp(createUser('alice', true));
+        const bobApp = createApp(createUser('bob', false));
+        const charlieApp = createApp(createUser('charlie', false));
+        const draftResult = await request(charlieApp, '/api/market/assets', {
+            method: 'POST',
+            body: {
+                type: 'character_card',
+                title: 'Revision Draft',
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(draftResult.status).toBe(201);
+        const draftId = draftResult.body.asset.id;
+
+        const rejectedOwnerPatch = await request(bobApp, `/api/market/assets/${draftId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'character_card',
+                title: 'Wrong Owner',
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(rejectedOwnerPatch.status).toBe(404);
+
+        const invalidPricePatch = await request(charlieApp, `/api/market/assets/${draftId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'character_card',
+                title: 'Bad Price',
+                price_type: 'fixed_price',
+                price_coins: 0,
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(invalidPricePatch.status).toBe(400);
+
+        const revisedDraft = await request(charlieApp, `/api/market/assets/${draftId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'character_card',
+                title: 'Revised Draft',
+                summary: 'Ready for review',
+                price_type: 'fixed_price',
+                price_coins: 5,
+                normalized_payload: createCharacterPayload(),
+                creator_id: 'alice',
+                status: 'listed',
+                sales_count: 99,
+                review_notes: 'do not keep',
+            },
+        });
+        expect(revisedDraft.status).toBe(200);
+        expect(revisedDraft.body.asset).toMatchObject({
+            id: draftId,
+            creator_id: 'charlie',
+            title: 'Revised Draft',
+            summary: 'Ready for review',
+            status: 'draft',
+            visibility: 'private',
+            price_type: 'fixed_price',
+            price_coins: 5,
+            sales_count: 0,
+            review_notes: '',
+            reviewed_by: null,
+        });
+
+        const submitDraft = await request(charlieApp, `/api/market/assets/${draftId}/submit`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(submitDraft.status).toBe(200);
+        expect(submitDraft.body.asset.status).toBe('submitted');
+
+        const blockedSubmittedPatch = await request(charlieApp, `/api/market/assets/${draftId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'character_card',
+                title: 'Submitted Patch',
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(blockedSubmittedPatch.status).toBe(400);
+
+        const approveResult = await request(aliceApp, `/api/market/assets/${draftId}/approve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(approveResult.status).toBe(200);
+
+        const blockedListedPatch = await request(charlieApp, `/api/market/assets/${draftId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'character_card',
+                title: 'Listed Patch',
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(blockedListedPatch.status).toBe(400);
+
+        const delistResult = await request(aliceApp, `/api/market/assets/${draftId}/delist`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(delistResult.status).toBe(200);
+
+        const blockedDelistedPatch = await request(charlieApp, `/api/market/assets/${draftId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'character_card',
+                title: 'Delisted Patch',
+                normalized_payload: createCharacterPayload(),
+            },
+        });
+        expect(blockedDelistedPatch.status).toBe(400);
+
+        const rejectedAssetId = await createSubmittedAsset(charlieApp, {
+            type: 'world_book',
+            title: 'Rejected World',
+            normalized_payload: {
+                name: 'Rejected World',
+                entries: {},
+            },
+        });
+        const rejectResult = await request(aliceApp, `/api/market/assets/${rejectedAssetId}/reject`, {
+            method: 'POST',
+            body: { reason: 'Needs work' },
+        });
+        expect(rejectResult.status).toBe(200);
+
+        const invalidPayloadPatch = await request(charlieApp, `/api/market/assets/${rejectedAssetId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'world_book',
+                title: 'Bad World',
+                normalized_payload: {},
+            },
+        });
+        expect(invalidPayloadPatch.status).toBe(400);
+
+        const revisedRejected = await request(charlieApp, `/api/market/assets/${rejectedAssetId}`, {
+            method: 'PATCH',
+            body: {
+                type: 'world_book',
+                title: 'Revised World',
+                summary: 'Updated after rejection',
+                normalized_payload: {
+                    name: 'Revised World',
+                    entries: {},
+                },
+            },
+        });
+        expect(revisedRejected.status).toBe(200);
+        expect(revisedRejected.body.asset).toMatchObject({
+            id: rejectedAssetId,
+            status: 'draft',
+            visibility: 'private',
+            title: 'Revised World',
+            review_notes: '',
+            reviewed_by: null,
+            submitted_at: null,
+        });
+
+        const resubmitRejected = await request(charlieApp, `/api/market/assets/${rejectedAssetId}/submit`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(resubmitRejected.status).toBe(200);
+        expect(resubmitRejected.body.asset.status).toBe('submitted');
+        expect(resubmitRejected.body.asset.visibility).toBe('review');
+    });
+
     test('validates fixed price asset pricing', async () => {
         const aliceApp = createApp(createUser('alice', true));
         const invalidFixedPrice = await request(aliceApp, '/api/market/assets', {

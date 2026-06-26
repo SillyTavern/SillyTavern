@@ -43,6 +43,9 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('id="marketplace_wallet_grant_reason"');
         expect(html).toContain('id="marketplace_wallet_review_queue"');
         expect(html).toContain('id="marketplace_wallet_report_queue"');
+        expect(html).toContain('id="marketplace_wallet_upload_status"');
+        expect(html).toContain('id="marketplace_wallet_upload_mode"');
+        expect(html).toContain('id="marketplace_wallet_upload_cancel"');
         expect(html).toContain('Report Queue');
     });
 
@@ -68,6 +71,16 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("$('#marketplace_wallet_creator_earnings')");
         expect(script).toContain("`${formatCoins(asset.sales_count)} claims`");
         expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
+        expect(script).toContain('editingAssetId: null');
+        expect(script).toContain("action: 'revise'");
+        expect(script).toContain('async function reviseAsset(assetId)');
+        expect(script).toContain('function fillUploadForm(asset)');
+        expect(script).toContain('function clearUploadForm()');
+        expect(script).toContain('function renderUploadMode(asset = null)');
+        expect(script).toContain("method: editingAssetId ? 'PATCH' : 'POST'");
+        expect(script).toContain("state.editingAssetId = asset?.id ?? null");
+        expect(script).toContain("$('#marketplace_wallet_upload_payload').val(JSON.stringify(asset.normalized_payload ?? {}, null, 2))");
+        expect(script).toContain("$root.find('#marketplace_wallet_upload_cancel').on('click', clearUploadForm)");
         expect(script).toContain("action: 'approve'");
         expect(script).toContain("action: 'reject'");
         expect(script).toContain("action: 'inspect'");
@@ -117,6 +130,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('.marketplace-wallet-grant');
         expect(css).toContain('.marketplace-wallet-review-item');
         expect(css).toContain('.marketplace-wallet-report-title');
+        expect(css).toContain('.marketplace-wallet-upload-status');
         expect(css).toContain('.marketplace-wallet-asset-preview h3');
         expect(css).toContain('.marketplace-wallet-preview-payload');
     });

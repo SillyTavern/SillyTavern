@@ -48,6 +48,7 @@
 | 举报处理先做管理员队列和 resolve | 让人工审核可以清理 open reports，同时避免提前固化处罚规则 |
 | 审核预览必须按详情懒加载 payload | 市场列表不带 payload；管理员 Inspect 时再取详情，减少列表泄漏面 |
 | 用户上传 JSON 预览用 DOM text 渲染 | payload 不能拼成 HTML；使用 `.text(JSON.stringify(...))` 降低 XSS 风险 |
+| 创作者只能修订 draft/rejected 资产 | submitted/listed/delisted 不允许原地 PATCH，避免审核中或已售内容静默变化 |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -66,6 +67,7 @@
 - marketplace-wallet 用户操作新增 Report；后端 `POST /api/market/assets/:id/report` 对可见资产创建 open report。
 - marketplace-wallet 管理员工具新增 Report Queue；后端 `GET /api/market/reports/admin` 返回 open reports，`POST /api/market/reports/:id/resolve` 将举报标记为 resolved。
 - marketplace-wallet Review Queue 新增 Inspect；管理员通过 asset detail 懒加载 payload，并在可滚动 TEXT popup 中预览。
+- marketplace-wallet 创作者资产新增 Revise；后端 `PATCH /api/market/assets/:id` 只允许 owner 修改 draft/rejected，保存后回 draft 并可重新 submit。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

@@ -13,6 +13,7 @@ const MARKET_TYPES = {
 const state = {
     assets: [],
     creator: null,
+    editingAssetId: null,
     reports: [],
     wallet: null,
     loaded: false,
@@ -203,6 +204,16 @@ function createAssetAction(asset) {
     const isBusy = state.busyAssetIds.has(asset.id);
     const $actions = $('<div class="marketplace-wallet-asset-actions"></div>');
 
+    if (asset.owned && ['draft', 'rejected'].includes(asset.status)) {
+        $actions.append(createAssetButton({
+            asset,
+            action: 'revise',
+            icon: 'fa-pen-to-square',
+            label: isBusy ? 'Loading' : 'Revise',
+            disabled: isBusy,
+        }));
+    }
+
     if (asset.owned && asset.status === 'draft') {
         $actions.append(createAssetButton({
             asset,
@@ -309,6 +320,37 @@ function renderReviewQueue() {
         $item.append($meta, $actions);
         $queue.append($item);
     }
+}
+
+function renderUploadMode(asset = null) {
+    const isEditing = Boolean(asset);
+    state.editingAssetId = asset?.id ?? null;
+    $('#marketplace_wallet_upload_status').attr('hidden', isEditing ? null : '');
+    $('#marketplace_wallet_upload_mode').text(isEditing ? `Editing ${asset.title || 'market asset'}` : '');
+    $('[data-marketplace-wallet-upload="draft"] span').text(isEditing ? 'Save Changes' : 'Save Draft');
+    $('[data-marketplace-wallet-upload="review"] span').text(isEditing ? 'Save & Submit' : 'Submit');
+}
+
+function clearUploadForm() {
+    $('#marketplace_wallet_upload_type').val('character_card');
+    $('#marketplace_wallet_upload_title').val('');
+    $('#marketplace_wallet_upload_summary').val('');
+    $('#marketplace_wallet_upload_price_type').val('free').trigger('change');
+    $('#marketplace_wallet_upload_price').val(0);
+    $('#marketplace_wallet_upload_payload').val('');
+    renderUploadMode();
+}
+
+function fillUploadForm(asset) {
+    $('#marketplace_wallet_upload_type').val(asset.type || 'character_card');
+    $('#marketplace_wallet_upload_title').val(asset.title || '');
+    $('#marketplace_wallet_upload_summary').val(asset.summary || '');
+    $('#marketplace_wallet_upload_price_type').val(asset.price_type || 'free').trigger('change');
+    $('#marketplace_wallet_upload_price').val(Number(asset.price_coins || 0));
+    $('#marketplace_wallet_upload_payload').val(JSON.stringify(asset.normalized_payload ?? {}, null, 2));
+    renderUploadMode(asset);
+    $('.marketplace-wallet-upload')[0]?.scrollIntoView({ block: 'nearest' });
+    $('#marketplace_wallet_upload_title').trigger('focus');
 }
 
 function renderReportQueue() {
@@ -602,6 +644,16 @@ async function inspectAsset(assetId) {
     });
 }
 
+async function reviseAsset(assetId) {
+    await withBusyAsset(assetId, async () => {
+        const result = await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}`, {
+            method: 'GET',
+        });
+        fillUploadForm(result.asset || {});
+        toastr.info('Asset loaded for revision');
+    });
+}
+
 async function resolveReport(reportId) {
     await withBusyReport(reportId, async () => {
         await fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`, {
@@ -680,8 +732,9 @@ async function createAsset(submitForReview) {
     const $buttons = $('[data-marketplace-wallet-upload]');
     $buttons.prop('disabled', true);
     try {
-        const result = await fetchJson('/api/market/assets', {
-            method: 'POST',
+        const editingAssetId = state.editingAssetId;
+        const result = await fetchJson(editingAssetId ? `/api/market/assets/${encodeURIComponent(editingAssetId)}` : '/api/market/assets', {
+            method: editingAssetId ? 'PATCH' : 'POST',
             body: JSON.stringify({
                 type,
                 title,
@@ -695,13 +748,11 @@ async function createAsset(submitForReview) {
             await fetchJson(`/api/market/assets/${encodeURIComponent(result.asset.id)}/submit`, {
                 method: 'POST',
             });
-            toastr.success('Asset saved and submitted for review');
+            toastr.success(editingAssetId ? 'Changes saved and submitted for review' : 'Asset saved and submitted for review');
         } else {
-            toastr.success('Draft saved');
+            toastr.success(editingAssetId ? 'Changes saved' : 'Draft saved');
         }
-        $('#marketplace_wallet_upload_title').val('');
-        $('#marketplace_wallet_upload_summary').val('');
-        $('#marketplace_wallet_upload_payload').val('');
+        clearUploadForm();
         await loadMarketplace({ silent: true });
     } catch (error) {
         console.error('Failed to create market asset', error);
@@ -776,6 +827,7 @@ function onAssetAction(event) {
         purchase: purchaseAsset,
         install: installAsset,
         submit: submitAsset,
+        revise: reviseAsset,
         inspect: inspectAsset,
         approve: approveAsset,
         reject: rejectAsset,
@@ -841,6 +893,7 @@ function bindEvents($root) {
     $root.find('[data-marketplace-wallet-upload]').on('click', function () {
         createAsset($(this).attr('data-marketplace-wallet-upload') === 'review');
     });
+    $root.find('#marketplace_wallet_upload_cancel').on('click', clearUploadForm);
 }
 
 export async function init() {

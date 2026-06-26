@@ -13,6 +13,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Immutable wallet ledger for grants, purchases, debits, and creator earnings.
 - Marketplace assets for character cards and world books.
 - Creator upload flow for draft assets, JSON payload validation, and submit-for-review.
+- Creator revision flow for draft or rejected assets before resubmission.
 - Creator Center summary for owned assets, review status counts, claims, installs, and earned coins.
 - Installable PWA shell for mobile browsers using the existing web app and static shell cache.
 - Admin review queue with inspect/approve/reject actions.

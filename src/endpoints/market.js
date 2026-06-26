@@ -645,6 +645,39 @@ router.post('/assets', (request, response) => {
     return response.status(201).json({ asset });
 });
 
+router.patch('/assets/:id', (request, response) => {
+    const normalized = normalizeCreateBody(request.body);
+    if (normalized.errors.length > 0) {
+        return response.status(400).json({ error: 'Invalid market asset', details: normalized.errors });
+    }
+
+    const currentUserId = getUserId(request);
+    const store = readStore(request);
+    const asset = findAsset(store, request.params.id);
+    if (!asset || asset.creator_id !== currentUserId) {
+        return response.sendStatus(404);
+    }
+    if (!['draft', 'rejected'].includes(asset.status)) {
+        return response.status(400).json({ error: 'only draft or rejected assets can be revised' });
+    }
+
+    const payloadErrors = validateNormalizedPayload({ ...asset, ...normalized.value });
+    if (payloadErrors.length > 0) {
+        return response.status(400).json({ error: 'Invalid market asset', details: payloadErrors });
+    }
+
+    Object.assign(asset, normalized.value);
+    asset.status = 'draft';
+    asset.visibility = 'private';
+    asset.submitted_at = null;
+    asset.reviewed_by = null;
+    asset.review_notes = '';
+    asset.updated_at = nowIso();
+    writeStore(request, store);
+
+    return response.json({ asset });
+});
+
 router.post('/assets/:id/submit', (request, response) => {
     const currentUserId = getUserId(request);
     const store = readStore(request);

@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 18
+阶段 19
 
 ## 各阶段
 
@@ -175,6 +175,18 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 19：创作者修订与重新提交
+- [x] 确认 rejected 资产需要修改后重提，不能只显示拒绝原因
+- [x] 新增创作者 PATCH draft/rejected asset API
+- [x] PATCH 后统一回到 draft/private，并清理旧 review 状态
+- [x] 禁止 submitted/listed/delisted 原地修改，避免 live payload 静默变化
+- [x] 在 marketplace-wallet 增加 Revise 编辑态，复用上传表单和取消按钮
+- [x] 补充后端和前端契约测试
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -205,6 +217,7 @@
 | 举报先只创建 open report | MVP 需要可审计入口，自动处罚和处理队列等管理策略后续再加 |
 | 举报处理先做队列和 resolve | 管理员需要能清理 open reports；封禁、自动处罚和申诉规则仍需产品策略 |
 | 审核预览复用管理员 asset detail | 管理员已有 payload 读取权限，Inspect 只需要前端拉详情并用安全 DOM 展示 |
+| 创作者修订只允许 draft/rejected | listed 资产已有购买/授权关系，原地改 payload 会破坏买家预期；后续需要版本化发布 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |
