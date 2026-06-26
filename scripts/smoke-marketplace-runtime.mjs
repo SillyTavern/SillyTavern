@@ -188,6 +188,35 @@ async function writeDemoMarketStore(dataRoot) {
                 approved_at: timestamp,
                 listed_at: timestamp,
             },
+            {
+                id: 'smoke_asset_paid_world',
+                creator_id: 'smoke-creator',
+                type: 'world_book',
+                title: 'Smoke Paid World',
+                summary: 'Runtime smoke fixed-price marketplace asset.',
+                description: '',
+                language: 'en',
+                content_rating: 'general',
+                price_type: 'fixed_price',
+                price_coins: 7,
+                tags: ['smoke', 'paid'],
+                metadata: {},
+                normalized_payload: {
+                    name: 'Smoke Paid World',
+                    entries: {},
+                },
+                visibility: 'public',
+                status: 'listed',
+                sales_count: 0,
+                install_count: 0,
+                rating_avg: 0,
+                rating_count: 0,
+                created_at: timestamp,
+                updated_at: timestamp,
+                submitted_at: timestamp,
+                approved_at: timestamp,
+                listed_at: timestamp,
+            },
         ],
         entitlements: [],
         installs: [],
@@ -285,6 +314,10 @@ async function run() {
             if (!demoAsset || demoAsset.status !== 'listed' || demoAsset.price_type !== 'free') {
                 throw new Error(`Seeded smoke asset missing from marketplace payload: ${JSON.stringify(payload)}`);
             }
+            const paidAsset = payload.assets.find(asset => asset.id === 'smoke_asset_paid_world');
+            if (!paidAsset || paidAsset.status !== 'listed' || paidAsset.price_type !== 'fixed_price' || paidAsset.price_coins !== 7) {
+                throw new Error(`Seeded paid smoke asset missing from marketplace payload: ${JSON.stringify(payload)}`);
+            }
         });
         console.log('runtime ok: /api/market/assets');
 
@@ -297,6 +330,65 @@ async function run() {
             body: '{}',
         });
         console.log('runtime ok: POST /api/market/assets/:id/purchase');
+
+        await assertJsonEndpoint(`${baseUrl}/api/wallet/grants/admin`, 'POST /api/wallet/grants/admin', payload => {
+            if (payload.entry?.userHandle !== 'default-user' || payload.entry?.bucket !== 'paid' || payload.entry?.amount !== 7) {
+                throw new Error(`Unexpected admin grant payload: ${JSON.stringify(payload)}`);
+            }
+            if (payload.balance?.buckets?.paid !== 7) {
+                throw new Error(`Admin grant did not update paid balance: ${JSON.stringify(payload)}`);
+            }
+        }, {
+            method: 'POST',
+            body: JSON.stringify({
+                targetHandle: 'default-user',
+                amount: 7,
+                bucket: 'paid',
+                reason: 'Runtime smoke fixed-price purchase',
+            }),
+        });
+        console.log('runtime ok: POST /api/wallet/grants/admin');
+
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/smoke_asset_paid_world/purchase`, 'POST /api/market/assets/:id/purchase fixed_price', payload => {
+            if (payload.already_owned !== false || payload.entitlement?.source !== 'purchase' || payload.entitlement?.asset_id !== 'smoke_asset_paid_world') {
+                throw new Error(`Unexpected fixed-price purchase payload: ${JSON.stringify(payload)}`);
+            }
+            if (!payload.entitlement?.purchase_id || payload.purchase?.id !== payload.entitlement.purchase_id) {
+                throw new Error(`Fixed-price purchase missing purchase id: ${JSON.stringify(payload)}`);
+            }
+            if (payload.purchase?.buyer_balance?.buckets?.paid !== 0) {
+                throw new Error(`Fixed-price purchase did not debit buyer paid balance: ${JSON.stringify(payload)}`);
+            }
+            if (payload.purchase?.ledger_entries !== undefined || payload.purchase?.creator_balance !== undefined) {
+                throw new Error(`Fixed-price purchase leaked internal ledger or creator balance: ${JSON.stringify(payload)}`);
+            }
+        }, {
+            method: 'POST',
+            body: '{}',
+        });
+        console.log('runtime ok: POST /api/market/assets/:id/purchase fixed_price');
+
+        await assertJsonEndpoint(`${baseUrl}/api/wallet/ledger`, '/api/wallet/ledger buyer debits', payload => {
+            if (payload.balance?.buckets?.paid !== 0) {
+                throw new Error(`Buyer wallet paid balance was not debited: ${JSON.stringify(payload)}`);
+            }
+            const paidDebit = payload.ledger?.find(entry => entry.type === 'market_purchase_debit' && entry.metadata?.asset_id === 'smoke_asset_paid_world');
+            if (!paidDebit || paidDebit.bucket !== 'paid' || paidDebit.amount !== -7) {
+                throw new Error(`Buyer ledger missing fixed-price debit: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/wallet/ledger buyer debits');
+
+        await assertJsonEndpoint(`${baseUrl}/api/wallet/ledger?handle=smoke-creator`, '/api/wallet/ledger creator earnings', payload => {
+            if (payload.handle !== 'smoke-creator' || payload.balance?.buckets?.earnings !== 7) {
+                throw new Error(`Creator earnings balance missing: ${JSON.stringify(payload)}`);
+            }
+            const creatorEarning = payload.ledger?.find(entry => entry.type === 'market_creator_earning' && entry.metadata?.asset_id === 'smoke_asset_paid_world');
+            if (!creatorEarning || creatorEarning.bucket !== 'earnings' || creatorEarning.amount !== 7) {
+                throw new Error(`Creator ledger missing fixed-price earning: ${JSON.stringify(payload)}`);
+            }
+        });
+        console.log('runtime ok: /api/wallet/ledger creator earnings');
 
         let installedPath = '';
         await assertJsonEndpoint(`${baseUrl}/api/market/assets/smoke_asset_demo/install`, 'POST /api/market/assets/:id/install', payload => {
@@ -314,6 +406,22 @@ async function run() {
         await assertPathExists(path.join(dataRoot, 'default-user', installedPath), 'marketplace install');
         console.log('runtime ok: POST /api/market/assets/:id/install');
 
+        let paidInstalledPath = '';
+        await assertJsonEndpoint(`${baseUrl}/api/market/assets/smoke_asset_paid_world/install`, 'POST /api/market/assets/:id/install fixed_price', payload => {
+            if (payload.installed?.type !== 'world_book' || payload.install?.asset_id !== 'smoke_asset_paid_world') {
+                throw new Error(`Unexpected fixed-price install payload: ${JSON.stringify(payload)}`);
+            }
+            if (!payload.installed?.path) {
+                throw new Error(`Fixed-price install payload missing local path: ${JSON.stringify(payload)}`);
+            }
+            paidInstalledPath = payload.installed.path;
+        }, {
+            method: 'POST',
+            body: '{}',
+        });
+        await assertPathExists(path.join(dataRoot, 'default-user', paidInstalledPath), 'fixed-price marketplace install');
+        console.log('runtime ok: POST /api/market/assets/:id/install fixed_price');
+
         await assertJsonEndpoint(`${baseUrl}/api/market/library`, '/api/market/library', payload => {
             if (!Array.isArray(payload.items)) {
                 throw new Error(`Unexpected library payload: ${JSON.stringify(payload)}`);
@@ -321,6 +429,10 @@ async function run() {
             const demoItem = payload.items.find(item => item.asset?.id === 'smoke_asset_demo');
             if (!demoItem || demoItem.entitlement?.source !== 'free' || demoItem.install_count !== 1) {
                 throw new Error(`Installed smoke asset missing from library payload: ${JSON.stringify(payload)}`);
+            }
+            const paidItem = payload.items.find(item => item.asset?.id === 'smoke_asset_paid_world');
+            if (!paidItem || paidItem.entitlement?.source !== 'purchase' || paidItem.install_count !== 1 || paidItem.asset?.price_type !== 'fixed_price') {
+                throw new Error(`Installed paid smoke asset missing from library payload: ${JSON.stringify(payload)}`);
             }
         });
         console.log('runtime ok: /api/market/library');

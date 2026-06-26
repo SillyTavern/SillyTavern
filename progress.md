@@ -627,6 +627,9 @@
 | 阶段 41 syntax gate | `npm run test:marketplace:syntax` | market endpoint 和测试语法门禁 | 通过：21 files checked | 通过 |
 | 阶段 41 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
 | 阶段 41 runtime smoke | `npm run test:marketplace:smoke` | 真实 server health/PWA/wallet/assets/free purchase/install/library 仍通过 | 通过 | 通过 |
+| 阶段 42 runtime smoke 固定价闭环 | `npm run test:marketplace:smoke` | 真实 server fixed-price purchase、admin grant、buyer debit、creator earning、响应隐私、安装和 Library | 通过 | 通过 |
+| 阶段 42 syntax gate | `npm run test:marketplace:syntax` | 扩展后的 runtime smoke 脚本语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 42 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 29 tests | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -684,14 +687,23 @@
 - README 和设计文档补充 paid purchase 响应边界：完整账本、创作者余额和收益明细由 Wallet API / Creator Center 读取。
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace`、`npm run test:marketplace:smoke`。
 
+## 2026-06-26 阶段 42：付费购买 runtime smoke 闭环
+- Explorer `019f0433-3fd1-7b51-b21f-42187fe1e917` 建议最优先补真实 server 固定价购买 smoke，防止 paid purchase 只在单测中可用。
+- `scripts/smoke-marketplace-runtime.mjs` 的临时 market store 增加 `smoke_asset_paid_world` fixed_price world book，保留原 free world book。
+- smoke 通过真实 `/api/wallet/grants/admin` 给 `default-user` 发 paid 余额，再购买 fixed-price 资产，验证 purchase response 不含 `ledger_entries`/`creator_balance`。
+- smoke 继续通过 `/api/wallet/ledger` 验证买家 paid 扣到 0，并通过 admin query 读取 `smoke-creator` earnings ledger 为 7。
+- smoke 安装 free 和 paid world book，验证两个文件都写入临时 dataRoot，Library 中两个资产均可见且 install_count 为 1。
+- README 验证矩阵和设计文档已更新 runtime smoke 覆盖范围。
+- 已通过 `npm run test:marketplace:smoke`、`npm run test:marketplace:syntax`、`npm run test:marketplace`、`git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本，以及购买响应隐私收紧 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧，以及固定价购买 runtime smoke 闭环 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本和购买响应隐私收紧 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧和固定价购买 runtime smoke 闭环 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

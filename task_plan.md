@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 41
+阶段 42
 
 ## 各阶段
 
@@ -422,6 +422,17 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 42：付费购买 runtime smoke 闭环
+- [x] 按并发审查建议补齐真实 server 固定价购买 smoke
+- [x] 在 runtime smoke 临时 market store 中加入 fixed_price 资产
+- [x] 通过真实 admin grant 给默认用户 paid 余额
+- [x] 验证 paid purchase 响应隐私 shape、买家扣款和创作者收益账本
+- [x] 验证付费资产可安装、Library 可见和文件落盘
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行 syntax、marketplace 聚合和 runtime smoke
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -474,6 +485,7 @@
 | 市场/钱包快照默认导出白名单字段 | 备份和迁移检查需要资产/授权/安装/举报/账本摘要，但不应默认导出 payload、举报正文、本地安装路径、完整 ledger reason/metadata 或绝对 dataRoot |
 | 快照 `--out` 不允许写入 dataRoot | 导出命令应保持用户数据目录只读，避免备份检查动作改变正在运行的本地数据根 |
 | 购买 API 响应应只返回买家需要的信息 | 买家需要 entitlement、是否已拥有和自己的余额摘要；创作者余额和完整 ledger entries 属于更敏感的账务审计数据，应通过各自 wallet/creator 接口读取 |
+| runtime smoke 需要覆盖固定价货币闭环 | 免费领取能证明安装路径，固定价购买才能证明真实 server 下 admin grant、扣款、创作者收益和响应隐私 shape 同时可用 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |
