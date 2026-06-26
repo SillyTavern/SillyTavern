@@ -597,6 +597,11 @@
 | Chromium channel E2E discovery | `npm run test:marketplace:e2e:server -- --list` | `channel: chromium` 配置下 wrapper 仍能启动临时 server 并发现用例 | 通过：4 tests listed | 通过 |
 | GitHub Chromium install 策略 | `gh run watch 28238257185` | CI 安装 `chromium --no-shell` 后实跑 E2E | 已取消：runner 仍长时间停在 `Install Playwright browser`；改为使用 runner 自带 Chrome channel | 环境阻塞 |
 | Runner Chrome E2E discovery | `npm run test:marketplace:e2e:server -- --list` | `PLAYWRIGHT_BROWSER_CHANNEL` 支持后，wrapper discovery 仍正常 | 通过：4 tests listed | 通过 |
+| Runner Chrome GitHub E2E 初跑 | `gh run watch 28238485632` | 使用 runner 自带 Chrome 跑真实 browser E2E | 未通过：3 个用例因 Extensions/inline drawer hidden 或 admin state 未准备而不可点击；mobile layout 通过 | 待修复 |
+| E2E UI 状态修复 syntax | `npm run test:marketplace:syntax` | E2E admin mock、onboarding 和 drawer helper 语法门禁 | 通过：19 files checked | 通过 |
+| E2E UI 状态修复 marketplace 回归 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health/seed 契约 | 通过：6 suites / 22 tests | 通过 |
+| E2E UI 状态修复 discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 能发现 4 个 browser E2E 用例 | 通过：4 tests listed | 通过 |
+| 本机 Chrome 单 worker E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | 用系统 Chrome 验证 admin queue、report resolve、free claim/install 和 mobile layout | 通过：4 passed (1.5m)；本机 Chrome channel 在测试结束后父进程延迟退出，手动 Ctrl-C 后清理，无残留 server | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -612,15 +617,18 @@
 | 2026-06-26 | admin 前端 gate 曾尝试用 `default-user` handle 兜底 | 1 | 按并发审查反馈改回仅使用 `isAdmin()`，与后端 admin 权限模型一致 |
 | 2026-06-26 | Playwright Chromium 下载被中断后留下半安装缓存 | 2 | 不再阻塞基础交付；保留 E2E 测试与脚本，新增稳定 Jest UI 契约测试，E2E 需完整安装 `chromium-headless-shell` 后运行 |
 | 2026-06-26 | Playwright `chromium-headless-shell` 安装下载完成后长时间卡住 | 1 | 终止卡住的安装进程；保留 E2E 列表验证和 Jest 契约，完整 E2E 仍待本机浏览器缓存修复 |
+| 2026-06-26 | Runner Chrome 真实 E2E 中 admin、report、purchase 按钮隐藏或不可点击 | 1 | E2E helper 打开外层 Extensions drawer、展开内层 Marketplace inline drawer，并 mock admin 当前用户 |
+| 2026-06-26 | 临时 data root 首次启动 onboarding 弹窗遮挡测试交互 | 1 | E2E helper 等待欢迎弹窗并点击 Save |
+| 2026-06-26 | 本机 Chrome channel E2E 通过后父进程延迟退出 | 1 | 手动 Ctrl-C 后 wrapper 清理 server；以 GitHub runner 作为并行 E2E 退出行为最终裁决 |
 
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁和 fork CI 凭证噪音修复 |
-| 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复，以及真实 Chrome E2E UI 状态修复 |
+| 我要去哪里？ | 下一步提交推送 E2E UI 状态修复，等待 GitHub Actions 真实 Chrome E2E 通过，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁和 fork CI 凭证噪音修复 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复和真实 Chrome E2E UI 状态修复 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

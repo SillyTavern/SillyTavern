@@ -82,6 +82,19 @@ function makeLibraryItem(asset, overrides = {}) {
     };
 }
 
+function makeCurrentUser(overrides = {}) {
+    return {
+        handle: 'default-user',
+        name: 'User',
+        avatar: '/img/default-user.png',
+        admin: true,
+        password: false,
+        enabled: true,
+        created: 0,
+        ...overrides,
+    };
+}
+
 async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubmittedAsset()], reports = [], library = [] } = {}) {
     const apiCalls = {
         approve: [],
@@ -90,6 +103,14 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
         purchases: [],
         resolveReports: [],
     };
+
+    await page.route('**/api/users/me', route => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(makeCurrentUser()),
+        });
+    });
 
     await page.route('**/api/wallet', route => {
         route.fulfill({
@@ -261,7 +282,32 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
 async function loadSillyTavern(page) {
     await page.goto('/');
     await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
-    await expect(page.locator('#marketplace_wallet_ui')).toBeAttached({ timeout: 30_000 });
+
+    const onboardingDialog = page.getByRole('dialog').filter({ hasText: 'Welcome to SillyTavern!' });
+    const hasOnboarding = await onboardingDialog.waitFor({ state: 'visible', timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
+    if (hasOnboarding) {
+        await onboardingDialog.locator('.popup-button-ok').click();
+        await expect(onboardingDialog).toBeHidden();
+    }
+
+    const extensionsDrawer = page.locator('#extensions-settings-button');
+    const extensionsContent = extensionsDrawer.locator('#rm_extensions_block');
+    if (!(await extensionsContent.evaluate(element => element.classList.contains('openDrawer')))) {
+        await extensionsDrawer.locator('.drawer-toggle').click();
+    }
+    await expect(extensionsContent).toHaveClass(/openDrawer/);
+
+    const walletUi = page.locator('#marketplace_wallet_ui');
+    await expect(walletUi).toBeAttached({ timeout: 30_000 });
+
+    const drawerContent = walletUi.locator('.inline-drawer-content');
+    if (!(await drawerContent.isVisible())) {
+        await walletUi.locator('.inline-drawer-toggle').click();
+    }
+    await expect(drawerContent).toBeVisible();
+    await expect(walletUi.locator('#marketplace_wallet_total')).toHaveText('175');
 }
 
 test.describe('marketplace wallet extension', () => {

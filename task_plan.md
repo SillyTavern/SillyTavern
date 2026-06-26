@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 36
+阶段 37
 
 ## 各阶段
 
@@ -366,8 +366,19 @@
 - [x] workflow 改为验证并使用 runner 自带 Chrome
 - [x] 删除 CI 中 Playwright 浏览器下载步骤
 - [x] 更新 README，说明可用 `PLAYWRIGHT_BROWSER_CHANNEL=chrome`
-- [ ] 运行基础测试和脚本验证
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
+### 阶段 37：真实浏览器 E2E UI 状态修复
+- [x] 定位 Runner Chrome E2E 已进入真实浏览器，但失败在隐藏抽屉、admin 可见性和首启 onboarding 状态
+- [x] 在 E2E 夹具中 mock admin 当前用户，避免账号配置漂移
+- [x] 在 E2E helper 中处理首次启动 onboarding 弹窗
+- [x] 在 E2E helper 中打开外层 Extensions drawer，再展开 Marketplace Wallet inline drawer
+- [x] 等待钱包总额渲染完成，避免只等 DOM attached 的竞态
+- [x] 运行 syntax、marketplace Jest 契约、E2E discovery 和本机 Chrome 单 worker 实跑
 - [ ] 提交并推送到 GitHub fork
+- [ ] 等待 GitHub Actions 真实 Chrome E2E 通过
 - **状态：** in_progress
 
 ## 关键问题
@@ -424,6 +435,8 @@
 | 未购买用户可从 listed 详情拿到 `normalized_payload` | 1 | 详情接口按创建者、管理员、授权用户过滤 payload |
 | 钱包 admin grant 空 body 返回 500 | 1 | 使用 `request.body ?? {}` 后再解析字段 |
 | admin 面板 DOM 已渲染但仍保留 `hidden` | 1 | 改为显式 `removeAttr('hidden')`/`attr('hidden', '')`，并提高扩展入口版本避免模块缓存 |
+| Runner Chrome E2E 中 marketplace admin 和按钮不可见 | 1 | E2E helper 打开外层 Extensions drawer、展开内层 inline drawer，并 mock admin 用户 |
+| Runner Chrome E2E 首次启动被 onboarding 弹窗遮挡 | 1 | E2E helper 等待并点击 onboarding Save |
 
 ## 备注
 - 设计文档阶段已完成。

@@ -96,6 +96,9 @@
 - 既有 merge-conflict bot workflow 已限制为官方仓库运行，避免 fork 缺 bot 凭证导致 push checks 失败。
 - 新增 demo marketplace seed 脚本，显式指定 data root 后写入免费角色卡和付费世界书，并保持幂等 upsert。
 - runtime smoke 现在会预置一条临时 listed 市场资产，并通过真实 server 校验 `/api/wallet` 与 `/api/market/assets` JSON shape。
+- Runner Chrome 真实 E2E 会暴露两层可见性：SillyTavern 外层 Extensions drawer 需要打开，Marketplace Wallet 自身的 inline drawer 也需要展开，否则 admin、Report Queue 和购买按钮都在隐藏父级下。
+- 临时 data root 首次启动会出现 onboarding persona 弹窗；浏览器 E2E 必须等待并确认 Save，避免欢迎弹窗遮挡 Extensions 面板点击。
+- E2E 中 mock `/api/users/me` 为 admin 用户能防止账号配置漂移影响前端 `isAdmin()` gate；真实后端权限仍由接口单测覆盖。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*
