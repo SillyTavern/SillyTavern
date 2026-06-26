@@ -658,6 +658,7 @@
 | 阶段 49 API reference CLI smoke | `npm run marketplace:export:api > /tmp/st-marketplace-api-reference.md && rg ...` | 生成 Markdown 包含 market report、wallet admin grant 和 public health 端点 | 通过 | 通过 |
 | 阶段 49 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/API reference/filter/UI 契约 | 通过：8 suites / 34 tests | 通过 |
 | 阶段 49 diff 空白检查 | `git diff --check` | 当前补丁无 trailing whitespace 或 whitespace error | 通过 | 通过 |
+| GitHub 阶段 49 API reference 验证 | `gh run watch 28246518305 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m38s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -778,6 +779,7 @@
 - 新增 `tests/marketplace-api-reference.test.js`，覆盖 Market API、Wallet API、Public health API 端点输出、显式 `--out` 写文件和参数错误。
 - README Useful Scripts、验证矩阵和设计文档已加入 API reference 导出命令，说明它用于发布前核对当前本地 MVP 路由。
 - 已通过 `npm --prefix tests run test:unit -- marketplace-api-reference.test.js`、`npm run test:marketplace:syntax`、`npm run marketplace:export:api` CLI smoke、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28246518305` 已确认 Marketplace Wallet Checks 全链路通过。
 
 ## 五问重启检查
 | 问题 | 答案 |

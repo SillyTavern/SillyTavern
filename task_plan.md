@@ -495,8 +495,8 @@
 - [x] 支持 stdout 和显式 `--out` 写入 Markdown
 - [x] 补充脚本测试、README 和设计文档说明
 - [x] 将脚本纳入 syntax gate 和 marketplace 聚合测试
-- [ ] 运行基础验证并提交推送
-- **状态：** in_progress
+- [x] 运行基础验证并提交推送
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
