@@ -684,6 +684,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 73：README 可运行脚本同步契约
+- [x] 测试确认 README 文档列出 hosted marketplace 关键脚本
+- [x] 测试确认 README 文档列出 PWA/mobile 关键脚本
+- [x] 测试确认这些脚本都存在于 `package.json`
+- [x] 更新 README 和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -745,6 +753,7 @@
 | Syntax gate 应覆盖扩展静态资产 | marketplace-wallet 依赖 manifest/window/style，JS 语法通过不代表这些关键资产存在且可解析 |
 | admin grant 目标字段别名必须锁定 | API reference 已标注 `handle`、`userHandle`、`targetHandle`，后端契约测试要保证三种别名都能正确发到目标用户 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
+| README 脚本清单应受测试保护 | 托管版交付依赖可运行脚本，README 的 marketplace/PWA 命令必须和 `package.json` 同步 |
 | Library Details 入口必须真实存在 | 计划和设计文档已把 My Library 作为找回/查看入口，库中只提供 Install 会迫使用户回市场列表找详情 |
 | Library 安装摘要应可见 | 后端已返回 entitlement 时间和 last_install 摘要，前端显示这些信息能让用户确认何时领取/购买以及最近安装到哪里 |
 | Health endpoint 公开但不含用户数据 | 部署平台和移动壳需要未登录探活，响应只能包含服务级状态 |

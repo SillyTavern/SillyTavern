@@ -101,6 +101,7 @@
 - 新增 `scripts/check-marketplace-syntax.mjs` 作为 marketplace/wallet/PWA/health 基础语法门禁，并接入根目录 `npm run test:marketplace`。
 - marketplace syntax gate 会检查 marketplace-wallet 的 `manifest.json`、`window.html` 和 `style.css` 存在且非空，manifest 还会执行 JSON parse。
 - wallet admin grant 接口接受 `handle`、`userHandle` 或 `targetHandle` 作为目标用户字段；后端契约测试应覆盖三者都写入同一目标用户的余额分桶和 ledger。
+- README 中的 hosted marketplace/PWA 可运行脚本清单应由 `tests/marketplace-scripts.test.js` 对照 `package.json` 保护，避免交付命令漂移。
 - PWA 契约测试新增 service worker 预缓存清单解析，确认 `/` 映射到 `index.html` 且所有 shell assets 都存在于 `public/`。
 - 设计文档的 API 模块已拆为“当前本地 MVP 已实现 API”和“Future SaaS API”，并明确当前上传流接收规范化 JSON payload。
 - 新增运行态 smoke 脚本，临时启动真实 SillyTavern server 并校验 `/api/health`、`/manifest.json`、`/service-worker.js`。

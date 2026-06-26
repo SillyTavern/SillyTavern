@@ -1017,6 +1017,13 @@
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js -t 'requires review before purchase'`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
 - GitHub run `28256650347` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
+## 2026-06-26 阶段 73：README 可运行脚本同步契约
+- `tests/marketplace-scripts.test.js` 新增 README/package 脚本同步契约。
+- 测试确认 `start:no-csrf`、marketplace seed/export/test 脚本、marketplace browser E2E 脚本和 PWA/mobile 测试脚本都存在于 `package.json` 且在 README 中有 `npm run ...` 用法。
+- 根据只读 explorer 复核，README 检查限制在 Useful Scripts/Validation matrix 段落，并使用命令边界正则，避免短脚本被长脚本假命中。
+- README Development Notes 已说明该契约用于防止托管版 marketplace/PWA 命令与文档漂移。
+- 已通过 `npm --prefix tests run test:unit -- marketplace-scripts.test.js`、`npm run test:marketplace:syntax`、`npm run test:marketplace` 和 `git diff --check`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
