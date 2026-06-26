@@ -616,6 +616,7 @@
 | 阶段 39 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/PWA/health/seed/filter/UI 契约通过 | 通过：6 suites / 24 tests | 通过 |
 | 阶段 39 marketplace workflow YAML 解析 | `node --input-type=module -e 'import YAML from "yaml"; ...'` | workflow 支持 `workflow_dispatch`，push 分支为 `codex/**`，且 marketplace job 存在 | 通过 | 通过 |
 | 阶段 39 README diff 检查 | `node --input-type=module -e '... git diff -- README.md ...'` | README diff 包含验证矩阵和 4 个 marketplace 验证命令 | 通过 | 通过 |
+| GitHub 阶段 39 权限测试验证 | `gh run watch 28241497439 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions syntax、Jest、runtime smoke、runner Chrome 和真实 browser E2E 全链路 | 通过：Marketplace Wallet MVP job 1m4s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但 runner 强制 Node 24 | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -654,6 +655,7 @@
 - `.github/workflows/marketplace-wallet-checks.yml` 增加 `workflow_dispatch`，并将 push 分支从 `codex/marketplace-wallet-mvp` 放宽到 `codex/**`，继续依赖 path filter 限制无关改动。
 - README 新增 marketplace 本地验证矩阵，覆盖 syntax、contract、runtime smoke 和临时 server E2E 命令。
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace`、workflow YAML 键存在性检查、`git diff --check`。
+- GitHub run `28241497439` 已确认阶段 39 权限坏输入测试和 workflow/README 改动通过 Marketplace Wallet Checks 全链路。
 
 ## 五问重启检查
 | 问题 | 答案 |

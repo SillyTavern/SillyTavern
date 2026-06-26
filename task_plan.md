@@ -398,8 +398,8 @@
 - [x] 增加 marketplace workflow 手动触发或更通用分支触发
 - [x] 增加 README 本地验证矩阵
 - [x] 运行基础测试、workflow 解析和 diff 检查
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
