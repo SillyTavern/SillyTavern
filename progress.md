@@ -448,6 +448,27 @@
   - progress.md
   - findings.md
 
+### 阶段 28：市场筛选排序可执行测试
+- **状态：** complete
+- 执行的操作：
+  - 新增 `public/scripts/extensions/marketplace-wallet/filters.js`，将市场列表筛选排序抽为纯函数。
+  - 更新 `index.js`，由 DOM 控件读取条件后调用 `filterAndSortAssets()`。
+  - 新增 `tests/marketplace-wallet-filters.test.js`，覆盖类型、价格、访问状态、搜索、排序和不修改原数组。
+  - 将 filters 和新测试文件加入 `scripts/check-marketplace-syntax.mjs`。
+  - 将新测试纳入 `npm run test:marketplace`。
+  - 将 marketplace-wallet manifest 版本提升到 `0.2.1`，避免旧 ESM 模块缓存。
+- 创建/修改的文件：
+  - public/scripts/extensions/marketplace-wallet/filters.js
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/manifest.json
+  - tests/marketplace-wallet-filters.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - scripts/check-marketplace-syntax.mjs
+  - package.json
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -502,6 +523,10 @@
 | smoke 脚本语法门禁 | `npm run test:marketplace:syntax` | smoke 脚本纳入 marketplace syntax gate | 通过：12 files checked | 通过 |
 | smoke 阶段 marketplace 回归 | `npm run test:marketplace` | syntax gate + marketplace/PWA/health 契约通过 | 通过：4 suites / 17 tests | 通过 |
 | smoke 阶段 E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
+| marketplace filters 纯函数测试 | `npm --prefix tests run test:unit -- marketplace-wallet-filters.test.js marketplace-wallet-ui.test.js` | 筛选、搜索、排序和 UI 契约通过 | 通过：2 suites / 7 tests | 通过 |
+| filters 阶段 marketplace 回归 | `npm run test:marketplace` | filters 测试纳入 marketplace 根命令 | 通过：5 suites / 19 tests | 通过 |
+| filters 阶段 runtime smoke | `npm run test:marketplace:smoke` | 临时 server health/PWA 公开端点仍可访问 | 通过 | 通过 |
+| filters 阶段 E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -521,11 +546,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准和运行态 smoke 脚本 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本和筛选排序可执行测试 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准和运行态 smoke 脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本和筛选排序可执行测试 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

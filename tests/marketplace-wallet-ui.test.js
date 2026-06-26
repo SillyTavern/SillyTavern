@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.0');
+        expect(manifest.version).toBe('0.2.1');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -75,18 +75,11 @@ describe('marketplace wallet extension UI contract', () => {
 
         expect(script).toContain("fetchJson('/api/market/creator/summary')");
         expect(script).toContain("fetchJson('/api/market/library')");
-        expect(script).toContain("const priceType = String($('#marketplace_wallet_price_filter').val() || '')");
-        expect(script).toContain("const access = String($('#marketplace_wallet_access_filter').val() || '')");
-        expect(script).toContain("const sort = String($('#marketplace_wallet_sort').val() || 'recent')");
-        expect(script).toContain("case 'available':");
-        expect(script).toContain("return asset.status === 'listed' && !asset.owned && !asset.entitled;");
-        expect(script).toContain("case 'library':");
-        expect(script).toContain('return asset.entitled;');
-        expect(script).toContain("case 'mine':");
-        expect(script).toContain('return asset.owned;');
-        expect(script).toContain("case 'popular':");
-        expect(script).toContain("case 'price_asc':");
-        expect(script).toContain("case 'price_desc':");
+        expect(script).toContain("import { filterAndSortAssets } from './filters.js';");
+        expect(script).toContain('return filterAndSortAssets(state.assets');
+        expect(script).toContain("priceType: $('#marketplace_wallet_price_filter').val()");
+        expect(script).toContain("access: $('#marketplace_wallet_access_filter').val()");
+        expect(script).toContain("sort: $('#marketplace_wallet_sort').val()");
         expect(script).toContain('async function loadCreatorSummary()');
         expect(script).toContain('async function loadLibrary()');
         expect(script).toContain("console.warn('Creator summary could not be loaded'");

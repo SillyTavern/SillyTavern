@@ -3,6 +3,7 @@ import { renderExtensionTemplateAsync } from '../../extensions.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { getCurrentUserHandle, isAdmin } from '../../user.js';
 import { getFileText } from '../../utils.js';
+import { filterAndSortAssets } from './filters.js';
 
 const MODULE_NAME = 'marketplace-wallet';
 const MARKET_TYPES = {
@@ -162,53 +163,13 @@ function renderAdminVisibility() {
 }
 
 function getFilteredAssets() {
-    const search = String($('#marketplace_wallet_search').val() || '').trim().toLowerCase();
-    const type = String($('#marketplace_wallet_type_filter').val() || '');
-    const priceType = String($('#marketplace_wallet_price_filter').val() || '');
-    const access = String($('#marketplace_wallet_access_filter').val() || '');
-    const sort = String($('#marketplace_wallet_sort').val() || 'recent');
-    return state.assets
-        .filter(asset => !type || asset.type === type)
-        .filter(asset => !priceType || asset.price_type === priceType)
-        .filter(asset => {
-            switch (access) {
-                case 'available':
-                    return asset.status === 'listed' && !asset.owned && !asset.entitled;
-                case 'library':
-                    return asset.entitled;
-                case 'mine':
-                    return asset.owned;
-                default:
-                    return true;
-            }
-        })
-        .filter(asset => {
-            if (!search) {
-                return true;
-            }
-            return [
-                asset.title,
-                asset.summary,
-                asset.creator_id,
-                ...(Array.isArray(asset.tags) ? asset.tags : []),
-            ].filter(Boolean).join(' ').toLowerCase().includes(search);
-        })
-        .sort((a, b) => {
-            switch (sort) {
-                case 'popular':
-                    return Number(b.sales_count || 0) - Number(a.sales_count || 0)
-                        || Number(b.install_count || 0) - Number(a.install_count || 0)
-                        || String(b.listed_at || b.updated_at || '').localeCompare(String(a.listed_at || a.updated_at || ''));
-                case 'price_asc':
-                    return Number(a.price_coins || 0) - Number(b.price_coins || 0)
-                        || String(b.listed_at || b.updated_at || '').localeCompare(String(a.listed_at || a.updated_at || ''));
-                case 'price_desc':
-                    return Number(b.price_coins || 0) - Number(a.price_coins || 0)
-                        || String(b.listed_at || b.updated_at || '').localeCompare(String(a.listed_at || a.updated_at || ''));
-                default:
-                    return String(b.listed_at || b.updated_at || '').localeCompare(String(a.listed_at || a.updated_at || ''));
-            }
-        });
+    return filterAndSortAssets(state.assets, {
+        search: $('#marketplace_wallet_search').val(),
+        type: $('#marketplace_wallet_type_filter').val(),
+        priceType: $('#marketplace_wallet_price_filter').val(),
+        access: $('#marketplace_wallet_access_filter').val(),
+        sort: $('#marketplace_wallet_sort').val(),
+    });
 }
 
 function getPriceLabel(asset) {
