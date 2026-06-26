@@ -496,6 +496,18 @@
   - progress.md
   - findings.md
 
+### 阶段 31：Fork CI 凭证噪音修复
+- **状态：** complete
+- 执行的操作：
+  - 读取 GitHub run `28236597360` 失败日志，确认失败发生在 `actions/create-github-app-token`。
+  - 失败原因是 fork 仓库缺少官方 bot 的 `ST_BOT_APP_ID`，导致 `appId option is required`。
+  - 更新 `.github/workflows/pr-check-merge-conflicts.yaml`，让 merge-conflict bot job 只在 `SillyTavern/SillyTavern` 官方仓库运行。
+- 创建/修改的文件：
+  - .github/workflows/pr-check-merge-conflicts.yaml
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -564,6 +576,8 @@
 | Marketplace workflow smoke step | `npm run test:marketplace:smoke` | workflow runtime smoke step 通过 | 通过 | 通过 |
 | Marketplace workflow E2E discovery step | `npm run test:marketplace:e2e -- --list` | workflow E2E discovery step 通过 | 通过：3 tests listed | 通过 |
 | GitHub Marketplace Wallet Checks | `gh run watch 28236597364 --repo Angelidiot/SillyTavern --exit-status` | GitHub Actions 新 workflow 通过 | 通过：Marketplace Wallet MVP job 47s，全步骤成功；actions 注解提示 pinned actions 内部 Node 20 deprecated 但被 runner 强制 Node 24 | 通过 |
+| Fork bot workflow YAML 验证 | `node --input-type=module -e "import YAML..."` | merge-conflict 和 marketplace workflows 都可解析 | 通过 | 通过 |
+| Fork bot workflow 基础回归 | `npm run test:marketplace:syntax` | 修改 workflow 不影响 marketplace syntax gate | 通过：14 files checked | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -584,11 +598,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖和 GitHub Actions 门禁 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁和 fork CI 凭证噪音修复 |
 | 我要去哪里？ | 下一步完成 report 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖和 GitHub Actions 门禁 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁和 fork CI 凭证噪音修复 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*
