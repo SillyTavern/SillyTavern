@@ -68,6 +68,10 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
         expect(script).toContain("action: 'approve'");
         expect(script).toContain("action: 'reject'");
+        expect(script).toContain("action: 'delist'");
+        expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/delist`");
+        expect(script).toContain('POPUP_TYPE.CONFIRM');
+        expect(script).toContain('asset.owned || asset.entitled');
         expect(script).toContain("$root.find('#marketplace_wallet_review_queue').on('click', onAssetAction)");
         expect(script).toContain("await fetchJson('/api/wallet/grants/admin'");
         expect(script).toContain("['bonus', 'paid', 'earnings'].includes(bucket)");
@@ -79,6 +83,7 @@ describe('marketplace wallet extension UI contract', () => {
 
         expect(css).toContain('@media screen and (max-width: 700px)');
         expect(css).toContain('.marketplace-wallet-creator-stats');
+        expect(css).toContain('data-marketplace-wallet-status="delisted"');
         expect(css).toContain('grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));');
         expect(css).toContain('.marketplace-wallet-review-actions');
         expect(css).toContain('grid-template-columns: 1fr 1fr;');

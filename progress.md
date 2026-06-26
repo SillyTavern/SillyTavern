@@ -196,6 +196,27 @@
   - progress.md
   - findings.md
 
+### 阶段 14：市场资产下架闭环
+- **状态：** in_progress
+- 执行的操作：
+  - 选择 delist 作为市场生命周期最小补齐项，暂不做退款、举报、suspend 或搜索排序。
+  - 新增 `POST /api/market/assets/:id/delist`，仅管理员可下架 listed 资产。
+  - 将下架资产从公开浏览和新购买中移除，但保留已有 entitlement 用户的详情读取和安装能力。
+  - 列表资产增加 `entitled` 标记，前端可给已授权用户展示 Install。
+  - marketplace-wallet 增加管理员 Delist 按钮和确认弹窗。
+  - 更新 README 与设计文档，记录 delist API 和“不撤销既有授权”的边界。
+- 创建/修改的文件：
+  - README.md
+  - docs/marketplace-currency-design.md
+  - src/endpoints/market.js
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/style.css
+  - tests/market-wallet.test.js
+  - tests/marketplace-wallet-ui.test.js
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -228,6 +249,7 @@
 | Creator Center E2E 列表 | `npm run test:marketplace:e2e -- --list` | 能发现 browser E2E 用例 | 通过：2 tests listed | 通过 |
 | PWA 契约测试 | `npm run test:pwa` | manifest 可安装、页面注册 SW、SW 不缓存 API/非 GET | 通过：1 suite / 3 tests | 通过 |
 | marketplace + PWA 根脚本 | `npm run test:marketplace` | 市场/钱包/PWA 契约测试通过 | 通过：3 suites / 14 tests | 通过 |
+| delist 生命周期回归 | `npm run test:marketplace` | admin 下架、非 admin 禁止、下架后新用户不可买、已授权用户可安装 | 通过：3 suites / 14 tests | 通过 |
 | marketplace E2E 实跑 | `npm run test:marketplace:e2e` | 浏览器 E2E 通过 | 未通过：本机 Playwright browser cache 半安装，缺 `chromium_headless_shell` / Chromium Framework | 环境阻塞 |
 
 ## 错误日志
@@ -247,11 +269,11 @@
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary，并正在补 PWA 手机安装壳 |
-| 我要去哪里？ | 下一步完成 PWA 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳，并正在补市场下架闭环 |
+| 我要去哪里？ | 下一步完成 delist 基础验证、提交推送，然后继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、README 和基础测试脚本 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、README 和基础测试脚本 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

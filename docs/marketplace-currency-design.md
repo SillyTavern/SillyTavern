@@ -420,17 +420,21 @@ GET    /api/market/assets/:id
 POST   /api/market/assets
 POST   /api/market/assets/:id/versions
 POST   /api/market/assets/:id/submit
+POST   /api/market/assets/:id/delist
 POST   /api/market/assets/:id/purchase
 POST   /api/market/assets/:id/install
 POST   /api/market/assets/:id/reviews
 POST   /api/market/assets/:id/report
 ```
 
-当前本地 MVP 额外在 Market API 下提供创作者中心聚合：
+当前本地 MVP 也在 Market API 下提供管理员下架和创作者中心聚合：
 
 ```text
+POST   /api/market/assets/:id/delist
 GET    /api/market/creator/summary
 ```
+
+下架只阻止新用户公开浏览和购买，不撤销既有 entitlement；已授权用户仍可查看 payload 并安装自己的副本。
 
 该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。
 

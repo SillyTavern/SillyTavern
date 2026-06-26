@@ -175,7 +175,17 @@ function createAssetAction(asset) {
         }));
     }
 
-    if (asset.owned) {
+    if (canUseAdminTools() && asset.status === 'listed') {
+        $actions.append(createAssetButton({
+            asset,
+            action: 'delist',
+            icon: 'fa-eye-slash',
+            label: isBusy ? 'Delisting' : 'Delist',
+            disabled: isBusy,
+        }));
+    }
+
+    if (asset.owned || asset.entitled) {
         $actions.append(createAssetButton({
             asset,
             action: 'install',
@@ -406,6 +416,25 @@ async function rejectAsset(assetId) {
     });
 }
 
+async function delistAsset(assetId) {
+    const confirmed = await callGenericPopup('Delist this marketplace asset?', POPUP_TYPE.CONFIRM, '', {
+        okButton: 'Delist',
+        cancelButton: 'Cancel',
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    await withBusyAsset(assetId, async () => {
+        await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/delist`, {
+            method: 'POST',
+        });
+        toastr.success('Asset delisted');
+        await loadMarketplace({ silent: true });
+    });
+}
+
 function parsePayloadJson() {
     const text = String($('#marketplace_wallet_upload_payload').val() || '').trim();
     if (!text) {
@@ -572,6 +601,7 @@ function onAssetAction(event) {
         submit: submitAsset,
         approve: approveAsset,
         reject: rejectAsset,
+        delist: delistAsset,
     };
     actions[action]?.(assetId).catch(error => {
         console.error(`Marketplace action failed: ${action}`, error);

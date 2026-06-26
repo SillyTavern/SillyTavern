@@ -286,7 +286,7 @@ function findAsset(store, id) {
     return store.assets.find(asset => asset.id === id) ?? null;
 }
 
-function toAssetListItem(asset, currentUserId) {
+function toAssetListItem(asset, currentUserId, store = null) {
     return {
         id: asset.id,
         creator_id: asset.creator_id,
@@ -306,6 +306,7 @@ function toAssetListItem(asset, currentUserId) {
         updated_at: asset.updated_at,
         listed_at: asset.listed_at,
         owned: asset.creator_id === currentUserId,
+        entitled: store ? hasActiveEntitlement(store, asset, currentUserId) : false,
     };
 }
 
@@ -356,8 +357,11 @@ function getCreatorSummary(store, currentUserId, balance, ledger) {
     };
 }
 
-function canReadAsset(asset, currentUserId, isAdmin = false) {
-    return isAdmin || asset.creator_id === currentUserId || ['approved', 'listed'].includes(asset.status);
+function canReadAsset(asset, currentUserId, store = null, isAdmin = false) {
+    return isAdmin
+        || asset.creator_id === currentUserId
+        || ['approved', 'listed'].includes(asset.status)
+        || (store && hasActiveEntitlement(store, asset, currentUserId));
 }
 
 function canPurchaseAsset(asset, currentUserId) {
@@ -498,8 +502,8 @@ router.get('/assets', (request, response) => {
     const currentUserId = getUserId(request);
     const store = readStore(request);
     const assets = store.assets
-        .filter(asset => canReadAsset(asset, currentUserId, !!request.user.profile.admin))
-        .map(asset => toAssetListItem(asset, currentUserId));
+        .filter(asset => canReadAsset(asset, currentUserId, store, !!request.user.profile.admin))
+        .map(asset => toAssetListItem(asset, currentUserId, store));
 
     return response.json({ assets });
 });
@@ -508,7 +512,7 @@ router.get('/assets/:id', (request, response) => {
     const currentUserId = getUserId(request);
     const store = readStore(request);
     const asset = findAsset(store, request.params.id);
-    if (!asset || !canReadAsset(asset, currentUserId, !!request.user.profile.admin)) {
+    if (!asset || !canReadAsset(asset, currentUserId, store, !!request.user.profile.admin)) {
         return response.sendStatus(404);
     }
 
@@ -637,6 +641,27 @@ router.post('/assets/:id/reject', requireAdminMiddleware, (request, response) =>
     return response.json({ asset });
 });
 
+router.post('/assets/:id/delist', requireAdminMiddleware, (request, response) => {
+    const store = readStore(request);
+    const asset = findAsset(store, request.params.id);
+    if (!asset) {
+        return response.sendStatus(404);
+    }
+    if (asset.status !== 'listed') {
+        return response.status(400).json({ error: 'asset must be listed before delisting' });
+    }
+
+    const timestamp = nowIso();
+    asset.status = 'delisted';
+    asset.visibility = 'private';
+    asset.delisted_by = getUserId(request);
+    asset.delisted_at = timestamp;
+    asset.updated_at = timestamp;
+    writeStore(request, store);
+
+    return response.json({ asset });
+});
+
 router.post('/assets/:id/purchase', async (request, response) => {
     const currentUserId = getUserId(request);
     const lockKey = `${request.params.id}:${currentUserId}`;
@@ -718,7 +743,7 @@ router.post('/assets/:id/install', (request, response) => {
         const currentUserId = getUserId(request);
         const store = readStore(request);
         const asset = findAsset(store, request.params.id);
-        if (!asset || !canReadAsset(asset, currentUserId, !!request.user.profile.admin)) {
+        if (!asset || !canReadAsset(asset, currentUserId, store, !!request.user.profile.admin)) {
             return response.sendStatus(404);
         }
         if (!canInstallAsset(store, asset, currentUserId)) {

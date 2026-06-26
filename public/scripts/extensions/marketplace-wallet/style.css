@@ -130,6 +130,10 @@
     color: var(--warning);
 }
 
+.marketplace-wallet-badge[data-marketplace-wallet-status="delisted"] {
+    color: var(--SmartThemeEmColor);
+}
+
 .marketplace-wallet-asset-actions {
     justify-content: flex-end;
     flex-wrap: wrap;

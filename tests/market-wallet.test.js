@@ -180,6 +180,12 @@ describe('market and wallet MVP endpoints', () => {
                 body: {},
             });
             expect(rejectedRejection.status).toBe(403);
+
+            const rejectedDelist = await request(bobApp, `/api/market/assets/${assetId}/delist`, {
+                method: 'POST',
+                body: {},
+            });
+            expect(rejectedDelist.status).toBe(403);
         } finally {
             warnSpy.mockRestore();
         }
@@ -208,6 +214,22 @@ describe('market and wallet MVP endpoints', () => {
         expect(purchaseResult.body.entitlement.purchase_id).toBeNull();
         expect(purchaseResult.body.purchase).toBeNull();
 
+        const delistResult = await request(aliceApp, `/api/market/assets/${assetId}/delist`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(delistResult.status).toBe(200);
+        expect(delistResult.body.asset.status).toBe('delisted');
+
+        const hiddenAfterDelist = await request(createApp(createUser('charlie', false)), `/api/market/assets/${assetId}`, { method: 'GET' });
+        expect(hiddenAfterDelist.status).toBe(404);
+
+        const blockedPurchaseAfterDelist = await request(createApp(createUser('charlie', false)), `/api/market/assets/${assetId}/purchase`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(blockedPurchaseAfterDelist.status).toBe(404);
+
         const freeLedger = await request(bobApp, '/api/wallet/ledger', { method: 'GET' });
         expect(freeLedger.status).toBe(200);
         expect(freeLedger.body.ledger).toHaveLength(0);
@@ -232,6 +254,7 @@ describe('market and wallet MVP endpoints', () => {
         const storedAsset = store.assets.find(asset => asset.id === assetId);
         expect(storedAsset.sales_count).toBe(1);
         expect(storedAsset.install_count).toBe(1);
+        expect(storedAsset.status).toBe('delisted');
         expect(store.entitlements.some(entitlement => entitlement.asset_id === assetId && entitlement.user_id === 'bob')).toBe(true);
         expect(store.installs.some(install => install.asset_id === assetId && install.user_id === 'bob')).toBe(true);
     });
