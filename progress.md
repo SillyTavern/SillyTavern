@@ -967,6 +967,7 @@
 - snapshot export 单测 fixture 和断言新增 submitted/approved/listed/delisted lifecycle 字段，同时继续确认 payload、举报正文、本地路径和私有 metadata 不导出。
 - README、设计文档和 findings 已补充 snapshot asset lifecycle 白名单边界。
 - 已通过 `npm run test:marketplace:syntax`、`npm --prefix tests run test:unit -- marketplace-snapshot-export.test.js`、`npm run test:marketplace` 和 `git diff --check`。
+- GitHub run `28254941882` 已确认 Marketplace Wallet Checks 全链路通过；仅有 GitHub Actions Node 20 runner deprecation annotation，不影响本次门禁结果。
 
 ## 五问重启检查
 | 问题 | 答案 |
