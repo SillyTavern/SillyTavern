@@ -477,8 +477,8 @@
 - [x] 覆盖 Save & Submit 会 PATCH 后 submit 并刷新 Creator Center/Review Queue
 - [x] 运行 E2E discovery、本机 Chrome E2E、marketplace 聚合和 syntax gate
 - [x] 更新 README/规划记录
-- [ ] 提交并推送到 GitHub fork
-- **状态：** in_progress
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
