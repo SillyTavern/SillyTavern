@@ -162,6 +162,15 @@
     flex-wrap: wrap;
 }
 
+.marketplace-wallet-affordability {
+    flex-basis: 100%;
+    color: var(--warning);
+    font-size: calc(var(--mainFontSize) * 0.78);
+    line-height: 1.25;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
 .marketplace-wallet-asset-actions .menu_button,
 .marketplace-wallet-upload-actions .menu_button,
 #marketplace_wallet_refresh {
@@ -466,6 +475,10 @@
     .marketplace-wallet-review-actions .menu_button {
         justify-content: center;
         min-width: 0;
+    }
+
+    .marketplace-wallet-affordability {
+        text-align: center;
     }
 
     .marketplace-wallet-preview-meta {

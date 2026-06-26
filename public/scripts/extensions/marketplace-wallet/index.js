@@ -323,6 +323,13 @@ function createAssetButton({ asset, action, icon, label, disabled = false, title
     return $button;
 }
 
+function createAffordabilityHint(asset, missingCoins) {
+    const hintId = `marketplace_wallet_afford_${asset.id}`;
+    return $('<small class="marketplace-wallet-affordability"></small>')
+        .attr('id', hintId)
+        .text(`Need ${formatCoins(missingCoins)} more bonus or paid coins`);
+}
+
 function createReportButton({ report, action, icon, label, disabled = false }) {
     const $button = $('<button class="menu_button menu_button_icon" type="button"></button>');
     $button.attr('data-marketplace-wallet-report-action', action);
@@ -398,15 +405,22 @@ function createAssetAction(asset) {
 
     if (asset.status === 'listed') {
         const priceCoins = Number(asset.price_coins || 0);
-        const canAfford = asset.price_type !== 'fixed_price' || getSpendableBalance() >= priceCoins;
-        $actions.append(createAssetButton({
+        const missingCoins = Math.max(0, priceCoins - getSpendableBalance());
+        const canAfford = asset.price_type !== 'fixed_price' || missingCoins === 0;
+        const $purchaseButton = createAssetButton({
             asset,
             action: 'purchase',
             icon: 'fa-cart-shopping',
             label: isBusy ? 'Working' : asset.price_type === 'free' ? 'Get & Install' : 'Buy & Install',
             disabled: isBusy || !canAfford,
-            title: canAfford ? '' : 'Not enough bonus or paid balance',
-        }));
+            title: canAfford ? '' : `Need ${formatCoins(missingCoins)} more bonus or paid coins`,
+        });
+        $actions.append($purchaseButton);
+        if (!canAfford) {
+            const $hint = createAffordabilityHint(asset, missingCoins);
+            $purchaseButton.attr('aria-describedby', $hint.attr('id'));
+            $actions.append($hint);
+        }
     }
 
     return $actions;

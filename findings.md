@@ -110,6 +110,7 @@
 - paid purchase API 响应现在只返回 entitlement、`already_owned`、purchase id 和 buyer balance；完整 ledger entries 与 creator balance 不再通过购买响应暴露，仍可由买家/创作者通过各自 Wallet API 和 Creator Center 查询。
 - runtime smoke 现在同时覆盖免费和固定价 world book：真实 server 下执行 admin grant、fixed-price purchase、buyer paid debit、creator earnings ledger、purchase response 隐私 shape、安装落盘和 Library 可见性。
 - marketplace-wallet 浏览器 E2E mock 现在维护可变 wallet/ledger/library 状态，覆盖 fixed-price Buy & Install 后余额刷新、Purchase 负流水、Library 安装数和移动布局。
+- marketplace-wallet 固定价资产只按 bonus+paid 判断购买力；余额不足时卡片显示缺口金额，避免移动端只看到 disabled 按钮。
 - marketplace-wallet 浏览器 E2E 现在覆盖创作者 world_book JSON 上传并 Save & Submit，断言新资产进入 Review Queue，Creator Center 统计和资产列表刷新。
 - marketplace-wallet 上传表单现在复用后端 `tags` 约束，创作者可填逗号分隔标签；列表卡片展示标签，搜索可命中 tags。
 - marketplace-wallet Load JSON 会按 payload 形状自动切换 `character_card` 或 `world_book`，减少用户上传角色卡/世界书时选错类型。

@@ -182,6 +182,10 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain('POPUP_TYPE.CONFIRM');
         expect(script).toContain('POPUP_TYPE.INPUT');
         expect(script).toContain('asset.owned || asset.entitled');
+        expect(script).toContain('function createAffordabilityHint(asset, missingCoins)');
+        expect(script).toContain('missingCoins = Math.max(0, priceCoins - getSpendableBalance())');
+        expect(script).toContain('Need ${formatCoins(missingCoins)} more bonus or paid coins');
+        expect(script).toContain("aria-describedby', $hint.attr('id')");
         expect(script).toContain('#marketplace_wallet_price_filter, #marketplace_wallet_access_filter, #marketplace_wallet_sort');
         expect(script).toContain("$root.find('#marketplace_wallet_review_queue').on('click', onAssetAction)");
         expect(script).toContain("$root.find('#marketplace_wallet_report_queue').on('click', onReportAction)");
@@ -212,5 +216,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('.marketplace-wallet-preview-payload');
         expect(css).toContain('.marketplace-wallet-tags');
         expect(css).toContain('.marketplace-wallet-tag');
+        expect(css).toContain('.marketplace-wallet-affordability');
+        expect(css).toContain('color: var(--warning);');
     });
 });

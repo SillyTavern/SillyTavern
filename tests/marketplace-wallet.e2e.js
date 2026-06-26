@@ -795,6 +795,33 @@ test.describe('marketplace wallet extension', () => {
         await expect(library).toContainText('1 installs');
     });
 
+    test('shows the missing spendable balance for unaffordable fixed-price assets', async ({ page }) => {
+        const costlyAsset = makeListedAsset({
+            id: 'costly-world',
+            title: 'Costly World',
+            price_type: 'fixed_price',
+            price_coins: 300,
+        });
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [costlyAsset],
+        });
+
+        await loadSillyTavern(page);
+
+        const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Costly World' });
+        const purchaseButton = assetRow.locator('[data-marketplace-wallet-action="purchase"]');
+        await expect(assetRow).toContainText('300 coins');
+        await expect(purchaseButton).toBeDisabled();
+        await expect(assetRow.locator('.marketplace-wallet-affordability')).toHaveText('Need 150 more bonus or paid coins');
+
+        const describedBy = await purchaseButton.getAttribute('aria-describedby');
+        expect(describedBy).toBeTruthy();
+        await expect(assetRow.locator(`#${describedBy}`)).toHaveText('Need 150 more bonus or paid coins');
+
+        await purchaseButton.click({ force: true });
+        expect(apiCalls.purchases).toEqual([]);
+    });
+
     test('submits a world book upload into the review queue and creator center', async ({ page }) => {
         const apiCalls = await mockMarketplaceApis(page, {
             assets: [],
@@ -974,7 +1001,17 @@ test.describe('marketplace wallet extension', () => {
 
     test('keeps review controls compact on mobile width', async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
-        await mockMarketplaceApis(page, { assets: [makeSubmittedAsset()] });
+        await mockMarketplaceApis(page, {
+            assets: [
+                makeSubmittedAsset(),
+                makeListedAsset({
+                    id: 'mobile-costly-world',
+                    title: 'Mobile Costly World',
+                    price_type: 'fixed_price',
+                    price_coins: 300,
+                }),
+            ],
+        });
 
         await loadSillyTavern(page);
 
@@ -983,6 +1020,7 @@ test.describe('marketplace wallet extension', () => {
             const grantGrid = element.querySelector('.marketplace-wallet-grant');
             const reviewItem = element.querySelector('.marketplace-wallet-review-item');
             const reviewActions = element.querySelector('.marketplace-wallet-review-actions');
+            const affordability = element.querySelector('.marketplace-wallet-affordability');
             const viewportWidth = document.documentElement.clientWidth;
             const overflowing = [...element.querySelectorAll('*')]
                 .filter(child => {
@@ -1000,6 +1038,7 @@ test.describe('marketplace wallet extension', () => {
                 grantColumns: getComputedStyle(grantGrid).gridTemplateColumns.split(' ').length,
                 reviewItemColumns: getComputedStyle(reviewItem).gridTemplateColumns.split(' ').length,
                 reviewActionColumns: getComputedStyle(reviewActions).gridTemplateColumns.split(' ').length,
+                affordabilityTextAlign: getComputedStyle(affordability).textAlign,
                 overflowing,
             };
         });
@@ -1009,6 +1048,7 @@ test.describe('marketplace wallet extension', () => {
             grantColumns: 1,
             reviewItemColumns: 1,
             reviewActionColumns: 2,
+            affordabilityTextAlign: 'center',
             overflowing: [],
         });
     });
