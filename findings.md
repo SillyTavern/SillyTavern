@@ -35,6 +35,8 @@
 | 市场/钱包前端适合作为 SillyTavern 内置扩展 | 复用 extension manifest、模板渲染、CSS 加载和 Extensions 面板，避免污染主入口脚本 |
 | 市场列表的 `owned` 只代表创建者身份 | 前端不能把它当成已购买状态；普通用户购买后再安装，重复购买依赖后端幂等返回 |
 | 购买按钮不能使用 `balance.total` 判定可消费余额 | `total` 包含 earnings，购买只消耗 bonus 和 paid，因此前端使用 `bonus + paid` |
+| 管理员前端 gate 必须和后端 admin 模型一致 | 后端按 `request.user.profile.admin` 授权，前端应使用 `isAdmin()`，不能根据 `default-user` handle 推断 |
+| 扩展 JS/CSS 入口需要版本化 | 浏览器会复用 ESM 模块；manifest 中加入 `?v=0.2.0` 可以让刷新加载新 admin UI |
 
 ## 资源
 - 本地文件：package.json、default/config.yaml、src/users.js、src/server-main.js
@@ -42,6 +44,9 @@
 
 ## 视觉/浏览器发现
 - 新增 `marketplace-wallet` 扩展采用 Extensions 面板内联抽屉；本地浏览器 smoke test 已确认扩展容器、标题、资产列表和刷新按钮成功加载。
+- admin 面板初始模板带 `hidden`，需要显式 `removeAttr('hidden')` 才能在真实浏览器里可靠显示。
+- 浏览器 smoke test 已确认 `marketplace-wallet` 加载 `index.js?v=0.2.0` 和 `style.css?v=0.2.0` 后，admin 面板可见，grant 控件和 review queue 存在。
+- in-app browser 当前未暴露 viewport 设置，本地也没有 Playwright 包；本轮移动端仅完成 CSS 结构调整，后续应补真实窄屏截图或 UI 自动化。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

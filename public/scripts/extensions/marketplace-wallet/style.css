@@ -43,7 +43,9 @@
 .marketplace-wallet-upload-grid,
 .marketplace-wallet-file-row,
 .marketplace-wallet-upload-actions,
-.marketplace-wallet-asset-actions {
+.marketplace-wallet-asset-actions,
+.marketplace-wallet-admin-header,
+.marketplace-wallet-review-title {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -144,7 +146,8 @@
     padding: 16px 4px;
 }
 
-.marketplace-wallet-upload {
+.marketplace-wallet-upload,
+.marketplace-wallet-admin {
     border-top: 1px solid var(--SmartThemeBorderColor);
     padding-top: 8px;
 }
@@ -154,6 +157,78 @@
     align-items: center;
     gap: 7px;
     margin-bottom: 4px;
+}
+
+.marketplace-wallet-admin-header,
+.marketplace-wallet-review-title {
+    margin-bottom: 6px;
+}
+
+.marketplace-wallet-admin-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+}
+
+.marketplace-wallet-grant {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 6px 8px;
+}
+
+.marketplace-wallet-grant label {
+    font-size: calc(var(--mainFontSize) * 0.82);
+    opacity: 0.85;
+}
+
+.marketplace-wallet-grant .text_pole {
+    margin-top: 0;
+}
+
+#marketplace_wallet_grant_submit {
+    grid-column: 1 / -1;
+    min-height: 32px;
+}
+
+.marketplace-wallet-review-queue {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.marketplace-wallet-review-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px 0;
+}
+
+.marketplace-wallet-review-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.marketplace-wallet-review-meta span {
+    overflow-wrap: anywhere;
+}
+
+.marketplace-wallet-review-meta small {
+    opacity: 0.75;
+}
+
+.marketplace-wallet-review-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 5px;
 }
 
 .marketplace-wallet-upload-grid {
@@ -187,14 +262,28 @@
         flex-direction: column;
     }
 
+    .marketplace-wallet-admin-grid,
+    .marketplace-wallet-grant,
+    .marketplace-wallet-review-item,
     .marketplace-wallet-upload-grid {
         grid-template-columns: 1fr;
     }
 
     .marketplace-wallet-asset-actions .menu_button,
     .marketplace-wallet-upload-actions .menu_button,
+    #marketplace_wallet_grant_submit,
     #marketplace_wallet_refresh {
         width: 100%;
         justify-content: center;
+    }
+
+    .marketplace-wallet-review-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .marketplace-wallet-review-actions .menu_button {
+        justify-content: center;
+        min-width: 0;
     }
 }

@@ -32,6 +32,40 @@
 
                 <div id="marketplace_wallet_assets" class="marketplace-wallet-assets" aria-live="polite"></div>
 
+                <section id="marketplace_wallet_admin" class="marketplace-wallet-admin" aria-label="Marketplace admin tools" hidden>
+                    <div class="marketplace-wallet-admin-header">
+                        <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                        <b data-i18n="Admin Tools">Admin Tools</b>
+                    </div>
+                    <div class="marketplace-wallet-admin-grid">
+                        <div class="marketplace-wallet-grant">
+                            <label for="marketplace_wallet_grant_handle" data-i18n="User handle">User handle</label>
+                            <input id="marketplace_wallet_grant_handle" class="text_pole" placeholder="default-user" aria-label="User handle">
+                            <label for="marketplace_wallet_grant_amount" data-i18n="Amount">Amount</label>
+                            <input id="marketplace_wallet_grant_amount" class="text_pole" type="number" min="1" step="1" value="100" aria-label="Grant amount">
+                            <label for="marketplace_wallet_grant_bucket" data-i18n="Bucket">Bucket</label>
+                            <select id="marketplace_wallet_grant_bucket" class="text_pole" aria-label="Grant bucket">
+                                <option value="bonus">bonus</option>
+                                <option value="paid">paid</option>
+                                <option value="earnings">earnings</option>
+                            </select>
+                            <label for="marketplace_wallet_grant_reason" data-i18n="Reason">Reason</label>
+                            <input id="marketplace_wallet_grant_reason" class="text_pole" value="Admin grant" aria-label="Grant reason">
+                            <button id="marketplace_wallet_grant_submit" class="menu_button menu_button_icon" type="button">
+                                <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+                                <span data-i18n="Grant Coins">Grant Coins</span>
+                            </button>
+                        </div>
+                        <div class="marketplace-wallet-review">
+                            <div class="marketplace-wallet-review-title">
+                                <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                                <b data-i18n="Review Queue">Review Queue</b>
+                            </div>
+                            <div id="marketplace_wallet_review_queue" class="marketplace-wallet-review-queue" aria-live="polite"></div>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="marketplace-wallet-upload" aria-label="Upload market asset">
                     <div class="marketplace-wallet-upload-header">
                         <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>

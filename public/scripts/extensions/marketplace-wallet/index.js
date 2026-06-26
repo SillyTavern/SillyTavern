@@ -1,5 +1,7 @@
 import { getRequestHeaders } from '../../../script.js';
 import { renderExtensionTemplateAsync } from '../../extensions.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
+import { getCurrentUserHandle, isAdmin } from '../../user.js';
 import { getFileText } from '../../utils.js';
 
 const MODULE_NAME = 'marketplace-wallet';
@@ -13,6 +15,7 @@ const state = {
     wallet: null,
     loaded: false,
     loading: false,
+    granting: false,
     busyAssetIds: new Set(),
 };
 
@@ -58,6 +61,19 @@ function renderWallet() {
     $('[data-marketplace-wallet-bucket="bonus"]').text(formatCoins(balance.buckets?.bonus));
     $('[data-marketplace-wallet-bucket="paid"]').text(formatCoins(balance.buckets?.paid));
     $('[data-marketplace-wallet-bucket="earnings"]').text(formatCoins(balance.buckets?.earnings));
+}
+
+function canUseAdminTools() {
+    return isAdmin();
+}
+
+function renderAdminVisibility() {
+    const $admin = $('#marketplace_wallet_admin');
+    if (canUseAdminTools()) {
+        $admin.removeAttr('hidden');
+    } else {
+        $admin.attr('hidden', '');
+    }
 }
 
 function getFilteredAssets() {
@@ -147,9 +163,54 @@ function createAssetAction(asset) {
     return $actions;
 }
 
+function renderReviewQueue() {
+    const $queue = $('#marketplace_wallet_review_queue');
+    if (!canUseAdminTools() || !$queue.length) {
+        return;
+    }
+
+    $queue.empty();
+    const submitted = state.assets
+        .filter(asset => asset.status === 'submitted')
+        .sort((a, b) => String(a.updated_at || '').localeCompare(String(b.updated_at || '')));
+
+    if (submitted.length === 0) {
+        $queue.append($('<div class="marketplace-wallet-empty"></div>').text('No assets awaiting review.'));
+        return;
+    }
+
+    for (const asset of submitted) {
+        const $item = $('<div class="marketplace-wallet-review-item"></div>');
+        const isBusy = state.busyAssetIds.has(asset.id);
+        const $meta = $('<div class="marketplace-wallet-review-meta"></div>');
+        const $title = $('<span></span>').text(asset.title || 'Untitled asset');
+        const $type = $('<small></small>').text(MARKET_TYPES[asset.type] || asset.type || 'Asset');
+        const $actions = $('<div class="marketplace-wallet-review-actions"></div>');
+
+        $meta.append($title, $type);
+        $actions.append(createAssetButton({
+            asset,
+            action: 'approve',
+            icon: 'fa-circle-check',
+            label: isBusy ? 'Approving' : 'Approve',
+            disabled: isBusy,
+        }));
+        $actions.append(createAssetButton({
+            asset,
+            action: 'reject',
+            icon: 'fa-circle-xmark',
+            label: isBusy ? 'Rejecting' : 'Reject',
+            disabled: isBusy,
+        }));
+        $item.append($meta, $actions);
+        $queue.append($item);
+    }
+}
+
 function renderAssets() {
     const $list = $('#marketplace_wallet_assets');
     $list.empty();
+    renderReviewQueue();
 
     if (state.loading && !state.loaded) {
         $list.append($('<div class="marketplace-wallet-empty"></div>').text('Loading marketplace...'));
@@ -198,6 +259,7 @@ async function loadMarketplace({ silent = false } = {}) {
         state.wallet = wallet;
         state.assets = Array.isArray(market.assets) ? market.assets : [];
         state.loaded = true;
+        renderAdminVisibility();
         renderWallet();
         renderAssets();
         if (!silent) {
@@ -207,6 +269,7 @@ async function loadMarketplace({ silent = false } = {}) {
         console.error('Failed to load marketplace', error);
         toastr.error(error.message || 'Marketplace could not be loaded');
     } finally {
+        renderAdminVisibility();
         setLoading(false);
     }
 }
@@ -253,6 +316,37 @@ async function submitAsset(assetId) {
             method: 'POST',
         });
         toastr.success('Asset submitted for review');
+        await loadMarketplace({ silent: true });
+    });
+}
+
+async function approveAsset(assetId) {
+    await withBusyAsset(assetId, async () => {
+        await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/approve`, {
+            method: 'POST',
+        });
+        toastr.success('Asset approved and listed');
+        await loadMarketplace({ silent: true });
+    });
+}
+
+async function rejectAsset(assetId) {
+    const reason = await callGenericPopup('Reason for rejection:', POPUP_TYPE.INPUT, '', {
+        okButton: 'Reject',
+        cancelButton: 'Cancel',
+        rows: 4,
+    });
+
+    if (reason === null || reason === false) {
+        return;
+    }
+
+    await withBusyAsset(assetId, async () => {
+        await fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/reject`, {
+            method: 'POST',
+            body: JSON.stringify({ reason: String(reason || '').slice(0, 1000) }),
+        });
+        toastr.success('Asset rejected');
         await loadMarketplace({ silent: true });
     });
 }
@@ -356,6 +450,55 @@ async function createAsset(submitForReview) {
     }
 }
 
+async function grantCoins() {
+    if (state.granting) {
+        return;
+    }
+
+    const targetHandle = String($('#marketplace_wallet_grant_handle').val() || '').trim();
+    const amount = Number($('#marketplace_wallet_grant_amount').val() || 0);
+    const bucket = String($('#marketplace_wallet_grant_bucket').val() || 'bonus');
+    const reason = String($('#marketplace_wallet_grant_reason').val() || '').trim() || 'Admin grant';
+
+    if (!targetHandle) {
+        toastr.warning('User handle is required');
+        return;
+    }
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+        toastr.warning('Grant amount must be a positive whole number');
+        return;
+    }
+    if (!['bonus', 'paid', 'earnings'].includes(bucket)) {
+        toastr.warning('Grant bucket is invalid');
+        return;
+    }
+
+    state.granting = true;
+    $('#marketplace_wallet_grant_submit').prop('disabled', true);
+    try {
+        const result = await fetchJson('/api/wallet/grants/admin', {
+            method: 'POST',
+            body: JSON.stringify({
+                targetHandle,
+                amount,
+                bucket,
+                reason,
+            }),
+        });
+        toastr.success(`${formatCoins(amount)} ${bucket} coins granted to ${result.handle}`);
+        if (state.wallet?.handle === result.handle) {
+            state.wallet.balance = result.balance;
+            renderWallet();
+        }
+    } catch (error) {
+        console.error('Failed to grant coins', error);
+        toastr.error(error.message || 'Coins could not be granted');
+    } finally {
+        state.granting = false;
+        $('#marketplace_wallet_grant_submit').prop('disabled', false);
+    }
+}
+
 function onAssetAction(event) {
     const button = event.target.closest('[data-marketplace-wallet-action]');
     if (!button) {
@@ -372,6 +515,8 @@ function onAssetAction(event) {
         purchase: purchaseAsset,
         install: installAsset,
         submit: submitAsset,
+        approve: approveAsset,
+        reject: rejectAsset,
     };
     actions[action]?.(assetId).catch(error => {
         console.error(`Marketplace action failed: ${action}`, error);
@@ -383,6 +528,8 @@ function bindEvents($root) {
     $root.find('#marketplace_wallet_refresh').on('click', () => loadMarketplace());
     $root.find('#marketplace_wallet_search, #marketplace_wallet_type_filter').on('input change', renderAssets);
     $root.find('#marketplace_wallet_assets').on('click', onAssetAction);
+    $root.find('#marketplace_wallet_review_queue').on('click', onAssetAction);
+    $root.find('#marketplace_wallet_grant_submit').on('click', grantCoins);
     $root.find('#marketplace_wallet_upload_price_type').on('change', function () {
         const isFixedPrice = String($(this).val()) === 'fixed_price';
         $('#marketplace_wallet_upload_price').prop('disabled', !isFixedPrice).val(isFixedPrice ? $('#marketplace_wallet_upload_price').val() || 1 : 0);
@@ -417,7 +564,9 @@ export async function init() {
 
     const template = await renderExtensionTemplateAsync(MODULE_NAME, 'window', {});
     const $html = $(template);
+    $html.find('#marketplace_wallet_grant_handle').val(getCurrentUserHandle());
     bindEvents($html);
     $('#marketplace_wallet_container').append($html);
+    renderAdminVisibility();
     await loadMarketplace({ silent: true });
 }

@@ -109,6 +109,26 @@
   - task_plan.md
   - progress.md
 
+### 阶段 10：管理员审核与赠币入口
+- **状态：** complete
+- 执行的操作：
+  - 启动并发审查 agent，复核 admin UI 显示、审核队列、grant 表单和移动端风险。
+  - 在 `marketplace-wallet` 扩展中新增管理员面板，包含赠币表单和 Review Queue。
+  - 支持管理员从 Review Queue 直接 approve/reject submitted 资产，拒绝时填写原因。
+  - 支持管理员按用户 handle、金额、余额 bucket 和 reason 发放站内币。
+  - 将 admin 前端 gate 收紧为 `isAdmin()`，避免用 `default-user` handle 推断管理员权限。
+  - 对 grant bucket 增加本地白名单校验，并将空 reason 规范为 `Admin grant`。
+  - 将扩展 manifest 升级到 `0.2.0`，JS/CSS 入口加入版本 query，避免浏览器 ESM 模块缓存旧逻辑。
+  - 使用本地 `http://localhost:8000/` 做浏览器 smoke test，确认新版脚本/CSS 加载、admin 面板移除 `hidden`、grant 控件和 review queue 存在。
+- 创建/修改的文件：
+  - public/scripts/extensions/marketplace-wallet/manifest.json
+  - public/scripts/extensions/marketplace-wallet/window.html
+  - public/scripts/extensions/marketplace-wallet/index.js
+  - public/scripts/extensions/marketplace-wallet/style.css
+  - task_plan.md
+  - progress.md
+  - findings.md
+
 ## 测试结果
 | 测试 | 输入 | 预期结果 | 实际结果 | 状态 |
 |------|------|---------|---------|------|
@@ -127,6 +147,12 @@
 | 前端与后端 diff 空白检查 | `git diff --check` | 无空白错误 | 通过 | 通过 |
 | 前端阶段市场/钱包单测 | `npm --prefix tests run test:unit -- market-wallet.test.js` | 5 个用例通过 | 通过：5 passed | 通过 |
 | marketplace-wallet 浏览器 smoke | 打开 `http://localhost:8000/` | 扩展容器、标题、资产列表和刷新按钮存在 | 通过 | 通过 |
+| admin UI 语法检查 | `node --check public/scripts/extensions/marketplace-wallet/index.js` | 无语法错误 | 通过 | 通过 |
+| marketplace-wallet manifest 校验 | 解析 `manifest.json` | JSON 有效 | 通过 | 通过 |
+| admin UI diff 空白检查 | `git diff --check` | 无空白错误 | 通过 | 通过 |
+| admin UI 回归单测 | `npm --prefix tests run test:unit -- market-wallet.test.js` | 5 个用例通过 | 通过：5 passed | 通过 |
+| admin UI 浏览器 smoke | 打开 `http://localhost:8000/` | 加载 `v=0.2.0` 脚本/CSS，admin 面板可见，grant 和 review queue 存在 | 通过 | 通过 |
+| admin UI 移动端检查 | 窄屏 viewport 验证 | 控件不溢出 | 未完整执行：in-app browser 未暴露 viewport 设置，本地无 Playwright 包；已做 CSS 结构调整 | 部分 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -138,15 +164,17 @@
 | 2026-06-26 | 钱包 admin grant 空 body 会抛 TypeError | 1 | 使用空对象兜底解析请求体 |
 | 2026-06-26 | 测试依赖被忽略的根目录 `config.yaml` | 1 | 改为使用 `import.meta.url` 解析已跟踪的 `default/config.yaml` |
 | 2026-06-26 | 列表接口 `owned` 不是“已购买”状态 | 1 | 前端非创作者只展示“购买/领取并安装”，重复购买交给后端 already_owned 幂等处理 |
+| 2026-06-26 | admin 面板 DOM 已渲染但仍保留 `hidden` 属性 | 1 | 改为显式移除/恢复 `hidden` 属性，并给扩展 JS/CSS 入口加版本 query 避免旧 ESM 模块缓存 |
+| 2026-06-26 | admin 前端 gate 曾尝试用 `default-user` handle 兜底 | 1 | 按并发审查反馈改回仅使用 `isAdmin()`，与后端 admin 权限模型一致 |
 
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
 | 我在哪里？ | 已完成市场与货币系统设计 |
-| 我要去哪里？ | 下一步可做审核后台、数据库迁移、真实支付和移动端封装 |
+| 我要去哪里？ | 下一步可做完整 UI 自动化测试、数据库迁移、真实支付和移动端封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP 和前端 marketplace-wallet 扩展 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展和管理员审核/赠币入口 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

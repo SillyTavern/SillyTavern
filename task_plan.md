@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 10
+阶段 11
 
 ## 各阶段
 
@@ -86,6 +86,18 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 11：管理员审核与赠币入口
+- [x] 使用并发 agent 复核 admin UI、审核队列和移动端风险
+- [x] 新增管理员面板，支持 Review Queue 审核入口和 admin grant 表单
+- [x] 管理员可在审核队列中批准或拒绝 submitted 资产
+- [x] 管理员可按用户 handle 发放 bonus/paid/earnings 余额
+- [x] 将 admin 可见性收紧到 `isAdmin()`，避免仅靠 handle 推断权限
+- [x] 增加扩展 manifest 版本化入口，避免前端模块缓存旧脚本
+- [x] 补充 grant bucket/reason 本地校验和移动端 review 按钮布局
+- [x] 运行目标语法检查、manifest JSON 检查、空白检查、市场/钱包单测和浏览器 smoke
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -107,6 +119,8 @@
 | 免费领取不写钱包账本 | 避免产生 0 金额账本噪音，付费购买才生成可审计 ledger |
 | 市场/钱包前端做成内置扩展 | 复用 SillyTavern extension manifest、模板、CSS 加载和 Extensions 面板，避免继续膨胀主入口脚本 |
 | 非创作者购买按钮采用“购买并安装” | 列表接口不暴露 entitlement，直接组合 purchase/install 可以兼容重复购买返回 already_owned |
+| 管理员前端入口只使用 `isAdmin()` 判断 | 后端实际按 `request.user.profile.admin` 授权，前端不能用 `default-user` handle 推断权限 |
+| `marketplace-wallet` manifest 使用版本化 JS/CSS URL | 避免浏览器复用旧 ESM 模块，保证 admin UI 修复刷新后生效 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |
@@ -115,7 +129,8 @@
 | `storage.stop is not a function` | 1 | 移除 node-persist 测试清理中的不存在方法调用 |
 | 未购买用户可从 listed 详情拿到 `normalized_payload` | 1 | 详情接口按创建者、管理员、授权用户过滤 payload |
 | 钱包 admin grant 空 body 返回 500 | 1 | 使用 `request.body ?? {}` 后再解析字段 |
+| admin 面板 DOM 已渲染但仍保留 `hidden` | 1 | 改为显式 `removeAttr('hidden')`/`attr('hidden', '')`，并提高扩展入口版本避免模块缓存 |
 
 ## 备注
 - 设计文档阶段已完成。
-- 后端 MVP 骨架已完成；暂不包含前端市场页、真实支付接入和数据库迁移。
+- 后端 MVP 骨架和前端扩展入口已完成；暂不包含真实支付接入、数据库迁移和完整 UI 自动化测试。
