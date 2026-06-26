@@ -101,9 +101,11 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
     const apiCalls = {
         approve: [],
         creates: [],
+        details: [],
         grants: [],
         installs: [],
         purchases: [],
+        revisions: [],
         resolveReports: [],
         submits: [],
     };
@@ -208,6 +210,65 @@ async function mockMarketplaceApis(page, { assets = [makeListedAsset(), makeSubm
             status: 201,
             contentType: 'application/json',
             body: JSON.stringify({ asset: createdAsset }),
+        });
+    });
+
+    await page.route('**/api/market/assets/*', async route => {
+        const method = route.request().method();
+        if (!['GET', 'PATCH'].includes(method)) {
+            route.fallback();
+            return;
+        }
+
+        const assetId = route.request().url().split('/').at(-1);
+        const existingAsset = assets.find(asset => asset.id === assetId);
+        if (!existingAsset) {
+            route.fulfill({
+                status: 404,
+                contentType: 'application/json',
+                body: JSON.stringify({ error: 'not found' }),
+            });
+            return;
+        }
+
+        if (method === 'GET') {
+            apiCalls.details.push(assetId);
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    asset: {
+                        ...existingAsset,
+                        payload_available: true,
+                    },
+                    entitlement: null,
+                }),
+            });
+            return;
+        }
+
+        const payload = JSON.parse(route.request().postData() || '{}');
+        apiCalls.revisions.push({ assetId, payload });
+        let revisedAsset = null;
+        assets = assets.map(asset => {
+            if (asset.id !== assetId) {
+                return asset;
+            }
+            revisedAsset = {
+                ...asset,
+                ...payload,
+                status: 'draft',
+                owned: true,
+                updated_at: '2026-06-26T13:02:00.000Z',
+                submitted_at: null,
+                normalized_payload: payload.normalized_payload,
+            };
+            return revisedAsset;
+        });
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ asset: revisedAsset }),
         });
     });
 
@@ -626,6 +687,85 @@ test.describe('marketplace wallet extension', () => {
         await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('1');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Creator Browser World');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('');
+        await expect(page.locator('#marketplace_wallet_upload_payload')).toHaveValue('');
+    });
+
+    test('revises a rejected creator asset and resubmits it for review', async ({ page }) => {
+        const rejectedAsset = makeSubmittedAsset({
+            id: 'rejected-world',
+            type: 'world_book',
+            title: 'Rejected Browser World',
+            summary: 'Needs a cleaner lore entry.',
+            creator_id: 'default-user',
+            status: 'rejected',
+            owned: true,
+            price_type: 'free',
+            price_coins: 0,
+            normalized_payload: {
+                name: 'Rejected Browser World',
+                entries: {
+                    old: {
+                        key: ['old'],
+                        content: 'Old rejected lore entry.',
+                    },
+                },
+            },
+        });
+        const apiCalls = await mockMarketplaceApis(page, {
+            assets: [rejectedAsset],
+        });
+
+        await loadSillyTavern(page);
+
+        const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Rejected Browser World' });
+        await expect(assetRow).toContainText('rejected');
+        await assetRow.locator('[data-marketplace-wallet-action="revise"]').click();
+
+        await expect.poll(() => apiCalls.details).toEqual(['rejected-world']);
+        await expect(page.locator('#marketplace_wallet_upload_status')).toBeVisible();
+        await expect(page.locator('#marketplace_wallet_upload_mode')).toHaveText('Editing Rejected Browser World');
+        await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('Rejected Browser World');
+        await expect(page.locator('#marketplace_wallet_upload_summary')).toHaveValue('Needs a cleaner lore entry.');
+        await expect(page.locator('#marketplace_wallet_upload_payload')).toHaveValue(/Old rejected lore entry\./);
+
+        await page.locator('#marketplace_wallet_upload_title').fill('Revised Browser World');
+        await page.locator('#marketplace_wallet_upload_summary').fill('Ready for a second review.');
+        await page.locator('#marketplace_wallet_upload_payload').fill(JSON.stringify({
+            name: 'Revised Browser World',
+            entries: {
+                revised: {
+                    key: ['revised'],
+                    content: 'This lore entry was revised in the browser E2E flow.',
+                },
+            },
+        }, null, 2));
+        await page.locator('[data-marketplace-wallet-upload="review"]').click();
+
+        await expect.poll(() => apiCalls.revisions).toHaveLength(1);
+        expect(apiCalls.revisions[0]).toMatchObject({
+            assetId: 'rejected-world',
+            payload: {
+                type: 'world_book',
+                title: 'Revised Browser World',
+                summary: 'Ready for a second review.',
+                price_type: 'free',
+                price_coins: 0,
+                normalized_payload: {
+                    name: 'Revised Browser World',
+                },
+            },
+        });
+        await expect.poll(() => apiCalls.submits).toEqual(['rejected-world']);
+
+        const reviewQueue = page.locator('#marketplace_wallet_review_queue');
+        await expect(reviewQueue).toContainText('Revised Browser World');
+        await expect(reviewQueue.locator('[data-marketplace-wallet-action="approve"]')).toHaveCount(1);
+
+        await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Revised Browser World');
+        await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
+        await expect(page.locator('#marketplace_wallet_upload_mode')).toHaveText('');
         await expect(page.locator('#marketplace_wallet_upload_title')).toHaveValue('');
         await expect(page.locator('#marketplace_wallet_upload_payload')).toHaveValue('');
     });

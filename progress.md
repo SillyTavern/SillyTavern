@@ -646,6 +646,10 @@
 | 阶段 46 角色隔离目标单测 | `npm --prefix tests run test:unit -- market-wallet.test.js` | submitted/private asset 对非 owner 隐藏、owner 自审批禁止、非 admin 不可 approve、owner/admin payload 权限、公开后只返回元数据 | 通过：1 suite / 10 tests | 通过 |
 | 阶段 46 syntax gate | `npm run test:marketplace:syntax` | market-wallet 新增测试语法门禁 | 通过：21 files checked | 通过 |
 | 阶段 46 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 30 tests | 通过 |
+| 阶段 47 syntax gate | `npm run test:marketplace:syntax` | rejected revise/resubmit browser E2E mock 语法门禁 | 通过：21 files checked | 通过 |
+| 阶段 47 E2E discovery | `npm run test:marketplace:e2e:server -- --list` | 临时 server 能发现 7 个 marketplace 浏览器用例 | 通过：7 tests listed | 通过 |
+| 阶段 47 本机 Chrome E2E | `PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1` | admin、report、free、fixed-price、creator upload、rejected revise/resubmit、mobile 七个用例 | 通过：7 passed (2.8m)；本机父进程延迟退出后 Ctrl-C 清理 | 通过 |
+| 阶段 47 marketplace 聚合回归 | `npm run test:marketplace` | syntax + marketplace/wallet/PWA/health/seed/snapshot/filter/UI 契约 | 通过：7 suites / 30 tests | 通过 |
 
 ## 错误日志
 | 时间戳 | 错误 | 尝试次数 | 解决方案 |
@@ -741,14 +745,22 @@
 - 新测试断言 Charlie 作为 owner 可读取 submitted detail payload 但不能自审批，Alice 作为 admin 可读取 payload 并 approve，approve 后 Bob 只能看到公开元数据且拿不到 normalized payload。
 - 已通过 `npm --prefix tests run test:unit -- market-wallet.test.js`、`npm run test:marketplace:syntax` 和 `npm run test:marketplace`。
 
+## 2026-06-26 阶段 47：Rejected 资产修订重提浏览器闭环
+- 启动只读 explorer `019f045e-7b65-7761-8b9e-4ea06cd97143` 复核 marketplace-wallet revision UI 与 Playwright mock 缺口。
+- `tests/marketplace-wallet.e2e.js` 的 mock 新增 asset detail GET 和 PATCH revision 路由，并记录 `apiCalls.details` 与 `apiCalls.revisions`。
+- 新增浏览器用例 `revises a rejected creator asset and resubmits it for review`：owned rejected world_book 点击 Revise 后填充上传表单，修改 title/summary/payload 后 Save & Submit。
+- 用例断言 PATCH payload、submit 调用、Review Queue 出现 revised asset、Creator Center 列表显示 submitted，上传表单清空。
+- README E2E 验证矩阵已更新 rejected asset revise/resubmit 覆盖范围。
+- 已通过 `npm run test:marketplace:syntax`、`npm run test:marketplace:e2e:server -- --list`、`PLAYWRIGHT_BROWSER_CHANNEL=chrome npm run test:marketplace:e2e:server -- --workers=1`（7 passed，本机父进程延迟退出后 Ctrl-C 清理）和 `npm run test:marketplace`。
+
 ## 五问重启检查
 | 问题 | 答案 |
 |------|------|
-| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环，以及 Creator/Admin 角色隔离后端契约 |
+| 我在哪里？ | 已完成市场/钱包后端、前端、管理员入口、基础脚本、Creator Center summary、PWA 安装壳、市场下架闭环、举报处理队列、审核预览、创作者修订重提、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、marketplace 语法门禁、PWA 缓存清单完整性检查、设计文档 MVP/API 边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、市场/钱包只读快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约，以及 Rejected 资产修订重提浏览器闭环 |
 | 我要去哪里？ | 下一步继续数据库迁移、真实支付、搜索审核和原生移动封装 |
 | 目标是什么？ | 让托管版 AI 酒馆支持用户上传、购买和安装角色卡/世界书等资产 |
 | 我学到了什么？ | 见 findings.md |
-| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环和 Creator/Admin 角色隔离后端契约 |
+| 我做了什么？ | 创建规划文件、设计文档、后端 MVP、前端 marketplace-wallet 扩展、管理员审核/赠币入口、Creator Center、PWA 安装壳、市场下架闭环、举报处理闭环、审核预览、创作者修订闭环、用户资产库、托管健康检查、资产详情弹窗、市场筛选排序、README、基础测试脚本、PWA 缓存完整性测试、文档边界校准、运行态 smoke 脚本、筛选排序可执行测试、Report Queue resolve 前端覆盖、GitHub Actions 门禁、fork CI 凭证噪音修复、真实 Chrome E2E UI 状态修复、marketplace/wallet 快照导出脚本、购买响应隐私收紧、固定价购买 runtime smoke 闭环、固定价购买浏览器 E2E、Creator 上传到审核队列浏览器闭环、Creator 上传审核 runtime smoke 闭环、Creator/Admin 角色隔离后端契约和 Rejected 资产修订重提浏览器闭环 |
 
 ---
 *每个阶段完成后或遇到错误时更新此文件*

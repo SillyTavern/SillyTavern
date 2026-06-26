@@ -113,6 +113,7 @@
 - marketplace-wallet 浏览器 E2E 现在覆盖创作者 world_book JSON 上传并 Save & Submit，断言新资产进入 Review Queue，Creator Center 统计和资产列表刷新。
 - runtime smoke 现在也覆盖真实 creator upload 状态机：POST 创建 draft world_book、Creator Center 看到 draft、submit 后进入 review、creator detail 可读 payload、approve 后 listed/public、市场列表不泄漏 payload、创作者可安装并刷新 install_count。
 - 后端契约测试现在明确覆盖角色隔离：普通用户看不到他人的 draft/submitted asset，不能 purchase 或 approve；owner 可以读取 submitted detail payload 但不能自审批，admin 可以审核，approved 后普通用户只能看元数据。
+- marketplace-wallet 浏览器 E2E 现在覆盖 rejected 资产修订重提：Revise 先 GET detail 填充表单，Save & Submit 走 PATCH 后 submit，Review Queue 和 Creator Center 刷新为 submitted。
 
 ---
 *每执行2次查看/浏览器/搜索操作后更新此文件*

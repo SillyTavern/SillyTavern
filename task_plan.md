@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 46
+阶段 47
 
 ## 各阶段
 
@@ -470,6 +470,15 @@
 - [x] 更新规划记录
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
+
+### 阶段 47：Rejected 资产修订重提浏览器闭环
+- [x] 让 Playwright mock 支持 asset detail 和 PATCH revision
+- [x] 覆盖 rejected 资产 Revise 后填充上传表单
+- [x] 覆盖 Save & Submit 会 PATCH 后 submit 并刷新 Creator Center/Review Queue
+- [x] 运行 E2E discovery、本机 Chrome E2E、marketplace 聚合和 syntax gate
+- [x] 更新 README/规划记录
+- [ ] 提交并推送到 GitHub fork
+- **状态：** in_progress
 
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
