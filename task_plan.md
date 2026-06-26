@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 16
+阶段 17
 
 ## 各阶段
 
@@ -152,6 +152,18 @@
 - [x] 提交并推送到 GitHub fork
 - **状态：** complete
 
+### 阶段 17：管理员举报处理队列
+- [x] 确认 report queue + resolve 是举报入口后的最小管理闭环
+- [x] 新增管理员 open report 队列 API
+- [x] 新增管理员 resolve report API
+- [x] 在 marketplace-wallet 管理员面板增加 Report Queue
+- [x] 将 report resolve 使用独立 busy/report action 状态，避免和资产操作混淆
+- [x] 补充后端和前端契约测试
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础测试和脚本验证
+- [x] 提交并推送到 GitHub fork
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -180,6 +192,7 @@
 | PWA service worker 不缓存 API | 钱包、市场、聊天和账号请求必须保持实时，静态壳缓存即可 |
 | 下架不撤销既有 entitlement | 下架阻止新购买和公开浏览，但已购买用户的安装副本能力保留，避免破坏已有体验 |
 | 举报先只创建 open report | MVP 需要可审计入口，自动处罚和处理队列等管理策略后续再加 |
+| 举报处理先做队列和 resolve | 管理员需要能清理 open reports；封禁、自动处罚和申诉规则仍需产品策略 |
 
 ## 遇到的错误
 | 错误 | 尝试次数 | 解决方案 |

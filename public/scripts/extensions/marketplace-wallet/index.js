@@ -13,12 +13,15 @@ const MARKET_TYPES = {
 const state = {
     assets: [],
     creator: null,
+    reports: [],
     wallet: null,
     loaded: false,
     loading: false,
     creatorLoading: false,
+    reportsLoading: false,
     granting: false,
     busyAssetIds: new Set(),
+    busyReportIds: new Set(),
 };
 
 function formatCoins(value) {
@@ -161,6 +164,16 @@ function createAssetButton({ asset, action, icon, label, disabled = false, title
     return $button;
 }
 
+function createReportButton({ report, action, icon, label, disabled = false }) {
+    const $button = $('<button class="menu_button menu_button_icon" type="button"></button>');
+    $button.attr('data-marketplace-wallet-report-action', action);
+    $button.attr('data-report-id', report.id);
+    $button.prop('disabled', disabled);
+    $button.append(`<i class="fa-solid ${icon}" aria-hidden="true"></i>`);
+    $button.append($('<span></span>').text(label));
+    return $button;
+}
+
 function createAssetAction(asset) {
     const isBusy = state.busyAssetIds.has(asset.id);
     const $actions = $('<div class="marketplace-wallet-asset-actions"></div>');
@@ -266,10 +279,54 @@ function renderReviewQueue() {
     }
 }
 
+function renderReportQueue() {
+    const $queue = $('#marketplace_wallet_report_queue');
+    if (!canUseAdminTools() || !$queue.length) {
+        return;
+    }
+
+    $queue.empty();
+    if (state.reportsLoading) {
+        $queue.append($('<div class="marketplace-wallet-empty"></div>').text('Loading reports...'));
+        return;
+    }
+
+    if (state.reports.length === 0) {
+        $queue.append($('<div class="marketplace-wallet-empty"></div>').text('No reports queued.'));
+        return;
+    }
+
+    for (const report of state.reports) {
+        const $item = $('<div class="marketplace-wallet-review-item marketplace-wallet-report-item"></div>');
+        const isBusy = state.busyReportIds.has(report.id);
+        const $meta = $('<div class="marketplace-wallet-review-meta"></div>');
+        const title = report.asset?.title || report.asset_id || 'Unknown asset';
+        const type = MARKET_TYPES[report.asset?.type] || report.asset?.type || 'Asset';
+        const reason = report.reason ? `${report.reason} · by ${report.reporter_id}` : `Reported by ${report.reporter_id}`;
+        const $actions = $('<div class="marketplace-wallet-review-actions"></div>');
+
+        $meta.append($('<span></span>').text(title));
+        $meta.append($('<small></small>').text(`${type} · ${report.asset?.status || 'missing'} · ${reason}`));
+        if (report.body) {
+            $meta.append($('<small></small>').text(String(report.body).slice(0, 180)));
+        }
+        $actions.append(createReportButton({
+            report,
+            action: 'resolve',
+            icon: 'fa-circle-check',
+            label: isBusy ? 'Resolving' : 'Resolve',
+            disabled: isBusy,
+        }));
+        $item.append($meta, $actions);
+        $queue.append($item);
+    }
+}
+
 function renderAssets() {
     const $list = $('#marketplace_wallet_assets');
     $list.empty();
     renderReviewQueue();
+    renderReportQueue();
 
     if (state.loading && !state.loaded) {
         $list.append($('<div class="marketplace-wallet-empty"></div>').text('Loading marketplace...'));
@@ -301,6 +358,27 @@ function renderAssets() {
         $main.append($titleRow, $summary, $meta);
         $asset.append($main, createAssetAction(asset));
         $list.append($asset);
+    }
+}
+
+async function loadReportQueue() {
+    if (!canUseAdminTools()) {
+        state.reports = [];
+        renderReportQueue();
+        return;
+    }
+
+    state.reportsLoading = true;
+    renderReportQueue();
+    try {
+        const result = await fetchJson('/api/market/reports/admin');
+        state.reports = Array.isArray(result.reports) ? result.reports : [];
+    } catch (error) {
+        state.reports = [];
+        console.warn('Report queue could not be loaded', error);
+    } finally {
+        state.reportsLoading = false;
+        renderReportQueue();
     }
 }
 
@@ -337,6 +415,7 @@ async function loadMarketplace({ silent = false } = {}) {
         renderWallet();
         renderAssets();
         void loadCreatorSummary();
+        void loadReportQueue();
         if (!silent) {
             toastr.success('Marketplace refreshed');
         }
@@ -346,6 +425,17 @@ async function loadMarketplace({ silent = false } = {}) {
     } finally {
         renderAdminVisibility();
         setLoading(false);
+    }
+}
+
+async function withBusyReport(reportId, callback) {
+    state.busyReportIds.add(reportId);
+    renderReportQueue();
+    try {
+        await callback();
+    } finally {
+        state.busyReportIds.delete(reportId);
+        renderReportQueue();
     }
 }
 
@@ -462,6 +552,16 @@ async function reportAsset(assetId) {
             body: JSON.stringify({ reason: String(reason || '').slice(0, 120) }),
         });
         toastr.success('Report submitted');
+    });
+}
+
+async function resolveReport(reportId) {
+    await withBusyReport(reportId, async () => {
+        await fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`, {
+            method: 'POST',
+        });
+        state.reports = state.reports.filter(report => report.id !== reportId);
+        toastr.success('Report resolved');
     });
 }
 
@@ -640,11 +740,33 @@ function onAssetAction(event) {
     });
 }
 
+function onReportAction(event) {
+    const button = event.target.closest('[data-marketplace-wallet-report-action]');
+    if (!button) {
+        return;
+    }
+
+    const reportId = button.getAttribute('data-report-id');
+    const action = button.getAttribute('data-marketplace-wallet-report-action');
+    if (!reportId || state.busyReportIds.has(reportId)) {
+        return;
+    }
+
+    const actions = {
+        resolve: resolveReport,
+    };
+    actions[action]?.(reportId).catch(error => {
+        console.error(`Marketplace report action failed: ${action}`, error);
+        toastr.error(error.message || 'Marketplace report action failed');
+    });
+}
+
 function bindEvents($root) {
     $root.find('#marketplace_wallet_refresh').on('click', () => loadMarketplace());
     $root.find('#marketplace_wallet_search, #marketplace_wallet_type_filter').on('input change', renderAssets);
     $root.find('#marketplace_wallet_assets').on('click', onAssetAction);
     $root.find('#marketplace_wallet_review_queue').on('click', onAssetAction);
+    $root.find('#marketplace_wallet_report_queue').on('click', onReportAction);
     $root.find('#marketplace_wallet_grant_submit').on('click', grantCoins);
     $root.find('#marketplace_wallet_upload_price_type').on('change', function () {
         const isFixedPrice = String($(this).val()) === 'fixed_price';

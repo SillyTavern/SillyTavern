@@ -269,6 +269,10 @@
     padding: 5px 0;
 }
 
+.marketplace-wallet-report-title {
+    margin-top: 10px;
+}
+
 .marketplace-wallet-review-meta {
     display: flex;
     flex-direction: column;

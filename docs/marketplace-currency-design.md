@@ -425,18 +425,22 @@ POST   /api/market/assets/:id/purchase
 POST   /api/market/assets/:id/install
 POST   /api/market/assets/:id/reviews
 POST   /api/market/assets/:id/report
+GET    /api/market/reports/admin
+POST   /api/market/reports/:id/resolve
 ```
 
-当前本地 MVP 也在 Market API 下提供管理员下架、用户举报和创作者中心聚合：
+当前本地 MVP 也在 Market API 下提供管理员下架、用户举报、举报队列和创作者中心聚合：
 
 ```text
 POST   /api/market/assets/:id/delist
 POST   /api/market/assets/:id/report
+GET    /api/market/reports/admin
+POST   /api/market/reports/:id/resolve
 GET    /api/market/creator/summary
 ```
 
 下架只阻止新用户公开浏览和购买，不撤销既有 entitlement；已授权用户仍可查看 payload 并安装自己的副本。
-举报会写入 market store 的 open report 记录，供后续管理后台处理；MVP 暂不做自动处罚。
+举报会写入 market store 的 open report 记录，管理员可在 marketplace-wallet 的 Report Queue 中查看并 resolve；MVP 暂不做自动处罚。
 
 该接口只返回当前用户自己的资产列表和聚合统计，例如草稿/待审核/上架/拒绝数量、领取数、付费销量、安装数、销售收入和 earnings 当前余额。完整钱包余额和 ledger 明细仍由 Wallet API 提供，市场 summary 不暴露原始 `wallet` 对象、`recent_earnings` 流水或资产 `normalized_payload`。
 

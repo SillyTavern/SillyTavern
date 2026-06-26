@@ -17,7 +17,7 @@ This branch adds a hosted AI tavern marketplace and wallet MVP on top of SillyTa
 - Installable PWA shell for mobile browsers using the existing web app and static shell cache.
 - Admin review queue with approve/reject actions.
 - Admin delist action to remove listed assets from public purchase while preserving existing entitlements.
-- User report action for marketplace assets to seed moderation review.
+- User report action and admin report queue with resolve workflow for marketplace moderation.
 - Admin coin grants for `bonus`, `paid`, and `earnings`.
 - Free and fixed-price purchase flow with `bonus -> paid` spending order.
 - Install flow copies approved/purchased assets into the user's private data directory.
@@ -77,7 +77,7 @@ npm --prefix tests run test:e2e
 
 - The MVP still uses JSON/node-persist storage and is intended for local validation, not production SaaS scale.
 - Production deployment should migrate market assets, entitlements, installs, wallet accounts, and wallet ledger entries to a transactional database.
-- Real payment, refunds, creator withdrawals, search/ranking, abuse reporting, object storage, and mobile app packaging remain future work.
+- Real payment, refunds, creator withdrawals, search/ranking, automated abuse enforcement, object storage, and mobile app packaging remain future work.
 - The codebase is AGPL-3.0. Hosted modifications should be reviewed for license compliance before commercial launch.
 
 ## Resources

@@ -42,6 +42,8 @@ describe('marketplace wallet extension UI contract', () => {
         expect(html).toContain('<option value="earnings">earnings</option>');
         expect(html).toContain('id="marketplace_wallet_grant_reason"');
         expect(html).toContain('id="marketplace_wallet_review_queue"');
+        expect(html).toContain('id="marketplace_wallet_report_queue"');
+        expect(html).toContain('Report Queue');
     });
 
     test('gates admin visibility with isAdmin and explicit hidden attribute handling', () => {
@@ -73,10 +75,20 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/delist`");
         expect(script).toContain("fetchJson(`/api/market/assets/${encodeURIComponent(assetId)}/report`");
         expect(script).toContain("reason: String(reason || '').slice(0, 120)");
+        expect(script).toContain("fetchJson('/api/market/reports/admin')");
+        expect(script).toContain("fetchJson(`/api/market/reports/${encodeURIComponent(reportId)}/resolve`");
+        expect(script).toContain('function renderReportQueue()');
+        expect(script).toContain('async function loadReportQueue()');
+        expect(script).toContain('async function resolveReport(reportId)');
+        expect(script).toContain('busyReportIds: new Set()');
+        expect(script).toContain('data-marketplace-wallet-report-action');
+        expect(script).toContain('data-report-id');
+        expect(script).toContain('No reports queued.');
         expect(script).toContain('POPUP_TYPE.CONFIRM');
         expect(script).toContain('POPUP_TYPE.INPUT');
         expect(script).toContain('asset.owned || asset.entitled');
         expect(script).toContain("$root.find('#marketplace_wallet_review_queue').on('click', onAssetAction)");
+        expect(script).toContain("$root.find('#marketplace_wallet_report_queue').on('click', onReportAction)");
         expect(script).toContain("await fetchJson('/api/wallet/grants/admin'");
         expect(script).toContain("['bonus', 'paid', 'earnings'].includes(bucket)");
         expect(script).toContain("|| 'Admin grant'");
@@ -95,5 +107,6 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('.marketplace-wallet-creator-asset');
         expect(css).toContain('.marketplace-wallet-grant');
         expect(css).toContain('.marketplace-wallet-review-item');
+        expect(css).toContain('.marketplace-wallet-report-title');
     });
 });

@@ -290,6 +290,13 @@ function findAsset(store, id) {
     return store.assets.find(asset => asset.id === id) ?? null;
 }
 
+function findReport(store, id) {
+    if (typeof id !== 'string' || !SAFE_ID_PATTERN.test(id)) {
+        return null;
+    }
+    return store.reports.find(report => report.id === id) ?? null;
+}
+
 function toAssetListItem(asset, currentUserId, store = null) {
     return {
         id: asset.id,
@@ -311,6 +318,33 @@ function toAssetListItem(asset, currentUserId, store = null) {
         listed_at: asset.listed_at,
         owned: asset.creator_id === currentUserId,
         entitled: store ? hasActiveEntitlement(store, asset, currentUserId) : false,
+    };
+}
+
+function toReportListItem(report, asset) {
+    return {
+        id: report.id,
+        asset_id: report.asset_id,
+        reporter_id: report.reporter_id,
+        reason: report.reason,
+        body: report.body,
+        status: report.status,
+        assigned_to: report.assigned_to ?? null,
+        created_at: report.created_at,
+        resolved_at: report.resolved_at ?? null,
+        resolved_by: report.resolved_by ?? null,
+        resolution_note: report.resolution_note ?? '',
+        asset: asset
+            ? {
+                id: asset.id,
+                creator_id: asset.creator_id,
+                type: asset.type,
+                title: asset.title,
+                status: asset.status,
+                price_type: asset.price_type,
+                price_coins: asset.price_coins,
+            }
+            : null,
     };
 }
 
@@ -541,6 +575,43 @@ router.get('/creator/summary', async (request, response) => {
         console.error('Market creator summary failed:', error);
         return response.sendStatus(500);
     }
+});
+
+router.get('/reports/admin', requireAdminMiddleware, (request, response) => {
+    const store = readStore(request);
+    const reports = store.reports
+        .filter(report => report.status === 'open')
+        .map(report => toReportListItem(report, store.assets.find(asset => asset.id === report.asset_id)))
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+    return response.json({ reports });
+});
+
+router.post('/reports/:id/resolve', requireAdminMiddleware, (request, response) => {
+    const store = readStore(request);
+    const report = findReport(store, request.params.id);
+    if (!report) {
+        return response.sendStatus(404);
+    }
+    if (report.status !== 'open') {
+        return response.status(400).json({ error: 'report must be open before resolution' });
+    }
+
+    const errors = [];
+    const resolutionNote = normalizeString(request.body?.note ?? '', 1000, 'note', errors);
+    if (errors.length > 0) {
+        return response.status(400).json({ error: 'Invalid report resolution', details: errors });
+    }
+
+    const timestamp = nowIso();
+    report.status = 'resolved';
+    report.resolved_by = getUserId(request);
+    report.resolution_note = resolutionNote;
+    report.resolved_at = timestamp;
+    writeStore(request, store);
+
+    const asset = store.assets.find(item => item.id === report.asset_id);
+    return response.json({ report: toReportListItem(report, asset) });
 });
 
 router.post('/assets', (request, response) => {

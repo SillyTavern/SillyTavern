@@ -229,6 +229,66 @@ describe('market and wallet MVP endpoints', () => {
             status: 'open',
         });
 
+        const reportWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            const rejectedReportQueue = await request(bobApp, '/api/market/reports/admin', { method: 'GET' });
+            expect(rejectedReportQueue.status).toBe(403);
+
+            const rejectedReportResolve = await request(bobApp, `/api/market/reports/${reportResult.body.report.id}/resolve`, {
+                method: 'POST',
+                body: {},
+            });
+            expect(rejectedReportResolve.status).toBe(403);
+        } finally {
+            reportWarnSpy.mockRestore();
+        }
+
+        const adminReports = await request(aliceApp, '/api/market/reports/admin', { method: 'GET' });
+        expect(adminReports.status).toBe(200);
+        expect(adminReports.body.reports).toHaveLength(1);
+        expect(adminReports.body.reports[0]).toMatchObject({
+            id: reportResult.body.report.id,
+            asset_id: assetId,
+            reporter_id: 'bob',
+            reason: 'copyright concern',
+            status: 'open',
+            asset: {
+                id: assetId,
+                title: 'Market Alice',
+                status: 'listed',
+            },
+        });
+        expect(adminReports.body.reports[0].asset).not.toHaveProperty('normalized_payload');
+
+        const missingResolve = await request(aliceApp, '/api/market/reports/report_00000000/resolve', {
+            method: 'POST',
+            body: {},
+        });
+        expect(missingResolve.status).toBe(404);
+
+        const resolveReport = await request(aliceApp, `/api/market/reports/${reportResult.body.report.id}/resolve`, {
+            method: 'POST',
+            body: { note: 'Reviewed' },
+        });
+        expect(resolveReport.status).toBe(200);
+        expect(resolveReport.body.report).toMatchObject({
+            id: reportResult.body.report.id,
+            status: 'resolved',
+            resolved_by: 'alice',
+            resolution_note: 'Reviewed',
+        });
+        expect(resolveReport.body.report.resolved_at).toBeTruthy();
+
+        const repeatedResolve = await request(aliceApp, `/api/market/reports/${reportResult.body.report.id}/resolve`, {
+            method: 'POST',
+            body: {},
+        });
+        expect(repeatedResolve.status).toBe(400);
+
+        const adminReportsAfterResolve = await request(aliceApp, '/api/market/reports/admin', { method: 'GET' });
+        expect(adminReportsAfterResolve.status).toBe(200);
+        expect(adminReportsAfterResolve.body.reports).toHaveLength(0);
+
         const invalidReport = await request(bobApp, `/api/market/assets/${assetId}/report`, {
             method: 'POST',
             body: { reason: '' },
@@ -272,6 +332,10 @@ describe('market and wallet MVP endpoints', () => {
             body: { reason: 'post-purchase concern' },
         });
         expect(entitledReportAfterDelist.status).toBe(201);
+
+        const adminReportsAfterEntitledReport = await request(aliceApp, '/api/market/reports/admin', { method: 'GET' });
+        expect(adminReportsAfterEntitledReport.status).toBe(200);
+        expect(adminReportsAfterEntitledReport.body.reports.map(report => report.id)).toEqual([entitledReportAfterDelist.body.report.id]);
 
         const installResult = await request(bobApp, `/api/market/assets/${assetId}/install`, {
             method: 'POST',
