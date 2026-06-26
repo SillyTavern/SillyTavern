@@ -1022,6 +1022,7 @@ test.describe('marketplace wallet extension', () => {
         await expect(page.locator('#marketplace_wallet_creator_rejected')).toHaveText('0');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Creator Browser World');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
+        await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted 2026-06-26');
         await expect(page.locator('#marketplace_wallet_creator_paid_sales')).toHaveText('0');
         await expect(page.locator('#marketplace_wallet_creator_installs')).toHaveText('0');
         await expect(page.locator('#marketplace_wallet_creator_earnings_balance')).toHaveText('25');
@@ -1041,6 +1042,8 @@ test.describe('marketplace wallet extension', () => {
             owned: true,
             price_type: 'free',
             price_coins: 0,
+            submitted_at: '2026-06-25T10:00:00.000Z',
+            rejection_reason: 'Needs a stronger summary',
             normalized_payload: {
                 name: 'Rejected Browser World',
                 entries: {
@@ -1051,14 +1054,29 @@ test.describe('marketplace wallet extension', () => {
                 },
             },
         });
+        const approvedAsset = makeListedAsset({
+            id: 'approved-creator-world',
+            title: 'Approved Creator World',
+            creator_id: 'default-user',
+            owned: true,
+            price_type: 'free',
+            price_coins: 0,
+            submitted_at: '2026-06-23T09:00:00.000Z',
+            approved_at: '2026-06-24T09:00:00.000Z',
+        });
         const apiCalls = await mockMarketplaceApis(page, {
-            assets: [rejectedAsset],
+            assets: [rejectedAsset, approvedAsset],
         });
 
         await loadSillyTavern(page);
 
         const assetRow = page.locator('#marketplace_wallet_assets article', { hasText: 'Rejected Browser World' });
         await expect(assetRow).toContainText('rejected');
+        const creatorAssetList = page.locator('#marketplace_wallet_creator_assets_list');
+        await expect(creatorAssetList).toContainText('submitted 2026-06-25');
+        await expect(creatorAssetList).toContainText('rejected: Needs a stronger summary');
+        await expect(creatorAssetList).toContainText('Approved Creator World');
+        await expect(creatorAssetList).toContainText('submitted 2026-06-23 · approved 2026-06-24');
         await assetRow.locator('[data-marketplace-wallet-action="revise"]').click();
 
         await expect.poll(() => apiCalls.details).toEqual(['rejected-world']);
@@ -1101,7 +1119,10 @@ test.describe('marketplace wallet extension', () => {
         await expect(reviewQueue).toContainText('Revised Browser World');
         await expect(reviewQueue.locator('[data-marketplace-wallet-action="approve"]')).toHaveCount(1);
 
-        await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_assets')).toHaveText('2');
+        await expect(page.locator('#marketplace_wallet_creator_submitted')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_listed')).toHaveText('1');
+        await expect(page.locator('#marketplace_wallet_creator_rejected')).toHaveText('0');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('Revised Browser World');
         await expect(page.locator('#marketplace_wallet_creator_assets_list')).toContainText('submitted');
         await expect(page.locator('#marketplace_wallet_upload_mode')).toHaveText('');

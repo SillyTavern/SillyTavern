@@ -79,6 +79,7 @@
 - 新增 Playwright E2E 覆盖 admin review/grant 和移动布局；当前本机 Playwright Chromium 缓存半安装，完整 E2E 需先成功安装 `chromium-headless-shell`。
 - 新增 Jest UI 契约测试作为稳定基础测试，已覆盖 manifest 版本化、admin 模板、`isAdmin()` gate、grant 校验和移动 CSS。
 - Creator Center 已移动到钱包余额下方，使用自适应统计网格展示 assets、drafts、submitted、listed、rejected、claims、paid sales、installs、earned 和 earnings balance；最近资产列表显示 status、claims、installs 和价格。
+- Creator Center 资产列表现在显示 submitted/approved 日期和 rejected 原因摘要，帮助创作者判断下一步是否修订重提。
 - PWA 安装壳复用现有 mobile meta 和 icons；新增 service worker 只缓存静态页面壳，手机用户可通过浏览器 Add to Home Screen / Install 使用。
 - marketplace-wallet 管理员操作新增 Delist；后端 `POST /api/market/assets/:id/delist` 只接受 listed 资产，返回 delisted/private 状态。
 - marketplace-wallet 用户操作新增 Report；后端 `POST /api/market/assets/:id/report` 对可见资产创建 open report。

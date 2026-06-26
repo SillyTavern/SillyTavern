@@ -193,9 +193,20 @@ function renderCreatorSummary() {
         const $main = $('<div class="marketplace-wallet-creator-asset-main"></div>');
         const $title = $('<span></span>').text(asset.title || 'Untitled asset');
         const $meta = $('<small></small>').text(`${asset.status || 'draft'} · ${formatCoins(asset.sales_count)} claims · ${formatCoins(asset.install_count)} installs`);
+        const submittedDate = formatAssetDate(asset.submitted_at);
+        const approvedDate = formatAssetDate(asset.approved_at);
+        const rejectionReason = String(asset.rejection_reason || '').trim();
+        const auditMeta = [
+            submittedDate ? `submitted ${submittedDate}` : '',
+            approvedDate ? `approved ${approvedDate}` : '',
+            rejectionReason ? `rejected: ${rejectionReason.slice(0, 120)}` : '',
+        ].filter(Boolean).join(' · ');
         const $price = $('<b></b>').text(getPriceLabel(asset));
 
         $main.append($title, $meta);
+        if (auditMeta) {
+            $main.append($('<small class="marketplace-wallet-creator-audit"></small>').text(auditMeta));
+        }
         $item.append($main, $price);
         $list.append($item);
     }

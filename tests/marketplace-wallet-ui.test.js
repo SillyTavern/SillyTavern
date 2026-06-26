@@ -16,7 +16,7 @@ describe('marketplace wallet extension UI contract', () => {
     test('uses versioned manifest assets to avoid stale extension modules', () => {
         const manifest = JSON.parse(readExtensionFile('manifest.json'));
 
-        expect(manifest.version).toBe('0.2.8');
+        expect(manifest.version).toBe('0.2.9');
         expect(manifest.js).toBe(`index.js?v=${manifest.version}`);
         expect(manifest.css).toBe(`style.css?v=${manifest.version}`);
         expect(manifest.hooks.activate).toBe('init');
@@ -140,6 +140,11 @@ describe('marketplace wallet extension UI contract', () => {
         expect(script).toContain("$('#marketplace_wallet_creator_earnings_balance')");
         expect(script).toContain("`${formatCoins(asset.sales_count)} claims`");
         expect(script).toContain("`${formatCoins(asset.install_count)} installs`");
+        expect(script).toContain('const submittedDate = formatAssetDate(asset.submitted_at)');
+        expect(script).toContain('const approvedDate = formatAssetDate(asset.approved_at)');
+        expect(script).toContain('const rejectionReason = String(asset.rejection_reason || \'\').trim()');
+        expect(script).toContain('class="marketplace-wallet-creator-audit"');
+        expect(script).toContain('rejected: ${rejectionReason.slice(0, 120)}');
         expect(script).toContain("action: 'details'");
         expect(script).toContain('async function viewAssetDetails(assetId)');
         expect(script).toContain('const inspectAsset = viewAssetDetails;');
@@ -250,6 +255,7 @@ describe('marketplace wallet extension UI contract', () => {
         expect(css).toContain('grid-template-columns: 1fr 1fr;');
         expect(css).toContain('.marketplace-wallet-admin-grid');
         expect(css).toContain('.marketplace-wallet-creator-asset');
+        expect(css).toContain('.marketplace-wallet-creator-audit');
         expect(css).toContain('.marketplace-wallet-grant');
         expect(css).toContain('.marketplace-wallet-review-item');
         expect(css).toContain('.marketplace-wallet-review-summary');

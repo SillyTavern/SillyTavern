@@ -4,7 +4,7 @@
 为托管版 AI 酒馆设计可落地的市场、货币、UGC 上传、创作者收益与审核安全系统，并形成后续开发可引用的设计文档。
 
 ## 当前阶段
-阶段 61
+阶段 62
 
 ## 各阶段
 
@@ -594,6 +594,14 @@
 - [x] 运行基础验证并提交推送
 - **状态：** complete
 
+### 阶段 62：创作者资产审核状态细节
+- [x] 在 Creator Center 资产列表展示 submitted/approved 日期
+- [x] rejected 资产显示拒绝原因摘要
+- [x] 补充 UI contract 和浏览器 E2E 覆盖
+- [x] 更新 README、设计文档和规划记录
+- [x] 运行基础验证并提交推送
+- **状态：** complete
+
 ## 关键问题
 1. 是否优先做网页/PWA，再做 iOS/Android 上架包？
 2. 创作者收益是否一开始允许提现，还是先做站内积分与免费市场？
@@ -643,6 +651,7 @@
 | 审核预览复用管理员 asset detail | 管理员已有 payload 读取权限，Inspect 只需要前端拉详情并用安全 DOM 展示 |
 | Review Queue 应展示安全元数据 | 审核员不应只看标题和类型；列表已有 creator/price/tags/summary/updated_at，前端可展示摘要但 payload 仍需 Inspect 懒加载 |
 | 创作者修订只允许 draft/rejected | listed 资产已有购买/授权关系，原地改 payload 会破坏买家预期；后续需要版本化发布 |
+| Creator Center 应显示审核状态细节 | 后端 creator asset item 已返回 submitted_at、approved_at 和 rejection_reason，前端显示后能让创作者知道何时提交、通过或被拒原因 |
 | Library 基于 active entitlements | 用户库应展示已领取/购买资产，包含下架但仍授权的内容；payload 继续按详情懒加载 |
 | Library Details 入口必须真实存在 | 计划和设计文档已把 My Library 作为找回/查看入口，库中只提供 Install 会迫使用户回市场列表找详情 |
 | Library 安装摘要应可见 | 后端已返回 entitlement 时间和 last_install 摘要，前端显示这些信息能让用户确认何时领取/购买以及最近安装到哪里 |
