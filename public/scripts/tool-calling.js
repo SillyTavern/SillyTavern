@@ -580,10 +580,15 @@ export class ToolManager {
             }
 
             if (typeof deltaValue === 'string') {
-                if (typeof targetValue === 'string') {
-                    // Concatenate strings
-                    target[key] = targetValue + deltaValue;
-                } else {
+                if (key === 'arguments') {
+                    // Only `arguments` streams incrementally across chunks and must be concatenated.
+                    target[key] = (typeof targetValue === 'string' ? targetValue : '') + deltaValue;
+                } else if (deltaValue || typeof targetValue !== 'string') {
+                    // Other string fields (id, type, name, ...) are sent whole per chunk, not
+                    // incrementally. Blindly concatenating them corrupts them when a backend
+                    // resends the same value on every delta (e.g. type: 'function' becomes
+                    // 'functionfunctionfunction...'), which then fails strict equality checks
+                    // elsewhere and silently drops the tool call.
                     target[key] = deltaValue;
                 }
             } else if (typeof deltaValue === 'object' && !Array.isArray(deltaValue)) {
