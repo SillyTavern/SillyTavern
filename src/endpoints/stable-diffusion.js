@@ -1881,7 +1881,10 @@ customOpenai.post('/models', async (request, response) => {
 
         const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_SD);
 
-        const modelsResponse = await fetch(urlJoin(url, '/models'), {
+        const modelsUrl = new URL(urlJoin(url, '/models'));
+        modelsUrl.searchParams.set('type', 'image');
+
+        const modelsResponse = await fetch(modelsUrl, {
             method: 'GET',
             headers: key ? { Authorization: `Bearer ${key}` } : {},
         });
@@ -1895,7 +1898,7 @@ customOpenai.post('/models', async (request, response) => {
         const data = await modelsResponse.json();
         const models = (data.data || [])
             .filter(model => !model.type || model.type === 'image')
-            .map(model => ({ value: model.id, text: model.name || model.id }));
+            .map(model => ({ value: model.id, text: model.name || model.model_spec?.name || model.id }));
 
         return response.send({ data: models });
     } catch (error) {
