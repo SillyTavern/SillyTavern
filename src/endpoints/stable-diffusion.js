@@ -1868,6 +1868,102 @@ aimlapi.post('/generate-image', async (req, res) => {
     }
 });
 
+const customOpenai = express.Router();
+
+customOpenai.post('/models', async (request, response) => {
+    try {
+        const { url } = request.body;
+
+        if (!url || !isValidUrl(url)) {
+            console.warn('Custom OpenAI-compatible endpoint: invalid URL.');
+            return response.sendStatus(400);
+        }
+
+        const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_SD);
+
+        const modelsResponse = await fetch(urlJoin(url, '/models'), {
+            method: 'GET',
+            headers: key ? { Authorization: `Bearer ${key}` } : {},
+        });
+
+        if (!modelsResponse.ok) {
+            console.warn('Custom OpenAI-compatible endpoint returned an error while listing models.');
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await modelsResponse.json();
+        const models = (data.data || [])
+            .filter(model => !model.type || model.type === 'image')
+            .map(model => ({ value: model.id, text: model.name || model.id }));
+
+        return response.send({ data: models });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+customOpenai.post('/generate', async (request, response) => {
+    try {
+        const { url, ...body } = request.body;
+
+        if (!url || !isValidUrl(url)) {
+            console.warn('Custom OpenAI-compatible endpoint: invalid URL.');
+            return response.sendStatus(400);
+        }
+
+        const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_SD);
+
+        console.debug('Custom OpenAI-compatible image request:', body);
+
+        const generateResponse = await fetch(urlJoin(url, '/images/generations'), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(key ? { Authorization: `Bearer ${key}` } : {}),
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!generateResponse.ok) {
+            const text = await generateResponse.text();
+            console.warn('Custom OpenAI-compatible endpoint returned an error.', text);
+            return response.status(500).send(text);
+        }
+
+        /** @type {any} */
+        const data = await generateResponse.json();
+        const image = data?.data?.[0];
+
+        if (!image) {
+            console.warn('Custom OpenAI-compatible endpoint did not return an image.');
+            return response.sendStatus(500);
+        }
+
+        let base64 = image.b64_json;
+
+        if (!base64 && image.url) {
+            const imageResponse = await fetch(image.url);
+            if (!imageResponse.ok) {
+                throw new Error('Failed to fetch generated image.');
+            }
+            const buffer = await imageResponse.arrayBuffer();
+            base64 = Buffer.from(buffer).toString('base64');
+        }
+
+        if (!base64) {
+            console.warn('Custom OpenAI-compatible endpoint returned an unsupported image format.');
+            return response.sendStatus(500);
+        }
+
+        return response.send({ format: 'png', data: base64 });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 const zai = express.Router();
 
 zai.post('/generate', async (request, response) => {
@@ -2204,5 +2300,6 @@ router.use('/bfl', bfl);
 router.use('/falai', falai);
 router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
+router.use('/custom-openai', customOpenai);
 router.use('/zai', zai);
 router.use('/workersai', workersai);
