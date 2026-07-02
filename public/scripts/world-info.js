@@ -4742,6 +4742,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
 
     console.debug(`[WI] Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
+    const sortedEntriesIndex = new Map(sortedEntries.map((entry, index) => [entry, index]));
     const timedEffects = new WorldInfoTimedEffects(chat, sortedEntries, isDryRun);
 
     timedEffects.checkTimedEffects();
@@ -4995,7 +4996,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
             .sort((a, b) => {
                 const isASticky = timedEffects.isEffectActive('sticky', a) ? 1 : 0;
                 const isBSticky = timedEffects.isEffectActive('sticky', b) ? 1 : 0;
-                return isBSticky - isASticky || sortedEntries.indexOf(a) - sortedEntries.indexOf(b);
+                return isBSticky - isASticky || sortedEntriesIndex.get(a) - sortedEntriesIndex.get(b);
             });
 
 
