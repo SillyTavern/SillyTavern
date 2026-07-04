@@ -21,6 +21,10 @@ const hash_derivations = {
 
     // Mistral
     // Mistral Reference: https://github.com/mistralai/mistral-common
+    'e7deee034838db2bfc7487788a3013d8a307ab69f72f3c54a85f06fd76007d4e':
+        // Mistral [INST] template used by EsotericSage / Helcyon embedded metadata
+        'Mistral V3-Tekken'
+    ,
     'e16746b40344d6c5b5265988e0328a0bf7277be86f1c335156eae07e29c82826':
         // Mistral-Small-Instruct-2409
         // Mistral-Large-Instruct-2407
@@ -56,6 +60,30 @@ const hash_derivations = {
     '7de1c58e208eda46e9c7f86397df37ec49883aeece39fb961e0a6b24088dd3c4':
         // gemma-3
         'Gemma 2'
+    ,
+    '36e3a42e5cf14cd0020e72d92e1fdd9970f59b82170e421f0cbe1bb42bead3f0':
+        // Gemma 4-style <|turn> chat template
+        'Gemma 4'
+    ,
+    '781d10940fbc44be40064b5d43a056fc486c84ceaa55538226368b57314132bf':
+        // Gemma 4-style <|turn> template without blank thought-channel generation prefill
+        { context: 'Gemma 4', instruct: 'Gemma 4 No-Think' }
+    ,
+
+    // Llama 3 header
+    'e31b95c7751bb95c1ae4d605a1feeeb95dfdbeae6b98c1425a49808c3d6e3dd8':
+        // Anubis-Mini-8B-v1h
+        'Llama 3 Instruct'
+    ,
+
+    // ChatML thinking variants
+    '04c996ed4919855b1f366cc2360d766ea1e5bab94089bbdfe0ba60349aead758':
+        // Qwen3.6 (enable_thinking variant)
+        { context: 'ChatML', instruct: 'ChatML Thinking' }
+    ,
+    'aa15651c20a0b00cac78ab04f517877611913b9478cd20fcca0a5837e3b93958':
+        // MiniCPM-V-4.6 ChatML template with blank no-think prefill
+        { context: 'ChatML', instruct: 'ChatML No-Think' }
     ,
 
     // Cohere
@@ -105,6 +133,17 @@ const hash_derivations = {
 const substr_derivations = [
     ['Moonshot AI', ['<|im_user|>user<|im_middle|>', '<|im_assistant|>assistant<|im_middle|>', '<|im_end|>']],
     ['OpenAI Harmony', ['<|start|>user<|message|>', '<|start|>assistant<|channel|>final<|message|>', '<|end|>']],
+    ['Gemma 4', ['<|turn>user', '<|turn>model', '<turn|>']],
+    ['Gemma 2', ['<start_of_turn>user', '<start_of_turn>model', '<end_of_turn>']],
+    ['Llama 3 Instruct', ['<|start_header_id|>user<|end_header_id|>', '<|start_header_id|>assistant<|end_header_id|>', '<|eot_id|>']],
+    // Mistral: spm-tokenizer templates pad the tags ('[INST] '), Tekken-tokenizer
+    // templates don't ('[INST]'); order matters — spaced (more specific) first.
+    ['Mistral V7', ['[SYSTEM_PROMPT] ', '[INST] ', '[/INST]']],
+    ['Mistral V7-Tekken', ['[SYSTEM_PROMPT]', '[INST]', '[/INST]']],
+    ['Mistral V2 & V3', ['[INST] ', '[/INST]']],
+    ['Mistral V3-Tekken', ['[INST]', '[/INST]']],
+    [{ context: 'ChatML', instruct: 'ChatML Thinking' }, ['ns_flags.enable_thinking', '<|im_start|>assistant', '<think>']],
+    [{ context: 'ChatML', instruct: 'ChatML No-Think' }, ['enable_thinking is defined and enable_thinking is false', '<think>\\n\\n</think>']],
 
     // Generic cases
     ['ChatML', ['<|im_start|>user', '<|im_start|>assistant', '<|im_end|>']],
