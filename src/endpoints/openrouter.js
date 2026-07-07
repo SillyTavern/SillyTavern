@@ -152,26 +152,25 @@ router.post('/image/generate', async (req, res) => {
             return res.status(400).json({ error: 'Model and prompt are required' });
         }
 
-        const response = await fetch(`${API_OPENROUTER}/chat/completions`, {
+        const requestBody = {
+            model: model,
+            prompt: prompt,
+            n: 1,
+            response_format: 'b64_json',
+        };
+
+        if (req.body.aspect_ratio) {
+            requestBody.aspect_ratio = req.body.aspect_ratio;
+        }
+
+        const response = await fetch(`${API_OPENROUTER}/images`, {
             method: 'POST',
             headers: {
                 ...OPENROUTER_HEADERS,
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${key}`,
             },
-            body: JSON.stringify({
-                model: model,
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt,
-                    },
-                ],
-                modalities: ['image'],
-                image_config: {
-                    aspect_ratio: req.body.aspect_ratio || '1:1',
-                },
-            }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
@@ -182,26 +181,20 @@ router.post('/image/generate', async (req, res) => {
         /** @type {any} */
         const data = await response.json();
 
-        const imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        const encodedImage = String(data?.data?.[0]?.b64_json || '');
 
-        if (!imageUrl) {
-            console.warn('No image URL found in OpenRouter response', data);
+        if (!encodedImage) {
+            console.warn('No image data found in OpenRouter response', data);
             return res.sendStatus(500);
         }
 
-        const [mimeType, base64Data] = /^data:(.*);base64,(.*)$/.exec(imageUrl)?.slice(1) || [];
+        const dataUrlMatch = encodedImage.match(/^data:(.+);base64,(.+)$/);
+        const mediaType = data?.data?.[0]?.media_type;
+        const mimeType = dataUrlMatch?.[1] || mediaType || 'image/png';
+        const format = mime.extension(mimeType) || 'png';
+        const image = dataUrlMatch?.[2] || encodedImage;
 
-        if (!mimeType || !base64Data) {
-            console.warn('Invalid image data format', imageUrl);
-            return res.sendStatus(500);
-        }
-
-        const result = {
-            format: mime.extension(mimeType) || 'png',
-            image: base64Data,
-        };
-
-        return res.json(result);
+        return res.json({ format, image });
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
