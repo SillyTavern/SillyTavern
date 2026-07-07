@@ -156,7 +156,6 @@ router.post('/image/generate', async (req, res) => {
             model: model,
             prompt: prompt,
             n: 1,
-            response_format: 'b64_json',
         };
 
         if (req.body.aspect_ratio) {
