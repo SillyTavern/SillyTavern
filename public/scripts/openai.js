@@ -441,7 +441,7 @@ const default_settings = {
     chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
-    minimax_model: 'MiniMax-M2.7',
+    minimax_model: 'MiniMax-M3',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
@@ -5867,7 +5867,7 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
-        const maxContext = oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        const maxContext = oai_settings.minimax_model === 'MiniMax-M3' ? max_1mil : oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
