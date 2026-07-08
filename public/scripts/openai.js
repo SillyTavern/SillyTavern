@@ -33,6 +33,7 @@ import {
     this_chid,
 } from '../script.js';
 import { getGroupNames, selected_group } from './group-chats.js';
+import { extension_settings } from './extensions.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -7247,3 +7248,60 @@ export function initOpenAI() {
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 }
+
+// Connection Profile Support (OpenRouter)
+
+// Helper function to attach OpenRouter settings to a profile
+function attachOpenRouterSettings(profile) {
+    // Only attach OpenRouter settings if we are currently using OpenRouter
+    if (main_api === 'openai' && oai_settings.chat_completion_source === 'openrouter') {
+        profile.openrouter_providers = oai_settings.openrouter_providers;
+        profile.openrouter_use_fallback = oai_settings.openrouter_use_fallback;
+        profile.openrouter_allow_fallbacks = oai_settings.openrouter_allow_fallbacks;
+        profile.openrouter_quantizations = oai_settings.openrouter_quantizations;
+        profile.openrouter_middleout = oai_settings.openrouter_middleout;
+        console.log('Connection Manager: OpenRouter settings attached to profile');
+    }
+}
+
+// 1. SAVE (Create): When a new profile is created
+eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) => {
+    attachOpenRouterSettings(profile);
+});
+
+// 2. SAVE (Update): When an existing profile is updated
+eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, (oldProfile, profile) => {
+    attachOpenRouterSettings(profile);
+});
+
+// 3. LOAD: When a profile is loaded, restore OpenRouter settings
+eventSource.on(event_types.CONNECTION_PROFILE_LOADED, (profileName) => {
+    // Only restore if we are using OpenAI API
+    if (main_api !== 'openai') {
+        return;
+    }
+
+    // Find the profile object by name
+    const profile = extension_settings.connectionManager.profiles.find(p => p.name === profileName);
+    if (!profile) {
+        return;
+    }
+
+    // Check if this profile has OpenRouter settings (Backwards Compatibility)
+    if (profile.openrouter_providers) {
+        // Restore settings to memory
+        oai_settings.openrouter_providers = profile.openrouter_providers;
+        oai_settings.openrouter_use_fallback = profile.openrouter_use_fallback ?? false;
+        oai_settings.openrouter_allow_fallbacks = profile.openrouter_allow_fallbacks ?? true;
+        oai_settings.openrouter_quantizations = profile.openrouter_quantizations;
+        oai_settings.openrouter_middleout = profile.openrouter_middleout ?? 'auto';
+
+        // Update the UI dropdowns/checkboxes so the user sees the change
+        $('#openrouter_providers_chat').val(oai_settings.openrouter_providers).trigger('change');
+        $('#openrouter_quantizations_chat').val(oai_settings.openrouter_quantizations).trigger('change');
+        $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback).trigger('change');
+        $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks).trigger('change');
+        
+        console.log('Connection Manager: OpenRouter settings restored from profile');
+    }
+});

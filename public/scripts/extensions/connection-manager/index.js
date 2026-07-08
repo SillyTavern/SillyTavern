@@ -179,6 +179,11 @@ const profilesProvider = () => [
  * @property {string} [secret-id] Secret ID
  * @property {string} [regex-preset] Regex Preset ID
  * @property {string[]} [exclude] Commands to exclude
+ * @property {string[]} [openrouter_providers] OpenRouter Selected Providers
+ * @property {boolean} [openrouter_use_fallback] OpenRouter Use Fallback Model
+ * @property {boolean} [openrouter_allow_fallbacks] OpenRouter Allow Fallback Providers
+ * @property {string[]} [openrouter_quantizations] OpenRouter Selected Quantizations
+ * @property {string} [openrouter_middleout] OpenRouter Middleout Setting
  */
 
 /**
