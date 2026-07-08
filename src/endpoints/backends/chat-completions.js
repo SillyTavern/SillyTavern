@@ -1815,9 +1815,43 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
-            apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
-            headers = {};
+            const modelsUrl = 'https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200';
+
+            try {
+                const response = await fetch(modelsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + apiKey,
+                        ...headers,
+                    },
+                });
+
+                if (response.ok) {
+                    /** @type {any} */
+                    const data = await response.json();
+                    const models = Array.isArray(data?.models)
+                        ? data.models
+                            .filter(m => m?.contextLength > 0 && m?.kind !== 'EMBEDDING_MODEL')
+                            .map(m => ({
+                                id: m.name,
+                                name: m.displayName,
+                                context_length: m.contextLength,
+                                supports_tools: m.supportsTools,
+                                supports_image_input: m.supportsImageInput,
+                            }))
+                        : [];
+
+                    console.debug('Available Fireworks models:', models.map(m => m.id));
+                    return statusResponse.send({ data: models });
+                } else {
+                    console.warn('Fireworks models endpoint failed:', response.status, response.statusText);
+                    return statusResponse.send({ error: true, data: { data: [] } });
+                }
+            } catch (error) {
+                console.error('Error fetching Fireworks models:', error);
+                return statusResponse.send({ error: true, data: { data: [] } });
+            }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE, request.body.secret_id);
             apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);

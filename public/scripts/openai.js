@@ -2289,14 +2289,12 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
         $('#model_fireworks_select').empty();
+        model_list.sort((a, b) => (a?.name || a?.id || '').localeCompare(b?.name || b?.id || ''));
         model_list.forEach((model) => {
-            if (!model?.supports_chat) {
-                return;
-            }
             $('#model_fireworks_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: model.name || model.id,
                 }));
         });
 
@@ -6269,6 +6267,8 @@ export function isImageInliningSupported() {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
         }
+        case chat_completion_sources.FIREWORKS:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.fireworks_model)?.supports_image_input);
         default:
             return false;
     }
