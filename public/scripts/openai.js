@@ -7301,7 +7301,7 @@ eventSource.on(event_types.CONNECTION_PROFILE_LOADED, (profileName) => {
         $('#openrouter_quantizations_chat').val(oai_settings.openrouter_quantizations).trigger('change');
         $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback).trigger('change');
         $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks).trigger('change');
-        
+
         console.log('Connection Manager: OpenRouter settings restored from profile');
     }
 });
