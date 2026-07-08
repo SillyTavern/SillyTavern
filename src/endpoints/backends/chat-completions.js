@@ -16,6 +16,7 @@ import {
     OPENAI_REASONING_EFFORT_MODELS,
     OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
+    ORCAROUTER_HEADERS,
     VERTEX_SAFETY,
     SILICONFLOW_ENDPOINT,
     MINIMAX_ENDPOINT,
@@ -95,6 +96,7 @@ const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_ORCAROUTER = 'https://api.orcarouter.ai/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
 /**
@@ -1758,6 +1760,10 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER, request.body.secret_id);
             // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
             headers = { ...OPENROUTER_HEADERS };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ORCAROUTER) {
+            apiUrl = API_ORCAROUTER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ORCAROUTER, request.body.secret_id);
+            headers = { ...ORCAROUTER_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
             apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI, request.body.secret_id);
@@ -2315,6 +2321,23 @@ router.post('/generate', async function (request, response) {
             if (isGemini) {
                 bodyParams['safety_settings'] = GEMINI_SAFETY;
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ORCAROUTER) {
+            apiUrl = API_ORCAROUTER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.ORCAROUTER, request.body.secret_id);
+            headers = { ...ORCAROUTER_HEADERS };
+            bodyParams = {};
+
+            // OrcaRouter forwards reasoning controls to the upstream model using
+            // OpenAI-style flat fields. See https://docs.orcarouter.ai
+            if (request.body.reasoning_effort) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+            }
+
+            bodyParams['include_reasoning'] = Boolean(request.body.include_reasoning);
+
+            // Pass through user-provided routing preferences (e.g. models / route).
+            // See https://www.orcarouter.ai/console/routing
+            mergeObjectWithYaml(bodyParams, request.body.orcarouter_extra_body);
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
             apiUrl = request.body.custom_url;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM, request.body.secret_id);

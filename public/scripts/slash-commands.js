@@ -3135,6 +3135,7 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
                     new SlashCommandEnumValue('siliconflow', 'SiliconFlow', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'siliconflow')), 'S'),
                     new SlashCommandEnumValue('minimax', 'MiniMax', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'minimax')), 'M'),
+                    new SlashCommandEnumValue('orcarouter', 'OrcaRouter', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'orcarouter')), 'O'),
                     new SlashCommandEnumValue('pollinations', 'Pollinations', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'pollinations')), 'P'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
                     ...Object.values(textgen_types).filter(api => Object.keys(SERVER_INPUTS).includes(api)).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
@@ -6275,6 +6276,7 @@ function getModelOptions(quiet) {
         { id: 'model_cometapi_select', api: 'openai', type: chat_completion_sources.COMETAPI },
         { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
         { id: 'model_workers_ai_select', api: 'openai', type: chat_completion_sources.WORKERS_AI },
+        { id: 'model_orcarouter_select', api: 'openai', type: chat_completion_sources.ORCAROUTER },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
