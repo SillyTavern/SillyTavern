@@ -7016,8 +7016,12 @@ export function getGeneratingModel(mes) {
 export function activateSendButtons() {
     is_send_press = false;
     hideStopButton();
-    showSwipeButtons();
     delete document.body.dataset.generating;
+    try {
+        showSwipeButtons();
+    } catch (error) {
+        console.warn('Failed to refresh swipe buttons while activating send buttons.', error);
+    }
 }
 
 /**
@@ -9977,68 +9981,74 @@ export async function swipe(event, direction, { source, repeated, message = chat
      * @param {boolean} revert Attept to revert the swipe without saving.
      */
     async function endSwipe(revert = false) {
-        //Wait for the generation to end.
         try {
-            //`mes_buttons` need to be hidden until the animation completes.
-            if (generation) {
-                document.body.dataset.swiping = 'true';
-                await generation;
-            }
-        } catch (error) {
-            console.warn(`Swipe failed, Swiping back. ${error}`);
-        }
-
-        //Clamp Id between swipes.
-        let clampedId = clamp(chat[mesId].swipe_id, 0, Math.max(0, chat[mesId].swipes.length - 1));
-
-        await updateSwipeCounter(mesId);
-        //Fallback.
-        if (mesId != chat.length - 1) {
-            await updateSwipeCounter(chat.length - 1);
-        }
-
-        // If swipe_id has not changed, give the user feedback.
-        if (clampedId == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
+            //Wait for the generation to end.
             try {
-                //Shake 700/140=5px
-                shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
-                //Flash red.
-                const flashTime = Math.max(animation_duration * 2, 100);
-                await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, flashTime).animate({ color: '' }).promise(), createTimeout(flashTime * 4, `The shake animation did not end within ${flashTime * 4}ms`)].filter(Boolean));
+                //`mes_buttons` need to be hidden until the animation completes.
+                if (generation) {
+                    document.body.dataset.swiping = 'true';
+                    await generation;
+                }
             } catch (error) {
-                console.warn(error);
+                console.warn(`Swipe failed, Swiping back. ${error}`);
+            }
+
+            //Clamp Id between swipes.
+            let clampedId = clamp(chat[mesId].swipe_id, 0, Math.max(0, chat[mesId].swipes.length - 1));
+
+            await updateSwipeCounter(mesId);
+            //Fallback.
+            if (mesId != chat.length - 1) {
+                await updateSwipeCounter(chat.length - 1);
+            }
+
+            // If swipe_id has not changed, give the user feedback.
+            if (clampedId == originalSwipeId && source != SWIPE_SOURCE.DELETE) {
+                try {
+                    //Shake 700/140=5px
+                    shakeElement(thisMesDiv, -swipeRange / 140, animation_duration, 'ease-in');
+                    //Flash red.
+                    const flashTime = Math.max(animation_duration * 2, 100);
+                    await Promise.race([thisMesDiv.find('.swipes-counter').animate({ color: 'red' }, flashTime).animate({ color: '' }).promise(), createTimeout(flashTime * 4, `The shake animation did not end within ${flashTime * 4}ms`)].filter(Boolean));
+                } catch (error) {
+                    console.warn(error);
+                }
+            }
+
+            //If the id is not within bounds, Swipe back.
+            if (chat[mesId]?.swipe_id !== clampedId || revert) {
+                // Prevent recursion.
+                if (source != SWIPE_SOURCE.BACK) {
+                    source = SWIPE_SOURCE.BACK;
+                    chat[mesId].swipe_id = clampedId;
+
+                    //Update the chat.
+                    await loadFromSwipeId(mesId, chat[mesId].swipe_id);
+                    await redisplayChat({ startIndex: mesId });
+                } else {
+                    await Popup.show.confirm(
+                        t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
+                        t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
+                        { okButton: 'OK', cancelButton: false },
+                    );
+                    console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
+                    await reloadCurrentChat();
+                }
+                //Out of bounds swipes should not be saved.
+            } else if (source != SWIPE_SOURCE.BACK) {
+                //Save the chat if swipe_id has changed.
+                saveChatDebounced();
+            }
+        } finally {
+            //Allow for another swipe even if swipe refresh or redisplay throws.
+            swipeState = SWIPE_STATE.NONE;
+            delete document.body.dataset.swiping;
+            try {
+                showSwipeButtons();
+            } catch (error) {
+                console.warn('Failed to refresh swipe buttons after swipe cleanup.', error);
             }
         }
-
-        //If the id is not within bounds, Swipe back.
-        if (chat[mesId]?.swipe_id !== clampedId || revert) {
-            // Prevent recursion.
-            if (source != SWIPE_SOURCE.BACK) {
-                source = SWIPE_SOURCE.BACK;
-                chat[mesId].swipe_id = clampedId;
-
-                //Update the chat.
-                await loadFromSwipeId(mesId, chat[mesId].swipe_id);
-                await redisplayChat({ startIndex: mesId });
-            } else {
-                await Popup.show.confirm(
-                    t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
-                    t`<p>After you click OK, the chat will be reloaded to prevent data corruption.</p>`,
-                    { okButton: 'OK', cancelButton: false },
-                );
-                console.trace(`Error! Recursion detected when reverting failed ${direction} swipe on message #${mesId}. Something has broken.`);
-                await reloadCurrentChat();
-            }
-            //Out of bounds swipes should not be saved.
-        } else if (source != SWIPE_SOURCE.BACK) {
-            //Save the chat if swipe_id has changed.
-            saveChatDebounced();
-        }
-
-        //Allow for another swipe.
-        swipeState = SWIPE_STATE.NONE;
-        delete document.body.dataset.swiping;
-        showSwipeButtons();
     }
 
     async function standardSwipe(newSwipeId) {
