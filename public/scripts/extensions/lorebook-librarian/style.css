@@ -1,0 +1,73 @@
+.lorebook-librarian-settings .inline-drawer-content {
+    gap: 0.75rem;
+}
+
+.lorebook-librarian-row,
+.lorebook-librarian-number-row {
+    margin: 0.5rem 0;
+}
+
+.lorebook-librarian-row label,
+.lorebook-librarian-number-row label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.lorebook-librarian-actions {
+    align-items: center;
+    margin: 0.75rem 0;
+}
+
+.lorebook-librarian-status {
+    margin: 0.5rem 0;
+    opacity: 0.85;
+}
+
+.lorebook-librarian-status[data-state="error"] {
+    color: var(--SmartThemeQuoteColor);
+}
+
+.lorebook-librarian-status[data-state="success"] {
+    color: var(--SmartThemeEmColor);
+}
+
+.lorebook-librarian-results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.lorebook-librarian-card {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 6px;
+    padding: 0.5rem;
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+.lorebook-librarian-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.lorebook-librarian-chip {
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.85em;
+    opacity: 0.9;
+}
+
+.lorebook-librarian-card pre,
+.lorebook-librarian-debug pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 35vh;
+    overflow: auto;
+}
+
+.lorebook-librarian-world-button {
+    min-width: 2em;
+}
