@@ -6273,6 +6273,7 @@ function getModelOptions(quiet) {
         { id: 'model_moonshot_select', api: 'openai', type: chat_completion_sources.MOONSHOT },
         { id: 'model_fireworks_select', api: 'openai', type: chat_completion_sources.FIREWORKS },
         { id: 'model_cometapi_select', api: 'openai', type: chat_completion_sources.COMETAPI },
+        { id: 'model_unorouter_select', api: 'openai', type: chat_completion_sources.UNOROUTER },
         { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
         { id: 'model_workers_ai_select', api: 'openai', type: chat_completion_sources.WORKERS_AI },
         { id: 'model_novel_select', api: 'novel', type: null },

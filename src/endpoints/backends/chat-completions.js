@@ -96,6 +96,7 @@ const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
+const API_UNOROUTER = 'https://api.unorouter.com/v1';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -1810,6 +1811,10 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
             headers = {};
             throw new Error('This provider is temporarily disabled.');
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.UNOROUTER) {
+            apiUrl = API_UNOROUTER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.UNOROUTER, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
@@ -2466,6 +2471,13 @@ router.post('/generate', async function (request, response) {
                 reasoning_effort: request.body.reasoning_effort,
             };
             throw new Error('This provider is temporarily disabled.');
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.UNOROUTER) {
+            apiUrl = API_UNOROUTER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.UNOROUTER, request.body.secret_id);
+            headers = {};
+            bodyParams = {
+                reasoning_effort: request.body.reasoning_effort,
+            };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
             const defaultApiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
             apiUrl = new URL(request.body.reverse_proxy || defaultApiUrl).toString();
