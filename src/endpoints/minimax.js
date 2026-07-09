@@ -16,6 +16,37 @@ const getAudioMimeType = (format) => {
     return mimeTypes[format] || 'audio/mpeg';
 };
 
+router.post('/get-voices', async (request, response) => {
+    try {
+        const { apiHost = 'https://api.minimax.io', voiceType = 'all' } = request.body;
+        const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
+
+        if (!apiKey) {
+            return response.status(400).json({ error: 'Missing MiniMax API key' });
+        }
+
+        const apiUrl = `${apiHost}/v1/get_voice`;
+        const apiResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ voice_type: voiceType }),
+        });
+
+        if (!apiResponse.ok) {
+            return response.status(apiResponse.status).json({ error: `HTTP ${apiResponse.status}` });
+        }
+
+        const data = await apiResponse.json();
+        return response.json(data);
+    } catch (error) {
+        console.error('MiniMax get voices failed:', error);
+        return response.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.post('/generate-voice', async (request, response) => {
     try {
         const {
