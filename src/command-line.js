@@ -35,6 +35,9 @@ import { initConfig } from './config-init.js';
  * @property {boolean} requestProxyEnabled If enable outgoing request proxy
  * @property {string} requestProxyUrl Request proxy URL
  * @property {string[]} requestProxyBypass Request proxy bypass list
+ * @property {string} novelaiApiUrl NovelAI general API URL
+ * @property {string} novelaiTextUrl NovelAI text generation API URL
+ * @property {string} novelaiImageUrl NovelAI image generation API URL
  * @property {function(): URL} getIPv4ListenUrl Get IPv4 listen URL
  * @property {function(): URL} getIPv6ListenUrl Get IPv6 listen URL
  * @property {function(import('./server-startup.js').ServerStartupResult): Promise<string>} getBrowserLaunchHostname Get browser launch hostname
@@ -81,6 +84,9 @@ export class CommandLineParser {
             requestProxyEnabled: false,
             requestProxyUrl: '',
             requestProxyBypass: [],
+            novelaiApiUrl: 'https://api.novelai.net',
+            novelaiTextUrl: 'https://text.novelai.net',
+            novelaiImageUrl: 'https://image.novelai.net',
             getIPv4ListenUrl: function () {
                 throw new Error('getIPv4ListenUrl is not implemented');
             },
@@ -238,6 +244,21 @@ export class CommandLineParser {
                 type: 'array',
                 describe: 'Request proxy bypass list (space separated list of hosts)',
             })
+            .option('novelaiApiUrl', {
+                type: 'string',
+                default: null,
+                describe: 'NovelAI general API URL',
+            })
+            .option('novelaiTextUrl', {
+                type: 'string',
+                default: null,
+                describe: 'NovelAI text generation API URL',
+            })
+            .option('novelaiImageUrl', {
+                type: 'string',
+                default: null,
+                describe: 'NovelAI image generation API URL',
+            })
             .option('heartbeatInterval', {
                 type: 'number',
                 default: null,
@@ -324,6 +345,9 @@ export class CommandLineParser {
             requestProxyEnabled: cliArguments.requestProxyEnabled ?? getConfigValue('requestProxy.enabled', defaultConfig.requestProxyEnabled, 'boolean'),
             requestProxyUrl: cliArguments.requestProxyUrl ?? getConfigValue('requestProxy.url', defaultConfig.requestProxyUrl),
             requestProxyBypass: cliArguments.requestProxyBypass ?? getConfigValue('requestProxy.bypass', defaultConfig.requestProxyBypass),
+            novelaiApiUrl: cliArguments.novelaiApiUrl ?? getConfigValue('novelai.apiUrl', defaultConfig.novelaiApiUrl),
+            novelaiTextUrl: cliArguments.novelaiTextUrl ?? getConfigValue('novelai.textUrl', defaultConfig.novelaiTextUrl),
+            novelaiImageUrl: cliArguments.novelaiImageUrl ?? getConfigValue('novelai.imageUrl', defaultConfig.novelaiImageUrl),
             getIPv4ListenUrl: function () {
                 const isValid = ipRegex.v4({ exact: true }).test(this.listenAddressIPv4);
                 return new URL(

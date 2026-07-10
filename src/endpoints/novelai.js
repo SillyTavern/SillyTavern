@@ -7,9 +7,10 @@ import express from 'express';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } from '../util.js';
 
-const API_NOVELAI = 'https://api.novelai.net';
-const TEXT_NOVELAI = 'https://text.novelai.net';
-const IMAGE_NOVELAI = 'https://image.novelai.net';
+const args = globalThis.COMMAND_LINE_ARGS || {};
+const API_NOVELAI = args.novelaiApiUrl || 'https://api.novelai.net';
+const TEXT_NOVELAI = args.novelaiTextUrl || 'https://text.novelai.net';
+const IMAGE_NOVELAI = args.novelaiImageUrl || 'https://image.novelai.net';
 
 // Constants for skip_cfg_above_sigma (Variety+) calculation
 const REFERENCE_PIXEL_COUNT = 1011712;   // 832 * 1216 reference image size
@@ -323,7 +324,7 @@ router.post('/generate-image', async (request, response) => {
                 input: request.body.prompt ?? '',
                 model: request.body.model ?? 'nai-diffusion',
                 parameters: {
-                    params_version: 3,
+                    params_version: 4,
                     prefer_brownian: true,
                     negative_prompt: request.body.negative_prompt ?? '',
                     height: request.body.height ?? 512,

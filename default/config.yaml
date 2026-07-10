@@ -103,6 +103,15 @@ requestProxy:
   bypass:
     - localhost
     - 127.0.0.1
+# -- NOVELAI API CONFIGURATION --
+novelai:
+  # NovelAI API URL for general endpoints (user info, subscription,
+  # upscaling, TTS, and non-Kayra/Erato text generation).
+  apiUrl: "https://api.novelai.net"
+  # NovelAI Text Generation API URL for Kayra and Erato models.
+  textUrl: "https://text.novelai.net"
+  # NovelAI Image Generation API URL.
+  imageUrl: "https://image.novelai.net"
 # Enable multi-user mode
 enableUserAccounts: false
 # Enable discreet login mode: hides user list on the login screen
