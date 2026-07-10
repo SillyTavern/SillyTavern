@@ -25,6 +25,7 @@ import yaml from 'yaml';
 import * as chevrotain from 'chevrotain';
 import { gzipSync, gzip } from 'fflate';
 import { sha256 } from 'js-sha256';
+import jxlDecode, { init as initJxlDecode } from '@jsquash/jxl/decode.js';
 
 /**
  * Expose the libraries to the 'window' object.
@@ -107,6 +108,8 @@ export default {
     gzipSync,
     gzip,
     sha256,
+    jxlDecode,
+    initJxlDecode,
 };
 
 export {
@@ -135,4 +138,6 @@ export {
     gzipSync,
     gzip,
     sha256,
+    jxlDecode,
+    initJxlDecode,
 };

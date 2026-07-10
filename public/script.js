@@ -184,6 +184,8 @@ import {
     clamp,
     shakeElement,
     createTimeout,
+    decodeJxlToDataUrl,
+    isJxlFile,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
@@ -7466,7 +7468,7 @@ async function read_avatar_load(input) {
 
         crop_data = undefined;
         const file = input.files[0];
-        const fileData = await getBase64Async(file);
+        const fileData = isJxlFile(file) ? await decodeJxlToDataUrl(file) : await getBase64Async(file);
 
         if (!power_user.never_resize_avatars) {
             const dlg = new Popup('Set the crop position of the avatar image', POPUP_TYPE.CROP, '', { cropImage: fileData });
