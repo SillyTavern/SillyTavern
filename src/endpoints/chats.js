@@ -44,8 +44,10 @@ function backupChat(directory, name, data, backupPrefix = CHAT_BACKUPS_PREFIX) {
         if (!fs.existsSync(directory)) {
             console.error(`The chat couldn't be backed up because no directory exists at ${directory}!`);
         }
-        // replace non-alphanumeric characters with underscores
-        name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        // Replace filesystem-unsafe and non-word characters with underscores,
+        // while preserving Unicode letters/numbers (e.g. Chinese, Cyrillic).
+        // See util.sanitizeBackupName and issue #5780.
+        name = sanitizeBackupName(name);
 
         const backupFile = path.join(directory, `${backupPrefix}${name}_${generateTimestamp()}.jsonl`);
 

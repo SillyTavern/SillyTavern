@@ -13,6 +13,7 @@ import readline from 'node:readline';
 import yaml from 'yaml';
 import { sync as commandExistsSync } from 'command-exists';
 import _ from 'lodash';
+import sanitize from 'sanitize-filename';
 import yauzl from 'yauzl';
 import mime from 'mime-types';
 import { default as simpleGit } from 'simple-git';
@@ -619,6 +620,32 @@ export function sanitizeSafeCharacterReplacements(char) {
  */
 export function removeFileExtension(filename) {
     return filename.replace(/\.[^.]+$/, '');
+}
+
+/**
+ * Sanitize a character/chat name for use as the body of a backup filename.
+ *
+ * The previous inline implementation (`replace(/[^a-z0-9]/gi, '_')`) replaced
+ * every non-ASCII character with an underscore, which caused all names that
+ * contained only non-Latin scripts (e.g. Chinese `雷电将军`, Cyrillic, Arabic)
+ * to collapse to identical underscore strings and share a single backup pool
+ * (see issue #5780).
+ *
+ * This helper preserves any Unicode letter or number while still replacing
+ * filesystem-unsafe and non-word characters with underscores. Names that
+ * contain no letters or numbers (e.g. `!!!`) collapse to a safe placeholder.
+ *
+ * @param {string} name The raw character/chat name.
+ * @returns {string} Filesystem-safe, lowercased name. Returns an empty string
+ *   for non-string or empty inputs.
+ */
+export function sanitizeBackupName(name) {
+    if (typeof name !== 'string' || name.length === 0) {
+        return '';
+    }
+    // Unicode property escapes require the `u` flag; \p{L} = any letter,
+    // \p{N} = any number (covers Latin, CJK, Cyrillic, Arabic, etc.).
+    return sanitize(name).replace(/[^\p{L}\p{N}]/giu, '_').toLowerCase();
 }
 
 export function generateTimestamp() {
