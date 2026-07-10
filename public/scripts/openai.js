@@ -7249,7 +7249,7 @@ export function initOpenAI() {
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 }
 
-// Connection Profile Support (OpenRouter)
+// Connection Profile Support (OpenRouter, NanoGPT, etc.)
 
 // Helper function to attach OpenRouter settings to a profile
 function attachOpenRouterSettings(profile) {
@@ -7303,5 +7303,54 @@ eventSource.on(event_types.CONNECTION_PROFILE_LOADED, (profileName) => {
         $('#openrouter_allow_fallbacks').prop('checked', oai_settings.openrouter_allow_fallbacks).trigger('change');
 
         console.log('Connection Manager: OpenRouter settings restored from profile');
+    }
+});
+
+// Connection Profile Support (NanoGPT)
+
+// Helper function to attach NanoGPT settings to a profile
+function attachNanoGptSettings(profile) {
+    // Only attach NanoGPT settings if we are currently using NanoGPT
+    if (main_api === 'openai' && oai_settings.chat_completion_source === 'nanogpt') {
+        profile.nanogpt_provider = oai_settings.nanogpt_provider;
+        profile.nanogpt_payg_override = oai_settings.nanogpt_payg_override;
+        console.log('Connection Manager: NanoGPT settings attached to profile');
+    }
+}
+
+// 1. SAVE (Create): When a new profile is created
+eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) => {
+    attachNanoGptSettings(profile);
+});
+
+// 2. SAVE (Update): When an existing profile is updated
+eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, (oldProfile, profile) => {
+    attachNanoGptSettings(profile);
+});
+
+// 3. LOAD: When a profile is loaded, restore NanoGPT settings
+eventSource.on(event_types.CONNECTION_PROFILE_LOADED, (profileName) => {
+    // Only restore if we are using OpenAI API
+    if (main_api !== 'openai') {
+        return;
+    }
+
+    // Find the profile object by name
+    const profile = extension_settings.connectionManager.profiles.find(p => p.name === profileName);
+    if (!profile) {
+        return;
+    }
+
+    // Check if this profile has NanoGPT settings (Backwards Compatibility)
+    if (profile.nanogpt_provider !== undefined) {
+        // Restore settings to memory
+        oai_settings.nanogpt_provider = profile.nanogpt_provider;
+        oai_settings.nanogpt_payg_override = profile.nanogpt_payg_override ?? false;
+
+        // Update the UI dropdowns/checkboxes so the user sees the change
+        $('#nanogpt_provider').val(oai_settings.nanogpt_provider).trigger('change');
+        $('#nanogpt_payg_override').prop('checked', oai_settings.nanogpt_payg_override).trigger('change');
+
+        console.log('Connection Manager: NanoGPT settings restored from profile');
     }
 });
