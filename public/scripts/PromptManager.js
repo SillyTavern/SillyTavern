@@ -1131,7 +1131,6 @@ class PromptManager {
         if ('global' === this.configuration.promptOrder.strategy) {
             this.activeCharacter = { id: this.configuration.promptOrder.dummyId };
         } else if ('character' === this.configuration.promptOrder.strategy) {
-            console.log('FOO');
             this.activeCharacter = { id: event.detail.id, ...event.detail.character };
             const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
 
