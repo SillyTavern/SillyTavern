@@ -465,7 +465,12 @@ async function loadSettings() {
         Object.assign(extension_settings.sd, defaultSettings);
     }
 
-    // Migrate old boolean minimal_prompt_processing to new prompt_processing enum
+    // Migrate old boolean `minimal_prompt_processing` setting to the new
+    // `prompt_processing` string enum (`standard` / `minimal` / `off`).
+    // This converts the legacy boolean value on first load after the update,
+    // then deletes the old key so it doesn't linger in saved settings.
+    // - true  (minimal processing enabled)  -> 'minimal'
+    // - false (standard processing, default) -> 'standard'
     if (extension_settings.sd.prompt_processing === undefined
         && extension_settings.sd.minimal_prompt_processing !== undefined) {
         extension_settings.sd.prompt_processing =
