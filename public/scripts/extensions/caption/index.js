@@ -18,6 +18,11 @@ const MODULE_NAME = 'caption';
 
 const PROMPT_DEFAULT = 'What\'s in this image?';
 const TEMPLATE_DEFAULT = '[{{user}} sends {{char}} a picture that contains: {{caption}}]';
+const GOOGLE_MODEL_MIGRATIONS = new Map([
+    ['gemini-3.1-flash-lite-preview', 'gemini-3.1-flash-lite'],
+    ['gemini-3.1-flash-image-preview', 'gemini-3.1-flash-image'],
+    ['gemini-3-pro-image-preview', 'gemini-3-pro-image'],
+]);
 
 /**
  * Migrates old extension settings to the new format.
@@ -40,9 +45,9 @@ function migrateSettings() {
         extension_settings.caption.multimodal_model = 'gpt-4-turbo';
     }
 
-    if (['google', 'vertexai'].includes(extension_settings.caption.multimodal_api)
-        && extension_settings.caption.multimodal_model === 'gemini-3.1-flash-lite-preview') {
-        extension_settings.caption.multimodal_model = 'gemini-3.1-flash-lite';
+    if (['google', 'vertexai'].includes(extension_settings.caption.multimodal_api)) {
+        extension_settings.caption.multimodal_model = GOOGLE_MODEL_MIGRATIONS.get(extension_settings.caption.multimodal_model)
+            ?? extension_settings.caption.multimodal_model;
     }
 
     if (!extension_settings.caption.multimodal_api) {
