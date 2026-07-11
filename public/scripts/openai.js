@@ -2604,7 +2604,8 @@ function getReasoningEffort(settings = null, model = null) {
             case reasoning_effort_types.max:
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
                     && /^gpt-5\.6/.test(model)) {
-                    return reasoning_effort_types.max;
+                    // GPT-5.6 reserves "max" effort for the Responses API.
+                    return 'xhigh';
                 }
                 return reasoning_effort_types.high;
             default:

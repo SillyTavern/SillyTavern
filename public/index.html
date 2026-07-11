@@ -2169,14 +2169,14 @@
                                                 <option data-i18n="openai_reasoning_effort_high" value="high">High</option>
                                                 <option data-i18n="openai_reasoning_effort_maximum" value="max">Maximum</option>
                                             </select>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes" data-i18n="OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.">
-                                                OpenAI-style options: low, medium, high. Minimum and maximum are aliased to low and high. Auto does not send an effort level.
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="openai,custom,xai,aimlapi,openrouter,pollinations,perplexity,cometapi,electronhub,azure_openai,chutes" data-i18n="OpenAI-compatible effort levels vary by model. Minimum and maximum may use model-specific aliases. Auto does not send an effort level.">
+                                                OpenAI-compatible effort levels vary by model. Minimum and maximum may use model-specific aliases. Auto does not send an effort level.
                                             </div>
                                             <strong class="toggle-description justifyLeft marginBot5" data-source="openrouter">
                                                 Request model reasoning = Off with Reasoning Effort = Minimum disables reasoning entirely on models that support that, but can cause errors with some models.
                                             </strong>
-                                            <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.">
-                                                Allocates a portion of the response length for thinking (min: 1024 tokens, low: 10%, medium: 25%, high: 50%, max: 95%), but minimum 1024 tokens. Auto does not request thinking.
+                                            <div class="toggle-description justifyLeft marginBot5" data-source="claude" data-i18n="Selects an effort level on adaptive-thinking models. On older Claude models, it allocates a portion of the response length to thinking. Auto does not request thinking.">
+                                                Selects an effort level on adaptive-thinking models. On older Claude models, it allocates a portion of the response length to thinking. Auto does not request thinking.
                                             </div>
                                             <div class="toggle-description justifyLeft marginBot5" data-source="makersuite,vertexai">
                                                 <span data-i18n="Sets a dynamic reasoning depth level for thinking (Flash 3/Pro 3). High and low are supported by both, minimal and medium are Flash 3 only. Auto lets the model decide.">
@@ -2204,7 +2204,7 @@
                                                 Constrains the verbosity of the model's response.
                                             </div>
                                             <strong class="toggle-description justifyLeft marginBot5" data-source="claude">
-                                                On Opus 4.6 / Sonnet 4.6, a non-automatic Reasoning Effort takes precedence over Verbosity.
+                                                On adaptive-thinking Claude models, a non-automatic Reasoning Effort takes precedence over Verbosity.
                                             </strong>
                                         </div>
                                     </div>
