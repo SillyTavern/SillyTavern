@@ -40,6 +40,11 @@ function migrateSettings() {
         extension_settings.caption.multimodal_model = 'gpt-4-turbo';
     }
 
+    if (['google', 'vertexai'].includes(extension_settings.caption.multimodal_api)
+        && extension_settings.caption.multimodal_model === 'gemini-3.1-flash-lite-preview') {
+        extension_settings.caption.multimodal_model = 'gemini-3.1-flash-lite';
+    }
+
     if (!extension_settings.caption.multimodal_api) {
         extension_settings.caption.multimodal_api = 'openai';
     }
