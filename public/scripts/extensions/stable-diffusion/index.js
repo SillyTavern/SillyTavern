@@ -280,7 +280,7 @@ const defaultSettings = {
     snap: false,
     free_extend: false,
     function_tool: false,
-    minimal_prompt_processing: false,
+    prompt_processing: 'standard',
 
     prompts: promptTemplates,
 
@@ -465,6 +465,14 @@ async function loadSettings() {
         Object.assign(extension_settings.sd, defaultSettings);
     }
 
+    // Migrate old boolean minimal_prompt_processing to new prompt_processing enum
+    if (extension_settings.sd.prompt_processing === undefined
+        && extension_settings.sd.minimal_prompt_processing !== undefined) {
+        extension_settings.sd.prompt_processing =
+            extension_settings.sd.minimal_prompt_processing ? 'minimal' : 'standard';
+        delete extension_settings.sd.minimal_prompt_processing;
+    }
+
     // Insert missing settings
     for (const [key, value] of Object.entries(defaultSettings)) {
         if (extension_settings.sd[key] === undefined) {
@@ -544,7 +552,7 @@ async function loadSettings() {
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_comfy_runpod_url').val(extension_settings.sd.comfy_runpod_url);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
-    $('#sd_minimal_prompt_processing').prop('checked', extension_settings.sd.minimal_prompt_processing);
+    $('#sd_prompt_processing').val(extension_settings.sd.prompt_processing);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
@@ -667,8 +675,8 @@ function onSnapInput() {
     saveSettingsDebounced();
 }
 
-function onMinimalPromptProcessing() {
-    extension_settings.sd.minimal_prompt_processing = !!$(this).prop('checked');
+function onPromptProcessingSelect() {
+    extension_settings.sd.prompt_processing = String($(this).val());
     saveSettingsDebounced();
 }
 
@@ -2898,7 +2906,12 @@ function processReply(str) {
         return '';
     }
 
-    if (extension_settings.sd.minimal_prompt_processing) {
+    if (extension_settings.sd.prompt_processing === 'off') {
+        // No processing — preserve raw LLM output including newlines
+        return str;
+    }
+
+    if (extension_settings.sd.prompt_processing === 'minimal') {
         // Minimal prompt processing
         // JSON and similar should be preserved
         str = str.normalize('NFD');
@@ -5404,15 +5417,18 @@ function applyCommandArguments(args) {
         'denoise': 'denoising_strength',
         '2ndpass': 'hr_second_pass_steps',
         'faces': 'restore_faces',
-        'processing': 'minimal_prompt_processing',
+        'processing': 'prompt_processing',
     };
     const enumHandlers = {
         'processing': (value) => {
             if (/standard/gi.test(String(value))) {
-                return false;
+                return 'standard';
             }
             if (/minimal/gi.test(String(value))) {
-                return true;
+                return 'minimal';
+            }
+            if (/off/gi.test(String(value))) {
+                return 'off';
             }
         },
     };
@@ -5866,7 +5882,7 @@ export async function init() {
     $('#sd_openai_duration').on('input', onOpenAiDurationSelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
-    $('#sd_minimal_prompt_processing').on('input', onMinimalPromptProcessing);
+    $('#sd_prompt_processing').on('change', onPromptProcessingSelect);
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
