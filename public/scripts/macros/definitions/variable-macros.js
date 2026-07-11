@@ -388,7 +388,7 @@ export function registerVariableMacros() {
             return '';
         },
     });
-    
+
     // {{getglobalvarkey::name::key}} -> returns value at key
     MacroRegistry.registerMacro('getglobalvarkey', {
         aliases: [{ alias: 'getglobalvarindex' }],
