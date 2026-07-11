@@ -315,12 +315,12 @@ const NANOGPT_PROVIDERS = [
         'label': 'Venice',
     },
     {
-        'id': 'wandb',
-        'label': 'Weights & Biases',
-    },
-    {
         'id': 'wafer',
         'label': 'Wafer',
+    },
+    {
+        'id': 'wandb',
+        'label': 'Weights & Biases',
     },
     {
         'id': 'xiaomi',
