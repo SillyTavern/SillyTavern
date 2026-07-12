@@ -1,7 +1,6 @@
 import process from 'node:process';
 import http from 'node:http';
 import https from 'node:https';
-import { URL } from 'node:url';
 import net from 'node:net';
 import dns from 'node:dns';
 import { ProxyAgent } from 'proxy-agent';
@@ -89,7 +88,9 @@ function hostnameMatchesDomain(hostname, pattern) {
     }
     // .example.com matches example.com and any subdomain
     if (pattern.startsWith('.')) {
-        return hostname === pattern.slice(1) || hostname.endsWith(pattern);
+        const lowerHost = hostname.toLowerCase();
+        const lowerPattern = pattern.toLowerCase();
+        return lowerHost === lowerPattern.slice(1) || lowerHost.endsWith(lowerPattern);
     }
     // Exact match (case-insensitive, since hostnames are)
     return hostname.toLowerCase() === pattern.toLowerCase();
@@ -112,6 +113,25 @@ async function shouldBypassProxy(urlStr, bypassList) {
 
     if (!hostname) return false;
 
+    // Resolve DNS once if any CIDR or IP-wildcard rules need it.
+    // Only needed when the URL uses a hostname (not a raw IP).
+    const isRawIP = net.isIPv4(hostname);
+    let resolvedIPs = null;
+
+    if (!isRawIP) {
+        const needDNS = bypassList.some(entry => {
+            const rule = parseBypassEntry(entry);
+            return rule && (rule.type === 'cidr' || rule.type === 'ip-wildcard');
+        });
+        if (needDNS) {
+            try {
+                resolvedIPs = await dns.promises.resolve4(hostname);
+            } catch {
+                // DNS resolution failed; IP-based rules will simply not match.
+            }
+        }
+    }
+
     for (const entry of bypassList) {
         const rule = parseBypassEntry(entry);
         if (!rule) continue;
@@ -124,37 +144,25 @@ async function shouldBypassProxy(urlStr, bypassList) {
                 break;
 
             case 'ip-wildcard':
-                if (net.isIPv4(hostname)) {
+                if (isRawIP) {
                     if (ipMatchesWildcard(hostname, rule.parts)) {
                         return true;
                     }
-                } else {
-                    // Resolve hostname to IP for wildcard matching
-                    try {
-                        const addresses = await dns.promises.resolve4(hostname);
-                        if (addresses.some(addr => ipMatchesWildcard(addr, rule.parts))) {
-                            return true;
-                        }
-                    } catch {
-                        // DNS resolution failed, continue to next rule
+                } else if (resolvedIPs) {
+                    if (resolvedIPs.some(addr => ipMatchesWildcard(addr, rule.parts))) {
+                        return true;
                     }
                 }
                 break;
 
             case 'cidr':
-                if (net.isIPv4(hostname)) {
+                if (isRawIP) {
                     if (ipInCIDR(hostname, rule.ip, rule.prefix)) {
                         return true;
                     }
-                } else {
-                    // Resolve hostname to IP for CIDR matching
-                    try {
-                        const addresses = await dns.promises.resolve4(hostname);
-                        if (addresses.some(addr => ipInCIDR(addr, rule.ip, rule.prefix))) {
-                            return true;
-                        }
-                    } catch {
-                        // DNS resolution failed, continue to next rule
+                } else if (resolvedIPs) {
+                    if (resolvedIPs.some(addr => ipInCIDR(addr, rule.ip, rule.prefix))) {
+                        return true;
                     }
                 }
                 break;
