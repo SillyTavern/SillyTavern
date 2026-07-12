@@ -11,11 +11,16 @@ const LOG_HEADER = '[Request Proxy]';
 /**
  * Parse a bypass list entry and determine its type.
  * @param {string} entry A single bypass entry from the config.
- * @returns {{type: 'cidr', ip: string, prefix: number} | {type: 'ip-wildcard', parts: string[]} | {type: 'domain', pattern: string} | null}
+ * @returns {{type: 'all'} | {type: 'cidr', ip: string, prefix: number} | {type: 'ip-wildcard', parts: string[]} | {type: 'domain', pattern: string, port?: number} | null}
  */
 function parseBypassEntry(entry) {
     const trimmed = entry.trim();
     if (!trimmed) return null;
+
+    // '*' matches everything (same as proxy-from-env behavior)
+    if (trimmed === '*') {
+        return { type: 'all' };
+    }
 
     // CIDR notation: 192.168.0.0/16
     const cidrMatch = trimmed.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})$/);
@@ -31,6 +36,15 @@ function parseBypassEntry(entry) {
         const parts = trimmed.split('.');
         if (parts.length === 4) {
             return { type: 'ip-wildcard', parts };
+        }
+    }
+
+    // Check for port-qualified host (host:port) — strip port for matching
+    const portMatch = trimmed.match(/^(.+):(\d{1,5})$/);
+    if (portMatch) {
+        const port = parseInt(portMatch[2], 10);
+        if (port >= 1 && port <= 65535) {
+            return { type: 'domain', pattern: portMatch[1], port };
         }
     }
 
@@ -104,13 +118,14 @@ function hostnameMatchesDomain(hostname, pattern) {
  * @returns {Promise<boolean>}
  */
 async function shouldBypassProxy(urlStr, bypassList) {
-    let hostname;
+    let url;
     try {
-        hostname = new URL(urlStr).hostname;
+        url = new URL(urlStr);
     } catch {
         return false;
     }
 
+    const hostname = url.hostname;
     if (!hostname) return false;
 
     // Resolve DNS once if any CIDR or IP-wildcard rules need it.
@@ -132,14 +147,23 @@ async function shouldBypassProxy(urlStr, bypassList) {
         }
     }
 
+    const urlPort = parseInt(url.port, 10) || null;
+
     for (const entry of bypassList) {
         const rule = parseBypassEntry(entry);
         if (!rule) continue;
 
         switch (rule.type) {
+            case 'all':
+                return true;
+
             case 'domain':
                 if (hostnameMatchesDomain(hostname, rule.pattern)) {
-                    return true;
+                    // If rule specifies a port, the request port must match.
+                    // No port on the rule means match any port.
+                    if (rule.port === undefined || rule.port === urlPort) {
+                        return true;
+                    }
                 }
                 break;
 

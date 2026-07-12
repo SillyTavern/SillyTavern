@@ -101,7 +101,9 @@ requestProxy:
   url: "socks5://username:password@example.com:1080"
   # Proxy bypass list. Requests to these hosts won't be routed through the proxy.
   # Supported patterns:
+  #   - '*' to bypass all requests
   #   - Domain: example.com, .example.com (matches subdomains), *.example.com
+  #   - Domain with port: example.com:8080
   #   - CIDR: 192.168.0.0/16
   #   - IP wildcard: 192.168.*.*
   bypass:
