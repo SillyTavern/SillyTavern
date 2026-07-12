@@ -155,7 +155,11 @@ async function shouldBypassProxy(urlStr, bypassList, fallbackHostname) {
         });
         if (needDNS) {
             try {
-                resolvedIPs = await dns.promises.resolve4(hostname);
+                // dns.lookup uses the OS resolver (getaddrinfo), which respects
+                // /etc/hosts, mDNS, and VPN resolvers — matching how Node.js
+                // resolves hostnames for outbound connections.
+                const results = await dns.promises.lookup(hostname, { family: 4, all: true });
+                resolvedIPs = results.map(r => r.address);
             } catch {
                 // DNS resolution failed; IP-based rules will simply not match.
             }
@@ -163,6 +167,19 @@ async function shouldBypassProxy(urlStr, bypassList, fallbackHostname) {
     }
 
     const urlPort = parseInt(url.port, 10) || null;
+
+    // Compute effective port for comparisons: when a URL omits the port,
+    // use the protocol default (e.g., 443 for https, 80 for http).
+    // This is needed so bypass entries like 'example.com:443' match
+    // requests to 'https://example.com/' (no explicit port).
+    let effectivePort = urlPort;
+    if (effectivePort === null) {
+        if (url.protocol === 'https:') {
+            effectivePort = 443;
+        } else if (url.protocol === 'http:') {
+            effectivePort = 80;
+        }
+    }
 
     for (const entry of bypassList) {
         const rule = parseBypassEntry(entry);
@@ -174,9 +191,9 @@ async function shouldBypassProxy(urlStr, bypassList, fallbackHostname) {
 
             case 'domain':
                 if (hostnameMatchesDomain(hostname, rule.pattern)) {
-                    // If rule specifies a port, the request port must match.
+                    // If rule specifies a port, the effective request port must match.
                     // No port on the rule means match any port.
-                    if (rule.port === undefined || rule.port === urlPort) {
+                    if (rule.port === undefined || rule.port === effectivePort) {
                         return true;
                     }
                 }
