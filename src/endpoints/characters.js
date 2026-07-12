@@ -14,7 +14,7 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction, forbiddenRegExp } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedDateTime, tryParse, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
+import { deepMerge, humanizedDateTime, tryParse, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements, isPathUnderParent } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
@@ -499,6 +499,7 @@ function unsetPrivateFields(char) {
     _.set(char, 'fav', false);
     _.set(char, 'data.extensions.fav', false);
     _.unset(char, 'chat');
+    _.unset(char, 'data.extensions.inline_media');
 }
 
 function readFromV2(char) {
@@ -1424,6 +1425,31 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
     const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
     if (!fs.existsSync(avatarPath)) {
         return response.sendStatus(400);
+    }
+
+    // Best-effort cleanup of inline_media reference assets attached to this character.
+    // Read the card before unlinking so the data is still available; failures here must not
+    // block the deletion itself.
+    try {
+        const card = await readCharacterData(avatarPath);
+        const cardJson = typeof card === 'string' ? tryParse(card) : null;
+        const inlineMedia = cardJson?.data?.extensions?.inline_media;
+        if (Array.isArray(inlineMedia)) {
+            for (const item of inlineMedia) {
+                if (!item?.url || typeof item.url !== 'string') continue;
+                const assetPath = path.normalize(path.join(request.user.directories.root, item.url));
+                if (!isPathUnderParent(request.user.directories.userImages, assetPath)) continue;
+                if (fs.existsSync(assetPath)) {
+                    try {
+                        await fsPromises.unlink(assetPath);
+                    } catch (err) {
+                        console.warn(`[Characters] Failed to remove inline_media asset ${item.url}:`, err);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[Characters] Failed to read inline_media for cleanup:', err);
     }
 
     fs.unlinkSync(avatarPath);
