@@ -1579,7 +1579,7 @@ function registerReasoningAppEvents() {
     }
 
     for (const event of [event_types.GENERATION_STOPPED, event_types.GENERATION_ENDED, event_types.CHAT_CHANGED]) {
-        eventSource.on(event, () => PromptReasoning.clearLatest());
+        eventSource.makeFirst(event, () => PromptReasoning.clearLatest());
     }
 
     eventSource.makeFirst(event_types.IMPERSONATE_READY, async () => {
