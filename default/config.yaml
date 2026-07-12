@@ -100,6 +100,10 @@ requestProxy:
   # Proxy URL. Possible protocols: http, https, socks, socks5, socks4, pac
   url: "socks5://username:password@example.com:1080"
   # Proxy bypass list. Requests to these hosts won't be routed through the proxy.
+  # Supported patterns:
+  #   - Domain: example.com, .example.com (matches subdomains), *.example.com
+  #   - CIDR: 192.168.0.0/16
+  #   - IP wildcard: 192.168.*.*
   bypass:
     - localhost
     - 127.0.0.1
