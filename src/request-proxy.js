@@ -14,6 +14,8 @@ const LOG_HEADER = '[Request Proxy]';
  * @returns {{type: 'all'} | {type: 'cidr', ip: string, prefix: number} | {type: 'ip-wildcard', parts: string[]} | {type: 'domain', pattern: string, port?: number} | null}
  */
 function parseBypassEntry(entry) {
+    // Guard against non-string entries (malformed config)
+    if (typeof entry !== 'string') return null;
     const trimmed = entry.trim();
     if (!trimmed) return null;
 
@@ -117,7 +119,10 @@ function hostnameMatchesDomain(hostname, pattern) {
  * @param {string[]} bypassList - List of bypass patterns from config.
  * @returns {Promise<boolean>}
  */
-async function shouldBypassProxy(urlStr, bypassList) {
+async function shouldBypassProxy(urlStr, bypassList, fallbackHostname) {
+    // Guard against non-array bypassList
+    if (!Array.isArray(bypassList)) return false;
+
     let url;
     try {
         url = new URL(urlStr);
@@ -125,7 +130,17 @@ async function shouldBypassProxy(urlStr, bypassList) {
         return false;
     }
 
-    const hostname = url.hostname;
+    let hostname = url.hostname;
+
+    // Fallback: for HTTPS CONNECT requests, proxy-agent v6 constructs an
+    // opaque URL (e.g. 'api.openai.com:443') whose WHATWG-parsed hostname
+    // is empty because the parser treats the hostname portion as a URL scheme.
+    // When the caller provides a fallbackHostname (from the request Host header),
+    // use it instead.
+    if (!hostname && fallbackHostname) {
+        hostname = fallbackHostname;
+    }
+
     if (!hostname) return false;
 
     // Resolve DNS once if any CIDR or IP-wildcard rules need it.
@@ -243,13 +258,30 @@ export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive
 
         /**
          * Custom proxy resolution callback.
-         * Uses our own bypass logic to support CIDR notation and IP wildcards,
-         * which are not handled by the default proxy-from-env resolution.
-         * @param {string} urlStr
+         * Uses our own bypass logic to support CIDR notation, IP wildcards,
+         * and legacy patterns (*, host:port) that proxy-from-env doesn't handle.
+         * @param {string} urlStr — URL being requested (may be a CONNECT target for HTTPS)
+         * @param {import('node:http').ClientRequest} req — the outgoing request
          * @returns {Promise<string>}
          */
-        async function getProxyForUrl(urlStr) {
-            if (hasBypass && await shouldBypassProxy(urlStr, bypass)) {
+        async function getProxyForUrl(urlStr, req) {
+            // For HTTPS requests through an HTTP proxy, proxy-agent v6 constructs
+            // a CONNECT URL like 'api.openai.com:443' whose WHATWG hostname is empty.
+            // Extract the real hostname from the request Host header as a fallback.
+            let fallbackHostname = null;
+            if (req) {
+                try {
+                    const hostHeader = req.getHeader('host');
+                    if (hostHeader) {
+                        // Strip port if present (Host header is 'host:port')
+                        fallbackHostname = String(hostHeader).split(':')[0];
+                    }
+                } catch {
+                    // getHeader may throw on some request types — safe to ignore
+                }
+            }
+
+            if (hasBypass && await shouldBypassProxy(urlStr, bypass, fallbackHostname)) {
                 return ''; // falsy return = bypass proxy
             }
             return url;
