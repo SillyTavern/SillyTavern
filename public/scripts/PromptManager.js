@@ -306,6 +306,7 @@ class PromptManager {
             personaDescription: t`Persona Description`,
             worldInfoBefore: t`World Info (↑Char)`,
             worldInfoAfter: t`World Info (↓Char)`,
+            charRefImages: t`Character Reference Images`,
         };
     }
 
@@ -1032,6 +1033,20 @@ class PromptManager {
                 }
             }
         }
+
+        // The "Append a prompt" footer dropdown filters out system_prompt:true entries
+        // (see renderPromptManager → `.filter(p => !p?.system_prompt)`), so users who
+        // created their per-character prompt order before charRefImages existed have no
+        // non-destructive way to surface it (only "Reset character" would, and that wipes
+        // their customizations). Auto-insert it before chatHistory to match the position
+        // it sits at in promptManagerDefaultPromptOrder.
+        for (const entry of this.serviceSettings.prompt_order) {
+            if (!Array.isArray(entry?.order)) continue;
+            if (entry.order.some(o => o.identifier === 'charRefImages')) continue;
+            const chatHistoryIdx = entry.order.findIndex(o => o.identifier === 'chatHistory');
+            const insertAt = chatHistoryIdx === -1 ? entry.order.length : chatHistoryIdx;
+            entry.order.splice(insertAt, 0, { identifier: 'charRefImages', enabled: true });
+        }
     }
 
     /**
@@ -1087,6 +1102,7 @@ class PromptManager {
             'personaDescription',
             'worldInfoBefore',
             'worldInfoAfter',
+            'charRefImages',
         ];
         return forceEditPrompts.includes(prompt.identifier) || !prompt.marker;
     }
@@ -1107,6 +1123,7 @@ class PromptManager {
             'main',
             'chatHistory',
             'dialogueExamples',
+            'charRefImages',
         ];
         return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
     }
@@ -2077,6 +2094,12 @@ const chatCompletionDefaultPrompts = {
             'system_prompt': true,
             'marker': true,
         },
+        {
+            'identifier': 'charRefImages',
+            'name': 'Character Reference Images',
+            'system_prompt': true,
+            'marker': true,
+        },
     ],
 };
 
@@ -2123,6 +2146,10 @@ const promptManagerDefaultPromptOrder = [
     },
     {
         'identifier': 'dialogueExamples',
+        'enabled': true,
+    },
+    {
+        'identifier': 'charRefImages',
         'enabled': true,
     },
     {

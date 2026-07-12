@@ -80,6 +80,7 @@ import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
+import { getCharacterInlineMedia, getCharacterInlineMediaPrompt } from './char-media.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
 
 export {
@@ -1216,6 +1217,48 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     await addToChatCompletion('scenario');
     await addToChatCompletion('personaDescription');
 
+    // Inline character reference media (image / video / audio): built as a user message attached to
+    // the charRefImages prompt block. Position is governed by the user's prompt manager order
+    // (movable / disable-able). Each attachment is gated by the model's per-modality capability.
+    if (prompts.has('charRefImages')) {
+        const media = getCharacterInlineMedia();
+        const refPrompt = prompts.get('charRefImages');
+        const isDisabled = promptManager.isPromptDisabledForActiveCharacter('charRefImages');
+        const isAbsolute = refPrompt.injection_position === INJECTION_POSITION.ABSOLUTE;
+        const imageInlining = isImageInliningSupported();
+        const videoInlining = isVideoInliningSupported();
+        const audioInlining = isAudioInliningSupported();
+        const supported = media.filter(m => {
+            const type = m.type ?? MEDIA_TYPE.IMAGE;
+            return (type === MEDIA_TYPE.IMAGE && imageInlining)
+                || (type === MEDIA_TYPE.VIDEO && videoInlining)
+                || (type === MEDIA_TYPE.AUDIO && audioInlining);
+        });
+        if (supported.length > 0 && !isDisabled && !isAbsolute) {
+            // Per-character body for the user message accompanying attachments (Advanced
+            // Definitions → Reference Media). Empty by default so the message ships as a
+            // pure-attachment payload; authors can opt in by writing something here.
+            const promptBody = getCharacterInlineMediaPrompt();
+            const effectivePrompt = new Prompt({ ...refPrompt, content: substituteParams(promptBody) });
+            const message = await Message.fromPromptAsync(effectivePrompt);
+            for (const attachment of supported) {
+                const type = attachment.type ?? MEDIA_TYPE.IMAGE;
+                try {
+                    if (type === MEDIA_TYPE.IMAGE) await message.addImage(attachment.url);
+                    else if (type === MEDIA_TYPE.VIDEO) await message.addVideo(attachment.url);
+                    else if (type === MEDIA_TYPE.AUDIO) await message.addAudio(attachment.url);
+                } catch (error) {
+                    console.error('Failed to inline character reference media', attachment.url, error);
+                }
+            }
+            if (chatCompletion.canAfford(message)) {
+                const collection = new MessageCollection('charRefImages');
+                collection.add(message);
+                chatCompletion.add(collection, prompts.index('charRefImages'));
+            }
+        }
+    }
+
     // Collection of control prompts that will always be positioned last
     chatCompletion.setOverriddenPrompts(prompts.overriddenPrompts);
     const controlPrompts = new MessageCollection('controlPrompts');
@@ -1432,6 +1475,11 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
     if (power_user.persona_description && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
         systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });
     }
+
+    // Character Reference Images marker — content comes from the per-character override at
+    // populate time (empty by default; the message ships as pure attachments). Sent as a user
+    // role since most VLMs don't accept image content parts in system messages.
+    systemPrompts.push({ role: 'user', content: '', identifier: 'charRefImages' });
 
     const knownExtensionPrompts = [
         '1_memory',

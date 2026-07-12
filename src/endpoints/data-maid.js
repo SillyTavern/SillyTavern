@@ -7,6 +7,7 @@ import { getSettingsBackupFilePrefix } from './settings.js';
 import { CHAT_BACKUPS_PREFIX } from './chats.js';
 import { isPathUnderParent, tryParse } from '../util.js';
 import { SETTINGS_FILE } from '../constants.js';
+import { read as readPngCharacterData } from '../character-card-parser.js';
 
 const sha256 = str => crypto.createHash('sha256').update(str).digest('hex');
 
@@ -205,6 +206,11 @@ export class DataMaidService {
                         }
                     }
                 }
+            }
+            // Character cards' inline_media (reference images / video / audio for VLMs) are stored
+            // under userImages — register their URLs so they aren't flagged as loose files.
+            for (const url of await this.#parseAllCharacterInlineMedia()) {
+                knownImages.add(url);
             }
             const knownImageFullPaths = new Set();
             knownImages.forEach(image => {
@@ -624,6 +630,37 @@ export class DataMaidService {
             console.error('[Data Maid] Error parsing chats:', error);
             return [];
         }
+    }
+
+    /**
+     * Reads every character card and returns the union of `data.extensions.inline_media[*].url`
+     * values. These reference assets live under userImages but are owned by character cards
+     * rather than chat messages, so they need to be tracked separately for loose-file detection.
+     * @returns {Promise<string[]>} List of inline_media URLs across all characters.
+     */
+    async #parseAllCharacterInlineMedia() {
+        const urls = [];
+        try {
+            const characters = await fs.promises.readdir(this.directories.characters, { withFileTypes: true });
+            for (const file of characters) {
+                if (!file.isFile() || path.parse(file.name).ext !== '.png') continue;
+                try {
+                    const filePath = path.join(this.directories.characters, file.name);
+                    const buffer = await fs.promises.readFile(filePath);
+                    const cardJson = tryParse(readPngCharacterData(buffer));
+                    const inlineMedia = cardJson?.data?.extensions?.inline_media;
+                    if (!Array.isArray(inlineMedia)) continue;
+                    for (const item of inlineMedia) {
+                        if (typeof item?.url === 'string' && item.url) urls.push(item.url);
+                    }
+                } catch (error) {
+                    console.warn(`[Data Maid] Error reading inline_media from ${file.name}:`, error);
+                }
+            }
+        } catch (error) {
+            console.error('[Data Maid] Error scanning characters for inline_media:', error);
+        }
+        return urls;
     }
 
     /**

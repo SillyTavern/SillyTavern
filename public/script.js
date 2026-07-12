@@ -267,6 +267,7 @@ import { addShowdownPatch } from './scripts/util/showdown-patch.js';
 import { applyBrowserFixes } from './scripts/browser-fixes.js';
 import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
+import { initCharacterMedia } from './scripts/char-media.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
 import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
@@ -772,6 +773,7 @@ async function firstLoadInit() {
     initInputMarkdown();
     initServerHistory();
     initSettingsSearch();
+    initCharacterMedia();
     initBulkEdit();
     initReasoning();
     initWelcomeScreen();
