@@ -651,6 +651,15 @@ describe('mergeMessages', () => {
         expect(types).toContain('text');
         expect(types).toContain('image_url');
     });
+
+    test('flattens array content and preserves video URLs via tokens', () => {
+        const videoContent = { type: 'video_url', video_url: { url: 'data:video/mp4;base64,abc' } };
+        const messages = [
+            { role: 'user', content: [{ type: 'text', text: 'Watch this' }, videoContent] },
+        ];
+        const result = mod.mergeMessages(messages, names);
+        expect(result[0].content).toEqual([{ type: 'text', text: 'Watch this' }, videoContent]);
+    });
 });
 
 

@@ -1584,6 +1584,10 @@ async function sendMinimaxRequest(request, response) {
 
         let bodyParams = {};
 
+        if (request.body.model === 'MiniMax-M3') {
+            bodyParams['thinking'] = { type: request.body.include_reasoning ? 'adaptive' : 'disabled' };
+        }
+
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
             bodyParams['tools'] = request.body.tools;
             bodyParams['tool_choice'] = request.body.tool_choice;
