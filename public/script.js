@@ -755,7 +755,7 @@ async function firstLoadInit() {
     initTags();
     initBookmarks();
     await getUserAvatars(true, user_avatar);
-    await getCharacters();
+    await getCharacters(true);
     await getBackgrounds();
     await initTokenizers();
     initBackgrounds();
@@ -1297,7 +1297,7 @@ export function getCharacterSource(chId = this_chid) {
     return '';
 }
 
-export async function getCharacters() {
+export async function getCharacters(retry = false) {
     const response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1305,8 +1305,16 @@ export async function getCharacters() {
     });
     if (response.ok) {
         const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
-        characters.splice(0, characters.length);
-        const getData = await response.json();
+        characters.length = 0;
+        let getData;
+
+        try {
+            getData = await response.json();
+        } catch (error) {
+            console.error('Failed to parse characters:', error);
+            return retry ? getCharacters(true) : undefined;
+        }
+
         for (let i = 0; i < getData.length; i++) {
             characters[i] = getData[i];
             characters[i].name = DOMPurify.sanitize(characters[i].name);
@@ -1338,6 +1346,8 @@ export async function getCharacters() {
         if (errorData?.overflow) {
             await Popup.show.text(t`Character data length limit reached`, t`To resolve this, set "performance.lazyLoadCharacters" to "true" in config.yaml and restart the server.`);
         }
+
+        return retry ? getCharacters(true) : undefined;
     }
 }
 
