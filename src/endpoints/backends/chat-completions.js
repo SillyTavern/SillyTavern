@@ -92,6 +92,8 @@ const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
+const API_MINIMAX_ANTHROPIC = 'https://api.minimax.io/anthropic';
+const API_MINIMAX_ANTHROPIC_CN = 'https://api.minimaxi.com/anthropic';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
@@ -1561,9 +1563,12 @@ async function sendChutesRequest(request, response) {
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
  */
-async function sendMinimaxRequest(request, response) {
-    const apiUrl = request.body.minimax_endpoint === MINIMAX_ENDPOINT.CN
-        ? API_MINIMAX_CN : API_MINIMAX;
+export async function sendMinimaxRequest(request, response) {
+    const isAnthropic = [MINIMAX_ENDPOINT.GLOBAL_ANTHROPIC, MINIMAX_ENDPOINT.CN_ANTHROPIC].includes(request.body.minimax_endpoint);
+    const isChina = [MINIMAX_ENDPOINT.CN, MINIMAX_ENDPOINT.CN_ANTHROPIC].includes(request.body.minimax_endpoint);
+    const apiUrl = isAnthropic
+        ? (isChina ? API_MINIMAX_ANTHROPIC_CN : API_MINIMAX_ANTHROPIC)
+        : (isChina ? API_MINIMAX_CN : API_MINIMAX);
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX, request.body.secret_id);
 
     if (!apiKey) {
@@ -1578,6 +1583,65 @@ async function sendMinimaxRequest(request, response) {
     });
 
     try {
+        if (isAnthropic) {
+            const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
+            const convertedPrompt = convertClaudeMessages(structuredClone(request.body.messages), '', true, useTools, getPromptNames(request), { video: true });
+            const bodyParams = {};
+
+            if (request.body.model === 'MiniMax-M3') {
+                bodyParams['thinking'] = { type: request.body.include_reasoning ? 'adaptive' : 'disabled' };
+            }
+
+            if (useTools) {
+                bodyParams['tools'] = request.body.tools
+                    .filter(tool => tool.type === 'function')
+                    .map(tool => tool.function)
+                    .map(fn => ({ name: fn.name, description: fn.description, input_schema: flattenSchema(fn.parameters, request.body.chat_completion_source) }));
+                bodyParams['tool_choice'] = { type: request.body.tool_choice };
+            }
+
+            const requestBody = {
+                'messages': convertedPrompt.messages,
+                'model': request.body.model,
+                'max_tokens': request.body.max_tokens,
+                'stream': request.body.stream,
+                'temperature': request.body.temperature,
+                'top_p': request.body.top_p,
+                ...bodyParams,
+            };
+
+            if (convertedPrompt.systemPrompt.length > 0) {
+                requestBody['system'] = convertedPrompt.systemPrompt;
+            }
+
+            const generateResponse = await fetch(apiUrl + '/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'anthropic-version': '2023-06-01',
+                    'x-api-key': apiKey,
+                },
+                body: JSON.stringify(requestBody),
+                signal: controller.signal,
+            });
+
+            if (request.body.stream) {
+                return await forwardFetchResponse(generateResponse, response);
+            }
+
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('MiniMax returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+
+            const generateResponseJson = await generateResponse.json();
+            const responseText = generateResponseJson?.content?.filter(block => block.type === 'text').map(block => block.text).join('\n\n') || '';
+            const reply = { choices: [{ index: 0, message: { content: responseText } }], content: generateResponseJson.content };
+            return response.send(reply);
+        }
+
         // MiniMax does not allow consecutive messages with the same role.
         // Merge them into a single message to avoid "invalid chat setting (2013)".
         const messages = postProcessPrompt(request.body.messages, PROMPT_PROCESSING_TYPE.MERGE_TOOLS, getPromptNames(request));

@@ -275,7 +275,18 @@ export const SILICONFLOW_ENDPOINT = {
 export const MINIMAX_ENDPOINT = {
     GLOBAL: 'global',
     CN: 'cn',
+    GLOBAL_ANTHROPIC: 'global-anthropic',
+    CN_ANTHROPIC: 'cn-anthropic',
 };
+
+/**
+ * Checks whether a MiniMax endpoint uses the Anthropic-compatible API.
+ * @param {string} endpoint MiniMax endpoint
+ * @returns {boolean} Whether the endpoint uses the Anthropic-compatible API
+ */
+export function isMinimaxAnthropicEndpoint(endpoint) {
+    return [MINIMAX_ENDPOINT.GLOBAL_ANTHROPIC, MINIMAX_ENDPOINT.CN_ANTHROPIC].includes(endpoint);
+}
 
 const sensitiveFields = [
     'reverse_proxy',
@@ -2941,7 +2952,8 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
         if (Number.isFinite(generate_data.temperature)) {
             const isM3 = settings.minimax_model === 'MiniMax-M3';
-            generate_data.temperature = clamp(generate_data.temperature, isM3 ? 0 : Number.EPSILON, isM3 ? oai_max_temp : claude_max_temp);
+            const supportsFullTemperatureRange = isM3 || isMinimaxAnthropicEndpoint(generate_data.minimax_endpoint);
+            generate_data.temperature = clamp(generate_data.temperature, supportsFullTemperatureRange ? 0 : Number.EPSILON, supportsFullTemperatureRange ? oai_max_temp : claude_max_temp);
         }
     }
 
@@ -3067,6 +3079,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         const eventStream = getEventSourceStream();
         response.body.pipeThrough(eventStream);
         const reader = eventStream.readable.getReader();
+        const streamingSource = oai_settings.chat_completion_source === chat_completion_sources.MINIMAX && isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint)
+            ? chat_completion_sources.CLAUDE
+            : null;
         return async function* streamData() {
             let text = '';
             const swipes = [];
@@ -3083,9 +3098,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
                     // FIXME: state.reasoning should be an array to support multi-swipe
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { overrideShowThoughts: false });
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { chatCompletionSource: streamingSource, overrideShowThoughts: false });
                 } else {
-                    text += getStreamingReply(parsed, state);
+                    text += getStreamingReply(parsed, state, { chatCompletionSource: streamingSource });
                 }
 
                 ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
@@ -5868,7 +5883,7 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
         const maxContext = oai_settings.minimax_model === 'MiniMax-M3' ? max_1mil : oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
-        const maxTemperature = oai_settings.minimax_model === 'MiniMax-M3' ? oai_max_temp : claude_max_temp;
+        const maxTemperature = oai_settings.minimax_model === 'MiniMax-M3' || isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint) ? oai_max_temp : claude_max_temp;
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -7204,6 +7219,7 @@ export function initOpenAI() {
     });
     $('#minimax_endpoint').on('input', function () {
         oai_settings.minimax_endpoint = String($(this).val());
+        $('#model_minimax_select').trigger('change');
         saveSettingsDebounced();
     });
     $('#workers_ai_account_id').on('input', function () {

@@ -192,9 +192,11 @@ export function convertClaudePrompt(messages, addAssistantPostfix, addAssistantP
  * @param {boolean}  useSysPrompt See if we want to use a system prompt
  * @param {boolean}  useTools See if we want to use tools
  * @param {PromptNames} names Prompt names
+ * @param {object} [options] Conversion options
+ * @param {boolean} [options.video=false] Convert OpenAI video URL blocks to Anthropic blocks
  * @returns {{messages: object[], systemPrompt: object[]}} Prompt for Anthropic
  */
-export function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, names) {
+export function convertClaudeMessages(messages, prefillString, useSysPrompt, useTools, names, { video = false } = {}) {
     let systemPrompt = [];
     if (useSysPrompt) {
         // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
@@ -285,6 +287,30 @@ export function convertClaudeMessages(messages, prefillString, useSysPrompt, use
 
                     return {
                         type: 'image',
+                        source: {
+                            type: 'base64',
+                            media_type: mimeType,
+                            data: base64Data,
+                        },
+                    };
+                }
+
+                if (video && content.type === 'video_url') {
+                    const videoData = content?.video_url?.url;
+                    if (!videoData?.startsWith('data:')) {
+                        return {
+                            type: 'video',
+                            source: {
+                                type: 'url',
+                                url: videoData,
+                            },
+                        };
+                    }
+                    const mimeType = videoData?.split(';')?.[0].split(':')?.[1];
+                    const base64Data = videoData?.split(',')?.[1];
+
+                    return {
+                        type: 'video',
                         source: {
                             type: 'base64',
                             media_type: mimeType,

@@ -899,6 +899,28 @@ describe('convertClaudeMessages', () => {
         expect(imagePart.source.data).toBe('abc123');
     });
 
+    test('converts video_url content when video support is enabled', () => {
+        const messages = [
+            { role: 'user', content: [
+                { type: 'text', text: 'Watch' },
+                { type: 'video_url', video_url: { url: 'data:video/mp4;base64,abc123' } },
+            ] },
+        ];
+        const result = mod.convertClaudeMessages(messages, '', false, false, names, { video: true });
+        const videoPart = result.messages[0].content.find(c => c.type === 'video');
+        expect(videoPart).toEqual({
+            type: 'video',
+            source: { type: 'base64', media_type: 'video/mp4', data: 'abc123' },
+        });
+    });
+
+    test('preserves video_url content by default', () => {
+        const videoPart = { type: 'video_url', video_url: { url: 'https://example.com/video.mp4' } };
+        const messages = [{ role: 'user', content: [videoPart] }];
+        const result = mod.convertClaudeMessages(messages, '', false, false, names);
+        expect(result.messages[0].content[0]).toEqual(videoPart);
+    });
+
     test('moves images from assistant to next user message', () => {
         const messages = [
             { role: 'assistant', content: [
