@@ -331,7 +331,7 @@ function importJanitorChat(userName, characterName, jsonData) {
         delete janitorai_origin.created_at;
         return {
             // Uses message username due to Janitor support for mid-chat persona switching
-            name: !message.is_bot ? (message.metadata.persona_name ?? userName) : characterName,
+            name: !message.is_bot ? (message.metadata?.persona_name ?? userName) : characterName,
             is_user: !message.is_bot,
             send_date: message.created_at ?? curTime, // Date is already ISOString
             mes: message.message ?? '',
