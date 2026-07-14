@@ -18,6 +18,8 @@ import { initConfig } from './config-init.js';
  * @property {boolean|string} enableIPv4 If enable IPv4 protocol ("auto" is also allowed)
  * @property {boolean|string} enableIPv6 If enable IPv6 protocol ("auto" is also allowed)
  * @property {boolean} dnsPreferIPv6 If prefer IPv6 for DNS
+ * @property {boolean} enableHappyEyeballs If enable Happy Eyeballs algorithm (RFC 8305) for dual-stack connections
+ * @property {number} happyEyeballsTimeout Happy Eyeballs connection attempt timeout in milliseconds
  * @property {number} heartbeatInterval Interval in seconds to write a heartbeat file. 0 to disable.
  * @property {boolean} browserLaunchEnabled If automatically launch SillyTavern in the browser
  * @property {string} browserLaunchHostname Browser launch hostname
@@ -64,6 +66,8 @@ export class CommandLineParser {
             enableIPv4: true,
             enableIPv6: false,
             dnsPreferIPv6: false,
+            enableHappyEyeballs: true,
+            happyEyeballsTimeout: 250,
             heartbeatInterval: 0,
             browserLaunchEnabled: false,
             browserLaunchHostname: 'auto',
@@ -138,6 +142,16 @@ export class CommandLineParser {
                 type: 'boolean',
                 default: null,
                 describe: 'Prefers IPv6 for DNS\nYou should probably have the enabled if you\'re on an IPv6 only network',
+            })
+            .option('enableHappyEyeballs', {
+                type: 'boolean',
+                default: null,
+                describe: 'Enable Happy Eyeballs (RFC 8305) for dual-stack IPv4/IPv6 connections',
+            })
+            .option('happyEyeballsTimeout', {
+                type: 'number',
+                default: null,
+                describe: 'Happy Eyeballs connection attempt timeout in milliseconds (default: 250)',
             })
             .option('browserLaunchEnabled', {
                 type: 'boolean',
@@ -307,6 +321,8 @@ export class CommandLineParser {
             enableIPv4: stringToBool(cliArguments.enableIPv4) ?? stringToBool(getConfigValue('protocol.ipv4', defaultConfig.enableIPv4)) ?? defaultConfig.enableIPv4,
             enableIPv6: stringToBool(cliArguments.enableIPv6) ?? stringToBool(getConfigValue('protocol.ipv6', defaultConfig.enableIPv6)) ?? defaultConfig.enableIPv6,
             dnsPreferIPv6: cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', defaultConfig.dnsPreferIPv6, 'boolean'),
+            enableHappyEyeballs: cliArguments.enableHappyEyeballs ?? getConfigValue('enableHappyEyeballs', defaultConfig.enableHappyEyeballs, 'boolean'),
+            happyEyeballsTimeout: cliArguments.happyEyeballsTimeout ?? getConfigValue('happyEyeballsTimeout', defaultConfig.happyEyeballsTimeout, 'number'),
             heartbeatInterval: cliArguments.heartbeatInterval ?? getConfigValue('heartbeatInterval', defaultConfig.heartbeatInterval, 'number'),
             browserLaunchEnabled: cliArguments.browserLaunchEnabled ?? cliArguments.autorun ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean'),
             browserLaunchHostname: cliArguments.browserLaunchHostname ?? cliArguments.autorunHostname ?? getConfigValue('browserLaunch.hostname', defaultConfig.browserLaunchHostname),

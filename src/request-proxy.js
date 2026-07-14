@@ -14,9 +14,11 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
  * @property {boolean} enableKeepAlive Enable HTTP/HTTPS keep-alive.
+ * @property {boolean} [enableHappyEyeballs] Enable Happy Eyeballs (RFC 8305) for dual-stack connections.
+ * @property {number} [happyEyeballsTimeout] Happy Eyeballs connection attempt timeout in milliseconds.
  * @property {boolean} privateRequestFilterEnabled Whether the private request filter is enabled.
  */
-export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive, privateRequestFilterEnabled }) {
+export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive, enableHappyEyeballs, happyEyeballsTimeout, privateRequestFilterEnabled }) {
     try {
         // No proxy is enabled, so return
         if (!enabled) {
@@ -46,8 +48,15 @@ export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive
             process.env.no_proxy = bypass.join(',');
         }
 
-        const httpAgent = http.globalAgent;
-        const httpsAgent = https.globalAgent;
+        const happyEyeballs = enableHappyEyeballs ?? true;
+        const agentOptions = {
+            keepAlive: enableKeepAlive,
+            autoSelectFamily: happyEyeballs,
+            ...(happyEyeballs ? { autoSelectFamilyAttemptTimeout: happyEyeballsTimeout ?? 250 } : {}),
+        };
+
+        const httpAgent = new http.Agent(agentOptions);
+        const httpsAgent = new https.Agent(agentOptions);
 
         const proxyAgent = new ProxyAgent({ httpAgent, httpsAgent, keepAlive: enableKeepAlive });
 
