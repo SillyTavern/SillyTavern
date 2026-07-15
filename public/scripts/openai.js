@@ -275,7 +275,18 @@ export const SILICONFLOW_ENDPOINT = {
 export const MINIMAX_ENDPOINT = {
     GLOBAL: 'global',
     CN: 'cn',
+    GLOBAL_ANTHROPIC: 'global-anthropic',
+    CN_ANTHROPIC: 'cn-anthropic',
 };
+
+/**
+ * Checks whether a MiniMax endpoint uses the Anthropic-compatible API.
+ * @param {string} endpoint MiniMax endpoint
+ * @returns {boolean} Whether the endpoint uses the Anthropic-compatible API
+ */
+export function isMinimaxAnthropicEndpoint(endpoint) {
+    return [MINIMAX_ENDPOINT.GLOBAL_ANTHROPIC, MINIMAX_ENDPOINT.CN_ANTHROPIC].includes(endpoint);
+}
 
 const sensitiveFields = [
     'reverse_proxy',
@@ -441,7 +452,7 @@ const default_settings = {
     chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
-    minimax_model: 'MiniMax-M2.7',
+    minimax_model: 'MiniMax-M3',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
@@ -2939,9 +2950,10 @@ export async function createGenerationParameters(settings, model, type, messages
 
     if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
         generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
-        // MiniMax requires temperature in (0.0, 1.0]; zero is rejected.
         if (Number.isFinite(generate_data.temperature)) {
-            generate_data.temperature = clamp(generate_data.temperature, Number.EPSILON, 1.0);
+            const isM3 = settings.minimax_model === 'MiniMax-M3';
+            const supportsFullTemperatureRange = isM3 || isMinimaxAnthropicEndpoint(generate_data.minimax_endpoint);
+            generate_data.temperature = clamp(generate_data.temperature, supportsFullTemperatureRange ? 0 : Number.EPSILON, supportsFullTemperatureRange ? oai_max_temp : claude_max_temp);
         }
     }
 
@@ -3067,6 +3079,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         const eventStream = getEventSourceStream();
         response.body.pipeThrough(eventStream);
         const reader = eventStream.readable.getReader();
+        const streamingSource = oai_settings.chat_completion_source === chat_completion_sources.MINIMAX && isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint)
+            ? chat_completion_sources.CLAUDE
+            : null;
         return async function* streamData() {
             let text = '';
             const swipes = [];
@@ -3083,9 +3098,9 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
                     // FIXME: state.reasoning should be an array to support multi-swipe
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { overrideShowThoughts: false });
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { chatCompletionSource: streamingSource, overrideShowThoughts: false });
                 } else {
-                    text += getStreamingReply(parsed, state);
+                    text += getStreamingReply(parsed, state, { chatCompletionSource: streamingSource });
                 }
 
                 ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
@@ -3162,6 +3177,23 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
         }
         return data.choices?.[0]?.delta?.content || '';
+    } else if (chat_completion_source === chat_completion_sources.MINIMAX) {
+        if (show_thoughts) {
+            const reasoningContent = data?.choices?.[0]?.delta?.reasoning_content;
+            const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details;
+
+            if (typeof reasoningContent === 'string') {
+                state.reasoning += reasoningContent;
+            } else if (Array.isArray(reasoningDetails)) {
+                const reasoningText = reasoningDetails.map(detail => detail?.text).filter(text => typeof text === 'string').join('');
+                if (reasoningText.startsWith(state.reasoning)) {
+                    state.reasoning = reasoningText;
+                } else if (reasoningText && !state.reasoning.endsWith(reasoningText)) {
+                    state.reasoning += reasoningText;
+                }
+            }
+        }
+        return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? '';
     } else if (chat_completion_source === chat_completion_sources.OPENROUTER) {
         const imageUrls = data?.choices?.[0]?.delta?.images?.filter(x => x.type === 'image_url')?.map(x => x?.image_url?.url) || [];
         if (Array.isArray(imageUrls) && imageUrls.length > 0) {
@@ -5867,12 +5899,13 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
-        const maxContext = oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        const maxContext = oai_settings.minimax_model === 'MiniMax-M3' ? max_1mil : oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        const maxTemperature = oai_settings.minimax_model === 'MiniMax-M3' || isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint) ? oai_max_temp : claude_max_temp;
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
-        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
-        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+        oai_settings.temp_openai = Math.min(maxTemperature, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', maxTemperature).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
@@ -6215,6 +6248,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.MINIMAX:
+            return oai_settings.minimax_model === 'MiniMax-M3';
         case chat_completion_sources.WORKERS_AI: {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
@@ -6259,6 +6294,8 @@ export function isVideoInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.input_modalities?.includes('video'));
         case chat_completion_sources.ZAI:
             return videoSupportedModels.some(model => oai_settings.zai_model.includes(model));
+        case chat_completion_sources.MINIMAX:
+            return oai_settings.minimax_model === 'MiniMax-M3';
         default:
             return false;
     }
@@ -7199,6 +7236,7 @@ export function initOpenAI() {
     });
     $('#minimax_endpoint').on('input', function () {
         oai_settings.minimax_endpoint = String($(this).val());
+        $('#model_minimax_select').trigger('change');
         saveSettingsDebounced();
     });
     $('#workers_ai_account_id').on('input', function () {

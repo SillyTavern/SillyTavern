@@ -651,6 +651,15 @@ describe('mergeMessages', () => {
         expect(types).toContain('text');
         expect(types).toContain('image_url');
     });
+
+    test('flattens array content and preserves video URLs via tokens', () => {
+        const videoContent = { type: 'video_url', video_url: { url: 'data:video/mp4;base64,abc' } };
+        const messages = [
+            { role: 'user', content: [{ type: 'text', text: 'Watch this' }, videoContent] },
+        ];
+        const result = mod.mergeMessages(messages, names);
+        expect(result[0].content).toEqual([{ type: 'text', text: 'Watch this' }, videoContent]);
+    });
 });
 
 
@@ -888,6 +897,28 @@ describe('convertClaudeMessages', () => {
         expect(imagePart.source.type).toBe('base64');
         expect(imagePart.source.media_type).toBe('image/png');
         expect(imagePart.source.data).toBe('abc123');
+    });
+
+    test('converts video_url content when video support is enabled', () => {
+        const messages = [
+            { role: 'user', content: [
+                { type: 'text', text: 'Watch' },
+                { type: 'video_url', video_url: { url: 'data:video/mp4;base64,abc123' } },
+            ] },
+        ];
+        const result = mod.convertClaudeMessages(messages, '', false, false, names, { video: true });
+        const videoPart = result.messages[0].content.find(c => c.type === 'video');
+        expect(videoPart).toEqual({
+            type: 'video',
+            source: { type: 'base64', media_type: 'video/mp4', data: 'abc123' },
+        });
+    });
+
+    test('preserves video_url content by default', () => {
+        const videoPart = { type: 'video_url', video_url: { url: 'https://example.com/video.mp4' } };
+        const messages = [{ role: 'user', content: [videoPart] }];
+        const result = mod.convertClaudeMessages(messages, '', false, false, names);
+        expect(result.messages[0].content[0]).toEqual(videoPart);
     });
 
     test('moves images from assistant to next user message', () => {

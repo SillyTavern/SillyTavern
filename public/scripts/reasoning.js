@@ -5,7 +5,7 @@ import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFo
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getCurrentLocale, t, translate } from './i18n.js';
 import { macros, MacroCategory } from './macros/macro-system.js';
-import { chat_completion_sources, getChatCompletionModel, oai_settings } from './openai.js';
+import { chat_completion_sources, getChatCompletionModel, isMinimaxAnthropicEndpoint, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { performFuzzySearch, power_user } from './power-user.js';
 import { getPresetManager } from './preset-manager.js';
@@ -123,6 +123,10 @@ export function extractReasoningFromData(data, {
                     return data?.responseContent?.parts?.filter(part => part.thought)?.map(part => part.text)?.join('\n\n') ?? '';
                 case chat_completion_sources.CLAUDE:
                     return data?.content?.filter(part => part.type === 'thinking')?.map(part => part.thinking)?.join('\n\n') ?? '';
+                case chat_completion_sources.MINIMAX:
+                    return isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint)
+                        ? data?.content?.filter(part => part.type === 'thinking')?.map(part => part.thinking)?.join('\n\n') ?? ''
+                        : data?.choices?.[0]?.message?.reasoning_content ?? '';
                 case chat_completion_sources.MISTRALAI:
                     return data?.choices?.[0]?.message?.content?.[0]?.thinking?.map(part => part.text)?.filter(x => x)?.join('\n\n') ?? '';
                 case chat_completion_sources.AIMLAPI:
