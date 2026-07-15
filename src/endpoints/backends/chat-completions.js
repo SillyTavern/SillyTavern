@@ -1650,6 +1650,7 @@ export async function sendMinimaxRequest(request, response) {
 
         if (request.body.model === 'MiniMax-M3') {
             bodyParams['thinking'] = { type: request.body.include_reasoning ? 'adaptive' : 'disabled' };
+            bodyParams['reasoning_split'] = true;
         }
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {

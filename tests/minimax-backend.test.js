@@ -90,6 +90,13 @@ describe('MiniMax chat completion endpoints', () => {
         expect(await captureRequestUrl('cn')).toBe('https://api.minimaxi.com/v1/chat/completions');
     });
 
+    test('requests separated reasoning for MiniMax-M3 OpenAI-compatible responses', async () => {
+        await mod.sendMinimaxRequest(createRequest('global'), createResponse());
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.thinking).toEqual({ type: 'adaptive' });
+        expect(body.reasoning_split).toBe(true);
+    });
+
     test('sends global Anthropic-compatible requests to the expected URL', async () => {
         expect(await captureRequestUrl('global-anthropic')).toBe('https://api.minimax.io/anthropic/v1/messages');
     });

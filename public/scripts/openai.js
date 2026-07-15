@@ -3177,6 +3177,23 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
         }
         return data.choices?.[0]?.delta?.content || '';
+    } else if (chat_completion_source === chat_completion_sources.MINIMAX) {
+        if (show_thoughts) {
+            const reasoningContent = data?.choices?.[0]?.delta?.reasoning_content;
+            const reasoningDetails = data?.choices?.[0]?.delta?.reasoning_details;
+
+            if (typeof reasoningContent === 'string') {
+                state.reasoning += reasoningContent;
+            } else if (Array.isArray(reasoningDetails)) {
+                const reasoningText = reasoningDetails.map(detail => detail?.text).filter(text => typeof text === 'string').join('');
+                if (reasoningText.startsWith(state.reasoning)) {
+                    state.reasoning = reasoningText;
+                } else if (reasoningText && !state.reasoning.endsWith(reasoningText)) {
+                    state.reasoning += reasoningText;
+                }
+            }
+        }
+        return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? '';
     } else if (chat_completion_source === chat_completion_sources.OPENROUTER) {
         const imageUrls = data?.choices?.[0]?.delta?.images?.filter(x => x.type === 'image_url')?.map(x => x?.image_url?.url) || [];
         if (Array.isArray(imageUrls) && imageUrls.length > 0) {
