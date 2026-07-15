@@ -68,6 +68,22 @@ For detailed installation instructions, please visit our documentation:
 * **[Android (Termux) Installation Guide](https://docs.sillytavern.app/installation/android-(termux)/)**
 * **[Docker Installation Guide](https://docs.sillytavern.app/installation/docker/)**
 
+## OpenAI-compatible gateways (Chat Completion)
+
+SillyTavern already supports **Chat Completion → Custom (OpenAI-compatible)**. Point it at any OpenAI-compatible multi-model gateway without a custom build:
+
+1. API type: **Chat Completion**
+2. Source: **Custom (OpenAI-compatible)**
+3. **Custom Endpoint (Base URL):** `https://daoxe.com/v1` (example: [DaoXE](https://daoxe.com))
+4. API key: your gateway key
+5. Model ID: an exact ID available to your account (`GET /v1/models` / dashboard) — do not rely on a static list
+
+Notes:
+
+- Uses OpenAI Chat Completions. Other protocols (for example Anthropic Messages) need a different client path.
+- DaoXE is not available in mainland China.
+- Full docs: [docs.sillytavern.app](https://docs.sillytavern.app/)
+
 ## License and credits
 
 **This program is distributed in the hope that it will be useful,
