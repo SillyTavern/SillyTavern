@@ -2330,6 +2330,28 @@ router.post('/generate', async function (request, response) {
                 bodyParams.logprobs = true;
             }
 
+            if (request.body.custom_prompt_caching && Array.isArray(request.body.messages)) {
+                const customModel = String(request.body.model).toLowerCase();
+                const isCustomClaude = customModel.includes('claude');
+
+                // if the model includes "claude", we use the full Anthropic special logic
+                if (isCustomClaude) {
+                    if (enableSystemPromptCache) {
+                        cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
+                    }
+                    if (cachingAtDepth !== -1) {
+                        cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+                    }
+                }
+                // if the model is not Claude, we use the simple standard without TTL
+                else {
+                    const enableGeminiSystemPromptCache = getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
+                    if (enableGeminiSystemPromptCache) {
+                        cachingSystemPromptForOpenRouter(request.body.messages);
+                    }
+                }
+            }
+
             mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
             embedOpenRouterMedia(request.body.messages, { audio: true, video: false });

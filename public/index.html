@@ -3851,6 +3851,18 @@
                             <div class="flex-container">
                                 <select id="model_custom_select" class="text_pole model_custom_select"></select>
                             </div>
+                            <h4 data-i18n="Advanced Options">Advanced Options</h4>
+                            <div class="flex-container">
+                                <label for="custom_prompt_caching" class="checkbox_label marginTopBot5" title="Enable Anthropic-style Prompt Caching (ephemeral) for this custom endpoint">
+                                    <input id="custom_prompt_caching" type="checkbox" />
+                                    <span data-i18n="Enable Prompt Caching">Enable Prompt Caching</span>
+                                </label>
+                            </div>
+                            <div>
+                                <small>
+                                    <span data-i18n="Enable caching in config.yaml">You also need to enable caching in config.yaml for this feature to work.</span>
+                                </small>
+                            </div>
                         </form>
                         <div id="xai_form" data-source="xai">
                             <h4>
