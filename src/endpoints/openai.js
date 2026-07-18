@@ -798,7 +798,9 @@ custom.post('/generate-voice', async (request, response) => {
         }
 
         const buffer = await result.arrayBuffer();
-        response.setHeader('Content-Type', 'audio/mpeg');
+        const contentType = result.headers.get('content-type')
+            ?? (response_format === 'wav' ? 'audio/wav' : 'audio/mpeg');
+        response.setHeader('Content-Type', contentType);
         return response.send(Buffer.from(buffer));
     } catch (error) {
         console.error('OpenAI TTS generation failed', error);
