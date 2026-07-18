@@ -3511,16 +3511,16 @@ function hideStopButton() {
     }
 }
 
-class StreamingProcessor {
+export class StreamingProcessor {
     /**
      * Creates a new streaming processor.
      * @param {string} type Generation type
      * @param {boolean} forceName2 If true, force the use of name2
-     * @param {Date} timeStarted Date when generation was started
-     * @param {string} continueMessage Previous message if the type is 'continue'
-     * @param {PromptReasoning} promptReasoning Prompt reasoning instance
+     * @param {Date} [timeStarted] Date when generation was started
+     * @param {string} [continueMessage] Previous message if the type is 'continue'
+     * @param {PromptReasoning} [promptReasoning] Prompt reasoning instance
      */
-    constructor(type, forceName2, timeStarted, continueMessage, promptReasoning) {
+    constructor(type, forceName2, timeStarted = new Date(), continueMessage = '', promptReasoning = new PromptReasoning()) {
         this.result = '';
         this.messageId = -1;
         /** @type {HTMLElement} */
@@ -5591,6 +5591,21 @@ export function stopGeneration() {
     }
     eventSource.emit(event_types.GENERATION_STOPPED);
     return stopped;
+}
+
+/**
+ * Sets the currently active streaming processor.
+ *
+ * Allows extensions to run their own out-of-band generation (e.g. via
+ * ConnectionManagerRequestService with a custom profile/preset) through the
+ * standard chat streaming pipeline: assign a generator to a StreamingProcessor,
+ * register it here so the global stop button aborts it, then await generate().
+ * The caller is responsible for calling onFinishStreaming() afterwards and for
+ * resetting the processor back to null when done.
+ * @param {StreamingProcessor?} processor Processor to set, or null to clear
+ */
+export function setStreamingProcessor(processor) {
+    streamingProcessor = processor;
 }
 
 /**
