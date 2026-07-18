@@ -3,6 +3,7 @@ import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.j
 import { t } from '../i18n.js';
 import { oai_settings, proxies, ZAI_ENDPOINT, POLLINATIONS_ENDPOINT } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
+import { StreamingDisplay } from '../streaming-display.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
 import { createThumbnail, isValidUrl } from '../utils.js';
@@ -407,7 +408,7 @@ export class ConnectionManagerRequestService {
     }
 
     /**
-     * @param {string} profileId
+     * @param {string | import('./connection-manager/index.js').ConnectionProfile} profileId Profile ID of a saved Connection Manager profile, or an ad-hoc profile object (does not need to be saved in settings)
      * @param {string | (import('../custom-request.js').ChatCompletionMessage & {ignoreInstruct?: boolean})[]} prompt
      * @param {number} maxTokens
      * @param {Object} custom
@@ -416,19 +417,23 @@ export class ConnectionManagerRequestService {
      * @param {boolean?} [custom.extractData=true]
      * @param {boolean?} [custom.includePreset=true]
      * @param {boolean?} [custom.includeInstruct=true]
+     * @param {string?} [custom.presetName] Use this generation preset instead of the profile's own (requires includePreset)
+     * @param {string?} [custom.instructName] Use this instruct template instead of the profile's own (requires includeInstruct; text completion only)
      * @param {Partial<InstructSettings>?} [custom.instructSettings] Override instruct settings
      * @param {Record<string, any>} [overridePayload] - Override payload for the request
      * @returns {Promise<import('../custom-request.js').ExtractedData | (() => AsyncGenerator<import('../custom-request.js').StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      */
     static async sendRequest(profileId, prompt, maxTokens, custom = this.defaultSendRequestParams, overridePayload = {}) {
-        const { stream, signal, extractData, includePreset, includeInstruct, instructSettings } = { ...this.defaultSendRequestParams, ...custom };
+        const { stream, signal, extractData, includePreset, includeInstruct, presetName, instructName, instructSettings } = { ...this.defaultSendRequestParams, ...custom };
 
         const context = SillyTavern.getContext();
         if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
             throw new Error('Connection Manager is not available');
         }
 
-        const profile = this.getProfile(profileId);
+        // Accept either a saved profile ID or a caller-provided profile object,
+        // so extensions can make one-off requests without persisting a profile.
+        const profile = typeof profileId === 'object' && profileId !== null ? profileId : this.getProfile(profileId);
         const selectedApiMap = this.validateProfile(profile);
 
         try {
@@ -459,7 +464,8 @@ export class ConnectionManagerRequestService {
                         custom_prompt_post_processing: profile['prompt-post-processing'],
                         ...overridePayload,
                     }, {
-                        presetName: includePreset ? profile.preset : undefined,
+                        // presetName (if given) takes precedence over the profile's own preset
+                        presetName: includePreset ? (presetName ?? profile.preset) : undefined,
                     }, extractData, signal);
                 }
                 case 'textgenerationwebui': {
@@ -477,8 +483,9 @@ export class ConnectionManagerRequestService {
                         secret_id: profile['secret-id'],
                         ...overridePayload,
                     }, {
-                        instructName: includeInstruct ? profile.instruct : undefined,
-                        presetName: includePreset ? profile.preset : undefined,
+                        // Explicit overrides (if given) take precedence over the profile's own settings
+                        instructName: includeInstruct ? (instructName ?? profile.instruct) : undefined,
+                        presetName: includePreset ? (presetName ?? profile.preset) : undefined,
                         instructSettings: includeInstruct ? instructSettings : undefined,
                     }, extractData, signal);
                 }
@@ -489,6 +496,129 @@ export class ConnectionManagerRequestService {
         } catch (error) {
             throw new Error('API request failed', { cause: error });
         }
+    }
+
+    /**
+     * Sends a streaming request and consumes the stream on the caller's behalf.
+     *
+     * Convenience wrapper around {@link sendRequest} for extensions that want to
+     * hook into the standard streaming pipeline without handling the raw
+     * AsyncGenerator: it accumulates the streamed text/reasoning, reports progress
+     * through a callback and/or ST's standard {@link StreamingDisplay} panel, and
+     * transparently falls back to a non-streaming request when the backend does
+     * not support streaming. Follows the same flow as the /profile-genstream
+     * slash command.
+     *
+     * @param {string | import('./connection-manager/index.js').ConnectionProfile} profileId Profile ID of a saved Connection Manager profile, or an ad-hoc profile object
+     * @param {string | (import('../custom-request.js').ChatCompletionMessage & {ignoreInstruct?: boolean})[]} prompt
+     * @param {number} maxTokens
+     * @param {Object} [custom] Same options as {@link sendRequest} (stream/extractData are managed by this helper)
+     * @param {Record<string, any>} [overridePayload] - Override payload for the request
+     * @param {Object} [streamOptions]
+     * @param {((text: string, reasoning: string) => void)?} [streamOptions.onProgress] Called with the cumulative text and reasoning after every received chunk
+     * @param {boolean} [streamOptions.showDisplay=false] Show ST's standard streaming display panel while generating
+     * @param {string} [streamOptions.displayLabel] Display label while generating
+     * @param {string} [streamOptions.completedLabel] Display label when finished
+     * @param {number|null} [streamOptions.completeDelay=3000] Delay in ms before the display auto-hides (null = stays until closed)
+     * @param {boolean} [streamOptions.showStopButton=true] Show a stop button on the display that aborts the generation
+     * @returns {Promise<import('../custom-request.js').ExtractedData>} The final accumulated content and reasoning (partial if stopped)
+     */
+    static async sendStreamedRequest(profileId, prompt, maxTokens, custom = {}, overridePayload = {}, streamOptions = {}) {
+        const {
+            onProgress = null,
+            showDisplay = false,
+            displayLabel = t`Generating...`,
+            completedLabel = t`Generated`,
+            completeDelay = 3000,
+            showStopButton = true,
+        } = streamOptions;
+
+        // Own controller so the display's stop button can abort the request.
+        // If the caller provided a signal, chain it so their abort still works.
+        const abortController = new AbortController();
+        if (custom?.signal instanceof AbortSignal) {
+            const callerSignal = custom.signal;
+            if (callerSignal.aborted) {
+                abortController.abort(callerSignal.reason);
+            } else {
+                callerSignal.addEventListener('abort', () => abortController.abort(callerSignal.reason), { once: true });
+            }
+        }
+
+        const displayIcon = typeof profileId === 'string' ? this.getProfileIcon(profileId) : null;
+        /** @type {StreamingDisplay | null} */
+        const display = showDisplay ? new StreamingDisplay() : null;
+        display?.show({
+            label: displayLabel,
+            icon: displayIcon,
+            onStop: showStopButton ? () => abortController.abort() : null,
+        });
+
+        let text = '';
+        let reasoning = '';
+
+        const reportProgress = () => {
+            display?.updateReasoning(reasoning).updateContent(text);
+            onProgress?.(text, reasoning);
+        };
+
+        try {
+            try {
+                const response = await this.sendRequest(
+                    profileId,
+                    prompt,
+                    maxTokens,
+                    { ...custom, stream: true, extractData: true, signal: abortController.signal },
+                    overridePayload,
+                );
+
+                if (typeof response === 'function') {
+                    for await (const chunk of response()) {
+                        text = chunk.text;
+                        reasoning = chunk.state?.reasoning || '';
+                        reportProgress();
+                    }
+                } else {
+                    // Some backends ignore the stream flag and return extracted data directly
+                    text = response?.content || '';
+                    reasoning = response?.reasoning || '';
+                    reportProgress();
+                }
+            } catch (error) {
+                // Aborts are handled by the outer catch
+                if (abortController.signal.aborted) {
+                    throw error;
+                }
+
+                // Streaming failed: retry once without streaming
+                console.warn('[ConnectionManagerRequestService] Streaming failed, falling back to non-streaming request', error);
+                const response = await this.sendRequest(
+                    profileId,
+                    prompt,
+                    maxTokens,
+                    { ...custom, stream: false, extractData: true, signal: abortController.signal },
+                    overridePayload,
+                );
+
+                const extracted = /** @type {import('../custom-request.js').ExtractedData} */ (response);
+                text = extracted?.content || '';
+                reasoning = extracted?.reasoning || '';
+                reportProgress();
+            }
+        } catch (error) {
+            // Stopped by the user (or the caller's signal): return what arrived so far
+            if (abortController.signal.aborted) {
+                display?.markStopped({ label: `${displayLabel} [${t`Stopped`}]` });
+                return { content: text, reasoning };
+            }
+
+            // Genuine failure: don't leave a stale display panel behind
+            display?.hide({ instant: true });
+            throw error;
+        }
+
+        display?.complete({ label: completedLabel, delay: completeDelay });
+        return { content: text, reasoning };
     }
 
     /**
