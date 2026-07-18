@@ -464,8 +464,9 @@ export class ConnectionManagerRequestService {
                         custom_prompt_post_processing: profile['prompt-post-processing'],
                         ...overridePayload,
                     }, {
-                        // presetName (if given) takes precedence over the profile's own preset
-                        presetName: includePreset ? (presetName ?? profile.preset) : undefined,
+                        // An explicit presetName always wins. Otherwise, when includePreset
+                        // is set, fall back to the profile's own preset.
+                        presetName: presetName ?? (includePreset ? profile.preset : undefined),
                     }, extractData, signal);
                 }
                 case 'textgenerationwebui': {
@@ -483,9 +484,10 @@ export class ConnectionManagerRequestService {
                         secret_id: profile['secret-id'],
                         ...overridePayload,
                     }, {
-                        // Explicit overrides (if given) take precedence over the profile's own settings
-                        instructName: includeInstruct ? (instructName ?? profile.instruct) : undefined,
-                        presetName: includePreset ? (presetName ?? profile.preset) : undefined,
+                        // Explicit overrides always win. Otherwise, when the corresponding
+                        // include flag is set, fall back to the profile's own settings.
+                        instructName: instructName ?? (includeInstruct ? profile.instruct : undefined),
+                        presetName: presetName ?? (includePreset ? profile.preset : undefined),
                         instructSettings: includeInstruct ? instructSettings : undefined,
                     }, extractData, signal);
                 }
