@@ -177,6 +177,11 @@ configuration, not references —
   connection-manager already enumerates (`FANCY_NAMES`,
   `public/scripts/extensions/connection-manager/index.js:72-90`).
 
+**Naming:** *profile* always means our atomic unit. The legacy
+connection-manager bundles are renamed **Connection Presets** in the UI
+(internal ids, storage keys and slash commands unchanged for compat) -
+they are exactly "templates you load", per the rule below.
+
 **Presets become templates:** "load preset" copies values *into* the profile
 (dirtying it, ⚠️). Editing a sampler edits the profile, never a shared preset
 object. This extends ST's existing explicit-save preset discipline to the

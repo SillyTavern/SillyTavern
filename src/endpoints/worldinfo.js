@@ -6,6 +6,9 @@ import sanitize from 'sanitize-filename';
 import _ from 'lodash';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import { tryParse } from '../util.js';
+import { leaseWriteGuard, bumpRevision } from '../multi-window.js';
+
+const worldKey = (r) => `world/${String(r.body?.name)}`;
 
 /**
  * Reads a World Info file and returns its contents
@@ -78,7 +81,7 @@ router.post('/get', (request, response) => {
     return response.send(file);
 });
 
-router.post('/delete', (request, response) => {
+router.post('/delete', leaseWriteGuard(worldKey), (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -131,7 +134,7 @@ router.post('/import', (request, response) => {
     return response.send({ name: worldName });
 });
 
-router.post('/edit', (request, response) => {
+router.post('/edit', leaseWriteGuard(worldKey), (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -152,6 +155,9 @@ router.post('/edit', (request, response) => {
     const pathToFile = path.join(request.user.directories.worlds, filename);
 
     writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
+    if (request.leaseKey) {
+        bumpRevision(request.user.profile.handle, request.leaseKey);
+    }
 
     return response.send({ ok: true });
 });

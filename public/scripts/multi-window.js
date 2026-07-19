@@ -18,8 +18,8 @@ let enabled = false;
 let registered = false;
 let windowId = '';
 let epoch = 0;
-/** @type {?{key: string, revision: number}} */
-let currentLease = null;
+/** @type {Map<string, {key: string, revision: number}>} One held lease per slot (chat, world, ...). */
+const currentLeases = new Map();
 /** @type {?object} */
 let rebirthReason = null;
 
@@ -136,25 +136,27 @@ async function heartbeat() {
     }
     try {
         const response = await api('heartbeat', {
-            heldLeases: currentLease ? [currentLease] : [],
+            heldLeases: [...currentLeases.values()],
         });
         if (response.status === 440) {
             // Server lost our session (restart or TTL after background-tab
             // timer throttling): re-register and re-acquire our lease.
             registered = false;
             epoch = 0;
-            const lostLease = currentLease;
-            currentLease = null;
-            if (await register() && lostLease) {
-                const reacquire = await api('lease/acquire', { key: lostLease.key, mode: 'write' });
-                const result = reacquire.ok ? await reacquire.json() : null;
-                if (result?.ok) {
-                    currentLease = { key: lostLease.key, revision: result.revision };
-                } else {
-                    toastr.warning(
-                        'This chat was taken by another window while this one was inactive. It is now read-only here.',
-                        'Multi-window', { timeOut: 10000 },
-                    );
+            const lostLeases = new Map(currentLeases);
+            currentLeases.clear();
+            if (await register()) {
+                for (const [slot, lost] of lostLeases) {
+                    const reacquire = await api('lease/acquire', { key: lost.key, mode: 'write' });
+                    const result = reacquire.ok ? await reacquire.json() : null;
+                    if (result?.ok) {
+                        currentLeases.set(slot, { key: lost.key, revision: result.revision });
+                    } else {
+                        toastr.warning(
+                            `"${lost.key}" was taken by another window while this one was inactive. It is now read-only here.`,
+                            'Multi-window', { timeOut: 10000 },
+                        );
+                    }
                 }
             }
             return;
@@ -164,8 +166,10 @@ async function heartbeat() {
         }
         const data = await response.json();
         for (const bump of data.revisionBumps ?? []) {
-            if (currentLease?.key === bump.key) {
-                currentLease.revision = bump.revision;
+            for (const lease of currentLeases.values()) {
+                if (lease.key === bump.key) {
+                    lease.revision = bump.revision;
+                }
             }
         }
     } catch {
@@ -250,15 +254,16 @@ export async function initMultiWindow() {
  * @param {string} key Entity key, matching the server's chatKey/groupChatKey
  * @returns {Promise<'acquired'|'readonly'|'disabled'>}
  */
-async function acquireWriteLease(key) {
+async function acquireWriteLease(key, slot, label) {
     if (!enabled || !registered) {
         return 'disabled';
     }
-    if (currentLease && currentLease.key !== key) {
-        api('lease/release', { key: currentLease.key }).catch(() => { });
-        currentLease = null;
+    const held = currentLeases.get(slot);
+    if (held && held.key !== key) {
+        api('lease/release', { key: held.key }).catch(() => { });
+        currentLeases.delete(slot);
     }
-    if (currentLease?.key === key) {
+    if (currentLeases.get(slot)?.key === key) {
         return 'acquired';
     }
 
@@ -268,17 +273,17 @@ async function acquireWriteLease(key) {
     }
     const result = await response.json();
     if (result.ok) {
-        currentLease = { key, revision: result.revision };
+        currentLeases.set(slot, { key, revision: result.revision });
         return 'acquired';
     }
 
     const takeOver = await callGenericPopup(
-        `<h3>Chat in use</h3><p>This chat is open in ${result.holders ?? 'another'} other window(s).</p>
+        `<h3>${label} in use</h3><p>This ${label.toLowerCase()} is open in ${result.holders ?? 'another'} other window(s).</p>
          <p>Take over? The other window(s) will be reloaded and their unsaved changes discarded.</p>`,
         POPUP_TYPE.CONFIRM, '', { okButton: 'Take over', cancelButton: 'Stay read-only' });
 
     if (takeOver !== 1) {
-        toastr.info('Chat is read-only in this window: another window holds it.', 'Multi-window');
+        toastr.info(`${label} is read-only in this window: another window holds it.`, 'Multi-window');
         return 'readonly';
     }
 
@@ -286,11 +291,11 @@ async function acquireWriteLease(key) {
     if (forceResponse.ok) {
         const forceResult = await forceResponse.json();
         if (forceResult.ok) {
-            currentLease = { key, revision: forceResult.revision };
+            currentLeases.set(slot, { key, revision: forceResult.revision });
             return 'acquired';
         }
     }
-    toastr.error('Could not take over the chat.', 'Multi-window');
+    toastr.error(`Could not take over the ${label.toLowerCase()}.`, 'Multi-window');
     return 'readonly';
 }
 
@@ -301,7 +306,7 @@ async function acquireWriteLease(key) {
  * @returns {Promise<'acquired'|'readonly'|'disabled'>}
  */
 export function leaseChat(avatarUrl, fileName) {
-    return acquireWriteLease(`chat/${avatarUrl}/${fileName}`);
+    return acquireWriteLease(`chat/${avatarUrl}/${fileName}`, 'chat', 'Chat');
 }
 
 /**
@@ -310,7 +315,16 @@ export function leaseChat(avatarUrl, fileName) {
  * @returns {Promise<'acquired'|'readonly'|'disabled'>}
  */
 export function leaseGroupChat(chatId) {
-    return acquireWriteLease(`groupchat/${chatId}`);
+    return acquireWriteLease(`groupchat/${chatId}`, 'chat', 'Chat');
+}
+
+/**
+ * Acquires the write lease for a World Info book.
+ * @param {string} name Book name
+ * @returns {Promise<'acquired'|'readonly'|'disabled'>}
+ */
+export function leaseWorld(name) {
+    return acquireWriteLease(`world/${name}`, 'world', 'Lorebook');
 }
 
 /**
