@@ -34,6 +34,9 @@ function collectSections() {
 
 /** @type {?{id: string, name: string, settings: object}} */
 let activeProfile = null;
+/** @type {{id: string, name: string}[]} */
+let profileList = [];
+let currentDefaultId = null;
 /** @type {string} JSON snapshot of the sections as last applied/saved */
 let appliedSnapshot = '';
 let dirty = false;
@@ -56,6 +59,8 @@ async function onSettingsLoadedBefore(settings) {
             return;
         }
         const { profiles, defaultId } = await response.json();
+        profileList = profiles.map(p => ({ id: p.id, name: p.name }));
+        currentDefaultId = defaultId;
 
         if (!profiles.length) {
             // First boot with the profile system: current globals become the
@@ -64,10 +69,19 @@ async function onSettingsLoadedBefore(settings) {
             return;
         }
 
-        // Precedence: this window's ephemeral (rides re-registration after a
-        // reload) > default profile > first profile.
-        const ephemeral = getBootEphemeralProfiles()[0];
-        const parent = profiles.find(p => p.id === defaultId) ?? profiles[0];
+        // Precedence: explicit switch pick (one-shot, discards unsaved
+        // changes) > this window's ephemeral > default profile > first.
+        const pick = sessionStorage.getItem('mw_boot_profile');
+        sessionStorage.removeItem('mw_boot_profile');
+        const ephemeral = pick ? null : getBootEphemeralProfiles()[0];
+        if (pick) {
+            for (const stale of getBootEphemeralProfiles()) {
+                apiCall('ephemeral', { profile: { id: stale.id }, remove: true });
+            }
+        }
+        const parent = profiles.find(p => p.id === pick)
+            ?? profiles.find(p => p.id === defaultId)
+            ?? profiles[0];
         const source = ephemeral ?? parent;
 
         activeProfile = {
@@ -117,14 +131,23 @@ function checkDirty() {
 }
 
 function updateBadge() {
-    const badge = document.getElementById('connection_profile_status');
-    if (!badge) {
+    const manager = document.getElementById('connection_profile_status');
+    if (!manager) {
         return;
     }
-    const name = activeProfile?.name ?? '(no profile)';
-    badge.querySelector('.cp-name').textContent = name;
-    badge.querySelector('.cp-warning').style.display = dirty ? '' : 'none';
-    badge.querySelector('.cp-save').style.display = dirty ? '' : 'none';
+    const select = manager.querySelector('.cp-select');
+    select.innerHTML = '';
+    for (const p of profileList) {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = p.id === currentDefaultId ? `${p.name} ★` : p.name;
+        select.appendChild(option);
+    }
+    if (activeProfile) {
+        select.value = activeProfile.id;
+    }
+    manager.querySelector('.cp-warning').style.display = dirty ? '' : 'none';
+    manager.querySelector('.cp-save').style.display = dirty ? '' : 'none';
 }
 
 /** Persists the current sections into the active profile (or a new one). */
@@ -184,7 +207,82 @@ async function migrate() {
     if (response.ok) {
         activeProfile = { id, name: 'Default', settings };
         appliedSnapshot = JSON.stringify(settings);
+        profileList.push({ id, name: 'Default' });
+        currentDefaultId = id;
         console.log('Connection profiles: migrated current settings into the "Default" profile');
+    }
+}
+
+async function switchProfile(id) {
+    if (!activeProfile || id === activeProfile.id) {
+        return;
+    }
+    if (dirty) {
+        const confirmed = await callGenericPopup(
+            'Switching profiles discards the unsaved changes in this window. Continue?',
+            POPUP_TYPE.CONFIRM, '', { okButton: 'Discard and switch', cancelButton: 'Cancel' });
+        if (confirmed !== 1) {
+            updateBadge();
+            return;
+        }
+    }
+    sessionStorage.setItem('mw_boot_profile', id);
+    location.reload();
+}
+
+async function saveAsNewProfile() {
+    const name = await callGenericPopup('New profile name:', POPUP_TYPE.INPUT, activeProfile ? `${activeProfile.name} (copy)` : 'New profile');
+    if (!name || typeof name !== 'string') {
+        return;
+    }
+    const settings = collectSections();
+    const id = uuidv4();
+    const response = await apiCall('save', { profile: { id, name, settings } });
+    if (response.ok) {
+        activeProfile = { id, name, settings };
+        appliedSnapshot = JSON.stringify(settings);
+        profileList.push({ id, name });
+        dirty = false;
+        updateBadge();
+        toastr.success(`Profile "${name}" saved.`, 'Connection profiles');
+    }
+}
+
+async function deleteActiveProfile() {
+    if (!activeProfile || profileList.length < 2) {
+        toastr.info('Cannot delete the last profile.', 'Connection profiles');
+        return;
+    }
+    const confirmed = await callGenericPopup(
+        `Delete profile "${activeProfile.name}"?`, POPUP_TYPE.CONFIRM, '',
+        { okButton: 'Delete', cancelButton: 'Cancel' });
+    if (confirmed !== 1) {
+        return;
+    }
+    await fetch('/api/sessions/lease/acquire', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ key: `profile/${activeProfile.id}`, mode: 'write' }),
+    }).catch(() => { });
+    const response = await apiCall('delete', { id: activeProfile.id });
+    if (!response.ok) {
+        toastr.error('Could not delete: the profile is owned by another window.', 'Connection profiles');
+        return;
+    }
+    const fallback = profileList.find(p => p.id !== activeProfile.id);
+    sessionStorage.setItem('mw_boot_profile', fallback.id);
+    location.reload();
+}
+
+async function setDefaultProfile() {
+    if (!activeProfile) {
+        return;
+    }
+    const response = await apiCall('set-default', { id: activeProfile.id });
+    if (response.ok) {
+        currentDefaultId = activeProfile.id;
+        updateBadge();
+        toastr.success(`"${activeProfile.name}" is now the default profile.`, 'Connection profiles');
     }
 }
 
@@ -193,17 +291,27 @@ function injectBadge() {
     if (!anchor || document.getElementById('connection_profile_status')) {
         return;
     }
-    const badge = document.createElement('div');
-    badge.id = 'connection_profile_status';
-    badge.classList.add('flex-container', 'alignItemsCenter');
-    badge.innerHTML = `
-        <small>Profile: <span class="cp-name"></span></small>
-        <span class="cp-warning" title="Virtual profile - will be lost on server restart. Save to keep.">⚠️</span>
-        <div class="cp-save menu_button menu_button_icon" title="Save connection profile">
-            <i class="fa-solid fa-save"></i><span>Save</span>
-        </div>`;
-    badge.querySelector('.cp-save').addEventListener('click', saveActiveProfile);
-    anchor.prepend(badge);
+    const manager = document.createElement('div');
+    manager.id = 'connection_profile_status';
+    manager.innerHTML = `
+        <div class="flex-container justifyCenter alignItemsCenter" style="gap: 6px;">
+            <strong>Profile:</strong>
+            <select class="cp-select text_pole" style="max-width: 40%; flex: 0 1 auto;"></select>
+            <span class="cp-warning" title="Virtual profile - will be lost on server restart. Save to keep." style="color: #ffc107; font-size: 1.2em; text-shadow: 0 0 2px #000;">&#9888;&#65039;</span>
+            <div class="cp-save menu_button menu_button_icon" title="Save changes into this profile">
+                <i class="fa-solid fa-save"></i><span>Save</span>
+            </div>
+            <i class="cp-save-as menu_button fa-solid fa-file-circle-plus" title="Save as new profile"></i>
+            <i class="cp-default menu_button fa-solid fa-star" title="Make this the default profile"></i>
+            <i class="cp-delete menu_button fa-solid fa-trash-can" title="Delete this profile"></i>
+        </div>
+        <hr>`;
+    manager.querySelector('.cp-save').addEventListener('click', saveActiveProfile);
+    manager.querySelector('.cp-save-as').addEventListener('click', saveAsNewProfile);
+    manager.querySelector('.cp-default').addEventListener('click', setDefaultProfile);
+    manager.querySelector('.cp-delete').addEventListener('click', deleteActiveProfile);
+    manager.querySelector('.cp-select').addEventListener('change', (e) => switchProfile(e.target.value));
+    anchor.prepend(manager);
     updateBadge();
 }
 
