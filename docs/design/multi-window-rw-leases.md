@@ -156,6 +156,7 @@ races. Clients treat 409 identically to a stale ⚠️: fork or reload.
 | World info books | `worlds/*.json` | RW lease. |
 | Themes, Quick Reply sets | per file | RW lease (low contention; comes for free). |
 | Connection profiles | **new**: `connection-profiles/*.json` (§5) | RW lease gates *persisting* a profile. Using a profile never requires a lease. |
+| Connection Presets | **inside settings blob** (`extension_settings.connectionManager.profiles`) | **Migrate to `connection-presets/*.json`**, then RW lease + revisions like profiles. Referenced by profiles by id; preset saves transitively ⚠️-invalidate windows whose profile references them (§5.1). |
 | Extension settings (`extension_settings`) | settings blob | **Explicit save + poison-all (§6.1).** No lease. Changes are local ⚠️-dirty state until an explicit save; the save persists the blob and poisons **every** session, including the saver's own. No window ever runs globals that differ from disk. |
 | `power_user` UI prefs, tags/tag_map | settings blob | Same explicit-save + poison-all mechanic. Tags are entity-ish and a candidate for later extraction like personas. |
 | Generation | stateless per-request | No locking needed. |
