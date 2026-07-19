@@ -19,6 +19,7 @@ import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
 import { formatReasoning } from '/scripts/reasoning.js';
+import { noteEntityRevision } from '/scripts/multi-window.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -362,7 +363,11 @@ async function persistPresetFile(profile) {
     const response = await presetFileApi('save', { preset: structuredClone(profile) });
     if (!response.ok) {
         toastr.warning('Preset changes could not be persisted to file (owned by another window?).', 'Connection presets');
+        return;
     }
+    // Record our own save so the revision watch does not report it as
+    // another window's update.
+    noteEntityRevision(`preset/${profile.id}`, (await response.json()).revision);
 }
 
 /**
@@ -971,6 +976,14 @@ export async function init() {
         const newExcludeList = template.find('input[name="exclude"]:not(:checked)').map(function () {
             return Object.entries(FANCY_NAMES).find(x => x[1] === String($(this).val()))?.[0];
         }).get();
+
+        // The UPDATED event below persists the preset file, and a rename is
+        // a preset edit like any other: both need the write lease up front,
+        // before the in-memory copy is touched.
+        if (!await acquirePresetLease(profile.id)) {
+            toastr.error('This preset is owned by another window.', 'Connection presets');
+            return;
+        }
 
         const oldProfile = structuredClone(profile);
         if (newExcludeList.length !== profile.exclude.length || !newExcludeList.every(e => profile.exclude.includes(e))) {

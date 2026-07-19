@@ -4,7 +4,7 @@ import { textgenerationwebui_settings } from './textgen-settings.js';
 import { kai_settings } from './kai-settings.js';
 import { nai_settings } from './nai-settings.js';
 import { extension_settings } from './extensions.js';
-import { getBootEphemeralProfiles, watchEntity, onEntityStale, noteEntityRevision } from './multi-window.js';
+import { getBootEphemeralProfiles, watchEntity, unwatchEntity, onEntityStale, noteEntityRevision } from './multi-window.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { debounce, uuidv4 } from './utils.js';
@@ -86,6 +86,10 @@ let presetSnapshot = '';
 let presetUnsaved = false;
 /** Another window saved a newer revision of the active profile. */
 let profileStale = false;
+/** Another window saved (or deleted) a newer revision of the active preset. */
+let presetStale = false;
+/** @type {?string} The preset id currently revision-watched. */
+let watchedPresetId = null;
 
 async function apiCall(path, body) {
     const response = await fetch(`/api/connection-profiles/${path}`, {
@@ -204,6 +208,7 @@ function checkDirty() {
     if (selected !== activePresetId) {
         activePresetId = selected;
         presetSnapshot = snap;
+        watchActivePreset();
     }
 
     const refDirty = activePresetId !== persistedPresetId;
@@ -225,12 +230,36 @@ function checkDirty() {
 }
 
 /**
+ * Revision-watches the active named preset so another window's save (or
+ * delete - both bump the revision) surfaces as staleness. Transitive: the
+ * profile references the preset, so a stale preset means the window's
+ * working state no longer matches what a reload would produce.
+ */
+function watchActivePreset() {
+    const key = activePresetId ? `preset/${activePresetId}` : null;
+    const watchedKey = watchedPresetId ? `preset/${watchedPresetId}` : null;
+    if (key === watchedKey) {
+        return;
+    }
+    if (watchedKey) {
+        unwatchEntity(watchedKey);
+    }
+    presetStale = false;
+    watchedPresetId = activePresetId;
+    if (key) {
+        watchEntity(key);
+    }
+}
+
+/**
  * Marks the current preset state as saved (called after the connection
  * manager's own Update flow persists the preset).
  */
 export function notePresetUpdated() {
     presetSnapshot = JSON.stringify(collectSections());
     presetUnsaved = false;
+    // This window's save is now the newest revision - it is no longer stale.
+    presetStale = false;
     updateBadge();
 }
 
@@ -279,14 +308,18 @@ function updateBadge() {
             document.getElementById(id)?.classList.toggle('disabled', !named);
         }
         // The selected named preset carries the "(unsaved)" marker when the
-        // working state has diverged from it.
+        // working state has diverged from it, and "(updated elsewhere)" when
+        // another window saved a newer revision of it.
         for (const option of presetSelect.options) {
             if (!option.value) {
                 continue;
             }
-            option.textContent = option.textContent.replace(/ \(unsaved\)$/, '');
+            option.textContent = option.textContent.replace(/( \((unsaved|updated elsewhere)\))+$/, '');
             if (option.value === activePresetId && presetUnsaved) {
                 option.textContent += ' (unsaved)';
+            }
+            if (option.value === activePresetId && presetStale) {
+                option.textContent += ' (updated elsewhere)';
             }
         }
     }
@@ -317,6 +350,7 @@ async function saveActiveProfile() {
             persistedPresetId = activePresetId;
             appliedSnapshot = JSON.stringify(settings);
             dirty = false;
+            profileStale = false;
             noteEntityRevision(`profile/${activeProfile.id}`, (await response.json()).revision);
             updateBadge();
             toastr.success(`Profile "${activeProfile.name}" saved.`, 'Connection profiles');
@@ -566,9 +600,18 @@ export function initConnectionProfiles() {
                 );
                 updateBadge();
             }
+            if (activePresetId && key === `preset/${activePresetId}`) {
+                presetStale = true;
+                toastr.warning(
+                    `Connection Preset "${getPresetName(activePresetId)}" was updated or deleted in another window. Reload to get the new version.`,
+                    'Connection presets', { timeOut: 15000 },
+                );
+                updateBadge();
+            }
         });
         if (activeProfile) {
             watchEntity(`profile/${activeProfile.id}`);
         }
+        watchActivePreset();
     });
 }
