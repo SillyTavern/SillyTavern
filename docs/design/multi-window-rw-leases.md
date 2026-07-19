@@ -1,6 +1,6 @@
 # Multi-Window SillyTavern: RW Leases, Atomic Profiles, and Session Poisoning
 
-**Status:** Draft design, pre-implementation
+**Status:** Living design — implementation underway on `feature/multi-window-leases` (Stage 1 complete, Stage 2 in progress)
 **Date:** 2026-07-19
 **Scope:** SillyTavern core (server + frontend). No changes to the multi-user account system.
 
@@ -167,8 +167,8 @@ races. Clients treat 409 identically to a stale ⚠️: fork or reload.
 ### 5.1 Shape
 
 The `<none>` (unprofiled) state is removed. Connection state always belongs to
-a profile. A profile is **self-contained**: it embeds the *full* generation
-configuration, not references —
+a profile. The *preset-scope content* covered by this system is the full
+generation configuration:
 
 - API family (`main_api`) + source, server URL, model;
 - **the complete sampler state** for that API family (snapshot of
@@ -180,13 +180,36 @@ configuration, not references —
 
 **Naming:** *profile* always means our atomic unit. The legacy
 connection-manager bundles are renamed **Connection Presets** in the UI
-(internal ids, storage keys and slash commands unchanged for compat) -
-they are exactly "templates you load", per the rule below.
+(internal ids, storage keys and slash commands unchanged for compat).
 
-**Presets become templates:** "load preset" copies values *into* the profile
-(dirtying it, ⚠️). Editing a sampler edits the profile, never a shared preset
-object. This extends ST's existing explicit-save preset discipline to the
-connection itself.
+**Presets are peer entities, not embedded copies.** A Connection Preset is a
+first-class leased entity on the same layer as profiles: it moves out of the
+`extension_settings` blob into `connection-presets/*.json` and gets its own
+RW lease and revision like every other file. A profile stores *which* preset
+it uses — never the preset's content. Editing preset content requires its
+write lease (drain/force-write as usual); saving it bumps its revision,
+which **transitively invalidates every window whose active profile references
+it**: those windows get the standard stale ⚠️. Force-writing a preset
+poisons its lease holders like any other entity.
+
+**No `<None>` preset — anonymous or named.** The preset selector never shows
+`<None>`. A profile's connection content is either:
+
+- **Anonymous: <profile name>** — the preset-scope content is embedded in
+  and owned by the profile itself: saved with the profile, no separate
+  lease, invisible to other profiles. This is the default state and the
+  successor of `<None>`.
+- **A named preset** — the profile stores only the reference; the content
+  lives in the preset file.
+
+Local edits while a named preset is selected mark it **"(unsaved)" ⚠️** in
+the selector — the working state has diverged from the named preset's
+content. In that state **the profile cannot be saved**: the user must first
+either (a) switch to the anonymous preset, folding the changes into the
+profile's own content and leaving the named preset untouched, or (b) save
+the named preset (lease-gated, staleness-propagating as above). This keeps
+the invariant sound: a profile never persists content that silently diverges
+from a named preset it claims to reference.
 
 Storage: one JSON file per persistent profile under
 `data/<user>/connection-profiles/`. Never inside `settings.json` (that would
@@ -229,7 +252,8 @@ connection: { profileId, parentId }   // parentId = fallback if profileId was ep
 ```
 
 Opening a chat applies its bound profile (fallback: parent, then default).
-Since profiles embed samplers, a chat binding captures the *entire* generation
+Since a profile carries the full preset-scope content — anonymous or via its
+named-preset reference — a chat binding captures the *entire* generation
 config. (Prior art: the community CharacterLocks extension does the
 switch-on-open half of this via chat metadata today.)
 
@@ -304,9 +328,13 @@ POST /api/lease/upgrade       { file }                          → grant | pend
 POST /api/lease/release       { file }
 POST /api/lease/force-write   { file }                          → poisons blocking holders
 
-GET/POST/DELETE /api/connection-profiles          (persistent profile CRUD; write requires lease)
-PUT  /api/connection-profiles/ephemeral           (debounced ephemeral upsert, keyed by session)
+POST /api/connection-profiles/{list,save,delete,set-default}   (profile CRUD; save/delete of an existing id requires its lease)
+POST /api/connection-profiles/ephemeral                        (debounced ephemeral upsert, keyed by session)
+POST /api/connection-presets/{list,save,delete,set-default}    (preset CRUD; same lease rules, key preset/<id>)
 ```
+
+(Implemented paths use `/api/sessions/*` for register/heartbeat and
+`/api/sessions/lease/*` for lease operations.)
 
 Modified: every existing save endpoint (`/api/chats/save`,
 `/api/characters/edit*`, group saves, world info save) gains a
@@ -326,9 +354,10 @@ Disabled ⇒ middleware grants everything to everyone (today's behavior).
    old fields left in place (read-only) for rollback for one release cycle.
 2. **Default profile synthesis / `<none>` retirement:** on first boot, collect
    current global connection+sampler state into a persistent profile named
-   "Default"; mark it the boot profile. Existing connection-manager profiles
-   are imported; profiles that referenced a preset by name embed a snapshot of
-   that preset's values.
+   "Default" with **anonymous** preset content; mark it the boot profile.
+   Existing connection-manager bundles are imported as named Connection
+   Preset files (compat import); the legacy `<None>` selection maps to the
+   anonymous state.
 3. **Settings blob slimming:** connection/sampler sections are no longer
    *read* from `settings.json` at boot (they come from the boot profile);
    they are still written for one release cycle for rollback safety, then
@@ -339,7 +368,7 @@ Disabled ⇒ middleware grants everything to everyone (today's behavior).
 | Stage | Contents | Estimate |
 |---|---|---|
 | **1. Sessions + chat leases** | Window id/epoch, registry, heartbeat, RW lease table, lease middleware on chat/group saves, read-only chat view, drain + force-write + poison for chats only. Kills the silent chat clobber. | ~1 week |
-| **2. Atomic profiles** | Profile files + CRUD, embedded samplers, presets-as-templates, ephemeral registry, dirty-diff, Save/⚠️/staleness UI, default profile migration, `<none>` retirement, explicit-save + poison-all for the residual settings blob (`saveSettingsDebounced` → dirty-marking shim). | ~2.5–3 weeks |
+| **2. Atomic profiles + presets** | Profile files + CRUD, anonymous/named preset model (preset file extraction, lease-gated preset CRUD, transitive staleness), ephemeral registry, dirty-diff, Save/⚠️/staleness UI, default profile migration, `<none>` retirement, explicit-save + poison-all for the residual settings blob (`saveSettingsDebounced` → dirty-marking shim). | ~2.5–3 weeks |
 | **3. Full generalization** | Persona extraction + leases, character/world/theme leases, per-chat profile binding, tags decision. | ~1 week |
 
 Total ≈ **a month** of focused work; the dominant cost is multi-window testing
@@ -348,9 +377,10 @@ settings churn), not the lease machinery itself (~a day of server code).
 
 ## 10. Risks & open questions
 
-- **Preset-to-template UX shift** is the biggest user-visible change; ships
-  behind the `multiWindow.enabled` flag, and the profile editor should make
-  "import from preset / export as preset" prominent.
+- **The anonymous/named preset UX shift** is the biggest user-visible change
+  (no `<None>`, "(unsaved)" blocking profile saves); ships behind the
+  `multiWindow.enabled` flag. The two escape hatches (switch to anonymous /
+  save the named preset) must be one click each from the blocked-save state.
 - **Third-party extensions** that programmatically switch connections (e.g.
   profile-switcher extensions) keep working in-memory; their
   `saveSettingsDebounced` calls mark the blob dirty instead of writing.
