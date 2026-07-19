@@ -26,8 +26,8 @@ const currentLeases = new Map();
  * @type {Map<string, number>}
  */
 const watchLeases = new Map();
-/** @type {?(key: string, revision: number) => void} */
-let staleHandler = null;
+/** @type {((key: string, revision: number) => void)[]} */
+const staleHandlers = [];
 /** Delay before re-acquiring a drained watch (writer finishes quickly). */
 const REWATCH_DELAY_MS = 30 * 1000;
 /** @type {?object} */
@@ -295,7 +295,7 @@ async function heartbeat() {
             }
             if (watchLeases.has(bump.key)) {
                 watchLeases.set(bump.key, bump.revision);
-                staleHandler?.(bump.key, bump.revision);
+                staleHandlers.forEach(h => h(bump.key, bump.revision));
             }
         }
         for (const key of data.drainRequests ?? []) {
@@ -323,7 +323,7 @@ async function rewatch(key, lastSeenRevision) {
     }
     const revision = await watchEntity(key);
     if (revision !== null && revision !== lastSeenRevision) {
-        staleHandler?.(key, revision);
+        staleHandlers.forEach(h => h(key, revision));
     }
 }
 
@@ -333,7 +333,7 @@ async function rewatch(key, lastSeenRevision) {
  * @param {(key: string, revision: number) => void} handler
  */
 export function onEntityStale(handler) {
-    staleHandler = handler;
+    staleHandlers.push(handler);
 }
 
 /**
@@ -543,6 +543,22 @@ export async function initMultiWindow() {
  * @param {string} key Entity key, matching the server's chatKey/groupChatKey
  * @returns {Promise<'acquired'|'readonly'|'disabled'>}
  */
+/**
+ * Slots currently in read-only mode: the user declined a take-over and the
+ * entity is revision-watched instead - other windows' saves refresh the
+ * view (chats only). Re-acquiring the same key stays read-only silently, so
+ * the refresh reload does not re-prompt the take-over dialog.
+ * @type {Map<string, string>} slot -> entity key
+ */
+const readonlySlots = new Map();
+
+/** Enters read-only mode for a slot: watch the entity for live updates. */
+function enterReadonly(slot, key) {
+    readonlySlots.set(slot, key);
+    watchEntity(key);
+    return 'readonly';
+}
+
 async function acquireWriteLease(key, slot, label) {
     if (!enabled || !registered) {
         return 'disabled';
@@ -552,8 +568,30 @@ async function acquireWriteLease(key, slot, label) {
         api('lease/release', { key: held.key }).catch(() => { });
         currentLeases.delete(slot);
     }
+    const readonlyHeld = readonlySlots.get(slot);
+    if (readonlyHeld && readonlyHeld !== key) {
+        unwatchEntity(readonlyHeld);
+        readonlySlots.delete(slot);
+    }
     if (currentLeases.get(slot)?.key === key) {
         return 'acquired';
+    }
+    if (readonlySlots.get(slot) === key) {
+        // Already viewing read-only (e.g. the live-view refresh re-opening
+        // the chat): upgrade silently if the owner has left, otherwise stay
+        // read-only without re-prompting the take-over dialog. The watch is
+        // released first so our own read lease cannot block the attempt.
+        unwatchEntity(key);
+        const upgrade = await api('lease/acquire', { key, mode: 'write' });
+        const upgradeResult = upgrade.ok ? await upgrade.json() : null;
+        if (upgradeResult?.ok) {
+            readonlySlots.delete(slot);
+            currentLeases.set(slot, { key, revision: upgradeResult.revision });
+            toastr.info(`The other window released this ${label.toLowerCase()}: it is now editable here.`, 'Multi-window');
+            return 'acquired';
+        }
+        watchEntity(key);
+        return 'readonly';
     }
 
     const response = await api('lease/acquire', { key, mode: 'write' });
@@ -572,8 +610,8 @@ async function acquireWriteLease(key, slot, label) {
         POPUP_TYPE.CONFIRM, '', { okButton: 'Take over', cancelButton: 'Stay read-only' });
 
     if (takeOver !== 1) {
-        toastr.info(`${label} is read-only in this window: another window holds it.`, 'Multi-window');
-        return 'readonly';
+        toastr.info(`${label} is read-only in this window: another window holds it. The view follows the owner's saves.`, 'Multi-window');
+        return enterReadonly(slot, key);
     }
 
     const forceResponse = await api('lease/force-write', { key });
@@ -585,8 +623,31 @@ async function acquireWriteLease(key, slot, label) {
         }
     }
     toastr.error(`Could not take over the ${label.toLowerCase()}.`, 'Multi-window');
-    return 'readonly';
+    return enterReadonly(slot, key);
 }
+
+/**
+ * Read-only live chat view (design §4, Chats row): while this window views
+ * a chat another window owns, the owner's saves arrive as revision bumps on
+ * the watch lease and re-render the chat from disk. Never merges - this
+ * window cannot save the chat anyway (leases gate persistence).
+ */
+let refreshingReadonlyChat = false;
+staleHandlers.push(async (key) => {
+    if (readonlySlots.get('chat') !== key || refreshingReadonlyChat) {
+        return;
+    }
+    refreshingReadonlyChat = true;
+    try {
+        const { reloadCurrentChat } = await import('../script.js');
+        await reloadCurrentChat();
+        toastr.info('Chat updated in the owning window - view refreshed.', 'Multi-window', { timeOut: 4000 });
+    } catch (error) {
+        console.error('Multi-window: failed to refresh the read-only chat view', error);
+    } finally {
+        refreshingReadonlyChat = false;
+    }
+});
 
 /**
  * Acquires the write lease for a character chat.
