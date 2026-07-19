@@ -462,7 +462,37 @@ function normalizeSettingsPayload(payload) {
         // File-owned (connection-presets/*.json) + per-window selection.
         delete clone.extension_settings.connectionManager;
     }
-    return JSON.stringify(clone);
+    return JSON.stringify(canonicalizeForComparison(clone));
+}
+
+/**
+ * Canonical form for payload comparison: object keys sorted, and object
+ * entries whose value is false/null/''/empty removed - so a key that a UI
+ * handler lazily materializes with its default value (a very common
+ * pattern) compares equal to the key never having existed. Real changes
+ * survive: a true<->false flip always keeps the `true` on one side. Array
+ * elements are never dropped (position matters).
+ * @param {any} value
+ * @returns {any}
+ */
+function canonicalizeForComparison(value) {
+    if (Array.isArray(value)) {
+        return value.map(canonicalizeForComparison);
+    }
+    if (value && typeof value === 'object') {
+        const result = {};
+        for (const key of Object.keys(value).sort()) {
+            const child = canonicalizeForComparison(value[key]);
+            const isEmptyObject = child && typeof child === 'object' && !Array.isArray(child) && !Object.keys(child).length;
+            const isEmptyArray = Array.isArray(child) && !child.length;
+            if (child === false || child === null || child === '' || isEmptyObject || isEmptyArray) {
+                continue;
+            }
+            result[key] = child;
+        }
+        return result;
+    }
+    return value;
 }
 
 /**
