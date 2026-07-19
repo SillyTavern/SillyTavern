@@ -135,6 +135,43 @@ post "${C3[@]}" -d '{"key":"profile/eph-1","mode":"write"}' $BASE/api/sessions/l
 check "cleanup: promoted ephemeral deleted" '{"ok":true}' \
   "$(post "${C3[@]}" -d '{"id":"eph-1"}' $BASE/api/connection-profiles/delete)"
 
+# --- Stage 3: characters, themes, Quick Reply sets (transient write leases) ---
+D=(-H "X-Window-Id: window-D" -H "X-Window-Epoch: 1")
+post "${D[@]}" -d '{}' $BASE/api/sessions/register > /dev/null
+
+# Character: lifecycle on a throwaway copy of the stock card
+CHAR_DIR=$DIR/../data/default-user/characters
+cp "$CHAR_DIR/default_Seraphina.png" "$CHAR_DIR/mw-test-char.png"
+EDIT_BODY='{"avatar_url":"mw-test-char.png","ch_name":"Seraphina","field":"personality","value":"lease test"}'
+check "D edit character without lease -> 409" "409" \
+  "$(code "${D[@]}" -d "$EDIT_BODY" $BASE/api/characters/edit-attribute)"
+post "${D[@]}" -d '{"key":"character/mw-test-char.png","mode":"write"}' $BASE/api/sessions/lease/acquire > /dev/null
+check "D edit character with lease -> 200" "200" \
+  "$(code "${D[@]}" -d "$EDIT_BODY" $BASE/api/characters/edit-attribute)"
+E=(-H "X-Window-Id: window-E" -H "X-Window-Epoch: 1")
+post "${E[@]}" -d '{}' $BASE/api/sessions/register > /dev/null
+check "E edit same character (no lease) -> 409" "409" \
+  "$(code "${E[@]}" -d "$EDIT_BODY" $BASE/api/characters/edit-attribute)"
+check "D delete character with lease -> 200" "200" \
+  "$(code "${D[@]}" -d '{"avatar_url":"mw-test-char.png","delete_chats":false}' $BASE/api/characters/delete)"
+post "${D[@]}" -d '{"key":"character/mw-test-char.png"}' $BASE/api/sessions/lease/release > /dev/null
+
+# Theme: create exempt, overwrite/delete gated
+THEME_BODY='{"name":"MW Test Theme","main_text_color":"#fff"}'
+check "D create theme (no lease) -> 200" "200" "$(code "${D[@]}" -d "$THEME_BODY" $BASE/api/themes/save)"
+check "D re-save theme without lease -> 409" "409" "$(code "${D[@]}" -d "$THEME_BODY" $BASE/api/themes/save)"
+post "${D[@]}" -d '{"key":"theme/MW Test Theme","mode":"write"}' $BASE/api/sessions/lease/acquire > /dev/null
+check "D re-save theme with lease -> 200" "200" "$(code "${D[@]}" -d "$THEME_BODY" $BASE/api/themes/save)"
+check "D delete theme with lease -> 200" "200" "$(code "${D[@]}" -d '{"name":"MW Test Theme"}' $BASE/api/themes/delete)"
+
+# Quick Reply set: same semantics
+QR_BODY='{"name":"MWTestQR","qrList":[]}'
+check "D create QR set (no lease) -> 200" "200" "$(code "${D[@]}" -d "$QR_BODY" $BASE/api/quick-replies/save)"
+check "D re-save QR set without lease -> 409" "409" "$(code "${D[@]}" -d "$QR_BODY" $BASE/api/quick-replies/save)"
+post "${D[@]}" -d '{"key":"qr/MWTestQR","mode":"write"}' $BASE/api/sessions/lease/acquire > /dev/null
+check "D re-save QR set with lease -> 200" "200" "$(code "${D[@]}" -d "$QR_BODY" $BASE/api/quick-replies/save)"
+check "D delete QR set with lease -> 200" "200" "$(code "${D[@]}" -d '{"name":"MWTestQR"}' $BASE/api/quick-replies/delete)"
+
 echo "----"
 echo "passed: $PASS failed: $FAIL"
 exit $FAIL

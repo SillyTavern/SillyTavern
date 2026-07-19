@@ -25,6 +25,12 @@ import { getChatInfo } from './chats.js';
 import { ByafParser } from '../byaf.js';
 import { CharXParser, persistCharXAssets } from '../charx.js';
 import cacheBuster from '../middleware/cacheBuster.js';
+import { leaseWriteGuard, bumpLeaseOnSuccess } from '../multi-window.js';
+
+/** Lease key of a character card (the avatar file name is the unique id). */
+const characterKey = (avatarUrl) => `character/${String(avatarUrl)}`;
+/** Guard for endpoints addressing one character via body.avatar_url. */
+const characterLease = leaseWriteGuard(r => characterKey(r.body.avatar_url));
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
@@ -1050,7 +1056,7 @@ router.post('/create', getFileNameValidationFunction('file_name'), async functio
     }
 });
 
-router.post('/rename', validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/rename', validateAvatarUrlMiddleware, characterLease, bumpLeaseOnSuccess, async function (request, response) {
     if (!request.body.avatar_url || !request.body.new_name) {
         return response.sendStatus(400);
     }
@@ -1096,7 +1102,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
     }
 });
 
-router.post('/edit', validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/edit', validateAvatarUrlMiddleware, characterLease, bumpLeaseOnSuccess, async function (request, response) {
     if (!request.body) {
         console.warn('Error: no response body detected');
         response.status(400).send('Error: no response body detected');
@@ -1137,7 +1143,7 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
     }
 });
 
-router.post('/edit-avatar', validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/edit-avatar', validateAvatarUrlMiddleware, characterLease, bumpLeaseOnSuccess, async function (request, response) {
     try {
         if (!request.file) {
             return response.status(400).send('Error: no file uploaded');
@@ -1188,7 +1194,7 @@ router.post('/edit-avatar', validateAvatarUrlMiddleware, async function (request
  * @param {Object} response - The HTTP response object.
  * @returns {void}
  */
-router.post('/edit-attribute', validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/edit-attribute', validateAvatarUrlMiddleware, characterLease, bumpLeaseOnSuccess, async function (request, response) {
     console.debug(request.body);
     if (!request.body) {
         console.warn('Error: no response body detected');
@@ -1323,7 +1329,9 @@ async function mergeCharacterUpdate(avatarPath, avatar, updateData, request, sho
  * @param {import("express").Response} response - The HTTP response object
  * @returns {void}
  */
-router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async function (request, response) {
+router.post('/merge-attributes', getFileNameValidationFunction('avatar'),
+    leaseWriteGuard(r => (Array.isArray(r.body.avatars) ? r.body.avatars : [r.body.avatar]).map(characterKey)),
+    bumpLeaseOnSuccess, async function (request, response) {
     try {
         // ── Bulk mode: avatars array is present ──────────────────
         if (Array.isArray(request.body.avatars)) {
@@ -1411,7 +1419,7 @@ router.post('/merge-attributes', getFileNameValidationFunction('avatar'), async 
     }
 });
 
-router.post('/delete', validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/delete', validateAvatarUrlMiddleware, characterLease, bumpLeaseOnSuccess, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }

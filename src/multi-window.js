@@ -489,9 +489,10 @@ export function poisonGate(request, response, next) {
 
 /**
  * Middleware factory: gates a save endpoint behind a write-intent lease.
- * The entity key is derived from the request; on success it is stored on
- * `request.leaseKey` so the handler can bump the revision after writing.
- * @param {(request: import('express').Request) => string} keyFromRequest
+ * The entity key (or keys - e.g. a bulk edit) is derived from the request;
+ * on success it is stored on `request.leaseKey` so the handler (or
+ * bumpLeaseOnSuccess) can bump the revision after writing.
+ * @param {(request: import('express').Request) => string | string[]} keyFromRequest
  * @returns {import('express').RequestHandler}
  */
 export function leaseWriteGuard(keyFromRequest) {
@@ -504,20 +505,44 @@ export function leaseWriteGuard(keyFromRequest) {
         if (!windowId || !Number.isInteger(epoch)) {
             return response.status(440).json({ error: 'unknown_session' });
         }
-        const key = keyFromRequest(request);
-        const result = validateWrite(request.user.profile.handle, windowId, epoch, key);
-        if (!result.ok) {
-            if (result.status === 'poisoned') {
-                return response.status(410).json({ error: 'poisoned', poisonReason: result.poisonReason });
+        const keys = [keyFromRequest(request)].flat();
+        for (const key of keys) {
+            const result = validateWrite(request.user.profile.handle, windowId, epoch, key);
+            if (!result.ok) {
+                if (result.status === 'poisoned') {
+                    return response.status(410).json({ error: 'poisoned', poisonReason: result.poisonReason });
+                }
+                if (result.status === 'unknown') {
+                    return response.status(440).json({ error: 'unknown_session' });
+                }
+                return response.status(409).json({ error: 'no_lease', key });
             }
-            if (result.status === 'unknown') {
-                return response.status(440).json({ error: 'unknown_session' });
-            }
-            return response.status(409).json({ error: 'no_lease', key });
         }
-        request.leaseKey = key;
+        request.leaseKey = keys.length === 1 ? keys[0] : keys;
         return next();
     };
+}
+
+/**
+ * Middleware: bumps the revision of the guarded entity (or entities) once
+ * the response has finished successfully. For endpoints whose handlers have
+ * many exit points and were not written with manual bumps.
+ * @param {import('express').Request} request
+ * @param {import('express').Response} response
+ * @param {import('express').NextFunction} next
+ */
+export function bumpLeaseOnSuccess(request, response, next) {
+    if (!MULTI_WINDOW_ENABLED) {
+        return next();
+    }
+    response.on('finish', () => {
+        if (request.leaseKey && response.statusCode < 400) {
+            for (const key of [request.leaseKey].flat()) {
+                bumpRevision(request.user.profile.handle, key);
+            }
+        }
+    });
+    return next();
 }
 
 /** Exposed for tests. */

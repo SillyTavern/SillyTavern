@@ -115,9 +115,97 @@ export function consumeNeutralLanding() {
 /**
  * Wraps fetch so any 410 response from our own API triggers the death ritual.
  */
+/**
+ * Low-contention entities (characters, themes, Quick Reply sets) save
+ * through transient write leases: acquired on the way into a gated request
+ * and released right after it completes, so a conflict only ever means a
+ * genuinely concurrent edit in another window. Keyed by pathname; the
+ * accessor reads fields from the request body (JSON string or FormData).
+ * @type {Map<string, (field: (name: string) => any) => {keys: string[], label: string}>}
+ */
+const TRANSIENT_LEASE_ROUTES = new Map([
+    ['/api/characters/edit', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/edit-avatar', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/edit-attribute', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/rename', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/delete', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/merge-attributes', f => {
+        const avatars = Array.isArray(f('avatars')) ? f('avatars') : [f('avatar')];
+        return { keys: avatars.filter(Boolean).map(a => `character/${a}`), label: 'character' };
+    }],
+    ['/api/themes/save', f => ({ keys: [`theme/${f('name')}`], label: 'theme' })],
+    ['/api/themes/delete', f => ({ keys: [`theme/${f('name')}`], label: 'theme' })],
+    ['/api/quick-replies/save', f => ({ keys: [`qr/${f('name')}`], label: 'Quick Reply set' })],
+    ['/api/quick-replies/delete', f => ({ keys: [`qr/${f('name')}`], label: 'Quick Reply set' })],
+]);
+
+/**
+ * Derives the transient lease target of an outgoing request, or null when
+ * the request is not lease-gated (or the body cannot be inspected).
+ * @param {RequestInfo | URL} resource
+ * @param {RequestInit} [options]
+ * @returns {?{keys: string[], label: string}}
+ */
+function transientLeaseTarget(resource, options) {
+    if (!enabled || !registered || dead || String(options?.method ?? 'GET').toUpperCase() !== 'POST') {
+        return null;
+    }
+    let pathname;
+    try {
+        pathname = new URL(typeof resource === 'string' ? resource : resource?.url ?? '', location.origin).pathname;
+    } catch {
+        return null;
+    }
+    const route = TRANSIENT_LEASE_ROUTES.get(pathname);
+    if (!route) {
+        return null;
+    }
+    const body = options?.body;
+    let field;
+    if (body instanceof FormData) {
+        field = (name) => body.get(name);
+    } else if (typeof body === 'string') {
+        try {
+            const parsed = JSON.parse(body);
+            field = (name) => parsed?.[name];
+        } catch {
+            return null;
+        }
+    } else {
+        return null;
+    }
+    const target = route(field);
+    return target.keys.length && target.keys.every(k => !k.endsWith('/undefined') && !k.endsWith('/null') && !k.endsWith('/')) ? target : null;
+}
+
+/**
+ * Acquires write leases on all keys; on any failure the ones already taken
+ * are released again.
+ * @param {string[]} keys
+ * @returns {Promise<boolean>} true when all leases are held
+ */
+async function acquireTransientLeases(keys) {
+    const taken = [];
+    for (const key of keys) {
+        try {
+            const response = await api('lease/acquire', { key, mode: 'write' });
+            if (!(response.ok && (await response.json()).ok === true)) {
+                throw new Error('conflict');
+            }
+            taken.push(key);
+        } catch {
+            for (const held of taken) {
+                api('lease/release', { key: held }).catch(() => { });
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
 function installPoisonDetector() {
     const origFetch = window.fetch.bind(window);
-    window.fetch = async function (resource, options) {
+    const checkedFetch = async function (resource, options) {
         const response = await origFetch(resource, options);
         const url = typeof resource === 'string' ? resource : resource?.url ?? '';
         if (response.status === 410 && url.startsWith('/')) {
@@ -130,6 +218,23 @@ function installPoisonDetector() {
             die(reason);
         }
         return response;
+    };
+    window.fetch = async function (resource, options) {
+        const target = transientLeaseTarget(resource, options);
+        if (!target) {
+            return checkedFetch(resource, options);
+        }
+        if (!await acquireTransientLeases(target.keys)) {
+            toastr.error(`Not saved: this ${target.label} is being edited in another window.`, 'Multi-window', { timeOut: 8000 });
+            return new Response(JSON.stringify({ error: 'no_lease' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+        }
+        try {
+            return await checkedFetch(resource, options);
+        } finally {
+            for (const key of target.keys) {
+                api('lease/release', { key }).catch(() => { });
+            }
+        }
     };
 }
 
