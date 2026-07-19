@@ -25,6 +25,8 @@ import { router as assetsRouter } from './endpoints/assets.js';
 import { router as filesRouter } from './endpoints/files.js';
 import { router as charactersRouter } from './endpoints/characters.js';
 import { router as chatsRouter } from './endpoints/chats.js';
+import { router as sessionsRouter } from './endpoints/sessions.js';
+import { poisonGate } from './multi-window.js';
 import { router as groupsRouter } from './endpoints/groups.js';
 import { router as worldInfoRouter } from './endpoints/worldinfo.js';
 import { router as statsRouter } from './endpoints/stats.js';
@@ -138,6 +140,7 @@ export function redirectDeprecatedEndpoints(app) {
  * @param {import('express').Express} app The Express app to use
  */
 export function setupPrivateEndpoints(app) {
+    app.use(poisonGate);
     app.use('/', userDataRouter);
     app.use('/api/users', usersPrivateRouter);
     app.use('/api/users', usersAdminRouter);
@@ -159,6 +162,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/files', filesRouter);
     app.use('/api/characters', charactersRouter);
     app.use('/api/chats', chatsRouter);
+    app.use('/api/sessions', sessionsRouter);
     app.use('/api/groups', groupsRouter);
     app.use('/api/worldinfo', worldInfoRouter);
     app.use('/api/stats', statsRouter);

@@ -9,6 +9,7 @@ import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
+import { leaseWriteGuard, bumpRevision, chatKey, groupChatKey } from '../multi-window.js';
 import {
     getConfigValue,
     humanizedDateTime,
@@ -467,7 +468,7 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     getBackupFunction(handle)(backupDirectory, cardName, jsonlData);
 }
 
-router.post('/save', validateAvatarUrlMiddleware, async function (request, response) {
+router.post('/save', validateAvatarUrlMiddleware, leaseWriteGuard(r => chatKey(String(r.body.avatar_url), String(r.body.file_name))), async function (request, response) {
     try {
         const handle = request.user.profile.handle;
         const cardName = String(request.body.avatar_url).replace('.png', '');
@@ -480,6 +481,9 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 
         if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, cardName, request.user.directories.backups);
+            if (request.leaseKey) {
+                bumpRevision(handle, request.leaseKey);
+            }
             return response.send({ ok: true });
         } else {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
@@ -844,7 +848,7 @@ router.post('/group/delete', (request, response) => {
     }
 });
 
-router.post('/group/save', async function (request, response) {
+router.post('/group/save', leaseWriteGuard(r => groupChatKey(String(r.body?.id))), async function (request, response) {
     try {
         if (!request.body || !request.body.id) {
             return response.sendStatus(400);
@@ -857,6 +861,9 @@ router.post('/group/save', async function (request, response) {
 
         if (Array.isArray(chatData)) {
             await trySaveChat(chatData, chatFilePath, request.body.force, handle, String(id), request.user.directories.backups);
+            if (request.leaseKey) {
+                bumpRevision(handle, request.leaseKey);
+            }
             return response.send({ ok: true });
         } else {
             return response.status(400).send({ error: 'The request\'s body.chat is not an array.' });
