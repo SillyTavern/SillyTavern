@@ -3,7 +3,8 @@ import { oai_settings } from './openai.js';
 import { textgenerationwebui_settings } from './textgen-settings.js';
 import { kai_settings } from './kai-settings.js';
 import { nai_settings } from './nai-settings.js';
-import { getBootEphemeralProfiles } from './multi-window.js';
+import { extension_settings } from './extensions.js';
+import { getBootEphemeralProfiles, watchEntity, onEntityStale, noteEntityRevision } from './multi-window.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { debounce, uuidv4 } from './utils.js';
@@ -11,10 +12,19 @@ import { debounce, uuidv4 } from './utils.js';
 /**
  * Client side of atomic connection profiles.
  *
- * A profile is a self-contained snapshot of the connection + sampler state
- * (the "sections" below). The active profile is applied by overlaying its
- * sections onto the parsed settings.json at the SETTINGS_LOADED_BEFORE seam,
- * so every existing loadSettings/UI path applies it with no special code.
+ * A profile is a snapshot of the connection + sampler state (the "sections"
+ * below) plus a reference to the selected Connection Preset. The active
+ * profile is applied by overlaying its sections onto the parsed settings.json
+ * at the SETTINGS_LOADED_BEFORE seam, so every existing loadSettings/UI path
+ * applies it with no special code.
+ *
+ * The Connection Preset UI (the connection-manager extension) is the preset
+ * selector: its "None" option is presented as "Anonymous: <profile name>" -
+ * the profile's own content. When a named preset is selected and the working
+ * state diverges from it, the preset shows "(unsaved)" and the profile
+ * cannot be saved until the preset is updated or Anonymous is selected
+ * (folding the changes into the profile).
+ *
  * Local changes fork a server-memory ephemeral "(edited)" copy - the ⚠️ in
  * the connections panel - which must be explicitly saved to persist.
  */
@@ -32,6 +42,16 @@ function collectSections() {
     }));
 }
 
+/** The Connection Preset currently selected in the connection manager. */
+function getSelectedPresetId() {
+    return extension_settings.connectionManager?.selectedProfile || null;
+}
+
+/** Display name of a Connection Preset. */
+function getPresetName(presetId) {
+    return extension_settings.connectionManager?.profiles?.find(p => p.id === presetId)?.name ?? presetId;
+}
+
 /** @type {?{id: string, name: string, settings: object}} */
 let activeProfile = null;
 /** @type {{id: string, name: string}[]} */
@@ -42,28 +62,19 @@ let appliedSnapshot = '';
 let dirty = false;
 let needsMigration = false;
 
-/** @type {{id: string, name: string, settings?: object}[]} */
-let presetList = [];
-/** @type {?string} Active named preset id; null = anonymous (profile-owned) content. */
+/** @type {?string} The Connection Preset id this window is tracking; null = anonymous. */
 let activePresetId = null;
 /** @type {?string} The presetId as persisted in the active profile. */
 let persistedPresetId = null;
-/** @type {string} JSON snapshot of the active named preset's content. */
+/** @type {string} JSON snapshot of the sections when the preset was applied/updated. */
 let presetSnapshot = '';
 /** Named preset selected and the working state has diverged from it. */
 let presetUnsaved = false;
+/** Another window saved a newer revision of the active profile. */
+let profileStale = false;
 
 async function apiCall(path, body) {
     const response = await fetch(`/api/connection-profiles/${path}`, {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify(body ?? {}),
-    });
-    return response;
-}
-
-async function presetApiCall(path, body) {
-    const response = await fetch(`/api/connection-presets/${path}`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(body ?? {}),
@@ -92,14 +103,13 @@ async function tryAcquireWrite(key) {
 /** Overlays the boot profile onto the parsed settings before loadSettings. */
 async function onSettingsLoadedBefore(settings) {
     try {
-        const [response, presetResponse] = await Promise.all([apiCall('list'), presetApiCall('list')]);
+        const response = await apiCall('list');
         if (!response.ok) {
             return;
         }
         const { profiles, defaultId } = await response.json();
         profileList = profiles.map(p => ({ id: p.id, name: p.name }));
         currentDefaultId = defaultId;
-        presetList = presetResponse.ok ? (await presetResponse.json()).presets ?? [] : [];
 
         if (!profiles.length) {
             // First boot with the profile system: current globals become the
@@ -112,10 +122,8 @@ async function onSettingsLoadedBefore(settings) {
         // changes) > this window's ephemeral > default profile > first.
         const pick = sessionStorage.getItem('mw_boot_profile');
         sessionStorage.removeItem('mw_boot_profile');
-        const presetPick = sessionStorage.getItem('mw_boot_preset');
-        sessionStorage.removeItem('mw_boot_preset');
-        const ephemeral = (pick || presetPick) ? null : getBootEphemeralProfiles()[0];
-        if (pick || presetPick) {
+        const ephemeral = pick ? null : getBootEphemeralProfiles()[0];
+        if (pick) {
             for (const stale of getBootEphemeralProfiles()) {
                 apiCall('ephemeral', { profile: { id: stale.id }, remove: true });
             }
@@ -124,22 +132,11 @@ async function onSettingsLoadedBefore(settings) {
             ?? profiles.find(p => p.id === defaultId)
             ?? profiles[0];
 
-        // Resolve the preset reference: a one-shot pick overrides the
-        // persisted reference (and dirties the profile until saved).
         persistedPresetId = parent.presetId ?? null;
-        activePresetId = ephemeral
-            ? (ephemeral.presetId ?? null)
-            : (presetPick !== null ? (presetPick || null) : persistedPresetId);
-        const namedPreset = activePresetId ? presetList.find(p => p.id === activePresetId) : null;
-        if (activePresetId && !namedPreset) {
-            // Referenced preset no longer exists: fall back to anonymous.
-            activePresetId = null;
-        }
+        activePresetId = ephemeral ? (ephemeral.presetId ?? null) : persistedPresetId;
 
-        // Content source: ephemeral working tree > named preset > anonymous.
-        const content = ephemeral?.settings
-            ?? (activePresetId ? namedPreset.settings : parent.settings)
-            ?? {};
+        // Content source: ephemeral working tree > profile.
+        const content = ephemeral?.settings ?? parent.settings ?? {};
 
         activeProfile = {
             id: ephemeral ? (ephemeral.parentId ?? parent.id) : parent.id,
@@ -150,11 +147,16 @@ async function onSettingsLoadedBefore(settings) {
             settings[key] = value;
         }
 
-        presetSnapshot = activePresetId ? JSON.stringify(namedPreset.settings ?? {}) : '';
+        // The profile's preset reference drives the Connection Preset UI.
+        if (settings.extension_settings?.connectionManager) {
+            settings.extension_settings.connectionManager.selectedProfile = activePresetId ?? '';
+        }
+
         // Booting from an ephemeral means unsaved changes exist: an empty
         // snapshot keeps the state dirty until saved or reverted.
         dirty = !!ephemeral;
         appliedSnapshot = ephemeral ? '' : JSON.stringify(content);
+        presetSnapshot = appliedSnapshot;
     } catch (error) {
         console.error('Connection profiles: failed to load', error);
     }
@@ -181,6 +183,15 @@ function checkDirty() {
     }
     const snap = JSON.stringify(collectSections());
     const wasDirty = dirty || presetUnsaved;
+
+    // Follow the Connection Preset selection: a change means the preset was
+    // just applied (or Anonymous selected) - resnapshot against it.
+    const selected = getSelectedPresetId();
+    if (selected !== activePresetId) {
+        activePresetId = selected;
+        presetSnapshot = snap;
+    }
+
     const refDirty = activePresetId !== persistedPresetId;
     if (activePresetId) {
         // Named preset: content divergence belongs to the preset, not the
@@ -199,6 +210,16 @@ function checkDirty() {
     updateBadge();
 }
 
+/**
+ * Marks the current preset state as saved (called after the connection
+ * manager's own Update flow persists the preset).
+ */
+export function notePresetUpdated() {
+    presetSnapshot = JSON.stringify(collectSections());
+    presetUnsaved = false;
+    updateBadge();
+}
+
 function updateBadge() {
     const manager = document.getElementById('connection_profile_status');
     if (!manager) {
@@ -210,6 +231,9 @@ function updateBadge() {
         const option = document.createElement('option');
         option.value = p.id;
         option.textContent = p.id === currentDefaultId ? `${p.name} ★` : p.name;
+        if (p.id === activeProfile?.id && profileStale) {
+            option.textContent += ' (updated elsewhere)';
+        }
         select.appendChild(option);
     }
     if (activeProfile) {
@@ -218,36 +242,40 @@ function updateBadge() {
     manager.querySelector('.cp-warning').style.display = dirty ? '' : 'none';
     manager.querySelector('.cp-save').style.display = dirty ? '' : 'none';
 
-    const presetSelect = manager.querySelector('.cp-preset-select');
-    presetSelect.innerHTML = '';
-    const anonymous = document.createElement('option');
-    anonymous.value = '';
-    anonymous.textContent = `Anonymous: ${activeProfile?.name ?? ''}`;
-    presetSelect.appendChild(anonymous);
-    for (const p of presetList) {
-        const option = document.createElement('option');
-        option.value = p.id;
-        option.textContent = (p.id === activePresetId && presetUnsaved) ? `${p.name} (unsaved)` : p.name;
-        presetSelect.appendChild(option);
+    // The Connection Preset select is the preset UI: "None" is presented as
+    // the profile's anonymous preset, and the selected named preset carries
+    // the "(unsaved)" marker when the working state has diverged from it.
+    const presetSelect = document.getElementById('connection_profiles');
+    if (presetSelect) {
+        const noneOption = presetSelect.querySelector('option[value=""]');
+        if (noneOption) {
+            noneOption.textContent = `Anonymous: ${activeProfile?.name ?? 'profile'}`;
+        }
+        for (const option of presetSelect.options) {
+            if (!option.value) {
+                continue;
+            }
+            option.textContent = option.textContent.replace(/ \(unsaved\)$/, '');
+            if (option.value === activePresetId && presetUnsaved) {
+                option.textContent += ' (unsaved)';
+            }
+        }
     }
-    presetSelect.value = activePresetId ?? '';
-    manager.querySelector('.cp-preset-warning').style.display = presetUnsaved ? '' : 'none';
-    manager.querySelector('.cp-preset-save').style.display = presetUnsaved ? '' : 'none';
 }
 
 /** Persists the current state into the active profile (or a new one). */
 async function saveActiveProfile() {
-    // A profile never persists content that diverges from a named preset it
-    // references: resolve the preset first.
+    // A profile never persists content that diverges from the named
+    // Connection Preset it references: resolve the preset first.
     if (activePresetId && presetUnsaved) {
         toastr.error(
-            'The selected preset has unsaved changes. Save the preset, or switch to the anonymous preset to fold the changes into this profile.',
+            `Connection Preset "${getPresetName(activePresetId)}" has unsaved changes. Update the preset, or select "Anonymous" to fold the changes into this profile.`,
             'Profile not saved', { timeOut: 10000 },
         );
         return;
     }
 
-    const settings = activePresetId ? (activeProfile?.settings ?? {}) : collectSections();
+    const settings = collectSections();
 
     if (activeProfile) {
         // Try to overwrite the parent: needs the write lease on it.
@@ -258,10 +286,9 @@ async function saveActiveProfile() {
         if (response.ok) {
             activeProfile.settings = settings;
             persistedPresetId = activePresetId;
-            if (!activePresetId) {
-                appliedSnapshot = JSON.stringify(settings);
-            }
+            appliedSnapshot = JSON.stringify(settings);
             dirty = false;
+            noteEntityRevision(`profile/${activeProfile.id}`, (await response.json()).revision);
             updateBadge();
             toastr.success(`Profile "${activeProfile.name}" saved.`, 'Connection profiles');
             return;
@@ -282,9 +309,7 @@ async function saveActiveProfile() {
     if (response.ok) {
         activeProfile = { id, name, settings };
         persistedPresetId = activePresetId;
-        if (!activePresetId) {
-            appliedSnapshot = JSON.stringify(settings);
-        }
+        appliedSnapshot = JSON.stringify(settings);
         profileList.push({ id, name });
         dirty = false;
         updateBadge();
@@ -299,12 +324,15 @@ async function migrate() {
     const settings = collectSections();
     const id = uuidv4();
     const response = await apiCall('save', {
-        profile: { id, name: 'Default', settings },
+        profile: { id, name: 'Default', presetId: getSelectedPresetId(), settings },
         makeDefault: true,
     });
     if (response.ok) {
         activeProfile = { id, name: 'Default', settings };
+        activePresetId = getSelectedPresetId();
+        persistedPresetId = activePresetId;
         appliedSnapshot = JSON.stringify(settings);
+        presetSnapshot = appliedSnapshot;
         profileList.push({ id, name: 'Default' });
         currentDefaultId = id;
         console.log('Connection profiles: migrated current settings into the "Default" profile');
@@ -325,88 +353,7 @@ async function switchProfile(id) {
         }
     }
     sessionStorage.setItem('mw_boot_profile', id);
-    sessionStorage.removeItem('mw_boot_preset');
     location.reload();
-}
-
-/**
- * Switches the preset selection. '' means the anonymous preset: the current
- * working state is folded into the profile's own content in place (no
- * reload). A named preset applies its content via a one-shot boot pick.
- * @param {string} id
- */
-async function switchPreset(id) {
-    if (!activeProfile) {
-        return;
-    }
-    if (!id) {
-        activePresetId = null;
-        activeProfile.settings = collectSections();
-        presetUnsaved = false;
-        presetSnapshot = '';
-        appliedSnapshot = '';
-        checkDirty();
-        toastr.info('Working changes folded into the profile. Save the profile to keep them.', 'Anonymous preset');
-        return;
-    }
-    if (id === activePresetId) {
-        return;
-    }
-    if (presetUnsaved) {
-        const confirmed = await callGenericPopup(
-            'Switching presets discards the unsaved preset changes in this window. Continue?',
-            POPUP_TYPE.CONFIRM, '', { okButton: 'Discard and switch', cancelButton: 'Cancel' });
-        if (confirmed !== 1) {
-            updateBadge();
-            return;
-        }
-    }
-    sessionStorage.setItem('mw_boot_preset', id);
-    location.reload();
-}
-
-/** Saves the working state into the selected named preset (lease-gated). */
-async function savePresetContent() {
-    const preset = presetList.find(p => p.id === activePresetId);
-    if (!preset) {
-        return;
-    }
-    if (!await tryAcquireWrite(`preset/${preset.id}`)) {
-        toastr.error('The preset is owned by another window.', 'Connection presets');
-        return;
-    }
-    const settings = collectSections();
-    const response = await presetApiCall('save', { preset: { id: preset.id, name: preset.name, settings } });
-    if (response.ok) {
-        preset.settings = settings;
-        presetSnapshot = JSON.stringify(settings);
-        presetUnsaved = false;
-        updateBadge();
-        toastr.success(`Preset "${preset.name}" saved.`, 'Connection presets');
-    } else {
-        toastr.error('Could not save the preset.', 'Connection presets');
-    }
-}
-
-/** Creates a named preset from the working state and references it. */
-async function saveAsNewPreset() {
-    const name = await callGenericPopup('New preset name:', POPUP_TYPE.INPUT, '');
-    if (!name || typeof name !== 'string') {
-        return;
-    }
-    const settings = collectSections();
-    const id = uuidv4();
-    const response = await presetApiCall('save', { preset: { id, name, settings } });
-    if (response.ok) {
-        presetList.push({ id, name, settings });
-        activePresetId = id;
-        presetSnapshot = JSON.stringify(settings);
-        presetUnsaved = false;
-        checkDirty();
-        toastr.success(`Preset "${name}" created. Save the profile to keep the reference.`, 'Connection presets');
-    } else {
-        toastr.error('Could not save the preset.', 'Connection presets');
-    }
 }
 
 async function saveAsNewProfile() {
@@ -416,9 +363,10 @@ async function saveAsNewProfile() {
     }
     const settings = collectSections();
     const id = uuidv4();
-    const response = await apiCall('save', { profile: { id, name, settings } });
+    const response = await apiCall('save', { profile: { id, name, presetId: activePresetId, settings } });
     if (response.ok) {
         activeProfile = { id, name, settings };
+        persistedPresetId = activePresetId;
         appliedSnapshot = JSON.stringify(settings);
         profileList.push({ id, name });
         dirty = false;
@@ -480,25 +428,19 @@ function injectBadge() {
             <i class="cp-default menu_button fa-solid fa-star" title="Make this the default profile"></i>
             <i class="cp-delete menu_button fa-solid fa-trash-can" title="Delete this profile"></i>
         </div>
-        <div class="flex-container justifyCenter alignItemsCenter" style="gap: 6px; margin-top: 4px;">
-            <strong>Preset:</strong>
-            <select class="cp-preset-select text_pole" style="max-width: 40%; flex: 0 1 auto;"></select>
-            <span class="cp-preset-warning" title="The working state has diverged from this named preset. Save the preset, or switch to Anonymous to fold the changes into the profile." style="color: #ffc107; font-size: 1.2em; text-shadow: 0 0 2px #000;">&#9888;&#65039;</span>
-            <div class="cp-preset-save menu_button menu_button_icon" title="Save changes into this preset">
-                <i class="fa-solid fa-save"></i><span>Save</span>
-            </div>
-            <i class="cp-preset-save-as menu_button fa-solid fa-file-circle-plus" title="Save as new preset"></i>
-        </div>
         <hr>`;
     manager.querySelector('.cp-save').addEventListener('click', saveActiveProfile);
     manager.querySelector('.cp-save-as').addEventListener('click', saveAsNewProfile);
     manager.querySelector('.cp-default').addEventListener('click', setDefaultProfile);
     manager.querySelector('.cp-delete').addEventListener('click', deleteActiveProfile);
     manager.querySelector('.cp-select').addEventListener('change', (e) => switchProfile(e.target.value));
-    manager.querySelector('.cp-preset-select').addEventListener('change', (e) => switchPreset(e.target.value));
-    manager.querySelector('.cp-preset-save').addEventListener('click', savePresetContent);
-    manager.querySelector('.cp-preset-save-as').addEventListener('click', saveAsNewPreset);
     anchor.prepend(manager);
+
+    // React promptly when the Connection Preset selection changes (give the
+    // preset's commands a moment to apply before snapshotting).
+    document.getElementById('connection_profiles')
+        ?.addEventListener('change', () => setTimeout(checkDirty, 1500));
+
     updateBadge();
 }
 
@@ -515,6 +457,26 @@ export function initConnectionProfiles() {
         injectBadge();
         setInterval(checkDirty, DIRTY_CHECK_INTERVAL_MS);
         eventSource.on(event_types.SETTINGS_UPDATED, checkDirty);
+        // The connection manager's own Update flow saves the preset; a
+        // finished preset apply is the moment to resnapshot against it.
+        eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, () => notePresetUpdated());
+        eventSource.on(event_types.CONNECTION_PROFILE_LOADED, () => checkDirty());
         updateBadge();
+
+        // Watch the active profile so other windows' saves show up as
+        // staleness (never hot-applied - fork or reload, no merging).
+        onEntityStale((key) => {
+            if (activeProfile && key === `profile/${activeProfile.id}`) {
+                profileStale = true;
+                toastr.warning(
+                    `Profile "${activeProfile.name}" was updated in another window. Reload to get the new version, or save yours as a new profile.`,
+                    'Connection profiles', { timeOut: 15000 },
+                );
+                updateBadge();
+            }
+        });
+        if (activeProfile) {
+            watchEntity(`profile/${activeProfile.id}`);
+        }
     });
 }
