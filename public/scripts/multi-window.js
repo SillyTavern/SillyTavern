@@ -20,6 +20,16 @@ let windowId = '';
 let epoch = 0;
 /** @type {Map<string, {key: string, revision: number}>} One held lease per slot (chat, world, ...). */
 const currentLeases = new Map();
+/**
+ * Read leases held purely to track other windows' writes (staleness).
+ * key -> last seen revision. Auto-released on drain, re-acquired later.
+ * @type {Map<string, number>}
+ */
+const watchLeases = new Map();
+/** @type {?(key: string, revision: number) => void} */
+let staleHandler = null;
+/** Delay before re-acquiring a drained watch (writer finishes quickly). */
+const REWATCH_DELAY_MS = 30 * 1000;
 /** @type {?object} */
 let rebirthReason = null;
 
@@ -136,7 +146,10 @@ async function heartbeat() {
     }
     try {
         const response = await api('heartbeat', {
-            heldLeases: [...currentLeases.values()],
+            heldLeases: [
+                ...currentLeases.values(),
+                ...[...watchLeases].map(([key, revision]) => ({ key, revision })),
+            ],
         });
         if (response.status === 440) {
             // Server lost our session (restart or TTL after background-tab
@@ -171,10 +184,154 @@ async function heartbeat() {
                     lease.revision = bump.revision;
                 }
             }
+            if (watchLeases.has(bump.key)) {
+                watchLeases.set(bump.key, bump.revision);
+                staleHandler?.(bump.key, bump.revision);
+            }
+        }
+        for (const key of data.drainRequests ?? []) {
+            // Pure readers comply at zero cost: release, re-acquire later to
+            // resume revision tracking. Never auto-release write intents.
+            const isWriteHeld = [...currentLeases.values()].some(lease => lease.key === key);
+            if (isWriteHeld) {
+                continue;
+            }
+            api('lease/release', { key }).catch(() => { });
+            if (watchLeases.has(key)) {
+                const lastSeen = watchLeases.get(key);
+                watchLeases.delete(key);
+                setTimeout(() => rewatch(key, lastSeen), REWATCH_DELAY_MS);
+            }
         }
     } catch {
         // Network hiccup: next tick will retry.
     }
+}
+
+async function rewatch(key, lastSeenRevision) {
+    if (dead || watchLeases.has(key)) {
+        return;
+    }
+    const revision = await watchEntity(key);
+    if (revision !== null && revision !== lastSeenRevision) {
+        staleHandler?.(key, revision);
+    }
+}
+
+/**
+ * Registers the handler notified when a watched entity's revision changes
+ * (i.e. another window saved it).
+ * @param {(key: string, revision: number) => void} handler
+ */
+export function onEntityStale(handler) {
+    staleHandler = handler;
+}
+
+/**
+ * Starts revision-tracking an entity via a read lease.
+ * @param {string} key Entity key
+ * @returns {Promise<?number>} The current revision, or null if unavailable
+ */
+export async function watchEntity(key) {
+    if (!enabled || !registered || dead) {
+        return null;
+    }
+    try {
+        const response = await api('lease/acquire', { key, mode: 'read' });
+        const result = response.ok ? await response.json() : null;
+        if (result?.ok) {
+            watchLeases.set(key, result.revision);
+            return result.revision;
+        }
+    } catch {
+        // Watching is best-effort.
+    }
+    return null;
+}
+
+/**
+ * Stops watching an entity and releases its read lease.
+ * @param {string} key Entity key
+ */
+export function unwatchEntity(key) {
+    if (watchLeases.delete(key)) {
+        api('lease/release', { key }).catch(() => { });
+    }
+}
+
+/**
+ * Records a revision this window itself produced (its own save), so the
+ * watch does not misreport it as another window's update.
+ * @param {string} key Entity key
+ * @param {number} revision
+ */
+export function noteEntityRevision(key, revision) {
+    if (watchLeases.has(key) && Number.isInteger(revision)) {
+        watchLeases.set(key, revision);
+    }
+}
+
+/**
+ * Whether the multi-window session system is active in this window.
+ * @returns {boolean}
+ */
+export function isMultiWindowActive() {
+    return enabled && registered;
+}
+
+// --- Global settings: explicit save + poison-all (design §6.1) ---
+// The settings blob never auto-persists in multi-window mode: changes are
+// local ⚠️-dirty state until an explicit save, which reloads EVERY window
+// (including this one) so no running window ever has globals differing from
+// disk. Boot-time normalizations (before APP_READY) still save normally.
+
+let appReady = false;
+let settingsDirty = false;
+
+/**
+ * True when a settings blob save should be deferred to the explicit flow.
+ * @returns {boolean}
+ */
+export function shouldDeferSettingsSave() {
+    return enabled && registered && appReady && !dead;
+}
+
+/** Marks the settings blob dirty and shows the explicit save control. */
+export function markSettingsDirty() {
+    settingsDirty = true;
+    let button = document.getElementById('mw_settings_save');
+    if (!button) {
+        button = document.createElement('div');
+        button.id = 'mw_settings_save';
+        button.classList.add('menu_button');
+        button.style.cssText = 'position: fixed; bottom: 8px; right: 8px; z-index: 10000; display: flex; align-items: center; gap: 6px;';
+        button.title = 'Unsaved global settings - lost on reload or server restart. Saving reloads ALL open windows.';
+        button.innerHTML = '<span style="color: #ffc107; text-shadow: 0 0 2px #000;">&#9888;&#65039;</span><span>Save settings</span>';
+        button.addEventListener('click', explicitSettingsSave);
+        document.body.appendChild(button);
+    }
+    button.style.display = settingsDirty ? 'flex' : 'none';
+}
+
+async function explicitSettingsSave() {
+    const confirmed = await callGenericPopup(
+        '<h3>Save global settings?</h3><p>All open windows (including this one) will be reloaded; unsaved changes in them will be discarded.</p>',
+        POPUP_TYPE.CONFIRM, '', { okButton: 'Save and reload all', cancelButton: 'Cancel' });
+    if (confirmed !== 1) {
+        return;
+    }
+    const { saveSettings } = await import('../script.js');
+    try {
+        await saveSettings(0, { explicit: true });
+    } catch (error) {
+        console.error('Explicit settings save failed', error);
+        toastr.error('Settings could not be saved.', 'Multi-window');
+        return;
+    }
+    settingsDirty = false;
+    // The server has poisoned every session including ours: enter the death
+    // ritual voluntarily instead of waiting for the next 410.
+    die({ reason: 'global settings saved', byWindow: windowId, entity: 'settings' });
 }
 
 /** @type {object[]} Ephemeral profiles returned by the last registration. */
@@ -222,6 +379,16 @@ export async function initMultiWindow() {
         if (document.visibilityState === 'visible') {
             heartbeat();
         }
+    });
+    // The settings-save shim only kicks in after boot: normalization saves
+    // during init (and its debounced tail shortly after APP_READY) persist
+    // normally, so a clean boot never starts ⚠️-dirty.
+    import('../script.js').then(({ eventSource, event_types }) => {
+        eventSource.once(event_types.APP_READY, () => {
+            setTimeout(() => {
+                appReady = true;
+            }, 5000);
+        });
     });
     // The landing flag may not have been consumed yet (init order): peek it.
     let reason = rebirthReason;

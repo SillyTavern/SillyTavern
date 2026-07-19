@@ -252,7 +252,7 @@ import { getPresetManager, initPresetManager } from './scripts/preset-manager.js
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
-import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection } from './scripts/multi-window.js';
+import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection, isMultiWindowActive, shouldDeferSettingsSave, markSettingsDirty } from './scripts/multi-window.js';
 import { initConnectionProfiles } from './scripts/connection-profiles-client.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
@@ -841,6 +841,10 @@ export function setAnimationDuration(ms = null) {
 export function setActiveCharacter(entityOrKey) {
     active_character = entityOrKey ? getTagKeyForEntity(entityOrKey) : null;
     if (active_character) active_group = null;
+    if (isMultiWindowActive()) {
+        sessionStorage.setItem('mw_active_character', active_character ?? '');
+        sessionStorage.setItem('mw_active_group', active_group ?? '');
+    }
 }
 
 /**
@@ -850,6 +854,10 @@ export function setActiveCharacter(entityOrKey) {
 export function setActiveGroup(entityOrKey) {
     active_group = entityOrKey ? getTagKeyForEntity(entityOrKey) : null;
     if (active_group) active_character = null;
+    if (isMultiWindowActive()) {
+        sessionStorage.setItem('mw_active_character', active_character ?? '');
+        sessionStorage.setItem('mw_active_group', active_group ?? '');
+    }
 }
 
 export function startStatusLoading() {
@@ -7993,9 +8001,13 @@ export async function getSettings(initLoaderHandle = null) {
 
         //Load the active character and group
         // After a poisoning, land neutral: no chat, no active character/group.
+        // In multi-window mode each window remembers its own active chat
+        // (sessionStorage), since the blob no longer auto-persists.
         if (!consumeNeutralLanding()) {
-            active_character = settings.active_character;
-            active_group = settings.active_group;
+            const windowCharacter = isMultiWindowActive() ? sessionStorage.getItem('mw_active_character') : null;
+            const windowGroup = isMultiWindowActive() ? sessionStorage.getItem('mw_active_group') : null;
+            active_character = windowCharacter !== null ? (windowCharacter || null) : settings.active_character;
+            active_group = windowGroup !== null ? (windowGroup || null) : settings.active_group;
         }
 
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
@@ -8036,7 +8048,13 @@ export async function getSettings(initLoaderHandle = null) {
 }
 
 //MARK: saveSettings()
-export async function saveSettings(loopCounter = 0) {
+export async function saveSettings(loopCounter = 0, { explicit = false } = {}) {
+    // Multi-window mode: the settings blob never auto-persists. Changes stay
+    // local until the user explicitly saves, which reloads all windows.
+    if (!explicit && shouldDeferSettingsSave()) {
+        markSettingsDirty();
+        return;
+    }
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
         saveSettingsDebounced();
@@ -8084,7 +8102,7 @@ export async function saveSettings(loopCounter = 0) {
     try {
         const saveSettingsRequest = await compressRequest({
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: { ...getRequestHeaders(), ...(explicit ? { 'X-Settings-Explicit': 'true' } : {}) },
             body: JSON.stringify(payload),
             cache: 'no-cache',
         });
