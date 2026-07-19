@@ -7998,7 +7998,10 @@ export async function getSettings(initLoaderHandle = null) {
         changeMainAPI();
 
         //Load User's Name and Avatar
-        initUserAvatar(settings.user_avatar);
+        // In multi-window mode each window remembers its own persona
+        // selection (the blob copy is not read back).
+        const windowAvatar = isMultiWindowActive() ? sessionStorage.getItem('mw_user_avatar') : null;
+        initUserAvatar(windowAvatar || settings.user_avatar);
         setPersonaDescription();
 
         //Load the active character and group

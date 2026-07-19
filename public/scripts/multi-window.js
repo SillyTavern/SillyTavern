@@ -433,6 +433,8 @@ function normalizeSettingsPayload(payload) {
     const clone = JSON.parse(JSON.stringify(payload));
     delete clone.active_character;
     delete clone.active_group;
+    // Per-window persona selection (mw_user_avatar in sessionStorage).
+    delete clone.user_avatar;
     // Profile-owned sections (design §8.3): the blob copies are rollback
     // shadows, kept for one release cycle but no longer authoritative.
     delete clone.main_api;
@@ -445,6 +447,16 @@ function normalizeSettingsPayload(payload) {
         delete clone.power_user.personas;
         delete clone.power_user.persona_descriptions;
         delete clone.power_user.personasMigratedToFiles;
+        // The ACTIVE persona's working copy - mirrors the entry in
+        // persona_descriptions, which lives in the persona's file. The
+        // persona "Global Settings" (persona_show_notifications,
+        // persona_allow_multi_connections, persona_auto_lock, sort order,
+        // default_persona) intentionally stay: those are real globals.
+        delete clone.power_user.persona_description;
+        delete clone.power_user.persona_description_position;
+        delete clone.power_user.persona_description_role;
+        delete clone.power_user.persona_description_depth;
+        delete clone.power_user.persona_description_lorebook;
     }
     if (clone.extension_settings) {
         // File-owned (connection-presets/*.json) + per-window selection.
