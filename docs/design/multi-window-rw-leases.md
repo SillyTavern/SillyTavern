@@ -1,6 +1,6 @@
 # Multi-Window SillyTavern: RW Leases, Atomic Profiles, and Session Poisoning
 
-**Status:** Living design — implementation underway on `feature/multi-window-leases` (Stage 1 complete, Stage 2 in progress)
+**Status:** Living design — Stages 1 and 2 implemented and live-verified on `feature/multi-window-leases`; see `multi-window-implementation-status.md` for the commit-by-commit state and remaining work
 **Date:** 2026-07-19
 **Scope:** SillyTavern core (server + frontend). No changes to the multi-user account system.
 
@@ -298,8 +298,10 @@ the bounded drain and the explicit warning exist for.
   extensions keep working unchanged in memory and inherit the semantics
   for free. Nothing about the blob auto-persists. Unsaved blob changes are
   lost on reload/poison/server restart (⚠️ says so).
-- **Explicit save** persists the whole blob and then poisons **every live
-  session — including the saver's own**. Everyone reboots through the normal
+- **Explicit save** (marked with an `X-Settings-Explicit` header — boot-time
+  normalization saves write without poisoning; the barrier is a property of
+  the deliberate save action, learned the hard way) persists the whole blob
+  and then poisons **every live session — including the saver's own**. Everyone reboots through the normal
   poison path (§6): neutral landing, ephemeral profiles restored, reason
   toast ("global settings were saved by window N").
 - Invariant: no running window ever has globals that differ from disk.
