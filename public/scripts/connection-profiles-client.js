@@ -5,6 +5,7 @@ import { kai_settings } from './kai-settings.js';
 import { nai_settings } from './nai-settings.js';
 import { extension_settings } from './extensions.js';
 import { getBootEphemeralProfiles, watchEntity, unwatchEntity, onEntityStale, noteEntityRevision } from './multi-window.js';
+import { getContext } from './st-context.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
 import { debounce, uuidv4 } from './utils.js';
@@ -415,8 +416,60 @@ async function switchProfile(id) {
             return;
         }
     }
+    // An explicit switch with a chat open rebinds that chat: the binding
+    // follows the profile the chat is actually used with (design §5.4) -
+    // otherwise the reload would immediately nag to switch back.
+    try {
+        const context = getContext();
+        if (context.getCurrentChatId() && context.chatMetadata) {
+            context.chatMetadata.connection = { profileId: id, parentId: id };
+            await context.saveMetadata();
+        }
+    } catch (error) {
+        console.warn('Connection profiles: could not rebind the open chat', error);
+    }
     sessionStorage.setItem('mw_boot_profile', id);
     location.reload();
+}
+
+/**
+ * Per-chat profile binding (design §5.4): chat_metadata.connection records
+ * the profile a chat was last used with. Rides inside the chat file, so it
+ * persists under the chat's own lease, conflict-free. On open, a chat bound
+ * to a different profile offers a one-click switch (which reloads) or an
+ * explicit rebind - it never hot-applies or auto-reloads.
+ */
+function onChatChanged() {
+    if (!activeProfile) {
+        return;
+    }
+    const context = getContext();
+    const metadata = context.chatMetadata;
+    if (!context.getCurrentChatId() || !metadata || typeof metadata !== 'object') {
+        return;
+    }
+    const boundId = metadata.connection?.profileId ?? metadata.connection?.parentId ?? null;
+    if (boundId === activeProfile.id) {
+        return;
+    }
+    const target = boundId ? profileList.find(p => p.id === boundId) : null;
+    if (!target) {
+        // Unbound (or bound to a deleted profile): adopt the active one.
+        metadata.connection = { profileId: activeProfile.id, parentId: activeProfile.id };
+        return;
+    }
+    const $toast = toastr.info(
+        `<div>This chat is bound to connection profile "${target.name}".</div>
+         <div class="menu_button cp-bind-switch" style="margin-top: 8px;">Switch to "${target.name}" (reloads)</div>
+         <div class="menu_button cp-bind-keep" style="margin-top: 4px;">Keep "${activeProfile.name}" and rebind</div>`,
+        'Connection profiles',
+        { timeOut: 15000, extendedTimeOut: 5000, escapeHtml: false },
+    );
+    $toast?.find?.('.cp-bind-switch')?.on?.('click', () => switchProfile(target.id));
+    $toast?.find?.('.cp-bind-keep')?.on?.('click', () => {
+        metadata.connection = { profileId: activeProfile.id, parentId: activeProfile.id };
+        toastr.clear($toast);
+    });
 }
 
 async function saveAsNewProfile() {
@@ -587,6 +640,7 @@ export function initConnectionProfiles() {
         // finished preset apply is the moment to resnapshot against it.
         eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, () => notePresetUpdated());
         eventSource.on(event_types.CONNECTION_PROFILE_LOADED, () => checkDirty());
+        eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
         updateBadge();
 
         // Watch the active profile so other windows' saves show up as
