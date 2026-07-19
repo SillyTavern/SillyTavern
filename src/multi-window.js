@@ -145,6 +145,11 @@ export function registerSession(handle, windowId, epoch) {
     const poisonReason = existing?.poisoned ?? null;
     const ephemeralProfiles = existing ? [...existing.ephemeralProfiles.values()] : [];
 
+    // A fresh page load holds nothing yet: leftover leases from the previous
+    // epoch would block other windows' drains for entities this window no
+    // longer has open. Clients re-acquire what they actually use.
+    releaseAllLeases(state, windowId);
+
     state.sessions.set(windowId, {
         epoch,
         lastSeen: Date.now(),

@@ -45,7 +45,7 @@ Also: `watchEntity/onEntityStale/noteEntityRevision` staleness machinery in clie
 1. **Stage 2 stragglers:** client-side transitive preset staleness (watch `preset/<id>` of active profile; machinery exists, unwired); rename-only preset edit persists via UPDATED event without lease guard; staleness-rewatch browser toast E2E never fully observed (drain+save half verified).
 2. **Stage 3:** persona extraction from blob → `personas/*.json` + leases; character card leases (`/api/characters/edit*`); theme/QR leases; per-chat profile binding via chat_metadata (`connection: {profileId, parentId}`); tags decision; read-only live chat view (drain handling for chat read leases).
 3. Cosmetics: zombie toast says "by another window" even for self-initiated settings saves; floating save button placement may collide with ST's bottom-right UI.
-4. Data dir of the dev clone contains test residue (profiles named "Promoted", presets "TestPreset"/"My Legacy Bundle"); safe to wipe `data/default-user/connection-{profiles,presets}`.
+4. ~~Data dir test residue~~ — cleaned; `tests/multi-window-leases.sh` now deletes everything it creates (a leftover `eph-1.json` makes the "saved ephemeral cleared" check fail on re-runs, since promoting the ephemeral becomes a lease-gated re-save). Re-runs still need a server restart (fixed window ids/epochs can't re-register against live session state).
 
 ## Upstream strategy
 

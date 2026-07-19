@@ -109,7 +109,10 @@ C3=(-H "X-Window-Id: window-C" -H "X-Window-Epoch: 3")
 REG=$(post "${C3[@]}" -d '{}' $BASE/api/sessions/register)
 echo "$REG" | grep -q '"ephemeralProfiles":\[\]' && check "saved ephemeral cleared from session" ok ok || check "saved ephemeral cleared from session" ok "$REG"
 
-# Delete requires the lease (window C still holds writer on P1 across epochs)
+# Re-registration drops all previous leases; deleting needs a fresh one
+check "C delete after re-register (leases dropped) -> 409" "409" \
+  "$(code "${C3[@]}" -d "{\"id\":\"$P1\"}" $BASE/api/connection-profiles/delete)"
+post "${C3[@]}" -d "{\"key\":\"profile/$P1\",\"mode\":\"write\"}" $BASE/api/sessions/lease/acquire > /dev/null
 check "C deletes profile with lease" '{"ok":true}' \
   "$(post "${C3[@]}" -d "{\"id\":\"$P1\"}" $BASE/api/connection-profiles/delete)"
 LIST=$(post "${C3[@]}" -d '{}' $BASE/api/connection-profiles/list)
@@ -126,6 +129,11 @@ check "C re-save preset with lease" '{"ok":true,"revision":3}' \
   "$(post "${C3[@]}" -d "$PRESET_BODY" $BASE/api/connection-presets/save)"
 check "C deletes preset" '{"ok":true}' \
   "$(post "${C3[@]}" -d '{"id":"test-preset-1"}' $BASE/api/connection-presets/delete)"
+
+# Cleanup: delete the promoted ephemeral so re-runs start from a clean data dir
+post "${C3[@]}" -d '{"key":"profile/eph-1","mode":"write"}' $BASE/api/sessions/lease/acquire > /dev/null
+check "cleanup: promoted ephemeral deleted" '{"ok":true}' \
+  "$(post "${C3[@]}" -d '{"id":"eph-1"}' $BASE/api/connection-profiles/delete)"
 
 echo "----"
 echo "passed: $PASS failed: $FAIL"
