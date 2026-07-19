@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { activateSendButtons, deactivateSendButtons, event_types, eventSource, getRequestHeaders, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -318,6 +318,102 @@ async function createConnectionProfile(forceName = null) {
 }
 
 /**
+ * Connection Presets live as files (data/<user>/connection-presets) behind
+ * /api/connection-presets; the array in extension_settings is only the
+ * in-memory working copy, hydrated from the files at init. False when the
+ * server has the multi-window feature disabled (legacy blob behavior).
+ */
+let presetFilesAvailable = false;
+
+async function presetFileApi(path, body) {
+    return fetch(`/api/connection-presets/${path}`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(body ?? {}),
+    });
+}
+
+/**
+ * Acquires the write lease for a preset file.
+ * @param {string} id Preset id
+ * @returns {Promise<boolean>} true when held (or the feature is disabled)
+ */
+async function acquirePresetLease(id) {
+    if (!presetFilesAvailable) {
+        return true;
+    }
+    try {
+        const response = await fetch('/api/sessions/lease/acquire', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ key: `preset/${id}`, mode: 'write' }),
+        });
+        return response.ok && (await response.json()).ok === true;
+    } catch {
+        return false;
+    }
+}
+
+/** Persists a preset bundle to its file. */
+async function persistPresetFile(profile) {
+    if (!presetFilesAvailable || !profile?.id) {
+        return;
+    }
+    const response = await presetFileApi('save', { preset: structuredClone(profile) });
+    if (!response.ok) {
+        toastr.warning('Preset changes could not be persisted to file (owned by another window?).', 'Connection presets');
+    }
+}
+
+/**
+ * Hydrates the in-memory preset list from the files, migrating any legacy
+ * bundles still living only in the settings blob. Files are the source of
+ * truth: blob-only bundles are migrated once, and bundles deleted from the
+ * files elsewhere disappear from the working copy.
+ */
+async function hydratePresetsFromServer() {
+    let response;
+    try {
+        response = await presetFileApi('list', {});
+    } catch {
+        return;
+    }
+    if (!response.ok) {
+        return;
+    }
+    presetFilesAvailable = true;
+    const cm = extension_settings.connectionManager;
+    const presets = (await response.json()).presets ?? [];
+    const fileIds = new Set(presets.map(p => p.id));
+
+    if (!cm.migratedToFiles) {
+        const toMigrate = cm.profiles.filter(p => p.id && !fileIds.has(p.id));
+        for (const bundle of toMigrate) {
+            const saved = await presetFileApi('save', { preset: structuredClone(bundle) });
+            if (saved.ok) {
+                presets.push(bundle);
+            } else {
+                console.error('Connection presets: failed to migrate preset to file', bundle.name);
+                return; // keep blob authoritative; retry next boot
+            }
+        }
+        if (toMigrate.length) {
+            console.log(`Connection presets: migrated ${toMigrate.length} preset(s) to files`);
+        }
+        cm.migratedToFiles = true;
+    }
+
+    for (const preset of presets) {
+        delete preset.revision; // server-side bookkeeping, not preset content
+    }
+    cm.profiles.splice(0, cm.profiles.length, ...presets);
+    if (cm.selectedProfile && !cm.profiles.some(p => p.id === cm.selectedProfile)) {
+        cm.selectedProfile = null;
+    }
+    saveSettingsDebounced();
+}
+
+/**
  * Deletes the selected connection preset.
  * @returns {Promise<void>}
  */
@@ -338,6 +434,14 @@ async function deleteConnectionProfile() {
 
     if (!confirm) {
         return;
+    }
+
+    if (!await acquirePresetLease(profile.id)) {
+        toastr.error('This preset is owned by another window.', 'Connection presets');
+        return;
+    }
+    if (presetFilesAvailable) {
+        await presetFileApi('delete', { id: profile.id });
     }
 
     extension_settings.connectionManager.profiles.splice(index, 1);
@@ -429,6 +533,10 @@ async function applyConnectionProfile(profile) {
  * @returns {Promise<void>}
  */
 async function updateConnectionProfile(profile) {
+    if (!await acquirePresetLease(profile.id)) {
+        toastr.error('This preset is owned by another window.', 'Connection presets');
+        throw new Error('Connection preset lease unavailable');
+    }
     profile.mode = main_api === 'openai' ? 'cc' : 'tc';
     await readProfileFromCommands(profile.mode, profile, true);
 }
@@ -703,6 +811,13 @@ export async function init() {
             extension_settings.connectionManager[key] = DEFAULT_SETTINGS[key];
         }
     }
+
+    await hydratePresetsFromServer();
+
+    // Persistence catch-all: every path that creates or updates a preset
+    // (buttons, edit dialog, slash commands) emits one of these.
+    eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) => persistPresetFile(profile));
+    eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, (_oldProfile, profile) => persistPresetFile(profile));
 
     const container = document.getElementById('rm_api_block');
     const settings = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
