@@ -253,6 +253,7 @@ import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.j
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection } from './scripts/multi-window.js';
+import { initConnectionProfiles } from './scripts/connection-profiles-client.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
@@ -703,6 +704,7 @@ async function firstLoadInit() {
     }
 
     await initMultiWindow();
+    initConnectionProfiles();
 
     const initLoaderOverlay = loader.createOverlay();
     initLoaderOverlay.classList.add('splash-screen');

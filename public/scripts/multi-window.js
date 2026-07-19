@@ -173,6 +173,18 @@ async function heartbeat() {
     }
 }
 
+/** @type {object[]} Ephemeral profiles returned by the last registration. */
+let bootEphemeralProfiles = [];
+
+/**
+ * Ephemeral profiles this window held before its last reload (restored by
+ * the server on re-registration).
+ * @returns {object[]}
+ */
+export function getBootEphemeralProfiles() {
+    return bootEphemeralProfiles;
+}
+
 async function register() {
     const response = await api('register', {});
     if (response.status === 404) {
@@ -182,6 +194,8 @@ async function register() {
     if (!response.ok) {
         return false;
     }
+    const data = await response.json();
+    bootEphemeralProfiles = data.ephemeralProfiles ?? [];
     registered = true;
     return true;
 }
