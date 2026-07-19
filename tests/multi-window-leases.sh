@@ -115,6 +115,18 @@ check "C deletes profile with lease" '{"ok":true}' \
 LIST=$(post "${C3[@]}" -d '{}' $BASE/api/connection-profiles/list)
 echo "$LIST" | grep -q "\"id\":\"$P1\"" && check "deleted profile gone from list" ok "$LIST" || check "deleted profile gone from list" ok ok
 
+# --- Connection presets (peer leased entities) ---
+PRESET_BODY='{"preset":{"id":"test-preset-1","name":"Test Preset","settings":{"temp":0.9}}}'
+check "C creates preset (no lease)" '{"ok":true,"revision":2}' \
+  "$(post "${C3[@]}" -d "$PRESET_BODY" $BASE/api/connection-presets/save)"
+check "C re-save preset without lease -> 409" "409" \
+  "$(code "${C3[@]}" -d "$PRESET_BODY" $BASE/api/connection-presets/save)"
+post "${C3[@]}" -d '{"key":"preset/test-preset-1","mode":"write"}' $BASE/api/sessions/lease/acquire > /dev/null
+check "C re-save preset with lease" '{"ok":true,"revision":3}' \
+  "$(post "${C3[@]}" -d "$PRESET_BODY" $BASE/api/connection-presets/save)"
+check "C deletes preset" '{"ok":true}' \
+  "$(post "${C3[@]}" -d '{"id":"test-preset-1"}' $BASE/api/connection-presets/delete)"
+
 echo "----"
 echo "passed: $PASS failed: $FAIL"
 exit $FAIL
