@@ -356,6 +356,62 @@ export function poisonAllSessions(handle, byWindow, reason) {
 }
 
 /**
+ * Upserts an ephemeral profile into a window's session. Ephemerals live in
+ * server memory only: they survive tab reloads (same windowId) but die with
+ * the server - by design, hence the client-side "save to keep" warning.
+ * @param {string} handle
+ * @param {string} windowId
+ * @param {number} epoch
+ * @param {object} profile Must have a string `id`
+ * @returns {{ok: true} | {ok: false, status: string}}
+ */
+export function upsertEphemeralProfile(handle, windowId, epoch, profile) {
+    const state = getUserState(handle);
+    if (sessionStatus(state, windowId, epoch) !== 'live') {
+        return { ok: false, status: sessionStatus(state, windowId, epoch) };
+    }
+    state.sessions.get(windowId).ephemeralProfiles.set(String(profile.id), profile);
+    return { ok: true };
+}
+
+/**
+ * Removes an ephemeral profile from a window's session (after it was saved
+ * persistently or explicitly discarded).
+ * @param {string} handle
+ * @param {string} windowId
+ * @param {number} epoch
+ * @param {string} profileId
+ * @returns {{ok: boolean}}
+ */
+export function deleteEphemeralProfile(handle, windowId, epoch, profileId) {
+    const state = getUserState(handle);
+    if (sessionStatus(state, windowId, epoch) !== 'live') {
+        return { ok: false };
+    }
+    state.sessions.get(windowId).ephemeralProfiles.delete(String(profileId));
+    return { ok: true };
+}
+
+/**
+ * Current revision of an entity (1 if never written this server lifetime).
+ * @param {string} handle
+ * @param {string} entityKey
+ * @returns {number}
+ */
+export function getRevision(handle, entityKey) {
+    return users.get(handle)?.leases.get(entityKey)?.revision ?? 1;
+}
+
+/**
+ * Generates an entity key for a connection profile.
+ * @param {string} profileId
+ * @returns {string}
+ */
+export function profileKey(profileId) {
+    return `profile/${profileId}`;
+}
+
+/**
  * Generates an entity key for a character chat file.
  * @param {string} avatarUrl Character avatar file name (unique character id)
  * @param {string} fileName Chat file name without extension

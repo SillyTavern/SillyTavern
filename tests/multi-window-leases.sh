@@ -74,6 +74,47 @@ post "${A2[@]}" -d "{\"key\":\"$KEY\"}" $BASE/api/sessions/lease/release > /dev/
 check "B write after drain" '{"ok":true,"revision":3}' \
   "$(post "${B[@]}" -d "{\"key\":\"$KEY\",\"mode\":\"write\"}" $BASE/api/sessions/lease/acquire)"
 
+# --- Connection profiles (Stage 2 server) ---
+C=(-H "X-Window-Id: window-C" -H "X-Window-Epoch: 1")
+P1="test-profile-1"
+PROFILE_BODY="{\"profile\":{\"id\":\"$P1\",\"name\":\"Test Profile\",\"settings\":{\"main_api\":\"openai\",\"temp\":0.7}}}"
+
+post "${C[@]}" -d '{}' $BASE/api/sessions/register > /dev/null
+check "C creates new profile (no lease needed)" '{"ok":true,"revision":2}' \
+  "$(post "${C[@]}" -d "$PROFILE_BODY" $BASE/api/connection-profiles/save)"
+check "C re-save existing without lease -> 409" "409" \
+  "$(code "${C[@]}" -d "$PROFILE_BODY" $BASE/api/connection-profiles/save)"
+post "${C[@]}" -d "{\"key\":\"profile/$P1\",\"mode\":\"write\"}" $BASE/api/sessions/lease/acquire > /dev/null
+check "C re-save with lease" '{"ok":true,"revision":3}' \
+  "$(post "${C[@]}" -d "$PROFILE_BODY" $BASE/api/connection-profiles/save)"
+
+LIST=$(post "${C[@]}" -d '{}' $BASE/api/connection-profiles/list)
+echo "$LIST" | grep -q "\"id\":\"$P1\"" && check "list contains profile" ok ok || check "list contains profile" ok "$LIST"
+post "${C[@]}" -d "{\"id\":\"$P1\"}" $BASE/api/connection-profiles/set-default > /dev/null
+LIST=$(post "${C[@]}" -d '{}' $BASE/api/connection-profiles/list)
+echo "$LIST" | grep -q "\"defaultId\":\"$P1\"" && check "set-default reflected" ok ok || check "set-default reflected" ok "$LIST"
+
+# Ephemeral profile: survives re-register (same windowId, new epoch)
+EPH="{\"profile\":{\"id\":\"eph-1\",\"name\":\"Default (edited, window C)\",\"parentId\":\"$P1\",\"settings\":{\"temp\":1.2}}}"
+check "C upserts ephemeral" '{"ok":true}' \
+  "$(post "${C[@]}" -d "$EPH" $BASE/api/connection-profiles/ephemeral)"
+C2=(-H "X-Window-Id: window-C" -H "X-Window-Epoch: 2")
+REG=$(post "${C2[@]}" -d '{}' $BASE/api/sessions/register)
+echo "$REG" | grep -q '"id":"eph-1"' && check "re-register returns ephemeral" ok ok || check "re-register returns ephemeral" ok "$REG"
+
+# Saving the ephemeral persistently clears it from the session
+EPH_SAVE="{\"profile\":{\"id\":\"eph-1\",\"name\":\"Promoted\",\"settings\":{\"temp\":1.2}}}"
+post "${C2[@]}" -d "$EPH_SAVE" $BASE/api/connection-profiles/save > /dev/null
+C3=(-H "X-Window-Id: window-C" -H "X-Window-Epoch: 3")
+REG=$(post "${C3[@]}" -d '{}' $BASE/api/sessions/register)
+echo "$REG" | grep -q '"ephemeralProfiles":\[\]' && check "saved ephemeral cleared from session" ok ok || check "saved ephemeral cleared from session" ok "$REG"
+
+# Delete requires the lease (window C still holds writer on P1 across epochs)
+check "C deletes profile with lease" '{"ok":true}' \
+  "$(post "${C3[@]}" -d "{\"id\":\"$P1\"}" $BASE/api/connection-profiles/delete)"
+LIST=$(post "${C3[@]}" -d '{}' $BASE/api/connection-profiles/list)
+echo "$LIST" | grep -q "\"id\":\"$P1\"" && check "deleted profile gone from list" ok "$LIST" || check "deleted profile gone from list" ok ok
+
 echo "----"
 echo "passed: $PASS failed: $FAIL"
 exit $FAIL
