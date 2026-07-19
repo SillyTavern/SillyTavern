@@ -1,6 +1,6 @@
 # Multi-Window SillyTavern: RW Leases, Atomic Profiles, and Session Poisoning
 
-**Status:** Living design — Stages 1 and 2 implemented and live-verified on `feature/multi-window-leases`; see `multi-window-implementation-status.md` for the commit-by-commit state and remaining work
+**Status:** Living design — Stages 1, 2, and 3 implemented and live-verified on `feature/multi-window-leases`; see `multi-window-implementation-status.md` for the commit-by-commit state and remaining work
 **Date:** 2026-07-19
 **Scope:** SillyTavern core (server + frontend). No changes to the multi-user account system.
 
@@ -158,7 +158,7 @@ races. Clients treat 409 identically to a stale ⚠️: fork or reload.
 | Connection profiles | **new**: `connection-profiles/*.json` (§5) | RW lease gates *persisting* a profile. Using a profile never requires a lease. |
 | Connection Presets | **inside settings blob** (`extension_settings.connectionManager.profiles`) | **Migrate to `connection-presets/*.json`**, then RW lease + revisions like profiles. Referenced by profiles by id; preset saves transitively ⚠️-invalidate windows whose profile references them (§5.1). |
 | Extension settings (`extension_settings`) | settings blob | **Explicit save + poison-all (§6.1).** No lease. Changes are local ⚠️-dirty state until an explicit save; the save persists the blob and poisons **every** session, including the saver's own. No window ever runs globals that differ from disk. |
-| `power_user` UI prefs, tags/tag_map | settings blob | Same explicit-save + poison-all mechanic. Tags are entity-ish and a candidate for later extraction like personas. |
+| `power_user` UI prefs, tags/tag_map | settings blob | Same explicit-save + poison-all mechanic. **Decided (Stage 3):** tags stay in the blob under explicit-save — they are cross-cutting bookkeeping (a map over all characters), not a per-entity unit; conflicts are rare and the poison-all barrier already prevents clobbers. Extraction remains possible later if contention appears. |
 | Generation | stateless per-request | No locking needed. |
 | Secrets/API keys | `secrets.json`, referenced by id | Unchanged; profiles reference `secret-id` (already supported by connection-manager). |
 
@@ -399,7 +399,9 @@ settings churn), not the lease machinery itself (~a day of server code).
   a group another window is chatting in poisons that window only if it holds a
   lease on that character (it does, as a reader → it drains automatically;
   only write-intent holders block and get poisoned). Verify in Stage 3 testing.
-- **Tags/tag_map extraction** deferred; under global lease until then.
+- **Tags/tag_map extraction**: decided in Stage 3 — stays under the blob's
+  explicit-save barrier (see §4); extraction deferred unless contention
+  appears in practice.
 - **Upstream:** this is core-invasive; the flag, the unchanged single-window
   behavior, and a staged PR series (Stage 1 first — it fixes real data loss)
   are the acceptance strategy. Related upstream asks: #883 (multi-tab),
