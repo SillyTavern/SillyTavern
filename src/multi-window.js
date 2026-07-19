@@ -4,8 +4,12 @@ import { getConfigValue } from './util.js';
 
 export const MULTI_WINDOW_ENABLED = !!getConfigValue('multiWindow.enabled', false, 'boolean');
 
-/** Session considered dead if no heartbeat within this window. */
-const SESSION_TTL_MS = 60 * 1000;
+/**
+ * Session considered dead if no heartbeat within this window. Generous on
+ * purpose: browsers throttle timers in background tabs to as little as one
+ * tick per minute, and a backgrounded window must not lose its session.
+ */
+const SESSION_TTL_MS = 3 * 60 * 1000;
 /** Poison records are kept this long so a reloading window can fetch the reason. */
 const POISON_TTL_MS = 10 * 60 * 1000;
 /** Registry sweep cadence. */

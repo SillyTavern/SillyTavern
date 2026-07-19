@@ -252,6 +252,7 @@ import { getPresetManager, initPresetManager } from './scripts/preset-manager.js
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection } from './scripts/multi-window.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
@@ -647,6 +648,7 @@ export function getRequestHeaders({ omitContentType = false } = {}) {
     const headers = {
         'Content-Type': 'application/json',
         'X-CSRF-Token': token,
+        ...getMultiWindowHeaders(),
     };
 
     if (omitContentType) {
@@ -699,6 +701,8 @@ async function firstLoadInit() {
         toastr.error(t`Couldn't get CSRF token. Please refresh the page.`, t`Error`, { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
         throw new Error('Initialization failed');
     }
+
+    await initMultiWindow();
 
     const initLoaderOverlay = loader.createOverlay();
     initLoaderOverlay.classList.add('splash-screen');
@@ -7424,6 +7428,10 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
             return;
         }
 
+        if (isLeaseRejection(result)) {
+            return;
+        }
+
         const errorData = await result.json();
         const isIntegrityError = errorData?.error === 'integrity' && !force;
         if (!isIntegrityError) {
@@ -7639,6 +7647,7 @@ export async function getChat() {
         if (!chat_metadata.integrity) {
             chat_metadata.integrity = uuidv4();
         }
+        await leaseChat(characters[this_chid].avatar, characters[this_chid].chat);
         await getChatResult();
         eventSource.emit(event_types.CHAT_LOADED, { detail: { id: this_chid, character: characters[this_chid] } });
 
@@ -7981,8 +7990,11 @@ export async function getSettings(initLoaderHandle = null) {
         setPersonaDescription();
 
         //Load the active character and group
-        active_character = settings.active_character;
-        active_group = settings.active_group;
+        // After a poisoning, land neutral: no chat, no active character/group.
+        if (!consumeNeutralLanding()) {
+            active_character = settings.active_character;
+            active_group = settings.active_group;
+        }
 
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 

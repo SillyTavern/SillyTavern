@@ -71,11 +71,19 @@ These principles resolve every edge case below; when in doubt, apply them:
 ```
 sessions: Map<windowId, {
     epoch: number,
-    lastSeen: timestamp,          // TTL-expired (default 60s)
+    lastSeen: timestamp,          // TTL-expired (default 3 min)
     poisoned: false | { reason: string, byWindow: string, entity: string },
     ephemeralProfiles: Map<profileId, ProfileObject>,
 }>
 ```
+
+The session TTL must tolerate background-tab timer throttling (browsers
+throttle `setInterval` in hidden tabs to as little as one tick per minute),
+hence minutes, not seconds. The client additionally heartbeats immediately on
+`visibilitychange` → visible, and on a `440 unknown_session` response (server
+restart or TTL expiry) it silently re-registers **and re-acquires the lease it
+was holding** — if that re-acquire conflicts because another window took the
+entity in the meantime, the window drops to read-only with a warning toast.
 
 ### 3.3 Heartbeat
 
@@ -229,10 +237,14 @@ Force-write is the only source of poisoning. Semantics:
 3. **A poisoned session is dead to the server.** Every endpoint rejects it
    (HTTP `410 Gone` with a `poisoned` body) — not just the heartbeat. In-flight
    debounced saves and stream continuations bounce off harmlessly. The
-   server-side rejection is the safety mechanism; the client reload is only UX.
-4. Client rule (one line): on any `410 poisoned` response → abort streaming
-   generation, **drop** (never flush) pending debounced saves,
-   `location.reload()`.
+   server-side rejection is the safety mechanism; everything client-side is
+   only UX.
+4. Client rule: on any `410 poisoned` response the window becomes a
+   **read-only zombie** — heartbeats stop and nothing can be saved (the
+   server enforces this), but the page deliberately does **not** auto-reload.
+   A sticky toast ("Session ended — copy anything you still need") with a
+   **Reload** button hands control to the user, so the state of the page can
+   be read or copied before it is discarded. Reload happens only on click.
 5. Rebirth: the reload re-registers with the same `windowId`, `epoch + 1`. The
    server clears the poison, returns the window's ephemeral profiles and the
    poison reason. The window lands **neutral**: same ephemeral/connection
