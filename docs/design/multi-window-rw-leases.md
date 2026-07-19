@@ -192,15 +192,19 @@ which **transitively invalidates every window whose active profile references
 it**: those windows get the standard stale ⚠️. Force-writing a preset
 poisons its lease holders like any other entity.
 
-**No `<None>` preset — anonymous or named.** The preset selector never shows
-`<None>`. A profile's connection content is either:
+**No `<None>` preset — anonymous or named.** The choice is an explicit mode
+toggle under the Connection Preset heading, not a `<None>` option in the
+dropdown. A profile's connection content is either:
 
-- **Anonymous: <profile name>** — the preset-scope content is embedded in
+- **Anonymous (<profile name>)** — the preset-scope content is embedded in
   and owned by the profile itself: saved with the profile, no separate
   lease, invisible to other profiles. This is the default state and the
-  successor of `<None>`.
-- **A named preset** — the profile stores only the reference; the content
-  lives in the preset file.
+  successor of `<None>`. In this mode the preset dropdown is hidden and the
+  preset buttons are grayed out.
+- **Named** — the profile stores only the reference; the content lives in
+  the preset file. The dropdown appears and a preset must be selected;
+  switching to Named with no presets yet triggers the create flow (cancel
+  falls back to Anonymous).
 
 Local edits while a named preset is selected mark it **"(unsaved)" ⚠️** in
 the selector — the working state has diverged from the named preset's
