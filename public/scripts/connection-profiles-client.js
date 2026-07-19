@@ -19,17 +19,31 @@ import { debounce, uuidv4 } from './utils.js';
  * applies it with no special code.
  *
  * The Connection Preset UI (the connection-manager extension) is the preset
- * selector: its "None" option is presented as "Anonymous: <profile name>" -
- * the profile's own content. When a named preset is selected and the working
- * state diverges from it, the preset shows "(unsaved)" and the profile
- * cannot be saved until the preset is updated or Anonymous is selected
- * (folding the changes into the profile).
+ * selector, fronted by an Anonymous/Named mode toggle injected under its
+ * heading. Anonymous means the content is the profile's own: the preset
+ * dropdown is hidden and the preset buttons are grayed out. Named means the
+ * profile references a named preset: the dropdown appears and a preset must
+ * be selected (switching to Named with no presets yet triggers the create
+ * flow). When a named preset is selected and the working state diverges from
+ * it, the preset shows "(unsaved)" and the profile cannot be saved until the
+ * preset is updated or the toggle is switched to Anonymous (folding the
+ * changes into the profile).
  *
  * Local changes fork a server-memory ephemeral "(edited)" copy - the ⚠️ in
  * the connections panel - which must be explicitly saved to persist.
  */
 
 const DIRTY_CHECK_INTERVAL_MS = 10 * 1000;
+
+/** The connection-manager buttons that only apply to named presets. */
+const PRESET_BUTTON_IDS = [
+    'view_connection_profile',
+    'create_connection_profile',
+    'update_connection_profile',
+    'edit_connection_profile',
+    'reload_connection_profile',
+    'delete_connection_profile',
+];
 
 /** Live references to the section sources; collected by value via JSON clone. */
 function collectSections() {
@@ -242,15 +256,30 @@ function updateBadge() {
     manager.querySelector('.cp-warning').style.display = dirty ? '' : 'none';
     manager.querySelector('.cp-save').style.display = dirty ? '' : 'none';
 
-    // The Connection Preset select is the preset UI: "None" is presented as
-    // the profile's anonymous preset, and the selected named preset carries
-    // the "(unsaved)" marker when the working state has diverged from it.
+    // The Anonymous/Named toggle fronts the Connection Preset select. The
+    // mode follows the extension's live selection (set synchronously on
+    // change), not activePresetId, which lags behind the delayed dirty check.
+    const named = !!getSelectedPresetId();
+    const modeToggle = document.getElementById('cp_preset_mode');
+    if (modeToggle) {
+        modeToggle.querySelector('.cp-anon-name').textContent = activeProfile?.name ?? 'profile';
+        modeToggle.querySelector('input[value="anonymous"]').checked = !named;
+        modeToggle.querySelector('input[value="named"]').checked = named;
+    }
     const presetSelect = document.getElementById('connection_profiles');
     if (presetSelect) {
+        // Anonymous is a toggle state, not a select option: the dropdown only
+        // ever offers named presets and only shows in Named mode.
+        presetSelect.style.display = named ? '' : 'none';
         const noneOption = presetSelect.querySelector('option[value=""]');
         if (noneOption) {
-            noneOption.textContent = `Anonymous: ${activeProfile?.name ?? 'profile'}`;
+            noneOption.hidden = true;
         }
+        for (const id of PRESET_BUTTON_IDS) {
+            document.getElementById(id)?.classList.toggle('disabled', !named);
+        }
+        // The selected named preset carries the "(unsaved)" marker when the
+        // working state has diverged from it.
         for (const option of presetSelect.options) {
             if (!option.value) {
                 continue;
@@ -269,7 +298,7 @@ async function saveActiveProfile() {
     // Connection Preset it references: resolve the preset first.
     if (activePresetId && presetUnsaved) {
         toastr.error(
-            `Connection Preset "${getPresetName(activePresetId)}" has unsaved changes. Update the preset, or select "Anonymous" to fold the changes into this profile.`,
+            `Connection Preset "${getPresetName(activePresetId)}" has unsaved changes. Update the preset, or switch to Anonymous to fold the changes into this profile.`,
             'Profile not saved', { timeOut: 10000 },
         );
         return;
@@ -409,6 +438,63 @@ async function setDefaultProfile() {
     }
 }
 
+/**
+ * Switches between Anonymous (content owned by the profile) and Named
+ * (profile references a Connection Preset) by driving the extension's own
+ * select, so its change handler applies/clears the preset normally.
+ * @param {Event} event
+ */
+function onPresetModeToggle(event) {
+    const mode = /** @type {HTMLInputElement} */ (event.target).value;
+    const presetSelect = /** @type {HTMLSelectElement} */ (document.getElementById('connection_profiles'));
+    if (!presetSelect || (mode === 'named') === !!getSelectedPresetId()) {
+        return;
+    }
+    if (mode === 'anonymous') {
+        presetSelect.value = '';
+        presetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        updateBadge();
+        return;
+    }
+    const presets = extension_settings.connectionManager?.profiles ?? [];
+    if (!presets.length) {
+        // Nothing to select yet: run the extension's create flow. Success
+        // lands on the new preset via its own events; cancel emits nothing,
+        // so show Anonymous again right away instead of a dead Named state.
+        updateBadge();
+        document.getElementById('create_connection_profile')?.click();
+        return;
+    }
+    const target = presets.find(p => p.id === persistedPresetId) ?? presets[0];
+    presetSelect.value = target.id;
+    presetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    updateBadge();
+}
+
+/** Injects the Anonymous/Named toggle under the Connection Preset heading. */
+function injectPresetModeToggle() {
+    const presetSelect = document.getElementById('connection_profiles');
+    const controlsRow = presetSelect?.parentElement;
+    if (!controlsRow || document.getElementById('cp_preset_mode')) {
+        return;
+    }
+    const toggle = document.createElement('div');
+    toggle.id = 'cp_preset_mode';
+    toggle.className = 'flex-container alignItemsCenter';
+    toggle.style.gap = '10px';
+    toggle.innerHTML = `
+        <label class="checkbox_label" title="The preset content is embedded in and owned by the connection profile">
+            <input type="radio" name="cp_preset_mode" value="anonymous">
+            <span>Anonymous (<span class="cp-anon-name">profile</span>)</span>
+        </label>
+        <label class="checkbox_label" title="The connection profile references a named Connection Preset">
+            <input type="radio" name="cp_preset_mode" value="named">
+            <span data-i18n="Named:">Named:</span>
+        </label>`;
+    toggle.addEventListener('change', onPresetModeToggle);
+    controlsRow.parentElement.insertBefore(toggle, controlsRow);
+}
+
 function injectBadge() {
     const anchor = document.getElementById('rm_api_block');
     if (!anchor || document.getElementById('connection_profile_status')) {
@@ -441,6 +527,7 @@ function injectBadge() {
     document.getElementById('connection_profiles')
         ?.addEventListener('change', () => setTimeout(checkDirty, 1500));
 
+    injectPresetModeToggle();
     updateBadge();
 }
 
@@ -453,6 +540,11 @@ export function initConnectionProfiles() {
     eventSource.once(event_types.APP_READY, async () => {
         if (needsMigration) {
             await migrate();
+        }
+        if (!activeProfile) {
+            // Feature off (or the profile list unreachable): leave the
+            // legacy UI untouched.
+            return;
         }
         injectBadge();
         setInterval(checkDirty, DIRTY_CHECK_INTERVAL_MS);
