@@ -1,5 +1,8 @@
 import { getRequestHeaders, eventSource, event_types } from '../script.js';
 import { power_user } from './power-user.js';
+import { onSettingsDirty } from './multi-window.js';
+import { debounce } from './utils.js';
+import { debounce_timeout } from './constants.js';
 
 /**
  * Persona extraction out of the settings blob (design §8.1).
@@ -155,6 +158,12 @@ export function initPersonaFiles() {
         if (!filesAvailable) {
             return;
         }
+        // Persona edits route through saveSettingsDebounced: the deferred
+        // dirty signal is the "edit submitted" moment, so the file write
+        // happens right away. The interval remains as a backstop for
+        // mutations that skip the settings save.
+        const syncSoon = debounce(syncPersonas, debounce_timeout.short);
+        onSettingsDirty(syncSoon);
         setInterval(syncPersonas, SYNC_INTERVAL_MS);
         eventSource.on(event_types.SETTINGS_UPDATED, syncPersonas);
     });

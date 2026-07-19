@@ -396,6 +396,10 @@ export function isMultiWindowActive() {
 
 let appReady = false;
 let settingsDirty = false;
+/** @type {?string} Normalized JSON of the settings blob as last persisted. */
+let settingsBaseline = null;
+/** @type {(() => void)[]} Notified on every deferred settings-save attempt. */
+const settingsDirtyListeners = [];
 
 /**
  * True when a settings blob save should be deferred to the explicit flow.
@@ -405,11 +409,71 @@ export function shouldDeferSettingsSave() {
     return enabled && registered && appReady && !dead;
 }
 
-/** Marks the settings blob dirty and shows the explicit save control. */
-export function markSettingsDirty() {
-    settingsDirty = true;
+/**
+ * Registers a handler fired on every deferred settings-save attempt - the
+ * "something just changed" signal. Entity syncs (personas, profile
+ * ephemerals) subscribe so an edit persists to its file right away instead
+ * of waiting for their periodic backstop pass.
+ * @param {() => void} handler
+ */
+export function onSettingsDirty(handler) {
+    settingsDirtyListeners.push(handler);
+}
+
+/**
+ * The settings payload with everything removed that is NOT the blob's to
+ * own anymore: per-window state (active chat), profile-owned connection +
+ * sampler sections, and file-owned persona/preset structures. Only a
+ * difference in what remains is a meaningful global change worth prompting
+ * the user to save.
+ * @param {object} payload
+ * @returns {string} Normalized JSON for comparison
+ */
+function normalizeSettingsPayload(payload) {
+    const clone = JSON.parse(JSON.stringify(payload));
+    delete clone.active_character;
+    delete clone.active_group;
+    // Profile-owned sections (design §8.3): the blob copies are rollback
+    // shadows, kept for one release cycle but no longer authoritative.
+    delete clone.main_api;
+    delete clone.oai_settings;
+    delete clone.textgenerationwebui_settings;
+    delete clone.kai_settings;
+    delete clone.nai_settings;
+    if (clone.power_user) {
+        // File-owned (personas/*.json).
+        delete clone.power_user.personas;
+        delete clone.power_user.persona_descriptions;
+        delete clone.power_user.personasMigratedToFiles;
+    }
+    if (clone.extension_settings) {
+        // File-owned (connection-presets/*.json) + per-window selection.
+        delete clone.extension_settings.connectionManager;
+    }
+    return JSON.stringify(clone);
+}
+
+/**
+ * Records the payload of a successful settings persist (boot-grace or
+ * explicit) as the clean baseline for dirty comparison.
+ * @param {object} payload
+ */
+export function noteSettingsPersisted(payload) {
+    try {
+        settingsBaseline = normalizeSettingsPayload(payload);
+    } catch {
+        settingsBaseline = null;
+    }
+    settingsDirty = false;
+    updateSettingsSaveButton();
+}
+
+function updateSettingsSaveButton() {
     let button = document.getElementById('mw_settings_save');
     if (!button) {
+        if (!settingsDirty) {
+            return;
+        }
         button = document.createElement('div');
         button.id = 'mw_settings_save';
         button.classList.add('menu_button');
@@ -428,6 +492,28 @@ export function markSettingsDirty() {
         }
     }
     button.style.display = settingsDirty ? 'flex' : 'none';
+}
+
+/**
+ * Handles a deferred settings save: notifies the entity syncs immediately,
+ * and shows the explicit save control only when the blob meaningfully
+ * differs from what is on disk (trivia like the active chat, sampler
+ * tweaks owned by the profile, or persona edits owned by their files do
+ * not prompt - and reverting a change hides the prompt again).
+ * @param {object} [payload] The settings payload that would have been saved
+ */
+export function markSettingsDirty(payload) {
+    settingsDirtyListeners.forEach(h => h());
+    if (payload && settingsBaseline) {
+        try {
+            settingsDirty = normalizeSettingsPayload(payload) !== settingsBaseline;
+        } catch {
+            settingsDirty = true;
+        }
+    } else {
+        settingsDirty = true;
+    }
+    updateSettingsSaveButton();
 }
 
 async function explicitSettingsSave() {

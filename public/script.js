@@ -252,7 +252,7 @@ import { getPresetManager, initPresetManager } from './scripts/preset-manager.js
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
-import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection, isMultiWindowActive, shouldDeferSettingsSave, markSettingsDirty } from './scripts/multi-window.js';
+import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection, isMultiWindowActive, shouldDeferSettingsSave, markSettingsDirty, noteSettingsPersisted } from './scripts/multi-window.js';
 import { initConnectionProfiles } from './scripts/connection-profiles-client.js';
 import { initPersonaFiles } from './scripts/personas-files.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
@@ -8050,31 +8050,8 @@ export async function getSettings(initLoaderHandle = null) {
 }
 
 //MARK: saveSettings()
-export async function saveSettings(loopCounter = 0, { explicit = false } = {}) {
-    // Multi-window mode: the settings blob never auto-persists. Changes stay
-    // local until the user explicitly saves, which reloads all windows.
-    if (!explicit && shouldDeferSettingsSave()) {
-        markSettingsDirty();
-        return;
-    }
-    if (!settingsReady) {
-        console.warn('Settings not ready, scheduling another save');
-        saveSettingsDebounced();
-        return;
-    }
-
-    const MAX_RETRIES = 3;
-    if (TempResponseLength.isCustomized()) {
-        if (loopCounter < MAX_RETRIES) {
-            console.warn('Response length is currently being overridden, scheduling another save');
-            saveSettingsDebounced(++loopCounter);
-            return;
-        }
-        console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
-        TempResponseLength.restore(null);
-    }
-
-    const payload = {
+function collectSettingsPayload() {
+    return {
         firstRun: firstRun,
         accountStorage: accountStorage.getState(),
         currentVersion: currentVersion,
@@ -8100,6 +8077,35 @@ export async function saveSettings(loopCounter = 0, { explicit = false } = {}) {
         proxies: proxies,
         selected_proxy: selected_proxy,
     };
+}
+
+export async function saveSettings(loopCounter = 0, { explicit = false } = {}) {
+    // Multi-window mode: the settings blob never auto-persists. Changes stay
+    // local until the user explicitly saves, which reloads all windows. The
+    // would-be payload lets the dirty check compare against what is on disk,
+    // so trivia (per-window/profile/file-owned fields) does not prompt.
+    if (!explicit && shouldDeferSettingsSave()) {
+        markSettingsDirty(settingsReady ? collectSettingsPayload() : undefined);
+        return;
+    }
+    if (!settingsReady) {
+        console.warn('Settings not ready, scheduling another save');
+        saveSettingsDebounced();
+        return;
+    }
+
+    const MAX_RETRIES = 3;
+    if (TempResponseLength.isCustomized()) {
+        if (loopCounter < MAX_RETRIES) {
+            console.warn('Response length is currently being overridden, scheduling another save');
+            saveSettingsDebounced(++loopCounter);
+            return;
+        }
+        console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
+        TempResponseLength.restore(null);
+    }
+
+    const payload = collectSettingsPayload();
 
     try {
         const saveSettingsRequest = await compressRequest({
@@ -8115,6 +8121,7 @@ export async function saveSettings(loopCounter = 0, { explicit = false } = {}) {
         }
 
         settings = payload;
+        noteSettingsPersisted(payload);
         await eventSource.emit(event_types.SETTINGS_UPDATED);
     } catch (error) {
         console.error('Error saving settings:', error);

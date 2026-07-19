@@ -4,7 +4,7 @@ import { textgenerationwebui_settings } from './textgen-settings.js';
 import { kai_settings } from './kai-settings.js';
 import { nai_settings } from './nai-settings.js';
 import { extension_settings } from './extensions.js';
-import { getBootEphemeralProfiles, watchEntity, unwatchEntity, onEntityStale, noteEntityRevision } from './multi-window.js';
+import { getBootEphemeralProfiles, watchEntity, unwatchEntity, onEntityStale, noteEntityRevision, onSettingsDirty } from './multi-window.js';
 import { getContext } from './st-context.js';
 import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
@@ -636,6 +636,10 @@ export function initConnectionProfiles() {
         injectBadge();
         setInterval(checkDirty, DIRTY_CHECK_INTERVAL_MS);
         eventSource.on(event_types.SETTINGS_UPDATED, checkDirty);
+        // A deferred settings save is the "edit submitted" moment: check
+        // for profile divergence right away (the ephemeral upsert follows),
+        // instead of waiting for the periodic pass.
+        onSettingsDirty(debounce(checkDirty, debounce_timeout.short));
         // The connection manager's own Update flow saves the preset; a
         // finished preset apply is the moment to resnapshot against it.
         eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, () => notePresetUpdated());
