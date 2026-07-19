@@ -2,14 +2,14 @@
 
 **Branch:** `feature/multi-window-leases` in `~/dev/SillyTavern-dev` (clone of `~/dev/SillyTavern`, based on devel `39972e97c`).
 **Design:** `multi-window-rw-leases.md` (same dir) — read it first; this doc is the delta between design and code.
-**State:** Stages 1 + 2 complete and live-verified. Stage 3 not started.
+**State:** Stages 1 + 2 complete and live-verified, including all former Stage-2 gaps (preset mode toggle, transitive preset staleness, lease-gated renames, settings-save UX). Stage 3 not started.
 
 ## Environment / workflow (critical for the next session)
 
 - Agent shell is a toolbox container WITHOUT node. Run/build via host flatpak SDK:
   `flatpak-spawn --host flatpak run --command=sh --filesystem=host --share=network --cwd=<dir> org.freedesktop.Sdk//25.08 -c '. /usr/lib/sdk/node24/enable.sh && <cmd>'` (requires sandbox disabled).
-- Dev server: `node server.js --port 8020` in the clone (config.yaml there has `multiWindow.enabled: true`, whitelist `10.0.0.0/8`). Preview launch config `sillytavern-dev` exists in the MAIN repo's `.claude/launch.json`. `preview_stop` leaves the flatpak'd node alive — kill by port: `ss -tlnp | grep 8020` → kill PID (via flatpak-spawn --host).
-- Test suite: `bash tests/multi-window-leases.sh` against a RUNNING :8020 server — **33/33**. It pollutes `data/default-user/` (profiles/presets); `rm -rf data/default-user/connection-profiles` before browser-testing migration paths.
+- Dev server: `node server.js --port 8020` in the clone (config.yaml there has `multiWindow.enabled: true`, whitelist `10.0.0.0/8`). Preview launch config `sillytavern` exists in THIS clone's `.claude/launch.json` (untracked). The server auto-opens a tab in the desktop browser at startup — a second live window exists even when you didn't open one. `preview_stop` leaves the flatpak'd node alive — kill by port: `ss -tlnp | grep 8020` → kill PID (via flatpak-spawn --host).
+- Test suite: `bash tests/multi-window-leases.sh` against a RUNNING :8020 server — **34/34**. It cleans up after itself, but re-runs need a fresh server (fixed window ids/epochs cannot re-register against live session state).
 - Simulate a second window with curl: register with `X-Window-Id`/`X-Window-Epoch` headers + CSRF token + cookie jar (see test script for the exact recipe).
 - The floating save button and popups: `preview_click` coordinate-clicks can miss; use `element.click()` via `preview_eval`.
 - Lint: `npx eslint <files>` (same flatpak recipe). Use Read/Edit tools for file edits, NOT python str.replace (silent no-ops caused doc drift once).
@@ -45,7 +45,7 @@ Also: `watchEntity/onEntityStale/noteEntityRevision` staleness machinery in clie
 
 1. ~~Stage 2 stragglers~~ — done in `d1b5af3db`: transitive preset staleness wired (watch follows the active named preset; stale = toast + "(updated elsewhere)" option marker; self-saves recorded via noteEntityRevision and clear the marker), edit-dialog renames lease-gated, and the drain→30s-rewatch→toast path observed live end-to-end (preview window + curl second window).
 2. **Stage 3:** persona extraction from blob → `personas/*.json` + leases; character card leases (`/api/characters/edit*`); theme/QR leases; per-chat profile binding via chat_metadata (`connection: {profileId, parentId}`); tags decision; read-only live chat view (drain handling for chat read leases).
-3. Cosmetics: zombie toast says "by another window" even for self-initiated settings saves; floating save button placement may collide with ST's bottom-right UI.
+3. ~~Cosmetics~~ — done in `c9668f1c6`: toasts compare `byWindow` against the own window id ("by this window" vs "by another window"); the saver reloads immediately after an explicit settings save instead of parking on the death toast; the Save settings control lives in-flow at the end of the top drawer-icon bar (fixed bottom-right kept only as fallback).
 4. ~~Data dir test residue~~ — cleaned; `tests/multi-window-leases.sh` now deletes everything it creates (a leftover `eph-1.json` makes the "saved ephemeral cleared" check fail on re-runs, since promoting the ephemeral becomes a lease-gated re-save). Re-runs still need a server restart (fixed window ids/epochs can't re-register against live session state).
 
 ## Upstream strategy
