@@ -254,6 +254,7 @@ import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection, isMultiWindowActive, shouldDeferSettingsSave, markSettingsDirty } from './scripts/multi-window.js';
 import { initConnectionProfiles } from './scripts/connection-profiles-client.js';
+import { initPersonaFiles } from './scripts/personas-files.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
@@ -705,6 +706,7 @@ async function firstLoadInit() {
 
     await initMultiWindow();
     initConnectionProfiles();
+    initPersonaFiles();
 
     const initLoaderOverlay = loader.createOverlay();
     initLoaderOverlay.classList.add('splash-screen');

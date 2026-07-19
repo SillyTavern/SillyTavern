@@ -164,6 +164,20 @@ post "${D[@]}" -d '{"key":"theme/MW Test Theme","mode":"write"}' $BASE/api/sessi
 check "D re-save theme with lease -> 200" "200" "$(code "${D[@]}" -d "$THEME_BODY" $BASE/api/themes/save)"
 check "D delete theme with lease -> 200" "200" "$(code "${D[@]}" -d '{"name":"MW Test Theme"}' $BASE/api/themes/delete)"
 
+# Persona files: create exempt, overwrite/delete gated
+PERSONA_BODY='{"persona":{"avatarId":"mw-test-persona.png","name":"Test Persona","description":{"description":"a tester","position":0}}}'
+check "D create persona (no lease)" '{"ok":true,"revision":2}' \
+  "$(post "${D[@]}" -d "$PERSONA_BODY" $BASE/api/personas/save)"
+check "D re-save persona without lease -> 409" "409" \
+  "$(code "${D[@]}" -d "$PERSONA_BODY" $BASE/api/personas/save)"
+post "${D[@]}" -d '{"key":"persona/mw-test-persona.png","mode":"write"}' $BASE/api/sessions/lease/acquire > /dev/null
+check "D re-save persona with lease" '{"ok":true,"revision":3}' \
+  "$(post "${D[@]}" -d "$PERSONA_BODY" $BASE/api/personas/save)"
+LIST=$(post "${D[@]}" -d '{}' $BASE/api/personas/list)
+echo "$LIST" | grep -q '"avatarId":"mw-test-persona.png"' && check "persona list contains persona" ok ok || check "persona list contains persona" ok "$LIST"
+check "D delete persona with lease" '{"ok":true}' \
+  "$(post "${D[@]}" -d '{"avatarId":"mw-test-persona.png"}' $BASE/api/personas/delete)"
+
 # Quick Reply set: same semantics
 QR_BODY='{"name":"MWTestQR","qrList":[]}'
 check "D create QR set (no lease) -> 200" "200" "$(code "${D[@]}" -d "$QR_BODY" $BASE/api/quick-replies/save)"

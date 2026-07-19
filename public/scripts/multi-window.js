@@ -133,6 +133,8 @@ const TRANSIENT_LEASE_ROUTES = new Map([
         const avatars = Array.isArray(f('avatars')) ? f('avatars') : [f('avatar')];
         return { keys: avatars.filter(Boolean).map(a => `character/${a}`), label: 'character' };
     }],
+    ['/api/personas/save', f => ({ keys: [`persona/${f('persona')?.avatarId}`], label: 'persona' })],
+    ['/api/personas/delete', f => ({ keys: [`persona/${f('avatarId')}`], label: 'persona' })],
     ['/api/themes/save', f => ({ keys: [`theme/${f('name')}`], label: 'theme' })],
     ['/api/themes/delete', f => ({ keys: [`theme/${f('name')}`], label: 'theme' })],
     ['/api/quick-replies/save', f => ({ keys: [`qr/${f('name')}`], label: 'Quick Reply set' })],

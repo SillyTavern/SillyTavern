@@ -28,6 +28,7 @@ import { router as chatsRouter } from './endpoints/chats.js';
 import { router as sessionsRouter } from './endpoints/sessions.js';
 import { router as connectionProfilesRouter } from './endpoints/connection-profiles.js';
 import { router as connectionPresetsRouter } from './endpoints/connection-presets.js';
+import { router as personasRouter } from './endpoints/personas.js';
 import { poisonGate } from './multi-window.js';
 import { router as groupsRouter } from './endpoints/groups.js';
 import { router as worldInfoRouter } from './endpoints/worldinfo.js';
@@ -167,6 +168,7 @@ export function setupPrivateEndpoints(app) {
     app.use('/api/sessions', sessionsRouter);
     app.use('/api/connection-profiles', connectionProfilesRouter);
     app.use('/api/connection-presets', connectionPresetsRouter);
+    app.use('/api/personas', personasRouter);
     app.use('/api/groups', groupsRouter);
     app.use('/api/worldinfo', worldInfoRouter);
     app.use('/api/stats', statsRouter);
