@@ -79,7 +79,9 @@ function die(poisonReason) {
     } catch {
         // sessionStorage full/unavailable: the rebirth toast is lost, nothing else.
     }
-    const by = poisonReason?.byWindow ? ' by another window' : '';
+    const by = poisonReason?.byWindow
+        ? (poisonReason.byWindow === windowId ? ' by this window' : ' by another window')
+        : '';
     const entity = poisonReason?.entity ? ` over <code>${poisonReason.entity}</code>` : '';
     const $toast = toastr.error(
         `<div>This window's session was ended${by}${entity}. Nothing here can be saved anymore.</div>
@@ -304,11 +306,19 @@ export function markSettingsDirty() {
         button = document.createElement('div');
         button.id = 'mw_settings_save';
         button.classList.add('menu_button');
-        button.style.cssText = 'position: fixed; bottom: 8px; right: 8px; z-index: 10000; display: flex; align-items: center; gap: 6px;';
         button.title = 'Unsaved global settings - lost on reload or server restart. Saving reloads ALL open windows.';
         button.innerHTML = '<span style="color: #ffc107; text-shadow: 0 0 2px #000;">&#9888;&#65039;</span><span>Save settings</span>';
         button.addEventListener('click', explicitSettingsSave);
-        document.body.appendChild(button);
+        // In-flow at the end of the top drawer-icon bar, where it cannot
+        // cover the chat input or the side panels.
+        const topBar = document.getElementById('top-settings-holder');
+        if (topBar) {
+            button.style.cssText = 'align-self: center; margin-left: 10px; display: flex; align-items: center; gap: 6px; white-space: nowrap;';
+            topBar.appendChild(button);
+        } else {
+            button.style.cssText = 'position: fixed; bottom: 8px; right: 8px; z-index: 10000; display: flex; align-items: center; gap: 6px;';
+            document.body.appendChild(button);
+        }
     }
     button.style.display = settingsDirty ? 'flex' : 'none';
 }
@@ -329,9 +339,12 @@ async function explicitSettingsSave() {
         return;
     }
     settingsDirty = false;
-    // The server has poisoned every session including ours: enter the death
-    // ritual voluntarily instead of waiting for the next 410.
+    // The server has poisoned every session including ours. The user just
+    // consented to "Save and reload all": record the landing reason and
+    // reload right away instead of parking this window on the death toast
+    // (other windows still get it - they may hold unsaved work).
     die({ reason: 'global settings saved', byWindow: windowId, entity: 'settings' });
+    location.reload();
 }
 
 /** @type {object[]} Ephemeral profiles returned by the last registration. */
@@ -400,7 +413,9 @@ export async function initMultiWindow() {
         }
     }
     if (reason) {
-        const by = reason.byWindow ? ' by another window' : '';
+        const by = reason.byWindow
+            ? (reason.byWindow === windowId ? ' by this window' : ' by another window')
+            : '';
         const entity = reason.entity ? ` (${reason.entity})` : '';
         const showToast = () => toastr.warning(
             `This window was reloaded: ${reason.reason}${by}${entity}. Unsaved changes were discarded.`,
