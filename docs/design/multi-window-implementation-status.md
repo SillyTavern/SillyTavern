@@ -32,7 +32,7 @@
 | `c80817414` | Anonymous/Named mode toggle (radio pair injected under the Connection Preset heading) replaces the pseudo-"Anonymous" None option: Anonymous (labelled with profile name) hides the dropdown + grays preset buttons; Named requires a preset — empty list triggers the create flow, cancel falls back to Anonymous; mode derives from the extension's live selection (not the lagging activePresetId); profile UI injection now gated on the profile system being live (flag-off invariant) |
 | `243a6d5c9` | Settings blob explicit-save + poison-all: saveSettings defers unless explicit (shim active APP_READY+5s grace), floating "⚠️ Save settings" (fixed bottom-right), `X-Settings-Explicit` header scopes the poison-all barrier (without it boot saves poisoned everyone — real bug found), saver dies voluntarily; per-window active char/group in sessionStorage (`mw_active_character/group`) |
 
-Also: `watchEntity/onEntityStale/noteEntityRevision` staleness machinery in client multi-window.js (read-lease watch, drain → auto-release + 30s rewatch); server registerSession drops the window's previous leases.
+Also: `watchEntity/onEntityStale/noteEntityRevision` staleness machinery in client multi-window.js (read-lease watch, drain → auto-release + 30s rewatch); server registerSession drops the window's previous leases. As of `d1b5af3db` the preset watch is wired end-to-end (see gap 1 below).
 
 ## Key invariants (do not break)
 
@@ -43,7 +43,7 @@ Also: `watchEntity/onEntityStale/noteEntityRevision` staleness machinery in clie
 
 ## Known gaps / next work
 
-1. **Stage 2 stragglers:** client-side transitive preset staleness (watch `preset/<id>` of active profile; machinery exists, unwired); rename-only preset edit persists via UPDATED event without lease guard; staleness-rewatch browser toast E2E never fully observed (drain+save half verified).
+1. ~~Stage 2 stragglers~~ — done in `d1b5af3db`: transitive preset staleness wired (watch follows the active named preset; stale = toast + "(updated elsewhere)" option marker; self-saves recorded via noteEntityRevision and clear the marker), edit-dialog renames lease-gated, and the drain→30s-rewatch→toast path observed live end-to-end (preview window + curl second window).
 2. **Stage 3:** persona extraction from blob → `personas/*.json` + leases; character card leases (`/api/characters/edit*`); theme/QR leases; per-chat profile binding via chat_metadata (`connection: {profileId, parentId}`); tags decision; read-only live chat view (drain handling for chat read leases).
 3. Cosmetics: zombie toast says "by another window" even for self-initiated settings saves; floating save button placement may collide with ST's bottom-right UI.
 4. ~~Data dir test residue~~ — cleaned; `tests/multi-window-leases.sh` now deletes everything it creates (a leftover `eph-1.json` makes the "saved ephemeral cleared" check fail on re-runs, since promoting the ephemeral becomes a lease-gated re-save). Re-runs still need a server restart (fixed window ids/epochs can't re-register against live session state).
