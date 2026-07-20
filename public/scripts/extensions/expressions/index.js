@@ -1518,6 +1518,9 @@ function chooseSpriteForExpression(spriteFolderName, expression, { prevExpressio
  * @returns {Promise<void>} A promise that resolves when the expression has been set.
  */
 async function setExpression(spriteFolderName, expression, { force = false, overrideSpriteFile = null } = {}) {
+    if (expression == null || expression === 'null' || expression === 'undefined') {
+        expression = extension_settings.expressions.fallback_expression || DEFAULT_FALLBACK_EXPRESSION;
+    }
     await validateImages(spriteFolderName);
     const img = $('img.expression');
     const prevExpressionSrc = img.attr('src');
@@ -1634,8 +1637,15 @@ async function setExpression(spriteFolderName, expression, { force = false, over
  * @param {string} expression - The expression label to use for the default image
  */
 function setDefaultEmojiForImage(img, expression) {
-    if (extension_settings.expressions.custom?.includes(expression)) {
-        console.debug(`Can't set default emoji for a custom expression (${expression}). setting to ${DEFAULT_FALLBACK_EXPRESSION} instead.`);
+    // Classifier / API can yield null/"null"/undefined; there is no null.png default asset (#5863).
+    if (
+        expression == null
+        || expression === ''
+        || expression === 'null'
+        || expression === 'undefined'
+        || extension_settings.expressions.custom?.includes(expression)
+    ) {
+        console.debug(`Can't set default emoji for expression (${expression}). setting to ${DEFAULT_FALLBACK_EXPRESSION} instead.`);
         expression = DEFAULT_FALLBACK_EXPRESSION;
     }
 
