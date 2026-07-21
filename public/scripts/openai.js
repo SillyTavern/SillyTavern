@@ -111,7 +111,7 @@ const default_continue_nudge_prompt = '[Continue your last message without repea
 const default_bias = 'Default (none)';
 const default_personality_format = '{{personality}}';
 const default_scenario_format = '{{scenario}}';
-const default_group_nudge_prompt = '[Write the next reply only as {{char}}.]';
+const default_group_nudge_prompt = '[RULES FOR {{char}}\'s REPLY]\n1. You are {{char}}. You are NOT any other character.\n2. Your tone, style, and behavior must come from {{char}}\'s own personality ONLY. Do NOT borrow attitudes, catchphrases, or behavioral patterns from other characters.\n3. DO NOT write any dialogue, actions, or narration for other characters.\n4. DO NOT use other characters\' names followed by a colon (e.g., "Name:" or "Name：").\n\n[BEFORE FINAL OUTPUT — Self-Review each line of your reply]\n- If any line starts with another character\'s name followed by a colon, DELETE that line.\n- If your reply sounds like it belongs to a DIFFERENT character instead of {{char}}, DISCARD it and rewrite to match {{char}}\'s personality.]';
 const default_bias_presets = {
     [default_bias]: [],
     'Anti-bond': [
@@ -1491,6 +1491,15 @@ async function preparePromptsForChatCompletion({ scenario, charPersonality, name
         systemPrompt.content = systemPromptOverride;
         const mainReplacement = promptManager.preparePrompt(systemPrompt, mainOriginalContent);
         prompts.override(mainReplacement, prompts.index('main'));
+    }
+
+    // Group chat: Replace main prompt with single-character role-play framing
+    if (selected_group && systemPrompt && !systemPromptOverride && !isSystemPromptDisabled) {
+        const rolePlayPrompt = 'You are {{char}}. Write {{char}}\'s next message in a role-play group chat with {{group}} and {{user}}. This is NOT a story or script — you are ONE character. Output ONLY {{char}}\'s words and actions. Do NOT write dialogue, actions, or narration for anyone else.';
+        const originalContent = systemPrompt.content;
+        systemPrompt.content = substituteParams(rolePlayPrompt);
+        const replacement = promptManager.preparePrompt(systemPrompt, originalContent);
+        prompts.override(replacement, prompts.index('main'));
     }
 
     // Apply character-specific jailbreak
