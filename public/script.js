@@ -230,7 +230,6 @@ import {
     formatInstructModeExamples,
     formatInstructModeStoryString,
     getInstructStoppingSequences,
-    names_behavior_types,
 } from './scripts/instruct-mode.js';
 import { initLocales, t } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
