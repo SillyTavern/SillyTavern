@@ -111,6 +111,7 @@ import {
     loadProxyPresets,
     selected_proxy,
     initOpenAI,
+    character_names_behavior,
 } from './scripts/openai.js';
 
 import {
@@ -4806,9 +4807,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     let oaiMessageExamples = [];
 
     if (main_api === 'openai') {
-        let appendNamesForGroup = !!selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
+        const appendNamesForGroup = !!selected_group && [character_names_behavior.DEFAULT, character_names_behavior.CONTENT, character_names_behavior.NONE_EXCEPT_EXAMPLES].includes(oai_settings.names_behavior);
+        const alwaysAppendNames = oai_settings.names_behavior === character_names_behavior.NONE_EXCEPT_EXAMPLES;
         oaiMessages = setOpenAIMessages(coreChat);
-        oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray, appendNamesForGroup);
+        oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray, appendNamesForGroup, alwaysAppendNames);
     }
 
     // hack for regeneration of the first message

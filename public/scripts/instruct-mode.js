@@ -18,6 +18,7 @@ export const names_behavior_types = {
     NONE: 'none',
     FORCE: 'force',
     ALWAYS: 'always',
+    NONE_EXCEPT_EXAMPLES: 'none_except_examples',
 };
 
 const controls = [
@@ -515,8 +516,8 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
     }
 
-    const includeNames = power_user.instruct.names_behavior === names_behavior_types.ALWAYS;
-    const includeGroupNames = !!selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE].includes(power_user.instruct.names_behavior);
+    const includeNames = [names_behavior_types.ALWAYS, names_behavior_types.NONE_EXCEPT_EXAMPLES].includes(power_user.instruct.names_behavior);
+    const includeGroupNames = !!selected_group && [names_behavior_types.ALWAYS, names_behavior_types.FORCE, names_behavior_types.NONE_EXCEPT_EXAMPLES].includes(power_user.instruct.names_behavior);
 
     let inputPrefix = power_user.instruct.input_sequence || '';
     let outputPrefix = power_user.instruct.output_sequence || '';
