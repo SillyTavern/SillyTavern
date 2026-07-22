@@ -1467,7 +1467,7 @@ export function getReasoningTemplateByName(name) {
  * @param {Object} options Optional arguments
  * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
  * @param {ReasoningTemplate} template Optional reasoning template to use instead of power_user.reasoning
- * @returns {ParsedReasoning|null} Parsed reasoning block and message content
+ * @returns {ParsedReasoning|null} Parsed reasoning block and message content, or null if no reasoning block was found
  */
 export function parseReasoningFromString(str, { strict = true } = {}, template = null) {
     template = template ?? power_user.reasoning;  // if no template given, use the currently selected template
@@ -1488,10 +1488,12 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
             return '';
         });
 
-        if (didReplace) {
-            reasoning = trimSpaces(reasoning);
-            content = trimSpaces(content);
+        if (!didReplace) {
+            return null;
         }
+
+        reasoning = trimSpaces(reasoning);
+        content = trimSpaces(content);
 
         return { reasoning, content };
     } catch (error) {
