@@ -359,7 +359,16 @@ async function checkChatIntegrity(filePath, integritySlug) {
 export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false, matcher = null) {
     return new Promise(async (res) => {
         const parsedPath = path.parse(pathToFile);
-        const stats = await fs.promises.stat(pathToFile);
+        let stats;
+        try {
+            stats = await fs.promises.stat(pathToFile);
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                res({ match: false });
+                return;
+            }
+            throw error;
+        }
         const hasMatcher = (typeof matcher === 'function');
 
         const chatData = {
