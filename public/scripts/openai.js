@@ -3446,6 +3446,37 @@ class InvalidCharacterNameError extends Error {
 }
 
 /**
+ * Determines whether a media URL points to a local file served by this server
+ * (e.g. '/user/images/...'). Such files can be inlined server-side instead of
+ * being fetched and base64-encoded in the browser.
+ * @param {string} url The media URL to inspect.
+ * @returns {string|null} The server-rooted path (starting with '/') if local, otherwise null.
+ */
+function getLocalServerMediaPath(url) {
+    if (typeof url !== 'string' || !url) {
+        return null;
+    }
+    // Protocol-relative URLs (//host/...) are not local.
+    if (url.startsWith('//')) {
+        return null;
+    }
+    // Server-rooted relative path.
+    if (url.startsWith('/')) {
+        return url;
+    }
+    // Absolute URL pointing at the same origin: use its path only.
+    try {
+        const parsed = new URL(url, window.location.origin);
+        if (parsed.origin === window.location.origin) {
+            return parsed.pathname + parsed.search;
+        }
+    } catch {
+        // Not a parseable URL - treat as non-local.
+    }
+    return null;
+}
+
+/**
  * Used for creating, managing, and interacting with a specific message object.
  */
 class Message {
@@ -3598,25 +3629,35 @@ class Message {
     async addVideo(video) {
         this.content = this.ensureContentIsArray();
         const isDataUrl = isDataURL(video);
-        if (!isDataUrl) {
-            try {
-                const response = await fetch(video, { method: 'GET', cache: 'force-cache' });
-                if (!response.ok) throw new Error('Failed to fetch video');
-                const blob = await response.blob();
-                video = await getBase64Async(blob);
-            } catch (error) {
-                console.error('Video adding skipped', error);
-                return;
-            }
-        }
-
+        const localPath = isDataUrl ? null : getLocalServerMediaPath(video);
         // Note: No compression for videos (unlike images)
         const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
-        this.content.push({ type: 'video_url', video_url: { 'url': video, 'detail': quality } });
+
+        if (localPath) {
+            // Local server file: keep the path as-is and let the server inline the
+            // base64 at generation time. This avoids loading large videos into the
+            // browser JS heap on every generation.
+            this.content.push({ type: 'video_url', video_url: { 'url': localPath, 'detail': quality } });
+        } else {
+            if (!isDataUrl) {
+                try {
+                    const response = await fetch(video, { method: 'GET', cache: 'force-cache' });
+                    if (!response.ok) throw new Error('Failed to fetch video');
+                    const blob = await response.blob();
+                    video = await getBase64Async(blob);
+                } catch (error) {
+                    console.error('Video adding skipped', error);
+                    return;
+                }
+            }
+            this.content.push({ type: 'video_url', video_url: { 'url': video, 'detail': quality } });
+        }
 
         try {
-            // Using Gemini calculation (263 tokens per second)
-            const duration = await getVideoDurationFromDataURL(video);
+            // Using Gemini calculation (263 tokens per second).
+            // getVideoDurationFromDataURL accepts any video src (data URL or local path)
+            // and reads only metadata, so token accounting stays consistent.
+            const duration = await getVideoDurationFromDataURL(localPath || video);
             this.tokens += 263 * Math.ceil(duration);
         } catch (error) {
             // Convservative estimate for video token cost without knowing duration
