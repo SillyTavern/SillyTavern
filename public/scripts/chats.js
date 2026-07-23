@@ -39,7 +39,7 @@ import {
     getBase64Async,
     getStringHash,
     humanFileSize,
-    saveBase64AsFile,
+    saveFileAsMediaToServer,
     extractTextFromOffice,
     download,
     getFileText,
@@ -205,13 +205,12 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         for (const file of fileInput.files) {
             const slug = getStringHash(file.name);
             const fileNamePrefix = `${Date.now()}_${slug}`;
-            const fileBase64 = await getBase64Async(file);
-            let base64Data = fileBase64.split(',')[1];
             const extension = getFileExtension(file);
 
             const mediaType = MEDIA_TYPE.getFromMime(file.type);
             if (mediaType) {
-                const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+                // Upload media files as-is to avoid materializing large base64 strings in memory
+                const imageUrl = await saveFileAsMediaToServer(file, name2, fileNamePrefix, extension);
                 if (!Array.isArray(message.extra.media)) {
                     message.extra.media = [];
                 }
@@ -227,6 +226,8 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 message.extra.inline_image = true;
             } else {
                 const uniqueFileName = `${fileNamePrefix}.txt`;
+                const fileBase64 = await getBase64Async(file);
+                let base64Data = fileBase64.split(',')[1];
 
                 if (isConvertible(file.type)) {
                     try {
