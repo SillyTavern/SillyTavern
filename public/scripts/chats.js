@@ -328,19 +328,23 @@ export async function getFileAttachment(url) {
  * @returns {Promise<boolean>} True if file is valid, false otherwise.
  */
 async function validateFile(file) {
-    const fileText = await file.text();
     const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
-    const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
     if (!isMedia && file.size > fileSizeLimit) {
         toastr.error(t`File is too big. Maximum size is ${humanFileSize(fileSizeLimit)}.`);
         return false;
     }
 
-    // If file is binary
-    if (isBinary && !isMedia && !isConvertible(file.type)) {
-        toastr.error(t`Binary files are not supported. Select a text file or image.`);
-        return false;
+    // Media files don't need to be read to be validated; skip the binary content check
+    if (!isMedia) {
+        const fileText = await file.text();
+        const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
+
+        // If file is binary
+        if (isBinary && !isConvertible(file.type)) {
+            toastr.error(t`Binary files are not supported. Select a text file or image.`);
+            return false;
+        }
     }
 
     return true;
