@@ -6309,6 +6309,16 @@ export function isVideoInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.input_modalities?.includes('video'));
         case chat_completion_sources.ZAI:
             return videoSupportedModels.some(model => oai_settings.zai_model.includes(model));
+        case chat_completion_sources.CUSTOM: {
+            const customModel = oai_settings.custom_model?.toLowerCase();
+            if (!customModel) {
+                return false;
+            }
+            return videoSupportedModels.some(model => {
+                const prefix = model.includes('-') ? model.slice(0, model.indexOf('-')) : model;
+                return customModel.includes(prefix.toLowerCase());
+            });
+        }
         default:
             return false;
     }
