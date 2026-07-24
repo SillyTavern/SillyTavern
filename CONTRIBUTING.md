@@ -2,7 +2,7 @@
 
 ## Setting up the dev environment
 
-1. Required software: git and node.
+1. Required software: git and **Bun** (>= 1.3.0). Node is no longer the runtime.
 2. Recommended editor: Visual Studio Code.
 3. You can also use GitHub Codespaces which sets up everything for you.
 
@@ -13,19 +13,20 @@
 3. Clone the fork onto your machine.
 4. Open the cloned repository in the code editor.
 5. Create a git branch (recommended), review the [git book](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control) if you haven't.
-6. Make your changes and test them locally.
-7. Commit the changes and push the branch to the remote repo.
-8. Go to GitHub, and open a pull request, targeting the appropriate upstream branch.
+6. Run `bun install` to install tooling and generate `bun.lock`.
+7. Make your changes and test them locally.
+8. Commit the changes and push the branch to the remote repo.
+9. Go to GitHub, and open a pull request, targeting the appropriate upstream branch.
 
-## Contribution guidelines
+## Maintaining code quality
 
-### Maintain code quality
+Run the enforced toolchain before committing:
 
-Our standards are pretty low, but make sure the code is not too ugly:
+- `bun run lint` — Biome lint check (replaces ESLint).
+- `bun run format` — Biome format (write). `bun run format:check` validates in CI.
+- `bun run typecheck` — resolves the base `tsconfig.base.json`.
 
-- Run VS Code's autoformat when you're done.
-- Check with ESLint by running `npm run lint`, then fix the errors.
-- Use common sense and follow existing naming conventions.
+Configs: `biome.json` (lint/format), `tsconfig.base.json` (permissive base, extended per-package).
 
 ### Use the correct target branch
 

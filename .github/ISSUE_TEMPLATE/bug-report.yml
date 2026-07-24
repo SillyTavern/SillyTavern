@@ -77,7 +77,7 @@ body:
       options:
         - label: I have explained the issue clearly, and I included all relevant info
           required: true
-        - label: I have checked that this [issue hasn't already been raised](https://github.com/SillyTavern/SillyTavern/issues?q=is%3Aissue)
+        - label: I have checked that this [issue hasn't already been raised](https://github.com/LordAlbior/SillyTavern-Remastered/issues?q=is%3Aissue)
           required: true
         - label: I have checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
           required: true

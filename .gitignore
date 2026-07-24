@@ -62,3 +62,5 @@ test-results/
 /.hermes
 /specs
 IDEA.md
+package-lock.json
+pnpm-lock.yaml

@@ -16,8 +16,8 @@ labels:
           🏆 This issue has been marked as a good first issue for contributors to implement!
           This is a great way to support the project. While also improving your skills, you'll also be credited as a contributor once your PR is merged.
 
-          If you're new to SillyTavern [here is the official documentation](https://docs.sillytavern.app/). The official contribution guide can be found [here](https://github.com/SillyTavern/SillyTavern/blob/release/CONTRIBUTING.md).
-          If you need any support, feel free to reach out via [Discord](https://discord.gg/sillytavern), or let us know in this issue or via [discussions](https://github.com/SillyTavern/SillyTavern/discussions).
+          If you're new to SillyTavern [here is the official documentation](https://docs.sillytavern.app/). The official contribution guide can be found [here](https://github.com/LordAlbior/SillyTavern-Remastered/blob/release/CONTRIBUTING.md).
+          If you need any support, feel free to reach out via [Discord](https://discord.gg/sillytavern), or let us know in this issue or via [discussions](https://github.com/LordAlbior/SillyTavern-Remastered/discussions).
 
   - name: ❌ wontfix
     labeled:

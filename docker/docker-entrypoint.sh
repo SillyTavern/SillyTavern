@@ -12,10 +12,10 @@ start_sillytavern() {
     fi
 
     # Execute init script to auto-populate config.yaml with missing values
-    $PREFIX npm run init
+    $PREFIX bun run init
 
     # Start the server
-    exec $PREFIX node server.js --listen "$@"
+    exec $PREFIX bun server.js --listen "$@"
 }
 
 # Dirs that MUST be present at this point (e.g for volumeless docker runs).
