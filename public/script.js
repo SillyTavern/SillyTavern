@@ -765,7 +765,7 @@ async function firstLoadInit() {
     initMacroAutoComplete();
     initWorldInfo();
     initHorde();
-    initRossMods();
+    await initRossMods();
     initStats();
     initCfg();
     initLogprobs();
