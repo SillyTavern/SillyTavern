@@ -99,3 +99,19 @@ router.post('/verify', async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+router.get('/list', async (request, response) => {
+    try {
+        // Read all files from the user files directory
+        const files = await fs.readdirSync(request.user.directories.files, {
+            withFileTypes: true,
+        });
+
+        // filter for files only and map to file names
+        const filenames = files.filter(f => f.isFile()).map(f => f.name);
+        return response.send(filenames);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
