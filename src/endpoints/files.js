@@ -100,15 +100,18 @@ router.post('/verify', async (request, response) => {
     }
 });
 
-router.get('/list', async (request, response) => {
+router.post('/list', async (request, response) => {
+    // Request a list of files stored in the user's files/ directory. Optionally passing a prefix to filter for.
     try {
+        const prefix = request.body?.prefix ?? '';
+
         // Read all files from the user files directory
         const files = await fs.readdirSync(request.user.directories.files, {
             withFileTypes: true,
         });
 
-        // filter for files only and map to file names
-        const filenames = files.filter(f => f.isFile()).map(f => f.name);
+        // filter for files that match the prefix and map to file names
+        const filenames = files.filter(f => f.isFile() && f.name.startsWith(prefix)).map(f => f.name);
         return response.send(filenames);
     } catch (error) {
         console.error(error);
