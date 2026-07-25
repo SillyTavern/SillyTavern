@@ -3043,17 +3043,17 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    // Claude Fable models removed sampling parameters and reject them with HTTP 400,
+    // Claude Fable / Claude 5 models removed sampling parameters and reject them with HTTP 400,
     // including via OpenAI-compatible proxies. Unanchored to also match prefixed ids
-    // like 'anthropic/claude-fable-5'.
-    if (/claude-fable/.test(model)) {
+    // like 'anthropic/claude-fable-5' or 'anthropic/claude-opus-5'.
+    if (/claude-(fable|opus-5|sonnet-5)/.test(model)) {
         delete generate_data.temperature;
         delete generate_data.top_p;
         delete generate_data.top_k;
         delete generate_data.frequency_penalty;
         delete generate_data.presence_penalty;
         // Keep reasoning_effort for the native Claude source, where the backend maps it to
-        // adaptive thinking; proxies may translate it into a thinking budget that Fable rejects.
+        // adaptive thinking; proxies may translate it into a thinking budget that these models reject.
         if (settings.chat_completion_source !== chat_completion_sources.CLAUDE) {
             delete generate_data.reasoning_effort;
         }
@@ -5652,7 +5652,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6|opus-4-7|opus-4-8|fable)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|sonnet-5|opus-4-6|opus-4-7|opus-4-8|opus-5|fable)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
@@ -6173,7 +6173,9 @@ export function isImageInliningSupported() {
         'claude-3',
         'claude-fable',
         'claude-opus-4',
+        'claude-opus-5',
         'claude-sonnet-4',
+        'claude-sonnet-5',
         'claude-haiku-4',
         // Cohere
         'c4ai-aya-vision',
