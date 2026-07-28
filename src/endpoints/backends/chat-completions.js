@@ -2253,6 +2253,16 @@ router.post('/generate', async function (request, response) {
                 bodyParams['repetition_penalty'] = request.body.repetition_penalty;
             }
 
+            // Sticky routing keys. OpenRouter uses session_id directly as the
+            // routing key, and falls back to prompt_cache_key when it's absent.
+            if (typeof request.body.session_id === 'string' && request.body.session_id) {
+                bodyParams['session_id'] = request.body.session_id.slice(0, 256);
+            }
+
+            if (typeof request.body.prompt_cache_key === 'string' && request.body.prompt_cache_key) {
+                bodyParams['prompt_cache_key'] = request.body.prompt_cache_key;
+            }
+
             if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
                 bodyParams['provider'] = {
                     allow_fallbacks: request.body.allow_fallbacks ?? true,

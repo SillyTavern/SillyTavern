@@ -81,6 +81,7 @@ import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { applyOpenRouterRoutingKey, openrouter_routing_key_modes, openrouter_routing_key_sources } from './openrouter-routing.js';
 
 export {
     openai_messages_count,
@@ -322,6 +323,8 @@ export const settingsToUpdate = {
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
+    openrouter_routing_key_mode: ['#openrouter_routing_key_mode_chat', 'openrouter_routing_key_mode', false, true],
+    openrouter_routing_key_source: ['#openrouter_routing_key_source_chat', 'openrouter_routing_key_source', false, true],
     tool_reasoning_mode: ['#tool_reasoning_mode', 'tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
     mistralai_model: ['#model_mistralai_select', 'mistralai_model', false, true],
@@ -481,6 +484,8 @@ const default_settings = {
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
     openrouter_middleout: openrouter_middleout_types.ON,
+    openrouter_routing_key_mode: openrouter_routing_key_modes.OFF,
+    openrouter_routing_key_source: openrouter_routing_key_sources.CHAT_ID,
     tool_reasoning_mode: tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
@@ -2844,6 +2849,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.quantizations = settings.openrouter_quantizations;
         generate_data.allow_fallbacks = settings.openrouter_allow_fallbacks;
         generate_data.middleout = settings.openrouter_middleout;
+        applyOpenRouterRoutingKey(generate_data, settings.openrouter_routing_key_mode, settings.openrouter_routing_key_source);
     }
 
     if (settings.chat_completion_source === chat_completion_sources.NANOGPT) {
@@ -6933,6 +6939,16 @@ export function initOpenAI() {
 
     $('#openrouter_middleout').on('input', function () {
         oai_settings.openrouter_middleout = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_routing_key_mode_chat').on('input', function () {
+        oai_settings.openrouter_routing_key_mode = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_routing_key_source_chat').on('input', function () {
+        oai_settings.openrouter_routing_key_source = String($(this).val());
         saveSettingsDebounced();
     });
 
