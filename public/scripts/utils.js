@@ -910,28 +910,27 @@ export function trimToEndSentence(input) {
     return characters.slice(0, last + 1).join('').trimEnd();
 }
 
+/**
+ * Trims a string to the start of the nearest sentence.
+ * @param {string} input The string to trim.
+ * @returns {string} The trimmed string.
+ * @example
+ * trimToStartSentence('Hello, world! I am from'); // 'I am from'
+ */
 export function trimToStartSentence(input) {
     if (!input) {
         return '';
     }
 
-    let p1 = input.indexOf('.');
-    let p2 = input.indexOf('!');
-    let p3 = input.indexOf('?');
-    let p4 = input.indexOf('\n');
-    let first = p1;
-    let skip1 = false;
-    if (p2 > 0 && p2 < first) { first = p2; }
-    if (p3 > 0 && p3 < first) { first = p3; }
-    if (p4 > 0 && p4 < first) { first = p4; skip1 = true; }
-    if (first > 0) {
-        if (skip1) {
-            return input.substring(first + 1);
-        } else {
-            return input.substring(first + 2);
-        }
+    const indices = ['.', '!', '?', '\n']
+        .map(delimiter => input.indexOf(delimiter))
+        .filter(index => index > 0);
+
+    if (indices.length === 0) {
+        return input;
     }
-    return input;
+
+    return input.substring(Math.min(...indices) + 1).trimStart();
 }
 
 /**
