@@ -2593,8 +2593,19 @@
                                     <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="generic_api_url_text" name="generic_api_url" class="text_pole wide100p" value="" autocomplete="off" data-server-history="generic">
                                 </div>
-                                <datalist id="generic_model_fill"></datalist>
-                                <input id="generic_model_textgenerationwebui" list="generic_model_fill" class="text_pole wide100p" placeholder="Model ID (optional)" data-i18n="[placeholder]Model ID (optional)" type="text">
+                                <h4 data-i18n="Enter a Model ID">Enter a Model ID</h4>
+                                <div class="flex-container">
+                                    <input list="generic_model_fill" id="generic_model_textgenerationwebui" class="text_pole wide100p" placeholder="Model ID (optional)" data-i18n="[placeholder]Model ID (optional)" type="text" autocomplete="off">
+                                    <datalist id="generic_model_fill"></datalist>
+                                </div>
+                                <h4 data-i18n="Available Models">Available Models</h4>
+                                <div class="flex-container">
+                                    <select id="generic_model_select" class="text_pole wide100p">
+                                        <option value="" data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                             <div data-tg-type="ooba" class="flex-container flexFlowColumn">
                                 <div class="flex-container flexFlowColumn">
