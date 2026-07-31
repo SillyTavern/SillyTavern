@@ -55,13 +55,11 @@ class FishAudioTtsProvider {
                 </div>
             </div>
             <label for="fish_audio_tts_model">Model</label>
-            <small>S2.1 Pro is the recommended billed production model. S2.1 Pro Free is intended for development.</small>
+            <small>Select a suggested Fish Audio model or enter a custom model identifier.</small>
             <input id="fish_audio_tts_model" class="text_pole" type="text" list="fish_audio_tts_models" maxlength="256" />
             <datalist id="fish_audio_tts_models">
-                <option value="s2.1-pro" label="Recommended production model (billed)"></option>
-                <option value="s2.1-pro-free" label="Free development model"></option>
-                <option value="s2-pro"></option>
-                <option value="s1"></option>
+                <option value="s2.1-pro" label="Recommended production model"></option>
+                <option value="s2-pro" label="Previous-generation S2 model"></option>
             </datalist>
             <label for="fish_audio_tts_latency">Latency</label>
             <select id="fish_audio_tts_latency" class="text_pole">
