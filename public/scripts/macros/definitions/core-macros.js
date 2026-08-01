@@ -317,7 +317,7 @@ export function registerCoreMacros() {
                 description: 'The string to titlecase.',
             },
         ],
-        description: 'Uppercases the first character of each word the characters of the argument provided.',
+        description: 'Uppercases the first character of each word of the argument provided.',
         returns: 'Titlecased string.',
         exampleUsage: ['{{titlecase::some TEXT}}'], // => "Some Text"
         handler: ({ unnamedArgs: [value] }) => value.replace(/\w\S*/g, text => {
