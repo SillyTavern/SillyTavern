@@ -232,6 +232,11 @@ test.describe('MacroEngine', () => {
             const output = await evaluateWithEngine(page, input);
             expect(output).toBe('Abc Resu Ihg Fed Jkl');
         });
+        test('should titlecase unicode correctly', async ({ page }) => {
+            const input = '{{titlecase::éOWYN åSTRÖM}}`';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Éowyn Åström');
+        })
     });
 
     test.describe('Legacy compatibility', () => {

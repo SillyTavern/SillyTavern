@@ -320,8 +320,11 @@ export function registerCoreMacros() {
         description: 'Uppercases the first character of each word of the argument provided.',
         returns: 'Titlecased string.',
         exampleUsage: ['{{titlecase::some TEXT}}'], // => "Some Text"
-        handler: ({ unnamedArgs: [value] }) => value.replace(/\w\S*/g, text => {
-            return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+
+        // `/([\p{L}\p{N}_])(\S*)/gu` is roughly the unicode-aware version of `/(\w)(\S*)/g`,
+        // which lets e.g. "{{titlecase::éowyn}}" become "Éowyn", rather than "éOwyn".
+        handler: ({ unnamedArgs: [value] }) => value.replace(/([\p{L}\p{N}_])(\S*)/gu, (_, first, rest) => {
+            return first.toUpperCase() + rest.toLowerCase();
         }),
     });
 
