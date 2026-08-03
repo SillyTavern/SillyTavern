@@ -92,6 +92,7 @@ const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
 const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
+const API_GONKABROKER = 'https://proxy.gonkabroker.com/v1';
 const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
@@ -1775,6 +1776,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_CHUTES;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.CHUTES, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GONKABROKER) {
+            apiUrl = API_GONKABROKER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.GONKABROKER, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ELECTRONHUB) {
             apiUrl = API_ELECTRONHUB;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.ELECTRONHUB, request.body.secret_id);
@@ -2359,6 +2364,11 @@ router.post('/generate', async function (request, response) {
                     },
                 };
             }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GONKABROKER) {
+            apiUrl = API_GONKABROKER;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.GONKABROKER, request.body.secret_id);
+            headers = {};
+            bodyParams = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);

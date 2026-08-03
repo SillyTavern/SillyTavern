@@ -210,6 +210,7 @@ export const CHAT_COMPLETION_SOURCES = {
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
     MINIMAX: 'minimax',
+    GONKABROKER: 'gonkabroker',
     WORKERS_AI: 'workers_ai',
 };
 

@@ -200,6 +200,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    GONKABROKER: 'gonkabroker',
 };
 
 const character_names_behavior = {
@@ -332,6 +333,7 @@ export const settingsToUpdate = {
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     siliconflow_endpoint: ['#siliconflow_endpoint', 'siliconflow_endpoint', false, true],
     minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
+    gonkabroker_model: ['#model_gonkabroker_select', 'gonkabroker_model', false, true],
     minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
@@ -449,6 +451,7 @@ const default_settings = {
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
     minimax_model: 'MiniMax-M2.7',
+    gonkabroker_model: '',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
@@ -1733,6 +1736,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.siliconflow_model;
         case chat_completion_sources.MINIMAX:
             return settings.minimax_model;
+        case chat_completion_sources.GONKABROKER:
+            return settings.gonkabroker_model;
         case chat_completion_sources.ELECTRONHUB:
             return settings.electronhub_model;
         case chat_completion_sources.CHUTES:
@@ -2285,6 +2290,24 @@ function saveModelList(data) {
         }
 
         $('#model_siliconflow_select').val(oai_settings.siliconflow_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.GONKABROKER) {
+        $('#model_gonkabroker_select').empty();
+        model_list.forEach((model) => {
+            $('#model_gonkabroker_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.gonkabroker_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.gonkabroker_model)) {
+            oai_settings.gonkabroker_model = model_list[0].id;
+        }
+
+        $('#model_gonkabroker_select').val(oai_settings.gonkabroker_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
@@ -5488,6 +5511,15 @@ async function onModelChange() {
         oai_settings.siliconflow_model = value;
     }
 
+    if ($(this).is('#model_gonkabroker_select')) {
+        if (!value) {
+            console.debug('Null Gonka Broker model selected. Ignoring.');
+            return;
+        }
+        console.log('Gonka Broker model changed to', value);
+        oai_settings.gonkabroker_model = value;
+    }
+
     if ($(this).is('#model_minimax_select')) {
         if (!value) {
             console.debug('Null MiniMax model selected. Ignoring.');
@@ -5985,6 +6017,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.GONKABROKER]: { key: SECRET_KEYS.GONKABROKER, selector: '#api_key_gonkabroker', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -6052,6 +6085,8 @@ function toggleChatCompletionForms() {
         $('#model_siliconflow_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
         $('#model_minimax_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.GONKABROKER) {
+        $('#model_gonkabroker_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -7273,6 +7308,7 @@ export function initOpenAI() {
     $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_minimax_select').on('change', onModelChange);
+    $('#model_gonkabroker_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
