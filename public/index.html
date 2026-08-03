@@ -697,7 +697,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai,trustedrouter">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -710,7 +710,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai,trustedrouter">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -723,7 +723,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai">
+                                <div class="range-block" data-source="openai,aimlapi,openrouter,custom,cohere,perplexity,groq,siliconflow,mistralai,electronhub,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,chutes,workers_ai,trustedrouter">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -749,7 +749,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai">
+                                <div class="range-block" data-source="openai,claude,aimlapi,openrouter,ai21,makersuite,vertexai,mistralai,custom,cohere,perplexity,groq,siliconflow,minimax,electronhub,chutes,nanogpt,deepseek,xai,pollinations,moonshot,fireworks,cometapi,azure_openai,zai,workers_ai,trustedrouter">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
                                     </div>
@@ -2000,7 +2000,7 @@
                                             </b>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,minimax,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt,workers_ai">
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom,claude,aimlapi,openrouter,groq,siliconflow,minimax,deepseek,makersuite,vertexai,ai21,xai,pollinations,moonshot,fireworks,cometapi,electronhub,chutes,azure_openai,zai,nanogpt,workers_ai,trustedrouter">
                                         <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_function_calling" type="checkbox" />
                                             <span data-i18n="Enable function calling">Enable function calling</span>
@@ -2934,6 +2934,7 @@
                                 <option value="perplexity">Perplexity</option>
                                 <option value="pollinations">Pollinations</option>
                                 <option value="siliconflow">SiliconFlow</option>
+                                <option value="trustedrouter">TrustedRouter</option>
                                 <option value="xai">xAI (Grok)</option>
                                 <option value="zai">Z.AI (GLM)</option>
                             </optgroup>
@@ -3611,6 +3612,26 @@
                                 <option value="MiniMax-M2.1-highspeed">MiniMax-M2.1-highspeed</option>
                                 <option value="MiniMax-M2">MiniMax-M2</option>
                                 <option value="M2-her">M2-her</option>
+                            </select>
+                        </div>
+                        <div id="trustedrouter_form" data-source="trustedrouter">
+                            <h4 data-i18n="TrustedRouter API Key">TrustedRouter API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_trustedrouter" name="api_key_trustedrouter" class="text_pole flex1" value="" type="text" autocomplete="off">
+                                <div title="Manage API keys" data-i18n="[title]Manage API keys" class="menu_button fa-solid fa-key fa-fw manage-api-keys" data-key="api_key_trustedrouter"></div>
+                            </div>
+                            <div data-for="api_key_trustedrouter" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you click 'Connect'.">
+                                For privacy reasons, your API key will be hidden after you click 'Connect'.
+                            </div>
+                            <h4 data-i18n="TrustedRouter Model">TrustedRouter Model</h4>
+                            <select id="model_trustedrouter_select">
+                                <option value="trustedrouter/auto">trustedrouter/auto</option>
+                                <option value="trustedrouter/fast">trustedrouter/fast</option>
+                                <option value="trustedrouter/cheap">trustedrouter/cheap</option>
+                                <option value="trustedrouter/zdr">trustedrouter/zdr</option>
+                                <option value="trustedrouter/e2e">trustedrouter/e2e</option>
+                                <option value="trustedrouter/synth">trustedrouter/synth</option>
+                                <option value="trustedrouter/synth-code">trustedrouter/synth-code</option>
                             </select>
                         </div>
                         <div id="electronhub_form" data-source="electronhub">

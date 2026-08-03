@@ -65,6 +65,7 @@ export const SECRET_KEYS = {
     AZURE_OPENAI: 'api_key_azure_openai',
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
+    TRUSTEDROUTER: 'api_key_trustedrouter',
     ELEVENLABS: 'api_key_elevenlabs',
     POLLINATIONS: 'api_key_pollinations',
     VOLCENGINE_APP_ID: 'volcengine_app_id',

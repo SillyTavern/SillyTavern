@@ -95,6 +95,7 @@ const API_SILICONFLOW_CN = 'https://api.siliconflow.cn/v1';
 const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
+const API_TRUSTEDROUTER = 'https://api.trustedrouter.com/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
 /**
@@ -1565,6 +1566,98 @@ async function sendChutesRequest(request, response) {
 }
 
 /**
+ * Sends a request to TrustedRouter.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendTrustedRouterRequest(request, response) {
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.TRUSTEDROUTER, request.body.secret_id);
+
+    if (!apiKey) {
+        console.warn('TrustedRouter key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    try {
+        let bodyParams = {};
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            bodyParams['tools'] = request.body.tools;
+            bodyParams['tool_choice'] = request.body.tool_choice;
+        }
+
+        if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
+            bodyParams['stop'] = request.body.stop;
+        }
+
+        if (request.body.json_schema) {
+            bodyParams['response_format'] = {
+                type: 'json_schema',
+                json_schema: {
+                    name: request.body.json_schema.name,
+                    strict: request.body.json_schema.strict ?? true,
+                    schema: request.body.json_schema.value,
+                },
+            };
+        }
+
+        const requestBody = {
+            'messages': request.body.messages,
+            'model': request.body.model,
+            'temperature': request.body.temperature,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'presence_penalty': request.body.presence_penalty,
+            'frequency_penalty': request.body.frequency_penalty,
+            'top_p': request.body.top_p,
+            'seed': request.body.seed,
+            ...bodyParams,
+        };
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+        };
+
+        console.debug('TrustedRouter request:', requestBody);
+
+        const generateResponse = await fetch(API_TRUSTEDROUTER + '/chat/completions', config);
+
+        if (request.body.stream) {
+            await forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                const errorText = await generateResponse.text();
+                console.warn('TrustedRouter returned error: ', errorText);
+                const errorJson = tryParse(errorText) ?? { error: true };
+                return response.status(500).send(errorJson);
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.debug('TrustedRouter response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.error('Error communicating with TrustedRouter: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+/**
  * Sends a request to MiniMax.
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
@@ -2192,6 +2285,7 @@ router.post('/generate', async function (request, response) {
             case CHAT_COMPLETION_SOURCES.XAI: return await sendXaiRequest(request, response);
             case CHAT_COMPLETION_SOURCES.CHUTES: return await sendChutesRequest(request, response);
             case CHAT_COMPLETION_SOURCES.MINIMAX: return await sendMinimaxRequest(request, response);
+            case CHAT_COMPLETION_SOURCES.TRUSTEDROUTER: return await sendTrustedRouterRequest(request, response);
             case CHAT_COMPLETION_SOURCES.ELECTRONHUB: return await sendElectronHubRequest(request, response);
             case CHAT_COMPLETION_SOURCES.AZURE_OPENAI: return await sendAzureOpenAIRequest(request, response);
         }

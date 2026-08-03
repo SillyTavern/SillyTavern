@@ -200,6 +200,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    TRUSTEDROUTER: 'trustedrouter',
 };
 
 const character_names_behavior = {
@@ -332,6 +333,7 @@ export const settingsToUpdate = {
     siliconflow_model: ['#model_siliconflow_select', 'siliconflow_model', false, true],
     siliconflow_endpoint: ['#siliconflow_endpoint', 'siliconflow_endpoint', false, true],
     minimax_model: ['#model_minimax_select', 'minimax_model', false, true],
+    trustedrouter_model: ['#model_trustedrouter_select', 'trustedrouter_model', false, true],
     minimax_endpoint: ['#minimax_endpoint', 'minimax_endpoint', false, true],
     electronhub_model: ['#model_electronhub_select', 'electronhub_model', false, true],
     nanogpt_model: ['#model_nanogpt_select', 'nanogpt_model', false, true],
@@ -449,6 +451,7 @@ const default_settings = {
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
     minimax_model: 'MiniMax-M2.7',
+    trustedrouter_model: 'trustedrouter/auto',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
@@ -1733,6 +1736,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.siliconflow_model;
         case chat_completion_sources.MINIMAX:
             return settings.minimax_model;
+        case chat_completion_sources.TRUSTEDROUTER:
+            return settings.trustedrouter_model;
         case chat_completion_sources.ELECTRONHUB:
             return settings.electronhub_model;
         case chat_completion_sources.CHUTES:
@@ -4404,6 +4409,7 @@ async function getStatusOpen() {
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.ZAI,
         chat_completion_sources.MINIMAX,
+        chat_completion_sources.TRUSTEDROUTER,
     ];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = t`Key saved; press \"Test Message\" to verify.`;
@@ -5497,6 +5503,15 @@ async function onModelChange() {
         oai_settings.minimax_model = value;
     }
 
+    if ($(this).is('#model_trustedrouter_select')) {
+        if (!value) {
+            console.debug('Null TrustedRouter model selected. Ignoring.');
+            return;
+        }
+        console.log('TrustedRouter model changed to', value);
+        oai_settings.trustedrouter_model = value;
+    }
+
     if ($(this).is('#model_electronhub_select')) {
         if (!value || !hasModelsLoaded) {
             console.debug('Null ElectronHub model selected. Ignoring.');
@@ -5923,6 +5938,13 @@ async function onModelChange() {
         $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.TRUSTEDROUTER) {
+        $('#openai_max_context').attr('max', max_1mil);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
         const maxContext = getZaiMaxContext(oai_settings.zai_model, oai_settings.max_context_unlocked);
         $('#openai_max_context').attr('max', maxContext);
@@ -5985,6 +6007,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.TRUSTEDROUTER]: { key: SECRET_KEYS.TRUSTEDROUTER, selector: '#api_key_trustedrouter', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -6052,6 +6075,8 @@ function toggleChatCompletionForms() {
         $('#model_siliconflow_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
         $('#model_minimax_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.TRUSTEDROUTER) {
+        $('#model_trustedrouter_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -7273,6 +7298,7 @@ export function initOpenAI() {
     $('#model_chutes_select').on('change', onModelChange);
     $('#model_siliconflow_select').on('change', onModelChange);
     $('#model_minimax_select').on('change', onModelChange);
+    $('#model_trustedrouter_select').on('change', onModelChange);
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
