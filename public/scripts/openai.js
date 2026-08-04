@@ -200,6 +200,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    INFERSIA: 'infersia',
 };
 
 const character_names_behavior = {
@@ -344,6 +345,7 @@ export const settingsToUpdate = {
     pollinations_endpoint: ['#pollinations_endpoint', 'pollinations_endpoint', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
+    infersia_model: ['#model_infersia_select', 'infersia_model', false, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
@@ -462,6 +464,7 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    infersia_model: 'deepseek/deepseek-v4-flash-0731',
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -1753,6 +1756,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
             return settings.fireworks_model;
+        case chat_completion_sources.INFERSIA:
+            return settings.infersia_model;
         case chat_completion_sources.AZURE_OPENAI:
             return settings.azure_openai_model;
         case chat_completion_sources.ZAI:
@@ -2308,6 +2313,24 @@ function saveModelList(data) {
         $('#model_fireworks_select').val(oai_settings.fireworks_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.INFERSIA) {
+        $('#model_infersia_select').empty();
+        model_list.forEach((model) => {
+            $('#model_infersia_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.name || model.id,
+                }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.infersia_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.infersia_model)) {
+            oai_settings.infersia_model = model_list[0].id;
+        }
+
+        $('#model_infersia_select').val(oai_settings.infersia_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').empty();
         model_list.forEach((model) => {
@@ -2546,6 +2569,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.INFERSIA,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -5583,6 +5607,15 @@ async function onModelChange() {
         oai_settings.fireworks_model = value;
     }
 
+    if ($(this).is('#model_infersia_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Infersia model selected. Ignoring.');
+            return;
+        }
+        console.log('Infersia model changed to', value);
+        oai_settings.infersia_model = value;
+    }
+
     if ($(this).is('#model_cometapi_select')) {
         if (!value) {
             console.debug('Null CometAPI model selected. Ignoring.');
@@ -5979,6 +6012,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: true },
         [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
         [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
+        [chat_completion_sources.INFERSIA]: { key: SECRET_KEYS.INFERSIA, selector: '#api_key_infersia', proxy: false },
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
@@ -6079,6 +6113,8 @@ function toggleChatCompletionForms() {
         $('#model_zai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.INFERSIA) {
+        $('#model_infersia_select').trigger('change');
     }
 
     $('[data-source]').each(function () {

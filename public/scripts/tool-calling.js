@@ -665,6 +665,7 @@ export class ToolManager {
             chat_completion_sources.AZURE_OPENAI,
             chat_completion_sources.ZAI,
             chat_completion_sources.SILICONFLOW,
+            chat_completion_sources.INFERSIA,
             chat_completion_sources.NANOGPT,
             chat_completion_sources.WORKERS_AI,
             chat_completion_sources.MINIMAX,
