@@ -88,6 +88,7 @@ const API_POLLINATIONS_ANON = 'https://text.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_INFERSIA = 'https://api.infersia.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
@@ -1818,6 +1819,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.INFERSIA) {
+            apiUrl = API_INFERSIA;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.INFERSIA, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE, request.body.secret_id);
             apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
@@ -2378,6 +2383,10 @@ router.post('/generate', async function (request, response) {
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
             apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
+            headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.INFERSIA) {
+            apiUrl = API_INFERSIA;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.INFERSIA, request.body.secret_id);
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {
