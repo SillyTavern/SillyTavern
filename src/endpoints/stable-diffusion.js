@@ -611,7 +611,8 @@ comfy.post('/generate', async (request, response) => {
         }
         const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
         console.debug('ComfyUI outputs:', outputs);
-        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
+        const imgInfo = outputs.map(it => it.images).filter(Array.isArray).flat()[0]
+            ?? outputs.map(it => it.gifs).filter(Array.isArray).flat()[0];
         if (!imgInfo) {
             throw new Error('ComfyUI did not return any recognizable outputs.');
         }
