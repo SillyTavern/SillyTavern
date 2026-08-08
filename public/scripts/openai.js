@@ -6908,6 +6908,12 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#openai_proxy_access_key').on('copy cut', function (event) {
+        if ($(this).hasClass('masked-secret')) {
+            event.preventDefault();
+        }
+    });
+
     $('#claude_assistant_prefill').on('input', function () {
         oai_settings.assistant_prefill = String($(this).val());
         saveSettingsDebounced();

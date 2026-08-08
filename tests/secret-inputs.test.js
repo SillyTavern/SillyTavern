@@ -22,6 +22,7 @@ describe('secret inputs', () => {
         expect(openaiJs).not.toContain('#openai_proxy_password');
         expect(openaiJs).toMatch(/proxy_password:\s*\['#openai_proxy_access_key', 'proxy_password'/);
         expect(openaiJs).toMatch(/\$\('#openai_proxy_access_key'\)\.toggleClass\('masked-secret'\)/);
+        expect(openaiJs).toMatch(/\$\('#openai_proxy_access_key'\)\.on\('copy cut', function \(event\) \{\s*if \(\$\(this\)\.hasClass\('masked-secret'\)\) \{\s*event\.preventDefault\(\);/s);
         expect(styleCss).toMatch(/\.masked-secret\s*{[^}]*-webkit-text-security:\s*disc;/s);
     });
 
