@@ -486,6 +486,20 @@ export async function readAllChunks(readableStream) {
     });
 }
 
+/**
+ * Creates a precisely-sized ArrayBuffer from a Uint8Array view such as a Node Buffer.
+ * This avoids leaking unrelated bytes from the underlying backing store.
+ * @param {Uint8Array} view Source byte view
+ * @returns {ArrayBuffer} Exact ArrayBuffer slice for the provided view
+ */
+export function getArrayBufferSlice(view) {
+    if (!(view instanceof Uint8Array)) {
+        throw new TypeError('Expected Uint8Array');
+    }
+
+    return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);
+}
+
 function isObject(item) {
     return (item && typeof item === 'object' && !Array.isArray(item));
 }
