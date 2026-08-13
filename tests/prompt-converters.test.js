@@ -166,6 +166,13 @@ describe('calculateGoogleBudgetTokens', () => {
         test('max returns high', () => expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.5-flash')).toBe('high'));
     });
 
+    test('Gemini 3.7 Flash uses Gemini 3 thinking levels without minimal', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.7-flash')).toBeNull();
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.7-flash')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.7-flash')).toBe('medium');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.7-flash')).toBe('high');
+    });
+
     test('Gemini 3.6 Flash uses Gemini 3 thinking levels', () => {
         expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.6-flash')).toBeNull();
         expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.6-flash')).toBe('minimal');
@@ -1055,7 +1062,7 @@ describe('convertGooglePrompt', () => {
         expect(result.contents.filter(c => c.role === 'user')).toHaveLength(1);
     });
 
-    test.each(['gemini-3.6-flash', 'gemini-3.5-flash-lite'])('merges a trailing prefill into the user turn on %s', (model) => {
+    test.each(['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])('merges a trailing prefill into the user turn on %s', (model) => {
         const messages = [
             { role: 'user', content: 'Hi' },
             { role: 'assistant', content: 'Prefill' },

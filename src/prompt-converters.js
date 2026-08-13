@@ -454,7 +454,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const toolNameMap = {};
 
     // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
-    const noPrefillModel = /gemini-3\.6-flash|gemini-3\.5-flash-lite/.test(model);
+    const noPrefillModel = /gemini-3\.[67]-flash|gemini-3\.5-flash-lite/.test(model);
 
     const contents = [];
     messages.forEach((message, index) => {
@@ -1263,11 +1263,13 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     }
 
     function getGemini3FlashBudget() {
+        // https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash
+        const noMinimalThinking = /gemini-3\.7-flash/.test(model);
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;
             case REASONING_EFFORT.min:
-                return 'minimal';
+                return noMinimalThinking ? 'low' : 'minimal';
             case REASONING_EFFORT.low:
                 return 'low';
             case REASONING_EFFORT.medium:
