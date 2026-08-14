@@ -89,6 +89,7 @@ const sources = {
     electronhub: 'electronhub',
     nanogpt: 'nanogpt',
     bfl: 'bfl',
+    dezgo: 'dezgo',
     falai: 'falai',
     xai: 'xai',
     google: 'google',
@@ -355,6 +356,7 @@ const defaultSettings = {
 
     // BFL API settings
     bfl_upsampling: false,
+    bfl_safety_tolerance: 2,
 
     // Google settings
     google_api: 'makersuite',
@@ -459,6 +461,111 @@ function toggleSourceControls() {
     });
 }
 
+/**
+ * Shows only the controls accepted by the selected BFL model.
+ * FLUX.2 Flex is the sole FLUX.2 text-to-image model that accepts guidance,
+ * steps, and prompt upsampling. Legacy BFL models retain their existing UI.
+ */
+function updateBflModelControls() {
+    if (extension_settings.sd.source === sources.dezgo) {
+        return;
+    }
+
+    const model = String(extension_settings.sd.model || '');
+    const isFlux2 = extension_settings.sd.source === sources.bfl && model.startsWith('flux-2-');
+    const isFlex = model === 'flux-2-flex';
+
+    $('#sd_steps_block').toggle(!isFlux2 || isFlex);
+    $('#sd_scale_block').toggle(!isFlux2 || isFlex);
+    $('#sd_bfl_upsampling_block').toggle(!isFlux2 || isFlex);
+    $('#sd_bfl_safety_tolerance_block').toggle(isFlux2);
+}
+
+/**
+ * Gets the public metadata for the selected Dezgo model.
+ * @returns {any|null} Selected Dezgo model metadata, if available.
+ */
+function getSelectedDezgoModel() {
+    if (extension_settings.sd.source !== sources.dezgo) {
+        return null;
+    }
+
+    return $('#sd_model').find(':selected').data('model') || null;
+}
+
+/**
+ * Updates the native controls to match the selected Dezgo endpoint schema.
+ * @param {boolean} applyDefaults Whether to reset supported values to model defaults.
+ * @returns {Promise<void>}
+ */
+async function updateDezgoModelControls(applyDefaults = false) {
+    const model = getSelectedDezgoModel();
+    const usingDezgo = extension_settings.sd.source === sources.dezgo;
+
+    const setRangeAttributes = (selector, limits) => {
+        for (const inputSelector of [selector, `${selector}_value`]) {
+            const input = $(inputSelector);
+            const originalRange = input.data('dezgo-original-range') || {
+                min: input.attr('min'),
+                max: input.attr('max'),
+                step: input.attr('step'),
+            };
+
+            input.data('dezgo-original-range', originalRange);
+            input.attr(limits || originalRange);
+        }
+    };
+
+    $('#sd_steps_block').toggle(!usingDezgo || !!model?.steps);
+    $('#sd_scale_block').toggle(!usingDezgo || !!model?.guidance);
+    $('#sd_sampler_block').toggle(!usingDezgo || (model?.samplers?.length ?? 0) > 0);
+
+    if (!usingDezgo || !model) {
+        setRangeAttributes('#sd_width', null);
+        setRangeAttributes('#sd_height', null);
+        setRangeAttributes('#sd_steps', null);
+        setRangeAttributes('#sd_scale', null);
+        return;
+    }
+
+    setRangeAttributes('#sd_width', { min: model.dimensions.min, max: model.dimensions.max, step: 8 });
+    setRangeAttributes('#sd_height', { min: model.dimensions.min, max: model.dimensions.max, step: 8 });
+    setRangeAttributes('#sd_steps', model.steps ? { min: model.steps.min, max: model.steps.max, step: 1 } : null);
+    setRangeAttributes('#sd_scale', model.guidance ? { min: model.guidance.min, max: model.guidance.max, step: 0.1 } : null);
+
+    const setNumber = (setting, selector, limits, defaultValue) => {
+        const currentValue = Number(extension_settings.sd[setting]);
+        const value = applyDefaults || !Number.isFinite(currentValue)
+            ? defaultValue
+            : clamp(currentValue, limits.min, limits.max);
+
+        if (extension_settings.sd[setting] !== value) {
+            $(selector).val(value).trigger('input');
+        }
+    };
+
+    setNumber('width', '#sd_width', model.dimensions, model.dimensions.default);
+    setNumber('height', '#sd_height', model.dimensions, model.dimensions.default);
+
+    if (model.steps) {
+        setNumber('steps', '#sd_steps', model.steps, model.steps.default);
+    }
+
+    if (model.guidance) {
+        setNumber('scale', '#sd_scale', model.guidance, model.guidance.default);
+    }
+
+    if (model.samplers.length > 0) {
+        if (applyDefaults || !model.samplers.includes(extension_settings.sd.sampler)) {
+            extension_settings.sd.sampler = model.defaultSampler ?? model.samplers[0];
+        }
+        await loadSamplers();
+    } else {
+        extension_settings.sd.sampler = null;
+        $('#sd_sampler').empty();
+    }
+}
+
 async function loadSettings() {
     // Initialize settings
     if (Object.keys(extension_settings.sd).length === 0) {
@@ -557,6 +664,7 @@ async function loadSettings() {
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
     $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
+    $('#sd_bfl_safety_tolerance').val(extension_settings.sd.bfl_safety_tolerance);
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
     $('#sd_google_duration').val(extension_settings.sd.google_duration);
@@ -606,6 +714,16 @@ function getClosestKnownResolution() {
 }
 
 async function loadSettingOptions() {
+    if (extension_settings.sd.source === sources.dezgo) {
+        await loadModels();
+        await updateDezgoModelControls();
+        return Promise.all([
+            loadSchedulers(),
+            loadVaes(),
+            loadComfyWorkflows(),
+        ]);
+    }
+
     return Promise.all([
         loadSamplers(),
         loadModels(),
@@ -1141,6 +1259,8 @@ async function onSourceChange() {
     toggleSourceControls();
     saveSettingsDebounced();
     await loadSettingOptions();
+    await updateDezgoModelControls(extension_settings.sd.source === sources.dezgo);
+    updateBflModelControls();
 }
 
 async function onComfyTypeChange() {
@@ -1327,6 +1447,13 @@ function onBflUpsamplingInput() {
     saveSettingsDebounced();
 }
 
+function onBflSafetyToleranceInput() {
+    const value = Number($('#sd_bfl_safety_tolerance').val());
+    extension_settings.sd.bfl_safety_tolerance = Number.isInteger(value) && value >= 0 && value <= 5 ? value : 2;
+    $('#sd_bfl_safety_tolerance').val(extension_settings.sd.bfl_safety_tolerance);
+    saveSettingsDebounced();
+}
+
 function onStabilityStylePresetChange() {
     extension_settings.sd.stability_style_preset = String($('#sd_stability_style_preset').val());
     saveSettingsDebounced();
@@ -1488,6 +1615,12 @@ async function onModelChange() {
     const selectedModel = $('#sd_model').find(':selected');
     extension_settings.sd.model = selectedModel.val();
     saveSettingsDebounced();
+
+    if (extension_settings.sd.source === sources.dezgo) {
+        await updateDezgoModelControls(true);
+    }
+
+    updateBflModelControls();
 
     if (extension_settings.sd.model && extension_settings.sd.source === sources.electronhub) {
         const cachedModel = selectedModel.data('model');
@@ -1727,6 +1860,9 @@ async function loadSamplers() {
             break;
         case sources.bfl:
             samplers = ['N/A'];
+            break;
+        case sources.dezgo:
+            samplers = getSelectedDezgoModel()?.samplers || [];
             break;
         case sources.falai:
             samplers = ['N/A'];
@@ -1981,6 +2117,9 @@ async function loadModels() {
         case sources.bfl:
             models = await loadBflModels();
             break;
+        case sources.dezgo:
+            models = await loadDezgoModels();
+            break;
         case sources.falai:
             models = await loadFalaiModels();
             break;
@@ -2020,6 +2159,8 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+
+    updateBflModelControls();
 }
 
 /**
@@ -2097,11 +2238,33 @@ async function loadBflModels() {
     $('#sd_bfl_key').toggleClass('success', !!secret_state[SECRET_KEYS.BFL]);
 
     return [
+        { value: 'flux-2-max', text: 'FLUX.2 Max' },
+        { value: 'flux-2-pro-preview', text: 'FLUX.2 Pro Preview' },
+        { value: 'flux-2-pro', text: 'FLUX.2 Pro' },
+        { value: 'flux-2-flex', text: 'FLUX.2 Flex' },
+        { value: 'flux-2-klein-4b', text: 'FLUX.2 Klein 4B' },
+        { value: 'flux-2-klein-9b-preview', text: 'FLUX.2 Klein 9B Preview' },
+        { value: 'flux-2-klein-9b', text: 'FLUX.2 Klein 9B' },
         { value: 'flux-pro-1.1-ultra', text: 'flux-pro-1.1-ultra' },
         { value: 'flux-pro-1.1', text: 'flux-pro-1.1' },
         { value: 'flux-pro', text: 'flux-pro' },
         { value: 'flux-dev', text: 'flux-dev' },
     ];
+}
+
+async function loadDezgoModels() {
+    $('#sd_dezgo_key').toggleClass('success', !!secret_state[SECRET_KEYS.DEZGO]);
+
+    const result = await fetch('/api/sd/dezgo/models', {
+        method: 'POST',
+        headers: getRequestHeaders({ omitContentType: true }),
+    });
+
+    if (result.ok) {
+        return await result.json();
+    }
+
+    return [];
 }
 
 async function loadFalaiModels() {
@@ -2625,6 +2788,9 @@ async function loadSchedulers() {
         case sources.bfl:
             schedulers = ['N/A'];
             break;
+        case sources.dezgo:
+            schedulers = ['N/A'];
+            break;
         case sources.falai:
             schedulers = ['N/A'];
             break;
@@ -2746,6 +2912,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.bfl:
+            vaes = ['N/A'];
+            break;
+        case sources.dezgo:
             vaes = ['N/A'];
             break;
         case sources.falai:
@@ -3104,6 +3273,7 @@ function setTypeSpecificDimensions(generationType, mediaAttachment = null) {
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
+    const preserveSelectedDezgoDimensions = extension_settings.sd.source === sources.dezgo && !mediaAttachment;
 
     // 1. If there's a media attachment, match its previous dimensions
     // 2. Face images are always portrait (pun intended) - increase height if needed
@@ -3111,10 +3281,10 @@ function setTypeSpecificDimensions(generationType, mediaAttachment = null) {
     if (Number.isInteger(mediaAttachment?.width) && Number.isInteger(mediaAttachment?.height)) {
         extension_settings.sd.width = mediaAttachment.width;
         extension_settings.sd.height = mediaAttachment.height;
-    } else if ((generationType === generationMode.FACE || generationType === generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
+    } else if (!preserveSelectedDezgoDimensions && (generationType === generationMode.FACE || generationType === generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
         // Round to nearest multiple of 64
         extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
-    } else if (generationType === generationMode.BACKGROUND && aspectRatio <= 1) {
+    } else if (!preserveSelectedDezgoDimensions && generationType === generationMode.BACKGROUND && aspectRatio <= 1) {
         // Round to nearest multiple of 64
         extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
     }
@@ -3399,6 +3569,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 break;
             case sources.bfl:
                 result = await generateBflImage(prefixedPrompt, signal);
+                break;
+            case sources.dezgo:
+                result = await generateDezgoImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.falai:
                 result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
@@ -4475,6 +4648,7 @@ async function generateBflImage(prompt, signal) {
             width: clamp(extension_settings.sd.width, 256, 1440),
             height: clamp(extension_settings.sd.height, 256, 1440),
             prompt_upsampling: !!extension_settings.sd.bfl_upsampling,
+            safety_tolerance: extension_settings.sd.bfl_safety_tolerance,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
@@ -4486,6 +4660,59 @@ async function generateBflImage(prompt, signal) {
         const text = await result.text();
         throw new Error(text);
     }
+}
+
+/**
+ * Generates an image using the Dezgo API.
+ * @param {string} prompt The main instruction used to guide the image generation.
+ * @param {string} negativePrompt The instruction used to restrict the image generation.
+ * @param {AbortSignal} signal An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} A promise that resolves when the image generation and processing are complete.
+ */
+async function generateDezgoImage(prompt, negativePrompt, signal) {
+    const model = getSelectedDezgoModel();
+
+    if (!model) {
+        throw new Error('No Dezgo model is selected.');
+    }
+
+    const body = {
+        model: extension_settings.sd.model,
+        prompt: prompt,
+        width: extension_settings.sd.width,
+        height: extension_settings.sd.height,
+        seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+    };
+
+    if (model.negativePrompt) {
+        body.negative_prompt = negativePrompt;
+    }
+
+    if (model.steps) {
+        body.steps = extension_settings.sd.steps;
+    }
+
+    if (model.guidance) {
+        body.guidance = extension_settings.sd.scale;
+    }
+
+    if (model.samplers.length > 0) {
+        body.sampler = extension_settings.sd.sampler;
+    }
+
+    const result = await fetch('/api/sd/dezgo/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify(body),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: data.format || 'png', data: data.image };
+    }
+
+    throw new Error(await result.text());
 }
 
 /**
@@ -5119,6 +5346,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NANOGPT];
         case sources.bfl:
             return secret_state[SECRET_KEYS.BFL];
+        case sources.dezgo:
+            return secret_state[SECRET_KEYS.DEZGO];
         case sources.falai:
             return secret_state[SECRET_KEYS.FALAI];
         case sources.xai:
@@ -5880,6 +6109,7 @@ export async function init() {
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
     $('#sd_function_tool').on('input', onFunctionToolInput);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
+    $('#sd_bfl_safety_tolerance').on('change', onBflSafetyToleranceInput);
 
     $('#sd_google_api').on('input', function () {
         extension_settings.sd.google_api = String($(this).val());
@@ -5934,6 +6164,7 @@ export async function init() {
         eventSource.on(event, async (/** @type {string} */ key) => {
             const keySourceMap = {
                 [sources.bfl]: SECRET_KEYS.BFL,
+                [sources.dezgo]: SECRET_KEYS.DEZGO,
                 [sources.falai]: SECRET_KEYS.FALAI,
                 [sources.stability]: SECRET_KEYS.STABILITY,
                 [sources.aimlapi]: SECRET_KEYS.AIMLAPI,

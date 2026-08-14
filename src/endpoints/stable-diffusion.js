@@ -1467,7 +1467,248 @@ nanogpt.post('/generate', async (request, response) => {
     }
 });
 
+const DEZGO_API_URL = 'https://api.dezgo.com';
+const DEZGO_SAMPLERS_SD1 = Object.freeze(['ddim', 'dpm', 'dpm_single', 'dpmpp_2m_karras', 'euler', 'euler_a', 'k_lms', 'pndm']);
+const DEZGO_SAMPLERS_XL = Object.freeze(['auto', 'ddim', 'dpm', 'dpm_single', 'dpmpp_2m_karras', 'euler', 'euler_a', 'k_lms', 'pndm']);
+const DEZGO_DEFAULT_SAMPLER_STANDARD = 'dpmpp_2m_karras';
+const DEZGO_DEFAULT_SAMPLER_LIGHTNING = 'auto';
+
+const DEZGO_MODELS = Object.freeze({
+    flux_1_schnell: {
+        label: 'Flux — Flux Schnell',
+        endpoint: '/text2image_flux',
+        apiModel: null,
+        negativePrompt: false,
+        dimensions: { min: 512, max: 1536, default: 1024 },
+        steps: { min: 2, max: 20, default: 4 },
+        guidance: null,
+        samplers: [],
+    },
+    ponyxl_6_turbo_dpo: {
+        label: 'XL Lightning — Pony Diffusion v6 XL Turbo DPO',
+        endpoint: '/text2image_sdxl_lightning',
+        apiModel: 'ponyxl_6_turbo_dpo',
+        negativePrompt: true,
+        dimensions: { min: 512, max: 2048, default: 1024 },
+        steps: null,
+        guidance: { min: 1, max: 2, default: 2 },
+        samplers: DEZGO_SAMPLERS_XL,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_LIGHTNING,
+    },
+    juggernautxl_10_hyper: {
+        label: 'XL Lightning — JuggernautXL 10 Hyper',
+        endpoint: '/text2image_sdxl_lightning',
+        apiModel: 'juggernautxl_10_hyper',
+        negativePrompt: true,
+        dimensions: { min: 512, max: 2048, default: 1024 },
+        steps: null,
+        guidance: { min: 1, max: 2, default: 2 },
+        samplers: DEZGO_SAMPLERS_XL,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_LIGHTNING,
+    },
+    envy_starlight_xl_01_lightning_1024px: {
+        label: 'XL Lightning — Envy Starlight XL 01 Lightning',
+        endpoint: '/text2image_sdxl_lightning',
+        apiModel: 'envy_starlight_xl_01_lightning_1024px',
+        negativePrompt: true,
+        dimensions: { min: 512, max: 2048, default: 1024 },
+        steps: null,
+        guidance: { min: 1, max: 2, default: 2 },
+        samplers: DEZGO_SAMPLERS_XL,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_LIGHTNING,
+    },
+    bluepencilxl_1024px: {
+        label: 'XL — BluePencilXL 3.1.0',
+        endpoint: '/text2image_sdxl',
+        apiModel: 'bluepencilxl_1024px',
+        negativePrompt: true,
+        dimensions: { min: 512, max: 2048, default: 1024 },
+        steps: { min: 10, max: 150, default: 30 },
+        guidance: { min: -20, max: 20, default: 7 },
+        samplers: DEZGO_SAMPLERS_XL,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_STANDARD,
+    },
+    ponyxl_6: {
+        label: 'XL — Pony Diffusion v6 XL',
+        endpoint: '/text2image_sdxl',
+        apiModel: 'ponyxl_6',
+        negativePrompt: true,
+        dimensions: { min: 512, max: 2048, default: 1024 },
+        steps: { min: 10, max: 150, default: 30 },
+        guidance: { min: -20, max: 20, default: 7 },
+        samplers: DEZGO_SAMPLERS_XL,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_STANDARD,
+    },
+    abyss_orange_mix_2: {
+        label: 'SD1 — AbyssOrangeMix 2',
+        endpoint: '/text2image',
+        apiModel: 'abyss_orange_mix_2',
+        negativePrompt: true,
+        dimensions: { min: 320, max: 1024, default: 512 },
+        steps: { min: 10, max: 150, default: 30 },
+        guidance: { min: -20, max: 20, default: 7 },
+        samplers: DEZGO_SAMPLERS_SD1,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_STANDARD,
+    },
+    blood_orange_mix: {
+        label: 'SD1 — BloodOrangeMix',
+        endpoint: '/text2image',
+        apiModel: 'blood_orange_mix',
+        negativePrompt: true,
+        dimensions: { min: 320, max: 1024, default: 512 },
+        steps: { min: 10, max: 150, default: 30 },
+        guidance: { min: -20, max: 20, default: 7 },
+        samplers: DEZGO_SAMPLERS_SD1,
+        defaultSampler: DEZGO_DEFAULT_SAMPLER_STANDARD,
+    },
+});
+
+/**
+ * @param {number} value Value to constrain.
+ * @param {{ min: number, max: number, default: number }} limits Allowed range and fallback.
+ * @returns {number} A clamped numeric value.
+ */
+function normalizeDezgoNumber(value, limits) {
+    const parsed = Number(value);
+    const number = Number.isFinite(parsed) ? parsed : limits.default;
+    return Math.min(Math.max(number, limits.min), limits.max);
+}
+
+/**
+ * @param {number} value Requested image dimension.
+ * @param {{ min: number, max: number, default: number }} limits Allowed range and fallback.
+ * @returns {number} A valid Dezgo dimension, divisible by eight.
+ */
+function normalizeDezgoDimension(value, limits) {
+    const dimension = normalizeDezgoNumber(value, limits);
+    return Math.max(limits.min, Math.min(limits.max, Math.floor(dimension / 8) * 8));
+}
+
+const dezgo = express.Router();
+
+dezgo.post('/models', (_request, response) => {
+    const models = Object.entries(DEZGO_MODELS).map(([value, model]) => {
+        return {
+            value,
+            text: model.label,
+            negativePrompt: model.negativePrompt,
+            dimensions: model.dimensions,
+            steps: model.steps,
+            guidance: model.guidance,
+            samplers: model.samplers,
+            defaultSampler: model.defaultSampler,
+        };
+    });
+
+    return response.send(models);
+});
+
+dezgo.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.DEZGO);
+
+        if (!key) {
+            console.warn('Dezgo key not found.');
+            return response.sendStatus(400);
+        }
+
+        const modelConfig = Object.hasOwn(DEZGO_MODELS, request.body.model)
+            ? DEZGO_MODELS[request.body.model]
+            : null;
+        if (!modelConfig) {
+            return response.status(400).send('Invalid Dezgo model selected.');
+        }
+
+        const prompt = typeof request.body.prompt === 'string' ? request.body.prompt : '';
+        if (!prompt || prompt.length > 1000) {
+            return response.status(400).send('Dezgo prompts must contain between 1 and 1000 characters.');
+        }
+
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+        formData.append('width', String(normalizeDezgoDimension(request.body.width, modelConfig.dimensions)));
+        formData.append('height', String(normalizeDezgoDimension(request.body.height, modelConfig.dimensions)));
+        formData.append('format', 'png');
+
+        if (modelConfig.apiModel) {
+            formData.append('model', modelConfig.apiModel);
+        }
+
+        if (modelConfig.negativePrompt) {
+            const negativePrompt = typeof request.body.negative_prompt === 'string' ? request.body.negative_prompt : '';
+            if (negativePrompt.length > 1000) {
+                return response.status(400).send('Dezgo negative prompts must not exceed 1000 characters.');
+            }
+            formData.append('negative_prompt', negativePrompt);
+        }
+
+        if (modelConfig.steps) {
+            const steps = Math.trunc(normalizeDezgoNumber(request.body.steps, modelConfig.steps));
+            formData.append('steps', String(steps));
+        }
+
+        if (modelConfig.guidance) {
+            const guidance = normalizeDezgoNumber(request.body.guidance, modelConfig.guidance);
+            formData.append('guidance', String(guidance));
+        }
+
+        if (modelConfig.samplers.length > 0) {
+            const sampler = modelConfig.samplers.includes(request.body.sampler)
+                ? request.body.sampler
+                : modelConfig.samplers[0];
+            formData.append('sampler', sampler);
+        }
+
+        const seed = Number(request.body.seed);
+        if (Number.isInteger(seed) && seed >= 0 && seed <= 4294967295) {
+            formData.append('seed', String(seed));
+        }
+
+        // Temporary diagnostic output: records the exact multipart fields sent to Dezgo, never the API key.
+        console.info('[Dezgo] Sending request:', JSON.stringify({
+            endpoint: modelConfig.endpoint,
+            fields: Object.fromEntries(formData.entries()),
+        }));
+
+        const result = await fetch(`${DEZGO_API_URL}${modelConfig.endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'image/*',
+                'X-Dezgo-Key': key,
+            },
+            body: formData,
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Dezgo returned an error.', result.status, result.statusText, text);
+            return response.status(result.status).send(text || 'Dezgo request failed.');
+        }
+
+        const contentType = result.headers.get('content-type') || 'image/png';
+        const buffer = await result.arrayBuffer();
+        return response.send({
+            image: Buffer.from(buffer).toString('base64'),
+            format: mime.extension(contentType) || 'png',
+        });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 const bfl = express.Router();
+const BFL_API_BASE_URL = 'https://api.bfl.ai/v1';
+const BFL_FLUX_2_MODELS = new Set([
+    'flux-2-max',
+    'flux-2-pro-preview',
+    'flux-2-pro',
+    'flux-2-flex',
+    'flux-2-klein-4b',
+    'flux-2-klein-9b-preview',
+    'flux-2-klein-9b',
+]);
+const BFL_FLUX_2_FLEX_MODEL = 'flux-2-flex';
 
 bfl.post('/generate', async (request, response) => {
     try {
@@ -1478,6 +1719,14 @@ bfl.post('/generate', async (request, response) => {
             return response.sendStatus(400);
         }
 
+        const model = String(request.body.model || '');
+        const isFlux2 = BFL_FLUX_2_MODELS.has(model);
+        const safetyTolerance = request.body.safety_tolerance === undefined ? 2 : Number(request.body.safety_tolerance);
+
+        if (isFlux2 && (!Number.isInteger(safetyTolerance) || safetyTolerance < 0 || safetyTolerance > 5)) {
+            return response.status(400).send('BFL safety tolerance must be an integer from 0 to 5.');
+        }
+
         const requestBody = {
             prompt: request.body.prompt,
             steps: request.body.steps,
@@ -1486,7 +1735,8 @@ bfl.post('/generate', async (request, response) => {
             height: request.body.height,
             prompt_upsampling: request.body.prompt_upsampling,
             seed: request.body.seed ?? null,
-            safety_tolerance: 6, // being least strict
+            // FLUX.2 uses the user-selected value; legacy BFL models retain the previous value.
+            safety_tolerance: isFlux2 ? safetyTolerance : 5,
             output_format: 'jpeg',
         };
 
@@ -1512,7 +1762,18 @@ bfl.post('/generate', async (request, response) => {
             }
         }
 
-        if (String(request.body.model).endsWith('-ultra')) {
+        if (isFlux2) {
+            // FLUX.2 accepts these optional controls only on the Flex endpoint.
+            delete requestBody.steps;
+            delete requestBody.guidance;
+            delete requestBody.prompt_upsampling;
+
+            if (model === BFL_FLUX_2_FLEX_MODEL) {
+                requestBody.steps = request.body.steps;
+                requestBody.guidance = request.body.guidance;
+                requestBody.prompt_upsampling = request.body.prompt_upsampling;
+            }
+        } else if (model.endsWith('-ultra')) {
             requestBody.aspect_ratio = getClosestAspectRatio(request.body.width, request.body.height);
             delete requestBody.steps;
             delete requestBody.guidance;
@@ -1521,17 +1782,18 @@ bfl.post('/generate', async (request, response) => {
             delete requestBody.prompt_upsampling;
         }
 
-        if (String(request.body.model).endsWith('-pro-1.1')) {
+        if (model.endsWith('-pro-1.1')) {
             delete requestBody.steps;
             delete requestBody.guidance;
         }
 
         console.debug('BFL request:', requestBody);
 
-        const result = await fetch(`https://api.bfl.ml/v1/${request.body.model}`, {
+        const result = await fetch(`${BFL_API_BASE_URL}/${encodeURIComponent(model)}`, {
             method: 'POST',
             body: JSON.stringify(requestBody),
             headers: {
+                'Accept': 'application/json',
                 'Content-Type': 'application/json',
                 'x-key': key,
             },
@@ -1544,13 +1806,23 @@ bfl.post('/generate', async (request, response) => {
 
         /** @type {any} */
         const taskData = await result.json();
-        const { id } = taskData;
+        const pollingUrl = taskData?.polling_url;
 
-        const MAX_ATTEMPTS = 100;
+        if (typeof pollingUrl !== 'string' || !pollingUrl) {
+            console.warn('BFL response did not include a polling URL.', taskData);
+            return response.sendStatus(502);
+        }
+
+        const MAX_ATTEMPTS = 240;
         for (let i = 0; i < MAX_ATTEMPTS; i++) {
-            await delay(2500);
+            await delay(500);
 
-            const statusResult = await fetch(`https://api.bfl.ml/v1/get_result?id=${id}`);
+            const statusResult = await fetch(pollingUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'x-key': key,
+                },
+            });
 
             if (!statusResult.ok) {
                 const text = await statusResult.text();
@@ -1568,6 +1840,13 @@ bfl.post('/generate', async (request, response) => {
             if (statusData?.status === 'Ready') {
                 const { sample } = statusData.result;
                 const fetchResult = await fetch(sample);
+
+                if (!fetchResult.ok) {
+                    const text = await fetchResult.text();
+                    console.warn('BFL image delivery returned an error.', text);
+                    return response.sendStatus(502);
+                }
+
                 const fetchData = await fetchResult.arrayBuffer();
                 const image = Buffer.from(fetchData).toString('base64');
                 return response.send({ image: image });
@@ -2201,6 +2480,7 @@ router.use('/chutes', chutes);
 router.use('/electronhub', electronhub);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
+router.use('/dezgo', dezgo);
 router.use('/falai', falai);
 router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
