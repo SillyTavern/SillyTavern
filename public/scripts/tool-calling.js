@@ -112,7 +112,7 @@ function stringify(obj) {
 /**
  * A class that represents a tool definition.
  */
-class ToolDefinition {
+export class ToolDefinition {
     /**
      * A unique name for the tool.
      * @type {string}
