@@ -2557,6 +2557,9 @@ function getReasoningEffort(settings = null, model = null) {
             switch (settings.reasoning_effort) {
                 case reasoning_effort_types.auto:
                     return undefined;
+                case reasoning_effort_types.min:
+                case reasoning_effort_types.low:
+                    return reasoning_effort_types.low;
                 case reasoning_effort_types.max:
                     return reasoning_effort_types.max;
                 default:
