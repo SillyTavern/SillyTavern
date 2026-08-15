@@ -416,12 +416,13 @@ export class ConnectionManagerRequestService {
      * @param {boolean?} [custom.extractData=true]
      * @param {boolean?} [custom.includePreset=true]
      * @param {boolean?} [custom.includeInstruct=true]
+     * @param {array?} [custom.tools]  A list of custom tool definitions to use for this request, independent of any registered ToolManager tools.
      * @param {Partial<InstructSettings>?} [custom.instructSettings] Override instruct settings
      * @param {Record<string, any>} [overridePayload] - Override payload for the request
      * @returns {Promise<import('../custom-request.js').ExtractedData | (() => AsyncGenerator<import('../custom-request.js').StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      */
     static async sendRequest(profileId, prompt, maxTokens, custom = this.defaultSendRequestParams, overridePayload = {}) {
-        const { stream, signal, extractData, includePreset, includeInstruct, instructSettings } = { ...this.defaultSendRequestParams, ...custom };
+        const { stream, signal, extractData, includePreset, includeInstruct, instructSettings, tools } = { ...this.defaultSendRequestParams, ...custom };
 
         const context = SillyTavern.getContext();
         if (context.extensionSettings.disabledExtensions.includes('connection-manager')) {
@@ -460,6 +461,7 @@ export class ConnectionManagerRequestService {
                         ...overridePayload,
                     }, {
                         presetName: includePreset ? profile.preset : undefined,
+                        tools: tools,
                     }, extractData, signal);
                 }
                 case 'textgenerationwebui': {

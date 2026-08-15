@@ -5,6 +5,7 @@ import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
 import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate, oai_settings } from './openai.js';
 import EventSourceStream from './sse-stream.js';
+import { ToolManager, ToolDefinition } from './tool-calling.js';
 
 // #region Type Definitions
 /**
@@ -456,10 +457,11 @@ export class ChatCompletionService {
      * @param {ChatCompletionPayload} data Request data
      * @param {boolean?} extractData Extract message from the response. Default true
      * @param {AbortSignal?} signal Abort signal
+     * @param {Map} toolMap map of tool names to ToolDefinition objects
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
      * @throws {Error}
      */
-    static async sendRequest(data, extractData = true, signal = null) {
+    static async sendRequest(data, extractData = true, signal = null, toolMap = null) {
         const response = await fetch('/api/backends/chat-completions/generate', {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -485,6 +487,7 @@ export class ChatCompletionService {
                     textGenType: data.chat_completion_source,
                     ignoreShowThoughts: true,
                 }),
+                tool_calls: toolMap ? await ToolManager.invokeFunctionTools(json, {}, toolMap) : [],
             };
             // Try parse JSON
             if (data.json_schema) {
@@ -536,6 +539,7 @@ export class ChatCompletionService {
      * @param {ChatCompletionPayload} requestData - payload data, overriding preset if given
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
+     * @param {array?} [options.tools] - list of custom tool definitions
      * @param {boolean} [extractData=true] - Whether to extract structured data from response
      * @param {AbortSignal?} [signal] - Abort signal
      * @returns {Promise<ExtractedData | (() => AsyncGenerator<StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
@@ -545,6 +549,9 @@ export class ChatCompletionService {
         const { presetName } = options;
         requestData = this.createRequestData(requestData);
 
+        // Tool calling info if present in options
+        const toolMap = this.buildCustomToolMap(options.tools);
+
         // Apply generation preset if specified
         if (presetName) {
             const presetManager = getPresetManager(this.TYPE);
@@ -552,7 +559,7 @@ export class ChatCompletionService {
                 const preset = presetManager.getCompletionPresetByName(presetName);
                 if (preset) {
                     // Convert preset to payload and merge with custom parameters
-                    requestData = await this.presetToGeneratePayload(preset, {}, requestData);
+                    requestData = await this.presetToGeneratePayload(preset, {}, requestData, toolMap);
                 } else {
                     console.warn(`Preset "${presetName}" not found, continuing with default settings`);
                 }
@@ -561,7 +568,7 @@ export class ChatCompletionService {
             }
         }
 
-        return await this.sendRequest(requestData, extractData, signal);
+        return await this.sendRequest(requestData, extractData, signal, toolMap);
     }
 
     /**
@@ -570,9 +577,10 @@ export class ChatCompletionService {
      * @param {Object} preset - The preset configuration
      * @param {Object} overridePreset - Additional parameters to override preset values
      * @param {Object} overridePayload - Additional parameters to override payload values
+     * @param {Map} toolMap - map of tool names to ToolDefinitions to add to the payload
      * @returns {Promise<any>} - Formatted payload for chat completion API
      */
-    static async presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}) {
+    static async presetToGeneratePayload(preset, overridePreset = {}, overridePayload = {}, toolMap = null) {
         if (!preset || typeof preset !== 'object') {
             throw new Error('Invalid preset: must be an object');
         }
@@ -591,6 +599,12 @@ export class ChatCompletionService {
             settings[settingToUpdate[1]] = value;
         }
 
+        // Now add tools if present
+        // If they are not supported by the CC source, they will be removed by createGenerationParameters()
+        if (toolMap) {
+            await ToolManager.registerFunctionToolsOpenAI(settings, Array.from(toolMap.values()));
+        }
+
         // Ensure api-url is properly applied for all sources that accept it
         ['custom_url', 'vertexai_region', 'zai_endpoint', 'siliconflow_endpoint', 'minimax_endpoint', 'pollinations_endpoint'].forEach(field => {
             // The order is: connection profile => CC preset => CC settings
@@ -603,5 +617,29 @@ export class ChatCompletionService {
 
         // apply overrides
         return this.createRequestData({ ...payload, ...overridePayload });
+    }
+
+    /**
+     * Given an array of tool definitions, build a map of tool names to ToolDefinition objects.
+     * @param tools array of custom tool defintitions
+     * @returns {Map} map of tool names to ToolDefinition objects
+     */
+    static buildCustomToolMap(tools) {
+        const toolMap = new Map();
+        if (!tools) return toolMap;
+        for (let tool of tools) {
+            toolMap.set(tool.name, new ToolDefinition(
+                tool.name,
+                tool.displayName,
+                tool.description,
+                tool.parameters,
+                tool.action,
+                tool.formatMessage,
+                () => true,  // Always considered enabled
+                true,  // Always considered stealth
+            ));
+        }
+
+        return toolMap;
     }
 }
