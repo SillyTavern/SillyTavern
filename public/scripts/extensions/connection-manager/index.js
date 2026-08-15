@@ -414,7 +414,21 @@ async function applyConnectionProfile(profile) {
         }
         try {
             const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
-            await SlashCommandParser.commands[command].callback(args, argument);
+            if (command === 'preset' && mode === 'cc') {
+                // When bind_preset_to_connection is on, loading a preset restores its own
+                // saved chat_completion_source/URL/model via an unawaited async chain
+                // (openai.js: onSettingsPresetChange). If that lands after the commands
+                // that follow, it silently overwrites this profile's values with the
+                // preset's stale ones. Wait for it to fully settle before continuing.
+                const presetBefore = document.querySelector('#settings_preset_openai option:selected')?.textContent;
+                const presetSettled = new Promise((resolve) => eventSource.once(event_types.OAI_PRESET_CHANGED_AFTER, resolve));
+                const result = await SlashCommandParser.commands[command].callback(args, argument);
+                if (result !== presetBefore) {
+                    await Promise.race([presetSettled, new Promise((resolve) => setTimeout(resolve, 2000))]);
+                }
+            } else {
+                await SlashCommandParser.commands[command].callback(args, argument);
+            }
         } catch (error) {
             console.error(`Failed to execute command: ${command} ${argument}`, error);
         }
