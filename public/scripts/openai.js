@@ -4939,6 +4939,23 @@ async function onLogitBiasPresetDeleteClick() {
     saveSettingsDebounced();
 }
 
+/**
+ * Promise that resolves when the most recently started preset application has fully completed.
+ * The change handler defers the actual apply behind an event emission, so programmatic preset
+ * switches (e.g. /preset, connection profiles) must await this to sequence follow-up commands
+ * such as /api and /model correctly.
+ * @type {Promise<void>}
+ */
+let presetApplicationPromise = Promise.resolve();
+
+/**
+ * Gets a promise that resolves when the currently pending preset application completes.
+ * @returns {Promise<void>} Promise that resolves when the preset is fully applied.
+ */
+export function getPresetApplicationPromise() {
+    return presetApplicationPromise;
+}
+
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
     const presetNameBefore = oai_settings.preset_settings_openai;
@@ -4954,7 +4971,7 @@ function onSettingsPresetChange() {
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input', { source: 'preset' });
 
     // Allow subscribers to alter the preset before applying deltas
-    eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
+    presetApplicationPromise = eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
         preset: preset,
         presetName: presetName,
         settingsToUpdate: settingsToUpdate,
