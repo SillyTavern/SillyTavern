@@ -453,13 +453,17 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const system_instruction = { parts: sysPrompt.map(text => ({ text })) };
     const toolNameMap = {};
 
+    // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
+    const noPrefillModel = /gemini-3\.[67]-flash|gemini-3\.5-flash-lite/.test(model);
+
     const contents = [];
     messages.forEach((message, index) => {
         // fix the roles
         if (message.role === 'system' || message.role === 'tool') {
             message.role = 'user';
         } else if (message.role === 'assistant') {
-            message.role = 'model';
+            // A trailing model turn is a prefill, which is rejected by the newest models
+            message.role = noPrefillModel && index === messages.length - 1 ? 'user' : 'model';
         }
 
         // Convert the content to an array of parts
@@ -1259,11 +1263,13 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     }
 
     function getGemini3FlashBudget() {
+        // https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash
+        const noMinimalThinking = /gemini-3\.7-flash/.test(model);
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;
             case REASONING_EFFORT.min:
-                return 'minimal';
+                return noMinimalThinking ? 'low' : 'minimal';
             case REASONING_EFFORT.low:
                 return 'low';
             case REASONING_EFFORT.medium:

@@ -140,7 +140,7 @@ router.post('/status', async function (req, res) {
     }
 
     try {
-        const response = await fetch(API_NOVELAI + '/user/subscription', {
+        const response = await fetch(IMAGE_NOVELAI + '/user/subscription', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

@@ -18,6 +18,8 @@ import { generateWebLlmChatPrompt, isWebLlmSupported } from '../shared.js';
 import { Popup, POPUP_RESULT } from '../../popup.js';
 import { t } from '../../i18n.js';
 import { removeReasoningFromString } from '../../reasoning.js';
+import { macros } from '../../macros/macro-system.js';
+import { MacrosParser } from '/scripts/macros.js';
 export { MODULE_NAME };
 
 /**
@@ -103,6 +105,19 @@ let lastServerResponseTime = 0;
 /** @type {{[characterName: string]: string}} */
 export let lastExpression = {};
 
+/**
+ * Gets the current fallback expression, including the labels for when it is not set
+ * @returns {string|null}
+ */
+function getCurrentFallbackExpression() {
+    const expression = extension_settings?.expressions.fallback_expression;
+    const showEmojis = extension_settings?.expressions?.showDefault;
+
+    if (!expression && showEmojis) return OPTION_EMOJI_FALLBACK;
+    if (!expression) return OPTION_NO_FALLBACK;
+
+    return expression;
+}
 /**
  * Returns a placeholder image object for a given expression
  * @param {string} expression - The expression label
@@ -787,12 +802,47 @@ async function setSpriteSlashCommand({ type }, searchTerm) {
 }
 
 /**
+ * Get all the currently set expression labels.
+ * @param {Object} args
+ * @param {'true'|'false'|'only'} [args.custom] - Whether to filter out or return only custom expressions
+ * @param {'true'|'false'} [args.filter] - Filter the list to only include expressions that have available sprites for the current character
+ * @param {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} [args.return] - In which format must the expressions be returned
+ * @param {string} characterName
+ * @returns {Promise<string>}
+ */
+async function getExpressionListSlashCommand(args, characterName) {
+    const { custom, filter = 'true', return: returnType = 'pipe' } = args;
+
+    const expressions = await getExpressionsList({ filterAvailable: !isFalseBoolean(filter) });
+    const customExpressions = extension_settings?.expressions?.custom || [];
+    const expressionsMap = {
+        default: expressions.filter(expression => !customExpressions.includes(expression)),
+        custom: customExpressions,
+        all: expressions,
+    };
+
+    let expressionIndex = 'all';
+
+    if (custom === 'false') expressionIndex = 'default';
+    if (custom === 'only') expressionIndex = 'custom';
+
+    try {
+        return await slashCommandReturnHelper.doReturn(returnType, expressionsMap[expressionIndex], {
+            objectToStringFunc: list => list.join(', '),
+        });
+    } catch (err) {
+        console.error(err);
+        return '';
+    }
+}
+
+/**
  * @param {string} expressionName - Label of the expression to set as fallback
  */
 function setFallBackExpressionSlashCommand(args, expressionName) {
     expressionName = expressionName.trim().toLowerCase();
 
-    if (!expressionName) return extension_settings?.expressions?.fallback_expression || '';
+    if (!expressionName) return getCurrentFallbackExpression();
 
     const select = /** @type {HTMLSelectElement} */(document.getElementById('expression_fallback'));
     const fallbackExpressions = Array
@@ -1151,12 +1201,21 @@ export async function getExpressionLabel(text, expressionsApi = extension_settin
     }
 }
 
-function getLastCharacterMessage() {
+/**
+ * @param {Object} [options]
+ * @param {string} [options.characterName] Filters last message to the one of the target character
+ */
+function getLastCharacterMessage({ characterName = '' } = {}) {
     const context = getContext();
     const reversedChat = context.chat.slice().reverse();
+    const ignoreCharName = !characterName;
 
     for (let mes of reversedChat) {
         if (mes.is_user || mes.is_system || mes.extra?.type === system_message_types.NARRATOR) {
+            continue;
+        }
+
+        if (!ignoreCharName && mes.name !== characterName) {
             continue;
         }
 
@@ -1461,6 +1520,30 @@ export async function getExpressionsList({ filterAvailable = false } = {}) {
         expressionsList = DEFAULT_EXPRESSIONS.slice();
         return expressionsList;
     }
+}
+
+/**
+ * Gets the last expression used in the chat by the active character.
+ * @param {Object} [options]
+ * @param {string} [options.characterName] Filters last expression to the one of the target character instead
+ * @returns {string}
+ */
+function getLastExpression({ characterName = '' } = {}) {
+    if (typeof characterName !== 'string') throw new Error('Character name must be a string');
+
+    if (!characterName) {
+        characterName = characters[this_chid]?.avatar || '';
+    }
+
+    const char = findChar({ name: characterName, quiet: true });
+
+    const currentLastMessage = getLastCharacterMessage({ characterName });
+    const finalCharacterName = currentLastMessage?.name ?? char?.name ?? characterName;
+
+    const spriteFolderName = getSpriteFolderName(currentLastMessage, finalCharacterName);
+    const sprite = lastExpression[spriteFolderName.split('/')[0]] ?? '';
+
+    return sprite;
 }
 
 /**
@@ -2351,15 +2434,15 @@ export async function init() {
                 typeList: [ARGUMENT_TYPE.STRING],
                 isRequired: false,
                 enumProvider: () => [
-                    new SlashCommandEnumValue('#none', 'Sets the fallback expression to no image'),
-                    new SlashCommandEnumValue('#emoji', 'Sets the fallback expression to emojis'),
+                    new SlashCommandEnumValue(OPTION_NO_FALLBACK, 'Sets the fallback expression to no image'),
+                    new SlashCommandEnumValue(OPTION_EMOJI_FALLBACK, 'Sets the fallback expression to emojis'),
                     ...localEnumProviders.expressions(),
                 ],
             }),
         ],
         helpString: `
             <div>
-                Gets the currently selected expression fallback for all characters.<br />
+                Gets the currently selected global fallback expression.<br />
                 If a valid expression label is sent, it will be set as the new fallback.
             </div>
             <div>
@@ -2410,23 +2493,8 @@ export async function init() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-last',
         aliases: ['lastsprite'],
-        /** @type {(args: object, name: string) => Promise<string>} */
-        callback: async (_, name) => {
-            if (typeof name !== 'string') throw new Error('name must be a string');
-            if (!name) {
-                if (selected_group) {
-                    toastr.error(t`In group chats, you must specify a character name.`, t`No character name specified`);
-                    return '';
-                }
-                name = characters[this_chid]?.avatar;
-            }
-
-            const char = findChar({ name: name });
-            if (!char) toastr.warning(t`Couldn't find character ${name}.`, t`Character not found`);
-
-            const sprite = lastExpression[char?.name ?? name] ?? '';
-            return sprite;
-        },
+        /** @type {(args: object, name: string) => string} */
+        callback: (_, name) => getLastExpression({ characterName: (name || '') }),
         returns: 'the last set expression for the named character.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
@@ -2440,23 +2508,14 @@ export async function init() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'expression-list',
         aliases: ['expressions'],
-        /** @type {(args: {return: string, filter: string}) => Promise<string>} */
-        callback: async (args) => {
-            let returnType =
-                /** @type {import('../../slash-commands/SlashCommandReturnHelper.js').SlashCommandReturnType} */
-                (args.return);
-
-            const list = await getExpressionsList({ filterAvailable: !isFalseBoolean(args.filter) });
-
-            return await slashCommandReturnHelper.doReturn(returnType ?? 'pipe', list, { objectToStringFunc: list => list.join(', ') });
-        },
+        callback: getExpressionListSlashCommand,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'return',
                 description: 'The way how you want the return value to be provided',
                 typeList: [ARGUMENT_TYPE.STRING],
                 defaultValue: 'pipe',
-                enumList: slashCommandReturnHelper.enumList({ allowObject: true }),
+                enumList: slashCommandReturnHelper.enumList({ allowObject: true, allowPopup: true }),
                 forceEnum: true,
             }),
             SlashCommandNamedArgument.fromProps({
@@ -2465,6 +2524,21 @@ export async function init() {
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 enumList: commonEnumProviders.boolean('trueFalse')(),
                 defaultValue: 'true',
+            }),
+            SlashCommandNamedArgument.fromProps({
+                name: 'custom',
+                description: t`Whether to include, filter out or return only custom expressions`,
+                typeList: [
+                    ARGUMENT_TYPE.STRING,
+                    ARGUMENT_TYPE.BOOLEAN,
+                ],
+                isRequired: false,
+                defaultValue: 'true',
+                enumList: [
+                    new SlashCommandEnumValue('true', '(default) Custom expressions will be included in the result'),
+                    new SlashCommandEnumValue('false', 'Custom expressions will not be included in the result'),
+                    new SlashCommandEnumValue('only', 'Only custom expressions will be included in the result'),
+                ],
             }),
         ],
         returns: 'The comma-separated list of available expressions, including custom expressions.',
@@ -2573,4 +2647,73 @@ export async function init() {
             </div>
         `,
     }));
+
+    if (power_user.experimental_macro_engine) {
+        macros.register('defaultExpression', {
+            handler: getCurrentFallbackExpression,
+            category: macros.category.MISC,
+            description: 'Returns the global fallback expression.',
+            returns: 'Expression label',
+            exampleUsage: '{{defaultExpression}}',
+        });
+
+        macros.register('lastExpression', {
+            handler: function ({ args: [name = '{{char}}'], resolve }) {
+                try {
+                    return getLastExpression({ characterName: resolve(name || '') });
+                } catch (error) {
+                    console.error(error);
+                    return '';
+                }
+            },
+            unnamedArgs: [{
+                name: 'name',
+                description: 'The name of the target character',
+                defaultValue: '{{char}}',
+                optional: true,
+                type: macros.valueType.STRING,
+            }],
+            delayArgResolution: true,
+            category: macros.category.MISC,
+            description: 'Returns the last expression used by the selected character. The currently active character is used if no character name is provided.',
+            returns: 'Expression label',
+            exampleUsage: [
+                '{{lastExpression}}',
+                '{{lastExpression::John}}',
+                '{{lastExpression::{{char}}}}',
+            ],
+        });
+
+        macros.register('availableExpressions', {
+            handler: function () {
+                return getCachedExpressions().join(', ');
+            },
+            category: macros.category.MISC,
+            description: 'Returns a list with all the available expressions provided by the Classifier API.',
+            returns: 'Expression label list',
+            exampleUsage: '{{availableExpressions}}',
+        });
+    } else {
+        MacrosParser.registerMacro('defaultExpression',
+            getCurrentFallbackExpression,
+            t`Returns the global fallback expression.`,
+        );
+
+        MacrosParser.registerMacro('lastExpression',
+            () => {
+                try {
+                    return getLastExpression();
+                } catch (error) {
+                    console.error(error);
+                    return '';
+                }
+            },
+            t`Returns the last expression used.`,
+        );
+
+        MacrosParser.registerMacro('availableExpressions',
+            () => getCachedExpressions().join(', '),
+            t`Returns a list with all the available expressions provided by the Classifier API.`,
+        );
+    }
 }
