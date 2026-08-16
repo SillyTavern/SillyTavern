@@ -436,7 +436,7 @@ const default_settings = {
     personality_format: default_personality_format,
     sort_models: 'alphabetically',
     group_models: false,
-    openai_model: 'gpt-4-turbo',
+    openai_model: 'gpt-5.6-terra',
     claude_model: 'claude-sonnet-4-5',
     google_model: 'gemini-2.5-pro',
     vertexai_model: 'gemini-2.5-pro',
