@@ -1551,7 +1551,12 @@ bfl.post('/generate', async (request, response) => {
         for (let i = 0; i < MAX_ATTEMPTS; i++) {
             await delay(2500);
 
-            const statusResult = await fetch(pollingUrl);
+            // The bfl.ai API requires authentication on the polling request as well
+            const statusResult = await fetch(pollingUrl, {
+                headers: {
+                    'x-key': key,
+                },
+            });
 
             if (!statusResult.ok) {
                 const text = await statusResult.text();
