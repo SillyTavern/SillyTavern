@@ -1,7 +1,7 @@
-import { CONNECT_API_MAP, createModelIcon, getRequestHeaders } from '../../script.js';
+import { CONNECT_API_MAP, createModelIcon, getRequestHeaders, substituteParams } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
-import { oai_settings, proxies, ZAI_ENDPOINT } from '../openai.js';
+import { oai_settings, proxies, ZAI_ENDPOINT, POLLINATIONS_ENDPOINT } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
@@ -117,13 +117,17 @@ export async function getMultimodalCaption(base64Img, prompt) {
         }
 
         requestBody.server_url = oai_settings.custom_url;
-        requestBody.custom_include_headers = oai_settings.custom_include_headers;
-        requestBody.custom_include_body = oai_settings.custom_include_body;
-        requestBody.custom_exclude_body = oai_settings.custom_exclude_body;
+        requestBody.custom_include_headers = substituteParams(oai_settings.custom_include_headers);
+        requestBody.custom_include_body = substituteParams(oai_settings.custom_include_body);
+        requestBody.custom_exclude_body = substituteParams(oai_settings.custom_exclude_body);
     }
 
     if (extension_settings.caption.multimodal_api === 'zai') {
         requestBody.zai_endpoint = oai_settings.zai_endpoint || ZAI_ENDPOINT.COMMON;
+    }
+
+    if (extension_settings.caption.multimodal_api === 'pollinations') {
+        requestBody.pollinations_endpoint = oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.AUTHENTICATED;
     }
 
     if (extension_settings.caption.multimodal_api === 'workers_ai') {
@@ -284,7 +288,7 @@ function throwIfInvalidModel(useReverseProxy) {
         throw new Error('Z.AI API key is not set.');
     }
 
-    if (multimodalApi === 'pollinations' && !secret_state[SECRET_KEYS.POLLINATIONS]) {
+    if (multimodalApi === 'pollinations' && oai_settings.pollinations_endpoint !== POLLINATIONS_ENDPOINT.ANONYMOUS && !secret_state[SECRET_KEYS.POLLINATIONS]) {
         throw new Error('Pollinations API key is not set.');
     }
 
@@ -449,6 +453,7 @@ export class ConnectionManagerRequestService {
                         zai_endpoint: profile['api-url'],
                         siliconflow_endpoint: profile['api-url'],
                         minimax_endpoint: profile['api-url'],
+                        pollinations_endpoint: profile['api-url'],
                         reverse_proxy: proxyPreset?.url,
                         proxy_password: proxyPreset?.password,
                         custom_prompt_post_processing: profile['prompt-post-processing'],

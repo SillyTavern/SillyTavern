@@ -74,13 +74,32 @@ function getMessageFromJquery(element) {
 }
 
 /**
+ * Collapses reasoning blocks that cannot be closed by their header.
+ * @param {JQuery<HTMLElement>} messageBlock Message block
+ */
+function closeReasoningDetailsWithoutContent(messageBlock) {
+    const details = messageBlock.find('.mes_reasoning_details');
+    if (details.attr('data-has-content') !== 'true') {
+        details.removeAttr('open');
+    }
+}
+
+/**
+ * Opens reasoning blocks only when they have visible content.
+ * @param {JQuery<HTMLElement>} details Reasoning details elements
+ */
+function openReasoningDetailsWithContent(details) {
+    details.filter('[data-has-content="true"]').attr('open', '');
+}
+
+/**
  * Toggles the auto-expand state of reasoning blocks.
  */
 function toggleReasoningAutoExpand() {
     const reasoningBlocks = document.querySelectorAll('details.mes_reasoning_details');
     reasoningBlocks.forEach((block) => {
         if (block instanceof HTMLDetailsElement) {
-            block.open = power_user.reasoning.auto_expand;
+            block.open = power_user.reasoning.auto_expand && block.dataset.hasContent === 'true';
         }
     });
 }
@@ -364,7 +383,7 @@ export class ReasoningHandler {
 
         this.updateDom(messageId);
 
-        if (power_user.reasoning.auto_expand && this.state !== ReasoningState.Hidden) {
+        if (power_user.reasoning.auto_expand && this.messageReasoningDetailsDom.dataset.hasContent === 'true') {
             this.messageReasoningDetailsDom.open = true;
         }
     }
@@ -551,7 +570,12 @@ export class ReasoningHandler {
         setDatasetProperty(this.messageReasoningDetailsDom, 'type', this.type);
 
         // Update the reasoning message
-        const reasoning = trimSpaces(this.reasoningDisplayText ?? this.reasoning);
+        const rawReasoning = this.reasoningDisplayText ?? this.reasoning;
+        const reasoning = trimSpaces(rawReasoning);
+        // Keep whitespace-only saved reasoning editable without showing it as visible content.
+        const hasStoredReasoning = Boolean(this.reasoningDisplayText || this.reasoning);
+        const hasReasoningContent = Boolean(String(rawReasoning ?? '').trim());
+        setDatasetProperty(this.messageReasoningDetailsDom, 'hasContent', hasReasoningContent ? 'true' : null);
         const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
 
         if (power_user.stream_fade_in) {
@@ -563,7 +587,8 @@ export class ReasoningHandler {
         // Update tooltip for hidden reasoning edit
         /** @type {HTMLElement} */
         const button = this.messageDom.querySelector('.mes_edit_add_reasoning');
-        button.title = this.state === ReasoningState.Hidden ? t`Hidden reasoning - Add reasoning block` : t`Add reasoning block`;
+        const isHiddenLikeReasoning = this.state === ReasoningState.Hidden || (hasStoredReasoning && !hasReasoningContent);
+        button.title = isHiddenLikeReasoning ? t`Hidden reasoning - Add reasoning block` : t`Add reasoning block`;
 
         // Make sure that hidden reasoning headers are collapsed by default, to not show a useless edit button
         if (this.state === ReasoningState.Hidden) {
@@ -934,8 +959,9 @@ function registerReasoningSlashCommands() {
             closeMessageEditor('reasoning');
             updateMessageBlock(messageId, message);
 
-            if (isTrueBoolean(String(args.collapse))) $(`#chat [mesid="${messageId}"] .mes_reasoning_details`).removeAttr('open');
-            if (isFalseBoolean(String(args.collapse))) $(`#chat [mesid="${messageId}"] .mes_reasoning_details`).attr('open', '');
+            const details = $(`#chat [mesid="${messageId}"] .mes_reasoning_details`);
+            if (isTrueBoolean(String(args.collapse))) details.removeAttr('open');
+            if (isFalseBoolean(String(args.collapse))) openReasoningDetailsWithContent(details);
             return message.extra.reasoning;
         },
     }));
@@ -1134,7 +1160,7 @@ function registerReasoningSlashCommands() {
         unnamedArgumentList: reasoningVisibilityArgs,
         callback: (_args, value) => {
             const details = getReasoningDetailsElements(value.toString());
-            if (details) details.attr('open', '');
+            if (details) openReasoningDetailsWithContent(details);
             return '';
         },
     }));
@@ -1151,7 +1177,7 @@ function registerReasoningSlashCommands() {
                 const $el = $(this);
                 if ($el.attr('open') !== undefined) {
                     $el.removeAttr('open');
-                } else {
+                } else if ($el.attr('data-has-content') === 'true') {
                     $el.attr('open', '');
                 }
             });
@@ -1198,8 +1224,8 @@ function setReasoningEventHandlers() {
 
     $(document).on('click', '.mes_reasoning_header', function (e) {
         const details = $(this).closest('.mes_reasoning_details');
-        // Along with the CSS rules to mark blocks not toggle-able when they are empty, prevent them from actually being toggled, or being edited
-        if (details.find('.mes_reasoning').is(':empty')) {
+        // Keep click behavior aligned with CSS: only blocks with backing content can toggle or enter edit mode.
+        if (details.attr('data-has-content') !== 'true') {
             e.preventDefault();
             return;
         }
@@ -1225,6 +1251,10 @@ function setReasoningEventHandlers() {
         e.preventDefault();
         const { message, messageBlock } = getMessageFromJquery(this);
         if (!message?.extra) {
+            return;
+        }
+
+        if (messageBlock.find('.reasoning_edit_textarea').length > 0) {
             return;
         }
 
@@ -1265,6 +1295,7 @@ function setReasoningEventHandlers() {
         e.stopPropagation();
         e.preventDefault();
 
+        $('.mes_reasoning_details[open]:not([data-has-content="true"])').removeAttr('open');
         $('.mes_reasoning_details[open] .mes_reasoning_header').trigger('click');
     });
 
@@ -1281,11 +1312,13 @@ function setReasoningEventHandlers() {
         newReasoning = substituteParams(newReasoning);
         textarea.remove();
         if (newReasoning === message.extra.reasoning) {
+            closeReasoningDetailsWithoutContent(messageBlock);
             return;
         }
         updateReasoningFromValue(message, newReasoning);
         await saveChatConditional();
         updateMessageBlock(messageId, message);
+        closeReasoningDetailsWithoutContent(messageBlock);
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
         await eventSource.emit(event_types.MESSAGE_REASONING_EDITED, messageId);
@@ -1302,6 +1335,7 @@ function setReasoningEventHandlers() {
         messageBlock.find('.mes_reasoning_edit_cancel:visible').trigger('click');
 
         updateReasoningUI(messageBlock);
+        closeReasoningDetailsWithoutContent(messageBlock);
     });
 
     $(document).on('click', '.mes_edit_add_reasoning', async function () {
@@ -1310,7 +1344,12 @@ function setReasoningEventHandlers() {
             return;
         }
 
-        if (message.extra.reasoning) {
+        const details = messageBlock.find('.mes_reasoning_details');
+        if (details.find('.reasoning_edit_textarea').length > 0) {
+            return;
+        }
+
+        if (message.extra.reasoning && details.attr('data-has-content') === 'true') {
             toastr.info(t`Reasoning already exists.`, t`Edit Message`);
             return;
         }
@@ -1324,7 +1363,7 @@ function setReasoningEventHandlers() {
         }
 
         // Open the reasoning area so we can actually edit it
-        messageBlock.find('.mes_reasoning_details').attr('open', '');
+        details.attr('open', '');
         messageBlock.find('.mes_reasoning_edit').trigger('click');
         await saveChatConditional();
     });

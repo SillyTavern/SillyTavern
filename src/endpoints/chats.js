@@ -319,12 +319,25 @@ async function checkChatIntegrity(filePath, integritySlug) {
         return true;
     }
 
-    // Parse the first line of the chat file as JSON
+    // If the chat file is empty, there is nothing that could be lost by overwriting it
+    if (fs.statSync(filePath).size === 0) {
+        return true;
+    }
+
+    // Parse the first line of the chat file as JSON. Strip a UTF-8 BOM an external editor may have added.
     const firstLine = await readFirstLine(filePath);
-    const jsonData = tryParse(firstLine);
+    const jsonData = tryParse(String(firstLine ?? '').replace(/^\uFEFF/, ''));
+
+    // If the first line of a non-empty file is not a JSON object, the file may be corrupted or truncated.
+    // Fail the check so the client asks for an explicit overwrite confirmation instead of silently losing data.
+    if (typeof jsonData !== 'object' || jsonData === null || Array.isArray(jsonData)) {
+        console.warn(`File "${filePath}" is not empty, but its first line could not be parsed as a chat header. Overwriting it requires an explicit confirmation.`);
+        return false;
+    }
+
     const chatIntegrity = jsonData?.chat_metadata?.integrity;
 
-    // If the chat has no integrity metadata, assume it's intact
+    // If the chat has no integrity metadata, assume it's intact (legacy chats created before integrity checks existed)
     if (!chatIntegrity) {
         console.debug(`File "${filePath}" does not have integrity metadata matching "${integritySlug}". The integrity validation has been skipped.`);
         return true;

@@ -7,7 +7,7 @@ import {
 } from '../lib.js';
 
 import { getContext } from './extensions.js';
-import { characters, getRequestHeaders, processDroppedFiles, this_chid, user_avatar } from '../script.js';
+import { animation_duration, characters, getRequestHeaders, processDroppedFiles, this_chid, user_avatar } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines, power_user } from './power-user.js';
 import { debounce_timeout } from './constants.js';
@@ -692,13 +692,12 @@ export function isElementInViewport(el) {
  * @param {{ (name: string): boolean; }} exists Function to check if name exists.
  * @param {Object} [options] The options.
  * @param {((baseName: string, i: number) => string)|null} [options.nameBuilder=null] Function to build the name.
- *        Starts with the index provided by `startIndex` (default is 1). If not provided, uses "${baseName} (${i})".
+ *        Starts with the index provided by `startIndex` (default is 0). If not provided, uses `baseName` for index 0 and "${baseName} (${i})" for higher indices.
  * @param {number} [options.maxTries=1000] The maximum number of tries to find a unique name. Default is 1000.
- * @param {number} [options.startIndex=1] The index to start with when building the name. Default is 1.
- *        When set to 0, the intention is to also check if the basename (without applied index) is free.
+ * @param {number} [options.startIndex=0] The index to start with when building the name. Default is 0.
  * @returns {string|null} A unique name. Null if no unique name could be found in `maxTries`.
  */
-export function getUniqueName(baseName, exists, { nameBuilder = null, maxTries = 1000, startIndex = 1 } = {}) {
+export function getUniqueName(baseName, exists, { nameBuilder = null, maxTries = 1000, startIndex = 0 } = {}) {
     nameBuilder ??= (baseName, i) => i === 0 ? baseName : `${baseName} (${i})`;
     let i = startIndex;
     let name;
@@ -2787,32 +2786,54 @@ export function arraysEqual(a, b) {
  * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
  * @param {string | HTMLElement?} content - The message to display inside the information block (supports HTML) or an HTML element
  * @param {'hint' | 'info' | 'warning' | 'error'} [type='info'] - The type of message, which determines the styling of the information block
+ * @param {object} [options={}] - Optional settings
+ * @param {boolean} [options.animate=true] - Whether to animate the block sliding in when first shown
  */
-export function setInfoBlock(target, content, type = 'info') {
+export function setInfoBlock(target, content, type = 'info', { animate = true } = {}) {
     if (!content) {
         clearInfoBlock(target);
         return;
     }
 
     const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
-    if (infoBlock) {
-        infoBlock.className = `info-block ${type}`;
-        if (typeof content === 'string') {
-            infoBlock.innerHTML = content;
-        } else {
-            infoBlock.innerHTML = '';
-            infoBlock.appendChild(content);
-        }
+    if (!infoBlock) return;
+
+    const wasVisible = infoBlock.classList.contains('info-block');
+
+    if (!wasVisible && animate) {
+        $(infoBlock).hide();
+    }
+
+    infoBlock.className = `info-block ${type}`;
+    if (typeof content === 'string') {
+        infoBlock.innerHTML = content;
+    } else {
+        infoBlock.innerHTML = '';
+        infoBlock.appendChild(content);
+    }
+
+    if (!wasVisible && animate) {
+        $(infoBlock).slideDown(animation_duration * 1.5);
     }
 }
 
 /**
  * Clears the content and style of an information block.
  * @param {string | HTMLElement} target - The CSS selector or the HTML element of the information block
+ * @param {object} [options={}] - Optional settings
+ * @param {boolean} [options.animate=true] - Whether to animate the block fading out before clearing
  */
-export function clearInfoBlock(target) {
+export function clearInfoBlock(target, { animate = true } = {}) {
     const infoBlock = typeof target === 'string' ? document.querySelector(target) : target;
-    if (infoBlock && infoBlock.classList.contains('info-block')) {
+    if (!infoBlock || !infoBlock.classList.contains('info-block')) return;
+
+    if (animate) {
+        $(infoBlock).slideUp(animation_duration * 1.5, () => {
+            infoBlock.className = '';
+            infoBlock.innerHTML = '';
+            $(infoBlock).css('display', '');
+        });
+    } else {
         infoBlock.className = '';
         infoBlock.innerHTML = '';
     }

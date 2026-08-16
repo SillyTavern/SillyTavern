@@ -70,6 +70,7 @@ module.exports = {
         '**/dist/**',
         '**/.git/**',
         'public/lib/**',
+        'public/scripts/extensions/third-party/**',
         'backups/**',
         'data/**',
         'cache/**',

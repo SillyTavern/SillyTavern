@@ -289,8 +289,8 @@ export function registerCoreMacros() {
                 description: 'Any kind of text as comment. If you want multiline comments, consider using a scoped macro like {{//}}First\nSecond{{///}}.',
             },
         ],
-        list: true,         // We consume any arguments as if this is a list, but we'll ignore them in the handler anyway
-        strictArgs: false,  // and we also always remove it, even if the parsing might say it's invalid
+        // list: true,         // We consume any arguments as if this is a list, but we'll ignore them in the handler anyway
+        // strictArgs: false,  // and we also always remove it, even if the parsing might say it's invalid
         description: 'Comment macro that produces an empty string. Can be used for writing into prompt definitions, without being passed to the context.',
         returns: '',
         displayOverride: '{{// ...}}',

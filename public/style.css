@@ -466,7 +466,7 @@ input[type='checkbox']:focus-visible {
     align-items: baseline;
 }
 
-.mes:has(.mes_reasoning:empty) .mes_reasoning_header {
+.mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning_header {
     cursor: default;
 }
 
@@ -489,10 +489,11 @@ input[type='checkbox']:focus-visible {
 .mes_reasoning_details:has(.reasoning_edit_textarea) .mes_reasoning_actions .mes_button:not(.edit_button),
 .mes_reasoning_details:not(:has(.reasoning_edit_textarea)) .mes_reasoning_actions .edit_button,
 .mes_block:has(.edit_textarea):has(.reasoning_edit_textarea) .mes_reasoning_actions,
-.mes.reasoning:not([data-reasoning-state="hidden"]) .mes_edit_add_reasoning,
-.mes:has(.mes_reasoning:empty) .mes_reasoning_arrow,
-.mes:has(.mes_reasoning:empty) .mes_reasoning,
-.mes:has(.mes_reasoning:empty) .mes_reasoning_copy {
+.mes.reasoning:has(.mes_reasoning_details[data-has-content="true"]) .mes_edit_add_reasoning,
+.mes:has(.mes_reasoning_details .reasoning_edit_textarea) .mes_edit_add_reasoning,
+.mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning_arrow,
+.mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning,
+.mes_reasoning_details:not([data-has-content="true"]) .mes_reasoning_copy {
     display: none;
 }
 
@@ -500,8 +501,10 @@ input[type='checkbox']:focus-visible {
     background-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 33%, var(--SmartThemeBlurTintColor) 66%);
 }
 
-/** If hidden reasoning should not be shown, we hide all blocks that don't have content */
-#chat:not([data-show-hidden-reasoning="true"]):not(:has(.reasoning_edit_textarea)) .mes:has(.mes_reasoning:empty) .mes_reasoning_details {
+/** If hidden reasoning should not be shown, we hide all blocks that don't have content,
+ * except the one currently being edited.
+ */
+#chat:not([data-show-hidden-reasoning="true"]) .mes_reasoning_details:not([data-has-content="true"]):not(:has(.reasoning_edit_textarea)) {
     display: none;
 }
 

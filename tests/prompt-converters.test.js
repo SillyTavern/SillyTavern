@@ -166,6 +166,19 @@ describe('calculateGoogleBudgetTokens', () => {
         test('max returns high', () => expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.5-flash')).toBe('high'));
     });
 
+    test('stable Gemini 3.1 Flash-Lite uses Gemini 3 thinking levels', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.1-flash-lite')).toBe('minimal');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'medium', 'gemini-3.1-flash-lite')).toBe('medium');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.1-flash-lite')).toBe('high');
+    });
+
+    test('stable Gemini 3 image models use Gemini 3 thinking levels', () => {
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.1-flash-image')).toBe('minimal');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3.1-flash-image')).toBe('high');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3-pro-image')).toBe('low');
+        expect(mod.calculateGoogleBudgetTokens(8192, 'max', 'gemini-3-pro-image')).toBe('high');
+    });
+
     describe('gemini-3 pro', () => {
         test('auto returns null', () => expect(mod.calculateGoogleBudgetTokens(8192, 'auto', 'gemini-3.0-pro')).toBeNull());
         test('min returns low', () => expect(mod.calculateGoogleBudgetTokens(8192, 'min', 'gemini-3.0-pro')).toBe('low'));

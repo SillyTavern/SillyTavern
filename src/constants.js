@@ -487,6 +487,10 @@ export const OPENAI_REASONING_EFFORT_MODELS = [
     'gpt-5.4-nano-2026-03-17',
     'gpt-5.5',
     'gpt-5.5-2026-04-23',
+    'gpt-5.6',
+    'gpt-5.6-sol',
+    'gpt-5.6-terra',
+    'gpt-5.6-luna',
 ];
 
 export const OPENAI_REASONING_EFFORT_MAP = {
@@ -559,6 +563,11 @@ export const MEDIA_REQUEST_TYPE = {
 export const ZAI_ENDPOINT = {
     COMMON: 'common',
     CODING: 'coding',
+};
+
+export const POLLINATIONS_ENDPOINT = {
+    AUTHENTICATED: 'authenticated',
+    ANONYMOUS: 'anonymous',
 };
 
 export const SILICONFLOW_ENDPOINT = {
