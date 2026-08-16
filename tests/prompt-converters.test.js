@@ -1062,16 +1062,18 @@ describe('convertGooglePrompt', () => {
         expect(result.contents.filter(c => c.role === 'user')).toHaveLength(1);
     });
 
-    test.each(['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'])('merges a trailing prefill into the user turn on %s', (model) => {
-        const messages = [
-            { role: 'user', content: 'Hi' },
-            { role: 'assistant', content: 'Prefill' },
-        ];
-        const result = mod.convertGooglePrompt(messages, model, false, names);
-        expect(result.contents).toHaveLength(1);
-        expect(result.contents[0].role).toBe('user');
-        expect(result.contents[0].parts[0].text).toBe('Hi\n\nPrefill');
-    });
+    for (const model of ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite']) {
+        test(`merges a trailing prefill into the user turn on ${model}`, () => {
+            const messages = [
+                { role: 'user', content: 'Hi' },
+                { role: 'assistant', content: 'Prefill' },
+            ];
+            const result = mod.convertGooglePrompt(messages, model, false, names);
+            expect(result.contents).toHaveLength(1);
+            expect(result.contents[0].role).toBe('user');
+            expect(result.contents[0].parts[0].text).toBe('Hi\n\nPrefill');
+        });
+    }
 
     test('keeps non-trailing model turns on models without prefill support', () => {
         const messages = [
