@@ -319,12 +319,25 @@ async function checkChatIntegrity(filePath, integritySlug) {
         return true;
     }
 
-    // Parse the first line of the chat file as JSON
+    // If the chat file is empty, there is nothing that could be lost by overwriting it
+    if (fs.statSync(filePath).size === 0) {
+        return true;
+    }
+
+    // Parse the first line of the chat file as JSON. Strip a UTF-8 BOM an external editor may have added.
     const firstLine = await readFirstLine(filePath);
-    const jsonData = tryParse(firstLine);
+    const jsonData = tryParse(String(firstLine ?? '').replace(/^\uFEFF/, ''));
+
+    // If the first line of a non-empty file is not a JSON object, the file may be corrupted or truncated.
+    // Fail the check so the client asks for an explicit overwrite confirmation instead of silently losing data.
+    if (typeof jsonData !== 'object' || jsonData === null || Array.isArray(jsonData)) {
+        console.warn(`File "${filePath}" is not empty, but its first line could not be parsed as a chat header. Overwriting it requires an explicit confirmation.`);
+        return false;
+    }
+
     const chatIntegrity = jsonData?.chat_metadata?.integrity;
 
-    // If the chat has no integrity metadata, assume it's intact
+    // If the chat has no integrity metadata, assume it's intact (legacy chats created before integrity checks existed)
     if (!chatIntegrity) {
         console.debug(`File "${filePath}" does not have integrity metadata matching "${integritySlug}". The integrity validation has been skipped.`);
         return true;
@@ -357,31 +370,64 @@ async function checkChatIntegrity(filePath, integritySlug) {
  * @typedef {(textArray: string[]) => boolean} ChatMatchFunction
  */
 export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false, matcher = null) {
-    return new Promise(async (res) => {
-        const parsedPath = path.parse(pathToFile);
-        const stats = await fs.promises.stat(pathToFile);
-        const hasMatcher = (typeof matcher === 'function');
+    const parsedPath = path.parse(pathToFile);
+    const hasMatcher = (typeof matcher === 'function');
 
-        const chatData = {
-            match: false,
-            file_id: parsedPath.name,
-            file_name: parsedPath.base,
-            file_size: formatBytes(stats.size),
-            chat_items: 0,
-            mes: '[The chat is empty]',
-            last_mes: stats.mtimeMs,
-            ...additionalData,
-        };
+    // A chat that is deleted while a scan is running is not an error: treat it like a corrupted chat and move on.
+    const chatVanished = () => {
+        console.warn('Chat file was deleted while it was being scanned:', pathToFile);
+        return { match: false };
+    };
 
-        if (stats.size === 0) {
-            res(chatData);
-            return;
+    let stats;
+    try {
+        stats = await fs.promises.stat(pathToFile);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            return chatVanished();
         }
+        throw error;
+    }
 
+    const chatData = {
+        match: false,
+        file_id: parsedPath.name,
+        file_name: parsedPath.base,
+        file_size: formatBytes(stats.size),
+        chat_items: 0,
+        mes: '[The chat is empty]',
+        last_mes: stats.mtimeMs,
+        ...additionalData,
+    };
+
+    if (stats.size === 0) {
+        return chatData;
+    }
+
+    return new Promise((res, rej) => {
         const fileStream = fs.createReadStream(pathToFile);
+
+        // The file can still disappear between the stat above and the stream opening
+        fileStream.on('error', (error) => {
+            if (error.code === 'ENOENT') {
+                res(chatVanished());
+                return;
+            }
+            rej(error);
+        });
+
         const rl = readline.createInterface({
             input: fileStream,
             crlfDelay: Infinity,
+        });
+
+        // readline re-emits input stream errors; without a listener the emit throws
+        rl.on('error', (error) => {
+            if (error.code === 'ENOENT') {
+                res(chatVanished());
+                return;
+            }
+            rej(error);
         });
 
         let lastLine;
@@ -410,8 +456,6 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
             lastLine = line;
         });
         rl.on('close', () => {
-            rl.close();
-
             if (lastLine) {
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name || jsonData.chat_metadata)) {
@@ -425,6 +469,9 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                     console.warn('Found an invalid or corrupted chat file:', pathToFile);
                     res({});
                 }
+            } else {
+                // The file was truncated after the stat reported a non-zero size
+                res({});
             }
         });
     });

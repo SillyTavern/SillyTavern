@@ -1,6 +1,6 @@
 {
     "chat_completion_source": "openai",
-    "openai_model": "gpt-4-turbo",
+    "openai_model": "gpt-5.6-terra",
     "claude_model": "claude-sonnet-4-5",
     "openrouter_model": "OR_Website",
     "openrouter_use_fallback": false,
