@@ -183,7 +183,17 @@ function getAllInteractables(element) {
  * Function to apply scroll reset behavior to a container
  * @param {Element} container - The container
  */
+const scrollResetAppliedContainers = new WeakSet();
+
 const applyScrollResetBehavior = (container) => {
+    // The container can be re-processed on every class/DOM change (e.g. during message
+    // streaming). Guard against attaching unbounded duplicate focusout listeners over a
+    // long session, which previously grew the listener registry steadily over time.
+    if (scrollResetAppliedContainers.has(container)) {
+        return;
+    }
+
+    scrollResetAppliedContainers.add(container);
     container.addEventListener('focusout', (e) => {
         setTimeout(() => {
             const focusedElement = document.activeElement;
