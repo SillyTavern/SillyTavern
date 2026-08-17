@@ -1797,6 +1797,15 @@ export async function loadExtensionSettings(settings, versionChanged, enableAuto
     extensionTypes = Object.fromEntries(extensions.map(x => [x.name, x.type]));
     manifests = await getManifests(extensionNames);
 
+    // An extension without a loadable manifest cannot be used: drop it so state queries
+    // and the extensions list do not report a ghost entry (e.g. leftover folder on disk)
+    const namesWithoutManifest = extensionNames.filter(name => !Object.hasOwn(manifests, name));
+    if (namesWithoutManifest.length) {
+        console.warn('Ignoring extensions without a loadable manifest.json:', namesWithoutManifest);
+        extensionNames = extensionNames.filter(name => Object.hasOwn(manifests, name));
+        namesWithoutManifest.forEach(name => delete extensionTypes[name]);
+    }
+
     if (versionChanged && enableAutoUpdate) {
         await autoUpdateExtensions(false);
     }
