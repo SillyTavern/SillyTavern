@@ -1104,7 +1104,7 @@ export function initTextGenSettings() {
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
             { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
-            { id: 'api_key_featherless', secret: SECRET_KEYS.FEATHERLESS },
+            { id: 'api_key_featherless-tg', secret: SECRET_KEYS.FEATHERLESS },
             { id: 'api_key_huggingface', secret: SECRET_KEYS.HUGGINGFACE },
             { id: 'api_key_generic', secret: SECRET_KEYS.GENERIC },
         ];

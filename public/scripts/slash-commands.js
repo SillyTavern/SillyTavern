@@ -6265,6 +6265,7 @@ function getModelOptions(quiet) {
         { id: 'model_siliconflow_select', api: 'openai', type: chat_completion_sources.SILICONFLOW },
         { id: 'model_minimax_select', api: 'openai', type: chat_completion_sources.MINIMAX },
         { id: 'model_electronhub_select', api: 'openai', type: chat_completion_sources.ELECTRONHUB },
+        { id: 'model_featherless_chat_select', api: 'openai', type: chat_completion_sources.FEATHERLESS },
         { id: 'model_nanogpt_select', api: 'openai', type: chat_completion_sources.NANOGPT },
         { id: 'model_deepseek_select', api: 'openai', type: chat_completion_sources.DEEPSEEK },
         { id: 'model_aimlapi_select', api: 'openai', type: chat_completion_sources.AIMLAPI },
