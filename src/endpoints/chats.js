@@ -32,14 +32,6 @@ const checkIntegrity = !!getConfigValue('backups.chat.checkIntegrity', true, 'bo
 export const CHAT_BACKUPS_PREFIX = 'chat_';
 
 /**
- * Saves a chat to the backups directory.
- * @param {string} directory The user's backup directory.
- * @param {string} name The name of the chat.
- * @param {string} data The serialized chat to save.
- * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
- * @returns
- */
-/**
  * Builds a stable filename key for a chat's backups.
  * Non-ASCII characters are replaced with underscores, so names such as CJK ones
  * would all collapse to the same key and share one backup quota. A short hash of
@@ -56,6 +48,14 @@ export function getBackupKey(name) {
     return sanitized;
 }
 
+/**
+ * Saves a chat to the backups directory.
+ * @param {string} directory The user's backup directory.
+ * @param {string} name The name of the chat.
+ * @param {string} data The serialized chat to save.
+ * @param {string} backupPrefix The file prefix. Typically CHAT_BACKUPS_PREFIX.
+ * @returns
+ */
 function backupChat(directory, name, data, backupPrefix = CHAT_BACKUPS_PREFIX) {
     try {
         if (!isBackupEnabled) { return; }
