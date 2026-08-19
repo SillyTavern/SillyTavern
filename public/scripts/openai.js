@@ -1623,6 +1623,21 @@ export async function prepareOpenAIMessages({
 }
 
 /**
+ * Extracts a human-readable message from a Chat Completion error response.
+ * Providers can return an error object without a message field, or the error as
+ * a plain string. statusText is only used for non-2xx responses, since for an
+ * HTTP 200 carrying an error payload it is just "OK" (#5647).
+ * @param {object} data Parsed response body
+ * @param {Response} response Fetch response
+ * @returns {string} Error message to display and throw
+ */
+function getChatCompletionErrorMessage(data, response) {
+    const error = data?.error ?? data?.detail?.error;
+    const message = typeof error === 'string' ? error : (error?.message || error?.code || error?.type);
+    return String(message || (!response.ok && response.statusText) || t`Unknown error`);
+}
+
+/**
  * Handles errors during streaming requests.
  * @param {Response} response
  * @param {string} decoded - response text or decoded stream data
@@ -1644,7 +1659,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
         // if trying to fix "[object Object]" displayed to users, start here
 
         if (data.error) {
-            !quiet && toastr.error(data.error.message || response.statusText, 'Chat Completion API');
+            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
             throw new Error(data);
         }
 
@@ -1654,7 +1669,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
         }
 
         if (data.detail) {
-            !quiet && toastr.error(data.detail?.error?.message || response.statusText, 'Chat Completion API');
+            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
             throw new Error(data);
         }
     } catch {
@@ -3135,7 +3150,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         checkModerationError(data);
 
         if (data.error) {
-            const message = data.error.message || response.statusText || t`Unknown error`;
+            const message = getChatCompletionErrorMessage(data, response);
             toastr.error(message, t`API returned an error`);
             throw new Error(message);
         }
