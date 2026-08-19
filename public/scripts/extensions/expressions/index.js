@@ -1717,13 +1717,9 @@ async function setExpression(spriteFolderName, expression, { force = false, over
  * @param {string} expression - The expression label to use for the default image
  */
 function setDefaultEmojiForImage(img, expression) {
-    // Classifiers can return a falsy or literal "null"/"undefined" label; there is no matching default asset (#5863).
-    if (
-        !expression
-        || expression === 'null'
-        || expression === 'undefined'
-        || extension_settings.expressions.custom?.includes(expression)
-    ) {
+    // Classifiers can return a falsy, literal "null"/"undefined", or otherwise unknown label,
+    // and custom expressions have no default assets; only known labels have an image (#5863).
+    if (!DEFAULT_EXPRESSIONS.includes(expression)) {
         console.debug(`Can't set default emoji for expression (${expression}). setting to ${DEFAULT_FALLBACK_EXPRESSION} instead.`);
         expression = DEFAULT_FALLBACK_EXPRESSION;
     }
