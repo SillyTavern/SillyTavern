@@ -7390,6 +7390,7 @@ export function initOpenAI() {
     $('#model_electronhub_select').on('change', onModelChange);
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
+    $('#model_opencodego_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);
