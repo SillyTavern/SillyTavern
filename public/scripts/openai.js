@@ -190,6 +190,7 @@ export const chat_completion_sources = {
     CHUTES: 'chutes',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    OPENCODEGO: 'opencodego',
     AIMLAPI: 'aimlapi',
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
@@ -339,6 +340,7 @@ export const settingsToUpdate = {
     nanogpt_provider: ['#nanogpt_provider', 'nanogpt_provider', false, true],
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
+    opencodego_model: ['#model_opencodego_select', 'opencodego_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
@@ -456,6 +458,7 @@ const default_settings = {
     nanogpt_provider: '',
     nanogpt_payg_override: false,
     deepseek_model: 'deepseek-v4-flash',
+    opencodego_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -1757,6 +1760,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.nanogpt_model;
         case chat_completion_sources.DEEPSEEK:
             return settings.deepseek_model;
+        case chat_completion_sources.OPENCODEGO:
+            return settings.opencodego_model;
         case chat_completion_sources.AIMLAPI:
             return settings.aimlapi_model;
         case chat_completion_sources.XAI:
@@ -2216,6 +2221,20 @@ function saveModelList(data) {
         $('#model_deepseek_select').val(oai_settings.deepseek_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENCODEGO) {
+        $('#model_opencodego_select').empty();
+        model_list.forEach((model) => {
+            $('#model_opencodego_select').append($('<option>', { value: model.id, text: model.id }));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.opencodego_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.opencodego_model)) {
+            oai_settings.opencodego_model = model_list[0].id;
+        }
+
+        $('#model_opencodego_select').val(oai_settings.opencodego_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
         $('#model_pollinations_select').empty();
         model_list.forEach((model) => {
@@ -2561,6 +2580,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.FIREWORKS,
+        chat_completion_sources.OPENCODEGO,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2588,6 +2608,20 @@ function getReasoningEffort(settings = null, model = null) {
                     return undefined;
                 case reasoning_effort_types.min:
                     return reasoning_effort_types.low;
+                default:
+                    return settings.reasoning_effort;
+            }
+        }
+
+        if (settings.chat_completion_source === chat_completion_sources.OPENCODEGO) {
+            // OpenCode Go supports low/medium/high, plus max for the DeepSeek V4 family
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return 'low';
+                case reasoning_effort_types.max:
+                    return /deepseek-v4/.test(model) ? 'max' : 'high';
                 default:
                     return settings.reasoning_effort;
             }
@@ -2725,6 +2759,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.OPENCODEGO,
         chat_completion_sources.XAI,
         chat_completion_sources.ZAI,
         chat_completion_sources.MOONSHOT,
@@ -2737,6 +2772,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.OPENCODEGO,
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.CHUTES,
@@ -3224,6 +3260,11 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
         }
         return data.choices?.[0]?.delta?.content || '';
+    } else if (chat_completion_source === chat_completion_sources.OPENCODEGO) {
+        if (show_thoughts) {
+            state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
+        }
+        return data.choices?.[0]?.delta?.content || '';
     } else if (chat_completion_source === chat_completion_sources.XAI) {
         if (show_thoughts) {
             state.reasoning += (data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content || '');
@@ -3298,6 +3339,7 @@ function parseChatCompletionLogprobs(data) {
         case chat_completion_sources.AZURE_OPENAI:
         case chat_completion_sources.OPENROUTER:
         case chat_completion_sources.DEEPSEEK:
+        case chat_completion_sources.OPENCODEGO:
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
         case chat_completion_sources.CHUTES:
@@ -4470,6 +4512,7 @@ async function getStatusOpen() {
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.DEEPSEEK,
+        chat_completion_sources.OPENCODEGO,
         chat_completion_sources.XAI,
         chat_completion_sources.ZAI,
         chat_completion_sources.MOONSHOT,
@@ -5586,6 +5629,16 @@ async function onModelChange() {
         oai_settings.deepseek_model = value;
     }
 
+    if ($(this).is('#model_opencodego_select')) {
+        if (!value) {
+            console.debug('Null OpenCode Go model selected. Ignoring.');
+            return;
+        }
+
+        console.log('OpenCode Go model changed to', value);
+        oai_settings.opencodego_model = value;
+    }
+
     if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
@@ -6024,6 +6077,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.ELECTRONHUB]: { key: SECRET_KEYS.ELECTRONHUB, selector: '#api_key_electronhub', proxy: false },
         [chat_completion_sources.NANOGPT]: { key: SECRET_KEYS.NANOGPT, selector: '#api_key_nanogpt', proxy: false },
         [chat_completion_sources.DEEPSEEK]: { key: SECRET_KEYS.DEEPSEEK, selector: '#api_key_deepseek', proxy: true },
+        [chat_completion_sources.OPENCODEGO]: { key: SECRET_KEYS.OPENCODEGO, selector: '#api_key_opencodego', proxy: true },
         [chat_completion_sources.XAI]: { key: SECRET_KEYS.XAI, selector: '#api_key_xai', proxy: true },
         [chat_completion_sources.AIMLAPI]: { key: SECRET_KEYS.AIMLAPI, selector: '#api_key_aimlapi', proxy: false },
         [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: true },
@@ -6110,6 +6164,8 @@ function toggleChatCompletionForms() {
         $('#model_custom_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
         $('#model_deepseek_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.OPENCODEGO) {
+        $('#model_opencodego_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
         $('#model_aimlapi_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {

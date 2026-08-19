@@ -6312,6 +6312,7 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE:
                 case chat_completion_sources.DEEPSEEK:
+                case chat_completion_sources.OPENCODEGO:
                 case chat_completion_sources.AI21:
                 case chat_completion_sources.GROQ:
                 case chat_completion_sources.POLLINATIONS:
