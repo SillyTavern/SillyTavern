@@ -68,6 +68,7 @@ import {
 } from '../tokenizers.js';
 import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
 import { getCookieSecret } from '../../users.js';
+import { fetchGoogleModels, GoogleModelsHttpError } from './google-models.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -1908,26 +1909,15 @@ router.post('/status', async function (request, statusResponse) {
             }
 
             try {
-                const response = await fetch(modelsUrl);
-
-                if (response.ok) {
-                    /** @type {any} */
-                    const data = await response.json();
-                    // Transform Google AI Studio models to OpenAI format
-                    const models = data.models
-                        ?.filter(model => model.supportedGenerationMethods?.includes('generateContent'))
-                        ?.map(model => ({
-                            ...model,
-                            id: model.name.replace('models/', ''),
-                        })) || [];
-
-                    console.info('Available Google AI Studio models:', models.map(m => m.id));
-                    return statusResponse.send({ data: models });
-                } else {
-                    console.warn('Google AI Studio models endpoint failed:', response.status, response.statusText);
+                const models = await fetchGoogleModels(modelsUrl);
+                console.info('Available Google AI Studio models:', models.map(m => m.id));
+                return statusResponse.send({ data: models });
+            } catch (error) {
+                if (error instanceof GoogleModelsHttpError) {
+                    console.warn('Google AI Studio models endpoint failed:', error.status, error.statusText);
                     return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
                 }
-            } catch (error) {
+
                 console.error('Error fetching Google AI Studio models:', error);
                 return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
             }
