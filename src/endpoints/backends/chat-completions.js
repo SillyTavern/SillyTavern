@@ -867,6 +867,21 @@ async function sendAI21Request(request, response) {
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
  */
+
+function normalizeMistralContent(content) {
+    if (!Array.isArray(content)) return null;
+    let textParts = [], reasoningParts = [];
+    for (const block of content) {
+        if (block.type === 'text' && block.text) textParts.push(block.text);
+        if (block.type === 'thinking' && Array.isArray(block.thinking)) {
+            for (const tb of block.thinking) {
+                if (tb.type === 'text' && tb.text) reasoningParts.push(tb.text);
+            }
+        }
+    }
+    return { text: textParts.join('') || null, reasoning: reasoningParts.join('\n') || null };
+}
+
 async function sendMistralAIRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI, request.body.secret_id);
@@ -878,6 +893,21 @@ async function sendMistralAIRequest(request, response) {
 
     try {
         const messages = convertMistralMessages(request.body.messages, getPromptNames(request));
+        // Fix: Mistral reasoning_effort is killed by a trailing system message.
+        // Merge any trailing system messages into the last user message.
+        if (request.body.reasoning_effort && messages.length > 1) {
+            while (messages.length > 1 && messages[messages.length - 1].role === 'system') {
+                const trailing = messages.pop();
+                const lastUser = messages.findLast(m => m.role === 'user');
+                if (lastUser) {
+                    lastUser.content += '\n' + trailing.content;
+                } else {
+                    trailing.role = 'user';
+                    messages.push(trailing);
+                    break;
+                }
+            }
+        }
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
@@ -896,6 +926,7 @@ async function sendMistralAIRequest(request, response) {
             'safe_prompt': request.body.safe_prompt,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
             'stop': Array.isArray(request.body.stop) && request.body.stop.length > 0 ? request.body.stop : undefined,
+            'reasoning_effort': /^(mistral-medium|mistral-small)/.test(request.body.model) ? 'high' : undefined,
         };
 
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
@@ -926,7 +957,7 @@ async function sendMistralAIRequest(request, response) {
             timeout: 0,
         };
 
-        console.debug('MisralAI request:', requestBody);
+        console.debug('MistralAI request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/chat/completions', config);
         if (request.body.stream) {
@@ -939,6 +970,13 @@ async function sendMistralAIRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('MistralAI response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1039,6 +1077,13 @@ async function sendCohereRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('Cohere response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1151,6 +1196,13 @@ async function sendDeepSeekRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('DeepSeek response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1257,6 +1309,13 @@ async function sendXaiRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('xAI response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1362,6 +1421,13 @@ async function sendAimlapiRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('AI/ML API response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1474,6 +1540,13 @@ async function sendElectronHubRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('Electron Hub response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1575,6 +1648,13 @@ async function sendChutesRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('Chutes response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
@@ -1656,6 +1736,13 @@ async function sendMinimaxRequest(request, response) {
                 return response.status(500).send(errorJson);
             }
             const generateResponseJson = await generateResponse.json();
+            for (const choice of generateResponseJson.choices ?? []) {
+                if (Array.isArray(choice.message?.content)) {
+                    const n = normalizeMistralContent(choice.message.content);
+                    choice.message.content = n.text;
+                    if (n.reasoning) choice.message.reasoning_content = n.reasoning;
+                }
+            }
             console.debug('MiniMax response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
