@@ -1958,6 +1958,17 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
+                                        <label for="prefill_friendly" title="Prefill Friendly context handling" data-i18n="[title]Prefill Friendly context handling" class="checkbox_label widthFreeExpand">
+                                            <input id="prefill_friendly" type="checkbox" />
+                                            <span data-i18n="Prefill Friendly">Prefill Friendly</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Keeps a stable prompt prefix by summarizing older history behind a moving context pointer. When the request reaches 80% of the maximum context, a blocking compaction summarizes old messages and keeps only ~20% of the newest raw history. The chat itself is never modified.">
+                                                Keeps a stable prompt prefix by summarizing older history behind a moving context pointer. When the request reaches 80% of the maximum context, a blocking compaction summarizes old messages and keeps only ~20% of the newest raw history. The chat itself is never modified.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
                                         <label for="squash_system_messages" title="Squash system messages" data-i18n="[title]Squash system messages" class="checkbox_label widthFreeExpand">
                                             <input id="squash_system_messages" type="checkbox" />
                                             <span data-i18n="Squash system messages">

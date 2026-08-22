@@ -380,6 +380,7 @@ export const settingsToUpdate = {
     media_inlining: ['#openai_media_inlining', 'media_inlining', true, false],
     inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false, false],
     continue_prefill: ['#continue_prefill', 'continue_prefill', true, false],
+    prefill_friendly: ['#prefill_friendly', 'prefill_friendly', true, false],
     continue_postfix: ['#continue_postfix', 'continue_postfix', false, false],
     function_calling: ['#openai_function_calling', 'function_calling', true, false],
     tool_call_recurse_limit: ['#tool_call_recurse_limit', 'tool_call_recurse_limit', false, false],
@@ -490,6 +491,7 @@ const default_settings = {
     inline_image_quality: 'auto',
     bypass_status_check: false,
     continue_prefill: false,
+    prefill_friendly: false,
     function_calling: false,
     tool_call_recurse_limit: 5,
     names_behavior: character_names_behavior.DEFAULT,
@@ -6904,6 +6906,11 @@ export function initOpenAI() {
 
     $('#continue_prefill').on('input', function () {
         oai_settings.continue_prefill = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#prefill_friendly').on('input', function () {
+        oai_settings.prefill_friendly = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

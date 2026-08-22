@@ -112,6 +112,11 @@ import {
     selected_proxy,
     initOpenAI,
 } from './scripts/openai.js';
+import {
+    beginRequest,
+    enforceCompaction,
+    init as initPrefillFriendly,
+} from './scripts/prefill-friendly.js';
 
 import {
     generateNovelWithStreaming,
@@ -743,6 +748,7 @@ async function firstLoadInit() {
     initNovelAISettings();
     initSystemPrompts();
     await initExtensions();
+    initPrefillFriendly();
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
     await initPresetManager();
@@ -4431,71 +4437,85 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         chat[0].mes = substituteParams(chat[0].mes);
     }
 
+    // Prefill Friendly: select model-visible history via pointer; never mutates `chat`
+    const pfContext = await beginRequest({ type, quietPrompt: quiet_prompt, dryRun });
+    const pfHistory = pfContext.enabled ? pfContext.history : null;
+
     // Collect messages with usable content
     const canUseTools = ToolManager.isToolCallingSupported();
     const canPerformToolCalls = !dryRun && ToolManager.canPerformToolCalls(type) && depth < ToolManager.RECURSE_LIMIT;
-    let coreChat = chat.filter(x => !x.is_system || (canUseTools && Array.isArray(x.extra?.tool_invocations)));
-    if (type === 'swipe') {
-        coreChat.pop();
-    }
 
-    coreChat = await Promise.all(coreChat.map(async (/** @type {ChatMessage} */ chatItem, index) => {
-        let message = chatItem.mes;
-        let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
-        let options = { isPrompt: true, depth: (coreChat.length - index - (isContinue ? 2 : 1)) };
-
-        let regexedMessage = getRegexedString(message, regexType, options);
-        regexedMessage = await appendFileContent(chatItem, regexedMessage);
-
-        const titles = [];
-        if (chatItem?.extra?.append_title && chatItem?.extra?.title) {
-            titles.push(chatItem.extra.title);
+    /** Build coreChat from a source array (chat or pfHistory). */
+    async function buildCoreChat(sourceChat) {
+        // Fresh instance per build so reasoning limits/counters don't leak across rebuilds.
+        promptReasoning = new PromptReasoning();
+        let coreChat = sourceChat.filter(x => !x.is_system || (canUseTools && Array.isArray(x.extra?.tool_invocations)));
+        if (type === 'swipe') {
+            coreChat.pop();
         }
-        if (Array.isArray(chatItem?.extra?.media)) {
-            for (const mediaItem of chatItem.extra.media) {
-                if (mediaItem?.title && mediaItem?.append_title) {
-                    titles.push(mediaItem.title);
+
+        coreChat = await Promise.all(coreChat.map(async (/** @type {ChatMessage} */ chatItem, index) => {
+            let message = chatItem.mes;
+            let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+            let options = { isPrompt: true, depth: (coreChat.length - index - (isContinue ? 2 : 1)) };
+
+            let regexedMessage = getRegexedString(message, regexType, options);
+            regexedMessage = await appendFileContent(chatItem, regexedMessage);
+
+            const titles = [];
+            if (chatItem?.extra?.append_title && chatItem?.extra?.title) {
+                titles.push(chatItem.extra.title);
+            }
+            if (Array.isArray(chatItem?.extra?.media)) {
+                for (const mediaItem of chatItem.extra.media) {
+                    if (mediaItem?.title && mediaItem?.append_title) {
+                        titles.push(mediaItem.title);
+                    }
                 }
             }
-        }
-        if (titles.length > 0) {
-            regexedMessage = `${regexedMessage}\n\n${titles.join('\n\n')}`;
-        }
+            if (titles.length > 0) {
+                regexedMessage = `${regexedMessage}\n\n${titles.join('\n\n')}`;
+            }
 
-        return {
-            ...chatItem,
-            mes: regexedMessage,
-            index,
-        };
-    }));
+            return {
+                ...chatItem,
+                mes: regexedMessage,
+                index,
+            };
+        }));
 
-    const promptReasoning = new PromptReasoning();
-    for (let i = coreChat.length - 1; i >= 0; i--) {
-        const depth = coreChat.length - i - (isContinue ? 2 : 1);
-        const isPrefix = isContinue && i === coreChat.length - 1;
+        for (let i = coreChat.length - 1; i >= 0; i--) {
+            const depth = coreChat.length - i - (isContinue ? 2 : 1);
+            const isPrefix = isContinue && i === coreChat.length - 1;
 
-        // In group chats, only include reasoning from the currently generating character
-        const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
+            // In group chats, only include reasoning from the currently generating character
+            const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
 
-        coreChat[i] = {
-            ...coreChat[i],
-            mes: isOtherGroupMember
-                ? coreChat[i].mes
-                : promptReasoning.addToMessage(
-                    coreChat[i].mes,
-                    getRegexedString(
-                        String(coreChat[i].extra?.reasoning ?? ''),
-                        regex_placement.REASONING,
-                        { isPrompt: true, depth: depth },
+            coreChat[i] = {
+                ...coreChat[i],
+                mes: isOtherGroupMember
+                    ? coreChat[i].mes
+                    : promptReasoning.addToMessage(
+                        coreChat[i].mes,
+                        getRegexedString(
+                            String(coreChat[i].extra?.reasoning ?? ''),
+                            regex_placement.REASONING,
+                            { isPrompt: true, depth: depth },
+                        ),
+                        isPrefix,
+                        coreChat[i].extra?.reasoning_duration,
                     ),
-                    isPrefix,
-                    coreChat[i].extra?.reasoning_duration,
-                ),
-        };
-        if (promptReasoning.isLimitReached()) {
-            break;
+            };
+            if (promptReasoning.isLimitReached()) {
+                break;
+            }
         }
+        return coreChat;
     }
+
+    // Outer-scope instance (updated by buildCoreChat) for later use in streaming
+    let promptReasoning = new PromptReasoning();
+    let coreChat = await buildCoreChat(pfHistory ?? chat);
 
     // Determine token limit
     let this_max_context = getMaxPromptTokens();
@@ -4575,6 +4595,34 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     };
     const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth, outletEntries } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
     setExtensionPrompt(inject_ids.QUIET_PROMPT, '', extension_prompt_types.IN_PROMPT, 0, true);
+
+    // Prefill Friendly: enforce compaction at 80% threshold (blocking)
+    if (pfContext.enabled && main_api === 'openai') {
+        try {
+            const pfResult = await enforceCompaction({
+                chat,
+                coreChat,
+                worldInfoBefore,
+                worldInfoAfter,
+                worldInfoString,
+                description,
+                personality,
+                scenario,
+                persona,
+                system,
+                promptBias,
+                maxContext: oai_settings.openai_max_context,
+            });
+
+            if (pfResult.compacted) {
+                coreChat = await buildCoreChat(pfResult.history);
+            }
+        } catch (err) {
+            console.error('[Prefill Friendly] Compaction failed, aborting generation:', err);
+            unblockGeneration(type);
+            return Promise.resolve();
+        }
+    }
 
     // Add message example WI
     for (const example of worldInfoExamples) {
