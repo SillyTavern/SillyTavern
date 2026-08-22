@@ -28,6 +28,8 @@ const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
     'kayra-v1': 'Carefree-Kayra',
     'llama-3-erato-v1': 'Erato-Dragonfruit',
+    'glm-4-6': 'GLM-Chat',
+    'xialong-v1': 'GLM-Chat',
 };
 
 export let novelai_settings;
@@ -923,7 +925,6 @@ export function initNovelAISettings() {
         saveSettingsDebounced();
 
         // Update the selected preset to something appropriate, if this model has a default one.
-        // Newer models (e.g. GLM-4.6, Xialong) don't ship a factory preset yet, so leave the current one selected.
         const default_preset = default_presets[nai_settings.model_novel];
         if (default_preset !== undefined) {
             $('#settings_preset_novel').val(novelai_setting_names[default_preset]);
