@@ -207,7 +207,19 @@ router.post('/generate', async function (req, res) {
 
     const repPenWhitelist = getRepPenaltyWhitelist(req.body.model);
 
-    const data = {
+    // GLM-4.6 and Xialong are only served through NovelAI's OpenAI-compatible chat endpoint,
+    // not the classic /ai/generate completion endpoint used by every other model.
+    const isChatModel = req.body.model === 'glm-4-6' || req.body.model === 'xialong-v1';
+
+    const data = isChatModel ? {
+        'model': req.body.model,
+        'messages': [{ 'role': 'user', 'content': req.body.input }],
+        'max_tokens': req.body.max_length,
+        'temperature': req.body.temperature,
+        'top_p': req.body.top_p,
+        'top_k': req.body.top_k,
+        'stream': req.body.streaming,
+    } : {
         'input': req.body.input,
         'model': req.body.model,
         'parameters': {
@@ -246,7 +258,7 @@ router.post('/generate', async function (req, res) {
     };
 
     // Tells the model to stop generation at '>'
-    if ('theme_textadventure' === req.body.prefix) {
+    if (!isChatModel && 'theme_textadventure' === req.body.prefix) {
         if (req.body.model.includes('clio') || req.body.model.includes('kayra')) {
             data.parameters.eos_token_id = 49405;
         }
@@ -264,8 +276,10 @@ router.post('/generate', async function (req, res) {
     };
 
     try {
-        const baseURL = (req.body.model.includes('kayra') || req.body.model.includes('erato')) ? TEXT_NOVELAI : API_NOVELAI;
-        const url = req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`;
+        const baseURL = (req.body.model.includes('kayra') || req.body.model.includes('erato') || isChatModel) ? TEXT_NOVELAI : API_NOVELAI;
+        const url = isChatModel
+            ? `${baseURL}/oa/v1/chat/completions`
+            : (req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`);
         const response = await fetch(url, { method: 'POST', ...args });
 
         if (req.body.streaming) {
