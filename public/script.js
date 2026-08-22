@@ -6228,7 +6228,7 @@ export function extractMessageFromData(data, activeApi = null) {
             case 'textgenerationwebui':
                 return data.choices?.[0]?.text ?? data.choices?.[0]?.message?.content ?? data.content ?? data.response ?? data[0]?.content ?? '';
             case 'novel':
-                return data.output;
+                return data?.choices?.[0]?.message?.content ?? data.output;
             case 'openai':
                 return data?.content?.filter(p => p.type === 'text')?.map(p => p.text)?.join('\n\n') ?? data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? data?.message?.content?.[0]?.text ?? data?.message?.tool_plan ?? '';
             default:

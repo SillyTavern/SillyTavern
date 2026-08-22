@@ -196,6 +196,10 @@
         "type": "novel_preset"
     },
     {
+        "filename": "presets/novel/GLM-Chat.json",
+        "type": "novel_preset"
+    },
+    {
         "filename": "presets/novel/Green-Active-Writer-Kayra.json",
         "type": "novel_preset"
     },

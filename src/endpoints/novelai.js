@@ -105,6 +105,60 @@ function getLogitBiasList(model) {
     return list.slice();
 }
 
+/**
+ * GLM-4.6 and Xialong are plain OpenAI-compatible chat models, not NovelAI's classic
+ * completion models. They don't have NovelAI's exotic samplers (Tail-Free Sampling,
+ * Min-P, Top-A, repetition penalty/slope) to keep output coherent, so a preset tuned for
+ * Clio/Kayra/Erato (which leans on those samplers and can leave temperature/top_p/top_k
+ * wide open) produces degenerate, garbled output when forwarded as-is to the chat endpoint.
+ * Clamp to safe defaults regardless of what preset is active.
+ * @param {number} temperature Requested temperature
+ * @param {number} top_p Requested top_p
+ * @param {number} top_k Requested top_k
+ * @returns {{temperature: number, top_p: number, top_k: number|undefined}} Clamped sampling parameters
+ */
+function getChatSamplingParams(temperature, top_p, top_k) {
+    return {
+        temperature: typeof temperature === 'number' ? Math.min(Math.max(temperature, 0), 1.25) : 0.8,
+        top_p: (typeof top_p === 'number' && top_p > 0 && top_p < 1) ? top_p : 0.9,
+        top_k: (typeof top_k === 'number' && top_k > 0) ? top_k : undefined,
+    };
+}
+
+/**
+ * Reads a NovelAI chat-completions SSE stream to completion and concatenates the text deltas.
+ * Used when the caller asked for a non-streaming response from a chat model (see the
+ * 'stream': true comment above) - we still have to consume it as a stream on our end.
+ * @param {import('node-fetch').Response} response Upstream fetch response with an SSE body
+ * @returns {Promise<string>} The fully concatenated completion text
+ */
+async function collectChatCompletionDeltas(response) {
+    const chunks = await readAllChunks(response.body);
+    const raw = Buffer.concat(chunks).toString('utf8');
+    let text = '';
+
+    for (const line of raw.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) {
+            continue;
+        }
+
+        const payload = trimmed.slice('data:'.length).trim();
+        if (!payload || payload === '[DONE]') {
+            continue;
+        }
+
+        try {
+            const json = JSON.parse(payload);
+            text += json?.choices?.[0]?.delta?.content ?? '';
+        } catch (error) {
+            console.warn('Failed to parse NovelAI chat completion chunk', error);
+        }
+    }
+
+    return text;
+}
+
 function getRepPenaltyWhitelist(model) {
     if (model.includes('clio') || model.includes('kayra')) {
         return repPenaltyAllowList.flat();
@@ -140,7 +194,7 @@ router.post('/status', async function (req, res) {
     }
 
     try {
-        const response = await fetch(API_NOVELAI + '/user/subscription', {
+        const response = await fetch(IMAGE_NOVELAI + '/user/subscription', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -207,7 +261,21 @@ router.post('/generate', async function (req, res) {
 
     const repPenWhitelist = getRepPenaltyWhitelist(req.body.model);
 
-    const data = {
+    // GLM-4.6 and Xialong are only served through NovelAI's OpenAI-compatible chat endpoint,
+    // not the classic /ai/generate completion endpoint used by every other model.
+    const isChatModel = req.body.model === 'glm-4-6' || req.body.model === 'xialong-v1';
+
+    const data = isChatModel ? {
+        'model': req.body.model,
+        'messages': [{ 'role': 'user', 'content': req.body.input }],
+        'max_tokens': req.body.max_length,
+        // NovelAI's chat endpoint only fills in the completion text on streamed deltas; a
+        // non-streamed request comes back with an empty `text` field and just the raw
+        // `token_ids`. Always stream upstream and, if the caller asked for a non-streaming
+        // response, collect the deltas into one string ourselves (see below).
+        'stream': true,
+        ...getChatSamplingParams(req.body.temperature, req.body.top_p, req.body.top_k),
+    } : {
         'input': req.body.input,
         'model': req.body.model,
         'parameters': {
@@ -246,7 +314,7 @@ router.post('/generate', async function (req, res) {
     };
 
     // Tells the model to stop generation at '>'
-    if ('theme_textadventure' === req.body.prefix) {
+    if (!isChatModel && 'theme_textadventure' === req.body.prefix) {
         if (req.body.model.includes('clio') || req.body.model.includes('kayra')) {
             data.parameters.eos_token_id = 49405;
         }
@@ -264,8 +332,10 @@ router.post('/generate', async function (req, res) {
     };
 
     try {
-        const baseURL = (req.body.model.includes('kayra') || req.body.model.includes('erato')) ? TEXT_NOVELAI : API_NOVELAI;
-        const url = req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`;
+        const baseURL = (req.body.model.includes('kayra') || req.body.model.includes('erato') || isChatModel) ? TEXT_NOVELAI : API_NOVELAI;
+        const url = isChatModel
+            ? `${baseURL}/oa/v1/chat/completions`
+            : (req.body.streaming ? `${baseURL}/ai/generate-stream` : `${baseURL}/ai/generate`);
         const response = await fetch(url, { method: 'POST', ...args });
 
         if (req.body.streaming) {
@@ -285,6 +355,15 @@ router.post('/generate', async function (req, res) {
                 }
 
                 return res.status(500).send({ error: { message } });
+            }
+
+            if (isChatModel) {
+                // We requested this upstream as a stream regardless of what the caller asked
+                // for (see the comment above); collect the deltas into one string and respond
+                // in the same shape non-chat models use, so the client doesn't need to care.
+                const output = await collectChatCompletionDeltas(response);
+                console.info('NovelAI Output', output);
+                return res.send({ output });
             }
 
             /** @type {any} */
