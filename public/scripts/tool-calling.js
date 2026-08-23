@@ -612,13 +612,15 @@ export class ToolManager {
      * Checks if tool calling is supported for the current settings and generation type.
      * @param {ChatCompletionSettings} settings Optional chat completion settings
      * @param {string} model Optional model name
+     * @param {string} api The api being checked, defaults to main_api
      * @returns {boolean} Whether tool calling is supported for the given type
      */
-    static isToolCallingSupported(settings = null, model = null) {
+    static isToolCallingSupported(settings = null, model = null, api = null) {
         settings = settings ?? oai_settings;
         model = model ?? getChatCompletionModel(settings);
+        api = api ?? main_api;
 
-        if (main_api !== 'openai' || !settings.function_calling) {
+        if (api !== 'openai' || !settings.function_calling) {
             return false;
         }
 
@@ -810,7 +812,7 @@ export class ToolManager {
             const message = await ToolManager.formatToolCallMessage(name, parameters, tools);
             const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
             const toolResult = await ToolManager.invokeFunctionTool(name, parameters, tools);
-            toastr.clear(toast);
+            if (toast) toastr.clear(toast);
             console.log('[ToolManager] Function tool result:', result);
 
             // Handle tool errors — still create an invocation so the LLM sees the failure
