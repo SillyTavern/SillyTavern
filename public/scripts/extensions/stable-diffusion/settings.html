@@ -46,6 +46,7 @@
                 <option value="chutes">Chutes</option>
                 <option value="workersai">Cloudflare Workers AI</option>
                 <option value="comfy">ComfyUI</option>
+                <option value="dezgo">Dezgo</option>
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="electronhub">Electron Hub</option>
                 <option value="extras">Extras API (deprecated)</option>
@@ -344,7 +345,7 @@
 
             <div data-sd-source="bfl">
                 <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
-                    <a href="https://api.bfl.ml/" target="_blank" rel="noopener noreferrer">
+                    <a href="https://api.bfl.ai/" target="_blank" rel="noopener noreferrer">
                         <strong data-i18n="API Key">API Key</strong>
                         <i class="fa-solid fa-share-from-square"></i>
                     </a>
@@ -354,12 +355,38 @@
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
                 </div>
-                <label class="checkbox_label marginBot5" for="sd_bfl_upsampling" data-i18n="[title]Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation." title="Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation.">
+                <label id="sd_bfl_safety_tolerance_block" class="flex-container flexFlowColumn gap0 marginBot5" for="sd_bfl_safety_tolerance">
+                    <span data-i18n="Safety Tolerance">Safety Tolerance</span>
+                    <small data-i18n="0 is most strict; 5 is least strict.">0 is most strict; 5 is least strict.</small>
+                    <select id="sd_bfl_safety_tolerance" class="text_pole">
+                        <option value="0" data-i18n="0 - Most strict">0 - Most strict</option>
+                        <option value="1">1</option>
+                        <option value="2" data-i18n="2 - Default">2 - Default</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5" data-i18n="5 - Least strict">5 - Least strict</option>
+                    </select>
+                </label>
+                <label id="sd_bfl_upsampling_block" class="checkbox_label marginBot5" for="sd_bfl_upsampling" data-i18n="[title]Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation." title="Whether to perform upsampling on the prompt. If active, automatically modifies the prompt for more creative generation.">
                     <input id="sd_bfl_upsampling" type="checkbox" />
                     <span data-i18n="Prompt Upsampling">
                         Prompt Upsampling
                     </span>
                 </label>
+            </div>
+
+            <div data-sd-source="dezgo">
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <a href="https://dev.dezgo.com/API/" target="_blank" rel="noopener noreferrer">
+                        <strong data-i18n="API Key">API Key</strong>
+                        <i class="fa-solid fa-share-from-square"></i>
+                    </a>
+                    <span class="expander"></span>
+                    <div id="sd_dezgo_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_dezgo">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
             </div>
 
             <div data-sd-source="falai">
@@ -436,7 +463,7 @@
             </div>
 
             <div class="flex-container">
-                <div class="flex1" data-sd-source="extras,horde,auto,drawthings,novel,vlad,comfy,sdcpp">
+                <div id="sd_sampler_block" class="flex1" data-sd-source="extras,horde,auto,drawthings,novel,vlad,comfy,sdcpp,dezgo">
                     <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
                     <select id="sd_sampler" class="text_pole"></select>
                 </div>
@@ -460,7 +487,7 @@
             </div>
 
             <div class="flex-container">
-                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                <div id="sd_steps_block" class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
                     <small>
                         <span data-i18n="Sampling steps">Sampling steps</span>
                     </small>
@@ -468,7 +495,7 @@
                     <input class="neo-range-input" type="number" id="sd_steps_value" data-for="sd_steps" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" >
                 </div>
 
-                <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                <div id="sd_scale_block" class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
                     <small>
                         <span data-i18n="CFG Scale">CFG Scale</span>
                     </small>
@@ -578,7 +605,7 @@
                 </label>
             </div>
 
-            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability,bfl,sdcpp" class="marginTop5">
+            <div id="sd_seed_block" data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability,bfl,sdcpp,dezgo" class="marginTop5">
                 <label for="sd_seed">
                     <span data-i18n="Seed">Seed</span>
                     <small data-i18n="(-1 for random)">(-1 for random)</small>
