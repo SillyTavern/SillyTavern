@@ -2394,11 +2394,34 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId, chat
     }
 }
 
+/**
+ * Enable or disable group auto-mode.
+ * Keeps the internal flag and the UI checkbox in sync, and arms the stop handler
+ * the same way toggling the checkbox does.
+ * @param {boolean} enabled Desired state.
+ * @returns {boolean} The resulting state.
+ */
+export function setGroupAutoMode(enabled) {
+    const value = !!enabled;
+
+    if (value === is_group_automode_enabled) {
+        return value;
+    }
+
+    is_group_automode_enabled = value;
+    $('#rm_group_automode').prop('checked', value);
+
+    if (value) {
+        eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
+    }
+
+    return value;
+}
+
 function onSendTextareaInput() {
     if (is_group_automode_enabled) {
         // Wait for current automode generation to finish
-        is_group_automode_enabled = false;
-        $('#rm_group_automode').prop('checked', false);
+        setGroupAutoMode(false);
     }
 }
 
@@ -2465,9 +2488,7 @@ jQuery(() => {
     $('#rm_group_submit').on('click', createGroup);
     $('#rm_group_scenario').on('click', setCharacterSettingsOverrides);
     $('#rm_group_automode').on('input', function () {
-        const value = $(this).prop('checked');
-        is_group_automode_enabled = value;
-        eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
+        setGroupAutoMode($(this).prop('checked'));
     });
     $('#rm_group_hidemutedsprites').on('input', function () {
         const value = $(this).prop('checked');
