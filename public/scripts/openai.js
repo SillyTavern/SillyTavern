@@ -6267,6 +6267,8 @@ export function isImageInliningSupported() {
         'Qwen/Qwen3-VL-235B-A22B-Instruct',
         'Qwen/Qwen3-VL-30B-A3B-Instruct',
         'zai-org/GLM-4.5V',
+        // DeepSeek
+        'deepseek-v4-flash-vision-exp',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -6315,6 +6317,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.DEEPSEEK:
+            return visionSupportedModels.some(model => oai_settings.deepseek_model.includes(model));
         case chat_completion_sources.WORKERS_AI: {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
