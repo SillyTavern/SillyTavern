@@ -6156,6 +6156,8 @@ export function isImageInliningSupported() {
         'moonshot-v1-128k-vision-preview',
         'kimi-k2.5',
         'kimi-latest',
+        // DeepSeek
+        'deepseek-v4-flash-vision-exp',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
@@ -6215,6 +6217,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
+        case chat_completion_sources.DEEPSEEK:
+            return visionSupportedModels.some(model => oai_settings.deepseek_model.includes(model));
         case chat_completion_sources.WORKERS_AI: {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
