@@ -1712,6 +1712,10 @@ export async function sendTextareaMessage() {
     if (is_send_press) return;
     if (isExecutingCommandsFromChatInput) return;
 
+    // Claim the send lock synchronously (no await above this line) to close the race window where
+    // two rapid triggers (e.g. double Enter) both pass the is_send_press check before Generate() sets it.
+    is_send_press = true;
+
     hideSwipeButtons(); //Swipe buttons must be hidden now, otherwise concurrent generations are possible.
 
     let generateType = 'normal';
