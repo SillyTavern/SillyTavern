@@ -4598,6 +4598,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             option.innerText = data.name;
             if (triggerUi) $('#settings_preset_openai').append(option).trigger('change');
         }
+        eventSource.emit(event_types.OAI_PRESET_SAVED, { data: presetBody, presetName: data.name });
     } else {
         toastr.error(t`Failed to save preset`);
         throw new Error('Failed to save preset');
