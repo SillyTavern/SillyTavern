@@ -1733,6 +1733,205 @@ falai.post('/generate', async (request, response) => {
     }
 });
 
+const wavespeed = express.Router();
+
+const WAVESPEED_API_BASE = 'https://api.wavespeed.ai/api/v3';
+
+/**
+ * WaveSpeed model catalog, cached in memory. Model input schemas differ a lot
+ * across the catalog — only about half of the text-to-image models accept
+ * `size`, and almost none accept `negative_prompt` — and the API silently
+ * drops fields a model doesn't declare. Without the schema we'd quietly ignore
+ * the user's resolution on those models, so the catalog is consulted before
+ * building a request.
+ * @type {{ at: number, models: any[] }}
+ */
+let wavespeedCatalog = { at: 0, models: [] };
+const WAVESPEED_CATALOG_TTL = 60 * 60 * 1000;
+
+/**
+ * Fetches the WaveSpeed model catalog, using the in-memory cache when fresh.
+ * @param {string} key WaveSpeed API key
+ * @returns {Promise<any[]>} List of models
+ */
+async function getWaveSpeedCatalog(key) {
+    if (wavespeedCatalog.models.length && Date.now() - wavespeedCatalog.at < WAVESPEED_CATALOG_TTL) {
+        return wavespeedCatalog.models;
+    }
+
+    const result = await fetch(`${WAVESPEED_API_BASE}/models`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!result.ok) {
+        console.warn('WaveSpeed returned an error.', result.status, result.statusText);
+        throw new Error('WaveSpeed request failed.');
+    }
+
+    /** @type {any} */
+    const data = await result.json();
+
+    if (!Array.isArray(data?.data)) {
+        console.warn('WaveSpeed returned invalid data.');
+        throw new Error('WaveSpeed request failed.');
+    }
+
+    wavespeedCatalog = { at: Date.now(), models: data.data };
+    return data.data;
+}
+
+/**
+ * Returns the set of input fields a model declares, or null if unknown.
+ * @param {any[]} models Model catalog
+ * @param {string} modelId Model identifier
+ * @returns {Set<string>|null} Declared input field names
+ */
+function getWaveSpeedInputFields(models, modelId) {
+    const schema = models
+        .find(x => x?.model_id === modelId)
+        ?.api_schema?.api_schemas?.[0]?.request_schema?.properties;
+
+    return schema ? new Set(Object.keys(schema)) : null;
+}
+
+wavespeed.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.WAVESPEED);
+
+        if (!key) {
+            console.warn('WaveSpeed key not found.');
+            return response.sendStatus(400);
+        }
+
+        const models = (await getWaveSpeedCatalog(key))
+            .filter(x => x?.type === 'text-to-image' && x?.model_id)
+            .sort((a, b) => String(a.name ?? a.model_id).localeCompare(String(b.name ?? b.model_id)))
+            .map(x => ({ value: x.model_id, text: `${x.name ?? x.model_id} (${x.model_id})` }));
+
+        return response.send(models);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+wavespeed.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.WAVESPEED);
+
+        if (!key) {
+            console.warn('WaveSpeed key not found.');
+            return response.sendStatus(400);
+        }
+
+        // Only send fields this model actually declares. The API drops unknown
+        // fields silently, so sending `size` to a model that takes
+        // `aspect_ratio` would ignore the user's resolution without any error.
+        let fields = null;
+        try {
+            fields = getWaveSpeedInputFields(await getWaveSpeedCatalog(key), request.body.model);
+        } catch {
+            console.warn('WaveSpeed catalog unavailable; sending the default request shape.');
+        }
+
+        const supports = (field) => !fields || fields.has(field);
+
+        const requestBody = {
+            prompt: request.body.prompt,
+            ...(supports('size') ? { size: `${request.body.width}*${request.body.height}` } : {}),
+            ...(supports('seed') && request.body.seed >= 0 ? { seed: request.body.seed } : {}),
+            ...(supports('negative_prompt') && request.body.negative_prompt
+                ? { negative_prompt: request.body.negative_prompt }
+                : {}),
+            ...(supports('enable_base64_output') ? { enable_base64_output: true } : {}),
+        };
+
+        console.debug('WaveSpeed request:', requestBody);
+
+        // Submitting creates a billable prediction, so this request is never
+        // retried: a retry after an ambiguous failure would create and charge
+        // for a second task. Only the status poll below is safe to repeat.
+        const result = await fetch(`${WAVESPEED_API_BASE}/${request.body.model}`, {
+            method: 'POST',
+            body: JSON.stringify(requestBody),
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('WaveSpeed returned an error.', result.status, text);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const submitData = await result.json();
+        const taskId = submitData?.data?.id;
+
+        if (!taskId) {
+            console.warn('WaveSpeed returned no prediction id.');
+            return response.sendStatus(500);
+        }
+
+        const MAX_ATTEMPTS = 100;
+        for (let i = 0; i < MAX_ATTEMPTS; i++) {
+            await delay(2500);
+
+            const statusResult = await fetch(`${WAVESPEED_API_BASE}/predictions/${taskId}/result`, {
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                },
+            });
+
+            if (!statusResult.ok) {
+                const text = await statusResult.text();
+                console.warn('WaveSpeed returned an error.', text);
+                return response.sendStatus(500);
+            }
+
+            /** @type {any} */
+            const statusData = await statusResult.json();
+            const status = statusData?.data?.status;
+
+            if (status === 'created' || status === 'processing') {
+                continue;
+            }
+
+            if (status === 'completed') {
+                const output = statusData?.data?.outputs?.[0];
+
+                if (!output) {
+                    throw new Error('WaveSpeed failed to generate image.', { cause: statusData });
+                }
+
+                // With enable_base64_output the output is a data URL; older
+                // models and oversized results still come back as a plain URL.
+                if (output.startsWith('data:')) {
+                    return response.send({ image: output.split(',')[1] });
+                }
+
+                const imageFetch = await fetch(output);
+                const fetchData = await imageFetch.arrayBuffer();
+                const image = Buffer.from(fetchData).toString('base64');
+                return response.send({ image: image });
+            }
+
+            throw new Error('WaveSpeed failed to generate image.', { cause: statusData?.data?.error || statusData });
+        }
+
+        throw new Error('WaveSpeed timed out while generating the image.');
+    } catch (error) {
+        console.error(error);
+        return response.status(500).send(error.cause || error.message);
+    }
+});
+
 const xai = express.Router();
 
 xai.post('/generate', async (request, response) => {
@@ -2209,6 +2408,7 @@ router.use('/electronhub', electronhub);
 router.use('/nanogpt', nanogpt);
 router.use('/bfl', bfl);
 router.use('/falai', falai);
+router.use('/wavespeed', wavespeed);
 router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
 router.use('/zai', zai);
