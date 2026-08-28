@@ -1831,6 +1831,8 @@ async function uploadCharacterBackground(formData) {
             return;
         }
 
+        formData.set('name', charName);
+
         const response = await fetch('/api/backgrounds/character/upload', {
             method: 'POST',
             headers: getRequestHeaders({ omitContentType: true }),
