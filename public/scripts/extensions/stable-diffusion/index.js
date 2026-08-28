@@ -4615,7 +4615,7 @@ async function generateWaveSpeedImage(prompt, negativePrompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'png', data: data.image };
+        return { format: data.format || 'png', data: data.image };
     } else {
         const text = await result.text();
         throw new Error(text);

@@ -1798,6 +1798,26 @@ function getWaveSpeedInputFields(models, modelId) {
     return schema ? new Set(Object.keys(schema)) : null;
 }
 
+/**
+ * Maps an image MIME type to the file format SillyTavern stores it as.
+ * WaveSpeed models can emit PNG, JPEG or WebP depending on the model and its
+ * `output_format` input, so the format has to follow the bytes rather than be
+ * assumed — otherwise the file is saved under a mismatched extension.
+ * @param {string|null|undefined} mime MIME type
+ * @returns {string} File format
+ */
+function getWaveSpeedFormat(mime) {
+    switch (String(mime ?? '').split(';')[0].trim().toLowerCase()) {
+        case 'image/jpeg':
+        case 'image/jpg':
+            return 'jpg';
+        case 'image/webp':
+            return 'webp';
+        default:
+            return 'png';
+    }
+}
+
 wavespeed.post('/models', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.WAVESPEED);
@@ -1913,13 +1933,15 @@ wavespeed.post('/generate', async (request, response) => {
                 // With enable_base64_output the output is a data URL; older
                 // models and oversized results still come back as a plain URL.
                 if (output.startsWith('data:')) {
-                    return response.send({ image: output.split(',')[1] });
+                    const format = getWaveSpeedFormat(output.slice(5).split(',')[0]);
+                    return response.send({ image: output.split(',')[1], format: format });
                 }
 
                 const imageFetch = await fetch(output);
                 const fetchData = await imageFetch.arrayBuffer();
                 const image = Buffer.from(fetchData).toString('base64');
-                return response.send({ image: image });
+                const format = getWaveSpeedFormat(imageFetch.headers.get('content-type'));
+                return response.send({ image: image, format: format });
             }
 
             throw new Error('WaveSpeed failed to generate image.', { cause: statusData?.data?.error || statusData });
