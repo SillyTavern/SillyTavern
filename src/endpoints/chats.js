@@ -491,7 +491,8 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                     // Resolve a degraded preview from the stat data instead of hiding an otherwise intact chat
                     // from the chat list, search and recents.
                     console.warn('Found an invalid or corrupted last line in a chat file:', pathToFile);
-                    chatData.chat_items = Math.max(itemCounter - 1, 0);
+                    // Exclude both the metadata line and the unreadable trailing line.
+                    chatData.chat_items = Math.max(itemCounter - 2, 0);
                     chatData.mes = '[The message is empty]';
                     chatData.match = hasMatcher ? hasAnyMatch : true;
                     res(chatData);

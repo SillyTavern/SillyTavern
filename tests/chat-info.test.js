@@ -102,7 +102,7 @@ describe('getChatInfo', () => {
         const info = await chats.getChatInfo(chatFile);
         expect(info.file_id).toBe('chat');
         expect(info.file_name).toBe('chat.jsonl');
-        expect(info.chat_items).toBe(1);
+        expect(info.chat_items).toBe(0);
         expect(info.mes).toBe('[The message is empty]');
         expect(info.match).toBe(true);
     });
@@ -113,7 +113,7 @@ describe('getChatInfo', () => {
         const info = await chats.getChatInfo(chatFile);
         expect(info.file_id).toBe('chat');
         expect(info.file_name).toBe('chat.jsonl');
-        expect(info.chat_items).toBe(3);
+        expect(info.chat_items).toBe(2);
         expect(info.mes).toBe('[The message is empty]');
         expect(info.match).toBe(true);
     });
