@@ -197,6 +197,26 @@ test.describe('MacroEngine', () => {
     });
 
     test.describe('Legacy compatibility', () => {
+        test('should preserve original macro when original content is unavailable', async ({ page }) => {
+            const input = 'Before {{original}} after';
+            const { output, hasMacroErrors } = await evaluateWithEngineAndCaptureMacroLogs(page, input);
+
+            expect(output).toBe(input);
+            expect(hasMacroErrors).toBe(false);
+        });
+
+        test('should resolve original macro when original content is available', async ({ page }) => {
+            const output = await page.evaluate(async () => {
+                const { MacroEngine } = await import('./scripts/macros/engine/MacroEngine.js');
+                const { MacroEnvBuilder } = await import('./scripts/macros/engine/MacroEnvBuilder.js');
+                const env = MacroEnvBuilder.buildFromRawEnv({ content: '{{original}}', original: 'ORIGINAL_VALUE' });
+
+                return MacroEngine.evaluate('{{original}}', env);
+            });
+
+            expect(output).toBe('ORIGINAL_VALUE');
+        });
+
         test('should strip trim macro and surrounding newlines (legacy behavior)', async ({ page }) => {
             const input = 'foo\n\n{{trim}}\n\nbar';
             const output = await evaluateWithEngine(page, input);
