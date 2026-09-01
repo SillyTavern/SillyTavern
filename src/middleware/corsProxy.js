@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { forwardFetchResponse } from '../util.js';
 
 /**

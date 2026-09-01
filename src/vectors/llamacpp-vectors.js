@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import urlJoin from 'url-join';
 import { setAdditionalHeadersByType } from '../additional-headers.js';
 import { TEXTGEN_TYPES } from '../constants.js';

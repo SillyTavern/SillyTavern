@@ -1,5 +1,4 @@
 import { Buffer } from 'node:buffer';
-import fetch from 'node-fetch';
 import express from 'express';
 import { speak, languages } from 'google-translate-api-x';
 import crypto from 'node:crypto';

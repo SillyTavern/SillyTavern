@@ -1,7 +1,6 @@
 import util from 'node:util';
 import { Buffer } from 'node:buffer';
 
-import fetch from 'node-fetch';
 import express from 'express';
 
 import { readSecret, SECRET_KEYS } from './secrets.js';

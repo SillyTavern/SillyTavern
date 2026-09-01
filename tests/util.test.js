@@ -1,7 +1,6 @@
 import { afterEach, describe, test, expect, jest } from '@jest/globals';
 import { once } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { Response } from 'node-fetch';
 import { CHAT_COMPLETION_SOURCES } from '../src/constants';
 import { flattenSchema, forwardFetchResponse } from '../src/util';
 
