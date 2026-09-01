@@ -1452,5 +1452,6 @@
     "Deleting chat…": "A eliminar chat…",
     "Loading chat…": "A carregar chat…",
     "Bulk Delete": "Eliminação em massa",
-    "Deleting ${0} character(s)…": "A eliminar ${0} personagem(ns)…"
+    "Deleting ${0} character(s)…": "A eliminar ${0} personagem(ns)…",
+    "Select tag to merge into": "Selecione a tag para a qual mesclar"
 }
