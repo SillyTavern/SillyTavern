@@ -1,4 +1,7 @@
 # -- DATA CONFIGURATION --
+# This is the encryption password for user secrets and other sensitive data. If left empty, encryption will be disabled and data will be stored in plaintext.
+# For better security, use a CLI argument or an environment variable (SILLYTAVERN_MASTERPASSWORD) instead of storing the password in the config file.
+masterPassword: ''
 # Root directory for user data storage
 dataRoot: ./data
 # -- SERVER CONFIGURATION --

@@ -3,7 +3,8 @@ import path from 'node:path';
 
 import express from 'express';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
-import { color, getConfigValue, uuidv4 } from '../util.js';
+import { color, getConfigValue, tryParse, uuidv4 } from '../util.js';
+import { decryptObjectAes256, encryptObjectAes256, isEncryptedData } from '../util-crypto.js';
 
 export const SECRETS_FILE = 'secrets.json';
 export const SECRET_KEYS = {
@@ -112,6 +113,14 @@ export const allowKeysExposure = !!getConfigValue('allowKeysExposure', false, 'b
  */
 export class SecretManager {
     /**
+     * Master password for encrypting secrets, loaded from command-line arguments or config (if set)
+     * @type {string}
+     */
+    static get #masterPassword() {
+        return String(globalThis.COMMAND_LINE_ARGS.masterPassword ?? '');
+    }
+
+    /**
      * @param {import('../users.js').UserDirectoryList} directories
      */
     constructor(directories) {
@@ -121,12 +130,91 @@ export class SecretManager {
     }
 
     /**
+     * Ensures that the secrets file is encrypted if a master password is set, and migrates existing secrets if necessary
+     * @param {import('../users.js').UserDirectoryList[]} directoriesLists List of user directories to check and encrypt secrets for
+     * @return {Promise<import('../users.js').UserDirectoryList[]>} The input list of user directories, returned for chaining purposes
+     */
+    static async ensureEncryption(directoriesLists) {
+        if (!SecretManager.#masterPassword) {
+            console.warn();
+            console.warn(color.yellow('Warning: masterPassword is not set. Secrets will be stored in plaintext.'));
+            console.warn();
+            return directoriesLists;
+        }
+
+        console.info();
+        console.info(color.green('Master password is set.'), 'Make sure to keep it secure. It cannot be recovered if lost.');
+        console.info();
+
+        for (const directories of directoriesLists) {
+            const manager = new SecretManager(directories);
+            if (!manager._isSecretsFileEncrypted()) {
+                console.info(path.basename(directories.root), color.yellow('Encrypting existing secrets file with master password...'));
+                try {
+                    const secrets = manager._readSecretsFile();
+                    manager._writeSecretsFile(secrets);
+                    console.info(path.basename(directories.root), color.green('Secrets file encrypted successfully.'));
+                } catch (error) {
+                    console.error(path.basename(directories.root), color.red('Failed to encrypt secrets file:'), error);
+                }
+            }
+        }
+
+        return directoriesLists;
+    }
+
+    /**
+     * Prepares secret data for writing, applying encryption if masterPassword is set
+     * @param {object} data The secret data to prepare
+     * @return {string} The prepared JSON-serialized data, encrypted if masterPassword is set
+     */
+    #prepareDataWrite(data) {
+        if (SecretManager.#masterPassword) {
+            const encryptedData = encryptObjectAes256(data, SecretManager.#masterPassword);
+            return JSON.stringify(encryptedData, null, 4);
+        }
+
+        return JSON.stringify(data, null, 4);
+    }
+
+    /**
+     * Parses secret data from a string, applying decryption if masterPassword is set
+     * @param {string} data The secret data string to parse
+     * @returns {object} The parsed secret data
+     */
+    #parseDataRead(data) {
+        const parsedData = tryParse(data);
+        if (!parsedData) {
+            throw new Error('Secrets file is empty or contains invalid JSON');
+        }
+
+        if (SecretManager.#masterPassword) {
+            try {
+                // Data is not encrypted, return as-is (handles unencrypted secrets file when master password is set)
+                if (!isEncryptedData(parsedData)) {
+                    return parsedData;
+                }
+
+                return decryptObjectAes256(parsedData, SecretManager.#masterPassword);
+            } catch (error) {
+                throw new Error('Decryption failed', { cause: error });
+            }
+        }
+
+        if (isEncryptedData(parsedData)) {
+            throw new Error('Secrets file appears to be encrypted but no master password is set. Unable to read secrets.');
+        }
+
+        return parsedData;
+    }
+
+    /**
      * Ensures the secrets file exists, creating an empty one if necessary
      * @private
      */
     _ensureSecretsFile() {
         if (!fs.existsSync(this.filePath)) {
-            writeFileAtomicSync(this.filePath, JSON.stringify(this.defaultSecrets), 'utf-8');
+            writeFileAtomicSync(this.filePath, this.#prepareDataWrite(this.defaultSecrets), 'utf-8');
         }
     }
 
@@ -138,7 +226,21 @@ export class SecretManager {
     _readSecretsFile() {
         this._ensureSecretsFile();
         const fileContents = fs.readFileSync(this.filePath, 'utf-8');
-        return /** @type {SecretKeys} */ (JSON.parse(fileContents));
+        return /** @type {SecretKeys} */ (this.#parseDataRead(fileContents));
+    }
+
+    /**
+     * Checks if the secrets file is encrypted by attempting to parse it as JSON and checking for the encrypted format
+     * @returns {boolean} True if the secrets file is encrypted, false otherwise
+     */
+    _isSecretsFileEncrypted() {
+        this._ensureSecretsFile();
+        const fileContents = fs.readFileSync(this.filePath, 'utf-8');
+        const parsedData = tryParse(fileContents);
+        if (parsedData) {
+            return isEncryptedData(parsedData);
+        }
+        return false;
     }
 
     /**
@@ -147,7 +249,7 @@ export class SecretManager {
      * @param {SecretKeys} secrets
      */
     _writeSecretsFile(secrets) {
-        writeFileAtomicSync(this.filePath, JSON.stringify(secrets, null, 4), 'utf-8');
+        writeFileAtomicSync(this.filePath, this.#prepareDataWrite(secrets), 'utf-8');
     }
 
     /**
@@ -383,8 +485,8 @@ export class SecretManager {
             return;
         }
 
-        const fileContents = fs.readFileSync(this.filePath, 'utf8');
-        const secrets = /** @type {FlatSecretKeys} */ (JSON.parse(fileContents));
+        const fileContents = /** @type {any} */ (this._readSecretsFile());
+        const secrets = /** @type {FlatSecretKeys} */ (fileContents);
         const values = Object.values(secrets);
 
         // Check if already migrated
@@ -501,7 +603,7 @@ export function migrateFlatSecrets(directoriesList) {
             const manager = new SecretManager(directories);
             manager.migrateFlatSecrets();
         } catch (error) {
-            console.warn(color.red(`Failed to migrate secrets for ${directories.root}:`), error);
+            console.warn(color.red(`Failed to migrate secrets for ${path.basename(directories.root)}:`), error);
         }
     }
 }
