@@ -2,6 +2,7 @@ import { throttle } from './utils.js';
 
 export function initDomHandlers() {
     handleInputWheel();
+    handleNumberInputConstraints();
 }
 
 /**
@@ -63,4 +64,67 @@ function handleInputWheel() {
             }
         }
     }, { passive: false });
+}
+
+/**
+ * Enforces min/max constraints on number inputs when users manually type values.
+ * Browsers only enforce min/max when using the spinner arrows or keyboard, not on manual input.
+ * This listener catches the 'change' event (fires on blur after editing) and clamps the value.
+ */
+function handleNumberInputConstraints() {
+    document.addEventListener('change', (e) => {
+        const target = e.target;
+
+        // Only handle number inputs with both min and max defined
+        if (!(target instanceof HTMLInputElement) || target.type !== 'number') return;
+
+        const min = target.getAttribute('min');
+        const max = target.getAttribute('max');
+        if (min === null && max === null) return;
+
+        const minVal = min !== null ? parseFloat(min) : NaN;
+        const maxVal = max !== null ? parseFloat(max) : NaN;
+        const currentVal = parseFloat(target.value);
+
+        // Skip if current value is not a valid number
+        if (isNaN(currentVal)) return;
+        // Skip if min/max are defined but invalid
+        if ((min !== null && isNaN(minVal)) || (max !== null && isNaN(maxVal))) return;
+
+        // Check if value is out of bounds
+        let needsClamp = false;
+        let newValue = currentVal;
+
+        if (min !== null && currentVal < minVal) {
+            newValue = minVal;
+            needsClamp = true;
+        } else if (max !== null && currentVal > maxVal) {
+            newValue = maxVal;
+            needsClamp = true;
+        }
+
+        if (!needsClamp) return;
+
+        // Apply step alignment if step is defined (like browser native behavior)
+        const step = target.getAttribute('step');
+        if (step !== null) {
+            const stepVal = parseFloat(step);
+            if (!isNaN(stepVal) && stepVal > 0) {
+                newValue = Math.round(newValue / stepVal) * stepVal;
+                // Re-clamp after step alignment if bounds exist
+                if (min !== null) newValue = Math.max(minVal, newValue);
+                if (max !== null) newValue = Math.min(maxVal, newValue);
+            }
+        }
+
+        // Fix floating point precision
+        newValue = Math.round(newValue * 1e10) / 1e10;
+
+        // Update the value
+        target.value = newValue.toString();
+
+        // Trigger input event so existing handlers fire (e.g., sampler settings update)
+        // Use jQuery trigger to ensure both jQuery and native handlers are called
+        $(target).trigger('input');
+    }, { passive: true });
 }
