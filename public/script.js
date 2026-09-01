@@ -4536,21 +4536,27 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // In group chats, only include reasoning from the currently generating character
         const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
 
-        coreChat[i] = {
-            ...coreChat[i],
-            mes: isOtherGroupMember
-                ? coreChat[i].mes
-                : promptReasoning.addToMessage(
-                    coreChat[i].mes,
-                    getRegexedString(
-                        String(coreChat[i].extra?.reasoning ?? ''),
-                        regex_placement.REASONING,
-                        { isPrompt: true, depth: depth },
-                    ),
-                    isPrefix,
-                    coreChat[i].extra?.reasoning_duration,
-                ),
-        };
+        if (!isOtherGroupMember) {
+            const reasoning = getRegexedString(
+                String(coreChat[i].extra?.reasoning ?? ''),
+                regex_placement.REASONING,
+                { isPrompt: true, depth: depth },
+            );
+            const duration = coreChat[i].extra?.reasoning_duration;
+
+            if (Array.isArray(coreChat[i].extra?.tool_invocations)) {
+                // For tool-call messages, mes is HTML display text — don't prepend reasoning there.
+                // Instead compute the reasoning prefix with empty content and store it separately.
+                // Use undefined (not empty string) when there is no reasoning to preserve existing behavior.
+                const toolCallContent = promptReasoning.addToMessage('', reasoning, isPrefix, duration) || undefined;
+                coreChat[i] = { ...coreChat[i], toolCallContent };
+            } else {
+                coreChat[i] = {
+                    ...coreChat[i],
+                    mes: promptReasoning.addToMessage(coreChat[i].mes, reasoning, isPrefix, duration),
+                };
+            }
+        }
         if (promptReasoning.isLimitReached()) {
             break;
         }
