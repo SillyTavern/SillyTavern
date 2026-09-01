@@ -6032,7 +6032,8 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
-        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
+        [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false },
+        [chat_completion_sources.PLAYER2]: { key: SECRET_KEYS.PLAYER2, selector: '#api_key_player2', proxy: false },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
     };
@@ -7270,6 +7271,28 @@ export function initOpenAI() {
         saveSettingsDebounced();
     });
 
+    $('#player2_auto_login').on('click', async function () {
+        const $btn = $(this);
+        $btn.prop('disabled', true).val(t`Connecting...`);
+        try {
+            const response = await fetch('/api/backends/chat-completions/player2/login', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                toastr.error(data?.message || t`Failed to connect to Player2 app.`, 'Player2');
+                return;
+            }
+            $('#api_key_player2').val(data.p2Key);
+            await writeSecret(SECRET_KEYS.PLAYER2, data.p2Key);
+            toastr.success(t`Key saved. Click Connect to verify.`, 'Player2');
+        } catch (error) {
+            console.error('Player2 auto-login error:', error);
+            toastr.error(t`An unexpected error occurred.`, 'Player2');
+        } finally {
+            $btn.prop('disabled', false).val(t`Get Key from Player2 App`);
+        }
     $('#cc_group_models').on('input', async () => {
         oai_settings.group_models = $('#cc_group_models').prop('checked');
         reconnectOpenAi();
