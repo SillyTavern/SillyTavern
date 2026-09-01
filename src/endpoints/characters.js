@@ -1464,7 +1464,8 @@ router.post('/delete', validateAvatarUrlMiddleware, async function (request, res
 router.post('/all', async function (request, response) {
     try {
         const files = fs.readdirSync(request.user.directories.characters);
-        const pngFiles = files.filter(file => file.endsWith('.png'));
+        const pngFiles = files.filter(file => file.endsWith('.png'))
+            .map(file => sanitizeOnDiskFileName(file, request.user.directories));
         const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories, { shallow: useShallowCharacters }));
         const data = (await Promise.all(processingPromises)).filter(c => c.name);
         return response.send(data);
@@ -1531,6 +1532,56 @@ router.post('/chats', validateAvatarUrlMiddleware, async function (request, resp
         return response.send({ error: true });
     }
 });
+
+/**
+ * Checks if a character file on disk has an unsanitized filename and renames it if needed.
+ * Also renames the associated chats directory to keep them in sync.
+ * @param {string} fileName The original filename (e.g. "Maya \ Lisa.png")
+ * @param {import('../users.js').UserDirectoryList} directories User directories
+ * @returns {string} The sanitized filename, or the original if no change was needed
+ */
+function sanitizeOnDiskFileName(fileName, directories) {
+    const nameWithoutExt = path.parse(fileName).name;
+    const sanitizedName = sanitize(nameWithoutExt);
+
+    if (sanitizedName === nameWithoutExt) {
+        return fileName;
+    }
+
+    const oldChatsDir = path.join(directories.chats, nameWithoutExt);
+    const hasChats = fs.existsSync(oldChatsDir);
+
+    // Find a unique name where both the avatar file and chat directory (if applicable) don't conflict
+    const newInternalName = getUniqueName(sanitizedName, (name) =>
+        fs.existsSync(path.join(directories.characters, `${name}.png`)) ||
+        (hasChats && fs.existsSync(path.join(directories.chats, name))),
+    { nameBuilder: (base, i) => i === 0 ? base : `${base}${i}`, startIndex: 0 });
+
+    if (!newInternalName) {
+        console.error(`Failed to find a unique sanitized name for: ${fileName}`);
+        return fileName;
+    }
+
+    const newFileName = `${newInternalName}.png`;
+    const oldFilePath = path.join(directories.characters, fileName);
+    const newFilePath = path.join(directories.characters, newFileName);
+
+    try {
+        fs.renameSync(oldFilePath, newFilePath);
+        console.info(`Sanitized character filename: "${fileName}" -> "${newFileName}"`);
+
+        if (hasChats) {
+            const newChatsDir = path.join(directories.chats, newInternalName);
+            fs.renameSync(oldChatsDir, newChatsDir);
+            console.info(`Renamed chat directory: "${nameWithoutExt}" -> "${newInternalName}"`);
+        }
+    } catch (err) {
+        console.error(`Failed to sanitize character filename: ${fileName}`, err);
+        return fileName;
+    }
+
+    return newFileName;
+}
 
 /**
  * Gets the name for the uploaded PNG file.
