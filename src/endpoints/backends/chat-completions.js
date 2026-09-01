@@ -2299,6 +2299,7 @@ router.post('/generate', async function (request, response) {
                 plugins: getOpenRouterPlugins(request),
                 reasoning: {
                     exclude: !includeReasoning,
+                    ...(includeReasoning && { enabled: true }),
                 },
             };
 
