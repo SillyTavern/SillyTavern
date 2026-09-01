@@ -17,13 +17,14 @@ import {
 import { deriveTemplatesFromChatTemplate } from './chat-templates.js';
 import { t } from './i18n.js';
 import { autoSelectInstructPreset, selectContextPreset, selectInstructPreset } from './instruct-mode.js';
+import { yaml } from '../lib.js';
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import { power_user, registerDebugFunction } from './power-user.js';
 import { getActiveManualApiSamplers, loadApiSelectedSamplers, isSamplerManualPriorityEnabled } from './samplerSelect.js';
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
-import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadLlamaCppModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadLlamaCppModels, loadMancerModels, loadMlxLmModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels, updateOpenRouterProvidersWarning } from './textgen-models.js';
 import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, getTokenizerBestMatch, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual, isObject } from './utils.js';
@@ -44,6 +45,7 @@ export const textgen_types = {
     FEATHERLESS: 'featherless',
     HUGGINGFACE: 'huggingface',
     GENERIC: 'generic',
+    MLXLM: 'mlx_lm',
 };
 
 const {
@@ -62,6 +64,7 @@ const {
     KOBOLDCPP,
     HUGGINGFACE,
     FEATHERLESS,
+    MLXLM,
 } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
@@ -138,6 +141,7 @@ export const SERVER_INPUTS = {
     [textgen_types.OLLAMA]: '#ollama_api_url_text',
     [textgen_types.HUGGINGFACE]: '#huggingface_api_url_text',
     [textgen_types.GENERIC]: '#generic_api_url_text',
+    [textgen_types.MLXLM]: '#mlx_lm_api_url_text',
 };
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
@@ -234,6 +238,15 @@ export const textgenerationwebui_settings = {
     extensions: {},
     adaptive_target: -0.01,
     adaptive_decay: 0.9,
+    mlx_lm_model: '',
+    mlx_lm_adapters: '',
+    mlx_lm_draft_model: '',
+    num_draft_tokens: 0,
+    mlx_lm_stream_options: '',
+    mlx_lm_custom_parameters: '',
+    repetition_context_size: 0,
+    presence_context_size: 0,
+    frequency_context_size: 0,
 };
 
 export {
@@ -320,6 +333,14 @@ export const setting_names = [
     'json_schema_allow_empty',
     'adaptive_target',
     'adaptive_decay',
+    'mlx_lm_adapters',
+    'mlx_lm_draft_model',
+    'num_draft_tokens',
+    'mlx_lm_stream_options',
+    'mlx_lm_custom_parameters',
+    'repetition_context_size',
+    'presence_context_size',
+    'frequency_context_size',
 ];
 
 const DYNATEMP_BLOCK = document.getElementById('dynatemp_block_ooba');
@@ -724,6 +745,9 @@ async function getStatusTextgen() {
         } else if (textgenerationwebui_settings.type === textgen_types.GENERIC) {
             loadGenericModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.generic_model || data?.result || t`Connected`);
+        } else if (textgenerationwebui_settings.type === textgen_types.MLXLM) {
+            loadMlxLmModels(data?.data);
+            setOnlineStatus(textgenerationwebui_settings.mlx_lm_model || t`Connected`);
         } else {
             setOnlineStatus(data?.result);
         }
@@ -1006,6 +1030,10 @@ export function initTextGenSettings() {
             'min_keep_textgenerationwebui': 0,
             'adaptive_target_textgenerationwebui': -0.01,
             'adaptive_decay_textgenerationwebui': 0.9,
+            'num_draft_tokens_textgenerationwebui': 0,
+            'repetition_context_size_textgenerationwebui': 0,
+            'presence_context_size_textgenerationwebui': 0,
+            'frequency_context_size_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
@@ -1107,6 +1135,7 @@ export function initTextGenSettings() {
             { id: 'api_key_featherless', secret: SECRET_KEYS.FEATHERLESS },
             { id: 'api_key_huggingface', secret: SECRET_KEYS.HUGGINGFACE },
             { id: 'api_key_generic', secret: SECRET_KEYS.GENERIC },
+            { id: 'api_key_mlx_lm', secret: SECRET_KEYS.MLXLM },
         ];
 
         for (const key of keys) {
@@ -1397,6 +1426,10 @@ export function parseTextgenLogprobs(token, logprobs) {
             }
             return null;
         }
+        case MLXLM: {
+            // TODO: Token Probabilities panel disabled due to upstream issues. Consider making changes when upstream changes
+            return null;
+        }
         default:
             return null;
     }
@@ -1507,6 +1540,11 @@ export function getTextGenModel(settings = null) {
         case LLAMACPP:
             if (settings.llamacpp_model) {
                 return settings.llamacpp_model;
+            }
+            break;
+        case MLXLM:
+            if (settings.mlx_lm_model) {
+                return settings.mlx_lm_model;
             }
             break;
         default:
@@ -1748,6 +1786,18 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
             ? settings.samplers_priorities
             : undefined,
     };
+    const mlxLmParams = {
+        'max_completion_tokens': maxTokens,
+        'repetition_context_size': settings.repetition_context_size,
+        'presence_context_size': settings.presence_context_size,
+        'frequency_context_size': settings.frequency_context_size,
+        'num_draft_tokens': settings.num_draft_tokens,
+        'adapters': settings.mlx_lm_adapters || undefined,
+        'draft_model': settings.mlx_lm_draft_model || undefined,
+        'seed': settings.seed >= 0 ? settings.seed : undefined,
+        'logprobs': power_user.request_token_probabilities,
+        'top_logprobs': power_user.request_token_probabilities ? getLogprobsNumber(MLXLM) : undefined,
+    };
 
     if (settings.type === OPENROUTER) {
         params.provider = settings.openrouter_providers;
@@ -1795,6 +1845,10 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
             params = Object.assign(params, aphroditeParams);
             break;
 
+        case MLXLM:
+            params = Object.assign(params, mlxLmParams);
+            break;
+
         default:
             params = Object.assign(params, nonAphroditeParams);
             break;
@@ -1836,6 +1890,44 @@ export function createTextGenGenerationData(settings, model, finalPrompt = null,
         } else {
             delete params.json_schema;
             delete params.guided_json;
+        }
+    }
+
+    if (settings.type === MLXLM) {
+        // TODO: Drop xtc_* due to upstream issues. Consider making changes when upstream changes
+        delete params.xtc_probability;
+        delete params.xtc_threshold;
+
+        // Parse user-provided stream_options JSON
+        if (settings.mlx_lm_stream_options) {
+            try {
+                params.stream_options = JSON.parse(settings.mlx_lm_stream_options);
+            } catch {
+                // Ignore parse errors
+            }
+        }
+
+        // Parse user-provided custom parameters YAML
+        if (settings.mlx_lm_custom_parameters) {
+            try {
+                const parsed = yaml.parse(settings.mlx_lm_custom_parameters);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    const deleteList = Array.isArray(parsed.DELETE) ? parsed.DELETE : null;
+                    delete parsed.DELETE;
+
+                    // Merge user fields into params
+                    Object.assign(params, parsed);
+
+                    // Delete params fields listed in DELETE
+                    if (deleteList) {
+                        for (const key of deleteList) {
+                            delete params[key];
+                        }
+                    }
+                }
+            } catch {
+                // Ignore parse errors
+            }
         }
     }
     return params;

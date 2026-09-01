@@ -128,6 +128,7 @@ router.post('/status', async function (request, response) {
             case TEXTGEN_TYPES.INFERMATICAI:
             case TEXTGEN_TYPES.OPENROUTER:
             case TEXTGEN_TYPES.FEATHERLESS:
+            case TEXTGEN_TYPES.MLXLM:
                 url += '/v1/models';
                 break;
             case TEXTGEN_TYPES.DREAMGEN:
@@ -304,6 +305,7 @@ router.post('/generate', async function (request, response) {
             case TEXTGEN_TYPES.TOGETHERAI:
             case TEXTGEN_TYPES.INFERMATICAI:
             case TEXTGEN_TYPES.HUGGINGFACE:
+            case TEXTGEN_TYPES.MLXLM:
                 url += '/v1/completions';
                 break;
             case TEXTGEN_TYPES.DREAMGEN:
