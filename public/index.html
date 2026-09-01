@@ -7032,18 +7032,10 @@
                 <div class="flex-container wide100p flexGap10">
                     <div class="flex4 flex-container flexFlowColumn flexNoGap">
                         <div class="flex-container justifySpaceBetween">
-                            <small for="characterFilter" data-i18n="Filter to Characters or Tags">
-                                Filter to Characters or Tags
+                            <small for="characterFilter">
+                                <span data-i18n="Filter to Characters, Tags, or Personas">Filter to Characters, Tags, or Personas</span>
+                                <div class="fa-solid fa-circle-info opacity50p" title="Click a selected item to cycle its filter mode: ○ One of (OR) → ✓ Required (AND) → ✗ Excluded (NOT)" data-i18n="[title]Click a selected item to cycle its filter mode: ○ One of (OR) → ✓ Required (AND) → ✗ Excluded (NOT)"></div>
                             </small>
-                            <label class="checkbox_label flexNoGap margin-r5" for="character_exclusion">
-                                <input type="checkbox" name="character_exclusion" />
-                                <span>
-                                    <small title="Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry" data-i18n="[title]Switch the Character/Tags filter around to exclude the listed characters and tags from matching for this entry">
-                                        <span data-i18n="Exclude">Exclude</span>
-                                        <div class="fa-solid fa-circle-info opacity50p"></div>
-                                    </small>
-                                </span>
-                            </label>
                         </div>
                         <div class="range-block-range">
                             <select name="characterFilter" multiple>
