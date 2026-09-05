@@ -103,6 +103,12 @@ class Prompt {
     content;
 
     /**
+     * Reasoning content of the prompt, sent as a prefill to APIs that accept it.
+     * @type {string}
+     */
+    reasoning_content;
+
+    /**
      * Display name of the prompt.
      * @type {string}
      */
@@ -169,6 +175,7 @@ class Prompt {
      * @param {string} [param0.identifier] - The unique identifier of the prompt.
      * @param {string} [param0.role] - The role associated with the prompt.
      * @param {string} [param0.content] - The content of the prompt.
+     * @param {string} [param0.reasoning_content] - The reasoning content of the prompt.
      * @param {string} [param0.name] - The name of the prompt.
      * @param {boolean} [param0.system_prompt] - Indicates if the prompt is a system prompt.
      * @param {string|number} [param0.position] - The position of the prompt in the prompt list.
@@ -179,10 +186,11 @@ class Prompt {
      * @param {boolean} [param0.forbid_overrides] - Indicates if the prompt should not be overridden.
      * @param {boolean} [param0.extension] - Prompt is added by an extension.
      */
-    constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension, injection_order, injection_trigger } = {}) {
+    constructor({ identifier, role, content, reasoning_content, name, system_prompt, position, injection_depth, injection_position, forbid_overrides, extension, injection_order, injection_trigger } = {}) {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
+        this.reasoning_content = reasoning_content;
         this.name = name;
         this.system_prompt = system_prompt;
         this.position = position;
@@ -557,10 +565,14 @@ class PromptManager {
             const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
             const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
             const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
+            const reasoningContentField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reasoning_content'));
+            const reasoningContentBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_reasoning_content_block'));
 
             nameField.value = prompt.name;
             roleField.value = 'system';
             promptField.value = prompt.content ?? '';
+            reasoningContentField.value = '';
+            reasoningContentBlock.style.display = 'none';
             injectionPositionField.value = (prompt.injection_position ?? 0).toString();
             injectionDepthField.value = (prompt.injection_depth ?? DEFAULT_DEPTH).toString();
             injectionOrderField.value = (prompt.injection_order ?? DEFAULT_ORDER).toString();
@@ -802,6 +814,7 @@ class PromptManager {
         // Prepare prompt edit form buttons
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save').addEventListener('click', this.handleSavePrompt);
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset').addEventListener('click', this.handleResetPrompt);
+        document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').addEventListener('change', (e) => this.handleRoleChange(e));
 
         const closeAndClearPopup = () => {
             this.hidePopup();
@@ -908,10 +921,12 @@ class PromptManager {
         const injectionOrderField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_order'));
         const injectionTriggerField = /** @type {HTMLSelectElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_trigger'));
         const forbidOverridesField = /** @type {HTMLInputElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_forbid_overrides'));
+        const reasoningContentField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reasoning_content'));
 
         prompt.name = nameField.value;
         prompt.role = roleField.value;
         prompt.content = promptField.value;
+        prompt.reasoning_content = reasoningContentField.value || undefined;
         prompt.injection_position = Number(injectionPositionField.value);
         prompt.injection_depth = Number(injectionDepthField.value);
         prompt.injection_order = Number(injectionOrderField.value);
@@ -1286,6 +1301,11 @@ class PromptManager {
             else preparedPrompt.content = substituteParams(prompt.content);
         }
 
+        if (prompt.reasoning_content) {
+            if (0 < groupMembers.length) preparedPrompt.reasoning_content = substituteParams(prompt.reasoning_content, { groupOverride: groupMembers.join(', ') });
+            else preparedPrompt.reasoning_content = substituteParams(prompt.reasoning_content);
+        }
+
         return preparedPrompt;
     }
 
@@ -1368,12 +1388,17 @@ class PromptManager {
         const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
         const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
         const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
+        const reasoningContentField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reasoning_content'));
+        const reasoningContentBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_reasoning_content_block'));
         const isPulledPrompt = Object.keys(this.promptSources).includes(prompt.identifier);
 
         nameField.value = prompt.name ?? '';
         roleField.value = prompt.role || 'system';
         promptField.value = prompt.content ?? '';
         promptField.disabled = prompt.marker ?? false;
+        reasoningContentField.value = prompt.reasoning_content ?? '';
+        reasoningContentField.disabled = prompt.marker ?? false;
+        reasoningContentBlock.style.display = roleField.value === 'assistant' ? '' : 'none';
         injectionPositionField.value = (prompt.injection_position ?? INJECTION_POSITION.RELATIVE).toString();
         injectionDepthField.value = (prompt.injection_depth ?? DEFAULT_DEPTH).toString();
         injectionOrderField.value = (prompt.injection_order ?? DEFAULT_ORDER).toString();
@@ -1406,6 +1431,11 @@ class PromptManager {
 
         const savePromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save');
         savePromptButton.dataset.pmPrompt = prompt.identifier;
+    }
+
+    handleRoleChange(event) {
+        const reasoningContentBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_reasoning_content_block');
+        reasoningContentBlock.style.display = event.target.value === 'assistant' ? '' : 'none';
     }
 
     handleInjectionPositionChange(event) {
@@ -1481,11 +1511,16 @@ class PromptManager {
         const forbidOverridesBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_forbid_overrides_block'));
         const entrySourceBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source_block'));
         const entrySource = /** @type {HTMLSpanElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_source'));
+        const reasoningContentField = /** @type {HTMLTextAreaElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reasoning_content'));
+        const reasoningContentBlock = /** @type {HTMLDivElement} */(document.getElementById(this.configuration.prefix + 'prompt_manager_reasoning_content_block'));
 
         nameField.value = '';
         roleField.selectedIndex = 0;
         promptField.value = '';
         promptField.disabled = false;
+        reasoningContentField.value = '';
+        reasoningContentField.disabled = false;
+        reasoningContentBlock.style.display = 'none';
         injectionPositionField.selectedIndex = 0;
         injectionPositionField.removeAttribute('disabled');
         injectionDepthField.value = DEFAULT_DEPTH.toString();
