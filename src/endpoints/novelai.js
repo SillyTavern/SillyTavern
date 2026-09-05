@@ -118,6 +118,11 @@ function getRepPenaltyWhitelist(model) {
 }
 
 function calculateSkipCfgAboveSigma(width, height, modelName) {
+    // Variety+ is not supported by V5 models
+    if (modelName?.startsWith('nai-diffusion-5')) {
+        return null;
+    }
+
     const magicConstant = modelName?.includes('nai-diffusion-4-5')
         ? SIGMA_MAGIC_NUMBER_V4_5
         : SIGMA_MAGIC_NUMBER;
@@ -323,7 +328,7 @@ router.post('/generate-image', async (request, response) => {
                 input: request.body.prompt ?? '',
                 model: request.body.model ?? 'nai-diffusion',
                 parameters: {
-                    params_version: 3,
+                    params_version: request.body.model?.startsWith('nai-diffusion-5') ? 4 : 3,
                     prefer_brownian: true,
                     negative_prompt: request.body.negative_prompt ?? '',
                     height: request.body.height ?? 512,

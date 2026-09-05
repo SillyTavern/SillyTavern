@@ -2457,6 +2457,14 @@ async function loadVladModels() {
 async function loadNovelModels() {
     return [
         {
+            value: 'nai-diffusion-5-full',
+            text: 'NAI Diffusion V5 (Full)',
+        },
+        {
+            value: 'nai-diffusion-5-curated',
+            text: 'NAI Diffusion V5 (Curated)',
+        },
+        {
             value: 'nai-diffusion-4-5-full',
             text: 'NAI Diffusion Anime V4.5 (Full)',
         },
