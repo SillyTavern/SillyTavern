@@ -316,6 +316,10 @@ router.post('/generate-image', async (request, response) => {
 
     try {
         console.debug('NAI Diffusion request:', request.body);
+
+        // V5 capability table (official web client): SMEA/SMEA DYN, Decrisper
+        // and non-karras noise schedules are disabled — force supported values.
+        const isV5Model = request.body.model?.startsWith('nai-diffusion-5');
         const generateUrl = `${IMAGE_NOVELAI}/ai/generate-image`;
         const generateResult = await fetch(generateUrl, {
             method: 'POST',
@@ -328,7 +332,7 @@ router.post('/generate-image', async (request, response) => {
                 input: request.body.prompt ?? '',
                 model: request.body.model ?? 'nai-diffusion',
                 parameters: {
-                    params_version: request.body.model?.startsWith('nai-diffusion-5') ? 4 : 3,
+                    params_version: isV5Model ? 4 : 3,
                     prefer_brownian: true,
                     negative_prompt: request.body.negative_prompt ?? '',
                     height: request.body.height ?? 512,
@@ -336,7 +340,7 @@ router.post('/generate-image', async (request, response) => {
                     scale: request.body.scale ?? 9,
                     seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 9999999999),
                     sampler: request.body.sampler ?? 'k_dpmpp_2m',
-                    noise_schedule: request.body.scheduler ?? 'karras',
+                    noise_schedule: isV5Model ? 'karras' : (request.body.scheduler ?? 'karras'),
                     steps: request.body.steps ?? 28,
                     n_samples: 1,
                     // NAI handholding for prompts
@@ -345,11 +349,11 @@ router.post('/generate-image', async (request, response) => {
                     add_original_image: false,
                     controlnet_strength: 1,
                     deliberate_euler_ancestral_bug: false,
-                    dynamic_thresholding: request.body.decrisper ?? false,
+                    dynamic_thresholding: isV5Model ? false : (request.body.decrisper ?? false),
                     legacy: false,
                     legacy_v3_extend: false,
-                    sm: request.body.sm ?? false,
-                    sm_dyn: request.body.sm_dyn ?? false,
+                    sm: isV5Model ? false : (request.body.sm ?? false),
+                    sm_dyn: isV5Model ? false : (request.body.sm_dyn ?? false),
                     uncond_scale: 1,
                     skip_cfg_above_sigma: request.body.variety_boost
                         ? calculateSkipCfgAboveSigma(

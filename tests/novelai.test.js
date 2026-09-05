@@ -148,6 +148,60 @@ describe('NovelAI image generation', () => {
         expect(parameters.skip_cfg_above_sigma).toBeCloseTo(58, 5);
     });
 
+    test('V5 forces karras and disables SMEA and Decrisper regardless of client settings', async () => {
+        mockZipResponse();
+
+        await fetch(`${baseUrl}/generate-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: '1girl',
+                model: 'nai-diffusion-5-full',
+                width: 832,
+                height: 1216,
+                scheduler: 'exponential',
+                sm: true,
+                sm_dyn: true,
+                decrisper: true,
+                seed: 1234,
+                upscale_ratio: 1,
+            }),
+        });
+
+        const parameters = requestParameters();
+        expect(parameters.noise_schedule).toBe('karras');
+        expect(parameters.sm).toBe(false);
+        expect(parameters.sm_dyn).toBe(false);
+        expect(parameters.dynamic_thresholding).toBe(false);
+    });
+
+    test('V4.5 passes through scheduler, SMEA and Decrisper settings', async () => {
+        mockZipResponse();
+
+        await fetch(`${baseUrl}/generate-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: '1girl',
+                model: 'nai-diffusion-4-5-full',
+                width: 832,
+                height: 1216,
+                scheduler: 'exponential',
+                sm: true,
+                sm_dyn: true,
+                decrisper: true,
+                seed: 1234,
+                upscale_ratio: 1,
+            }),
+        });
+
+        const parameters = requestParameters();
+        expect(parameters.noise_schedule).toBe('exponential');
+        expect(parameters.sm).toBe(true);
+        expect(parameters.sm_dyn).toBe(true);
+        expect(parameters.dynamic_thresholding).toBe(true);
+    });
+
     test('V3 keeps params_version 3 and the base Variety+ sigma', async () => {
         mockZipResponse();
 

@@ -4021,7 +4021,7 @@ function getNovelParams() {
     }
 
     if (extension_settings.sd.sampler === 'ddim' ||
-        ['nai-diffusion-4-curated-preview', 'nai-diffusion-4-full'].includes(extension_settings.sd.model)) {
+        ['nai-diffusion-4-curated-preview', 'nai-diffusion-4-full', 'nai-diffusion-5-full', 'nai-diffusion-5-curated'].includes(extension_settings.sd.model)) {
         sm = false;
         sm_dyn = false;
     }
