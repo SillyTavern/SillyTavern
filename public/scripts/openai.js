@@ -196,6 +196,7 @@ export const chat_completion_sources = {
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
+    HUBRIS: 'hubris',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
@@ -346,6 +347,7 @@ export const settingsToUpdate = {
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
+    hubris_model: ['#model_hubris_select', 'hubris_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false, true],
@@ -461,6 +463,7 @@ const default_settings = {
     pollinations_model: 'openai',
     pollinations_endpoint: POLLINATIONS_ENDPOINT.AUTHENTICATED,
     cometapi_model: 'gpt-4o',
+    hubris_model: 'anthropic/claude-sonnet-5',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
@@ -1765,6 +1768,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.pollinations_model;
         case chat_completion_sources.COMETAPI:
             return settings.cometapi_model;
+        case chat_completion_sources.HUBRIS:
+            return settings.hubris_model;
         case chat_completion_sources.MOONSHOT:
             return settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
@@ -2363,6 +2368,22 @@ function saveModelList(data) {
         $('#model_cometapi_select').val(oai_settings.cometapi_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.HUBRIS) {
+        $('#model_hubris_select').empty();
+
+        model_list.forEach((model) => {
+            $('#model_hubris_select').append(new Option(model.display_name || model.id, model.id));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.hubris_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.hubris_model)) {
+            oai_settings.hubris_model = model_list[0].id;
+            saveSettingsDebounced();
+        }
+
+        $('#model_hubris_select').val(oai_settings.hubris_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         const modelId = model_list?.[0]?.id || '';
         oai_settings.azure_openai_model = modelId;
@@ -2557,6 +2578,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.POLLINATIONS,
         chat_completion_sources.PERPLEXITY,
         chat_completion_sources.COMETAPI,
+        chat_completion_sources.HUBRIS,
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
@@ -5633,6 +5655,15 @@ async function onModelChange() {
         oai_settings.fireworks_model = value;
     }
 
+    if ($(this).is('#model_hubris_select')) {
+        if (!value) {
+            console.debug('Null Hubris model selected. Ignoring.');
+            return;
+        }
+        console.log('Hubris model changed to', value);
+        oai_settings.hubris_model = value;
+    }
+
     if ($(this).is('#model_cometapi_select')) {
         if (!value) {
             console.debug('Null CometAPI model selected. Ignoring.');
@@ -6029,6 +6060,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: true },
         [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
         [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
+        [chat_completion_sources.HUBRIS]: { key: SECRET_KEYS.HUBRIS, selector: '#api_key_hubris', proxy: false },
         [chat_completion_sources.AZURE_OPENAI]: { key: SECRET_KEYS.AZURE_OPENAI, selector: '#api_key_azure_openai', proxy: false },
         [chat_completion_sources.ZAI]: { key: SECRET_KEYS.ZAI, selector: '#api_key_zai', proxy: true },
         [chat_completion_sources.CHUTES]: { key: SECRET_KEYS.CHUTES, selector: '#api_key_chutes', proxy: false },
@@ -6123,6 +6155,8 @@ function toggleChatCompletionForms() {
         $('#model_fireworks_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.HUBRIS) {
+        $('#model_hubris_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         $('#azure_openai_model').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ZAI) {
@@ -6307,6 +6341,8 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.COMETAPI:
             return true;
+        case chat_completion_sources.HUBRIS:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.hubris_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.MOONSHOT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.moonshot_model)?.supports_image_in);
         case chat_completion_sources.NANOGPT:
@@ -7339,6 +7375,7 @@ export function initOpenAI() {
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);
     $('#model_cometapi_select').on('change', onModelChange);
+    $('#model_hubris_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
