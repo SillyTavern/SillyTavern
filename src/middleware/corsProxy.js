@@ -26,6 +26,12 @@ export default async function corsProxyMiddleware(req, res) {
 
         headersToRemove.forEach(header => delete headers[header]);
 
+        // Force a set of encodings that node-fetch/undici can transparently decompress.
+        // Some origins (e.g. Cloudflare-fronted sites) will respond with zstd when a browser's
+        // full Accept-Encoding list is forwarded as-is; undici does not decode zstd, so the raw
+        // compressed bytes would otherwise be piped straight through to the client as garbage.
+        headers['accept-encoding'] = 'gzip, deflate, br';
+
         const bodyMethods = ['POST', 'PUT', 'PATCH'];
 
         const response = await fetch(url, {
