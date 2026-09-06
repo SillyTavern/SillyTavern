@@ -3643,5 +3643,8 @@
     "Deleting chat…": "正在删除聊天…",
     "Loading chat…": "正在加载聊天…",
     "Bulk Delete": "批量删除",
-    "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…"
+    "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…",
+    "Service Tier": "服务档位",
+    "Flex (cheap, slower)": "Flex（低价，较慢）",
+    "Priority (fast, expensive)": "Priority（快，但贵）"
 }
