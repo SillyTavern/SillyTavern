@@ -150,6 +150,7 @@ export function extractReasoningFromData(data, {
                 case chat_completion_sources.COMETAPI:
                 case chat_completion_sources.CHUTES:
                 case chat_completion_sources.ELECTRONHUB:
+                case chat_completion_sources.HUBRIS:
                 case chat_completion_sources.NANOGPT:
                 case chat_completion_sources.SILICONFLOW:
                 case chat_completion_sources.ZAI:
