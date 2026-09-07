@@ -91,6 +91,7 @@ const API_POLLINATIONS_ANON = 'https://text.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_HUBRIS = 'https://api.hubris.pw/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
@@ -1830,6 +1831,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_GROQ;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);
             headers = {};
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HUBRIS) {
+            apiUrl = API_HUBRIS;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.HUBRIS, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COMETAPI) {
             apiUrl = API_COMETAPI;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
@@ -2579,6 +2584,24 @@ router.post('/generate', async function (request, response) {
                 bodyParams['response_format'] = {
                     type: 'json_schema',
                     json_schema: request.body.json_schema.value,
+                };
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.HUBRIS) {
+            apiUrl = API_HUBRIS;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.HUBRIS, request.body.secret_id);
+            headers = {};
+            bodyParams = {
+                reasoning_effort: request.body.reasoning_effort,
+            };
+            if (request.body.json_schema) {
+                bodyParams['response_format'] = {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: request.body.json_schema.name,
+                        description: request.body.json_schema.description,
+                        schema: request.body.json_schema.value,
+                        strict: request.body.json_schema.strict ?? true,
+                    },
                 };
             }
         } else {
