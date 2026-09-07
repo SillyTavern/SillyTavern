@@ -442,7 +442,7 @@ export function getTokenizerModel(requestModel) {
         return 'o1';
     }
 
-    if (requestModel.includes('gpt-5') || requestModel.includes('o3') || requestModel.includes('o4-mini')) {
+    if (requestModel.includes('gpt-5') || requestModel.includes('gpt-6-astra') || requestModel.includes('o3') || requestModel.includes('o4-mini')) {
         return 'o1';
     }
 

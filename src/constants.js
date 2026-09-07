@@ -456,7 +456,7 @@ export const AZURE_OPENAI_KEYS = [
     'reasoning_effort',
 ];
 
-export const OPENAI_VERBOSITY_MODELS = /^gpt-5/;
+export const OPENAI_VERBOSITY_MODELS = /^(?:gpt-5|gpt-6-astra)/;
 
 export const OPENAI_REASONING_EFFORT_MODELS = [
     'o1',
@@ -491,6 +491,7 @@ export const OPENAI_REASONING_EFFORT_MODELS = [
     'gpt-5.6-sol',
     'gpt-5.6-terra',
     'gpt-5.6-luna',
+    'gpt-6-astra',
 ];
 
 export const OPENAI_REASONING_EFFORT_MAP = {
