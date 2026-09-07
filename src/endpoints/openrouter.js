@@ -26,7 +26,13 @@ router.post('/models/providers', async (req, res) => {
         const endpoints = data?.data?.endpoints || [];
         const providerNames = endpoints.map(e => e.provider_name);
 
-        return res.json(providerNames);
+        const getTier = (tag) => tag?.endsWith('/flex') ? 'flex'
+            : tag?.endsWith('/priority') ? 'priority'
+                : 'standard';
+
+        const tiers = [...new Set(endpoints.filter(e => e.status === 0).map(e => getTier(e.tag)))];
+
+        return res.json({ providers: providerNames, tiers });
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);

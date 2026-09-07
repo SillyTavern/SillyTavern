@@ -1452,5 +1452,8 @@
     "Deleting chat…": "Eyði spjalli…",
     "Loading chat…": "Hleð spjalli…",
     "Bulk Delete": "Fjöldaeyðing",
-    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…"
+    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…",
+    "Service Tier": "Þjónustustig",
+    "Flex (cheap, slower)": "Flex (ódýr, hægari)",
+    "Priority (fast, expensive)": "Priority (hratt, dýrt)"
 }

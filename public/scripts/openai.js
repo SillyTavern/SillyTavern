@@ -322,6 +322,7 @@ export const settingsToUpdate = {
     openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false, true],
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
+    openrouter_service_tier: ['#openrouter_service_tier', 'openrouter_service_tier', false, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
     tool_reasoning_mode: ['#tool_reasoning_mode', 'tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
@@ -481,6 +482,7 @@ const default_settings = {
     openrouter_providers: [],
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
+    openrouter_service_tier: '',
     openrouter_middleout: openrouter_middleout_types.ON,
     tool_reasoning_mode: tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
@@ -2873,6 +2875,9 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.quantizations = settings.openrouter_quantizations;
         generate_data.allow_fallbacks = settings.openrouter_allow_fallbacks;
         generate_data.middleout = settings.openrouter_middleout;
+        if (settings.openrouter_service_tier) {
+            generate_data.service_tier = settings.openrouter_service_tier;
+        }
     }
 
     if (settings.chat_completion_source === chat_completion_sources.NANOGPT) {
@@ -5472,7 +5477,7 @@ async function onModelChange() {
 
         console.log('OpenRouter model changed to', value);
         oai_settings.openrouter_model = value;
-        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat');
+        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat', '#openrouter_service_tier', oai_settings.openrouter_service_tier);
     }
 
     if ($(this).is('#model_ai21_select')) {
@@ -7251,6 +7256,11 @@ export function initOpenAI() {
 
         oai_settings.openrouter_quantizations = selectedQuantizations;
 
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_service_tier').on('change', function () {
+        oai_settings.openrouter_service_tier = String($(this).val());
         saveSettingsDebounced();
     });
 

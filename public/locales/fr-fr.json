@@ -2062,5 +2062,8 @@
     "Deleting chat…": "Suppression de la discussion…",
     "Loading chat…": "Chargement de la discussion…",
     "Bulk Delete": "Suppression groupée",
-    "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…"
+    "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…",
+    "Service Tier": "Niveau de service",
+    "Flex (cheap, slower)": "Flex (moins cher, plus lent)",
+    "Priority (fast, expensive)": "Priority (rapide, coûteux)"
 }

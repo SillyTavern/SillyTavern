@@ -2335,6 +2335,10 @@ router.post('/generate', async function (request, response) {
                 bodyParams['route'] = 'fallback';
             }
 
+            if (request.body.service_tier) {
+                bodyParams['service_tier'] = request.body.service_tier;
+            }
+
             if (request.body.reasoning_effort) {
                 bodyParams['reasoning']['effort'] = request.body.reasoning_effort;
             }
