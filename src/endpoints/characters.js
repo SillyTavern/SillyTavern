@@ -1081,7 +1081,9 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 
         // Rename chats folder
         if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
-            fs.cpSync(oldChatsPath, newChatsPath, { recursive: true });
+            // Supplying a filter avoids a Node.js Windows copyDir crash while preserving all entries.
+            // https://github.com/nodejs/node/issues/63970
+            fs.cpSync(oldChatsPath, newChatsPath, { recursive: true, filter: () => true });
             fs.rmSync(oldChatsPath, { recursive: true, force: true });
         }
 
