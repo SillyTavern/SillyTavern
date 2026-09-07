@@ -171,6 +171,10 @@
     min-height: 200px;
 }
 
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_reasoning_content {
+    min-height: 100px;
+}
+
 #completion_prompt_manager_popup .completion_prompt_manager_popup_entry .completion_prompt_manager_popup_entry_form_footer {
     display: flex;
     justify-content: space-between;
