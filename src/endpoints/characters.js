@@ -1081,7 +1081,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 
         // Rename chats folder
         if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
-            fs.cpSync(oldChatsPath, newChatsPath, { recursive: true });
+            fs.cpSync(oldChatsPath, newChatsPath, { recursive: true, filter: () => true });
             fs.rmSync(oldChatsPath, { recursive: true, force: true });
         }
 
