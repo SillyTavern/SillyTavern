@@ -2361,6 +2361,8 @@
     "prompt_post_processing_merge": "合併連續角色",
     "prompt_post_processing_semi": "半嚴格（交替角色）",
     "prompt_post_processing_strict": "嚴格（使用者優先，交替角色）",
+    "prompt_post_processing_strict_trailing": "嚴格（使用者優先與最後，交替角色）",
+    "prompt_post_processing_strict_trailing_tools": "嚴格（使用者優先與最後，交替角色；含工具）",
     "Background Fitting": "背景填充",
     "Classic": "經典",
     "Cover": "覆蓋",
