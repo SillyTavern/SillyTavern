@@ -203,11 +203,12 @@ export const chat_completion_sources = {
     MINIMAX: 'minimax',
 };
 
-const character_names_behavior = {
+export const character_names_behavior = {
     NONE: -1,
     DEFAULT: 0,
     COMPLETION: 1,
     CONTENT: 2,
+    NONE_EXCEPT_EXAMPLES: 3,
 };
 
 const continue_postfix_types = {
@@ -607,6 +608,8 @@ function setOpenAIMessages(chat) {
                 break;
             case character_names_behavior.COMPLETION:
                 break;
+            case character_names_behavior.NONE_EXCEPT_EXAMPLES:
+                break;
             default:
                 break;
         }
@@ -651,15 +654,17 @@ function setOpenAIMessages(chat) {
 /**
  * Formats chat examples into chat completion messages.
  * @param {string[]} mesExamplesArray - Array containing all examples.
+ * @param {boolean} appendNamesForGroup - Whether to append the character name for group chats
+ * @param {boolean} alwaysAppendNames - Whether to append names in all examples regardless of group status
  * @returns {object[]} - Array containing all examples formatted for chat completion.
  */
-function setOpenAIMessageExamples(mesExamplesArray) {
+function setOpenAIMessageExamples(mesExamplesArray, appendNamesForGroup = true, alwaysAppendNames = false) {
     // get a nice array of all blocks of all example messages = array of arrays (important!)
     const examples = [];
     for (let item of mesExamplesArray) {
         // remove <START> {Example Dialogue:} and replace \r\n with just \n
         let replaced = item.replace(/<START>/i, '{Example Dialogue:}').replace(/\r/gm, '');
-        let parsed = parseExampleIntoIndividual(replaced, true);
+        let parsed = parseExampleIntoIndividual(replaced, appendNamesForGroup, alwaysAppendNames);
         // add to the example message blocks array
         examples.push(parsed);
     }
@@ -724,9 +729,10 @@ function setupChatCompletionPromptManager(openAiSettings) {
  * Parses the example messages into individual messages.
  * @param {string} messageExampleString - The string containing the example messages
  * @param {boolean} appendNamesForGroup - Whether to append the character name for group chats
+ * @param {boolean} alwaysAppendNames - Whether to append names in all examples regardless of group status
  * @returns {Message[]} Array of message objects
  */
-export function parseExampleIntoIndividual(messageExampleString, appendNamesForGroup = true) {
+export function parseExampleIntoIndividual(messageExampleString, appendNamesForGroup = true, alwaysAppendNames = false) {
     const groupBotNames = getGroupNames().map(name => `${name}:`);
 
     let result = []; // array of msgs
@@ -741,9 +747,13 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
         // join different newlines (we split them by \n and join by \n)
         // remove char name
         // strip to remove extra spaces
-        let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
+        let parsed_msg = cur_msg_lines.join('\n');
+        if (name) {
+            parsed_msg = parsed_msg.replace(name + ':', '').trim();
+        }
+        parsed_msg = parsed_msg.trim();
 
-        if (appendNamesForGroup && selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
+        if ((alwaysAppendNames || (appendNamesForGroup && selected_group)) && ['example_user', 'example_assistant'].includes(system_name)) {
             parsed_msg = `${name}: ${parsed_msg}`;
         }
 
@@ -782,6 +792,8 @@ export function parseExampleIntoIndividual(messageExampleString, appendNamesForG
         add_msg(name1, 'system', 'example_user');
     } else if (in_bot) {
         add_msg(botName, 'system', 'example_assistant');
+    } else {
+        add_msg(null, 'system', 'system');
     }
     return result;
 }
@@ -4405,6 +4417,9 @@ function setNamesBehaviorControls() {
         case character_names_behavior.CONTENT:
             $('#character_names_content').prop('checked', true);
             break;
+        case character_names_behavior.NONE_EXCEPT_EXAMPLES:
+            $('#character_names_none_except_examples').prop('checked', true);
+            break;
     }
 
     const checkedItemText = $('input[name="character_names"]:checked ~ span').text().trim();
@@ -7121,6 +7136,12 @@ export function initOpenAI() {
 
     $('#character_names_content').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.CONTENT;
+        setNamesBehaviorControls();
+        saveSettingsDebounced();
+    });
+
+    $('#character_names_none_except_examples').on('input', function () {
+        oai_settings.names_behavior = character_names_behavior.NONE_EXCEPT_EXAMPLES;
         setNamesBehaviorControls();
         saveSettingsDebounced();
     });

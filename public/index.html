@@ -1915,6 +1915,13 @@
                                                     Prepend character names to message contents.
                                                 </small>
                                             </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none_except_examples">
+                                                <input type="radio" id="character_names_none_except_examples" name="character_names" value="3">
+                                                <span data-i18n="None (Except Examples)">None (Except Examples)</span>
+                                                <small class="flexBasis100p" data-i18n="character_names_none_except_examples">
+                                                    Never add name prefixes to messages, but always include them in example dialogues.
+                                                </small>
+                                            </label>
                                             <!-- Hidden input for loading radio buttons from presets. Don't remove! -->
                                             <input type="hidden" id="names_behavior" class="displayNone" />
                                         </div>
@@ -4315,6 +4322,7 @@
                                     </small>
                                     <select id="instruct_names_behavior">
                                         <option value="none" data-i18n="Never">Never</option>
+                                        <option value="none_except_examples" data-i18n="Never (Except Examples)">Never (Except Examples)</option>
                                         <option value="force" data-i18n="Groups and Past Personas">Groups and Past Personas</option>
                                         <option value="always" data-i18n="Always">Always</option>
                                     </select>
