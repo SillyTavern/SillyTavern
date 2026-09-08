@@ -293,16 +293,16 @@ export function getSentencepiceTokenizer(model) {
         return spp_llama;
     }
 
+    if (model.includes('nerdstash_v2')) {
+        return spp_nerd_v2;
+    }
+
     if (model.includes('nerdstash')) {
         return spp_nerd;
     }
 
     if (model.includes('mistral')) {
         return spp_mistral;
-    }
-
-    if (model.includes('nerdstash_v2')) {
-        return spp_nerd_v2;
     }
 
     if (model.includes('yi')) {
@@ -472,6 +472,18 @@ export function getTokenizerModel(requestModel) {
 
     if (TEXT_COMPLETION_MODELS.includes(requestModel)) {
         return requestModel;
+    }
+
+    if (requestModel.includes('gpt2')) {
+        return 'gpt2';
+    }
+
+    if (requestModel.includes('nerdstash_v2')) {
+        return 'nerdstash_v2';
+    }
+
+    if (requestModel.includes('nerdstash')) {
+        return 'nerdstash';
     }
 
     if (requestModel.includes('claude')) {
