@@ -44,7 +44,8 @@ import {
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getNovelAnlas, getNovelUnlimitedImageGeneration, loadNovelSubscriptionData } from '../../nai-settings.js';
-import { getMultimodalCaption } from '../shared.js';
+import { getMultimodalCaption, ConnectionManagerRequestService } from '../shared.js';
+import { buildLeanChatPrompt, prepareLeanPromptForTransport, LEAN_PROMPT_CANCELLED } from '../lean-chat-prompt.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import {
@@ -281,6 +282,11 @@ const defaultSettings = {
     free_extend: false,
     function_tool: false,
     minimal_prompt_processing: false,
+
+    // Use a Connection Manager profile (different model/preset/endpoint) for the LLM
+    // step that turns the chat context into an SD prompt. Off → uses the main API.
+    use_connection_profile: false,
+    connectionProfileId: '',
 
     prompts: promptTemplates,
 
@@ -545,6 +551,8 @@ async function loadSettings() {
     $('#sd_comfy_runpod_url').val(extension_settings.sd.comfy_runpod_url);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
     $('#sd_minimal_prompt_processing').prop('checked', extension_settings.sd.minimal_prompt_processing);
+    $('#sd_use_connection_profile').prop('checked', !!extension_settings.sd.use_connection_profile);
+    $('#sd_connection_profile_block').toggle(!!extension_settings.sd.use_connection_profile);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').val(extension_settings.sd.clip_skip);
     $('#sd_seed').val(extension_settings.sd.seed);
@@ -669,6 +677,13 @@ function onSnapInput() {
 
 function onMinimalPromptProcessing() {
     extension_settings.sd.minimal_prompt_processing = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onUseConnectionProfile() {
+    const checked = !!$(this).prop('checked');
+    extension_settings.sd.use_connection_profile = checked;
+    $('#sd_connection_profile_block').toggle(checked);
     saveSettingsDebounced();
 }
 
@@ -3178,7 +3193,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt, combineN
             prompt = await generateMultimodalPrompt(generationType, quietPrompt);
             break;
         default:
-            prompt = await generatePrompt(quietPrompt);
+            prompt = await generatePrompt(quietPrompt, generationType);
             break;
     }
 
@@ -3285,13 +3300,72 @@ function getUserAvatarUrl() {
 }
 
 /**
- * Generates a prompt using the main LLM API.
+ * Generates a prompt using either the main LLM API (default) or a Connection Profile
+ * (when use_connection_profile is enabled in settings — sends via
+ * ConnectionManagerRequestService so the request goes against the chosen profile's
+ * model/preset/endpoint instead of the global one).
  * @param {string} quietPrompt - The prompt to use for the image generation.
  * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
  */
-async function generatePrompt(quietPrompt) {
+/**
+ * Per-mode lean-builder flags for the SD prompt-generation step. Each generation
+ * mode answers a different question, so the LLM gets the bare minimum it needs
+ * to produce a focused image prompt.
+ *
+ *   FACE / CHARACTER / USER  → describe a single character; no chat history
+ *   NOW                      → describe the current scene; only the last message
+ *   SCENARIO / MESSAGE       → "the whole story"; full chat + WI
+ *   BACKGROUND               → describe the setting; scenario only, no chat
+ *   TOOL                     → tool-call generated prompt; full context
+ *   default                  → conservative full context (matches old main-API behavior)
+ *
+ * RAW_LAST, FREE, FREE_EXTENDED, *_MULTIMODAL never reach generatePrompt — they
+ * are handled directly in getPrompt.
+ */
+function leanFlagsForSdMode(mode) {
+    const M = generationMode;
+    switch (mode) {
+        case M.FACE:
+        case M.CHARACTER:
+        case M.USER:
+            return { includeCharacter: true, includeChatHistory: false, includeWorldInfo: false };
+        case M.NOW:
+            return { includeCharacter: true, includeChatHistory: true, historyMaxMessages: 1, includeWorldInfo: false };
+        case M.SCENARIO:
+        case M.MESSAGE:
+            return { includeCharacter: true, includeChatHistory: true, includeWorldInfo: true };
+        case M.BACKGROUND:
+            // Setting can change mid-chat (characters move to a different location);
+            // include chat history so the LLM picks up the current location.
+            return { includeCharacter: true, includeChatHistory: true, includeWorldInfo: true };
+        case M.TOOL:
+            return { includeCharacter: true, includeChatHistory: true, includeWorldInfo: true };
+        default:
+            return { includeCharacter: true, includeChatHistory: true, includeWorldInfo: true };
+    }
+}
+
+async function generatePrompt(quietPrompt, generationType) {
     const toast = toastr.info('Generating image prompt with an LLM...', 'Image Generation');
-    const reply = await generateQuietPrompt({ quietPrompt });
+    let reply;
+    if (extension_settings.sd.use_connection_profile && extension_settings.sd.connectionProfileId) {
+        const profileId = extension_settings.sd.connectionProfileId;
+        const flags = leanFlagsForSdMode(generationType);
+        const messages = await buildLeanChatPrompt({
+            profileId,
+            quietPrompt,
+            ...flags,
+        });
+        const prepared = await prepareLeanPromptForTransport(messages, profileId);
+        if (prepared === LEAN_PROMPT_CANCELLED) {
+            toastr.clear(toast);
+            throw new Error('Prompt generation cancelled.');
+        }
+        const result = await ConnectionManagerRequestService.sendRequest(profileId, prepared, 512);
+        reply = result.content || '';
+    } else {
+        reply = await generateQuietPrompt({ quietPrompt });
+    }
     const processedReply = processReply(reply);
     toastr.clear(toast);
 
@@ -5867,6 +5941,19 @@ export async function init() {
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_minimal_prompt_processing').on('input', onMinimalPromptProcessing);
+    $('#sd_use_connection_profile').on('input', onUseConnectionProfile);
+    try {
+        ConnectionManagerRequestService.handleDropdown(
+            '#sd_connection_profile',
+            extension_settings.sd.connectionProfileId,
+            (profile) => {
+                extension_settings.sd.connectionProfileId = profile?.id ?? '';
+                saveSettingsDebounced();
+            },
+        );
+    } catch (e) {
+        console.warn('[sd] connection-manager unavailable, profile prompt-gen disabled', e);
+    }
     $('#sd_clip_skip').on('input', onClipSkipInput);
     $('#sd_seed').on('input', onSeedInput);
     $('#sd_character_prompt_share').on('input', onCharacterPromptShareInput);
