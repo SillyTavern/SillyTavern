@@ -201,6 +201,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    CONCENTRATE: 'concentrate',
 };
 
 const character_names_behavior = {
@@ -340,6 +341,7 @@ export const settingsToUpdate = {
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
+    concentrate_model: ['#model_concentrate_select', 'concentrate_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     pollinations_endpoint: ['#pollinations_endpoint', 'pollinations_endpoint', false, true],
@@ -457,6 +459,7 @@ const default_settings = {
     nanogpt_payg_override: false,
     deepseek_model: 'deepseek-v4-flash',
     aimlapi_model: 'chatgpt-4o-latest',
+    concentrate_model: 'auto',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
     pollinations_endpoint: POLLINATIONS_ENDPOINT.AUTHENTICATED,
@@ -1759,6 +1762,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.deepseek_model;
         case chat_completion_sources.AIMLAPI:
             return settings.aimlapi_model;
+        case chat_completion_sources.CONCENTRATE:
+            return settings.concentrate_model;
         case chat_completion_sources.XAI:
             return settings.xai_model;
         case chat_completion_sources.POLLINATIONS:
@@ -2105,6 +2110,33 @@ function saveModelList(data) {
         }
 
         $('#model_aimlapi_select').val(oai_settings.aimlapi_model).trigger('change');
+    }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.CONCENTRATE) {
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.CONCENTRATE);
+        $('#model_concentrate_select').empty();
+        $('#model_concentrate_select').append($('<option>', { value: 'auto', text: 'auto (Concentrate picks the best model)' }));
+
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.CONCENTRATE).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.display_name || model.id }));
+                });
+                $('#model_concentrate_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_concentrate_select').append($('<option>', { value: model.id, text: model.display_name || model.id }));
+            });
+        }
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.concentrate_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.concentrate_model) && oai_settings.concentrate_model !== 'auto') {
+            oai_settings.concentrate_model = model_list[0].id;
+        }
+
+        $('#model_concentrate_select').val(oai_settings.concentrate_model).trigger('change');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
@@ -2472,6 +2504,17 @@ function sortModelsBy(data, property, source) {
                     return a?.info?.name && b?.info?.name ? a.info.name.localeCompare(b.info.name) : 0;
                 }
             });
+        case chat_completion_sources.CONCENTRATE:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.max_input_tokens || 0) - (a.max_input_tokens || 0);
+                } else {
+                    // Combined model list has no pricing info. Sort alphabetically by name.
+                    const aName = a?.display_name || a?.id || '';
+                    const bName = b?.display_name || b?.id || '';
+                    return aName.localeCompare(bName);
+                }
+            });
         default:
             return data;
     }
@@ -2531,6 +2574,15 @@ function groupModelsByVendor(array, source) {
                 acc.get(vendor).push(curr);
                 return acc;
             }, new Map());
+        case chat_completion_sources.CONCENTRATE:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.owned_by || 'Other';
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
         default:
             return new Map([['', array]]);
     }
@@ -2553,6 +2605,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.CUSTOM,
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
+        chat_completion_sources.CONCENTRATE,
         chat_completion_sources.OPENROUTER,
         chat_completion_sources.POLLINATIONS,
         chat_completion_sources.PERPLEXITY,
@@ -2754,6 +2807,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.CONCENTRATE,
     ];
 
     // Sources that support logit bias
@@ -3273,7 +3327,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.CONCENTRATE, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -3315,6 +3369,7 @@ function parseChatCompletionLogprobs(data) {
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
         case chat_completion_sources.CHUTES:
+        case chat_completion_sources.CONCENTRATE:
             if (!data.choices?.length) {
                 return null;
             }
@@ -5620,6 +5675,15 @@ async function onModelChange() {
         oai_settings.aimlapi_model = value;
     }
 
+    if ($(this).is('#model_concentrate_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Concentrate model selected. Ignoring.');
+            return;
+        }
+        console.log('Concentrate model changed to', value);
+        oai_settings.concentrate_model = value;
+    }
+
     if ($(this).is('#model_xai_select')) {
         if (!value) {
             console.debug('Null XAI model selected. Ignoring.');
@@ -5941,6 +6005,29 @@ async function onModelChange() {
         oai_settings.temp_openai = Number($('#temp_openai').val());
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.CONCENTRATE) {
+        let maxContext;
+        if (oai_settings.max_context_unlocked) {
+            maxContext = unlocked_max;
+        } else {
+            const model = model_list.find(m => m.id === oai_settings.concentrate_model);
+            maxContext = model?.max_input_tokens || max_32k;
+        }
+
+        $('#openai_max_context')
+            .prop('max', maxContext)
+            .val(Math.min(Number(oai_settings.openai_max_context), maxContext))
+            .trigger('input');
+
+        $('#temp_openai')
+            .prop('max', oai_max_temp)
+            .val(Number(oai_settings.temp_openai))
+            .trigger('input');
+
+        oai_settings.openai_max_context = Number($('#openai_max_context').val());
+        oai_settings.temp_openai = Number($('#temp_openai').val());
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.COHERE) {
         oai_settings.pres_pen_openai = Math.min(Math.max(0, oai_settings.pres_pen_openai), 1);
         $('#pres_pen_openai').attr('max', 1).attr('min', 0).val(oai_settings.pres_pen_openai).trigger('input');
@@ -6040,6 +6127,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.DEEPSEEK]: { key: SECRET_KEYS.DEEPSEEK, selector: '#api_key_deepseek', proxy: true },
         [chat_completion_sources.XAI]: { key: SECRET_KEYS.XAI, selector: '#api_key_xai', proxy: true },
         [chat_completion_sources.AIMLAPI]: { key: SECRET_KEYS.AIMLAPI, selector: '#api_key_aimlapi', proxy: false },
+        [chat_completion_sources.CONCENTRATE]: { key: SECRET_KEYS.CONCENTRATE, selector: '#api_key_concentrate', proxy: false },
         [chat_completion_sources.MOONSHOT]: { key: SECRET_KEYS.MOONSHOT, selector: '#api_key_moonshot', proxy: true },
         [chat_completion_sources.FIREWORKS]: { key: SECRET_KEYS.FIREWORKS, selector: '#api_key_fireworks', proxy: false },
         [chat_completion_sources.COMETAPI]: { key: SECRET_KEYS.COMETAPI, selector: '#api_key_cometapi', proxy: false },
@@ -6126,6 +6214,8 @@ function toggleChatCompletionForms() {
         $('#model_deepseek_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.AIMLAPI) {
         $('#model_aimlapi_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.CONCENTRATE) {
+        $('#model_concentrate_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.XAI) {
         $('#model_xai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.POLLINATIONS) {
@@ -6315,6 +6405,8 @@ export function isImageInliningSupported() {
             return visionSupportedModels.some(model => oai_settings.xai_model.includes(model));
         case chat_completion_sources.AIMLAPI:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
+        case chat_completion_sources.CONCENTRATE:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.concentrate_model)?.capabilities?.image_input?.supported);
         case chat_completion_sources.CHUTES:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.chutes_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.ELECTRONHUB:
@@ -7214,6 +7306,13 @@ export function initOpenAI() {
             width: '100%',
             templateResult: getAimlapiModelTemplate,
         });
+        $('#model_concentrate_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            matcher: textValueMatcher,
+        });
         $('#model_electronhub_select').select2({
             placeholder: t`Select a model`,
             searchInputPlaceholder: t`Search models...`,
@@ -7353,6 +7452,7 @@ export function initOpenAI() {
     $('#model_nanogpt_select').on('change', onModelChange);
     $('#model_deepseek_select').on('change', onModelChange);
     $('#model_aimlapi_select').on('change', onModelChange);
+    $('#model_concentrate_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);

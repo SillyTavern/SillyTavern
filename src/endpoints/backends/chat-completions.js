@@ -99,6 +99,7 @@ const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
+const API_CONCENTRATE = 'https://api.concentrate.ai/v1';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -1821,6 +1822,10 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_AIMLAPI;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
             headers = { ...AIMLAPI_HEADERS };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CONCENTRATE) {
+            apiUrl = API_CONCENTRATE;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CONCENTRATE, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = 'https://gen.pollinations.ai/text';
@@ -2430,6 +2435,25 @@ router.post('/generate', async function (request, response) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ, request.body.secret_id);
             headers = {};
             bodyParams = {};
+            if (request.body.json_schema) {
+                bodyParams['response_format'] = {
+                    type: 'json_schema',
+                    json_schema: {
+                        name: request.body.json_schema.name,
+                        description: request.body.json_schema.description,
+                        schema: request.body.json_schema.value,
+                        strict: request.body.json_schema.strict ?? true,
+                    },
+                };
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CONCENTRATE) {
+            apiUrl = API_CONCENTRATE;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CONCENTRATE, request.body.secret_id);
+            headers = {};
+            bodyParams = {};
+            if (request.body.reasoning_effort) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+            }
             if (request.body.json_schema) {
                 bodyParams['response_format'] = {
                     type: 'json_schema',
