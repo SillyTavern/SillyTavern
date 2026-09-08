@@ -98,6 +98,14 @@ export {
 };
 
 let openai_messages_count = 0;
+let dsLastSentMessages = [];
+const dsCacheDiag = {
+    breakpointIndex: -1,
+    breakpointSource: '',
+    hitTokens: 0,
+    missTokens: 0,
+    hitRate: 0,
+};
 
 const default_main_prompt = 'Write {{char}}\'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}.';
 const default_nsfw_prompt = '';
@@ -641,7 +649,7 @@ function setOpenAIMessages(chat) {
             });
         }
 
-        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning };
+        messages[i] = { 'role': role, 'content': content, name: name, 'media': media, 'mediaDisplay': mediaDisplay, 'mediaIndex': mediaIndex, 'invocations': invocations, 'signature': signature, 'reasoning': reasoning, source: 'chatHistory' };
         j++;
     }
 
@@ -858,7 +866,7 @@ async function populationInjectionPrompts(prompts, messages) {
                 const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
 
                 if (jointPrompt && jointPrompt.length) {
-                    roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true });
+                    roleMessages.push({ 'role': role, 'content': jointPrompt, injected: true, source: `injection_d${i}` });
                 }
             }
         }
@@ -2676,6 +2684,57 @@ function getVerbosity(settings = null) {
 }
 
 /**
+ * Detect where cache prefix starts diverging from the previous request.
+ * @param {ChatCompletionMessage[]} messages
+ */
+function detectDeepSeekCacheBreakpoint(messages) {
+    if (dsLastSentMessages.length === 0) {
+        return;
+    }
+
+    let breakIdx = -1;
+    const maxLen = Math.min(dsLastSentMessages.length, messages.length);
+
+    for (let i = 0; i < maxLen; i++) {
+        const prevContent = typeof dsLastSentMessages[i]?.content === 'string'
+            ? dsLastSentMessages[i].content
+            : JSON.stringify(dsLastSentMessages[i]?.content || '');
+        const currContent = typeof messages[i]?.content === 'string'
+            ? messages[i].content
+            : JSON.stringify(messages[i]?.content || '');
+
+        if (prevContent !== currContent || dsLastSentMessages[i]?.role !== messages[i]?.role) {
+            breakIdx = i;
+            break;
+        }
+    }
+
+    if (breakIdx === -1 && messages.length !== dsLastSentMessages.length) {
+        breakIdx = maxLen;
+    }
+
+    dsCacheDiag.breakpointIndex = breakIdx;
+    dsCacheDiag.breakpointSource = breakIdx >= 0 && breakIdx < messages.length
+        ? (messages[breakIdx]?.source || 'unknown')
+        : '';
+}
+
+function updateDeepSeekCacheDiagnosticsUI() {
+    $('#cache_hit_tokens').text(dsCacheDiag.hitTokens.toLocaleString());
+    $('#cache_miss_tokens').text(dsCacheDiag.missTokens.toLocaleString());
+    $('#cache_hit_rate').text(`${dsCacheDiag.hitRate}%`);
+
+    const hasBreakpoint = dsCacheDiag.breakpointIndex >= 0;
+    $('#cache_breakpoint_info').toggle(hasBreakpoint);
+    if (hasBreakpoint) {
+        $('#cache_breakpoint_index').text(dsCacheDiag.breakpointIndex);
+        $('#cache_breakpoint_source').text(dsCacheDiag.breakpointSource);
+    }
+
+    $('#deepseek_cache_diagnostics').show();
+}
+
+/**
  * Build the generation parameter object for an OAI request.
  * @param {ChatCompletionSettings} settings Initial chat completion settings
  * @param {string} model Model name
@@ -3130,6 +3189,23 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
     const model = getChatCompletionModel(oai_settings);
     const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
+
+    const isDeepSeek = oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK;
+    let messagesWithSource = [];
+
+    if (isDeepSeek) {
+        messagesWithSource = structuredClone(generate_data.messages);
+
+        for (const msg of generate_data.messages) {
+            delete msg.source;
+        }
+
+        dsCacheDiag.breakpointIndex = -1;
+        dsCacheDiag.breakpointSource = '';
+        detectDeepSeekCacheBreakpoint(messagesWithSource);
+        updateDeepSeekCacheDiagnosticsUI();
+    }
+
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
@@ -3155,11 +3231,30 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) return;
+                if (done) {
+                    if (isDeepSeek) {
+                        dsLastSentMessages = structuredClone(messagesWithSource);
+                    }
+                    return;
+                }
                 const rawData = value.data;
-                if (rawData === '[DONE]') return;
+                if (rawData === '[DONE]') {
+                    if (isDeepSeek) {
+                        dsLastSentMessages = structuredClone(messagesWithSource);
+                    }
+                    return;
+                }
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
+
+                // Extract DeepSeek cache usage from the final streaming chunk
+                if (isDeepSeek && parsed?.usage) {
+                    dsCacheDiag.hitTokens = parsed.usage.prompt_cache_hit_tokens || 0;
+                    dsCacheDiag.missTokens = parsed.usage.prompt_cache_miss_tokens || 0;
+                    const total = dsCacheDiag.hitTokens + dsCacheDiag.missTokens;
+                    dsCacheDiag.hitRate = total > 0 ? Math.round((dsCacheDiag.hitTokens / total) * 100) : 0;
+                    updateDeepSeekCacheDiagnosticsUI();
+                }
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
@@ -3191,6 +3286,18 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             // Delay is required to allow the active message to be updated to
             // the one we are generating (happens right after sendOpenAIRequest)
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
+        }
+
+        if (isDeepSeek && data?.usage) {
+            dsCacheDiag.hitTokens = data.usage.prompt_cache_hit_tokens || 0;
+            dsCacheDiag.missTokens = data.usage.prompt_cache_miss_tokens || 0;
+            const total = dsCacheDiag.hitTokens + dsCacheDiag.missTokens;
+            dsCacheDiag.hitRate = total > 0 ? Math.round((dsCacheDiag.hitTokens / total) * 100) : 0;
+            updateDeepSeekCacheDiagnosticsUI();
+        }
+
+        if (isDeepSeek) {
+            dsLastSentMessages = structuredClone(messagesWithSource);
         }
 
         return data;
@@ -3503,6 +3610,8 @@ class Message {
     /** @type {string} */
     identifier;
     /** @type {string} */
+    source;
+    /** @type {string} */
     role;
     /** @type {string|any[]} */
     content;
@@ -3522,8 +3631,9 @@ class Message {
      * @param {string} identifier - A unique identifier for the message.
      * @private Don't use this constructor directly. Use createAsync instead.
      */
-    constructor(role, content, identifier) {
+    constructor(role, content, identifier, source) {
         this.identifier = identifier;
+        this.source = source || identifier;
         this.role = role;
         this.content = content;
 
@@ -3542,8 +3652,8 @@ class Message {
      * @param {string} identifier
      * @returns {Promise<Message>} Message instance
      */
-    static async createAsync(role, content, identifier) {
-        const message = new Message(role, content, identifier);
+    static async createAsync(role, content, identifier, source) {
+        const message = new Message(role, content, identifier, source);
 
         if (typeof message.content === 'string' && message.content.length > 0) {
             message.tokens = await tokenHandler.countAsync({ role: message.role, content: message.content });
@@ -3777,7 +3887,7 @@ class Message {
      * @returns {Promise<Message>} A new instance of Message.
      */
     static fromPromptAsync(prompt) {
-        return Message.createAsync(prompt.role, prompt.content, prompt.identifier);
+        return Message.createAsync(prompt.role, prompt.content, prompt.identifier, prompt.identifier);
     }
 
     /**
@@ -3827,6 +3937,7 @@ class MessageCollection {
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
                     ...(message.signature && { signature: message.signature }),
                     ...(message.reasoning && { reasoning: message.reasoning }),
+                    source: message.source || message.identifier || '',
                 });
             }
             return acc;
@@ -3926,6 +4037,7 @@ export class ChatCompletion {
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
                     lastMessage.content += '\n' + message.content;
+                    lastMessage.source = `${lastMessage.source || ''}+${message.source || ''}`.replace(/^\+|\+$/g, '');
                     lastMessage.tokens = await tokenHandler.countAsync({ role: lastMessage.role, content: lastMessage.content });
                 } else {
                     squashedMessages.push(message);
@@ -4118,6 +4230,7 @@ export class ChatCompletion {
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
                     ...(item.signature ? { signature: item.signature } : {}),
                     ...(item.reasoning ? { reasoning: item.reasoning } : {}),
+                    source: item.source || item.identifier || '',
                 };
                 chat.push(message);
             } else {
@@ -6959,6 +7072,13 @@ export function initOpenAI() {
         forceCharacterEditorTokenize();
         updateFeatureSupportFlags();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
+
+        if (oai_settings.chat_completion_source === chat_completion_sources.DEEPSEEK) {
+            updateDeepSeekCacheDiagnosticsUI();
+        } else {
+            dsLastSentMessages = [];
+            $('#deepseek_cache_diagnostics').hide();
+        }
     });
 
     $('#oai_max_context_unlocked').on('input', function (_e, data) {
