@@ -293,9 +293,9 @@ export class ReasoningHandler {
         this.reasoning = '';
         /** @type {string?} The reasoning output display in case of translate or other */
         this.reasoningDisplayText = null;
-        /** @type {Date} When the reasoning started */
+        /** @type {Date|null} When the reasoning started */
         this.startTime = null;
-        /** @type {Date} When the reasoning ended */
+        /** @type {Date|null} When the reasoning ended */
         this.endTime = null;
 
         /** @type {Date} Initial starting time of the generation */
@@ -304,13 +304,13 @@ export class ReasoningHandler {
         this.#isHiddenReasoningModel = isHiddenReasoningModel();
 
         // Cached DOM elements for reasoning
-        /** @type {HTMLElement} Main message DOM element `.mes` */
+        /** @type {HTMLElement?} Main message DOM element `.mes` */
         this.messageDom = null;
-        /** @type {HTMLDetailsElement} Reasoning details DOM element `.mes_reasoning_details` */
+        /** @type {HTMLDetailsElement?} Reasoning details DOM element `.mes_reasoning_details` */
         this.messageReasoningDetailsDom = null;
-        /** @type {HTMLElement} Reasoning content DOM element `.mes_reasoning` */
+        /** @type {HTMLElement?} Reasoning content DOM element `.mes_reasoning` */
         this.messageReasoningContentDom = null;
-        /** @type {HTMLElement} Reasoning header DOM element `.mes_reasoning_header_title` */
+        /** @type {HTMLElement?} Reasoning header DOM element `.mes_reasoning_header_title` */
         this.messageReasoningHeaderDom = null;
     }
 
@@ -319,8 +319,15 @@ export class ReasoningHandler {
      * @param {PromptReasoning} promptReasoning Prompt reasoning object
      */
     initContinue(promptReasoning) {
-        this.reasoning = promptReasoning.prefixReasoning;
         this.state = promptReasoning.prefixIncomplete ? ReasoningState.None : ReasoningState.Done;
+        if (this.state == ReasoningState.Done) {
+            this.reasoning = promptReasoning.prefixReasoningFormatted;
+            this.type = ReasoningType.Parsed;
+            this.#parsingReasoningMesStartIndex = this.reasoning.length;
+            promptReasoning.prefixIncomplete = true;
+        } else {
+            this.reasoning = promptReasoning.prefixReasoning;
+        }
         this.startTime = this.initialTime;
         this.endTime = promptReasoning.prefixDuration ? new Date(this.initialTime.getTime() + promptReasoning.prefixDuration) : null;
     }
@@ -392,7 +399,7 @@ export class ReasoningHandler {
     /**
      * Gets the duration of the reasoning in milliseconds.
      *
-     * @returns {number?} The duration in milliseconds, or null if the start or end time is not set
+     * @returns {number|null} The duration in milliseconds, or null if the start or end time is not set
      */
     getDuration() {
         if (this.startTime && this.endTime) {
@@ -416,19 +423,21 @@ export class ReasoningHandler {
             return false;
         }
 
-        reasoning = allowReset ? reasoning ?? this.reasoning : reasoning || this.reasoning;
-        reasoning = trimSpaces(reasoning);
-
         // Ensure the chat extra exists
         if (!chat[messageId].extra) {
             chat[messageId].extra = {};
         }
         const extra = chat[messageId].extra;
 
+        reasoning = allowReset ? reasoning ?? this.reasoning : reasoning || this.reasoning;
         const reasoningChanged = extra.reasoning !== reasoning;
-        this.reasoning = getRegexedString(reasoning ?? '', regex_placement.REASONING);
 
-        this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : ReasoningType.Model;
+        this.reasoning = getRegexedString(trimSpaces(reasoning) ?? '', regex_placement.REASONING);
+
+        this.type = (this.#isParsingReasoning || this.#parsingReasoningMesStartIndex) ? ReasoningType.Parsed : reasoning ? ReasoningType.Model : null;
+
+        if (reasoningChanged && this.type == ReasoningType.Model && this.state == ReasoningState.None)
+            this.state = this.reasoning ? ReasoningState.Thinking : ReasoningState.Done;
 
         if (persist) {
             // Build and save the reasoning data to message extras
@@ -478,16 +487,19 @@ export class ReasoningHandler {
      * @returns {boolean} Whether the message has changed after reasoning parsing
      */
     #autoParseReasoningFromMessage(messageId, mesChanged, promptReasoning) {
-        if (!power_user.reasoning.auto_parse)
-            return;
-        if (!power_user.reasoning.prefix || !power_user.reasoning.suffix)
+        if (!power_user.reasoning.auto_parse || !power_user.reasoning.prefix || !power_user.reasoning.suffix)
             return mesChanged;
+
+        // If we already have native model reasoning, don't auto-parse reconstructed text
+        if (this.type === ReasoningType.Model && this.state !== ReasoningState.None) {
+            return mesChanged;
+        }
 
         /** @type {ChatMessage} */
         const message = chat[messageId];
         if (!message) return mesChanged;
 
-        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes;
+        const parseTarget = promptReasoning?.prefixIncomplete ? (promptReasoning.prefixReasoningFormatted + message.mes) : message.mes ?? '';
 
         // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
         if (this.#parsingReasoningMesStartIndex) {
@@ -1456,7 +1468,7 @@ export function getReasoningTemplateByName(name) {
  * @param {Object} options Optional arguments
  * @param {boolean} [options.strict=true] Whether the reasoning block **has** to be at the beginning of the provided string (excluding whitespaces), or can be anywhere in it
  * @param {ReasoningTemplate} template Optional reasoning template to use instead of power_user.reasoning
- * @returns {ParsedReasoning|null} Parsed reasoning block and message content
+ * @returns {ParsedReasoning|null} Parsed reasoning block and message content, or null if no reasoning block was found
  */
 export function parseReasoningFromString(str, { strict = true } = {}, template = null) {
     template = template ?? power_user.reasoning;  // if no template given, use the currently selected template
@@ -1477,10 +1489,12 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
             return '';
         });
 
-        if (didReplace) {
-            reasoning = trimSpaces(reasoning);
-            content = trimSpaces(content);
+        if (!didReplace) {
+            return null;
         }
+
+        reasoning = trimSpaces(reasoning);
+        content = trimSpaces(content);
 
         return { reasoning, content };
     } catch (error) {
