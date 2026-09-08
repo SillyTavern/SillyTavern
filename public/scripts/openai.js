@@ -2833,8 +2833,12 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
+    // Add registered tools if this generation allows it
     if (!canMultiSwipe && ToolManager.canPerformToolCalls(type, settings, model)) {
         await ToolManager.registerFunctionToolsOpenAI(generate_data);
+    } else {  // otherwise, add any manual tools added (currently can be done by ConnectionManagerRequestService, which always uses quite prompts)
+        generate_data.tools =  settings.tools;
+        generate_data.tool_choice = settings.tool_choice ?? 'auto';
     }
 
     // Empty array will produce a validation error

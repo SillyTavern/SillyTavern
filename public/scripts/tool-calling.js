@@ -112,7 +112,7 @@ function stringify(obj) {
 /**
  * A class that represents a tool definition.
  */
-class ToolDefinition {
+export class ToolDefinition {
     /**
      * A unique name for the tool.
      * @type {string}
@@ -320,16 +320,18 @@ export class ToolManager {
      * Invokes a tool by name. Returns the result of the tool's action function.
      * @param {string} name The name of the tool to invoke.
      * @param {object} parameters Function parameters. For example, if the tool requires a "name" parameter, you would pass {name: "value"}.
+     * @param {Map} tools Optional custom map of tools. Uses registered tools if null.
      * @returns {Promise<string|Error>} The result of the tool's action function. If an error occurs, null is returned. Non-string results are JSON-stringified.
      */
-    static async invokeFunctionTool(name, parameters) {
+    static async invokeFunctionTool(name, parameters, tools = null) {
+        tools = tools ?? this.#tools;
         try {
-            if (!this.#tools.has(name)) {
+            if (!tools.has(name)) {
                 throw new Error(`No tool with the name "${name}" has been registered.`);
             }
 
             const invokeParameters = this.#parseParameters(parameters);
-            const tool = this.#tools.get(name);
+            const tool = tools.get(name);
             const result = await tool.invoke(invokeParameters);
             return typeof result === 'string' ? result : JSON.stringify(result);
         } catch (error) {
@@ -347,14 +349,16 @@ export class ToolManager {
     /**
      * Checks if a tool is a stealth tool.
      * @param {string} name The name of the tool to check.
+     * @param {Map} tools Optional custom map of tools. Uses registered tools if null.
      * @returns {boolean} Whether the tool is a stealth tool.
      */
-    static isStealthTool(name) {
-        if (!this.#tools.has(name)) {
+    static isStealthTool(name, tools = null) {
+        tools = tools ?? this.#tools;
+        if (!tools.has(name)) {
             return false;
         }
 
-        const tool = this.#tools.get(name);
+        const tool = tools.get(name);
         return !!tool.stealth;
     }
 
@@ -362,15 +366,17 @@ export class ToolManager {
      * Formats a message for a tool call by name.
      * @param {string} name The name of the tool to format the message for.
      * @param {object} parameters Function tool call parameters.
+     * @param {Map} tools Optional custom map of tools. Uses registered tools if null.
      * @returns {Promise<string>} The formatted message for the tool call.
      */
-    static async formatToolCallMessage(name, parameters) {
-        if (!this.#tools.has(name)) {
+    static async formatToolCallMessage(name, parameters, tools = null) {
+        tools = tools ?? this.#tools;
+        if (!tools.has(name)) {
             return `Invoked unknown tool: ${name}`;
         }
 
         try {
-            const tool = this.#tools.get(name);
+            const tool = tools.get(name);
             const formatParameters = this.#parseParameters(parameters);
             return await tool.formatMessage(formatParameters);
         } catch (error) {
@@ -382,25 +388,29 @@ export class ToolManager {
     /**
      * Gets the display name of a tool by name.
      * @param {string} name
+     * @param {Map} tools Optional custom map of tools. Uses registered tools if null.
      * @returns {string} The display name of the tool.
      */
-    static getDisplayName(name) {
-        if (!this.#tools.has(name)) {
+    static getDisplayName(name, tools = null) {
+        tools = tools ?? this.#tools;
+        if (!tools.has(name)) {
             return name;
         }
 
-        const tool = this.#tools.get(name);
+        const tool = tools.get(name);
         return tool.displayName || name;
     }
 
     /**
      * Register function tools for the next chat completion request.
      * @param {object} data Generation data
+     * @param {Map} tool_map Optional custom map of tools. Uses registered tools if null.
      */
-    static async registerFunctionToolsOpenAI(data) {
+    static async registerFunctionToolsOpenAI(data, tool_map = null) {
+        const toolArray = (tool_map === null) ? ToolManager.tools : Array.from(tool_map.values());
         const tools = [];
 
-        for (const tool of ToolManager.tools) {
+        for (const tool of toolArray) {
             const register = await tool.shouldRegister();
             if (!register) {
                 console.log('[ToolManager] Skipping tool registration:', tool);
@@ -410,8 +420,7 @@ export class ToolManager {
         }
 
         if (tools.length) {
-            console.log('[ToolManager] Registered function tools:', tools);
-
+            console.log('[ToolManager] Added function tools to request:', tools);
             data.tools = tools;
             data.tool_choice = 'auto';
         }
@@ -609,13 +618,15 @@ export class ToolManager {
      * Checks if tool calling is supported for the current settings and generation type.
      * @param {ChatCompletionSettings} settings Optional chat completion settings
      * @param {string} model Optional model name
+     * @param {string} api The api being checked, defaults to main_api
      * @returns {boolean} Whether tool calling is supported for the given type
      */
-    static isToolCallingSupported(settings = null, model = null) {
+    static isToolCallingSupported(settings = null, model = null, api = null) {
         settings = settings ?? oai_settings;
         model = model ?? getChatCompletionModel(settings);
+        api = api ?? main_api;
 
-        if (main_api !== 'openai' || !settings.function_calling) {
+        if (api !== 'openai' || !settings.function_calling) {
             return false;
         }
 
@@ -775,9 +786,12 @@ export class ToolManager {
     /**
      * Check for function tool calls in the response data and invoke them.
      * @param {any} data Reply data
+     * @param {Map} tools Optional custom map of tools. Uses registed tools if null.
      * @returns {Promise<ToolInvocationResult>} Successful tool invocations
      */
-    static async invokeFunctionTools(data, { reasoningText = null } = {}) {
+    static async invokeFunctionTools(data, { reasoningText = null } = {}, tools = null) {
+        if (tools === null) tools = this.#tools;
+
         /** @type {ToolInvocationResult} */
         const result = {
             invocations: [],
@@ -799,12 +813,12 @@ export class ToolManager {
             const id = toolCall.id;
             const parameters = toolCall.function.arguments;
             const name = toolCall.function.name;
-            const displayName = ToolManager.getDisplayName(name);
-            const isStealth = ToolManager.isStealthTool(name);
-            const message = await ToolManager.formatToolCallMessage(name, parameters);
+            const displayName = ToolManager.getDisplayName(name, tools);
+            const isStealth = ToolManager.isStealthTool(name, tools);
+            const message = await ToolManager.formatToolCallMessage(name, parameters, tools);
             const toast = message && toastr.info(message, 'Tool Calling', { timeOut: 0 });
-            const toolResult = await ToolManager.invokeFunctionTool(name, parameters);
-            toastr.clear(toast);
+            const toolResult = await ToolManager.invokeFunctionTool(name, parameters, tools);
+            if (toast) toastr.clear(toast);
             console.log('[ToolManager] Function tool result:', result);
 
             // Handle tool errors — still create an invocation so the LLM sees the failure
