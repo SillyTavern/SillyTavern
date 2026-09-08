@@ -345,6 +345,7 @@ export const settingsToUpdate = {
     pollinations_endpoint: ['#pollinations_endpoint', 'pollinations_endpoint', false, true],
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
+    fireworks_priority: ['#fireworks_priority', 'fireworks_priority', true, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
@@ -463,6 +464,7 @@ const default_settings = {
     cometapi_model: 'gpt-4o',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
+    fireworks_priority: false,
     zai_model: 'glm-4.6',
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -2894,8 +2896,11 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.nanogpt_payg_override = settings.nanogpt_payg_override;
     }
 
-    if (settings.chat_completion_source === chat_completion_sources.FIREWORKS && type !== 'quiet') {
-        generate_data.chat_id = getCurrentChatId();
+    if (settings.chat_completion_source === chat_completion_sources.FIREWORKS) {
+        if (type !== 'quiet') {
+            generate_data.chat_id = getCurrentChatId();
+        }
+        generate_data.fireworks_priority = settings.fireworks_priority;
     }
 
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(settings.chat_completion_source)) {
@@ -7280,6 +7285,11 @@ export function initOpenAI() {
 
     $('#nanogpt_payg_override').on('input', function () {
         oai_settings.nanogpt_payg_override = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#fireworks_priority').on('input', function () {
+        oai_settings.fireworks_priority = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
