@@ -3,15 +3,15 @@
 import { DOMPurify } from '../lib.js';
 
 import { event_types, eventSource, is_send_press, main_api, substituteParams } from '../script.js';
-import { is_group_generating } from './group-chats.js';
-import { Message, MessageCollection, TokenHandler } from './openai.js';
-import { power_user } from './power-user.js';
-import { debounce, waitUntilCondition, escapeHtml, uuidv4 } from './utils.js';
 import { debounce_timeout } from './constants.js';
-import { renderTemplateAsync } from './templates.js';
-import { Popup } from './popup.js';
+import { is_group_generating } from './group-chats.js';
 import { t } from './i18n.js';
+import { Message, MessageCollection, TokenHandler } from './openai.js';
+import { Popup } from './popup.js';
+import { power_user } from './power-user.js';
 import { isMobile } from './RossAscends-mods.js';
+import { renderTemplateAsync } from './templates.js';
+import { debounce, escapeHtml, uuidv4, waitUntilCondition } from './utils.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -196,6 +196,41 @@ class Prompt {
 }
 
 /**
+ * @typedef {Object} PromptFolder
+ * @property {string} identifier
+ * @property {string} name
+ * @property {boolean} enabled
+ * @property {boolean} expanded
+ * @property {string[]} prompts
+ */
+
+/**
+ * @typedef {Object} PromptOrder
+ * @property {number} character_id
+ * @property {PromptOrderEntry[]} order
+ */
+
+/**
+ * @typedef {Object} PromptOrderEntry
+ * @property {string} identifier
+ * @property {boolean} enabled
+ */
+
+/**
+ * @typedef {Object} ServiceSettingsDetermined
+ * @property {number} openai_max_context
+ * @property {number} openai_max_tokens
+ * TODO: should not use Partial
+ * @property {Partial<Prompt>[]} prompts
+ * @property {PromptFolder[]} prompt_folders
+ * @property {PromptOrder[]} prompt_order
+ */
+
+/**
+ * @typedef {Record<string, any> & ServiceSettingsDetermined} ServiceSettings
+ */
+
+/**
  * Representing a collection of prompts.
  */
 export class PromptCollection {
@@ -346,7 +381,10 @@ class PromptManager {
             },
         };
 
-        // Chatcompletion configuration object
+        /**
+         * Chatcompletion configuration object
+         * @type {ServiceSettings|null}
+         */
         this.serviceSettings = null;
 
         // DOM element containing the prompt manager
@@ -432,7 +470,7 @@ class PromptManager {
     init(moduleConfiguration, serviceSettings) {
         this.configuration = Object.assign(this.configuration, moduleConfiguration);
         this.tokenHandler = this.tokenHandler || new TokenHandler(() => { throw new Error('Token handler not set'); });
-        this.serviceSettings = serviceSettings;
+        this.serviceSettings = /** @type {ServiceSettings} */(serviceSettings);
         this.containerElement = document.getElementById(this.configuration.containerIdentifier);
 
         if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = { id: this.configuration.promptOrder.dummyId };
@@ -791,7 +829,7 @@ class PromptManager {
         // Trigger re-render when token settings are changed
         document.getElementById('openai_max_context').addEventListener('change', (event) => {
             if (!(event.target instanceof HTMLInputElement)) return;
-            this.serviceSettings.openai_max_context = event.target.value;
+            this.serviceSettings.openai_max_context = Number(event.target.value);
             if (this.activeCharacter) this.renderDebounced();
         });
 
@@ -1255,7 +1293,7 @@ class PromptManager {
      * @returns {Prompt|null} The prompt object, or null if not found
      */
     getPromptById(identifier) {
-        return this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null;
+        return /** @type {Prompt|null} */(this.serviceSettings.prompts.find(item => item && item.identifier === identifier) ?? null);
     }
 
     /**
@@ -1265,6 +1303,33 @@ class PromptManager {
      */
     getPromptIndexById(identifier) {
         return this.serviceSettings.prompts.findIndex(item => item.identifier === identifier) ?? null;
+    }
+
+    /**
+     * Finds and returns a folder by its identifier.
+     * @param {string} identifier - Identifier of the folder
+     * @returns {PromptFolder|null} The folder object, or null if not found
+     */
+    getPromptFolderById(identifier) {
+        return this.serviceSettings.prompt_folders.find(item => item.identifier === identifier) ?? null;
+    }
+
+    /**
+     * Finds and returns the index of a prompt folder by its identifier.
+     * @param {string} identifier - Identifier of the prompt folder
+     * @returns {number|null} Index of the prompt, or null if not found
+     */
+    getPromptFolderIndexById(identifier) {
+        return this.serviceSettings.prompt_folders.findIndex(item => item.identifier === identifier) ?? null;
+    }
+
+    /**
+     * Find and returns a folder by a prompt it may contain
+     * @param {string} identifier - Identifier of the prompt folder
+     * @returns {PromptFolder|null} The folder object, or null if not found
+     */
+    getPromptFolderByPromptId(identifier) {
+        return this.serviceSettings.prompt_folders.find(folder => folder.prompts.includes(identifier)) ?? null;
     }
 
     /**
@@ -1637,9 +1702,10 @@ class PromptManager {
             rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
 
             const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
-            footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
+            footerDiv.querySelector('.menu_button.fa-file-import').addEventListener('click', this.handleAppendPrompt);
             footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
-            footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
+            footerDiv.querySelector('.menu_button.fa-folder-plus').addEventListener('click', this.handleNewFolder);
+            footerDiv.querySelector('.menu_button.fa-plus-square').addEventListener('click', this.handleNewPrompt);
             footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
@@ -1661,83 +1727,92 @@ class PromptManager {
 
         let listItemHtml = await renderTemplateAsync('promptManagerListHeader', { prefix });
 
-        this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
-            if (!prompt) return;
+        const renderItem = (order, listClass = 'li') => {
+          const prompt = this.getPromptById(order.identifier);
 
-            const listEntry = this.getPromptOrderEntry(this.activeCharacter, prompt.identifier);
-            const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
-            const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
-            const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
-            const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
+          const enabledClass = order.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
+          const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
+          const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
+          const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
-            // Warn the user if the chat history goes below certain token thresholds.
-            let warningClass = '';
-            let warningTitle = '';
+          // Warn the user if the chat history goes below certain token thresholds.
+          let warningClass = '';
+          let warningTitle = '';
 
-            const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
-            if (this.tokenUsage > tokenBudget * 0.8 &&
-                'chatHistory' === prompt.identifier) {
-                const warningThreshold = this.configuration.warningTokenThreshold;
-                const dangerThreshold = this.configuration.dangerTokenThreshold;
+          const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
+          if (this.tokenUsage > tokenBudget * 0.8 && 'chatHistory' === prompt.identifier) {
+            const warningThreshold = this.configuration.warningTokenThreshold;
+            const dangerThreshold = this.configuration.dangerTokenThreshold;
 
-                if (tokens <= dangerThreshold) {
-                    warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
-                    warningTitle = 'Very little of your chat history is being sent, consider deactivating some other prompts.';
-                } else if (tokens <= warningThreshold) {
-                    warningClass = 'fa-solid tooltip fa-triangle-exclamation text_warning';
-                    warningTitle = 'Only a few messages worth chat history are being sent.';
-                }
+            if (tokens <= dangerThreshold) {
+              warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
+              warningTitle =
+                'Very little of your chat history is being sent, consider deactivating some other prompts.';
+            } else if (tokens <= warningThreshold) {
+              warningClass = 'fa-solid tooltip fa-triangle-exclamation text_warning';
+              warningTitle = 'Only a few messages worth chat history are being sent.';
             }
+          }
 
-            const calculatedTokens = tokens ? tokens : '-';
+          const calculatedTokens = tokens ? tokens : '-';
 
-            let detachSpanHtml = '';
-            if (this.isPromptDeletionAllowed(prompt)) {
-                detachSpanHtml = `
+          let detachSpanHtml = '';
+          if (this.isPromptDeletionAllowed(prompt)) {
+            detachSpanHtml = `
                     <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken fa-xs"></span>
                 `;
-            } else {
-                detachSpanHtml = '<span class="fa-solid"></span>';
-            }
+          } else {
+            detachSpanHtml = '<span class="fa-solid"></span>';
+          }
 
-            let editSpanHtml = '';
-            if (this.isPromptEditAllowed(prompt)) {
-                editSpanHtml = `
+          let editSpanHtml = '';
+          if (this.isPromptEditAllowed(prompt)) {
+            editSpanHtml = `
                     <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil fa-xs"></span>
                 `;
-            } else {
-                editSpanHtml = '<span class="fa-solid"></span>';
-            }
+          } else {
+            editSpanHtml = '<span class="fa-solid"></span>';
+          }
 
-            let toggleSpanHtml = '';
-            if (this.isPromptToggleAllowed(prompt)) {
-                toggleSpanHtml = `
-                    <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
+          let toggleSpanHtml = '';
+          if (this.isPromptToggleAllowed(prompt)) {
+            toggleSpanHtml = `
+                    <span class="prompt-manager-toggle-action ${order.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
                 `;
-            } else {
-                toggleSpanHtml = '<span class="fa-solid"></span>';
-            }
+          } else {
+            toggleSpanHtml = '<span class="fa-solid"></span>';
+          }
 
-            const encodedName = escapeHtml(prompt.name);
-            const isMarkerPrompt = prompt.marker && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
-            const isSystemPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE && !prompt.forbid_overrides;
-            const isImportantPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE && prompt.forbid_overrides;
-            const isUserPrompt = !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
-            const isInjectionPrompt = prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
-            const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
-            const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
-            const iconLookup = prompt.role === 'system' && (prompt.marker || prompt.system_prompt) ? '' : prompt.role;
+          const encodedName = escapeHtml(prompt.name);
+          const isMarkerPrompt = prompt.marker && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
+          const isSystemPrompt =
+            !prompt.marker &&
+            prompt.system_prompt &&
+            prompt.injection_position !== INJECTION_POSITION.ABSOLUTE &&
+            !prompt.forbid_overrides;
+          const isImportantPrompt =
+            !prompt.marker &&
+            prompt.system_prompt &&
+            prompt.injection_position !== INJECTION_POSITION.ABSOLUTE &&
+            prompt.forbid_overrides;
+          const isUserPrompt =
+            !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
+          const isInjectionPrompt = prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
+          const isOverriddenPrompt =
+            Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
+          const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
+          const iconLookup = prompt.role === 'system' && (prompt.marker || prompt.system_prompt) ? '' : prompt.role;
 
-            //add role icons to the right of prompt name
-            const promptRoles = {
-                assistant: { roleIcon: 'fa-robot', roleTitle: 'Prompt will be sent as Assistant' },
-                user: { roleIcon: 'fa-user', roleTitle: 'Prompt will be sent as User' },
-            };
-            const roleIcon = promptRoles[iconLookup]?.roleIcon || '';
-            const roleTitle = promptRoles[iconLookup]?.roleTitle || '';
+          //add role icons to the right of prompt name
+          const promptRoles = {
+            assistant: { roleIcon: 'fa-robot', roleTitle: 'Prompt will be sent as Assistant' },
+            user: { roleIcon: 'fa-user', roleTitle: 'Prompt will be sent as User' },
+          };
+          const roleIcon = promptRoles[iconLookup]?.roleIcon || '';
+          const roleTitle = promptRoles[iconLookup]?.roleTitle || '';
 
-            listItemHtml += `
-                <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${escapeHtml(prompt.identifier)}">
+          return `
+                <${listClass} class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" type="prompt" data-pm-identifier="${escapeHtml(prompt.identifier)}">
                     <span class="drag-handle">☰</span>
                     <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                         ${isMarkerPrompt ? '<span class="fa-fw fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
@@ -1759,8 +1834,42 @@ class PromptManager {
                     </span>
 
                     <span class="prompt_manager_prompt_tokens" data-pm-tokens="${calculatedTokens}"><span class="${warningClass}" title="${warningTitle}"> </span>${calculatedTokens}</span>
+                </${listClass}>
+            `;
+        };
+
+        const renderFolder = order => {
+          const encodedName = escapeHtml(order.name);
+
+          const enabledClass = order.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
+          const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
+
+          return `
+                <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${order.expanded ? 'expanded' : ''}" type="folder" data-pm-identifier="${escapeHtml(order.identifier)}">
+                    <span class="drag-handle">☰</span>
+                    <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
+                        <span class="fa-fw fa-solid fa-folder" title="Folder"></span>
+                        <span title="${encodedName}">${encodedName}</span>
+                    </span>
+                    <span>
+                        <span class="prompt_manager_prompt_controls">
+                            <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken fa-xs"></span>
+                            <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil fa-xs"></span>
+                            <span class="prompt-manager-toggle-action ${order.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
+                        </span>
+                    </span>
+                    <span title="expand" class="prompt-manager-expand-action fa-fw fa-solid ${order.expanded ? 'fa-chevron-up' : 'fa-chevron-down'}"></span>
+
+                    <div class="${prefix}prompt_manager_prompt_items">
+                        ${order.items.map(item => renderItem(item, 'ul')).join('')}
+                    </div>
                 </li>
             `;
+        };
+
+        this.getPromptOrderTreeForCharacter(this.activeCharacter).forEach(order => {
+          if (!order) return;
+          listItemHtml += isPromptOrderFolder(order) ? renderFolder(order) : renderItem(order);
         });
 
         promptManagerList.insertAdjacentHTML('beforeend', listItemHtml);
@@ -2080,6 +2189,10 @@ const chatCompletionDefaultPrompts = {
     ],
 };
 
+const promptManagerDefaultPromptFolders = {
+    'prompt_folder': [],
+}
+
 const promptManagerDefaultPromptOrders = {
     'prompt_order': [],
 };
@@ -2136,9 +2249,7 @@ const promptManagerDefaultPromptOrder = [
 ];
 
 export {
-    PromptManager,
-    registerPromptManagerMigration,
-    chatCompletionDefaultPrompts,
-    promptManagerDefaultPromptOrders,
-    Prompt,
+    chatCompletionDefaultPrompts, Prompt, PromptManager, promptManagerDefaultPromptFolders,
+    promptManagerDefaultPromptOrders, registerPromptManagerMigration
 };
+
