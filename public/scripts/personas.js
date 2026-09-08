@@ -50,6 +50,8 @@ import {
     resolveAvatarData,
     findPersona,
     escapeHtml,
+    decodeJxlToDataUrl,
+    isJxlFile,
 } from './utils.js';
 import { debounce_timeout } from './constants.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -399,7 +401,7 @@ async function changeUserAvatar(e) {
     }
 
     const formData = new FormData(form);
-    const dataUrl = await getBase64Async(file);
+    const dataUrl = isJxlFile(file) ? await decodeJxlToDataUrl(file) : await getBase64Async(file);
     let url = '/api/avatars/upload';
 
     if (!power_user.never_resize_avatars) {

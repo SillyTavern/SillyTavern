@@ -235,6 +235,11 @@ app.get('/callback/:source?', (request, response) => {
 // Host login page
 app.get('/login', loginPageMiddleware);
 
+// Serve JXL decoder WASM for client-side image decoding
+app.get('/lib/jxl/jxl_dec.wasm', (_req, res) => {
+    res.sendFile(path.join(serverDirectory, 'node_modules/@jsquash/jxl/codec/dec/jxl_dec.wasm'));
+});
+
 // Host frontend assets
 const webpackMiddleware = getWebpackServeMiddleware();
 app.use(webpackMiddleware);
