@@ -1,7 +1,7 @@
 {
     "input_sequence": "<|turn>user\n",
     "output_sequence": "<|turn>model\n",
-    "last_output_sequence": "<|turn>model\n<|channel>thought\n<channel|>",
+    "last_output_sequence": "<|turn>model\n",
     "system_sequence": "<|turn>system\n",
     "stop_sequence": "<turn|>",
     "wrap": false,
@@ -21,5 +21,5 @@
     "sequences_as_stop_strings": true,
     "story_string_prefix": "<|turn>system\n",
     "story_string_suffix": "<turn|>\n",
-    "name": "Gemma 4"
+    "name": "Gemma 4 No-Think"
 }
