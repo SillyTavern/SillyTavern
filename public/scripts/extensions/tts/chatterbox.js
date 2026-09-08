@@ -24,6 +24,7 @@ class ChatterboxTtsProvider {
             split_text: this.settings.split_text || true,
             chunk_size: this.settings.chunk_size || 120,
             output_format: this.settings.output_format || 'wav',
+            streaming: this.settings.streaming || false,
             voiceMap: this.settings.voiceMap || {},
         };
     }
@@ -32,6 +33,15 @@ class ChatterboxTtsProvider {
     voices = [];
     separator = '. ';
     audioElement = document.createElement('audio');
+    audioContext = null;
+    audioWorkletNode = null;
+    scriptNode = null;
+    useWorklet = false;
+    sampleChunks = [];
+    chunkPos = 0;
+    pendingBytes = new Uint8Array(0);
+    currentVolume = 1.0;
+    abortController = null;
 
     languageLabels = {
         'English': 'en',
@@ -132,6 +142,14 @@ class ChatterboxTtsProvider {
                 <option value="wav" ${this.settings.output_format === 'wav' ? 'selected' : ''}>WAV</option>
                 <option value="opus" ${this.settings.output_format === 'opus' ? 'selected' : ''}>Opus</option>
             </select>
+        </div>`;
+
+        // Streaming
+        html += `<div class="chatterbox-setting-row">
+            <label class="checkbox_label">
+                <input type="checkbox" id="chatterbox-streaming" ${this.settings.streaming ? 'checked' : ''} />
+                Streaming <small>(plays audio as it is generated; always WAV. Requires server v2.0.0+)</small>
+            </label>
         </div>`;
 
         html += '</div>'; // End params section
@@ -260,6 +278,7 @@ class ChatterboxTtsProvider {
         $('#chatterbox-split-text').prop('checked', this.settings.split_text);
         $('#chatterbox-chunk-size').val(this.settings.chunk_size);
         $('#chatterbox-format').val(this.settings.output_format);
+        $('#chatterbox-streaming').prop('checked', this.settings.streaming);
 
         // Show/hide chunk size based on split text
         if (this.settings.split_text) {
@@ -422,6 +441,12 @@ class ChatterboxTtsProvider {
             this.settings.output_format = e.target.value;
             this.onSettingsChange();
         });
+
+        // Streaming
+        $('#chatterbox-streaming').on('change', (e) => {
+            this.settings.streaming = e.target.checked;
+            this.onSettingsChange();
+        });
     }
 
     //#############################//
@@ -484,7 +509,8 @@ class ChatterboxTtsProvider {
                 speed_factor: this.settings.speed_factor,
                 language: this.settings.language,
                 split_text: false, // Don't split for preview
-                output_format: this.settings.output_format,
+                output_format: this.settings.streaming ? 'wav' : this.settings.output_format,
+                stream: this.settings.streaming,
             };
 
             // Add voice-specific parameters
@@ -494,16 +520,26 @@ class ChatterboxTtsProvider {
                 requestBody.predefined_voice_id = actualVoiceId;
             }
 
+            this.abortController = new AbortController();
+
             const response = await fetch(`${this.settings.provider_endpoint}/tts`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestBody),
+                signal: this.abortController.signal,
             });
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // Stream the preview in real-time when streaming is enabled
+            if (this.settings.streaming) {
+                await this.processStreamingAudio(response);
+                this.updateStatus('Ready');
+                return;
             }
 
             // Get the audio blob and play it
@@ -518,9 +554,15 @@ class ChatterboxTtsProvider {
 
             await audio.play();
         } catch (error) {
-            console.error('Error previewing voice:', error);
             this.updateStatus('Ready');
+            if (error?.name === 'AbortError') {
+                console.info('Chatterbox TTS preview cancelled.');
+                return;
+            }
+            console.error('Error previewing voice:', error);
             throw error;
+        } finally {
+            this.abortController = null;
         }
     }
 
@@ -594,7 +636,9 @@ class ChatterboxTtsProvider {
                 language: this.settings.language,
                 split_text: this.settings.split_text,
                 chunk_size: this.settings.chunk_size,
-                output_format: this.settings.output_format,
+                // The server ignores output_format when streaming (always WAV).
+                output_format: this.settings.streaming ? 'wav' : this.settings.output_format,
+                stream: this.settings.streaming,
             };
 
             // Add voice-specific parameters
@@ -606,6 +650,10 @@ class ChatterboxTtsProvider {
 
             console.log('Generating TTS with params:', requestBody);
 
+            // Track this request so it can be cancelled via stop() (e.g. the TTS stop button).
+            // Aborting disconnects the HTTP stream, which cancels server-side generation.
+            this.abortController = new AbortController();
+
             const response = await fetch(`${this.settings.provider_endpoint}/tts`, {
                 method: 'POST',
                 headers: {
@@ -613,6 +661,7 @@ class ChatterboxTtsProvider {
                     'Cache-Control': 'no-cache',
                 },
                 body: JSON.stringify(requestBody),
+                signal: this.abortController.signal,
             });
 
             if (!response.ok) {
@@ -621,14 +670,236 @@ class ChatterboxTtsProvider {
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
 
+            // When streaming, play the audio in real-time via the AudioWorklet and
+            // return an empty string so the framework skips its own playback queue.
+            if (this.settings.streaming) {
+                await this.processStreamingAudio(response);
+                this.updateStatus('Ready');
+                return '';
+            }
+
             this.updateStatus('Ready');
 
             // Return the response directly - SillyTavern expects a Response object
             return response;
         } catch (error) {
-            console.error('Error in generateTts:', error);
             this.updateStatus('Ready');
+            // A user-initiated stop aborts the request; treat it as a clean cancellation.
+            if (error?.name === 'AbortError') {
+                console.info('Chatterbox TTS generation cancelled.');
+                return '';
+            }
+            console.error('Error in generateTts:', error);
             throw error;
+        } finally {
+            this.abortController = null;
+        }
+    }
+
+    //######################//
+    // Streaming Playback   //
+    //######################//
+
+    async initStreamingPlayer(sampleRate) {
+        // Tear down any previous streaming session to avoid leaking AudioContexts
+        this.teardownStreamingPlayer();
+
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate });
+
+        // AudioWorklet is only available in secure contexts (HTTPS / localhost).
+        // When SillyTavern is served over plain HTTP (e.g. a LAN IP), it is
+        // undefined, so we fall back to a ScriptProcessorNode which works there.
+        if (this.audioContext.audioWorklet) {
+            try {
+                const processorUrl = './scripts/extensions/tts/lib/pcm-processor.js';
+                await this.audioContext.audioWorklet.addModule(processorUrl);
+                this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'pcm-processor');
+                this.audioWorkletNode.connect(this.audioContext.destination);
+                this.audioWorkletNode.port.postMessage({ volume: this.currentVolume });
+                this.useWorklet = true;
+                return;
+            } catch (error) {
+                console.warn('Chatterbox: AudioWorklet init failed, falling back to ScriptProcessorNode:', error);
+                this.audioWorkletNode = null;
+            }
+        } else {
+            console.warn('Chatterbox: AudioWorklet unavailable (insecure context). Using ScriptProcessorNode fallback for streaming.');
+        }
+
+        this.useWorklet = false;
+        this.initScriptProcessor();
+    }
+
+    initScriptProcessor() {
+        // Queue of decoded Float32 sample chunks awaiting playback
+        this.sampleChunks = [];
+        this.chunkPos = 0;
+        this.pendingBytes = new Uint8Array(0);
+
+        const bufferSize = 4096;
+        this.scriptNode = this.audioContext.createScriptProcessor(bufferSize, 0, 1);
+        this.scriptNode.onaudioprocess = (event) => {
+            const output = event.outputBuffer.getChannelData(0);
+            for (let i = 0; i < output.length; i++) {
+                // Drop fully-consumed chunks
+                while (this.sampleChunks.length > 0 && this.chunkPos >= this.sampleChunks[0].length) {
+                    this.sampleChunks.shift();
+                    this.chunkPos = 0;
+                }
+                if (this.sampleChunks.length > 0) {
+                    output[i] = this.sampleChunks[0][this.chunkPos++] * this.currentVolume;
+                } else {
+                    output[i] = 0;
+                }
+            }
+        };
+        this.scriptNode.connect(this.audioContext.destination);
+    }
+
+    pushPcm(bytes) {
+        if (this.useWorklet) {
+            this.audioWorkletNode.port.postMessage({ pcmData: bytes });
+            return;
+        }
+
+        // ScriptProcessor fallback: decode 16-bit PCM to Float32 on the main thread.
+        const newData = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        const combined = new Uint8Array(this.pendingBytes.length + newData.length);
+        combined.set(this.pendingBytes);
+        combined.set(newData, this.pendingBytes.length);
+
+        const completeSamples = Math.floor(combined.length / 2);
+        const bytesToProcess = completeSamples * 2;
+
+        if (completeSamples > 0) {
+            const int16 = new Int16Array(combined.buffer.slice(0, bytesToProcess));
+            const floats = new Float32Array(completeSamples);
+            for (let i = 0; i < completeSamples; i++) {
+                floats[i] = int16[i] / 32768.0;
+            }
+            this.sampleChunks.push(floats);
+        }
+
+        this.pendingBytes = combined.length > bytesToProcess
+            ? combined.slice(bytesToProcess)
+            : new Uint8Array(0);
+    }
+
+    teardownStreamingPlayer() {
+        try {
+            if (this.scriptNode) {
+                this.scriptNode.onaudioprocess = null;
+                this.scriptNode.disconnect();
+                this.scriptNode = null;
+            }
+            if (this.audioWorkletNode) {
+                this.audioWorkletNode.disconnect();
+                this.audioWorkletNode = null;
+            }
+            if (this.audioContext) {
+                this.audioContext.close();
+                this.audioContext = null;
+            }
+        } catch (error) {
+            console.warn('Chatterbox: error tearing down streaming player:', error);
+        }
+    }
+
+    // Called by the TTS framework when the user stops playback.
+    // Aborts the in-flight request (cancels server generation) and stops local playback.
+    stop() {
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+        this.teardownStreamingPlayer();
+        this.sampleChunks = [];
+        this.chunkPos = 0;
+        this.pendingBytes = new Uint8Array(0);
+        this.updateStatus('Ready');
+    }
+
+    parseWavHeader(buffer) {
+        const view = new DataView(buffer);
+        // Number of channels: bytes 22-23 (little endian)
+        const channels = view.getUint16(22, true);
+        // Sample rate: bytes 24-27 (little endian)
+        const sampleRate = view.getUint32(24, true);
+        // Bits per sample: bytes 34-35 (little endian)
+        const bitsPerSample = view.getUint16(34, true);
+
+        return { sampleRate, channels, bitsPerSample };
+    }
+
+    async processStreamingAudio(response) {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        let headerParsed = false;
+        // Buffer used to accumulate the leading WAV header across reads, in case
+        // the first chunk arrives smaller than the 44-byte header.
+        let headerBuffer = new Uint8Array(0);
+
+        const concat = (a, b) => {
+            const combined = new Uint8Array(a.length + b.length);
+            combined.set(a);
+            combined.set(b, a.length);
+            return combined;
+        };
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+
+                if (!headerParsed) {
+                    headerBuffer = concat(headerBuffer, value);
+                    if (headerBuffer.length < 44) {
+                        // Need more bytes before we can read the header
+                        continue;
+                    }
+
+                    const wavInfo = this.parseWavHeader(headerBuffer.buffer);
+                    console.log('Chatterbox WAV stream info:', wavInfo);
+
+                    await this.initStreamingPlayer(wavInfo.sampleRate);
+
+                    // Forward any PCM data that arrived after the 44-byte header
+                    const pcmData = headerBuffer.slice(44);
+                    if (pcmData.length > 0) {
+                        this.pushPcm(pcmData);
+                    }
+                    headerParsed = true;
+                    headerBuffer = new Uint8Array(0);
+                    continue;
+                }
+
+                this.pushPcm(value);
+            }
+        } catch (error) {
+            // stop() aborts the fetch, which surfaces here; treat as a clean cancellation.
+            if (error?.name === 'AbortError') {
+                console.info('Chatterbox audio stream cancelled.');
+                return;
+            }
+            throw error;
+        }
+    }
+
+    setVolume(volume) {
+        // Clamp volume between 0.0 and 2.0 (0% to 200%)
+        this.currentVolume = Math.max(0, Math.min(2.0, volume));
+
+        // Regular (non-streaming) playback
+        this.audioElement.volume = Math.min(this.currentVolume, 1.0);
+
+        // Streaming playback via AudioWorklet (ScriptProcessor reads currentVolume directly)
+        if (this.audioWorkletNode) {
+            this.audioWorkletNode.port.postMessage({ volume: this.currentVolume });
         }
     }
 
