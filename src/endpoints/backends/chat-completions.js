@@ -2354,7 +2354,7 @@ router.post('/generate', async function (request, response) {
                 };
             }
 
-            const isClaude = /^anthropic\/claude/.test(request.body.model);
+            const isClaude = /anthropic\/claude/.test(request.body.model);
             const isGemini = /google\/gemini/.test(request.body.model);
             const isCacheableGemini = isGemini && await isOpenRouterModelCacheable(request.body.model);
             const enableGeminiSystemPromptCache = getConfigValue('gemini.enableSystemPromptCache', false, 'boolean');
