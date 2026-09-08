@@ -84,22 +84,79 @@ const a11yRules = {
     },
 };
 
+const a11yRuleEntries = Object.entries(a11yRules);
+const combinedA11ySelector = Object.keys(a11yRules).join(', ');
+
 /**
- * Apply accessibility rules to an element.
+ * Apply the matching accessibility rules to a single element.
+ * @param {Element} element Element to process.
+ */
+function applyMatchingRules(element) {
+    for (const [selector, rule] of a11yRuleEntries) {
+        if (element.matches(selector)) {
+            rule(element);
+        }
+    }
+}
+
+/**
+ * Apply accessibility rules to an element and its descendants.
  * @param {Element} element Element to process.
  */
 function applyA11yRules(element) {
     try {
-        for (const [selector, rule] of Object.entries(a11yRules)) {
-            // Apply if the element directly matches the selector
-            if (element.matches(selector)) {
-                rule(element);
-            }
-            // Apply the rule to descendants
-            element.querySelectorAll(selector).forEach(rule);
+        // Single combined query, then dispatch rules only on actual matches
+        if (element.matches(combinedA11ySelector)) {
+            applyMatchingRules(element);
         }
+        element.querySelectorAll(combinedA11ySelector).forEach(applyMatchingRules);
     } catch (error) {
         console.error('Error applying accessibility rules to element:', element, error);
+    }
+}
+
+/** @type {Set<Element>} */
+const pendingElements = new Set();
+let flushScheduled = false;
+
+/**
+ * Check if any ancestor of the element is also queued for processing.
+ * @param {Element} element Element to check.
+ * @param {Set<Element>} queued Set of queued elements.
+ * @returns {boolean} True if a queued ancestor exists.
+ */
+function hasQueuedAncestor(element, queued) {
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+        if (queued.has(parent)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function flushPendingElements() {
+    flushScheduled = false;
+    const elements = new Set(pendingElements);
+    pendingElements.clear();
+
+    for (const element of elements) {
+        // Skip elements that were removed or are covered by a queued ancestor
+        if (!element.isConnected || hasQueuedAncestor(element, elements)) {
+            continue;
+        }
+        applyA11yRules(element);
+    }
+}
+
+/**
+ * Queue an element for rule application on the next animation frame.
+ * @param {Element} element Element to process.
+ */
+function queueElement(element) {
+    pendingElements.add(element);
+    if (!flushScheduled) {
+        flushScheduled = true;
+        requestAnimationFrame(flushPendingElements);
     }
 }
 
@@ -112,8 +169,8 @@ function setAccessibilityObserver() {
         for (const mutation of mutationsList) {
             if (mutation.type === 'childList') {
                 for (const addedNode of mutation.addedNodes) {
-                    if (addedNode instanceof Element && addedNode.nodeType === Node.ELEMENT_NODE) {
-                        applyA11yRules(addedNode);
+                    if (addedNode instanceof Element) {
+                        queueElement(addedNode);
                     }
                 }
             }
