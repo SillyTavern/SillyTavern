@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced, CONNECT_API_MAP } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -14,7 +14,7 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from '../../slash-commands/SlashCommandScope.js';
 import { collapseSpaces, getUniqueName, isFalseBoolean, isTrueBoolean, uuidv4, waitUntilCondition } from '../../utils.js';
 import { t } from '../../i18n.js';
-import { getSecretLabelById } from '../../secrets.js';
+import { getSecretLabelById, resolveSecretKeyForApi } from '../../secrets.js';
 import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
@@ -224,6 +224,16 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
 
             const allowEmpty = ALLOW_EMPTY.includes(command);
             const args = getNamedArguments();
+
+            // Resolve secret-id from the profile's own api field, not global provider state
+            if (command === 'secret-id' && profile.api) {
+                const apiMap = CONNECT_API_MAP[profile.api];
+                if (apiMap) {
+                    const secretKey = resolveSecretKeyForApi(apiMap.selected, apiMap.source, apiMap.type);
+                    if (secretKey) args.key = secretKey;
+                }
+            }
+
             const result = await SlashCommandParser.commands[command].callback(args, '');
             if (result || (allowEmpty && result === '')) {
                 profile[command] = result;
