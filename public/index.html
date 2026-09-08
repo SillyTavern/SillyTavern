@@ -2513,6 +2513,21 @@
                                         <option data-i18n="Unknown" value="unknown">Unknown</option>
                                     </select>
                                 </div>
+                                <div>
+                                    <h4 data-i18n="[title]Pins a chat to one provider so prompt caching keeps hitting. An explicit provider order overrides this." title="Pins a chat to one provider so prompt caching keeps hitting. An explicit provider order overrides this.">
+                                        <span data-i18n="Cache Routing Key">Cache Routing Key</span>
+                                    </h4>
+                                    <select id="openrouter_routing_key_mode_text" class="text_pole">
+                                        <option data-i18n="Disabled" value="off">Disabled</option>
+                                        <option data-i18n="Send as session_id (recommended)" value="session_id">Send as session_id (recommended)</option>
+                                        <option data-i18n="Send as prompt_cache_key" value="prompt_cache_key">Send as prompt_cache_key</option>
+                                    </select>
+                                    <select id="openrouter_routing_key_source_text" class="text_pole marginTopBot5">
+                                        <option data-i18n="Key: chat ID" value="chat_id">Key: chat ID</option>
+                                        <option data-i18n="Key: chat name" value="chat_name">Key: chat name</option>
+                                        <option data-i18n="Key: chat name (hashed)" value="chat_name_hash">Key: chat name (hashed)</option>
+                                    </select>
+                                </div>
                             </div>
                             <div data-tg-type="infermaticai" class="flex-container flexFlowColumn">
                                 <h4 data-i18n="InfermaticAI API Key">InfermaticAI API Key</h4>
@@ -3258,6 +3273,21 @@
                                     <option data-i18n="Brain floating point (16 bit)" value="bf16">Brain floating point (16 bit)</option>
                                     <option data-i18n="Floating point (32 bit)" value="fp32">Floating point (32 bit)</option>
                                     <option data-i18n="Unknown" value="unknown">Unknown</option>
+                                </select>
+                            </div>
+                            <div>
+                                <h4 data-i18n="[title]Pins a chat to one provider so prompt caching keeps hitting. An explicit provider order overrides this." title="Pins a chat to one provider so prompt caching keeps hitting. An explicit provider order overrides this.">
+                                    <span data-i18n="Cache Routing Key">Cache Routing Key</span>
+                                </h4>
+                                <select id="openrouter_routing_key_mode_chat" class="text_pole">
+                                    <option data-i18n="Disabled" value="off">Disabled</option>
+                                    <option data-i18n="Send as session_id (recommended)" value="session_id">Send as session_id (recommended)</option>
+                                    <option data-i18n="Send as prompt_cache_key" value="prompt_cache_key">Send as prompt_cache_key</option>
+                                </select>
+                                <select id="openrouter_routing_key_source_chat" class="text_pole marginTopBot5">
+                                    <option data-i18n="Key: chat ID" value="chat_id">Key: chat ID</option>
+                                    <option data-i18n="Key: chat name" value="chat_name">Key: chat name</option>
+                                    <option data-i18n="Key: chat name (hashed)" value="chat_name_hash">Key: chat name (hashed)</option>
                                 </select>
                             </div>
                         </form>
