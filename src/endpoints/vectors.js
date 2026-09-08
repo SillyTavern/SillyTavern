@@ -380,16 +380,18 @@ async function deleteVectorItems(directories, collectionId, source, sourceSettin
  * @param {string} searchText - The text to search for
  * @param {number} topK - The number of results to return
  * @param {number} threshold - The threshold for the search
- * @returns {Promise<{hashes: number[], metadata: object[]}>} - The metadata of the items that match the search text
+ * @returns {Promise<{hashes: number[], metadata: object[], scores: number[]}>} - The metadata of the items that match the search text
  */
 async function queryCollection(directories, collectionId, source, sourceSettings, searchText, topK, threshold) {
     const store = await getIndex(directories, collectionId, source, sourceSettings);
     const vector = await getVector(source, sourceSettings, searchText, true, directories);
 
     const result = await store.queryItems(vector, topK);
-    const metadata = result.filter(x => x.score >= threshold).map(x => x.item.metadata);
-    const hashes = result.map(x => Number(x.item.metadata.hash));
-    return { metadata, hashes };
+    const filtered = result.filter(x => x.score >= threshold);
+    const metadata = filtered.map(x => x.item.metadata);
+    const hashes = filtered.map(x => Number(x.item.metadata.hash));
+    const scores = filtered.map(x => x.score);
+    return { metadata, hashes, scores };
 }
 
 /**
@@ -402,7 +404,7 @@ async function queryCollection(directories, collectionId, source, sourceSettings
  * @param {number} topK - The number of results to return
  * @param {number} threshold - The threshold for the search
  *
- * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - The top K results from each collection
+ * @returns {Promise<Record<string, { hashes: number[], metadata: object[], scores: number[] }>>} - The top K results from each collection
  */
 async function multiQueryCollection(directories, collectionIds, source, sourceSettings, searchText, topK, threshold) {
     const vector = await getVector(source, sourceSettings, searchText, true, directories);
@@ -427,11 +429,12 @@ async function multiQueryCollection(directories, collectionIds, source, sourceSe
     const groupedResults = {};
     for (const result of sortedResults) {
         if (!groupedResults[result.collectionId]) {
-            groupedResults[result.collectionId] = { hashes: [], metadata: [] };
+            groupedResults[result.collectionId] = { hashes: [], metadata: [], scores: [] };
         }
 
         groupedResults[result.collectionId].hashes.push(Number(result.result.item.metadata.hash));
         groupedResults[result.collectionId].metadata.push(result.result.item.metadata);
+        groupedResults[result.collectionId].scores.push(result.result.score);
     }
 
     return groupedResults;
