@@ -348,6 +348,7 @@ export const settingsToUpdate = {
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
+    custom_prompt_caching: ['#custom_prompt_caching', 'custom_prompt_caching', true, true], 
     custom_include_body: ['#custom_include_body', 'custom_include_body', false, true],
     custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false, true],
     custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false, true],
@@ -473,6 +474,7 @@ const default_settings = {
     azure_openai_model: '',
     custom_model: '',
     custom_url: '',
+    custom_prompt_caching: false, 
     custom_include_body: '',
     custom_exclude_body: '',
     custom_include_headers: '',
@@ -2917,6 +2919,7 @@ export async function createGenerationParameters(settings, model, type, messages
 
     if (settings.chat_completion_source === chat_completion_sources.CUSTOM) {
         generate_data.custom_url = settings.custom_url;
+        generate_data.custom_prompt_caching = settings.custom_prompt_caching; 
         generate_data.custom_include_body = substituteParams(settings.custom_include_body);
         generate_data.custom_exclude_body = substituteParams(settings.custom_exclude_body);
         generate_data.custom_include_headers = substituteParams(settings.custom_include_headers);
@@ -7066,6 +7069,11 @@ export function initOpenAI() {
 
     $('#custom_api_url_text').on('input', function () {
         oai_settings.custom_url = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#custom_prompt_caching').on('input', function () {
+        oai_settings.custom_prompt_caching = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
