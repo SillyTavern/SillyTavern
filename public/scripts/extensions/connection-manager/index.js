@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { activateSendButtons, deactivateSendButtons, event_types, eventSource, getRequestHeaders, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -19,6 +19,7 @@ import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
 import { formatReasoning } from '/scripts/reasoning.js';
+import { noteEntityRevision } from '/scripts/multi-window.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -159,8 +160,8 @@ const profilesProvider = () => [
 /**
  * @typedef {Object} ConnectionProfile
  * @property {string} id Unique identifier
- * @property {string} mode Mode of the connection profile
- * @property {string} [name] Name of the connection profile
+ * @property {string} mode Mode of the connection preset
+ * @property {string} [name] Name of the connection preset
  * @property {string} [api] API
  * @property {string} [preset] Settings Preset
  * @property {string} [model] Model
@@ -207,9 +208,9 @@ function findProfileByName(value) {
 }
 
 /**
- * Reads the connection profile from the commands.
- * @param {string} mode Mode of the connection profile
- * @param {ConnectionProfile} profile Connection profile
+ * Reads the connection preset from the commands.
+ * @param {string} mode Mode of the connection preset
+ * @param {ConnectionProfile} profile Connection preset
  * @param {boolean} [cleanUp] Whether to clean up the profile
  */
 async function readProfileFromCommands(mode, profile, cleanUp = false) {
@@ -251,9 +252,9 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
 }
 
 /**
- * Creates a new connection profile.
- * @param {string} [forceName] Name of the connection profile
- * @returns {Promise<ConnectionProfile>} Created connection profile
+ * Creates a new connection preset.
+ * @param {string} [forceName] Name of the connection preset
+ * @returns {Promise<ConnectionProfile>} Created connection preset
  */
 async function createConnectionProfile(forceName = null) {
     const mode = main_api === 'openai' ? 'cc' : 'tc';
@@ -303,7 +304,7 @@ async function createConnectionProfile(forceName = null) {
     }
 
     if (isNameTaken(name) || name === NONE) {
-        toastr.error('A profile with the same name already exists.');
+        toastr.error('A preset with the same name already exists.');
         return null;
     }
 
@@ -318,7 +319,107 @@ async function createConnectionProfile(forceName = null) {
 }
 
 /**
- * Deletes the selected connection profile.
+ * Connection Presets live as files (data/<user>/connection-presets) behind
+ * /api/connection-presets; the array in extension_settings is only the
+ * in-memory working copy, hydrated from the files at init. False when the
+ * server has the multi-window feature disabled (legacy blob behavior).
+ */
+let presetFilesAvailable = false;
+
+async function presetFileApi(path, body) {
+    return fetch(`/api/connection-presets/${path}`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(body ?? {}),
+    });
+}
+
+/**
+ * Acquires the write lease for a preset file.
+ * @param {string} id Preset id
+ * @returns {Promise<boolean>} true when held (or the feature is disabled)
+ */
+async function acquirePresetLease(id) {
+    if (!presetFilesAvailable) {
+        return true;
+    }
+    try {
+        const response = await fetch('/api/sessions/lease/acquire', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ key: `preset/${id}`, mode: 'write' }),
+        });
+        return response.ok && (await response.json()).ok === true;
+    } catch {
+        return false;
+    }
+}
+
+/** Persists a preset bundle to its file. */
+async function persistPresetFile(profile) {
+    if (!presetFilesAvailable || !profile?.id) {
+        return;
+    }
+    const response = await presetFileApi('save', { preset: structuredClone(profile) });
+    if (!response.ok) {
+        toastr.warning('Preset changes could not be persisted to file (owned by another window?).', 'Connection presets');
+        return;
+    }
+    // Record our own save so the revision watch does not report it as
+    // another window's update.
+    noteEntityRevision(`preset/${profile.id}`, (await response.json()).revision);
+}
+
+/**
+ * Hydrates the in-memory preset list from the files, migrating any legacy
+ * bundles still living only in the settings blob. Files are the source of
+ * truth: blob-only bundles are migrated once, and bundles deleted from the
+ * files elsewhere disappear from the working copy.
+ */
+async function hydratePresetsFromServer() {
+    let response;
+    try {
+        response = await presetFileApi('list', {});
+    } catch {
+        return;
+    }
+    if (!response.ok) {
+        return;
+    }
+    presetFilesAvailable = true;
+    const cm = extension_settings.connectionManager;
+    const presets = (await response.json()).presets ?? [];
+    const fileIds = new Set(presets.map(p => p.id));
+
+    if (!cm.migratedToFiles) {
+        const toMigrate = cm.profiles.filter(p => p.id && !fileIds.has(p.id));
+        for (const bundle of toMigrate) {
+            const saved = await presetFileApi('save', { preset: structuredClone(bundle) });
+            if (saved.ok) {
+                presets.push(bundle);
+            } else {
+                console.error('Connection presets: failed to migrate preset to file', bundle.name);
+                return; // keep blob authoritative; retry next boot
+            }
+        }
+        if (toMigrate.length) {
+            console.log(`Connection presets: migrated ${toMigrate.length} preset(s) to files`);
+        }
+        cm.migratedToFiles = true;
+    }
+
+    for (const preset of presets) {
+        delete preset.revision; // server-side bookkeeping, not preset content
+    }
+    cm.profiles.splice(0, cm.profiles.length, ...presets);
+    if (cm.selectedProfile && !cm.profiles.some(p => p.id === cm.selectedProfile)) {
+        cm.selectedProfile = null;
+    }
+    saveSettingsDebounced();
+}
+
+/**
+ * Deletes the selected connection preset.
  * @returns {Promise<void>}
  */
 async function deleteConnectionProfile() {
@@ -340,6 +441,14 @@ async function deleteConnectionProfile() {
         return;
     }
 
+    if (!await acquirePresetLease(profile.id)) {
+        toastr.error('This preset is owned by another window.', 'Connection presets');
+        return;
+    }
+    if (presetFilesAvailable) {
+        await presetFileApi('delete', { id: profile.id });
+    }
+
     extension_settings.connectionManager.profiles.splice(index, 1);
     extension_settings.connectionManager.selectedProfile = null;
     saveSettingsDebounced();
@@ -348,8 +457,8 @@ async function deleteConnectionProfile() {
 }
 
 /**
- * Formats the connection profile for display.
- * @param {ConnectionProfile} profile Connection profile
+ * Formats the connection preset for display.
+ * @param {ConnectionProfile} profile Connection preset
  * @returns {Object} Fancy profile
  */
 function makeFancyProfile(profile) {
@@ -385,8 +494,8 @@ function makeFancyProfile(profile) {
 }
 
 /**
- * Applies the connection profile.
- * @param {ConnectionProfile} profile Connection profile
+ * Applies the connection preset.
+ * @param {ConnectionProfile} profile Connection preset
  * @returns {Promise<void>}
  */
 async function applyConnectionProfile(profile) {
@@ -424,18 +533,22 @@ async function applyConnectionProfile(profile) {
 }
 
 /**
- * Updates the selected connection profile.
- * @param {ConnectionProfile} profile Connection profile
+ * Updates the selected connection preset.
+ * @param {ConnectionProfile} profile Connection preset
  * @returns {Promise<void>}
  */
 async function updateConnectionProfile(profile) {
+    if (!await acquirePresetLease(profile.id)) {
+        toastr.error('This preset is owned by another window.', 'Connection presets');
+        throw new Error('Connection preset lease unavailable');
+    }
     profile.mode = main_api === 'openai' ? 'cc' : 'tc';
     await readProfileFromCommands(profile.mode, profile, true);
 }
 
 /**
- * Renders the connection profile details.
- * @param {HTMLSelectElement} profiles Select element containing connection profiles
+ * Renders the connection preset details.
+ * @param {HTMLSelectElement} profiles Select element containing connection presets
  */
 function renderConnectionProfiles(profiles) {
     profiles.innerHTML = '';
@@ -566,14 +679,14 @@ async function generateStreamCallback(args, value) {
                 if (fuseResults.length > 0) {
                     effectiveProfileId = fuseResults[0].item.id;
                 } else {
-                    toastr.warning(t`Connection profile not found: ${profileIdOrName}`);
+                    toastr.warning(t`Connection preset not found: ${profileIdOrName}`);
                     return '';
                 }
             }
         }
 
         if (!effectiveProfileId) {
-            toastr.error(t`No connection profile specified or selected. Use profile= argument or select a profile in Connection Manager.`);
+            toastr.error(t`No connection preset specified or selected. Use profile= argument or select a preset in Connection Manager.`);
             return '';
         }
 
@@ -704,6 +817,13 @@ export async function init() {
         }
     }
 
+    await hydratePresetsFromServer();
+
+    // Persistence catch-all: every path that creates or updates a preset
+    // (buttons, edit dialog, slash commands) emits one of these.
+    eventSource.on(event_types.CONNECTION_PROFILE_CREATED, (profile) => persistPresetFile(profile));
+    eventSource.on(event_types.CONNECTION_PROFILE_UPDATED, (_oldProfile, profile) => persistPresetFile(profile));
+
     const container = document.getElementById('rm_api_block');
     const settings = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
     container.insertAdjacentHTML('afterbegin', settings);
@@ -763,7 +883,7 @@ export async function init() {
         await applyConnectionProfile(profile);
         await renderDetailsContent(detailsContent);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
-        toastr.success('Connection profile reloaded', '', { timeOut: 1500 });
+        toastr.success('Connection preset reloaded', '', { timeOut: 1500 });
     });
 
     const createButton = document.getElementById('create_connection_profile');
@@ -795,7 +915,7 @@ export async function init() {
         saveSettingsDebounced();
         await eventSource.emit(event_types.CONNECTION_PROFILE_UPDATED, oldProfile, profile);
         await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
-        toastr.success('Connection profile updated', '', { timeOut: 1500 });
+        toastr.success('Connection preset updated', '', { timeOut: 1500 });
     });
 
     const deleteButton = document.getElementById('delete_connection_profile');
@@ -849,13 +969,21 @@ export async function init() {
         }
 
         if (profile.name !== newName && extension_settings.connectionManager.profiles.some(p => p.name === newName)) {
-            toastr.error('A profile with the same name already exists.');
+            toastr.error('A preset with the same name already exists.');
             return;
         }
 
         const newExcludeList = template.find('input[name="exclude"]:not(:checked)').map(function () {
             return Object.entries(FANCY_NAMES).find(x => x[1] === String($(this).val()))?.[0];
         }).get();
+
+        // The UPDATED event below persists the preset file, and a rename is
+        // a preset edit like any other: both need the write lease up front,
+        // before the in-memory copy is touched.
+        if (!await acquirePresetLease(profile.id)) {
+            toastr.error('This preset is owned by another window.', 'Connection presets');
+            return;
+        }
 
         const oldProfile = structuredClone(profile);
         if (newExcludeList.length !== profile.exclude.length || !newExcludeList.every(e => profile.exclude.includes(e))) {
@@ -866,12 +994,12 @@ export async function init() {
             if (saveChanges) {
                 await updateConnectionProfile(profile);
             } else {
-                toastr.info('Press "Update" to record them into the profile.', 'Included settings list updated');
+                toastr.info('Press "Update" to record them into the preset.', 'Included settings list updated');
             }
         }
 
         if (profile.name !== newName) {
-            toastr.success('Connection profile renamed.');
+            toastr.success('Connection preset renamed.');
             profile.name = newName;
         }
 
@@ -892,11 +1020,11 @@ export async function init() {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile',
-        helpString: 'Switch to a connection profile or return the name of the current profile in no argument is provided. Use <code>&lt;None&gt;</code> to switch to no profile.',
+        helpString: 'Switch to a connection preset or return the name of the current profile in no argument is provided. Use <code>&lt;None&gt;</code> to switch to no profile.',
         returns: 'name of the profile',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Name of the connection profile',
+                description: 'Name of the connection preset',
                 enumProvider: profilesProvider,
                 isRequired: false,
             }),
@@ -904,7 +1032,7 @@ export async function init() {
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
                 name: 'await',
-                description: 'Wait for the connection profile to be applied before returning.',
+                description: 'Wait for the connection preset to be applied before returning.',
                 isRequired: false,
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
                 defaultValue: 'true',
@@ -963,7 +1091,7 @@ export async function init() {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile-list',
-        helpString: 'List all connection profile names.',
+        helpString: 'List all connection preset names.',
         returns: 'list of profile names',
         callback: () => JSON.stringify(extension_settings.connectionManager.profiles.map(p => p.name)),
     }));
@@ -971,17 +1099,17 @@ export async function init() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile-create',
         returns: 'name of the new profile',
-        helpString: 'Create a new connection profile using the current settings.',
+        helpString: 'Create a new connection preset using the current settings.',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'name of the new connection profile',
+                description: 'name of the new connection preset',
                 isRequired: true,
                 typeList: [ARGUMENT_TYPE.STRING],
             }),
         ],
         callback: async (_args, name) => {
             if (!name || typeof name !== 'string') {
-                toastr.warning('Please provide a name for the new connection profile.');
+                toastr.warning('Please provide a name for the new connection preset.');
                 return '';
             }
             const profile = await createConnectionProfile(name);
@@ -1000,7 +1128,7 @@ export async function init() {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile-update',
-        helpString: 'Update the selected connection profile.',
+        helpString: 'Update the selected connection preset.',
         callback: async () => {
             const selectedProfile = extension_settings.connectionManager.selectedProfile;
             const profile = extension_settings.connectionManager.profiles.find(p => p.id === selectedProfile);
@@ -1019,11 +1147,11 @@ export async function init() {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'profile-get',
-        helpString: 'Get the details of the connection profile. Returns the selected profile if no argument is provided.',
+        helpString: 'Get the details of the connection preset. Returns the selected profile if no argument is provided.',
         returns: 'object of the selected profile',
         unnamedArgumentList: [
             SlashCommandArgument.fromProps({
-                description: 'Name of the connection profile',
+                description: 'Name of the connection preset',
                 enumProvider: profilesProvider,
                 isRequired: false,
             }),
@@ -1056,7 +1184,7 @@ export async function init() {
             ),
             SlashCommandNamedArgument.fromProps({
                 name: 'profile',
-                description: t`connection profile ID to use for generation`,
+                description: t`connection preset ID to use for generation`,
                 typeList: [ARGUMENT_TYPE.STRING],
                 enumProvider: commonEnumProviders.connectionProfiles(),
             }),

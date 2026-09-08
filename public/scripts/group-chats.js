@@ -80,6 +80,7 @@ import {
     chatElement,
     ensureMessageMediaIsArray,
 } from '../script.js';
+import { leaseGroupChat, isLeaseRejection } from './multi-window.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect, printTagFilters, tag_filter_type } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
@@ -265,6 +266,7 @@ export async function getGroupChat(groupId, reload = false) {
 
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
+    await leaseGroupChat(chat_id);
     const metadata = data?.[0]?.chat_metadata ?? {};
     const freshChat = !metadata.tainted && (!Array.isArray(data) || !data.length);
 
@@ -642,6 +644,9 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const response = await fetch('/api/chats/group/save', saveGroupChatRequest);
 
     if (!response.ok) {
+        if (isLeaseRejection(response)) {
+            return;
+        }
         const errorData = await response.json();
         const isIntegrityError = errorData?.error === 'integrity' && !force;
         if (!isIntegrityError) {

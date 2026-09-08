@@ -57,6 +57,7 @@ import { groups, selected_group } from './group-chats.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { openWorldInfoEditor, world_names } from './world-info.js';
+import { isMultiWindowActive } from './multi-window.js';
 import { renderTemplateAsync } from './templates.js';
 import { saveMetadataDebounced } from './extensions.js';
 import { accountStorage } from './util/AccountStorage.js';
@@ -156,6 +157,11 @@ export async function setUserAvatar(imgfile, { toastPersonaNameChange = true, na
     user_avatar = imgfile && typeof imgfile === 'string' ? imgfile : $(this).attr('data-avatar-id');
     if (currentUserAvatar === user_avatar) {
         return;
+    }
+    if (isMultiWindowActive()) {
+        // Persona selection is per-window (like the active character); the
+        // blob copy is neither read back nor dirty-checked in this mode.
+        sessionStorage.setItem('mw_user_avatar', user_avatar ?? '');
     }
     reloadUserAvatar();
     updatePersonaUIStates({ navigateToCurrent: navigateToCurrent });
