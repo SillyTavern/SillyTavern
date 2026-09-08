@@ -46,6 +46,7 @@
                 <option value="chutes">Chutes</option>
                 <option value="workersai">Cloudflare Workers AI</option>
                 <option value="comfy">ComfyUI</option>
+                <option value="custom" data-i18n="Custom (OpenAI-compatible)">Custom (OpenAI-compatible)</option>
                 <option value="drawthings">DrawThings HTTP API</option>
                 <option value="electronhub">Electron Hub</option>
                 <option value="extras">Extras API (deprecated)</option>
@@ -283,6 +284,18 @@
                         <i class="fa-solid fa-trash-can"></i>
                     </div>
                 </div>
+            </div>
+            <div data-sd-source="custom">
+                <label for="sd_custom_url" data-i18n="Endpoint Base URL">Endpoint Base URL</label>
+                <input id="sd_custom_url" type="text" class="text_pole" data-i18n="[placeholder]sd_custom_url" placeholder="Example: https://api.venice.ai/api/v1" value="{{custom_url}}" />
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_custom_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_custom_openai_sd">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+                <i data-i18n="sd_custom_hint">Hint: Works with any server implementing the OpenAI-compatible /v1/images/generations endpoint (e.g. Venice.ai, koboldcpp --routermode). Leave the API key unset if the server doesn't require one.</i>
             </div>
             <div data-sd-source="pollinations">
                 <a href="https://enter.pollinations.ai">Pollinations.ai</a>
