@@ -679,6 +679,7 @@ export class AutoComplete {
             }
         }
         this.clone.style.height = `${inputRect.height}px`;
+        this.clone.style.overflow = 'hidden';
         this.clone.style.left = `${inputRect.left}px`;
         this.clone.style.top = `${inputRect.top}px`;
         this.clone.style.whiteSpace = style.whiteSpace;
