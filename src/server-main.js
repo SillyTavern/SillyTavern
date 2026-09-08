@@ -210,6 +210,14 @@ if (!cliArgs.disableCsrf) {
 }
 
 // Static files
+// Redirect /index.html to / so that location.href agrees with <base href="/">.
+// Otherwise jQuery UI tabs' _isLocal() sees a mismatch and AJAX-loads in-page
+// tab anchors as if they were remote URLs, duplicating every id in the document.
+app.get('/index.html', (request, response) => {
+    const query = request.url.split('?')[1];
+    return response.redirect(301, query ? `/?${query}` : '/');
+});
+
 // Host index page
 app.get('/', cacheBuster.middleware, (request, response) => {
     if (shouldRedirectToLogin(request)) {
