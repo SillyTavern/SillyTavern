@@ -1,3 +1,6 @@
+/**
+ * Unit tests for the pure functions of the server-side src/util.js.
+ */
 import { describe, test, expect, jest } from '@jest/globals';
 import {
     keyToEnv,
