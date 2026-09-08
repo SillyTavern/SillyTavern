@@ -793,6 +793,57 @@ custom.post('/generate-voice', async (request, response) => {
     }
 });
 
+custom.post('/transcribe-audio', async (request, response) => {
+    try {
+        const { provider_endpoint, model, language, api_key } = request.body;
+
+        if (!provider_endpoint) {
+            console.warn('No OpenAI-compatible STT provider endpoint provided');
+            return response.sendStatus(400);
+        }
+
+        if (!request.file) {
+            console.warn('No audio file found');
+            return response.sendStatus(400);
+        }
+
+        console.info('Processing audio file with OpenAI-compatible STT provider', provider_endpoint);
+        const formData = new FormData();
+        formData.append('file', fs.createReadStream(request.file.path), { filename: 'audio.wav', contentType: 'audio/wav' });
+        formData.append('model', model || 'whisper-1');
+
+        if (language) {
+            formData.append('language', language);
+        }
+
+        const headers = { ...formData.getHeaders() };
+        if (api_key) {
+            headers.Authorization = `Bearer ${api_key}`;
+        }
+
+        const result = await fetch(provider_endpoint, {
+            method: 'POST',
+            headers,
+            body: formData,
+        });
+
+        fs.unlinkSync(request.file.path);
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('OpenAI-compatible STT request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.debug('OpenAI-compatible STT transcription response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error('OpenAI-compatible STT transcription failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
 router.use('/custom', custom);
 
 /**
