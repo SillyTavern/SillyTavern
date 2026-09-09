@@ -58,6 +58,44 @@ describe('cache keepalive', () => {
         expect(keeper.status).toContain('Paused');
     });
 
+    test('a two-minute normal reply leaves two minutes until the first refresh', async () => {
+        const { keeper, send, advance } = fixture();
+        keeper.capture(request);
+        advance(120000);
+        keeper.settle('whole-context');
+        advance(119999);
+        await keeper.tick('whole-context');
+        expect(send).not.toHaveBeenCalled();
+        advance(1);
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    test('refresh response duration does not extend the next deadline', async () => {
+        const { keeper, send, advance } = fixture();
+        send.mockImplementationOnce(async () => { advance(30000); });
+        advance();
+        await keeper.tick('whole-context');
+        advance(209999);
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(1);
+        advance(1);
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    test('an overdue normal reply waits for completion then sends once without catch-up', async () => {
+        const { keeper, send, advance } = fixture();
+        keeper.capture(request);
+        advance(660000);
+        await keeper.tick('whole-context', true);
+        expect(send).not.toHaveBeenCalled();
+        keeper.settle('whole-context');
+        await keeper.tick('whole-context');
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(1);
+    });
+
     test('uses a custom interval and never sends while disabled or busy', async () => {
         const { keeper, send, advance } = fixture();
         keeper.configure(true, 0.5);

@@ -113,13 +113,14 @@ export class CacheKeeper {
         // Validate now, before accepting a snapshot of a real request.
         buildRefreshRequest(request);
         this.invalidate('Waiting for generation to finish');
+        // Generation time consumes the cache lifetime too.
+        this.nextAt = this.now() + this.interval * 60000;
         this.request = structuredClone(request);
     }
 
     settle(context) {
         if (!this.enabled || !this.request) return;
         this.context = context;
-        this.nextAt = this.now() + this.interval * 60000;
         this.report('Waiting for next refresh');
     }
 
@@ -129,6 +130,7 @@ export class CacheKeeper {
             return;
         }
         this.count = 0;
+        this.nextAt = this.now() + this.interval * 60000;
         this.settle(context);
     }
 
@@ -145,10 +147,11 @@ export class CacheKeeper {
         const timeout = setTimeout(() => controller.abort(), 60000);
         this.report('Refreshing in background');
         try {
+            const startedAt = this.now();
             await this.send(buildRefreshRequest(this.request), controller.signal);
             if (epoch !== this.epoch) return;
             this.count++;
-            this.nextAt = this.count < 6 ? this.now() + this.interval * 60000 : 0;
+            this.nextAt = this.count < 6 ? startedAt + this.interval * 60000 : 0;
             this.report(this.count === 6 ? 'Paused: context unchanged for 6 refreshes' : 'Refresh completed');
         } catch (error) {
             if (epoch !== this.epoch) return;

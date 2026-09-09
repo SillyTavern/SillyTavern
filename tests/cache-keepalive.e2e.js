@@ -105,7 +105,7 @@ for (const native of [false, true]) {
             await page.locator('[data-interval]').dispatchEvent('change');
             await page.evaluate(() => window.normalTurn(false));
             await page.clock.runFor(1000);
-            await page.clock.fastForward(29000);
+            await page.clock.fastForward(28000);
             expect(requests).toHaveLength(1);
             await page.clock.runFor(1000);
             await expect(page.locator('[data-status]')).toContainText('(1/6)');
@@ -113,6 +113,29 @@ for (const native of [false, true]) {
             await page.clock.fastForward(240000);
             expect(requests).toHaveLength(2);
             await expect(page.locator('[data-status]')).toContainText('Disabled');
+        });
+
+        test('counts the normal generation time toward the four-minute deadline', async ({ page }) => {
+            const requests = await setup(page, native);
+            await page.evaluate(async native => {
+                await window.emit('GENERATION_STARTED', 'normal', {}, false);
+                const body = JSON.stringify(window.realRequest);
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'normal', body });
+                await fetch('/api/backends/chat-completions/generate', { method: 'POST', body });
+            }, native);
+            await page.clock.fastForward(120000);
+            expect(requests).toHaveLength(1);
+            await page.evaluate(async () => {
+                window.context.chat.push({ mes: 'Two-minute reply' });
+                await window.emit('GENERATION_ENDED');
+                await window.emit('MESSAGE_RECEIVED');
+            });
+            await page.clock.runFor(1000);
+            await page.clock.fastForward(118000);
+            expect(requests).toHaveLength(1);
+            await page.clock.runFor(1000);
+            await expect(page.locator('[data-status]')).toContainText('(1/6)');
+            expect(requests).toHaveLength(2);
         });
 
         test('detects changes to an earlier message and never refreshes an inactive chat', async ({ page }) => {

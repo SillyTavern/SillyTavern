@@ -10,6 +10,8 @@ The extension retains the last actual request in memory, after prompt assembly a
 
 > 这只是刷新缓存，收到后回复确认即可。
 
+The interval starts when the request is dispatched, including generation time. A request sent at 00:00 and completed at 02:00 is first refreshed around 04:00, not 06:00. Subsequent deadlines also use the refresh dispatch time. Normal generation is never interrupted or refreshed concurrently; an overdue reply triggers one refresh on the next check after completion, without a catch-up burst. Extreme responses exceeding ten minutes receive no special handling and may outlast the cache. Manual Resume waits one interval from the click.
+
 No refresh message or reply is added to the chat. Draft text is untouched. Returned tool calls are discarded without execution. Tool definitions, tool choice, model, system prompt, history, images, thinking settings, output budget, stream setting, and routing parameters are retained. Only `n` is reduced to one and the refresh instruction is appended.
 
 After **six completed refreshes of an unchanged context**, automatic refreshes pause. **Resume** starts another cycle. A new normal generation replaces the snapshot and starts a new cycle. Errors and requests lasting longer than 60 seconds pause refreshes; there is no automatic error retry loop.
