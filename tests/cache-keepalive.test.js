@@ -29,6 +29,40 @@ function fixture(send = jest.fn().mockResolvedValue(undefined)) {
 }
 
 describe('cache keepalive', () => {
+    test('allows a two-minute refresh and aborts a stalled refresh after three minutes', async () => {
+        jest.useFakeTimers();
+        try {
+            let finish;
+            let signal;
+            const { keeper, advance, send } = fixture(jest.fn((_body, requestSignal) => new Promise((resolve, reject) => {
+                finish = resolve;
+                signal = requestSignal;
+                signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+            })));
+            advance();
+            const first = keeper.tick('whole-context');
+            await jest.advanceTimersByTimeAsync(120000);
+            expect(signal.aborted).toBe(false);
+            await keeper.tick('whole-context');
+            expect(send).toHaveBeenCalledTimes(1);
+            finish({ readTokens: 500 });
+            await first;
+            expect(keeper.count).toBe(1);
+            advance();
+            const second = keeper.tick('whole-context');
+            await jest.advanceTimersByTimeAsync(179999);
+            expect(signal.aborted).toBe(false);
+            await jest.advanceTimersByTimeAsync(1);
+            await second;
+            expect(signal.aborted).toBe(true);
+            expect(keeper.status).toBe('Paused: request timed out');
+            expect(keeper.count).toBe(1);
+            expect(keeper.nextAt).toBe(0);
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     test('saving chat updates its timestamp without changing the prompt context', () => {
         const ctx = { characters: [{ name: 'Example', date_last_chat: 100 }], characterId: 0, groups: [], extensionSettings: {}, chat: [] };
         const before = contextFingerprint(ctx);

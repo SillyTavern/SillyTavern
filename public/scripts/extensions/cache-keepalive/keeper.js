@@ -172,7 +172,8 @@ export class CacheKeeper {
         const epoch = this.epoch;
         const controller = new AbortController();
         this.controller = controller;
-        const timeout = setTimeout(() => controller.abort(), 60000);
+        // Preserve the original generation budget, allowing typical 1–2 minute replies.
+        const timeout = setTimeout(() => controller.abort(), 180000);
         this.lastAttemptAt = this.now();
         this.report('Refreshing in background');
         try {
