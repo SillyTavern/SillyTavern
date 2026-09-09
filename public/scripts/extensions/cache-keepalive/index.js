@@ -124,7 +124,7 @@ export function init() {
                 body: JSON.stringify(body),
                 signal,
             });
-            return consumeRefreshResponse(response);
+            return consumeRefreshResponse(response, body.stream === true);
         },
     });
     const on = (event, handler) => {

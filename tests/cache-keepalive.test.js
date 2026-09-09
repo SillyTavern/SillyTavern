@@ -254,6 +254,16 @@ describe('cache keepalive', () => {
 });
 
 describe('background response consumption', () => {
+    test('drains forwarded SSE without a content-type header using the request stream flag', async () => {
+        const response = new Response(new TextEncoder().encode('data: {"usage":{"cache_read_input_tokens":33960}}\n\ndata: [DONE]\n\n'));
+        expect(response.headers.has('content-type')).toBe(false);
+        await expect(consumeRefreshResponse(response, true)).resolves.toEqual({ readTokens: 33960, writeTokens: null });
+    });
+
+    test('still detects explicit JSON errors for a streaming request', async () => {
+        await expect(consumeRefreshResponse(Response.json({ error: true }), true)).rejects.toThrow('API returned an error');
+    });
+
     test.each([
         'data: {"choices":[{"delta":{"content":"OK"}}]}\r\n\r\ndata: [DONE]\r\n\r\n',
         'event: message_stop\ndata: {"type":"message_stop"}\n\n',

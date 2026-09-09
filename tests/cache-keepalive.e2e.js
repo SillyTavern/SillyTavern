@@ -6,13 +6,17 @@ test.use({ channel: process.env.PLAYWRIGHT_CHANNEL || undefined, video: 'off' })
 const folder = new URL('../public/scripts/extensions/cache-keepalive/', import.meta.url);
 const endpoint = '/api/backends/chat-completions/generate';
 
-async function setup(page, native, { locale = 'en-US', reply = { choices: [{ message: { content: '确认', tool_calls: [{ id: 'never-execute' }] } }] } } = {}) {
+async function setup(page, native, { locale = 'en-US', forwardedStream = false, reply = { choices: [{ message: { content: '确认', tool_calls: [{ id: 'never-execute' }] } }] } } = {}) {
     const requests = [];
     await page.route('http://keepalive.test/**', async route => {
         const path = new URL(route.request().url()).pathname;
         if (path === endpoint) {
             requests.push(route.request().postDataJSON());
-            await route.fulfill({ json: reply });
+            if (forwardedStream) {
+                await route.fulfill({ body: Buffer.from(`data: ${JSON.stringify(reply)}\n\ndata: [DONE]\n\n`) });
+            } else {
+                await route.fulfill({ json: reply });
+            }
         } else if (path.endsWith('.js')) {
             await route.fulfill({ contentType: 'text/javascript', body: await readFile(new URL(path.split('/').at(-1), folder), 'utf8') });
         } else {
@@ -77,6 +81,16 @@ async function setup(page, native, { locale = 'en-US', reply = { choices: [{ mes
 for (const native of [false, true]) {
     // eslint-disable-next-line playwright/valid-title -- Both branches are literal suite titles.
     test.describe(native ? 'Native request event' : 'Stock plugin fetch observer', () => {
+        test('accepts stock server forwarded SSE without an event-stream response header', async ({ page }) => {
+            const requests = await setup(page, native, { locale: 'zh-CN', forwardedStream: true, reply: { usage: { cache_read_input_tokens: 33960 } } });
+            await page.evaluate(() => window.normalTurn());
+            await page.clock.fastForward(240000);
+            await expect(page.locator('[data-status]')).toContainText('保活请求成功 (1/6)');
+            await expect(page.locator('[data-cache]')).toContainText('33960');
+            expect(requests).toHaveLength(2);
+            await expect(page.locator('#chat')).toHaveText('Real chat');
+        });
+
         test('shows Chinese state, countdown, captured request and confirmed cache usage', async ({ page }) => {
             await setup(page, native, { locale: 'zh-CN', reply: { usage: { cache_read_input_tokens: 800, cache_creation_input_tokens: 40 } } });
             const panel = page.locator('#cache_keepalive_settings');

@@ -34,12 +34,15 @@ export function cacheUsage(data) {
 }
 
 /** Drain replies without invoking chat rendering, message saving or tools. */
-export async function consumeRefreshResponse(response) {
+export async function consumeRefreshResponse(response, stream = false) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const check = data => {
         if (!data || data.error || data.type === 'error') throw new Error('API returned an error; check the server log');
     };
-    if (!response.headers.get('content-type')?.includes('text/event-stream')) {
+    // SillyTavern's forwarding helper can omit upstream response headers.
+    // Use the captured request flag, while retaining explicit JSON error handling.
+    const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+    if (contentType.includes('application/json') || (!stream && !contentType.includes('text/event-stream'))) {
         const data = await response.json();
         check(data);
         return cacheUsage(data);
