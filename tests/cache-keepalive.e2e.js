@@ -191,6 +191,26 @@ for (const native of [false, true]) {
             expect(requests).toHaveLength(2);
         });
 
+        test('ignores chat-save timestamps and auxiliary quiet requests during normal generation', async ({ page }) => {
+            const requests = await setup(page, native);
+            await page.evaluate(async native => {
+                window.context.characters[0].date_last_chat = 100;
+                await window.emit('GENERATION_STARTED', 'normal', {}, false);
+                const body = JSON.stringify({ ...window.realRequest, type: 'normal' });
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'normal', body });
+                await fetch('/api/backends/chat-completions/generate', { method: 'POST', body });
+                const auxiliary = JSON.stringify({ ...window.realRequest, type: 'quiet', messages: [{ role: 'user', content: 'Auxiliary request' }] });
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'quiet', body: auxiliary });
+                await fetch('/api/backends/chat-completions/generate', { method: 'POST', body: auxiliary });
+                window.context.characters[0].date_last_chat = 200;
+            }, native);
+            await page.clock.fastForward(240000);
+            await expect(page.locator('[data-status]')).toContainText('(1/6)');
+            expect(requests).toHaveLength(3);
+            expect(requests[2].messages.slice(0, -1)).toEqual(requests[0].messages);
+            expect(requests[2].type).toBe('normal');
+        });
+
         test('refreshes while the foreground request is pending and its output grows', async ({ page }) => {
             const requests = await setup(page, native);
             let foreground;

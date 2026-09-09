@@ -13,13 +13,17 @@ function serializeContext(value) {
 
 /** Include the whole chat and prompt settings, not just the most recent message. */
 export function contextFingerprint(ctx) {
+    const activeCharacter = ctx.characters[ctx.characterId];
+    const character = activeCharacter ? { ...activeCharacter } : activeCharacter;
+    // saveChat updates this sorting timestamp; it is not part of the prompt.
+    if (character) delete character.date_last_chat;
     return serializeContext({
         chatId: ctx.chatId,
         characterId: ctx.characterId,
         groupId: ctx.groupId,
         chat: ctx.chat,
         metadata: ctx.chatMetadata,
-        character: ctx.characters[ctx.characterId],
+        character,
         group: ctx.groups.find(group => group.id == ctx.groupId),
         names: [ctx.name1, ctx.name2],
         // Prompt assembly skips empty entries; extensions can recreate these
@@ -129,15 +133,20 @@ export function init() {
     };
     const invalidate = () => { candidateChat = null; finished = false; received = false; keeper.invalidate(); };
     const capture = (body, type = generationType) => {
-        if (!active || !busy || !['normal', 'regenerate', 'swipe', 'continue'].includes(type)) return;
+        if (!active || !busy) return;
         const current = SillyTavern.getContext();
         if (!current.chatId || current.mainApi !== 'openai') return;
         try {
-            const replacesLast = ['swipe', 'continue'].includes(type);
+            const request = JSON.parse(body);
+            // Auxiliary requests may run during a normal generation without
+            // emitting GENERATION_STARTED. Trust the serialized request type.
+            const requestType = request.type || type;
+            if (!['normal', 'regenerate', 'swipe', 'continue'].includes(requestType)) return;
+            const replacesLast = ['swipe', 'continue'].includes(requestType);
             historyLength = Math.max(0, current.chat.length - (replacesLast ? 1 : 0));
             historyLimit = current.chat.length + (replacesLast ? 0 : 1);
             protectedHistory = serializeContext(current.chat.slice(0, historyLength));
-            keeper.capture(JSON.parse(body), contextFingerprint(inputContext(current)));
+            keeper.capture(request, contextFingerprint(inputContext(current)));
             candidateChat = identity();
             received = false;
         } catch {

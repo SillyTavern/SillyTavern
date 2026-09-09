@@ -5,7 +5,7 @@
     "optional": [],
     "js": "index.js",
     "author": "rashadrao335566",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "homePage": "https://github.com/rashadrao335566/SillyTavern-Cache-Keepalive",
     "hooks": {
         "activate": "init",

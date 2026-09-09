@@ -29,6 +29,14 @@ function fixture(send = jest.fn().mockResolvedValue(undefined)) {
 }
 
 describe('cache keepalive', () => {
+    test('saving chat updates its timestamp without changing the prompt context', () => {
+        const ctx = { characters: [{ name: 'Example', date_last_chat: 100 }], characterId: 0, groups: [], extensionSettings: {}, chat: [] };
+        const before = contextFingerprint(ctx);
+        ctx.characters[0].date_last_chat = 200;
+        expect(contextFingerprint(ctx)).toBe(before);
+        ctx.characters[0].name = 'Changed';
+        expect(contextFingerprint(ctx)).not.toBe(before);
+    });
     test('preserves every original message and cache-sensitive parameter without mutation', () => {
         const original = structuredClone(request);
         const copy = buildRefreshRequest(request);
