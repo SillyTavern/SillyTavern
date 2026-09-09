@@ -3133,9 +3133,12 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
+    const body = JSON.stringify(generate_data);
+    // Read-only snapshot after all request customization, before transport.
+    await eventSource.emit(event_types.CHAT_COMPLETION_REQUEST_READY, { type, body });
     const response = await fetch(generate_url, {
         method: 'POST',
-        body: JSON.stringify(generate_data),
+        body,
         headers: getRequestHeaders(),
         signal: signal,
     });

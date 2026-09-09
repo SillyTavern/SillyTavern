@@ -1,0 +1,14 @@
+{
+    "display_name": "Automatic Cache Keepalive",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "author": "rashadrao335566",
+    "version": "1.0.0",
+    "homePage": "https://github.com/rashadrao335566/SillyTavern-Cache-Keepalive",
+    "hooks": {
+        "activate": "init",
+        "disable": "dispose"
+    }
+}
