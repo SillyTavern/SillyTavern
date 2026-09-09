@@ -1,6 +1,6 @@
 /* eslint-disable playwright/no-standalone-expect -- Jest test.each is not recognized by the Playwright rule. */
 import { describe, test, expect, jest } from '@jest/globals';
-import { CacheKeeper, buildRefreshRequest, validateInterval, REFRESH_MESSAGE, consumeRefreshResponse } from '../public/scripts/extensions/cache-keepalive/keeper.js';
+import { CacheKeeper, buildRefreshRequest, validateInterval, REFRESH_MESSAGE, consumeRefreshResponse, cacheUsage } from '../public/scripts/extensions/cache-keepalive/keeper.js';
 import { contextFingerprint } from '../public/scripts/extensions/cache-keepalive/index.js';
 
 const request = {
@@ -254,7 +254,7 @@ describe('background response consumption', () => {
                 controller.close();
             },
         }), { headers: { 'content-type': 'text/event-stream' } });
-        await expect(consumeRefreshResponse(response)).resolves.toBeUndefined();
+        await expect(consumeRefreshResponse(response)).resolves.toEqual({ readTokens: null, writeTokens: null });
         expect(response.bodyUsed).toBe(true);
     });
 
@@ -271,6 +271,37 @@ describe('background response consumption', () => {
     test('rejects HTTP and JSON errors', async () => {
         await expect(consumeRefreshResponse(new Response('', { status: 429 }))).rejects.toThrow('HTTP 429');
         await expect(consumeRefreshResponse(Response.json({ error: true }))).rejects.toThrow('API returned an error');
-        await expect(consumeRefreshResponse(Response.json({ choices: [{ message: { content: 'OK' } }] }))).resolves.toBeUndefined();
+        await expect(consumeRefreshResponse(Response.json({ choices: [{ message: { content: 'OK' } }] }))).resolves.toEqual({ readTokens: null, writeTokens: null });
+    });
+
+    test.each([
+        [{ usage: { cache_read_input_tokens: 500, cache_creation_input_tokens: 20 } }, { readTokens: 500, writeTokens: 20 }],
+        [{ usage: { prompt_tokens_details: { cached_tokens: 0 } } }, { readTokens: 0, writeTokens: null }],
+        [{ usageMetadata: { cachedContentTokenCount: 300 } }, { readTokens: 300, writeTokens: null }],
+        [{ usage: { cache_read_input_tokens: -1 } }, { readTokens: null, writeTokens: null }],
+        [{ usage: { prompt_tokens: 1000 } }, { readTokens: null, writeTokens: null }],
+    ])('extracts reported cache usage without treating missing data as zero', (data, expected) => {
+        expect(cacheUsage(data)).toEqual(expected);
+    });
+
+    test('retains SSE cache usage from message_start without adding cumulative reports', async () => {
+        const response = new Response([
+            'data: {"type":"message_start","message":{"usage":{"cache_read_input_tokens":800,"cache_creation_input_tokens":40}}}',
+            'data: {"usage":{"cache_read_input_tokens":800}}',
+            'data: {"type":"message_stop"}',
+            '',
+        ].join('\n\n'), { headers: { 'content-type': 'text/event-stream' } });
+        await expect(consumeRefreshResponse(response)).resolves.toEqual({ readTokens: 800, writeTokens: 40 });
+    });
+
+    test('records successful usage and time, then clears them for a different context', async () => {
+        const { keeper, advance } = fixture(jest.fn().mockResolvedValue({ readTokens: 500, writeTokens: 0 }));
+        advance();
+        await keeper.tick('whole-context');
+        expect(keeper.cacheUsage.readTokens).toBe(500);
+        expect(keeper.lastSuccessAt).toBe(240000);
+        keeper.invalidate();
+        expect(keeper.cacheUsage).toBeNull();
+        expect(keeper.lastSuccessAt).toBeNull();
     });
 });

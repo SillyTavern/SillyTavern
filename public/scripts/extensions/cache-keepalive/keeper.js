@@ -22,6 +22,17 @@ export function buildRefreshRequest(request) {
     return copy;
 }
 
+/** Missing usage is unknown, not a cache miss. Never infer a hit from HTTP success. */
+export function cacheUsage(data) {
+    const usage = data?.usage ?? data?.message?.usage;
+    const validCount = values => values.find(value => Number.isFinite(value) && value >= 0) ?? null;
+    return {
+        readTokens: validCount([usage?.cache_read_input_tokens, usage?.prompt_tokens_details?.cached_tokens,
+            usage?.input_tokens_details?.cached_tokens, usage?.prompt_cache_hit_tokens, data?.usageMetadata?.cachedContentTokenCount]),
+        writeTokens: validCount([usage?.cache_creation_input_tokens, usage?.prompt_tokens_details?.cache_write_tokens]),
+    };
+}
+
 /** Drain replies without invoking chat rendering, message saving or tools. */
 export async function consumeRefreshResponse(response) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -29,13 +40,15 @@ export async function consumeRefreshResponse(response) {
         if (!data || data.error || data.type === 'error') throw new Error('API returned an error; check the server log');
     };
     if (!response.headers.get('content-type')?.includes('text/event-stream')) {
-        check(await response.json());
-        return;
+        const data = await response.json();
+        check(data);
+        return cacheUsage(data);
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let completed = false;
+    const usage = { readTokens: null, writeTokens: null };
     const parseEvent = event => {
         const data = event.split('\n').filter(line => line.startsWith('data:')).map(line => line.slice(5).trimStart()).join('\n');
         if (!data) return;
@@ -45,6 +58,10 @@ export async function consumeRefreshResponse(response) {
         }
         const parsed = JSON.parse(data);
         check(parsed);
+        const reported = cacheUsage(parsed);
+        for (const key of Object.keys(usage)) {
+            if (reported[key] !== null) usage[key] = Math.max(usage[key] ?? 0, reported[key]);
+        }
         completed ||= parsed.type === 'message_stop' || parsed.type === 'message-end'
             || parsed.choices?.some(choice => choice.finish_reason != null)
             || parsed.candidates?.some(candidate => candidate.finishReason != null);
@@ -64,6 +81,7 @@ export async function consumeRefreshResponse(response) {
             }
         }
         if (!completed) throw new Error('Incomplete streaming response');
+        return usage;
     } finally {
         await reader.cancel();
         reader.releaseLock();
@@ -85,6 +103,9 @@ export class CacheKeeper {
         this.controller = null;
         this.epoch = 0;
         this.status = 'Disabled';
+        this.lastSuccessAt = null;
+        this.lastAttemptAt = null;
+        this.cacheUsage = null;
     }
 
     report(status) {
@@ -105,6 +126,9 @@ export class CacheKeeper {
         this.context = null;
         this.count = 0;
         this.nextAt = 0;
+        this.lastSuccessAt = null;
+        this.lastAttemptAt = null;
+        this.cacheUsage = null;
         this.report(this.enabled ? status : 'Disabled');
     }
 
@@ -146,11 +170,14 @@ export class CacheKeeper {
         const controller = new AbortController();
         this.controller = controller;
         const timeout = setTimeout(() => controller.abort(), 60000);
+        this.lastAttemptAt = this.now();
         this.report('Refreshing in background');
         try {
             const startedAt = this.now();
-            await this.send(buildRefreshRequest(this.request), controller.signal);
+            const usage = await this.send(buildRefreshRequest(this.request), controller.signal);
             if (epoch !== this.epoch) return;
+            this.cacheUsage = usage ?? { readTokens: null, writeTokens: null };
+            this.lastSuccessAt = this.now();
             this.count++;
             this.nextAt = this.count < 6 ? startedAt + this.interval * 60000 : 0;
             this.report(this.count === 6 ? 'Paused: context unchanged for 6 refreshes' : 'Refresh completed');
@@ -160,7 +187,10 @@ export class CacheKeeper {
             this.report(controller.signal.aborted ? 'Paused: request timed out' : `Paused: ${error.message}`);
         } finally {
             clearTimeout(timeout);
-            if (this.controller === controller) this.controller = null;
+            if (this.controller === controller) {
+                this.controller = null;
+                this.changed(this);
+            }
         }
     }
 }

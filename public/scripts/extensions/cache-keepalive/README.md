@@ -31,6 +31,12 @@ Switching chats, editing history, changing a model/preset/connection, or changin
 
 Provider reference: [Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
 
+## Status panel and updates
+
+The panel follows SillyTavern's current language, displaying Chinese or English separately. It shows a live countdown, request snapshot availability, consecutive refresh count, last successful refresh time and reported cache usage. A captured request is not a cache hit. Positive cache-read tokens confirm a hit for the last successful refresh; explicit zero means no hit, and missing usage means unknown. Cache writes are shown separately. These are response usage measurements, not a live cache availability probe.
+
+Common Claude, OpenAI-compatible and Gemini usage fields are parsed from JSON and SSE responses. Version and update controls are visible in settings. The standalone version uses SillyTavern's extension updater with its discovered folder and installation scope. Built-in installations show source-branch update instructions. On older standalone versions, use **Manage extensions → Update all**, then reload; individual update icons are hidden until an update check detects a newer commit.
+
 ## Implementations
 
 The native version is a built-in extension with a read-only `CHAT_COMPLETION_REQUEST_READY` event emitted immediately before transport. Its event payload contains `{ type, body }`, where `body` is the serialized final request. The standalone version uses the same code and a narrowly scoped `fetch` observer on stock builds without that event.

@@ -1,4 +1,5 @@
 import { CacheKeeper, DEFAULT_INTERVAL, validateInterval, consumeRefreshResponse } from './keeper.js';
+import { VERSION, translator, statusText, countdownText, cacheText, updateInstalledExtension } from './ui.js';
 
 const OWNER = Symbol.for('SillyTavern.cacheKeepalive');
 const ENDPOINT = '/api/backends/chat-completions/generate';
@@ -60,28 +61,57 @@ export function init() {
     panel.className = 'extension_container';
     panel.innerHTML = `<div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Automatic cache keepalive / 自动保持缓存在线</b>
+            <b data-label="title"></b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
+        <div class="marginTop5 marginBot5">
+            <div role="status" aria-live="polite" data-status></div>
+            <div data-countdown></div>
+            <div data-snapshot></div>
+            <div data-cache></div>
+            <div data-last-success></div>
+            <div data-version></div>
+            <div class="flex-container">
+                <button class="menu_button menu_button_icon" type="button" data-update data-label="update"></button>
+                <button class="menu_button menu_button_icon" type="button" data-reload data-label="reload"></button>
+            </div>
+            <div role="status" data-update-status></div>
+        </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label"><input type="checkbox" data-enabled> Enable / 开启</label>
-            <label>Interval in minutes / 间隔（分钟）
+            <label class="checkbox_label"><input type="checkbox" data-enabled><span data-label="enable"></span></label>
+            <label><span data-label="interval"></span>
                 <input class="text_pole" type="number" min="0.1" max="1440" step="0.1" data-interval>
             </label>
-            <small>Uses the last real Chat Completion request. Send a normal message first.
-                Replies are discarded. Pauses after 6 unchanged refreshes. API usage is billable.
-                Keep this tab open; browser sleep can delay timers.</small>
-            <div role="status" aria-live="polite" data-status></div>
-            <button class="menu_button" type="button" data-resume>Resume / 恢复</button>
+            <small data-label="hint"></small>
+            <p><small data-label="cacheHint"></small></p>
+            <button class="menu_button menu_button_icon" type="button" data-resume data-label="resume"></button>
         </div>
     </div>`;
     document.querySelector('#extensions_settings').append(panel);
     const enabledInput = panel.querySelector('[data-enabled]');
     const intervalInput = panel.querySelector('[data-interval]');
     const status = panel.querySelector('[data-status]');
+    let locale;
+    let t;
+    const render = state => {
+        const nextLocale = SillyTavern.getContext().getCurrentLocale?.() || document.documentElement.lang || navigator.language || 'en';
+        if (locale !== nextLocale) {
+            locale = nextLocale;
+            t = translator(locale);
+            for (const element of panel.querySelectorAll('[data-label]')) element.textContent = t(element.dataset.label);
+            panel.querySelector('[data-version]').textContent = `${t('version')}: ${VERSION}`;
+        }
+        status.textContent = `${statusText(state, t)} (${state.count}/6)`;
+        const unavailable = SillyTavern.getContext().onlineStatus === 'no_connection';
+        panel.querySelector('[data-countdown]').textContent = `${t('countdown')}: ${countdownText(state, t, Date.now(), unavailable)}`;
+        panel.querySelector('[data-snapshot]').textContent = `${t('snapshot')}: ${state.request ? t('captured', { count: state.request.messages.length }) : t('noSnapshot')}`;
+        panel.querySelector('[data-cache]').textContent = `${t('cache')}: ${cacheText(state.cacheUsage, t)}`;
+        const time = state.lastSuccessAt === null ? t('never') : new Date(state.lastSuccessAt).toLocaleTimeString(locale);
+        panel.querySelector('[data-last-success]').textContent = `${t('lastSuccess')}: ${time}`;
+    };
 
     const keeper = new CacheKeeper({
-        changed: state => { status.textContent = `${state.status} (${state.count}/6)`; },
+        changed: render,
         send: async (body, signal) => {
             const response = await originalFetch.call(globalThis, ENDPOINT, {
                 method: 'POST',
@@ -89,7 +119,7 @@ export function init() {
                 body: JSON.stringify(body),
                 signal,
             });
-            await consumeRefreshResponse(response);
+            return consumeRefreshResponse(response);
         },
     });
     const on = (event, handler) => {
@@ -177,7 +207,7 @@ export function init() {
             keeper.configure(settings.enabled, interval);
             ctx.saveSettingsDebounced();
         } catch (error) {
-            intervalInput.setCustomValidity(error.message);
+            intervalInput.setCustomValidity(t('invalid'));
             intervalInput.reportValidity();
             if (!enabledInput.checked) {
                 settings.enabled = false;
@@ -189,7 +219,24 @@ export function init() {
     enabledInput.addEventListener('change', configure);
     intervalInput.addEventListener('change', configure);
     panel.querySelector('[data-resume]').addEventListener('click', () => keeper.resume(fingerprint(SillyTavern.getContext())));
+    panel.querySelector('[data-reload]').addEventListener('click', () => location.reload());
+    panel.querySelector('[data-update]').addEventListener('click', async event => {
+        const button = event.currentTarget;
+        const updateStatus = panel.querySelector('[data-update-status]');
+        button.disabled = true;
+        updateStatus.textContent = t('updating');
+        try {
+            const result = await updateInstalledExtension(import.meta.url, originalFetch.bind(globalThis), ctx.getRequestHeaders());
+            updateStatus.textContent = t(result);
+        } catch (error) {
+            console.error('Cache keepalive update failed:', error);
+            updateStatus.textContent = t('updateFailed');
+        } finally {
+            button.disabled = false;
+        }
+    });
     const timer = setInterval(() => {
+        render(keeper);
         if (!keeper.enabled || !keeper.request) return;
         const current = SillyTavern.getContext();
         if (candidateChat !== null && (candidateChat !== identity() || current.chat.length > historyLimit

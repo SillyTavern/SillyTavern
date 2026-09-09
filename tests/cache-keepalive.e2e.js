@@ -6,22 +6,22 @@ test.use({ channel: process.env.PLAYWRIGHT_CHANNEL || undefined, video: 'off' })
 const folder = new URL('../public/scripts/extensions/cache-keepalive/', import.meta.url);
 const endpoint = '/api/backends/chat-completions/generate';
 
-async function setup(page, native) {
+async function setup(page, native, { locale = 'en-US', reply = { choices: [{ message: { content: '确认', tool_calls: [{ id: 'never-execute' }] } }] } } = {}) {
     const requests = [];
     await page.route('http://keepalive.test/**', async route => {
         const path = new URL(route.request().url()).pathname;
         if (path === endpoint) {
             requests.push(route.request().postDataJSON());
-            await route.fulfill({ json: { choices: [{ message: { content: '确认', tool_calls: [{ id: 'never-execute' }] } }] } });
+            await route.fulfill({ json: reply });
         } else if (path.endsWith('.js')) {
-            await route.fulfill({ contentType: 'text/javascript', body: await readFile(new URL(path.slice(1), folder), 'utf8') });
+            await route.fulfill({ contentType: 'text/javascript', body: await readFile(new URL(path.split('/').at(-1), folder), 'utf8') });
         } else {
             await route.fulfill({ contentType: 'text/html', body: '<div id="extensions_settings"></div><textarea id="send_textarea">Unsent draft</textarea><div id="chat">Real chat</div>' });
         }
     });
     await page.goto('http://keepalive.test/');
     await page.clock.install();
-    await page.evaluate(async native => {
+    await page.evaluate(async ({ native, locale }) => {
         const listeners = new Map();
         const keys = ['GENERATION_STARTED', 'GENERATION_ENDED', 'GENERATION_STOPPED', 'MESSAGE_RECEIVED',
             'CHAT_CHANGED', 'MESSAGE_EDITED', 'WORLDINFO_UPDATED', 'CHATCOMPLETION_MODEL_CHANGED'];
@@ -39,6 +39,7 @@ async function setup(page, native) {
             extensionSettings: { cache_keepalive: { enabled: true, interval: 4 } },
             saveSettingsDebounced() {}, getRequestHeaders: () => ({ 'Content-Type': 'application/json', 'X-CSRF-Token': 'test' }),
             eventTypes,
+            getCurrentLocale: () => locale,
             eventSource: {
                 on(event, handler) { listeners.set(event, [...(listeners.get(event) || []), handler]); },
                 removeListener(event, handler) { listeners.set(event, (listeners.get(event) || []).filter(value => value !== handler)); },
@@ -51,7 +52,7 @@ async function setup(page, native) {
             if (options?.signal) window.transportSignals.push(options.signal);
             return transportFetch.apply(this, arguments);
         };
-        window.extension = await import('/index.js');
+        window.extension = await import(native ? '/scripts/extensions/cache-keepalive/index.js' : '/scripts/extensions/third-party/cache-keepalive/index.js');
         window.extension.init();
         window.realRequest = {
             model: 'test-model', stream: true, n: 1, max_tokens: 8192, reasoning_effort: 'high',
@@ -69,13 +70,59 @@ async function setup(page, native) {
             if (streaming) await window.emit('MESSAGE_RECEIVED');
             window.context.extensionPrompts = {};
         };
-    }, native);
+    }, { native, locale });
     return requests;
 }
 
 for (const native of [false, true]) {
     // eslint-disable-next-line playwright/valid-title -- Both branches are literal suite titles.
     test.describe(native ? 'Native request event' : 'Stock plugin fetch observer', () => {
+        test('shows Chinese state, countdown, captured request and confirmed cache usage', async ({ page }) => {
+            await setup(page, native, { locale: 'zh-CN', reply: { usage: { cache_read_input_tokens: 800, cache_creation_input_tokens: 40 } } });
+            const panel = page.locator('#cache_keepalive_settings');
+            await expect(panel.locator('[data-label="title"]')).toHaveText('自动保持缓存在线');
+            await expect(panel.locator('[data-snapshot]')).toContainText('尚未捕获');
+            await expect(panel.locator('[data-cache]')).toContainText('尚未检查');
+            await page.evaluate(() => window.normalTurn());
+            await expect(panel.locator('[data-snapshot]')).toContainText('已捕获');
+            await expect(panel.locator('[data-cache]')).toContainText('尚未检查');
+            await page.clock.runFor(1000);
+            await expect(panel.locator('[data-countdown]')).toHaveText('下次刷新: 03:59');
+            await page.clock.fastForward(239000);
+            await expect(panel.locator('[data-status]')).toContainText('保活请求成功 (1/6)');
+            await expect(panel.locator('[data-cache]')).toContainText('已命中：800 个词元 · 已写入：40 个词元');
+            await expect(panel.locator('[data-last-success]')).not.toContainText('暂无');
+            expect(await panel.textContent()).not.toMatch(/Enable|Resume|Waiting|Unknown|Version/);
+        });
+
+        test('shows missing usage as unknown and stays in English', async ({ page }) => {
+            await setup(page, native);
+            await page.evaluate(() => window.normalTurn());
+            await page.clock.fastForward(240000);
+            await expect(page.locator('[data-cache]')).toContainText('Unknown — provider returned no cache usage');
+            expect(await page.locator('#cache_keepalive_settings').textContent()).not.toMatch(/[\u4e00-\u9fff]/);
+            await page.locator('[data-enabled]').uncheck();
+            await expect(page.locator('[data-countdown]')).toHaveText('Next refresh: Disabled');
+            await expect(page.locator('[data-snapshot]')).toContainText('Not captured');
+        });
+
+        test('provides a visible update action with an explicit result', async ({ page }) => {
+            await setup(page, native, { locale: 'zh-CN' });
+            await page.addStyleTag({ content: '.inline-drawer-content { display: none; }' });
+            const updates = [];
+            await page.route('**/api/extensions/discover', route => route.fulfill({ json: [{ name: 'third-party/cache-keepalive', type: 'local' }] }));
+            await page.route('**/api/extensions/update', route => {
+                updates.push(route.request().postDataJSON());
+                return route.fulfill({ json: { isUpToDate: false } });
+            });
+            await expect(page.locator('[data-update]')).toHaveText('检查并更新');
+            await expect(page.locator('[data-update]')).toBeVisible();
+            await expect(page.locator('[data-countdown]')).toBeVisible();
+            await page.locator('[data-update]').click();
+            await expect(page.locator('[data-update-status]')).toContainText(native ? '这是内置版' : '更新已安装');
+            expect(updates).toEqual(native ? [] : [{ extensionName: 'cache-keepalive', global: false }]);
+        });
+
         test('refreshes the same prefix six times, leaves chat and draft untouched, and resumes', async ({ page }) => {
             const requests = await setup(page, native);
             await page.evaluate(() => window.normalTurn());
