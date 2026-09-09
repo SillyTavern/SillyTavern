@@ -6,6 +6,7 @@ import {
     getRequestHeaders,
     reloadCurrentChat,
     saveSettingsDebounced,
+    settings,
     substituteParams,
     updateMessageBlock,
 } from '../../../script.js';
@@ -19,6 +20,7 @@ import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.
 import { enumTypes, SlashCommandEnumValue } from '../../slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
+import { power_user } from '/scripts/power-user.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -36,6 +38,11 @@ const defaultSettings = {
     provider: 'google',
     auto_mode: autoModeOptions.NONE,
     deepl_endpoint: 'free',
+    openai_compatible_system_prompt: '',
+    openai_compatible_user_prompt: '',
+    openai_compatible_model_override: '',
+    openai_compatible_chunk_size: 2000,
+    openai_compatible_endpoint_override: '',
 };
 
 const languageCodes = {
@@ -146,7 +153,7 @@ const languageCodes = {
     'Zulu': 'zu',
 };
 
-const KEY_REQUIRED = ['deepl', 'libre'];
+const KEY_REQUIRED = ['deepl', 'libre', 'translate_openai_compatible'];
 const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 
 function showKeysButton() {
@@ -157,6 +164,7 @@ function showKeysButton() {
     $('#translate_url_button').toggle(providerOptionalUrl).data('key', extension_settings.translate.provider + '_url');
     $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
     $('#deepl_api_endpoint').toggle(extension_settings.translate.provider === 'deepl');
+    $('#translate_openai_compatible_settings').toggle(extension_settings.translate.provider === 'translate_openai_compatible');
 }
 
 function loadSettings() {
@@ -170,6 +178,12 @@ function loadSettings() {
     $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', 'true');
     $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', 'true');
     $('#deepl_api_endpoint').val(extension_settings.translate.deepl_endpoint).toggle(extension_settings.translate.provider === 'deepl');
+    $('#translate_openai_compatible_url_input').val(extension_settings.translate.openai_compatible_endpoint_override);
+    $('#translate_openai_compatible_model_input').val(extension_settings.translate.openai_compatible_model_override);
+    $('#translate_openai_compatible_system_prompt_textarea').val(extension_settings.translate.openai_compatible_system_prompt);
+    $('#translate_openai_compatible_user_prompt_textarea').val(extension_settings.translate.openai_compatible_user_prompt);
+    $('#translate_openai_compatible_block_size_slider').val(extension_settings.translate.openai_compatible_chunk_size);
+    $('#translate_openai_compatible_block_size_slider_counter').val(extension_settings.translate.openai_compatible_chunk_size);
     showKeysButton();
 }
 
@@ -425,6 +439,71 @@ async function translateProviderYandex(text, lang) {
 }
 
 /**
+ * Translates text using the OpenAI Compatible API
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @returns {Promise<string>} Translated text
+ */
+async function translateProviderOpenAICompatible(text, lang) {
+    let fromChar = false;
+    let fromLang = '';
+    let toLang = '';
+    if (lang === extension_settings.translate.internal_language) {
+        fromChar = false;
+        fromLang = extension_settings.translate.target_language;
+        toLang = extension_settings.translate.internal_language;
+    } else {
+        fromChar = true;
+        fromLang = extension_settings.translate.internal_language;
+        toLang = extension_settings.translate.target_language;
+    }
+
+    const context = getContext();
+    const char = context.getCharacterCardFields().personality;
+    const user = substituteParams(power_user.persona_description);
+    const authorPersonality = fromChar ? char : user;
+
+    const systemPrompt = substituteParams(
+        extension_settings.translate.openai_compatible_system_prompt,
+        {
+            dynamicMacros: {
+                messageAuthorPersonality: authorPersonality,
+                translateFromLang: fromLang,
+                translateToLang: toLang,
+                messageToTranslate: text,
+            },
+        },
+    );
+    const userPrompt = substituteParams(
+        extension_settings.translate.openai_compatible_user_prompt,
+        {
+            dynamicMacros: {
+                messageAuthorPersonality: authorPersonality,
+                translateFromLang: fromLang,
+                translateToLang: toLang,
+                messageToTranslate: text,
+            },
+        },
+    );
+
+    const openAIUrl = extension_settings.translate.openai_compatible_endpoint_override || settings.oai_settings.custom_url;
+    const model = extension_settings.translate.openai_compatible_model_override || settings.oai_settings.custom_model;
+
+    const response = await fetch('/api/translate/openai_compatible', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ endpoint: openAIUrl, model: model, system_prompt: systemPrompt, user_prompt: userPrompt }),
+    });
+
+    if (response.ok) {
+        const result = await response.text();
+        return result;
+    }
+
+    throw new Error(response.statusText);
+}
+
+/**
  * Splits text into chunks and translates each chunk separately
  * @param {string} text Text to translate
  * @param {string} lang Target language code
@@ -515,6 +594,8 @@ async function translateInner(text, lang, provider) {
             return await chunkedTranslate(text, lang, translateProviderBing, 1000);
         case 'yandex':
             return await translateProviderYandex(text, lang);
+        case 'translate_openai_compatible':
+            return await chunkedTranslate(text, lang, translateProviderOpenAICompatible, extension_settings.translate.openai_compatible_chunk_size);
         default:
             console.error('Unknown translation provider', provider);
             return text;
@@ -750,6 +831,55 @@ export async function init() {
         extension_settings.translate.deepl_endpoint = event.target.value;
         saveSettingsDebounced();
     });
+    $('#translate_openai_compatible_url_input').on('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_endpoint_override = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_model_input').on('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_model_override = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_system_prompt_textarea').on('change', (event) => {
+        if (!(event.target instanceof HTMLTextAreaElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_system_prompt = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_user_prompt_textarea').on('change', (event) => {
+        if (!(event.target instanceof HTMLTextAreaElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_user_prompt = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_block_size_slider').on('input', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        $('#translate_openai_compatible_block_size_slider_counter').val(event.target.value);
+    });
+    $('#translate_openai_compatible_block_size_slider').on('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_chunk_size = event.target.value;
+        saveSettingsDebounced();
+    });
+    $('#translate_openai_compatible_block_size_slider_counter').on('change', (event) => {
+        if (!(event.target instanceof HTMLInputElement)) {
+            return;
+        }
+        extension_settings.translate.openai_compatible_chunk_size = event.target.value;
+        saveSettingsDebounced();
+    });
+
     $(document).on('click', '.mes_translate', onMessageTranslateClick);
 
     [event_types.SECRET_WRITTEN, event_types.SECRET_DELETED, event_types.SECRET_ROTATED].forEach((eventType) => {
