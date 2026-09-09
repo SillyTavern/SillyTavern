@@ -278,6 +278,56 @@ export function registerCoreMacros() {
         handler: ({ unnamedArgs: [value] }) => Array.from(value).reverse().join(''),
     });
 
+    MacroRegistry.registerMacro('uppercase', {
+        category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'value',
+                type: MacroValueType.STRING,
+                description: 'The string to uppercase.',
+            },
+        ],
+        description: 'Uppercases the characters of the argument provided.',
+        returns: 'Uppercased string.',
+        exampleUsage: ['{{uppercase::I am Lana}}'],
+        handler: ({ unnamedArgs: [value] }) => value.toUpperCase(),
+    });
+
+    MacroRegistry.registerMacro('lowercase', {
+        category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'value',
+                type: MacroValueType.STRING,
+                description: 'The string to lowercase.',
+            },
+        ],
+        description: 'Lowercases the characters of the argument provided.',
+        returns: 'Lowercased string.',
+        exampleUsage: ['{{lowercase::I am Lana}}'], // => "i am lana"`
+        handler: ({ unnamedArgs: [value] }) => value.toLowerCase(),
+    });
+
+    MacroRegistry.registerMacro('titlecase', {
+        category: MacroCategory.UTILITY,
+        unnamedArgs: [
+            {
+                name: 'value',
+                type: MacroValueType.STRING,
+                description: 'The string to titlecase.',
+            },
+        ],
+        description: 'Uppercases the first character of each word of the argument provided.',
+        returns: 'Titlecased string.',
+        exampleUsage: ['{{titlecase::some TEXT}}'], // => "Some Text"
+
+        // `/([\p{L}\p{N}_])(\S*)/gu` is roughly the unicode-aware version of `/(\w)(\S*)/g`,
+        // which lets e.g. "{{titlecase::éowyn}}" become "Éowyn", rather than "éOwyn".
+        handler: ({ unnamedArgs: [value] }) => value.replace(/([\p{L}\p{N}_])(\S*)/gu, (_, first, rest) => {
+            return first.toUpperCase() + rest.toLowerCase();
+        }),
+    });
+
     // Comment macro: {{// ...}} -> '' (consumes any arguments)
     MacroRegistry.registerMacro('//', {
         aliases: [{ alias: 'comment', visible: false }],
