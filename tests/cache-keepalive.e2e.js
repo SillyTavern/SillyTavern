@@ -211,6 +211,24 @@ for (const native of [false, true]) {
             expect(requests[2].type).toBe('normal');
         });
 
+        test('keeps the original request after an automatic prompt preview rebuild', async ({ page }) => {
+            const requests = await setup(page, native);
+            await page.evaluate(() => window.normalTurn());
+            await page.clock.runFor(1000);
+            await page.evaluate(async () => {
+                await window.emit('GENERATION_STARTED', 'normal', {}, true);
+                window.context.extensionPrompts.DEPTH_PROMPT = { value: 'Derived preview after the reply', depth: 4 };
+            });
+            await page.clock.fastForward(239000);
+            await expect(page.locator('[data-status]')).toContainText('(1/6)');
+            expect(requests).toHaveLength(2);
+            expect(requests[1].messages.slice(0, -1)).toEqual(requests[0].messages);
+            await page.evaluate(() => { window.context.chatMetadata.note_prompt = 'User edited the author note'; });
+            await page.clock.fastForward(240000);
+            expect(requests).toHaveLength(2);
+            await expect(page.locator('[data-status]')).toContainText('Context changed');
+        });
+
         test('refreshes while the foreground request is pending and its output grows', async ({ page }) => {
             const requests = await setup(page, native);
             let foreground;

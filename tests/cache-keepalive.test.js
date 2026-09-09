@@ -230,6 +230,8 @@ describe('cache keepalive', () => {
         expect(contextFingerprint(ctx)).toBe(before);
         ctx.extensionPrompts = { DEPTH_PROMPT: { value: '', depth: 4 } };
         expect(contextFingerprint(ctx)).toBe(before);
+        ctx.extensionPrompts.DEPTH_PROMPT.value = 'Rebuilt preview output';
+        expect(contextFingerprint(ctx)).toBe(before);
         ctx.chat[0].extra.reasoning = '';
         expect(contextFingerprint(ctx)).toBe(before);
         for (const mutate of [
@@ -240,7 +242,6 @@ describe('cache keepalive', () => {
             value => { value.chatCompletionSettings.tools[0].function.name = 'new'; },
             value => { value.extensionSettings.other.prompt = 'y'; },
             value => { value.chatId = 'two'; },
-            value => { value.extensionPrompts.DEPTH_PROMPT.value = 'A real author note'; },
         ]) {
             const copy = structuredClone(ctx);
             mutate(copy);

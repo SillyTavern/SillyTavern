@@ -26,9 +26,8 @@ export function contextFingerprint(ctx) {
         character,
         group: ctx.groups.find(group => group.id == ctx.groupId),
         names: [ctx.name1, ctx.name2],
-        // Prompt assembly skips empty entries; extensions can recreate these
-        // after generation without changing any input to the model.
-        prompts: Object.fromEntries(Object.entries(ctx.extensionPrompts ?? {}).filter(([, prompt]) => prompt.value)),
+        // extensionPrompts is derived scratch state rebuilt by prompt previews.
+        // Compare its source settings below; replay uses the captured final body.
         api: ctx.mainApi,
         completion: ctx.chatCompletionSettings,
         powerUser: ctx.powerUserSettings,

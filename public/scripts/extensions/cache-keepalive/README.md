@@ -20,6 +20,7 @@ Switching chats, editing history, changing a model/preset/connection, or changin
 
 ## Cache behavior and limits
 
+- Comparison tracks chat content and source settings, excluding chat-save timestamps and derived prompt-preview scratch data. Previews never replace the captured final request, and parallel quiet requests cannot overwrite a normal chat snapshot.
 - Concurrent refreshes can reuse only matching cache entries that already exist. On Claude, a new cache entry becomes available after the first response begins; an earlier parallel request may write a new entry instead of hitting a cache.
 - This keeps the **last real request's input prefix** warm. The model's latest reply was output, not part of that cached input, and is not reconstructed or appended to the snapshot. The next normal turn supplies it through SillyTavern's usual prompt construction.
 - The request is sent through the same SillyTavern backend and provider. The provider must support prompt caching; its cache configuration, minimum token threshold, routing, and cache-hit rules still apply. A successful refresh is not proof of a cache hit. Check provider usage such as `cache_read_input_tokens` or `cached_tokens`.
