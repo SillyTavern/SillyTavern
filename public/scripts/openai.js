@@ -2820,6 +2820,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'request_image_resolution': String(settings.request_image_resolution),
         'request_image_aspect_ratio': String(settings.request_image_aspect_ratio),
         'custom_prompt_post_processing': settings.custom_prompt_post_processing,
+        'names_behavior': settings.names_behavior,
         'verbosity': getVerbosity(settings),
     };
 
