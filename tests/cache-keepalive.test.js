@@ -96,7 +96,45 @@ describe('cache keepalive', () => {
         expect(send).toHaveBeenCalledTimes(1);
     });
 
-    test('uses a custom interval and never sends while disabled or busy', async () => {
+    test('refreshes an input snapshot before normal generation finishes', async () => {
+        const { keeper, send, advance } = fixture();
+        keeper.capture(request, 'input-context');
+        advance();
+        await keeper.tick('input-context');
+        expect(send).toHaveBeenCalledTimes(1);
+        const deadline = keeper.nextAt;
+        keeper.settle('finished-chat');
+        expect(keeper.nextAt).toBe(deadline);
+        expect(keeper.count).toBe(1);
+        advance();
+        await keeper.tick('finished-chat');
+        expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    test('normal completion does not clear a background error pause', async () => {
+        const { keeper, advance } = fixture(jest.fn().mockRejectedValue(new Error('HTTP 429')));
+        keeper.capture(request, 'input-context');
+        advance();
+        await keeper.tick('input-context');
+        keeper.settle('finished-chat');
+        expect(keeper.nextAt).toBe(0);
+        expect(keeper.status).toContain('HTTP 429');
+    });
+
+    test('normal completion does not clear the six-refresh pause', async () => {
+        const { keeper, advance } = fixture();
+        keeper.capture(request, 'input-context');
+        for (let i = 0; i < 6; i++) {
+            advance();
+            await keeper.tick('input-context');
+        }
+        keeper.settle('finished-chat');
+        expect(keeper.count).toBe(6);
+        expect(keeper.nextAt).toBe(0);
+        expect(keeper.status).toContain('Paused');
+    });
+
+    test('uses a custom interval and never sends while disabled or unavailable', async () => {
         const { keeper, send, advance } = fixture();
         keeper.configure(true, 0.5);
         keeper.capture(request);
@@ -164,7 +202,7 @@ describe('cache keepalive', () => {
         expect(send).toHaveBeenCalledTimes(2);
     });
 
-    test('a request must finish before it can be refreshed', async () => {
+    test('a request without a comparison context cannot be refreshed', async () => {
         const { keeper, send, advance } = fixture();
         keeper.capture(request);
         advance();
@@ -175,7 +213,7 @@ describe('cache keepalive', () => {
     test('compares old messages, metadata, tools/settings and identity, excluding its own controls', () => {
         const ctx = {
             chatId: 'one', characterId: 0, characters: [{ name: 'Character' }], groups: [],
-            chat: [{ mes: 'old' }, { mes: 'latest' }], chatMetadata: { note: 'note' },
+            chat: [{ mes: 'old', extra: {} }, { mes: 'latest' }], chatMetadata: { note: 'note' },
             extensionSettings: { cache_keepalive: { enabled: false }, other: { prompt: 'x' } },
             chatCompletionSettings: { model: 'a', tools: request.tools },
         };
@@ -184,8 +222,11 @@ describe('cache keepalive', () => {
         expect(contextFingerprint(ctx)).toBe(before);
         ctx.extensionPrompts = { DEPTH_PROMPT: { value: '', depth: 4 } };
         expect(contextFingerprint(ctx)).toBe(before);
+        ctx.chat[0].extra.reasoning = '';
+        expect(contextFingerprint(ctx)).toBe(before);
         for (const mutate of [
             value => { value.chat[0].mes = 'edited'; },
+            value => { value.chat[0].extra.reasoning = 'Changed reasoning'; },
             value => { value.chatMetadata.note = 'changed'; },
             value => { value.chatCompletionSettings.model = 'b'; },
             value => { value.chatCompletionSettings.tools[0].function.name = 'new'; },

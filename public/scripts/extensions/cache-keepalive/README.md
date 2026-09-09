@@ -6,20 +6,21 @@ Opt-in background refreshes for the active SillyTavern Chat Completion conversat
 
 Open **Extensions → Automatic cache keepalive**, enable the switch, and send a normal chat message. The default interval is **4 minutes**; the supported range is 0.1–1440 minutes. Choose an interval shorter than your provider's cache lifetime.
 
-The extension retains the last actual request in memory, after prompt assembly and request customization. After the normal reply finishes, it sends a copy of that request with one appended user message:
+The extension retains the last actual request in memory, after prompt assembly and request customization. At each deadline, including while the normal reply is still being generated, it sends a copy of that request with one appended user message:
 
 > 这只是刷新缓存，收到后回复确认即可。
 
-The interval starts when the request is dispatched, including generation time. A request sent at 00:00 and completed at 02:00 is first refreshed around 04:00, not 06:00. Subsequent deadlines also use the refresh dispatch time. Normal generation is never interrupted or refreshed concurrently; an overdue reply triggers one refresh on the next check after completion, without a catch-up burst. Extreme responses exceeding ten minutes receive no special handling and may outlast the cache. Manual Resume waits one interval from the click.
+The interval starts when the request is dispatched, including generation time. A request sent at 00:00 and completed at 02:00 is first refreshed around 04:00, not 06:00. Subsequent deadlines also use the refresh dispatch time. Refreshes run concurrently with normal generation using independent abort signals. Background refreshes never overlap each other or create catch-up bursts. Normal completion preserves the current refresh deadline, count and error pause. Manual Resume waits one interval from the click.
 
 No refresh message or reply is added to the chat. Draft text is untouched. Returned tool calls are discarded without execution. Tool definitions, tool choice, model, system prompt, history, images, thinking settings, output budget, stream setting, and routing parameters are retained. Only `n` is reduced to one and the refresh instruction is appended.
 
 After **six completed refreshes of an unchanged context**, automatic refreshes pause. **Resume** starts another cycle. A new normal generation replaces the snapshot and starts a new cycle. Errors and requests lasting longer than 60 seconds pause refreshes; there is no automatic error retry loop.
 
-Switching chats, editing history, changing a model/preset/connection, or changing world info invalidates the saved request. Send a normal message again to establish a new snapshot. The context comparison includes the full chat, metadata, active character/group, prompt settings and extension settings. Auxiliary quiet requests are excluded. Request bodies are never written to settings or browser storage.
+Switching chats, editing history, changing a model/preset/connection, or changing world info invalidates the saved request. Send a normal message again to establish a new snapshot. During generation, the comparison protects the submitted input and settings while excluding the growing output slot, including an existing slot being swiped or continued. History edits and model/connection changes still invalidate the snapshot. After normal completion, comparison includes the full chat, metadata, active character/group, prompt settings and extension settings. Auxiliary quiet requests are excluded. Request bodies are never written to settings or browser storage.
 
 ## Cache behavior and limits
 
+- Concurrent refreshes can reuse only matching cache entries that already exist. On Claude, a new cache entry becomes available after the first response begins; an earlier parallel request may write a new entry instead of hitting a cache.
 - This keeps the **last real request's input prefix** warm. The model's latest reply was output, not part of that cached input, and is not reconstructed or appended to the snapshot. The next normal turn supplies it through SillyTavern's usual prompt construction.
 - The request is sent through the same SillyTavern backend and provider. The provider must support prompt caching; its cache configuration, minimum token threshold, routing, and cache-hit rules still apply. A successful refresh is not proof of a cache hit. Check provider usage such as `cache_read_input_tokens` or `cached_tokens`.
 - SillyTavern's provider conversion and depth-based cache markers still apply. Appending a user message can affect trailing message grouping or cache breakpoints. Exact preservation is guaranteed for the original **frontend request messages**, not every provider's final wire representation. Cache hits/TTL have not been verified against a paid provider in the automated tests.

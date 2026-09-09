@@ -108,20 +108,21 @@ export class CacheKeeper {
         this.report(this.enabled ? status : 'Disabled');
     }
 
-    capture(request) {
+    capture(request, context = null) {
         if (!this.enabled) return;
         // Validate now, before accepting a snapshot of a real request.
         buildRefreshRequest(request);
-        this.invalidate('Waiting for generation to finish');
+        this.invalidate('Waiting for a context snapshot');
         // Generation time consumes the cache lifetime too.
         this.nextAt = this.now() + this.interval * 60000;
         this.request = structuredClone(request);
+        if (context !== null) this.settle(context);
     }
 
     settle(context) {
         if (!this.enabled || !this.request) return;
         this.context = context;
-        this.report('Waiting for next refresh');
+        if (this.nextAt && this.count < 6 && !this.controller) this.report('Waiting for next refresh');
     }
 
     resume(context) {
@@ -134,13 +135,13 @@ export class CacheKeeper {
         this.settle(context);
     }
 
-    async tick(context, busy = false) {
+    async tick(context, unavailable = false) {
         if (!this.enabled || !this.request || this.context === null) return;
         if (context !== this.context) {
             this.invalidate();
             return;
         }
-        if (busy || this.controller || this.count >= 6 || !this.nextAt || this.now() < this.nextAt) return;
+        if (unavailable || this.controller || this.count >= 6 || !this.nextAt || this.now() < this.nextAt) return;
         const epoch = this.epoch;
         const controller = new AbortController();
         this.controller = controller;

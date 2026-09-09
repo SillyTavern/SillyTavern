@@ -5,9 +5,14 @@ const ENDPOINT = '/api/backends/chat-completions/generate';
 const SETTING = 'cache_keepalive';
 let cleanup;
 
+// Streaming initializes absent reasoning fields to an empty string.
+function serializeContext(value) {
+    return JSON.stringify(value, (key, entry) => key === 'reasoning' && entry === '' ? undefined : entry);
+}
+
 /** Include the whole chat and prompt settings, not just the most recent message. */
 export function contextFingerprint(ctx) {
-    return JSON.stringify({
+    return serializeContext({
         chatId: ctx.chatId,
         characterId: ctx.characterId,
         groupId: ctx.groupId,
@@ -41,7 +46,14 @@ export function init() {
     let candidateChat = null;
     let finished = false;
     let received = false;
+    let historyLength = 0;
+    let historyLimit = 0;
+    let protectedHistory = '';
     const identity = () => JSON.stringify([SillyTavern.getContext().groupId, SillyTavern.getContext().characterId, SillyTavern.getContext().chatId]);
+    // Only the active output slot may grow while the original request runs.
+    // Swipe/continue write into the last existing slot; normal replies append.
+    const inputContext = current => ({ ...current, chat: current.chat.slice(0, historyLength) });
+    const fingerprint = current => contextFingerprint(candidateChat === null ? current : inputContext(current));
 
     const panel = document.createElement('div');
     panel.id = 'cache_keepalive_settings';
@@ -91,7 +103,11 @@ export function init() {
         const current = SillyTavern.getContext();
         if (!current.chatId || current.mainApi !== 'openai') return;
         try {
-            keeper.capture(JSON.parse(body));
+            const replacesLast = ['swipe', 'continue'].includes(type);
+            historyLength = Math.max(0, current.chat.length - (replacesLast ? 1 : 0));
+            historyLimit = current.chat.length + (replacesLast ? 0 : 1);
+            protectedHistory = serializeContext(current.chat.slice(0, historyLength));
+            keeper.capture(JSON.parse(body), contextFingerprint(inputContext(current)));
             candidateChat = identity();
             received = false;
         } catch {
@@ -138,9 +154,10 @@ export function init() {
         else if (!busy) invalidate();
     });
     for (const key of ['MESSAGE_EDITED', 'MESSAGE_DELETED', 'MESSAGE_SWIPED', 'MESSAGE_UPDATED',
-        'MESSAGE_SENT', 'MESSAGE_REASONING_EDITED', 'MESSAGE_REASONING_DELETED']) {
-        on(events[key], () => { if (!busy) invalidate(); });
+        'MESSAGE_REASONING_EDITED', 'MESSAGE_REASONING_DELETED']) {
+        on(events[key], invalidate);
     }
+    on(events.MESSAGE_SENT, () => { if (!busy || keeper.request) invalidate(); });
 
     try {
         settings.interval = validateInterval(settings.interval);
@@ -171,17 +188,22 @@ export function init() {
     };
     enabledInput.addEventListener('change', configure);
     intervalInput.addEventListener('change', configure);
-    panel.querySelector('[data-resume]').addEventListener('click', () => keeper.resume(contextFingerprint(SillyTavern.getContext())));
+    panel.querySelector('[data-resume]').addEventListener('click', () => keeper.resume(fingerprint(SillyTavern.getContext())));
     const timer = setInterval(() => {
-        if (!keeper.enabled || !keeper.request || busy) return;
+        if (!keeper.enabled || !keeper.request) return;
         const current = SillyTavern.getContext();
+        if (candidateChat !== null && (candidateChat !== identity() || current.chat.length > historyLimit
+            || serializeContext(current.chat.slice(0, historyLength)) !== protectedHistory)) {
+            invalidate();
+            return;
+        }
         if (finished) {
             if (received && candidateChat === identity()) keeper.settle(contextFingerprint(current));
             else keeper.invalidate('No completed reply; waiting for a normal chat request');
             candidateChat = null;
             finished = false;
         }
-        void keeper.tick(contextFingerprint(current), current.onlineStatus === 'no_connection');
+        void keeper.tick(fingerprint(current), current.onlineStatus === 'no_connection');
     }, 1000);
     cleanup = () => {
         active = false;

@@ -45,6 +45,12 @@ async function setup(page, native) {
             },
         };
         window.SillyTavern = { getContext: () => window.context };
+        window.transportSignals = [];
+        const transportFetch = window.fetch;
+        window.fetch = function (input, options) {
+            if (options?.signal) window.transportSignals.push(options.signal);
+            return transportFetch.apply(this, arguments);
+        };
         window.extension = await import('/index.js');
         window.extension.init();
         window.realRequest = {
@@ -136,6 +142,111 @@ for (const native of [false, true]) {
             await page.clock.runFor(1000);
             await expect(page.locator('[data-status]')).toContainText('(1/6)');
             expect(requests).toHaveLength(2);
+        });
+
+        test('refreshes while the foreground request is pending and its output grows', async ({ page }) => {
+            const requests = await setup(page, native);
+            let foreground;
+            await page.route('**/api/backends/chat-completions/generate', route => {
+                const body = route.request().postDataJSON();
+                if (body.messages.at(-1).content === 'Latest question') {
+                    requests.push(body);
+                    foreground = route;
+                    return;
+                }
+                return route.fallback();
+            });
+            await page.evaluate(async native => {
+                await window.emit('GENERATION_STARTED', 'normal', {}, false);
+                const body = JSON.stringify(window.realRequest);
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'normal', body });
+                window.foregroundController = new AbortController();
+                window.foregroundDone = false;
+                window.normalPending = fetch('/api/backends/chat-completions/generate', { method: 'POST', body, signal: window.foregroundController.signal })
+                    .then(response => response.json()).then(() => { window.foregroundDone = true; });
+            }, native);
+            await expect.poll(() => requests.length).toBe(1);
+            await page.evaluate(() => { window.context.chat.push({ mes: 'Partial output' }); });
+            await page.clock.fastForward(240000);
+            await expect(page.locator('[data-status]')).toContainText('(1/6)');
+            await page.evaluate(() => { window.context.chat.at(-1).mes += ' and more output'; });
+            await page.clock.fastForward(240000);
+            await expect(page.locator('[data-status]')).toContainText('(2/6)');
+            expect(requests).toHaveLength(3);
+            expect(requests[1].messages.slice(0, -1)).toEqual(requests[0].messages);
+            expect(await page.evaluate(() => window.foregroundDone)).toBe(false);
+            expect(await page.evaluate(() => window.foregroundController.signal.aborted)).toBe(false);
+            await foreground.fulfill({ json: { choices: [{ message: { content: 'Finished' } }] } });
+            await page.evaluate(async () => {
+                await window.normalPending;
+                await window.emit('GENERATION_ENDED');
+                await window.emit('MESSAGE_RECEIVED');
+            });
+            await page.clock.runFor(1000);
+            expect(requests).toHaveLength(3);
+            await page.clock.fastForward(239000);
+            await expect(page.locator('[data-status]')).toContainText('(3/6)');
+        });
+
+        test('cancels only background refresh on chat switch, without overlapping refreshes', async ({ page }) => {
+            const requests = await setup(page, native);
+            const held = [];
+            await page.route('**/api/backends/chat-completions/generate', route => {
+                requests.push(route.request().postDataJSON());
+                held.push(route);
+            });
+            await page.evaluate(async native => {
+                await window.emit('GENERATION_STARTED', 'normal', {}, false);
+                const body = JSON.stringify(window.realRequest);
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'normal', body });
+                window.foregroundController = new AbortController();
+                window.normalPending = fetch('/api/backends/chat-completions/generate', { method: 'POST', body, signal: window.foregroundController.signal });
+            }, native);
+            await expect.poll(() => held.length).toBe(1);
+            await page.clock.fastForward(240000);
+            await expect.poll(() => held.length).toBe(2);
+            await page.clock.runFor(10000);
+            expect(held).toHaveLength(2);
+            await page.evaluate(async () => { window.context.chatId = 'another-chat'; await window.emit('CHAT_CHANGED'); });
+            expect(await page.evaluate(() => window.transportSignals.at(-1).aborted)).toBe(true);
+            expect(await page.evaluate(() => window.foregroundController.signal.aborted)).toBe(false);
+            await page.clock.fastForward(240000);
+            expect(held).toHaveLength(2);
+            await held[0].fulfill({ json: { choices: [] } });
+            await page.evaluate(() => window.normalPending.then(() => undefined));
+        });
+
+        test('keeps swipe and continuation output out of the comparison prefix', async ({ page }) => {
+            const requests = await setup(page, native);
+            for (const type of ['swipe', 'continue']) {
+                await page.evaluate(async ({ native, type }) => {
+                    window.context.chat = [{ mes: 'Earlier message' }, { mes: 'Original assistant answer' }];
+                    await window.emit('GENERATION_STARTED', type, {}, false);
+                    const body = JSON.stringify(window.realRequest);
+                    if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type, body });
+                    await fetch('/api/backends/chat-completions/generate', { method: 'POST', body });
+                    window.context.chat.at(-1).mes = 'Growing replacement or continuation';
+                }, { native, type });
+                await page.clock.fastForward(240000);
+                await expect(page.locator('[data-status]')).toContainText('(1/6)');
+            }
+            expect(requests).toHaveLength(4);
+            expect(requests[3].messages.slice(0, -1)).toEqual(requests[2].messages);
+        });
+
+        test('invalidates an earlier-message edit during generation', async ({ page }) => {
+            const requests = await setup(page, native);
+            await page.evaluate(async native => {
+                await window.emit('GENERATION_STARTED', 'normal', {}, false);
+                const body = JSON.stringify(window.realRequest);
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'normal', body });
+                await fetch('/api/backends/chat-completions/generate', { method: 'POST', body });
+                window.context.chat[0].mes = 'Edited while streaming';
+                await window.emit('MESSAGE_EDITED');
+            }, native);
+            await page.clock.fastForward(240000);
+            expect(requests).toHaveLength(1);
+            await expect(page.locator('[data-status]')).toContainText('Context changed');
         });
 
         test('detects changes to an earlier message and never refreshes an inactive chat', async ({ page }) => {
