@@ -11,27 +11,29 @@ function serializeContext(value) {
     return JSON.stringify(value, (key, entry) => key === 'reasoning' && entry === '' ? undefined : entry);
 }
 
-/** Include the whole chat and prompt settings, not just the most recent message. */
+function messageInputs(chat) {
+    return chat.map(message => ({
+        name: message.name, is_user: message.is_user, is_system: message.is_system, mes: message.mes,
+        reasoning: message.extra?.reasoning, file: message.extra?.file, media: message.extra?.media,
+    }));
+}
+
+/** Track editable inputs, never the application's runtime bookkeeping objects. */
 export function contextFingerprint(ctx) {
     const activeCharacter = ctx.characters[ctx.characterId];
-    const character = activeCharacter ? { ...activeCharacter } : activeCharacter;
-    // saveChat updates this sorting timestamp; it is not part of the prompt.
-    if (character) delete character.date_last_chat;
+    const characterFields = ['name', 'description', 'personality', 'scenario', 'first_mes', 'mes_example', 'system_prompt', 'post_history_instructions'];
+    const character = activeCharacter ? Object.fromEntries(characterFields.map(key => [key, activeCharacter[key] ?? activeCharacter.data?.[key]])) : undefined;
+    const noteFields = ['note_prompt', 'note_interval', 'note_depth', 'note_position', 'note_role'];
     return serializeContext({
         chatId: ctx.chatId,
         characterId: ctx.characterId,
         groupId: ctx.groupId,
-        chat: ctx.chat,
-        metadata: ctx.chatMetadata,
+        chat: messageInputs(ctx.chat ?? []),
+        authorNote: Object.fromEntries(noteFields.map(key => [key, ctx.chatMetadata?.[key]])),
         character,
-        group: ctx.groups.find(group => group.id == ctx.groupId),
         names: [ctx.name1, ctx.name2],
-        // extensionPrompts is derived scratch state rebuilt by prompt previews.
-        // Compare its source settings below; replay uses the captured final body.
         api: ctx.mainApi,
         completion: ctx.chatCompletionSettings,
-        powerUser: ctx.powerUserSettings,
-        extensions: Object.fromEntries(Object.entries(ctx.extensionSettings).filter(([key]) => key !== SETTING)),
     });
 }
 
@@ -144,7 +146,7 @@ export function init() {
             const replacesLast = ['swipe', 'continue'].includes(requestType);
             historyLength = Math.max(0, current.chat.length - (replacesLast ? 1 : 0));
             historyLimit = current.chat.length + (replacesLast ? 0 : 1);
-            protectedHistory = serializeContext(current.chat.slice(0, historyLength));
+            protectedHistory = serializeContext(messageInputs(current.chat.slice(0, historyLength)));
             keeper.capture(request, contextFingerprint(inputContext(current)));
             candidateChat = identity();
             received = false;
@@ -168,7 +170,7 @@ export function init() {
         globalThis.fetch = observedFetch;
     }
     on(events.GENERATION_STARTED, (type, options, dryRun) => {
-        if (dryRun) return;
+        if (dryRun || !['normal', 'regenerate', 'swipe', 'continue'].includes(type || 'normal')) return;
         busy = true;
         generationType = type || 'normal';
         invalidate();
@@ -192,7 +194,8 @@ export function init() {
         else if (!busy) invalidate();
     });
     for (const key of ['MESSAGE_EDITED', 'MESSAGE_DELETED', 'MESSAGE_SWIPED', 'MESSAGE_UPDATED',
-        'MESSAGE_REASONING_EDITED', 'MESSAGE_REASONING_DELETED']) {
+        'MESSAGE_REASONING_EDITED', 'MESSAGE_REASONING_DELETED', 'MESSAGE_FILE_EMBEDDED',
+        'FILE_ATTACHMENT_DELETED', 'MEDIA_ATTACHMENT_DELETED']) {
         on(events[key], invalidate);
     }
     on(events.MESSAGE_SENT, () => { if (!busy || keeper.request) invalidate(); });
@@ -248,14 +251,13 @@ export function init() {
         if (!keeper.enabled || !keeper.request) return;
         const current = SillyTavern.getContext();
         if (candidateChat !== null && (candidateChat !== identity() || current.chat.length > historyLimit
-            || serializeContext(current.chat.slice(0, historyLength)) !== protectedHistory)) {
+            || serializeContext(messageInputs(current.chat.slice(0, historyLength))) !== protectedHistory)) {
             invalidate();
             return;
         }
         if (finished) {
-            if (received && candidateChat === identity()) keeper.settle(contextFingerprint(current));
-            else keeper.invalidate('No completed reply; waiting for a normal chat request');
-            candidateChat = null;
+            if (received && candidateChat === identity()) keeper.settle(fingerprint(current));
+            else { keeper.invalidate('No completed reply; waiting for a normal chat request'); candidateChat = null; }
             finished = false;
         }
         void keeper.tick(fingerprint(current), current.onlineStatus === 'no_connection');

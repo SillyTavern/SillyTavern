@@ -218,6 +218,9 @@ for (const native of [false, true]) {
             await page.evaluate(async () => {
                 await window.emit('GENERATION_STARTED', 'normal', {}, true);
                 window.context.extensionPrompts.DEPTH_PROMPT = { value: 'Derived preview after the reply', depth: 4 };
+                window.context.chatMetadata.runtime_preview = { updated: Date.now() };
+                window.context.chat[0].extra = { token_count: 900 };
+                window.context.chat.at(-1).extra = { runtime_output_state: 'Post-processing finished' };
             });
             await page.clock.fastForward(239000);
             await expect(page.locator('[data-status]')).toContainText('(1/6)');

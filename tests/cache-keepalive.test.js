@@ -218,10 +218,10 @@ describe('cache keepalive', () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    test('compares old messages, metadata, tools/settings and identity, excluding its own controls', () => {
+    test('compares message inputs, author notes, tools/settings and identity, excluding runtime state', () => {
         const ctx = {
             chatId: 'one', characterId: 0, characters: [{ name: 'Character' }], groups: [],
-            chat: [{ mes: 'old', extra: {} }, { mes: 'latest' }], chatMetadata: { note: 'note' },
+            chat: [{ mes: 'old', extra: {} }, { mes: 'latest' }], chatMetadata: { note_prompt: 'note' },
             extensionSettings: { cache_keepalive: { enabled: false }, other: { prompt: 'x' } },
             chatCompletionSettings: { model: 'a', tools: request.tools },
         };
@@ -234,13 +234,16 @@ describe('cache keepalive', () => {
         expect(contextFingerprint(ctx)).toBe(before);
         ctx.chat[0].extra.reasoning = '';
         expect(contextFingerprint(ctx)).toBe(before);
+        ctx.chatMetadata.runtime_preview = { updated: Date.now() };
+        ctx.extensionSettings.other.prompt = 'Runtime plugin state';
+        ctx.chat[0].extra.token_count = 900;
+        expect(contextFingerprint(ctx)).toBe(before);
         for (const mutate of [
             value => { value.chat[0].mes = 'edited'; },
             value => { value.chat[0].extra.reasoning = 'Changed reasoning'; },
-            value => { value.chatMetadata.note = 'changed'; },
+            value => { value.chatMetadata.note_prompt = 'changed'; },
             value => { value.chatCompletionSettings.model = 'b'; },
             value => { value.chatCompletionSettings.tools[0].function.name = 'new'; },
-            value => { value.extensionSettings.other.prompt = 'y'; },
             value => { value.chatId = 'two'; },
         ]) {
             const copy = structuredClone(ctx);
