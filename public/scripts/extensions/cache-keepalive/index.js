@@ -42,6 +42,11 @@ export function init() {
     globalThis[OWNER] = true;
     const ctx = SillyTavern.getContext();
     const settings = ctx.extensionSettings[SETTING] ??= { enabled: false, interval: DEFAULT_INTERVAL };
+    // Remove the retired 1.0.9 experiment setting; dispatch timing is always used.
+    if (Object.hasOwn(settings, 'afterReply')) {
+        delete settings.afterReply;
+        ctx.saveSettingsDebounced();
+    }
     const source = ctx.eventSource;
     const events = ctx.eventTypes;
     const listeners = [];
@@ -51,7 +56,6 @@ export function init() {
     let active = true;
     let candidateChat = null;
     let finished = false;
-    let finishedAt = null;
     let received = false;
     let historyLength = 0;
     let historyLimit = 0;
@@ -88,8 +92,6 @@ export function init() {
             <label><span data-label="interval"></span>
                 <input class="text_pole" type="number" min="0.1" max="1440" step="0.1" data-interval>
             </label>
-            <label class="checkbox_label"><input type="checkbox" data-after-reply><span data-label="afterReply"></span></label>
-            <p><small data-label="testHint"></small></p>
             <small data-label="hint"></small>
             <p><small data-label="cacheHint"></small></p>
             <button class="menu_button menu_button_icon" type="button" data-resume data-label="resume"></button>
@@ -98,7 +100,6 @@ export function init() {
     document.querySelector('#extensions_settings').append(panel);
     const enabledInput = panel.querySelector('[data-enabled]');
     const intervalInput = panel.querySelector('[data-interval]');
-    const afterReplyInput = panel.querySelector('[data-after-reply]');
     const status = panel.querySelector('[data-status]');
     let locale;
     let t;
@@ -136,7 +137,7 @@ export function init() {
         source.on(event, handler);
         listeners.push([event, handler]);
     };
-    const invalidate = () => { candidateChat = null; finished = false; finishedAt = null; received = false; keeper.invalidate(); };
+    const invalidate = () => { candidateChat = null; finished = false; received = false; keeper.invalidate(); };
     const capture = (body, type = generationType) => {
         if (!active || !busy) return;
         const current = SillyTavern.getContext();
@@ -180,8 +181,6 @@ export function init() {
         invalidate();
     });
     on(events.GENERATION_ENDED, () => {
-        if (!busy) return;
-        finishedAt = Date.now();
         busy = false;
         generationType = null;
         // Streaming emits MESSAGE_RECEIVED after GENERATION_ENDED, and the
@@ -214,16 +213,14 @@ export function init() {
     }
     enabledInput.checked = settings.enabled === true;
     intervalInput.value = String(settings.interval);
-    afterReplyInput.checked = settings.afterReply === true;
-    keeper.configure(enabledInput.checked, settings.interval, afterReplyInput.checked);
+    keeper.configure(enabledInput.checked, settings.interval);
     const configure = () => {
         try {
             const interval = validateInterval(intervalInput.value);
             intervalInput.setCustomValidity('');
             settings.interval = interval;
             settings.enabled = enabledInput.checked;
-            settings.afterReply = afterReplyInput.checked;
-            keeper.configure(settings.enabled, interval, settings.afterReply);
+            keeper.configure(settings.enabled, interval);
             ctx.saveSettingsDebounced();
         } catch (error) {
             intervalInput.setCustomValidity(t('invalid'));
@@ -237,7 +234,6 @@ export function init() {
     };
     enabledInput.addEventListener('change', configure);
     intervalInput.addEventListener('change', configure);
-    afterReplyInput.addEventListener('change', configure);
     panel.querySelector('[data-resume]').addEventListener('click', () => keeper.resume(fingerprint(SillyTavern.getContext())));
     panel.querySelector('[data-reload]').addEventListener('click', () => location.reload());
     panel.querySelector('[data-update]').addEventListener('click', async event => {
@@ -265,7 +261,7 @@ export function init() {
             return;
         }
         if (finished) {
-            if (received && candidateChat === identity()) keeper.complete(fingerprint(current), finishedAt);
+            if (received && candidateChat === identity()) keeper.settle(fingerprint(current));
             else { keeper.invalidate('No completed reply; waiting for a normal chat request'); candidateChat = null; }
             finished = false;
         }
