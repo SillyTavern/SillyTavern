@@ -99,6 +99,8 @@ export class CacheKeeper {
         this.now = now;
         this.enabled = false;
         this.interval = DEFAULT_INTERVAL;
+        this.afterReply = false;
+        this.replyEndedAt = null;
         this.request = null;
         this.context = null;
         this.count = 0;
@@ -116,8 +118,9 @@ export class CacheKeeper {
         this.changed(this);
     }
 
-    configure(enabled, interval) {
+    configure(enabled, interval, afterReply = false) {
         this.interval = validateInterval(interval);
+        this.afterReply = afterReply === true;
         this.enabled = Boolean(enabled);
         this.invalidate(this.enabled ? 'Waiting for a normal chat request' : 'Disabled');
     }
@@ -132,6 +135,7 @@ export class CacheKeeper {
         this.lastSuccessAt = null;
         this.lastAttemptAt = null;
         this.cacheUsage = null;
+        this.replyEndedAt = null;
         this.report(this.enabled ? status : 'Disabled');
     }
 
@@ -141,7 +145,7 @@ export class CacheKeeper {
         buildRefreshRequest(request);
         this.invalidate('Waiting for a context snapshot');
         // Generation time consumes the cache lifetime too.
-        this.nextAt = this.now() + this.interval * 60000;
+        this.nextAt = this.afterReply ? 0 : this.now() + this.interval * 60000;
         this.request = structuredClone(request);
         if (context !== null) this.settle(context);
     }
@@ -149,10 +153,26 @@ export class CacheKeeper {
     settle(context) {
         if (!this.enabled || !this.request) return;
         this.context = context;
+        if (this.afterReply && this.replyEndedAt === null) {
+            this.report('Waiting for normal reply to finish');
+            return;
+        }
         if (this.nextAt && this.count < 6 && !this.controller) this.report('Waiting for next refresh');
     }
 
+    complete(context, endedAt = this.now()) {
+        if (!this.enabled || !this.request || this.replyEndedAt !== null) return;
+        if (this.context !== context) { this.invalidate(); return; }
+        this.replyEndedAt = endedAt;
+        if (this.afterReply) this.nextAt = endedAt + this.interval * 60000;
+        this.settle(context);
+    }
+
     resume(context) {
+        if (this.afterReply) {
+            this.invalidate('Waiting for a normal chat request');
+            return;
+        }
         if (!this.request || this.context !== context) {
             this.invalidate();
             return;
@@ -183,7 +203,7 @@ export class CacheKeeper {
             this.cacheUsage = usage ?? { readTokens: null, writeTokens: null };
             this.lastSuccessAt = this.now();
             this.count++;
-            this.nextAt = this.count < 6 ? startedAt + this.interval * 60000 : 0;
+            this.nextAt = this.count < 6 ? (this.afterReply ? this.lastSuccessAt : startedAt) + this.interval * 60000 : 0;
             this.report(this.count === 6 ? 'Paused: context unchanged for 6 refreshes' : 'Refresh completed');
         } catch (error) {
             if (epoch !== this.epoch) return;

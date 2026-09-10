@@ -1,7 +1,10 @@
-export const VERSION = '1.0.8';
+export const VERSION = '1.0.9';
 
 const messages = {
     en: {
+        afterReply: 'Test: start timer after reply finishes',
+        testHint: 'Uses the interval above (normally 4 minutes). Waits for the normal reply to finish; subsequent refreshes also count from completion. Switching modes requires a new normal request. Resume in test mode waits for a new normal request. Cache hits alone do not prove the TTL start point.',
+        'Waiting for normal reply to finish': 'Waiting for normal reply to finish (test mode)',
         title: 'Automatic cache keepalive', enable: 'Enable', interval: 'Interval in minutes', resume: 'Resume',
         hint: 'Capture a normal chat request first. Background replies never enter chat. API usage is billable; keep this tab open.',
         version: 'Version', update: 'Check and update', updating: 'Checking for updates…', updated: 'Update installed. Reload the page to apply it.',
@@ -27,6 +30,9 @@ const messages = {
         'No completed reply; waiting for a normal chat request': 'No completed reply; waiting for a normal chat request',
     },
     zh: {
+        afterReply: '测试：回复结束后开始计时',
+        testHint: '沿用上方间隔（通常为 4 分钟）。正常回复结束后才开始倒计时，后续保活也从回复结束计时。切换模式后需重新正常发送一次；测试模式点击恢复也会等待新的正常请求。单次命中不能直接证明缓存起算点。',
+        'Waiting for normal reply to finish': '等待正常回复结束（测试模式）',
         title: '自动保持缓存在线', enable: '开启', interval: '刷新间隔（分钟）', resume: '恢复',
         hint: '开启后先正常发送一次消息。后台回复不会写入聊天；请求会产生 API 费用，请保持页面打开。',
         version: '当前版本', update: '检查并更新', updating: '正在检查更新…', updated: '更新已安装，请刷新页面使其生效。',
@@ -72,6 +78,7 @@ export function countdownText(state, t, now = Date.now(), unavailable = false) {
     if (!state.enabled) return t('off');
     if (!state.request) return t('waiting');
     if (state.controller) return t('running');
+    if (state.afterReply && state.replyEndedAt === null) return t('Waiting for normal reply to finish');
     if (!state.nextAt || state.count >= 6) return t('paused');
     if (unavailable) return t('offline');
     const seconds = Math.ceil((state.nextAt - now) / 1000);

@@ -81,6 +81,43 @@ async function setup(page, native, { locale = 'en-US', forwardedStream = false, 
 for (const native of [false, true]) {
     // eslint-disable-next-line playwright/valid-title -- Both branches are literal suite titles.
     test.describe(native ? 'Native request event' : 'Stock plugin fetch observer', () => {
+        test('completion timing switch waits until reply completion then uses the unchanged four-minute interval', async ({ page }) => {
+            const requests = await setup(page, native, { locale: 'zh-CN', reply: { usage: { cache_read_input_tokens: 800 } } });
+            await page.locator('[data-after-reply]').check();
+            await expect(page.locator('[data-interval]')).toHaveValue('4');
+            await page.evaluate(async native => {
+                await window.emit('GENERATION_STARTED', 'normal', {}, false);
+                const body = JSON.stringify(window.realRequest);
+                if (native) await window.emit('CHAT_COMPLETION_REQUEST_READY', { type: 'normal', body });
+                await fetch('/api/backends/chat-completions/generate', { method: 'POST', body });
+            }, native);
+            await page.clock.fastForward(120000);
+            await expect(page.locator('[data-countdown]')).toContainText('等待正常回复结束');
+            expect(requests).toHaveLength(1);
+            await page.evaluate(async () => {
+                window.context.chat.push({ mes: 'Normal model reply' });
+                await window.emit('GENERATION_ENDED');
+                await window.emit('MESSAGE_RECEIVED');
+            });
+            await page.clock.fastForward(120000);
+            await expect(page.locator('[data-countdown]')).toContainText('02:00');
+            expect(requests).toHaveLength(1);
+            // An auxiliary completion must not restart the countdown.
+            await page.evaluate(() => window.emit('GENERATION_ENDED'));
+            await page.clock.fastForward(120000);
+            await expect(page.locator('[data-cache]')).toContainText('已命中：800');
+            expect(requests).toHaveLength(2);
+            expect(requests[1].messages.slice(0, -1)).toEqual(requests[0].messages);
+            await expect(page.locator('#chat')).toHaveText('Real chat');
+            await expect(page.locator('#send_textarea')).toHaveValue('Unsent draft');
+            await page.locator('[data-after-reply]').uncheck();
+            await expect(page.locator('[data-snapshot]')).toContainText('尚未捕获');
+            await page.evaluate(() => window.normalTurn());
+            await page.clock.fastForward(240000);
+            await expect(page.locator('[data-status]')).toContainText('(1/6)');
+            expect(requests).toHaveLength(4);
+        });
+
         test('accepts stock server forwarded SSE without an event-stream response header', async ({ page }) => {
             const requests = await setup(page, native, { locale: 'zh-CN', forwardedStream: true, reply: { usage: { cache_read_input_tokens: 33960 } } });
             await page.evaluate(() => window.normalTurn());

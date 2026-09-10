@@ -45,3 +45,7 @@ The native version is a built-in extension with a read-only `CHAT_COMPLETION_REQ
 ## Validation
 
 From the repository root, run `npm run lint`. From `tests`, run `npm run test:unit -- --runInBand` and `npx playwright test cache-keepalive.e2e.js`. The browser tests use mocked model responses and cover both the native event and stock fetch observer, including both generation event orders, full-prefix equality, six-refresh pause, manual resume, custom intervals, chat switching, earlier-message edits, quiet request exclusion and disposal.
+
+### Cache timing test
+
+Enable **Test: start timer after reply finishes** to count the existing interval (normally 4 minutes) from normal reply completion. Subsequent refreshes also count from completion. The default remains request-dispatch timing. Switching modes requires a new normal request; Resume in test mode also waits for one. This deliberately delays refreshes to investigate cache lifetime; a hit alone does not establish the provider’s TTL or its starting point.

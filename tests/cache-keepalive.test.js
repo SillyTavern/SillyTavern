@@ -29,6 +29,49 @@ function fixture(send = jest.fn().mockResolvedValue(undefined)) {
 }
 
 describe('cache keepalive', () => {
+    test('completion timing waits four minutes after a two-minute reply and resets on new requests', async () => {
+        const { keeper, advance, send } = fixture();
+        keeper.configure(true, 4, true);
+        keeper.capture(request, 'whole-context');
+        advance(120000);
+        await keeper.tick('whole-context');
+        expect(send).not.toHaveBeenCalled();
+        keeper.complete('whole-context');
+        expect(keeper.nextAt).toBe(360000);
+        advance(120000);
+        keeper.complete('whole-context');
+        await keeper.tick('whole-context');
+        expect(keeper.nextAt).toBe(360000);
+        expect(send).not.toHaveBeenCalled();
+        advance(120000);
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(1);
+        keeper.capture(request, 'whole-context');
+        expect(keeper.nextAt).toBe(0);
+        expect(keeper.replyEndedAt).toBeNull();
+        advance(600000);
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(1);
+        keeper.configure(true, 4, false);
+        keeper.capture(request, 'whole-context');
+        advance();
+        await keeper.tick('whole-context');
+        expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    test('completion-based refreshes count from completion and resume requires a new normal request', async () => {
+        const { keeper, advance } = fixture(async () => { advance(120000); return { readTokens: 10 }; });
+        keeper.configure(true, 4, true);
+        keeper.capture(request, 'whole-context');
+        keeper.complete('whole-context');
+        advance();
+        await keeper.tick('whole-context');
+        expect(keeper.nextAt).toBe(600000);
+        keeper.resume('whole-context');
+        expect(keeper.request).toBeNull();
+        expect(keeper.nextAt).toBe(0);
+    });
+
     test('allows a two-minute refresh and aborts a stalled refresh after three minutes', async () => {
         jest.useFakeTimers();
         try {
