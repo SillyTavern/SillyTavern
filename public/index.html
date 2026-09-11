@@ -7078,6 +7078,33 @@
                         </div>
                     </div>
                 </div>
+                <div class="flex-container wide100p flexGap10">
+                    <div class="flex4 flex-container flexFlowColumn flexNoGap">
+                        <div class="flex-container justifySpaceBetween">
+                            <small for="personaFilter" data-i18n="Filter to Personas">
+                                Filter to Personas
+                            </small>
+                            <label class="checkbox_label flexNoGap margin-r5" for="persona_exclusion">
+                                <input type="checkbox" name="persona_exclusion" />
+                                <span>
+                                    <small title="Switch the Persona filter around to exclude the listed personas from matching for this entry" data-i18n="[title]Switch the Persona filter around to exclude the listed personas from matching for this entry">
+                                        <span data-i18n="Exclude">Exclude</span>
+                                        <div class="fa-solid fa-circle-info opacity50p"></div>
+                                    </small>
+                                </span>
+                            </label>
+                        </div>
+                        <div class="range-block-range">
+                            <select name="personaFilter" multiple>
+                                <option value="" data-i18n="-- Personas not found --">
+                                    -- Personas not found --
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex4">
+                    </div>
+                </div>
                 <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                     <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text">
                         <label class="checkbox flex-container">

@@ -2130,6 +2130,14 @@ function addMissingWorldInfoFields(data) {
                 tags: [],
             };
         }
+
+        // Ensure that the personaFilter is an object with the expected structure
+        if (!entry.personaFilter || typeof entry.personaFilter !== 'object' || Array.isArray(entry.personaFilter)) {
+            entry.personaFilter = {
+                isExclude: false,
+                personas: [],
+            };
+        }
     });
 
     return data;
@@ -3161,6 +3169,57 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name 
         await saveWorldInfo(name, data);
     });
 }
+/** Init persona filter select2. */
+function initPersonaFilterSelect2Helper(personaFilter) {
+    if (!isMobile()) {
+        $(personaFilter).select2({
+            width: '100%',
+            placeholder: t`Tie this entry to specific personas`,
+            allowClear: true,
+            closeOnSelect: false,
+        });
+    }
+}
+
+/** Fill persona options (values are avatar ids, stable across renames). */
+function fillPersonaOptionsHelper({ personaFilter, entry }) {
+    Object.entries(power_user.personas).forEach(([avatarId, personaName]) => {
+        const option = document.createElement('option');
+        option.innerText = personaName;
+        option.value = avatarId;
+        option.selected = entry.personaFilter?.personas?.includes(avatarId);
+        option.setAttribute('data-type', 'persona');
+        personaFilter.append(option);
+    });
+}
+
+/** Persist persona filter selection. */
+function handlePersonaFilterChangeHelper({ personaFilter, data, entry, name }) {
+    personaFilter.on('mousedown change', async function (e) {
+        if (world_names.length === 0) {
+            e.preventDefault();
+            return;
+        }
+        const uid = $(this).data('uid');
+        const selected = $(this).find(':selected');
+        if ((!selected || selected?.length === 0) && !data.entries[uid].personaFilter?.isExclude) {
+            delete data.entries[uid].personaFilter;
+        } else {
+            const personas = selected.filter('[data-type="persona"]').map((_, e) => e instanceof HTMLOptionElement && e.value).toArray();
+            Object.assign(
+                data.entries[uid],
+                {
+                    personaFilter: {
+                        isExclude: data.entries[uid].personaFilter?.isExclude ?? false,
+                        personas: personas,
+                    },
+                },
+            );
+        }
+        setWIOriginalDataValue(data, uid, 'persona_filter', data.entries[uid].personaFilter);
+        await saveWorldInfo(name, data);
+    });
+}
 
 /**
  * Helper to handle probability input.
@@ -3664,6 +3723,41 @@ export async function getWorldEntry(name, data, entry) {
         initCharacterFilterSelect2Helper(characterFilter);
         fillCharacterAndTagOptionsHelper({ characterFilter, entry });
         handleCharacterFilterChangeHelper({ characterFilter, data, entry, name });
+
+        // Persona filter (small[for] matches the entry template markup)
+        const personaFilterLabel = editTemplate.find('small[for="personaFilter"]');
+        personaFilterLabel.text(entry.personaFilter?.isExclude ? 'Exclude Persona(s)' : 'Filter to Persona(s)');
+        const personaExclusionInput = editTemplate.find('input[name="persona_exclusion"]');
+        personaExclusionInput.data('uid', entry.uid);
+        personaExclusionInput.on('input', async function (_, { noSave = false } = {}) {
+            const uid = $(this).data('uid');
+            const value = $(this).prop('checked');
+            personaFilterLabel.text(value ? 'Exclude Persona(s)' : 'Filter to Persona(s)');
+            if (data.entries[uid].personaFilter) {
+                if (!value && data.entries[uid].personaFilter.personas.length === 0) {
+                    delete data.entries[uid].personaFilter;
+                } else {
+                    data.entries[uid].personaFilter.isExclude = value;
+                }
+            } else if (value) {
+                Object.assign(data.entries[uid], { personaFilter: { isExclude: true, personas: [] } });
+            }
+            if (data.entries[uid]?.personaFilter?.personas?.length > 0) {
+                for (const avatarId of [...data.entries[uid].personaFilter.personas]) {
+                    if (!power_user.personas[avatarId]) {
+                        data.entries[uid].personaFilter.personas = data.entries[uid].personaFilter.personas.filter(x => x !== avatarId);
+                    }
+                }
+            }
+            setWIOriginalDataValue(data, uid, 'persona_filter', data.entries[uid].personaFilter);
+            !noSave && await saveWorldInfo(name, data);
+        });
+        personaExclusionInput.prop('checked', entry.personaFilter?.isExclude ?? false).trigger('input', { noSave: true });
+        const personaFilter = editTemplate.find('select[name="personaFilter"]');
+        personaFilter.data('uid', entry.uid);
+        initPersonaFilterSelect2Helper(personaFilter);
+        fillPersonaOptionsHelper({ personaFilter, entry });
+        handlePersonaFilterChangeHelper({ personaFilter, data, entry, name });
 
         // Content
         const counter = editTemplate.find('.world_entry_form_token_counter');
@@ -4697,6 +4791,14 @@ function parseDecorators(content) {
     return [[], content];
 }
 
+/** Persona include/exclude check (avatar ids; missing/empty never filters). */
+export function isPersonaFiltered(entry, currentPersonaId) {
+    const personas = entry?.personaFilter?.personas;
+    if (!Array.isArray(personas) || personas.length === 0) return false;
+    const listed = personas.includes(currentPersonaId);
+    return entry.personaFilter.isExclude ? listed : !listed;
+}
+
 /**
  * Performs a scan on the chat and returns the world info activated.
  * @param {string[]} chat The chat messages to scan, in reverse order.
@@ -4840,6 +4942,12 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                         }
                     }
                 }
+            }
+
+            // Check if this entry applies to the current persona or if it's excluded (#5595)
+            if (isPersonaFiltered(entry, user_avatar)) {
+                log('filtered out by persona');
+                continue;
             }
 
             const isSticky = timedEffects.isEffectActive('sticky', entry);
