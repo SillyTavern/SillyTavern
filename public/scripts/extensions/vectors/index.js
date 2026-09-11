@@ -822,7 +822,15 @@ async function rearrangeChat(chat, _contextSize, _abort, type) {
         const insertedHashes = new Set();
         const retainMessages = chat.slice(-settings.protect);
 
-        for (const message of chat) {
+        // The interceptor receives a copy of the chat with hidden messages filtered out.
+        // If hidden messages were vectorized, they must be matched against the full chat,
+        // otherwise their vectors can never be inserted.
+        const fullChat = getContext().chat;
+        const hiddenMessages = settings.keep_hidden && Array.isArray(fullChat)
+            ? fullChat.filter(x => x.is_system && !fullChat.slice(-settings.protect).includes(x))
+            : [];
+
+        for (const message of [...chat, ...hiddenMessages]) {
             if (retainMessages.includes(message) || !message.mes) {
                 continue;
             }
