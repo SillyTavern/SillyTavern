@@ -2,6 +2,7 @@
 
 ## 2026-09-11
 
+- Pushed the implementation branch through the contributor fork and opened upstream PR #6025 against `release`. GitHub reports no CI checks for the branch yet and the PR remains open for upstream review; this status update is committed as `docs: record pull request status`.
 - Complete branch-diff review found no actionable issues: model IDs and snapshot dates match current official documentation, the existing GPT Image request path already handles the 2.5 aliases, and the diff contains no credential-like values.
 - Committed the repository instructions, decision ledger, and current GPT Image 2.5 model support together as `feat: support current OpenAI image models`; the ignored per-user extension, settings, and credential remain local-only.
 - Verification completed: the app started and compiled successfully; its own routes returned valid `gpt-4o-mini-tts` audio, transcribed that audio correctly with `gpt-4o-transcribe`, and generated a low-quality smoke-test image with `gpt-image-2.5-flare`. The Speech Recognition 1.1.0 manifest was also served successfully.
