@@ -2382,6 +2382,10 @@ async function loadDrawthingsModels() {
 
 async function loadOpenAiModels() {
     return [
+        { value: 'gpt-image-2.5-sunburst', text: 'gpt-image-2.5-sunburst' },
+        { value: 'gpt-image-2.5-sunburst-2026-09-08', text: 'gpt-image-2.5-sunburst-2026-09-08' },
+        { value: 'gpt-image-2.5-flare', text: 'gpt-image-2.5-flare' },
+        { value: 'gpt-image-2.5-flare-2026-09-08', text: 'gpt-image-2.5-flare-2026-09-08' },
         { value: 'gpt-image-2', text: 'gpt-image-2' },
         { value: 'gpt-image-2-2026-04-21', text: 'gpt-image-2-2026-04-21' },
         { value: 'gpt-image-1.5', text: 'gpt-image-1.5' },
