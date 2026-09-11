@@ -2806,6 +2806,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'top_p': Number(settings.top_p_openai),
         'max_tokens': settings.openai_max_tokens,
         'stream': stream,
+        'stream_options': stream && [chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI, chat_completion_sources.NANOGPT, chat_completion_sources.AIMLAPI].includes(settings.chat_completion_source) ? { include_usage: true } : undefined,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': settings.chat_completion_source,
@@ -3152,14 +3153,27 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             let text = '';
             const swipes = [];
             const toolCalls = [];
+            let apiUsage = null;
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) return;
+                if (done) break;
                 const rawData = value.data;
-                if (rawData === '[DONE]') return;
+                if (rawData === '[DONE]') break;
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
+
+                // Capture API usage from various SSE formats:
+                // OAI / Anthropic: parsed.usage (prompt_tokens/completion_tokens or input_tokens/output_tokens)
+                // Gemini:          parsed.usageMetadata (candidatesTokenCount etc.)
+                // Cohere v2:       parsed.meta.tokens (input_tokens/output_tokens)
+                const chunkUsage = parsed.usage
+                    || parsed.usageMetadata
+                    || parsed.meta?.tokens
+                    || null;
+                if (chunkUsage) {
+                    apiUsage = chunkUsage;
+                }
 
                 if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
                     const swipeIndex = parsed.choices[0].index - 1;
@@ -3171,7 +3185,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
                 ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
 
-                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
+                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state, usage: apiUsage };
             }
         };
     } else {
@@ -3195,6 +3209,23 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
 
         return data;
     }
+}
+
+/**
+ * Extracts the completion token count from API-reported usage data,
+ * normalizing across OAI, Claude, Gemini, and Cohere formats.
+ * @param {object|null} apiUsage - Raw API usage object from SSE chunk or response body
+ * @returns {number|null} - Completion token count, or null if not determinable
+ */
+export function getApiCompletionTokens(apiUsage) {
+    if (!apiUsage || typeof apiUsage !== 'object') return null;
+    if (typeof apiUsage.completion_tokens === 'number') return apiUsage.completion_tokens;
+    if (typeof apiUsage.output_tokens === 'number') return apiUsage.output_tokens;
+    if (typeof apiUsage.totalTokenCount === 'number' && typeof apiUsage.promptTokenCount === 'number') {
+        return apiUsage.totalTokenCount - apiUsage.promptTokenCount;
+    }
+    if (typeof apiUsage.candidatesTokenCount === 'number') return apiUsage.candidatesTokenCount;
+    return null;
 }
 
 /**

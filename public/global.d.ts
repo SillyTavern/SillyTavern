@@ -101,6 +101,8 @@ declare global {
         title?: string;
         isSmallSys?: boolean;
         token_count?: number;
+        /** Raw API-reported usage data (prompt_tokens, completion_tokens, etc.). Format varies by backend. */
+        api_usage?: object;
         /** When false, the message cannot be swiped. */
         swipeable?: boolean;
         overswipe_behavior?: OVERSWIPE_BEHAVIOR;
