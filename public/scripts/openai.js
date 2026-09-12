@@ -4385,7 +4385,7 @@ function loadOpenAISettings(data, settings) {
     setToolReasoningControls();
     ToolManager.RECURSE_LIMIT = oai_settings.tool_call_recurse_limit;
 
-    $('#openrouter_providers_chat').trigger('change');
+    syncOpenRouterProvidersForModel(oai_settings.openrouter_model, '#openrouter_providers_chat', oai_settings.openrouter_providers);
     $('#openrouter_quantizations_chat').trigger('change');
     $('#nanogpt_provider').trigger('change');
     $('#chat_completion_source').trigger('change');
@@ -5054,7 +5054,7 @@ function onSettingsPresetChange() {
         // These cannot be changed via preset if unbound to connection
         if (oai_settings.bind_preset_to_connection) {
             $('#chat_completion_source').trigger('change');
-            $('#openrouter_providers_chat').trigger('change');
+            syncOpenRouterProvidersForModel(oai_settings.openrouter_model, '#openrouter_providers_chat', oai_settings.openrouter_providers);
             $('#openrouter_quantizations_chat').trigger('change');
             $('#nanogpt_provider').trigger('change');
         }
@@ -5486,7 +5486,7 @@ async function onModelChange() {
 
         console.log('OpenRouter model changed to', value);
         oai_settings.openrouter_model = value;
-        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat');
+        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat', oai_settings.openrouter_providers);
     }
 
     if ($(this).is('#model_ai21_select')) {
@@ -7246,12 +7246,13 @@ export function initOpenAI() {
     }
 
     $('#openrouter_providers_chat').on('change', function () {
-        const selectedProviders = $(this).val();
-
-        // Not a multiple select?
-        if (!Array.isArray(selectedProviders)) {
+        // Options still loading from OpenRouter — do not wipe saved slugs.
+        if ($(this).find('option').length === 0) {
             return;
         }
+
+        // Include disabled leftovers; $(this).val() omits them.
+        const selectedProviders = $(this).find('option:selected').map(function () { return this.value; }).get();
 
         oai_settings.openrouter_providers = selectedProviders;
 
