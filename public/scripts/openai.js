@@ -821,6 +821,10 @@ async function populationInjectionPrompts(prompts, messages) {
         // Get prompts for current depth
         const depthPrompts = prompts.filter(prompt => prompt.injection_depth === i && prompt.content);
 
+        for (const prompt of prompts.filter(prompt => prompt.injection_depth === i && prompt.reasoning_content)) {
+            console.warn(`Dropping the reasoning prefill of in-chat prompt ${prompt.identifier}: only relative prompts can carry it.`);
+        }
+
         const roleMessages = [];
         const separator = '\n';
         const wrap = false;
@@ -3519,6 +3523,8 @@ class Message {
     role;
     /** @type {string|any[]} */
     content;
+    /** @type {string?} */
+    reasoning_content = null;
     /** @type {string} */
     name;
     /** @type {object} */
@@ -3588,6 +3594,21 @@ class Message {
             role: this.role,
             tool_calls: JSON.stringify(this.tool_calls),
             ...(this.reasoning ? { reasoning: this.reasoning } : {}),
+        });
+    }
+
+    /**
+     * Set the reasoning content of the message, sent as a prefill to APIs that accept it.
+     * @param {string} reasoningContent Reasoning content to set for the message.
+     * @returns {Promise<void>}
+     */
+    async setReasoningContent(reasoningContent) {
+        this.reasoning_content = reasoningContent;
+        // Non-string content (undefined, or a multimodal array) makes the tokenizer skip the whole message.
+        this.tokens = await tokenHandler.countAsync({
+            role: this.role,
+            ...(typeof this.content === 'string' ? { content: this.content } : {}),
+            reasoning_content: this.reasoning_content,
         });
     }
 
@@ -3789,8 +3810,14 @@ class Message {
      * @param {Object} prompt - The prompt object.
      * @returns {Promise<Message>} A new instance of Message.
      */
-    static fromPromptAsync(prompt) {
-        return Message.createAsync(prompt.role, prompt.content, prompt.identifier);
+    static async fromPromptAsync(prompt) {
+        const message = await Message.createAsync(prompt.role, prompt.content, prompt.identifier);
+
+        if (typeof prompt.reasoning_content === 'string' && prompt.reasoning_content.length > 0) {
+            await message.setReasoningContent(prompt.reasoning_content);
+        }
+
+        return message;
     }
 
     /**
@@ -3831,10 +3858,11 @@ class MessageCollection {
      */
     getChat() {
         return this.collection.reduce((acc, message) => {
-            if (message.content || message.tool_calls) {
+            if (message.content || message.tool_calls || message.reasoning_content) {
                 acc.push({
                     role: message.role,
                     content: message.content,
+                    ...(message.reasoning_content && { reasoning_content: message.reasoning_content }),
                     ...(message.name && { name: message.name }),
                     ...(message.tool_calls && { tool_calls: message.tool_calls }),
                     ...(message.role === 'tool' && { tool_call_id: message.identifier }),
@@ -4122,10 +4150,11 @@ export class ChatCompletion {
         for (let item of this.messages.collection) {
             if (item instanceof MessageCollection) {
                 chat.push(...item.getChat());
-            } else if (item instanceof Message && (item.content || item.tool_calls)) {
+            } else if (item instanceof Message && (item.content || item.tool_calls || item.reasoning_content)) {
                 const message = {
                     role: item.role,
                     content: item.content,
+                    ...(item.reasoning_content ? { reasoning_content: item.reasoning_content } : {}),
                     ...(item.name ? { name: item.name } : {}),
                     ...(item.tool_calls ? { tool_calls: item.tool_calls } : {}),
                     ...(item.role === 'tool' ? { tool_call_id: item.identifier } : {}),
