@@ -835,7 +835,12 @@ sdcpp.post('/ping', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/v1/images/generations'));
 
-        const result = await fetch(url, { method: 'OPTIONS' });
+        const result = await fetch(url, {
+            method: 'OPTIONS',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
         if (!result.ok) {
             throw new Error('stable-diffusion.cpp server returned an error.');
         }
@@ -851,7 +856,11 @@ sdcpp.post('/models', async (request, response) => {
     try {
         const url = new URL(urlJoin(request.body.url, '/v1/models'));
 
-        const result = await fetch(url);
+        const result = await fetch(url, {
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
         if (!result.ok) {
             throw new Error('stable-diffusion.cpp server returned an error.');
         }
@@ -898,6 +907,7 @@ sdcpp.post('/generate', async (request, response) => {
             body: JSON.stringify(payload),
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': getBasicAuthHeader(request.body.auth),
             },
         });
 
