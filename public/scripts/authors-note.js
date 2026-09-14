@@ -96,7 +96,7 @@ function setNotePositionCommand(_, text) {
             return;
         }
 
-        $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input');
+        $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input').trigger('change');
         toastr.info(t`Author's Note position updated`);
     }
     return Object.keys(validPositions).find(key => validPositions[key] == chat_metadata[metadata_keys.position]);

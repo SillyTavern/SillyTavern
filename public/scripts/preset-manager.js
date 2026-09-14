@@ -23,7 +23,7 @@ import { t } from './i18n.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
-import { oai_settings, openai_setting_names, openai_settings } from './openai.js';
+import { getPresetApplicationPromise, oai_settings, openai_setting_names, openai_settings } from './openai.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { reasoning_templates } from './reasoning.js';
@@ -406,14 +406,21 @@ class PresetManager {
 
     /**
      * Selects a preset by option value.
+     * The returned promise resolves when the preset is fully applied. Chat Completion presets
+     * apply asynchronously after the change event, so callers that run follow-up commands
+     * (e.g. /preset followed by /api) must await it to avoid overriding their own changes.
      * @param {string} value Preset option value
+     * @returns {Promise<void>}
      */
-    selectPreset(value) {
+    async selectPreset(value) {
         const option = $(this.select).filter(function () {
             return $(this).val() === value;
         });
         option.prop('selected', true);
         $(this.select).val(value).trigger('change');
+        if (this.apiId === 'openai') {
+            await getPresetApplicationPromise();
+        }
     }
 
     /**
@@ -938,7 +945,7 @@ async function presetCommandCallback(_, name) {
             const presetValue = presetManager.findPreset(exactMatch);
 
             if (presetValue) {
-                presetManager.selectPreset(presetValue);
+                await presetManager.selectPreset(presetValue);
                 shouldReconnect && await waitForConnection();
             }
         }
@@ -961,7 +968,7 @@ async function presetCommandCallback(_, name) {
             console.log('Found fuzzy preset match', fuzzyPresetName);
 
             if (currentPreset !== fuzzyPresetName) {
-                presetManager.selectPreset(fuzzyPresetValue);
+                await presetManager.selectPreset(fuzzyPresetValue);
                 shouldReconnect && await waitForConnection();
             }
         }

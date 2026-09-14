@@ -214,11 +214,16 @@ const Def = {
             // Macro args allow nested macros
             enter(Tokens.Macro.Start, modes.macro_def),
 
+            // PIPE/FILTER FEATURE DISABLED: Lines below commented out until pipe/filter feature is fully implemented.
+            // Currently, having these active breaks macros that use | as a regular character in argument values (e.g., {{setvar::foo::|bar}})
+            // See: https://github.com/SillyTavern/SillyTavern/issues/5618
+            // TODO: Re-enable when filter flag (>) logic is properly implemented to conditionally enable pipe parsing
+
             // We allow escaped pipes to not start output modifiers. We need to capture this first, before the pipe
-            using(Tokens.Filter.EscapedPipe),
+            // using(Tokens.Filter.EscapedPipe),
 
             // If at any place during args writing there is a pipe, we lex it as an output identifier, and then continue with lex its args
-            enter(Tokens.Filter.Pipe, modes.macro_filter_modifer),
+            // enter(Tokens.Filter.Pipe, modes.macro_filter_modifer),
 
             using(Tokens.Args.DoubleColon),
             using(Tokens.Args.Colon),

@@ -3,7 +3,7 @@ import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, rend
 import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
-import { oai_settings } from '../../openai.js';
+import { oai_settings, POLLINATIONS_ENDPOINT } from '../../openai.js';
 import { getMultimodalCaption } from '../shared.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -18,6 +18,11 @@ const MODULE_NAME = 'caption';
 
 const PROMPT_DEFAULT = 'What\'s in this image?';
 const TEMPLATE_DEFAULT = '[{{user}} sends {{char}} a picture that contains: {{caption}}]';
+const GOOGLE_MODEL_MIGRATIONS = new Map([
+    ['gemini-3.1-flash-lite-preview', 'gemini-3.1-flash-lite'],
+    ['gemini-3.1-flash-image-preview', 'gemini-3.1-flash-image'],
+    ['gemini-3-pro-image-preview', 'gemini-3-pro-image'],
+]);
 
 /**
  * Migrates old extension settings to the new format.
@@ -37,7 +42,12 @@ function migrateSettings() {
     if (extension_settings.caption.source === 'openai') {
         extension_settings.caption.source = 'multimodal';
         extension_settings.caption.multimodal_api = 'openai';
-        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
+        extension_settings.caption.multimodal_model = 'gpt-5.6-luna';
+    }
+
+    if (['google', 'vertexai'].includes(extension_settings.caption.multimodal_api)) {
+        extension_settings.caption.multimodal_model = GOOGLE_MODEL_MIGRATIONS.get(extension_settings.caption.multimodal_model)
+            ?? extension_settings.caption.multimodal_model;
     }
 
     if (!extension_settings.caption.multimodal_api) {
@@ -45,7 +55,7 @@ function migrateSettings() {
     }
 
     if (!extension_settings.caption.multimodal_model) {
-        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
+        extension_settings.caption.multimodal_model = 'gpt-5.6-luna';
     }
 
     if (!extension_settings.caption.prompt) {
@@ -530,8 +540,8 @@ export async function init() {
                         return true;
                     }
 
-                    // Custom API doesn't need additional checks
-                    if (api === 'custom') {
+                    // Custom API and anonymous Pollinations don't need additional checks
+                    if (api === 'custom' || (api === 'pollinations' && oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS)) {
                         return true;
                     }
                 }

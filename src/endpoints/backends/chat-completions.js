@@ -1,4 +1,5 @@
 /* eslint-disable dot-notation */
+import { createHmac } from 'node:crypto';
 import process from 'node:process';
 import util from 'node:util';
 import express from 'express';
@@ -20,6 +21,7 @@ import {
     SILICONFLOW_ENDPOINT,
     MINIMAX_ENDPOINT,
     ZAI_ENDPOINT,
+    POLLINATIONS_ENDPOINT,
 } from '../../constants.js';
 import {
     forwardFetchResponse,
@@ -65,6 +67,8 @@ import {
     getWebTokenizer,
 } from '../tokenizers.js';
 import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
+import { getCookieSecret } from '../../users.js';
+import { fetchGoogleModels, GoogleModelsHttpError } from './google-models.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -83,6 +87,7 @@ const API_DEEPSEEK = 'https://api.deepseek.com/beta';
 const API_XAI = 'https://api.x.ai/v1';
 const API_AIMLAPI = 'https://api.aimlapi.com/v1';
 const API_POLLINATIONS = 'https://gen.pollinations.ai/v1';
+const API_POLLINATIONS_ANON = 'https://text.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
@@ -105,6 +110,18 @@ const cachingAtDepth = (() => {
     return Number.isInteger(value) && value >= 0 ? value : -1;
 })();
 const enableAdaptiveThinking = getConfigValue('claude.enableAdaptiveThinking', true, 'boolean');
+
+/**
+ * Lazily-cached HMAC key (instance cookie secret) for session-affinity hashing.
+ * @type {string|undefined}
+ */
+let affinityKey;
+function getAffinityKey() {
+    if (affinityKey === undefined) {
+        affinityKey = getCookieSecret(globalThis.DATA_ROOT);
+    }
+    return affinityKey;
+}
 
 /**
  * Cache for cacheable (writing) OpenRouter model IDs.
@@ -231,13 +248,17 @@ async function sendClaudeRequest(request, response) {
         const useTools = Array.isArray(request.body.tools) && request.body.tools.length > 0;
         const useSystemPrompt = Boolean(request.body.use_sysprompt);
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
-        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model);
-        const useWebSearch = /^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) && Boolean(request.body.enable_web_search);
+        // Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-fable-5'
+        const isFableModel = /claude-fable/.test(request.body.model);
+        const isFable51Model = /claude-fable-5-1/.test(request.body.model);
+        const isClaude5Model = /claude-(opus-5|sonnet-5)/.test(request.body.model);
+        const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model;
+        const useWebSearch = (/^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6)/.test(request.body.model);
-        const useVerbosity = /^claude-(opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model);
-        const noPrefillModel = /^claude-(opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model);
-        const isAdaptiveModel = /^claude-(opus-4-7)/.test(request.body.model) || (enableAdaptiveThinking && /^claude-(opus-4-6|sonnet-4-6)/.test(request.body.model));
-        const noSamplingModel = /^claude-(opus-4-7)/.test(request.body.model);
+        const useVerbosity = /^claude-(opus-4-5|opus-4-6|sonnet-4-6|opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model;
+        const noPrefillModel = /^claude-(opus-4-6|sonnet-4-6|opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model;
+        const isAdaptiveModel = /^claude-(opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model || (enableAdaptiveThinking && /^claude-(opus-4-6|sonnet-4-6)/.test(request.body.model));
+        const noSamplingModel = /^claude-(opus-4-7|opus-4-8)/.test(request.body.model) || isFableModel || isClaude5Model;
         let fixThinkingPrefill = false;
         // Add custom stop sequences
         const stopSequences = [];
@@ -278,15 +299,24 @@ async function sendClaudeRequest(request, response) {
             }
         }
 
-        // Structured output is a forced tool
+        // Fable 5.1 rejects forced tools, but supports native JSON outputs.
         if (request.body.json_schema) {
-            const jsonTool = {
-                name: request.body.json_schema.name,
-                description: request.body.json_schema.description || 'Well-formed JSON object',
-                input_schema: request.body.json_schema.value,
-            };
-            requestBody.tools = [...(requestBody.tools || []), jsonTool];
-            requestBody.tool_choice = { type: 'tool', name: request.body.json_schema.name };
+            if (isFable51Model) {
+                requestBody.output_config = {
+                    format: {
+                        type: 'json_schema',
+                        schema: request.body.json_schema.value,
+                    },
+                };
+            } else {
+                const jsonTool = {
+                    name: request.body.json_schema.name,
+                    description: request.body.json_schema.description || 'Well-formed JSON object',
+                    input_schema: request.body.json_schema.value,
+                };
+                requestBody.tools = [...(requestBody.tools || []), jsonTool];
+                requestBody.tool_choice = { type: 'tool', name: request.body.json_schema.name };
+            }
         }
 
         if (useWebSearch) {
@@ -321,13 +351,13 @@ async function sendClaudeRequest(request, response) {
         }
 
         const reasoningEffort = request.body.reasoning_effort;
+        const includeReasoning = Boolean(request.body.include_reasoning);
         const budgetTokens = calculateClaudeBudgetTokens(requestBody.max_tokens, reasoningEffort, requestBody.stream, isAdaptiveModel);
 
         // Adaptive thinking: returns a string effort level (like Gemini 3)
         if (useThinking && typeof budgetTokens === 'string') {
             fixThinkingPrefill = true;
             requestBody.thinking = { type: 'adaptive' };
-            const includeReasoning = Boolean(request.body.include_reasoning);
             if (noSamplingModel && includeReasoning) {
                 requestBody.thinking.display = 'summarized';
             }
@@ -335,6 +365,10 @@ async function sendClaudeRequest(request, response) {
             requestBody.output_config.effort = budgetTokens;
             // top_k is not allowed in adaptive mode
             delete requestBody.top_k;
+        } else if (useThinking && (isFableModel || isClaude5Model) && reasoningEffort === 'auto' && includeReasoning) {
+            // Fable/Claude 5 auto thinking is already enabled, but readable summaries require an explicit display request.
+            fixThinkingPrefill = true;
+            requestBody.thinking = { type: 'adaptive', display: 'summarized' };
         } else if (useThinking && Number.isInteger(budgetTokens)) {
             // Traditional thinking: returns a numeric budget
             fixThinkingPrefill = true;
@@ -485,12 +519,14 @@ async function sendMakerSuiteRequest(request, response) {
             'gemini-2.0-flash-preview-image-generation',
             'gemini-2.5-flash-image-preview',
             'gemini-2.5-flash-image',
-            'gemini-3-pro-image-preview',
-            'gemini-3.1-flash-image-preview',
+            'gemini-3-pro-image',
+            'gemini-3.1-flash-image',
         ];
 
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3[.\d]*-(flash|pro)/.test(m));
         const isImageSizeModel = m => /^gemini-3/.test(m);
+        // https://ai.google.dev/gemini-api/docs/latest-model#api-changes-and-parameter-updates
+        const noSamplingModel = /gemini-3\.[67]-flash|gemini-3\.5-flash-lite/.test(model);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -502,6 +538,13 @@ async function sendMakerSuiteRequest(request, response) {
 
         if (!Array.isArray(generationConfig.stopSequences) || !generationConfig.stopSequences.length) {
             delete generationConfig.stopSequences;
+        }
+
+        if (noSamplingModel) {
+            delete generationConfig.temperature;
+            delete generationConfig.topP;
+            delete generationConfig.topK;
+            delete generationConfig.candidateCount;
         }
 
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
@@ -1789,8 +1832,9 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
             headers = { ...AIMLAPI_HEADERS };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = 'https://gen.pollinations.ai/text';
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            apiKey = isAnonymous ? 'anonymous' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.GROQ) {
             apiUrl = API_GROQ;
@@ -1806,9 +1850,61 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
             headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.FIREWORKS) {
-            apiUrl = API_FIREWORKS;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
-            headers = {};
+            const modelsUrl = 'https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200';
+
+            try {
+                const response = await fetch(modelsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + apiKey,
+                        ...headers,
+                    },
+                });
+
+                if (response.ok) {
+                    /** @type {any} */
+                    const data = await response.json();
+                    const models = Array.isArray(data?.models)
+                        ? data.models
+                            .filter(m => m?.contextLength > 0 && m?.kind !== 'EMBEDDING_MODEL')
+                            .map(m => ({
+                                id: m.name,
+                                name: m.displayName,
+                                context_length: m.contextLength,
+                                supports_tools: m.supportsTools,
+                                supports_image_input: m.supportsImageInput,
+                            }))
+                        : [];
+
+                    // Add fast router versions for models that have them
+                    const fastRouters = {
+                        'accounts/fireworks/models/glm-5p2': 'accounts/fireworks/routers/glm-5p2-fast',
+                        'accounts/fireworks/models/kimi-k2p6': 'accounts/fireworks/routers/kimi-k2p6-fast',
+                        'accounts/fireworks/models/kimi-k2p7-code': 'accounts/fireworks/routers/kimi-k2p7-code-fast',
+                        'accounts/fireworks/models/kimi-k3': 'accounts/fireworks/routers/kimi-k3-fast',
+                    };
+                    for (const [standardId, fastId] of Object.entries(fastRouters)) {
+                        const standard = models.find(m => m.id === standardId);
+                        if (standard) {
+                            models.push({
+                                ...standard,
+                                id: fastId,
+                                name: standard.name + ' (fast)',
+                            });
+                        }
+                    }
+
+                    console.debug('Available Fireworks models:', models.map(m => m.id));
+                    return statusResponse.send({ data: models });
+                } else {
+                    console.warn('Fireworks models endpoint failed:', response.status, response.statusText);
+                    return statusResponse.send({ error: true, data: { data: [] } });
+                }
+            } catch (error) {
+                console.error('Error fetching Fireworks models:', error);
+                return statusResponse.send({ error: true, data: { data: [] } });
+            }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MAKERSUITE) {
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE, request.body.secret_id);
             apiUrl = trimTrailingSlash(request.body.reverse_proxy || API_MAKERSUITE);
@@ -1823,26 +1919,15 @@ router.post('/status', async function (request, statusResponse) {
             }
 
             try {
-                const response = await fetch(modelsUrl);
-
-                if (response.ok) {
-                    /** @type {any} */
-                    const data = await response.json();
-                    // Transform Google AI Studio models to OpenAI format
-                    const models = data.models
-                        ?.filter(model => model.supportedGenerationMethods?.includes('generateContent'))
-                        ?.map(model => ({
-                            ...model,
-                            id: model.name.replace('models/', ''),
-                        })) || [];
-
-                    console.info('Available Google AI Studio models:', models.map(m => m.id));
-                    return statusResponse.send({ data: models });
-                } else {
-                    console.warn('Google AI Studio models endpoint failed:', response.status, response.statusText);
+                const models = await fetchGoogleModels(modelsUrl);
+                console.info('Available Google AI Studio models:', models.map(m => m.id));
+                return statusResponse.send({ data: models });
+            } catch (error) {
+                if (error instanceof GoogleModelsHttpError) {
+                    console.warn('Google AI Studio models endpoint failed:', error.status, error.statusText);
                     return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
                 }
-            } catch (error) {
+
                 console.error('Error fetching Google AI Studio models:', error);
                 return statusResponse.send({ error: true, bypass: true, data: { data: [] } });
             }
@@ -2227,6 +2312,11 @@ router.post('/generate', async function (request, response) {
                 },
             };
 
+            if (request.body.logprobs > 0) {
+                bodyParams['top_logprobs'] = request.body.logprobs;
+                bodyParams['logprobs'] = true;
+            }
+
             if (request.body.min_p !== undefined) {
                 bodyParams['min_p'] = request.body.min_p;
             }
@@ -2366,6 +2456,9 @@ router.post('/generate', async function (request, response) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.FIREWORKS, request.body.secret_id);
             headers = {};
             bodyParams = {};
+            if (request.body.reasoning_effort) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+            }
             if (request.body.json_schema) {
                 bodyParams['response_format'] = {
                     type: 'json_schema',
@@ -2376,6 +2469,9 @@ router.post('/generate', async function (request, response) {
                         strict: request.body.json_schema.strict ?? true,
                     },
                 };
+            }
+            if (request.body.chat_id) {
+                headers['x-session-affinity'] = createHmac('sha256', getAffinityKey()).update(request.body.chat_id).digest('hex').slice(0, 16);
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.NANOGPT) {
             apiUrl = API_NANOGPT;
@@ -2414,20 +2510,23 @@ router.post('/generate', async function (request, response) {
                 };
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
-            apiUrl = API_POLLINATIONS;
-            apiKey = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+            apiUrl = isAnonymous ? API_POLLINATIONS_ANON : API_POLLINATIONS;
+            apiKey = isAnonymous ? 'anonymous' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS, request.body.secret_id);
             headers = {};
             bodyParams = {
-                reasoning_effort: request.body.reasoning_effort,
                 seed: request.body.seed ?? Math.floor(Math.random() * 99999999),
             };
-            if (request.body.json_schema) {
-                bodyParams['response_format'] = {
-                    type: 'json_schema',
-                    json_schema: {
-                        schema: request.body.json_schema.value,
-                    },
-                };
+            if (!isAnonymous) {
+                bodyParams['reasoning_effort'] = request.body.reasoning_effort;
+                if (request.body.json_schema) {
+                    bodyParams['response_format'] = {
+                        type: 'json_schema',
+                        json_schema: {
+                            schema: request.body.json_schema.value,
+                        },
+                    };
+                }
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();

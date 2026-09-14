@@ -6,7 +6,7 @@ import sanitize from 'sanitize-filename';
 import { CheckRepoActions, default as simpleGit } from 'simple-git';
 
 import { PUBLIC_DIRECTORIES } from '../constants.js';
-import { getConfigValue, isValidUrl } from '../util.js';
+import { color, getConfigValue, isValidUrl } from '../util.js';
 import { createGitClient } from '../git/client.js';
 
 const gitBackend = getConfigValue('git.backend', 'auto');
@@ -486,17 +486,35 @@ router.get('/discover', function (request, response) {
         fs.mkdirSync(PUBLIC_DIRECTORIES.globalExtensions);
     }
 
+    /**
+     * A directory without a manifest.json is not a usable extension: typically a leftover
+     * from a manual deletion (e.g. a locked .git directory on Windows). Listing it would
+     * make the client report a ghost extension and request its manifest in vain on every load.
+     * @param {string} parentDirectory Directory containing extension folders
+     * @param {string} folder Extension folder name
+     * @returns {boolean} Whether the folder contains a manifest
+     */
+    const hasManifest = (parentDirectory, folder) => {
+        const manifestExists = fs.existsSync(path.join(parentDirectory, folder, 'manifest.json'));
+        if (!manifestExists) {
+            console.warn(color.yellow(`Extension folder "${path.join(parentDirectory, folder)}" has no manifest.json and was skipped. Remove the folder to get rid of this warning.`));
+        }
+        return manifestExists;
+    };
+
     // Get all folders in system extensions folder, excluding third-party
     const builtInExtensions = fs
         .readdirSync(PUBLIC_DIRECTORIES.extensions)
         .filter(f => fs.statSync(path.join(PUBLIC_DIRECTORIES.extensions, f)).isDirectory())
         .filter(f => f !== 'third-party')
+        .filter(f => hasManifest(PUBLIC_DIRECTORIES.extensions, f))
         .map(f => ({ type: 'system', name: f }));
 
     // Get all folders in local extensions folder
     const userExtensions = fs
         .readdirSync(path.join(request.user.directories.extensions))
         .filter(f => fs.statSync(path.join(request.user.directories.extensions, f)).isDirectory())
+        .filter(f => hasManifest(request.user.directories.extensions, f))
         .map(f => ({ type: 'local', name: `third-party/${f}` }));
 
     // Get all folders in global extensions folder
@@ -504,6 +522,7 @@ router.get('/discover', function (request, response) {
     const globalExtensions = fs
         .readdirSync(PUBLIC_DIRECTORIES.globalExtensions)
         .filter(f => fs.statSync(path.join(PUBLIC_DIRECTORIES.globalExtensions, f)).isDirectory())
+        .filter(f => hasManifest(PUBLIC_DIRECTORIES.globalExtensions, f))
         .map(f => ({ type: 'global', name: `third-party/${f}` }))
         .filter(f => !userExtensions.some(e => e.name === f.name));
 

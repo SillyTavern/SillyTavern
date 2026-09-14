@@ -38,6 +38,7 @@ import {
     newAssistantChat,
     online_status,
     reloadCurrentChat,
+    refreshSwipeButtons,
     removeMacros,
     renameCharacter,
     renameChat,
@@ -57,11 +58,11 @@ import {
     swipe,
     stopGeneration,
     substituteParams,
-    syncMesToSwipe,
     system_avatar,
     system_message_types,
     this_chid,
     updateMessageElement,
+    updateSwipeCounter,
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
@@ -70,7 +71,7 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
-import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
+import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_ENDPOINT, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
@@ -2970,9 +2971,9 @@ export function initDefaultSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'tokens',
-        callback: (_, text) => {
+        callback: async (_, text) => {
             if (text instanceof SlashCommandClosure || Array.isArray(text)) throw new Error(t`Unnamed argument cannot be a closure for command /tokens`);
-            return getTokenCountAsync(text).then(count => String(count));
+            return String(await getTokenCountAsync(text));
         },
         returns: t`number of tokens`,
         unnamedArgumentList: [
@@ -3135,6 +3136,7 @@ export function initDefaultSlashCommands() {
                     new SlashCommandEnumValue('vertexai', 'Google Vertex AI', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'vertexai')), 'V'),
                     new SlashCommandEnumValue('siliconflow', 'SiliconFlow', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'siliconflow')), 'S'),
                     new SlashCommandEnumValue('minimax', 'MiniMax', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'minimax')), 'M'),
+                    new SlashCommandEnumValue('pollinations', 'Pollinations', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'pollinations')), 'P'),
                     new SlashCommandEnumValue('kobold', 'KoboldAI Classic', enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'kobold')), 'K'),
                     ...Object.values(textgen_types).filter(api => Object.keys(SERVER_INPUTS).includes(api)).map(api => new SlashCommandEnumValue(api, null, enumTypes.getBasedOnIndex(UNIQUE_APIS.findIndex(x => x === 'textgenerationwebui')), 'T')),
                 ],
@@ -3168,7 +3170,7 @@ export function initDefaultSlashCommands() {
                 ${t`If a manual API is provided to <b>set</b> the URL, make sure to set <code>connect=false</code>, as auto-connect only works for the currently selected API, or consider switching to it with <code>/api</code> first.`}
             </div>
             <div>
-                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, SiliconFlow, MiniMax, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
+                ${t`This slash command works for most of the Text Completion sources, KoboldAI Classic, and also Custom OpenAI compatible, Z.AI, SiliconFlow, MiniMax, Pollinations, and Google Vertex AI for the Chat Completion sources. If unsure which APIs are supported, check the auto-completion of the optional <code>api</code> argument of this command.`}
             </div>
         `,
     }));
@@ -4615,6 +4617,7 @@ async function echoCallback(args, value) {
  * @param {string} value - The swipe text to add (unnamed argument)
  */
 async function addSwipeCallback(args, value) {
+    const lastMessageId = chat.length - 1;
     const lastMessage = chat[chat.length - 1];
 
     if (!lastMessage) {
@@ -4662,15 +4665,13 @@ async function addSwipeCallback(args, value) {
     const newSwipeId = lastMessage.swipes.length - 1;
 
     if (isTrueBoolean(args.switch)) {
-        // Make sure ad-hoc changes to extras are saved before swiping away
-        syncMesToSwipe();
-        lastMessage.swipe_id = newSwipeId;
-        lastMessage.mes = lastMessage.swipes[newSwipeId];
-        lastMessage.extra = structuredClone(lastMessage.swipe_info?.[newSwipeId]?.extra ?? lastMessage.extra ?? {});
+        await swipe(null, SWIPE_DIRECTION.RIGHT, { source: SWIPE_SOURCE.SLASH_COMMAND, repeated: false, forceMesId: lastMessageId, forceSwipeId: newSwipeId });
+    } else {
+        await updateSwipeCounter(lastMessageId, { message: lastMessage });
+        refreshSwipeButtons();
     }
 
     await saveChatConditional();
-    await reloadCurrentChat();
 
     return String(newSwipeId);
 }
@@ -6684,6 +6685,32 @@ async function setApiUrlCallback({ api = null, connect = 'true', quiet = 'false'
         }
 
         return oai_settings.vertexai_region || defaultRegion;
+    }
+
+    const isCurrentlyPollinations = main_api === 'openai' && oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS;
+    if (api === chat_completion_sources.POLLINATIONS || (!api && isCurrentlyPollinations)) {
+        if (!url) {
+            return oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.AUTHENTICATED;
+        }
+
+        const permittedValues = Object.values(POLLINATIONS_ENDPOINT);
+        if (!permittedValues.includes(url)) {
+            !isQuiet && toastr.warning(t`Valid options are: ${permittedValues.join(', ')}`, t`Pollinations endpoint '${url}' is not a valid option.`);
+            return '';
+        }
+
+        if (!isCurrentlyPollinations && autoConnect) {
+            toastr.warning(t`Pollinations API is not the currently selected API, so we cannot do an auto-connect. Consider switching to it via /api beforehand.`);
+            return '';
+        }
+
+        $('#pollinations_endpoint').val(url).trigger('input');
+
+        if (autoConnect) {
+            $('#api_button_openai').trigger('click');
+        }
+
+        return oai_settings.pollinations_endpoint || POLLINATIONS_ENDPOINT.AUTHENTICATED;
     }
 
     // Special handling for Kobold Classic API

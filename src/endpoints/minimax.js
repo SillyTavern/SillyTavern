@@ -33,12 +33,11 @@ router.post('/generate-voice', async (request, response) => {
         } = request.body;
 
         const apiKey = readSecret(request.user.directories, SECRET_KEYS.MINIMAX);
-        const groupId = readSecret(request.user.directories, SECRET_KEYS.MINIMAX_GROUP_ID);
 
         // Validate required parameters
-        if (!text || !voiceId || !apiKey || !groupId) {
+        if (!text || !voiceId || !apiKey) {
             console.warn('MiniMax TTS: Missing required parameters');
-            return response.status(400).json({ error: 'Missing required parameters: text, voiceId, apiKey, and groupId are required' });
+            return response.status(400).json({ error: 'Missing required parameters: text, voiceId, and apiKey are required' });
         }
 
         const requestBody = {
@@ -64,7 +63,7 @@ router.post('/generate-voice', async (request, response) => {
             requestBody.lang = language;
         }
 
-        const apiUrl = `${apiHost}/v1/t2a_v2?GroupId=${groupId}`;
+        const apiUrl = `${apiHost}/v1/t2a_v2`;
 
         console.debug('MiniMax TTS Request:', {
             url: apiUrl,

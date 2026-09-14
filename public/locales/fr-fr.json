@@ -717,7 +717,7 @@
     "Click to set a new User Name": "Cliquez pour définir un nouveau nom d'utilisateur",
     "Click to lock your selected persona to the current chat. Click again to remove the lock.": "Cliquez pour verrouiller votre persona sélectionnée sur la discussion actuelle. Cliquez à nouveau pour supprimer le verrou.",
     "Click to set user name for all messages": "Cliquez pour définir le nom d'utilisateur pour tous les messages",
-    "Persona Description": "Description de la persona",
+    "Persona Description": "Description du persona",
     "Example: [{{user}} is a 28-year-old Romanian cat girl.]": "Exemple : [{{user}} est une fille chat roumaine de 28 ans.]",
     "Tokens persona description": "Description des tokens",
     "Position:": "Position :",

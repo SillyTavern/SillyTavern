@@ -75,7 +75,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.**
 
-* [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 by Humi: MIT License
+* [TavernAI](https://github.com/TavernAI/TavernAI-v1) 1.2.8 by Humi: MIT License
 * Portions of CncAnon's TavernAITurbo mod used with permission
 * Visual Novel Mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Noto Sans font by Google (OFL license)
