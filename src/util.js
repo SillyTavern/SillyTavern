@@ -82,7 +82,7 @@ export function getConfig() {
  * Returns the value for the given key from the config object.
  * @param {string} key - Key to get from the config object
  * @param {any} defaultValue - Default value to return if the key is not found
- * @param {'number'|'boolean'|null} typeConverter - Type to convert the value to
+ * @param {'number'|'boolean'|string[]|null} typeConverter - Type to convert the value to, or allowed normalized string values
  * @returns {any} Value for the given key
  */
 export function getConfigValue(key, defaultValue = null, typeConverter = null) {
@@ -98,6 +98,11 @@ export function getConfigValue(key, defaultValue = null, typeConverter = null) {
     }
 
     const value = _getValue();
+    if (Array.isArray(typeConverter)) {
+        const normalized = String(value).trim().toLowerCase();
+        return typeConverter.includes(normalized) ? normalized : defaultValue;
+    }
+
     switch (typeConverter) {
         case 'number':
             return isNaN(parseFloat(value)) ? defaultValue : parseFloat(value);
