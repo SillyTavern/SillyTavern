@@ -1471,5 +1471,8 @@
     "Deleting chat…": "กำลังลบแชท…",
     "Loading chat…": "กำลังโหลดแชท…",
     "Bulk Delete": "ลบจำนวนมาก",
-    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…"
+    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…",
+  "Service Tier": "ระดับบริการ",
+  "Flex (cheap, slower)": "Flex (ถูก, ช้ากว่า)",
+  "Priority (fast, expensive)": "Priority (เร็ว, แพง)"
 }

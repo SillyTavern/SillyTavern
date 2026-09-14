@@ -367,16 +367,26 @@ export function updateOpenRouterProvidersWarning(providersSelector) {
     $warning.toggleClass('displayNone', !showWarning);
 }
 
-export async function syncOpenRouterProvidersForModel(modelId, providersSelector) {
+export async function syncOpenRouterProvidersForModel(modelId, providersSelector, tiersSelector = null, preferredTier = null) {
     const $providers = $(providersSelector);
 
     const refreshWarningState = () => {
         updateOpenRouterProvidersWarning(providersSelector);
     };
 
+    const resetTiers = () => {
+        if (!tiersSelector) return;
+        const $tiers = $(tiersSelector);
+        if ($tiers.length === 0) return;
+        $tiers.find('option').not(':first').remove();
+        $tiers.children('option:first').attr('value', '').text(t`Default`);
+        $tiers.trigger('change');
+    };
+
     if (!modelId || !modelId.includes('/')) {
         $providers.find('option').prop('disabled', false);
         $providers.trigger('change.select2');
+        resetTiers();
         refreshWarningState();
         return;
     }
@@ -393,11 +403,14 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
             return;
         }
 
-        const providerNames = await response.json();
+        const data = await response.json();
+        const providerNames = Array.isArray(data) ? data : data?.providers;
+        const tiers = Array.isArray(data) ? [] : data?.tiers;
 
         if (!Array.isArray(providerNames) || providerNames.length === 0) {
             $providers.find('option').prop('disabled', false);
             $providers.trigger('change.select2');
+            resetTiers();
             refreshWarningState();
             return;
         }
@@ -409,6 +422,29 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
 
         $providers.trigger('change.select2');
         refreshWarningState();
+
+        if (tiersSelector && Array.isArray(tiers)) {
+            const $tiers = $(tiersSelector);
+            if ($tiers.length > 0) {
+                const labels = {
+                    flex: t`Flex (cheap, slower)`,
+                    standard: t`Default`,
+                    priority: t`Priority (fast, expensive)`,
+                };
+                const current = $tiers.val();
+                $tiers.find('option').not(':first').remove();
+                $tiers.children('option:first').attr('value', '').text(labels.standard);
+                tiers.forEach((tier) => {
+                    if (tier === 'standard') return;
+                    if ($tiers.find(`option[value="${tier}"]`).length === 0) {
+                        $tiers.append($(`<option value="${tier}">${labels[tier] ?? tier}</option>`));
+                    }
+                });
+                const restore = [preferredTier, current].find(v => v && $tiers.find(`option[value="${v}"]`).length > 0);
+                $tiers.val(restore ?? '');
+                $tiers.trigger('change');
+            }
+        }
     } catch (error) {
         console.error('Failed to fetch OpenRouter providers for model', error);
         refreshWarningState();
