@@ -612,7 +612,9 @@ export function getTokenizerModel() {
             return mistralTokenizer;
         } else if (model?.architecture?.tokenizer === 'Yi') {
             return yiTokenizer;
-        } else if (model?.architecture?.tokenizer === 'Gemini') {
+        } else if (model?.architecture?.tokenizer === 'Gemini' || model?.architecture?.tokenizer === 'Gemma') {
+            // OpenRouter reports Gemma models as 'Gemma', not 'Gemini'; without
+            // this they fell through to the gpt-3.5-turbo default below.
             return gemmaTokenizer;
         } else if (model?.architecture?.tokenizer === 'Qwen') {
             return qwen2Tokenizer;
