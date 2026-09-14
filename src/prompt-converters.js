@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { CHARACTER_NAMES_BEHAVIOR } from './constants.js';
 import { getConfigValue, tryParse } from './util.js';
 
 const PROMPT_PLACEHOLDER = getConfigValue('promptPlaceholder', 'Let\'s get started.');
@@ -47,9 +48,12 @@ const enableThoughtSignatures = !!getConfigValue('gemini.thoughtSignatures', tru
  * @returns {PromptNames} Prompt names
  */
 export function getPromptNames(request) {
+    // "Never add character name prefixes" also applies to the prefixes the
+    // server adds while converting or post-processing the prompt.
+    const addNames = Number(request.body.names_behavior) !== CHARACTER_NAMES_BEHAVIOR.NONE;
     return {
-        charName: String(request.body.char_name || ''),
-        userName: String(request.body.user_name || ''),
+        charName: addNames ? String(request.body.char_name || '') : '',
+        userName: addNames ? String(request.body.user_name || '') : '',
         groupNames: Array.isArray(request.body.group_names) ? request.body.group_names.map(String) : [],
         startsWithGroupName: function (message) {
             return this.groupNames.some(name => message.startsWith(`${name}: `));

@@ -24,6 +24,28 @@ function makeNames(charName = '', userName = '', groupNames = []) {
 }
 
 
+describe('postProcessPrompt single', () => {
+    const messages = () => [
+        { role: 'system', content: 'sys' },
+        { role: 'user', content: 'Test1' },
+        { role: 'assistant', content: 'Response 1' },
+        { role: 'user', content: 'Test2' },
+    ];
+
+    test('prefixes user and character names when names are provided', () => {
+        const result = mod.postProcessPrompt(messages(), 'single', makeNames('Bot', 'User'));
+        expect(result).toHaveLength(1);
+        expect(result[0].role).toBe('user');
+        expect(result[0].content).toBe('sys\n\nUser: Test1\n\nBot: Response 1\n\nUser: Test2');
+    });
+
+    test('adds no prefixes when the names are empty (names behavior NONE)', () => {
+        const result = mod.postProcessPrompt(messages(), 'single', makeNames('', ''));
+        expect(result).toHaveLength(1);
+        expect(result[0].content).toBe('sys\n\nTest1\n\nResponse 1\n\nTest2');
+    });
+});
+
 describe('addAssistantPrefix', () => {
     test('returns empty array unchanged', () => {
         expect(mod.addAssistantPrefix([], [], 'prefix')).toEqual([]);
@@ -782,6 +804,23 @@ describe('getPromptNames', () => {
         const request = { body: { group_names: [123, null] } };
         const names = mod.getPromptNames(request);
         expect(names.groupNames).toEqual(['123', 'null']);
+    });
+
+    test('omits the names when the client never wants name prefixes (#6011)', () => {
+        const request = { body: { char_name: 'Bot', user_name: 'User', group_names: ['Alice'], names_behavior: -1 } };
+        const names = mod.getPromptNames(request);
+        expect(names.charName).toBe('');
+        expect(names.userName).toBe('');
+        expect(names.groupNames).toEqual(['Alice']);
+    });
+
+    test('keeps the names for the other names behaviors', () => {
+        for (const behavior of [0, 1, 2, '2', undefined]) {
+            const request = { body: { char_name: 'Bot', user_name: 'User', names_behavior: behavior } };
+            const names = mod.getPromptNames(request);
+            expect(names.charName).toBe('Bot');
+            expect(names.userName).toBe('User');
+        }
     });
 });
 
