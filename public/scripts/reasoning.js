@@ -742,6 +742,9 @@ export class PromptReasoning {
      * @returns {string} Message content with reasoning
      */
     addToMessage(content, reasoning, isPrefix, duration) {
+        // Normalize content to empty string if not provided
+        content = content ?? '';
+
         // Disabled or reached limit of additions
         if (!isPrefix && (!power_user.reasoning.add_to_prompts || this.counter >= power_user.reasoning.max_additions)) {
             return content;
