@@ -293,6 +293,8 @@ export const power_user = {
     persona_description_depth: 2,
     persona_description_lorebook: '',
     persona_show_notifications: true,
+    persona_allow_multi_connections: false,
+    persona_auto_lock: false,
     persona_sort_order: 'asc',
 
     custom_stopping_strings: '',
