@@ -4727,7 +4727,7 @@ async function generateOpenRouterImage(prompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'jpg', data: data.image };
+        return { format: data.format || 'png', data: data.image };
     }
 
     const text = await result.text();
