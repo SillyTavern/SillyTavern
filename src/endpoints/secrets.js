@@ -51,6 +51,7 @@ export const SECRET_KEYS = {
     BFL: 'api_key_bfl',
     COMFY_RUNPOD: 'api_key_comfy_runpod',
     FALAI: 'api_key_falai',
+    WAVESPEED: 'api_key_wavespeed',
     GENERIC: 'api_key_generic',
     DEEPSEEK: 'api_key_deepseek',
     SERPER: 'api_key_serper',
