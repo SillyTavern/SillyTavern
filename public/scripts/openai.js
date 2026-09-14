@@ -5262,6 +5262,8 @@ function getZaiMaxContext(model, isUnlocked) {
     }
 
     const contextMap = {
+        'glm-5.3': max_1mil,
+        'glm-5.3-flash': max_1mil,
         'glm-5.2': max_1mil,
         'glm-5.1': max_200k,
         'glm-5-turbo': max_200k,
@@ -6288,6 +6290,7 @@ export function isImageInliningSupported() {
         // DeepSeek
         'deepseek-v4-flash-vision-exp',
         // Z.AI (GLM)
+        'glm-5.3-flash',
         'glm-4.5v',
         'glm-4.6v',
         'glm-5v-turbo',
@@ -6380,6 +6383,7 @@ export function isVideoInliningSupported() {
         'gemini-3',
         'gemma-4',
         // Z.AI (GLM)
+        'glm-5.3-flash',
         'glm-4.5v',
         'glm-4.6v',
         'glm-5v-turbo',
