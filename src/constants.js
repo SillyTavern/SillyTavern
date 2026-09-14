@@ -206,6 +206,7 @@ export const CHAT_COMPLETION_SOURCES = {
     MOONSHOT: 'moonshot',
     FIREWORKS: 'fireworks',
     COMETAPI: 'cometapi',
+    HUBRIS: 'hubris',
     AZURE_OPENAI: 'azure_openai',
     ZAI: 'zai',
     SILICONFLOW: 'siliconflow',
