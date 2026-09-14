@@ -546,11 +546,12 @@ export class ChatCompletionService {
      * @throws {Error}
      */
     static async processRequest(requestData, options, extractData = true, signal = null) {
-        const { presetName } = options;
+        const { presetName, tool_choice, tools } = options;
         requestData = this.createRequestData(requestData);
 
         // Tool calling info if present in options
-        const toolMap = this.buildCustomToolMap(options.tools);
+        const toolMap = this.buildCustomToolMap(tools);
+        if (tool_choice) requestData.tool_choice = tool_choice;
 
         // Apply generation preset if specified
         if (presetName) {
@@ -601,8 +602,9 @@ export class ChatCompletionService {
 
         // Now add tools if present
         // If they are not supported by the CC source, they will be removed by createGenerationParameters()
-        if (toolMap) {
+        if (toolMap && toolMap.size > 0) {
             await ToolManager.registerFunctionToolsOpenAI(settings, Array.from(toolMap.values()));
+            settings.tool_choice = overridePayload.tool_choice ?? 'auto';  // override tool choice if present
         }
 
         // Ensure api-url is properly applied for all sources that accept it
@@ -636,7 +638,7 @@ export class ChatCompletionService {
                 tool.action,
                 tool.formatMessage,
                 () => true,  // Always considered enabled
-                true,  // Always considered stealth
+                tool.stealth
             ));
         }
 
