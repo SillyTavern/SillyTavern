@@ -87,6 +87,7 @@ import { POPUP_TYPE, Popup, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { compressRequest } from './request-compression.js';
+import { parseChatResponse } from './chat-response.js';
 
 export {
     selected_group,
@@ -199,15 +200,7 @@ async function loadGroupChat(chatId) {
         body: JSON.stringify({ id: chatId }),
     });
 
-    if (response.ok) {
-        const data = await response.json();
-        if (!Array.isArray(data)) {
-            return [];
-        }
-        return data;
-    }
-
-    return [];
+    return await parseChatResponse(response);
 }
 
 /**
@@ -264,7 +257,21 @@ export async function getGroupChat(groupId, reload = false) {
     await unshallowGroupMembers(groupId);
 
     const chat_id = group.chat_id;
-    const data = await loadGroupChat(chat_id);
+    let data;
+    try {
+        data = await loadGroupChat(chat_id);
+    } catch (error) {
+        console.error('Group chat could not be loaded:', error);
+        try {
+            await Popup.show.text(
+                t`Group chat could not be loaded`,
+                t`Something went wrong while loading the group chat. The page will be reloaded to prevent data corruption.`,
+            );
+        } finally {
+            window.location.reload();
+        }
+        return;
+    }
     const metadata = data?.[0]?.chat_metadata ?? {};
     const freshChat = !metadata.tainted && (!Array.isArray(data) || !data.length);
 

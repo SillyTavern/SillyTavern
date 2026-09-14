@@ -18,7 +18,6 @@ import {
     removeOldBackups,
     formatBytes,
     tryWriteFileSync,
-    tryReadFileSync,
     tryDeleteFile,
     readFirstLine,
     isPathUnderParent,
@@ -570,42 +569,67 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 });
 
 /**
- * Gets the chat as an object.
+ * Gets the chat as an array of JSONL records.
+ * Missing and empty files return an empty array. Other read errors and malformed
+ * non-empty JSONL lines are reported to the caller.
  * @param {string} chatFilePath The full chat file path.
- * @returns {Array}} If the chatFilePath cannot be read, this will return [].
+ * @returns {Array} Parsed chat records.
+ * @throws {Error} If the file cannot be read or a non-empty line cannot be parsed.
  */
 export function getChatData(chatFilePath) {
-    let chatData = [];
+    let chatJSON;
+    try {
+        chatJSON = fs.readFileSync(chatFilePath, 'utf8');
+    } catch (error) {
+        // If the file does not exist, return an empty array
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+            return [];
+        }
 
-    const chatJSON = tryReadFileSync(chatFilePath) ?? '';
-    if (chatJSON.length > 0) {
-        const lines = chatJSON.split('\n');
-        // Iterate through the array of strings and parse each line as JSON
-        chatData = lines.map(line => tryParse(line)).filter(x => x);
-    } else {
-        console.warn(`File not found: ${chatFilePath}. The chat does not exist or is empty.`);
+        throw new Error(`Could not read chat file "${chatFilePath}".`, { cause: error });
+    }
+
+    const chatData = [];
+    for (const [index, rawLine] of chatJSON.split('\n').entries()) {
+        // Process Unicode BOM
+        const line = index === 0 ? rawLine.replace(/^\uFEFF/, '') : rawLine;
+        if (!line.trim()) {
+            continue;
+        }
+
+        try {
+            chatData.push(JSON.parse(line));
+        } catch (error) {
+            throw new SyntaxError(`Could not parse chat file "${chatFilePath}" at line ${index + 1}.`, { cause: error });
+        }
     }
 
     return chatData;
 }
 
+/**
+ * Loads a character chat.
+ * Returns a JSON array for successful reads, including missing and empty chats.
+ * Invalid requests return 400; read and parse failures return 500 with a JSON error.
+ */
 router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const directoryPath = path.join(request.user.directories.chats, dirName);
         if (!isPathUnderParent(request.user.directories.chats, directoryPath)) {
-            return response.sendStatus(400);
+            return response.status(400).send({ error: 'Invalid chat path.' });
         }
+
+        if (!request.body.file_name) {
+            return response.status(400).send({ error: 'The request\'s body.file_name is required.' });
+        }
+
         const chatDirExists = fs.existsSync(directoryPath);
 
         //if no chat dir for the character is found, make one with the character name
         if (!chatDirExists) {
             fs.mkdirSync(directoryPath);
-            return response.send({});
-        }
-
-        if (!request.body.file_name) {
-            return response.send({});
+            return response.send([]);
         }
 
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
@@ -613,8 +637,8 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
 
         return response.send(getChatData(chatFilePath));
     } catch (error) {
-        console.error(error);
-        return response.send({});
+        console.error('Could not load character chat:', error);
+        return response.status(500).send({ error: 'Chat could not be loaded.' });
     }
 });
 
@@ -869,15 +893,25 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
     }
 });
 
+/**
+ * Loads a group chat.
+ * Returns a JSON array for successful reads, including missing and empty chats.
+ * Invalid requests return 400; read and parse failures return 500 with a JSON error.
+ */
 router.post('/group/get', (request, response) => {
-    if (!request.body || !request.body.id) {
-        return response.sendStatus(400);
+    try {
+        if (!request.body || !request.body.id) {
+            return response.status(400).send({ error: 'The request\'s body.id is required.' });
+        }
+
+        const id = request.body.id;
+        const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
+
+        return response.send(getChatData(chatFilePath));
+    } catch (error) {
+        console.error('Could not load group chat:', error);
+        return response.status(500).send({ error: 'Chat could not be loaded.' });
     }
-
-    const id = request.body.id;
-    const chatFilePath = path.join(request.user.directories.groupChats, sanitize(`${id}.jsonl`));
-
-    return response.send(getChatData(chatFilePath));
 });
 
 router.post('/group/info', async (request, response) => {

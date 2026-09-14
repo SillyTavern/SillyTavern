@@ -288,6 +288,7 @@ import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
 import { compressRequest, setRequestCompressionConfig } from './scripts/request-compression.js';
 import { canJumpToSwipeForMessage, canOpenSwipePickerForMessage, initSwipePicker } from './scripts/swipe-picker.js';
+import { parseChatResponse } from './scripts/chat-response.js';
 
 // API OBJECT FOR EXTERNAL WIRING
 globalThis.SillyTavern = {
@@ -7319,37 +7320,35 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
                 cache: 'no-cache',
             });
 
-            if (getChatResponse.ok) {
-                const currentChat = await getChatResponse.json();
+            const currentChat = await parseChatResponse(getChatResponse);
 
-                for (const message of currentChat) {
-                    if (message.is_user || message.is_system || message.extra?.type == system_message_types.NARRATOR) {
-                        continue;
-                    }
-
-                    if (message.name !== undefined) {
-                        message.name = newName;
-                    }
+            for (const message of currentChat) {
+                if (message.is_user || message.is_system || message.extra?.type == system_message_types.NARRATOR) {
+                    continue;
                 }
 
-                await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
-
-                const saveChatRequest = await compressRequest({
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({
-                        ch_name: newName,
-                        file_name: fileNameWithoutExtension,
-                        chat: currentChat,
-                        avatar_url: newAvatar,
-                    }),
-                    cache: 'no-cache',
-                });
-                const saveChatResponse = await fetch('/api/chats/save', saveChatRequest);
-
-                if (!saveChatResponse.ok) {
-                    throw new Error('Could not save chat');
+                if (message.name !== undefined) {
+                    message.name = newName;
                 }
+            }
+
+            await eventSource.emit(event_types.CHARACTER_RENAMED_IN_PAST_CHAT, currentChat, oldAvatar, newAvatar);
+
+            const saveChatRequest = await compressRequest({
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    ch_name: newName,
+                    file_name: fileNameWithoutExtension,
+                    chat: currentChat,
+                    avatar_url: newAvatar,
+                }),
+                cache: 'no-cache',
+            });
+            const saveChatResponse = await fetch('/api/chats/save', saveChatRequest);
+
+            if (!saveChatResponse.ok) {
+                throw new Error('Could not save chat');
             }
         } catch (error) {
             toastr.error(t`Past chat could not be updated: ${file_name}`);
@@ -7646,11 +7645,7 @@ export async function getChat() {
             }),
         });
 
-        if (!response.ok) {
-            throw new Error('Chat could not be loaded');
-        }
-
-        const data = await response.json();
+        const data = await parseChatResponse(response);
         if (Array.isArray(data) && data.length > 0) {
             /** @type {ChatHeader} */
             const chatHeader = data.shift();
@@ -7658,7 +7653,7 @@ export async function getChat() {
             chat.splice(0, chat.length, ...data);
             chat.forEach(ensureMessageMediaIsArray);
         } else {
-            // An empty/corrupted chat file
+            // An empty chat file
             chat.splice(0, chat.length);
             chat_metadata = {};
         }
@@ -7676,8 +7671,15 @@ export async function getChat() {
             $('#send_textarea').trigger('click').trigger('focus');
         });
     } catch (error) {
-        await getChatResult();
-        console.log(error);
+        console.error('Chat could not be loaded:', error);
+        try {
+            await Popup.show.text(
+                t`Chat could not be loaded`,
+                t`Something went wrong while loading the chat. The page will be reloaded to prevent data corruption.`,
+            );
+        } finally {
+            window.location.reload();
+        }
     }
 }
 
@@ -8468,19 +8470,14 @@ export async function getChatsFromFiles(data, isGroupChat) {
                     cache: 'no-cache',
                 });
 
-                if (!chatResponse.ok) {
-                    return res();
-                    // continue;
-                }
-
-                const currentChat = await chatResponse.json();
+                const currentChat = await parseChatResponse(chatResponse);
                 if (!isGroupChat) {
                     // remove the first message, which is metadata, only for individual chats
                     currentChat.shift();
                 }
                 chat_dict[file_name] = currentChat;
             } catch (error) {
-                console.error(error);
+                console.error(`Chat file could not be loaded: ${file_name}`, error);
             }
 
             return res();
