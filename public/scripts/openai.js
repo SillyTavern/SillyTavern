@@ -2632,6 +2632,10 @@ function getReasoningEffort(settings = null, model = null) {
                 return reasoning_effort_types.low;
             case reasoning_effort_types.max:
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
+                    && /^gpt-6-astra/.test(model)) {
+                    return reasoning_effort_types.max;
+                }
+                if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
                     && /^gpt-5\.6/.test(model)) {
                     // GPT-5.6 reserves "max" effort for the Responses API.
                     return 'xhigh';
@@ -3088,6 +3092,15 @@ export async function createGenerationParameters(settings, model, type, messages
             delete generate_data.logit_bias;
             delete generate_data.stop;
         }
+    }
+
+    if (gptSources.includes(settings.chat_completion_source) && /gpt-6-astra/.test(model)) {
+        generate_data.max_completion_tokens = generate_data.max_tokens;
+        delete generate_data.max_tokens;
+        delete generate_data.temperature;
+        delete generate_data.top_p;
+        delete generate_data.logprobs;
+        delete generate_data.top_logprobs;
     }
 
     // Claude Fable / Claude 5 models removed sampling parameters and reject them with HTTP 400,
@@ -5079,6 +5092,7 @@ function getMaxContextOpenAI(value) {
 
     /** @type {[RegExp, number][]} */
     const contextMap = [
+        [/^gpt-6-astra/, max_1050k],
         [/^gpt-5\.6/, max_1050k],
         [/^gpt-5\.[45]/, max_1mil],
         [/^gpt-5/, max_400k],
@@ -6227,6 +6241,7 @@ export function isImageInliningSupported() {
         'gpt-4.1',
         'gpt-4.5-preview',
         'gpt-4o',
+        'gpt-6-astra',
         'gpt-5',
         'o1',
         'o3',
