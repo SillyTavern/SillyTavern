@@ -593,7 +593,7 @@ export function getTokenizerModel() {
         return oai_settings.azure_openai_model || turboTokenizer;
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK || oai_settings.chat_completion_source == chat_completion_sources.OPENCODEGO) {
         return deepseekTokenizer;
     }
 
