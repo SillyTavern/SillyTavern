@@ -3,7 +3,7 @@ import { chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMa
 import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
-import { PROTECTED } from '../protected-whitespace.js';
+import { PROTECTED, stripProtected } from '../protected-whitespace.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../engine/MacroLexer.js';
 import { MacroParser } from '../engine/MacroParser.js';
@@ -192,8 +192,11 @@ export function registerCoreMacros() {
                 }
             }
 
-            // Check if condition is falsy: empty string or isFalseBoolean
-            let isFalsy = condition === '' || isFalseBoolean(condition);
+            // Check if condition is falsy: empty string or isFalseBoolean.
+            // Sentinels mark whitespace-only macro output (e.g. {{noop}}), which is
+            // semantically empty for truthiness - see issues #5673/#5674.
+            const semanticCondition = stripProtected(condition);
+            let isFalsy = semanticCondition === '' || isFalseBoolean(semanticCondition);
             if (inverted) isFalsy = !isFalsy;
 
             // Split raw content on {{else}} macro at the top nesting level
