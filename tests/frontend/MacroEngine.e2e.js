@@ -4,6 +4,49 @@ import { testSetup } from './frontent-test-utils.js';
 test.describe('MacroEngine', () => {
     test.beforeEach(testSetup.awaitST);
 
+    test.describe('Whitespace regressions (#5673, #5674)', () => {
+        test('{{noop}} prevents newline trimming around {{trim}}', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo\n{{noop}}{{trim}}\nbar');
+            expect(output).toBe('foo\nbar');
+        });
+
+        test('{{noop}} preserves the space in variable shorthand assignment values', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{.myvar = foo}}{{.myvar += {{noop}} bar}}{{.myvar}}');
+            expect(output).toBe('foo bar');
+        });
+
+        test('{{newline}} works inside {{if}} branches', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo{{if 1}}{{newline}}{{/if}}bar');
+            expect(output).toBe('foo\nbar');
+        });
+
+        test('literal author whitespace is still trimmed in assignment values', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{.myvar = x }}{{.myvar}}');
+            expect(output).toBe('x');
+        });
+
+        test('literal author whitespace is still trimmed in {{if}} branches', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo{{if 1}} hi {{/if}}bar');
+            expect(output).toBe('foohibar');
+        });
+
+        test('{{trim}} without {{noop}} still eats surrounding newlines', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo\n{{trim}}\nbar');
+            expect(output).toBe('foobar');
+        });
+
+        test('the # (preserveWhitespace) flag keeps working', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo{{#if 1}}{{newline}}{{/if}}bar');
+            expect(output).toBe('foo\nbar');
+        });
+
+        test('macro results stored in variables contain no protection artifacts', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{.myvar = a{{newline}}b}}{{.myvar}}');
+            expect(output).toBe('a\nb');
+            expect(output).not.toContain('\uE000');
+        });
+    });
+
     test.describe('Basic evaluation', () => {
         test('should return input unchanged when there are no macros', async ({ page }) => {
             const input = 'Hello world, no macros here.';
