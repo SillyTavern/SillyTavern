@@ -641,6 +641,9 @@ function charaFormatData(data, directories) {
         } catch {
             console.warn(`Failed to read world info file: ${data.world}. Character book will not be available.`);
         }
+    } else {
+        // User removed the world book association - clear the embedded character book
+        _.unset(char, 'data.character_book');
     }
 
     if (data.extensions) {
