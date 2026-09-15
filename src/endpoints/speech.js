@@ -2,7 +2,6 @@ import { Buffer } from 'node:buffer';
 import fs from 'node:fs';
 import express from 'express';
 import wavefile from 'wavefile';
-import fetch from 'node-fetch';
 import FormData from 'form-data';
 import mime from 'mime-types';
 import { getPipeline } from '../transformers.js';
