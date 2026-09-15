@@ -39,7 +39,7 @@ import {
     getBase64Async,
     getStringHash,
     humanFileSize,
-    saveBase64AsFile,
+    saveFileAsMediaToServer,
     extractTextFromOffice,
     download,
     getFileText,
@@ -205,13 +205,12 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
         for (const file of fileInput.files) {
             const slug = getStringHash(file.name);
             const fileNamePrefix = `${Date.now()}_${slug}`;
-            const fileBase64 = await getBase64Async(file);
-            let base64Data = fileBase64.split(',')[1];
             const extension = getFileExtension(file);
 
             const mediaType = MEDIA_TYPE.getFromMime(file.type);
             if (mediaType) {
-                const imageUrl = await saveBase64AsFile(base64Data, name2, fileNamePrefix, extension);
+                // Upload media files as-is to avoid materializing large base64 strings in memory
+                const imageUrl = await saveFileAsMediaToServer(file, name2, fileNamePrefix, extension);
                 if (!Array.isArray(message.extra.media)) {
                     message.extra.media = [];
                 }
@@ -227,6 +226,8 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 message.extra.inline_image = true;
             } else {
                 const uniqueFileName = `${fileNamePrefix}.txt`;
+                const fileBase64 = await getBase64Async(file);
+                let base64Data = fileBase64.split(',')[1];
 
                 if (isConvertible(file.type)) {
                     try {
@@ -327,19 +328,23 @@ export async function getFileAttachment(url) {
  * @returns {Promise<boolean>} True if file is valid, false otherwise.
  */
 async function validateFile(file) {
-    const fileText = await file.text();
     const isMedia = file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/');
-    const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
 
     if (!isMedia && file.size > fileSizeLimit) {
         toastr.error(t`File is too big. Maximum size is ${humanFileSize(fileSizeLimit)}.`);
         return false;
     }
 
-    // If file is binary
-    if (isBinary && !isMedia && !isConvertible(file.type)) {
-        toastr.error(t`Binary files are not supported. Select a text file or image.`);
-        return false;
+    // Media files don't need to be read to be validated; skip the binary content check
+    if (!isMedia) {
+        const fileText = await file.text();
+        const isBinary = /^[\x00-\x08\x0E-\x1F\x7F-\xFF]*$/.test(fileText);
+
+        // If file is binary
+        if (isBinary && !isConvertible(file.type)) {
+            toastr.error(t`Binary files are not supported. Select a text file or image.`);
+            return false;
+        }
     }
 
     return true;

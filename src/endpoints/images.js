@@ -23,6 +23,55 @@ function ensureDirectoryExistence(filePath) {
     fs.mkdirSync(dirname);
 }
 
+/**
+ * Builds a sanitized destination path for an uploaded image.
+ * Returns null if the requested format is not a supported media extension.
+ *
+ * @param {import('../users.js').UserDirectoryList} directories - User directories
+ * @param {string} format - File extension of the image
+ * @param {string} [filename] - Optional filename (extension is ignored)
+ * @param {string} [chName] - Optional character name for a sub-folder
+ * @returns {string|null} The full path to save the image to, or null if the format is invalid
+ */
+function getUploadedImagePath(directories, format, filename, chName) {
+    if (!MEDIA_EXTENSIONS.includes(format)) {
+        return null;
+    }
+
+    // Constructing filename and path
+    const finalName = filename
+        ? `${removeFileExtension(filename)}.${format}`
+        : `${Date.now()}.${format}`;
+
+    // if character is defined, save to a sub folder for that character
+    if (chName) {
+        return path.join(directories.userImages, sanitize(chName), sanitize(finalName));
+    }
+
+    return path.join(directories.userImages, sanitize(finalName));
+}
+
+/**
+ * Moves an uploaded temp file to its destination.
+ * Falls back to copy+unlink when renaming across devices.
+ *
+ * @param {string} sourcePath - Path to the uploaded temp file
+ * @param {string} destinationPath - Path to move the file to
+ * @returns {Promise<void>}
+ */
+export async function moveUploadedFile(sourcePath, destinationPath) {
+    try {
+        await fs.promises.rename(sourcePath, destinationPath);
+    } catch (error) {
+        if (error.code === 'EXDEV') {
+            await fs.promises.copyFile(sourcePath, destinationPath);
+            await fs.promises.unlink(sourcePath);
+        } else {
+            throw error;
+        }
+    }
+}
+
 export const router = express.Router();
 
 /**
@@ -48,23 +97,9 @@ router.post('/upload', async (request, response) => {
             return response.status(400).send({ error: 'No image data provided' });
         }
 
-        const validFormat = MEDIA_EXTENSIONS.includes(format);
-        if (!validFormat) {
+        const pathToNewFile = getUploadedImagePath(request.user.directories, format, request.body.filename, request.body.ch_name);
+        if (!pathToNewFile) {
             return response.status(400).send({ error: 'Invalid image format' });
-        }
-
-        // Constructing filename and path
-        let filename;
-        if (request.body.filename) {
-            filename = `${removeFileExtension(request.body.filename)}.${format}`;
-        } else {
-            filename = `${Date.now()}.${format}`;
-        }
-
-        // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(request.user.directories.userImages, sanitize(filename));
-        if (request.body.ch_name) {
-            pathToNewFile = path.join(request.user.directories.userImages, sanitize(request.body.ch_name), sanitize(filename));
         }
 
         ensureDirectoryExistence(pathToNewFile);
@@ -73,6 +108,42 @@ router.post('/upload', async (request, response) => {
         response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
     } catch (error) {
         console.error(error);
+        response.status(500).send({ error: 'Failed to save the image' });
+    }
+});
+
+/**
+ * Endpoint to handle raw multipart image/media uploads.
+ * The file should be provided as a multipart form field named 'avatar'.
+ * Avoids buffering the file contents in memory by moving the uploaded temp file into place.
+ *
+ * @route POST /api/images/upload-form
+ * @param {Object} request.body - The multipart form fields.
+ * @param {string} request.body.format - The file extension of the media file.
+ * @param {string} [request.body.filename] - Optional filename (extension is ignored).
+ * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
+ * @returns {Object} response - The response object containing the path where the file was saved.
+ */
+router.post('/upload-form', async (request, response) => {
+    try {
+        if (!request.file) {
+            return response.status(400).send({ error: 'No file provided' });
+        }
+
+        const pathToNewFile = getUploadedImagePath(request.user.directories, request.body.format, request.body.filename, request.body.ch_name);
+        if (!pathToNewFile) {
+            await fs.promises.unlink(request.file.path).catch(() => { });
+            return response.status(400).send({ error: 'Invalid image format' });
+        }
+
+        ensureDirectoryExistence(pathToNewFile);
+        await moveUploadedFile(request.file.path, pathToNewFile);
+        response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
+    } catch (error) {
+        console.error(error);
+        if (request.file?.path) {
+            await fs.promises.unlink(request.file.path).catch(() => { });
+        }
         response.status(500).send({ error: 'Failed to save the image' });
     }
 });
