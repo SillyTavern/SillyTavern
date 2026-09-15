@@ -156,8 +156,20 @@ class MacroEngine {
             return isNested ? input : stripProtected(input);
         }
 
-        const result = this.#runPostProcessors(evaluated, safeEnv);
-        return isNested ? result : stripProtected(result);
+        // Core post-processors (priority <= 50) run on the protected text: they
+        // implement trim-blocking semantics that depend on sentinels being present.
+        // Then sentinels are stripped and extension post-processors (priority > 50)
+        // receive plain text, so extensions never observe internal protection.
+        const coreResult = this.#runPostProcessors(evaluated, safeEnv, 50);
+        if (isNested) {
+            // Nested evaluations (e.g. the {{if}} macro resolving its branch) keep
+            // sentinels for the caller's trim passes AND do not invoke extension
+            // post-processors; the outermost call owns both stripping and the
+            // extension band, so extensions only ever see plain text once.
+            return coreResult;
+        }
+        const stripped = stripProtected(coreResult);
+        return this.#runPostProcessors(stripped, safeEnv, Number.POSITIVE_INFINITY, 51);
     }
 
     /**
@@ -261,9 +273,10 @@ class MacroEngine {
      * @param {MacroEnv} env - The environment to pass to the macro handler.
      * @returns {string} The processed text.
      */
-    #runPostProcessors(text, env) {
+    #runPostProcessors(text, env, maxPriority = Number.POSITIVE_INFINITY, minPriority = 0) {
         let result = text;
-        for (const { handler } of this.#postProcessors) {
+        for (const { handler, priority } of this.#postProcessors) {
+            if (priority > maxPriority || priority < minPriority) continue;
             result = handler(result, env);
         }
         return result;
