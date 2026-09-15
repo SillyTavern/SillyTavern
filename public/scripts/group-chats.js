@@ -18,6 +18,8 @@ import {
     paginationDropdownChangeHandler,
     waitUntilCondition,
     uuidv4,
+    decodeJxlToDataUrl,
+    isJxlFile,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -1904,7 +1906,7 @@ async function uploadGroupAvatar(event) {
         return;
     }
 
-    const result = await getBase64Async(file);
+    const result = isJxlFile(file) ? await decodeJxlToDataUrl(file) : await getBase64Async(file);
 
     $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
