@@ -137,7 +137,7 @@ class MacroEngine {
         // If the parser did not produce a valid CST, fall back to the original input.
         if (!cst || typeof cst !== 'object' || !cst.children) {
             logMacroGeneralError({ message: 'Macro parser produced an invalid CST. Returning original input.', error: { input, lexingErrors, parserErrors } });
-            return input;
+            return isNested ? input : stripProtected(input);
         }
 
         let evaluated;
@@ -149,10 +149,11 @@ class MacroEngine {
                 env: safeEnv,
                 resolveMacro: this.#resolveMacro.bind(this),
                 trimContent: this.trimScopedContent.bind(this),
+                keepProtection: true,
             });
         } catch (error) {
             logMacroGeneralError({ message: 'Macro evaluation failed. Returning original input.', error: { input, error } });
-            return input;
+            return isNested ? input : stripProtected(input);
         }
 
         const result = this.#runPostProcessors(evaluated, safeEnv);

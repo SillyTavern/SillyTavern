@@ -27,7 +27,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setvar::myvar::foo}}', '{{setvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.local.set(name, stripProtected(value));
+            ctx.variables.local.set(stripProtected(name), stripProtected(value));
             return '';
         },
     });
@@ -51,7 +51,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{addvar::mystrvar::foo}}', '{{addvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.local.add(name, value);
+            ctx.variables.local.add(name, stripProtected(value));
             return '';
         },
     });
@@ -112,7 +112,7 @@ export function registerVariableMacros() {
         exampleUsage: ['{{getvar::myvar}}', '{{getvar myintvar}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.local.get(name);
-            return normalize(result);
+            return normalize(stripProtected(String(result ?? '')));
         },
     });
 
@@ -181,7 +181,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setvarkey::myarray::0::foo}}', '{{setvarkey::myobj::uniquekey::somevalue}}'],
         handler: ({ unnamedArgs: [name, key, value] }) => {
-            ctx.variables.local.set(name, stripProtected(value), { index: key });
+            ctx.variables.local.set(stripProtected(name), stripProtected(value), { index: stripProtected(key) });
             return '';
         },
     });
@@ -208,7 +208,7 @@ export function registerVariableMacros() {
         exampleUsage: ['{{getvarkey::myarray::0}}', '{{getvarkey::myobj::uniquekey}}'],
         handler: ({ unnamedArgs: [name, key], normalize }) => {
             const result = ctx.variables.local.get(name, { index: key });
-            return normalize(result);
+            return normalize(stripProtected(String(result ?? '')));
         },
     });
 
@@ -231,7 +231,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setglobalvar::myvar::foo}}', '{{setglobalvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.global.set(name, stripProtected(value));
+            ctx.variables.global.set(stripProtected(name), stripProtected(value));
             return '';
         },
     });
@@ -255,7 +255,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{addglobalvar::mystrvar::foo}}', '{{addglobalvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.global.add(name, value);
+            ctx.variables.global.add(name, stripProtected(value));
             return '';
         },
     });
@@ -316,7 +316,7 @@ export function registerVariableMacros() {
         exampleUsage: ['{{getglobalvar::myvar}}', '{{getglobalvar myintvar}}'],
         handler: ({ unnamedArgs: [name], normalize }) => {
             const result = ctx.variables.global.get(name);
-            return normalize(result);
+            return normalize(stripProtected(String(result ?? '')));
         },
     });
 
@@ -385,7 +385,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setglobalvarkey::myarray::0::foo}}', '{{setglobalvarkey::myobj::uniquekey::bar}}'],
         handler: ({ unnamedArgs: [name, key, value] }) => {
-            ctx.variables.global.set(name, stripProtected(value), { index: key });
+            ctx.variables.global.set(stripProtected(name), stripProtected(value), { index: stripProtected(key) });
             return '';
         },
     });
@@ -412,7 +412,7 @@ export function registerVariableMacros() {
         exampleUsage: ['{{getglobalvarkey::myarray::0}}', '{{getglobalvarkey::myobj::uniquekey}}'],
         handler: ({ unnamedArgs: [name, key], normalize }) => {
             const result = ctx.variables.global.get(name, { index: key });
-            return normalize(result);
+            return normalize(stripProtected(String(result ?? '')));
         },
     });
 }

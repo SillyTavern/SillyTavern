@@ -3,7 +3,7 @@ import { chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMa
 import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
-import { PROTECTED, stripProtected } from '../protected-whitespace.js';
+import { stripProtected } from '../protected-whitespace.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../engine/MacroLexer.js';
 import { MacroParser } from '../engine/MacroParser.js';
@@ -71,12 +71,16 @@ export function registerCoreMacros() {
     // that prevented newline trimming around itself (see issues #5673/#5674).
     // It now resolves to a sentinel character which blocks trim operations and
     // the legacy {{trim}} post-processor regex; it is stripped from final output.
+    // Handler returns the PLAIN empty string: macro arguments always receive ''.
+    // The protectsWhitespace flag makes the document-splice layer insert the
+    // protection sentinel when rendering noop into document text, where it blocks
+    // trim operations and the legacy {{trim}} post-processor regex.
     MacroRegistry.registerMacro('noop', {
         protectsWhitespace: true,
         category: MacroCategory.UTILITY,
         description: 'Does nothing and produces an empty string. As a legacy behavior, it prevents newline trimming around itself.',
         returns: '',
-        handler: () => PROTECTED,
+        handler: () => '',
     });
 
     // {{trim}} -> macro will currently replace itself with itself. Trimming is handled in post-processing.
