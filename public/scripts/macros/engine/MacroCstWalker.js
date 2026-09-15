@@ -4,6 +4,7 @@
 /** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
 
 import { logMacroInternalError, logMacroRuntimeWarning } from './MacroDiagnostics.js';
+import { PROTECTED, protect, stripProtected } from '../protected-whitespace.js';
 import { MacroEngine } from './MacroEngine.js';
 import { parseFlags, createEmptyFlags, MacroFlagType } from './MacroFlags.js';
 import { MacroParser } from './MacroParser.js';
@@ -53,6 +54,7 @@ import { isFalseBoolean } from '/scripts/utils.js';
  *           original full content (env.content). This remains constant throughout the evaluation.
  * @property {(call: MacroCall) => string} resolveMacro - Callback to resolve a macro call to its result string.
  * @property {(content: string, options?: { trimIndent?: boolean }) => string} trimContent - Shared utility function that trims scoped content with optional indentation dedent.
+ * @property {boolean} [keepProtection=false] - When true, whitespace-protection sentinels from flagged macros are kept in evaluated results (document-fragment mode). Arguments must leave this false so handlers receive plain strings.
  */
 
 /**
@@ -87,11 +89,11 @@ class MacroCstWalker {
     /**
      * Evaluates a full document CST into a resolved string.
      *
-     * @param {EvaluationContext & { cst: CstNode }} options
+     * @param {EvaluationContext & { cst: CstNode, keepProtection?: boolean }} options
      * @returns {string}
      */
     evaluateDocument(options) {
-        const { text, cst, contextOffset, env, resolveMacro, trimContent } = options;
+        const { text, cst, contextOffset, env, resolveMacro, trimContent, keepProtection } = options;
 
         if (typeof text !== 'string') {
             throw new Error('MacroCstWalker.evaluateDocument: text must be a string');
@@ -107,7 +109,7 @@ class MacroCstWalker {
         }
 
         /** @type {EvaluationContext} */
-        const context = { text, contextOffset, env, resolveMacro, trimContent };
+        const context = { text, contextOffset, env, resolveMacro, trimContent, keepProtection: keepProtection === true };
         let items = this.#collectDocumentItems(cst);
 
         // Process scoped macros: find opening/closing pairs and merge them
@@ -150,6 +152,27 @@ class MacroCstWalker {
         }
 
         return result;
+    }
+
+    /**
+     * Protects flagged macro results when splicing them into document text.
+     *
+     * @param {string} name - Macro name.
+     * @param {string} value - Evaluated macro result.
+     * @returns {string} The document text result.
+     */
+    #protectIfFlagged(name, value) {
+        const def = MacroRegistry.getPrimaryMacro(name.toLowerCase());
+        if (def?.protectsWhitespace !== true) {
+            return value;
+        }
+        // A flagged macro whose result is empty/whitespace-only still needs a
+        // bare sentinel in document text (e.g. {{noop}} must block the legacy
+        // {{trim}} regex even though its semantic value is '').
+        if (value.trim() === '') {
+            return PROTECTED + value + PROTECTED;
+        }
+        return protect(value);
     }
 
     /**
@@ -450,11 +473,15 @@ class MacroCstWalker {
                 if (delayArgResolution) {
                     scopedValue = rawScopedText;
                 } else {
-                    scopedValue = this.#evaluateScopedContent(scopedContent, context);
+                    // Evaluate as a protected fragment so trim passes respect flagged
+                    // macros, then strip sentinels: the scoped value is a macro ARGUMENT
+                    // and handlers must receive plain strings.
+                    scopedValue = this.#evaluateScopedContent(scopedContent, { ...context, keepProtection: true });
                     // Auto-trim scoped content unless the '#' (preserveWhitespace) flag is set
                     if (!flags.preserveWhitespace) {
                         scopedValue = trimContent(scopedValue);
                     }
+                    scopedValue = stripProtected(scopedValue);
                 }
 
                 args.push(scopedValue);
@@ -509,6 +536,11 @@ class MacroCstWalker {
         const value = resolveMacro(call);
         const stringValue = typeof value === 'string' ? value : String(value ?? '');
 
+        // Document/fragment contexts keep flagged results protected so trim passes
+        // respect macro-produced whitespace; argument contexts return plain strings.
+        if (context.keepProtection) {
+            return this.#protectIfFlagged(name, stringValue);
+        }
         return stringValue;
     }
 
@@ -637,7 +669,8 @@ class MacroCstWalker {
 
         return () => {
             if (!resolved) {
-                cached = this.#evaluateVariableValue(operatorChildren, context);
+                // Strip sentinels so macro results persist as plain values in variables
+                cached = stripProtected(this.#evaluateVariableValue(operatorChildren, context));
                 resolved = true;
             }
             return cached;
@@ -673,7 +706,7 @@ class MacroCstWalker {
 
         switch (operation) {
             case 'get':
-                return normalize(vars.get(varName));
+                return normalize(stripProtected(String(vars.get(varName) ?? '')));
 
             case 'set':
                 vars.set(varName, lazyValue());
@@ -701,14 +734,14 @@ class MacroCstWalker {
                 // Returns default value if variable is falsy, otherwise returns variable value
                 // Value is only resolved if needed (when variable is falsy)
                 const currentValue = vars.get(varName);
-                return isFalsy(currentValue) ? normalize(lazyValue()) : normalize(currentValue);
+                return isFalsy(currentValue) ? normalize(lazyValue()) : normalize(stripProtected(String(currentValue ?? '')));
             }
 
             case 'nullishCoalescing': {
                 // Returns default value only if variable doesn't exist, otherwise returns variable value (even if falsy)
                 // Value is only resolved if needed (when variable doesn't exist)
                 const exists = vars.has(varName);
-                return exists ? normalize(vars.get(varName)) : normalize(lazyValue());
+                return exists ? normalize(stripProtected(String(vars.get(varName) ?? ''))) : normalize(lazyValue());
             }
 
             case 'logicalOrAssign': {
@@ -735,21 +768,21 @@ class MacroCstWalker {
 
             case 'equals': {
                 // String equality comparison - value is always needed
-                const currentValue = normalize(vars.get(varName));
+                const currentValue = normalize(stripProtected(String(vars.get(varName) ?? '')));
                 const compareValue = normalize(lazyValue());
                 return currentValue === compareValue ? 'true' : 'false';
             }
 
             case 'notEquals': {
                 // String inequality comparison - value is always needed
-                const currentValue = normalize(vars.get(varName));
+                const currentValue = normalize(stripProtected(String(vars.get(varName) ?? '')));
                 const compareValue = normalize(lazyValue());
                 return currentValue !== compareValue ? 'true' : 'false';
             }
 
             case 'greaterThan': {
                 // Numeric greater than comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand ">" operator requires numeric values. Got: "${vars.get(varName)}" > "${lazyValue()}"` });
@@ -760,7 +793,7 @@ class MacroCstWalker {
 
             case 'greaterThanOrEqual': {
                 // Numeric greater than or equal comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand ">=" operator requires numeric values. Got: "${vars.get(varName)}" >= "${lazyValue()}"` });
@@ -771,7 +804,7 @@ class MacroCstWalker {
 
             case 'lessThan': {
                 // Numeric less than comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand "<" operator requires numeric values. Got: "${vars.get(varName)}" < "${lazyValue()}"` });
@@ -782,7 +815,7 @@ class MacroCstWalker {
 
             case 'lessThanOrEqual': {
                 // Numeric less than or equal comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand "<=" operator requires numeric values. Got: "${vars.get(varName)}" <= "${lazyValue()}"` });
@@ -849,22 +882,26 @@ class MacroCstWalker {
 
         nestedWithRange.sort((a, b) => a.range.startOffset - b.range.startOffset);
 
+        const first = nestedWithRange[0].range;
+        const last = nestedWithRange[nestedWithRange.length - 1].range;
+        const leading = text.slice(startOffset, first.startOffset).trimStart();
+        const trailing = text.slice(last.endOffset + 1, endOffset + 1).trimEnd();
         let result = '';
         let cursor = startOffset;
 
         for (const entry of nestedWithRange) {
             if (entry.range.startOffset > cursor) {
-                result += text.slice(cursor, entry.range.startOffset);
+                result += entry.range === first ? leading : text.slice(cursor, entry.range.startOffset);
             }
             result += this.#evaluateMacroNode(entry.node, context);
             cursor = entry.range.endOffset + 1;
         }
 
         if (cursor <= endOffset) {
-            result += text.slice(cursor, endOffset + 1);
+            result += trailing;
         }
 
-        return result.trim();
+        return result;
     }
 
     /**
@@ -891,8 +928,11 @@ class MacroCstWalker {
         // Calculate the new base offset: parent's contextOffset + this argument's start position
         const newContextOffset = contextOffset + location.startOffset;
 
-        // Use the shared helper to evaluate the content, which handles scoped macros
-        return this.#evaluateRawContent(rawContent, newContextOffset, context);
+        // Arguments are semantic values, not document text: evaluate WITHOUT
+        // protection and strip any sentinels produced by inner document
+        // evaluations (e.g. delayed-resolution handlers calling resolve()), so
+        // handlers always receive plain strings regardless of nesting.
+        return stripProtected(this.#evaluateRawContent(rawContent, newContextOffset, { ...context, keepProtection: false }));
     }
 
     /**
@@ -926,7 +966,7 @@ class MacroCstWalker {
         // This is important: positions in the parsed CST are relative to rawContent,
         // but contextOffset tracks the absolute position in the original document
         /** @type {EvaluationContext} */
-        const contentContext = { ...context, text: rawContent, contextOffset: newContextOffset };
+        const contentContext = { ...context, text: rawContent, contextOffset: newContextOffset, keepProtection: context.keepProtection === true };
 
         // Collect items and process scoped macros
         let items = this.#collectDocumentItems(cst);

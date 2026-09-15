@@ -2,6 +2,7 @@ import { MacroParser } from './MacroParser.js';
 import { MacroCstWalker } from './MacroCstWalker.js';
 import { MacroRegistry, MacroValueType } from './MacroRegistry.js';
 import { logMacroGeneralError, logMacroInternalError, logMacroRuntimeWarning, logMacroSyntaxWarning } from './MacroDiagnostics.js';
+import { stripProtected } from '../protected-whitespace.js';
 import { ELSE_MARKER } from '../definitions/core-macros.js';
 
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
@@ -112,9 +113,10 @@ class MacroEngine {
      * @param {number} [options.contextOffset=0] - Base offset from the original top-level document.
      *        Used when evaluating nested content (via resolve() in handlers) to preserve global
      *        positioning for macros like {{pick}} that seed on position.
+     * @param {boolean} [options.isNested=false] - Preserve sentinels for the calling macro's trim passes.
      * @returns {string} The resolved string.
      */
-    evaluate(input, env, { contextOffset = 0 } = {}) {
+    evaluate(input, env, { contextOffset = 0, isNested = false } = {}) {
         if (!input) {
             return '';
         }
@@ -135,7 +137,7 @@ class MacroEngine {
         // If the parser did not produce a valid CST, fall back to the original input.
         if (!cst || typeof cst !== 'object' || !cst.children) {
             logMacroGeneralError({ message: 'Macro parser produced an invalid CST. Returning original input.', error: { input, lexingErrors, parserErrors } });
-            return input;
+            return isNested ? input : stripProtected(input);
         }
 
         let evaluated;
@@ -147,15 +149,27 @@ class MacroEngine {
                 env: safeEnv,
                 resolveMacro: this.#resolveMacro.bind(this),
                 trimContent: this.trimScopedContent.bind(this),
+                keepProtection: true,
             });
         } catch (error) {
             logMacroGeneralError({ message: 'Macro evaluation failed. Returning original input.', error: { input, error } });
-            return input;
+            return isNested ? input : stripProtected(input);
         }
 
-        const result = this.#runPostProcessors(evaluated, safeEnv);
-
-        return result;
+        // Core post-processors (priority <= 50) run on the protected text: they
+        // implement trim-blocking semantics that depend on sentinels being present.
+        // Then sentinels are stripped and extension post-processors (priority > 50)
+        // receive plain text, so extensions never observe internal protection.
+        const coreResult = this.#runPostProcessors(evaluated, safeEnv, 50);
+        if (isNested) {
+            // Nested evaluations (e.g. the {{if}} macro resolving its branch) keep
+            // sentinels for the caller's trim passes AND do not invoke extension
+            // post-processors; the outermost call owns both stripping and the
+            // extension band, so extensions only ever see plain text once.
+            return coreResult;
+        }
+        const stripped = stripProtected(coreResult);
+        return this.#runPostProcessors(stripped, safeEnv, Number.POSITIVE_INFINITY, 51);
     }
 
     /**
@@ -259,9 +273,10 @@ class MacroEngine {
      * @param {MacroEnv} env - The environment to pass to the macro handler.
      * @returns {string} The processed text.
      */
-    #runPostProcessors(text, env) {
+    #runPostProcessors(text, env, maxPriority = Number.POSITIVE_INFINITY, minPriority = 0) {
         let result = text;
-        for (const { handler } of this.#postProcessors) {
+        for (const { handler, priority } of this.#postProcessors) {
+            if (priority > maxPriority || priority < minPriority) continue;
             result = handler(result, env);
         }
         return result;
@@ -383,9 +398,10 @@ class MacroEngine {
         // Find the first non-empty line (has non-whitespace characters)
         let baseIndent = 0;
         for (const line of lines) {
-            if (line.trim() !== '') {
+            const bare = stripProtected(line);
+            if (bare.trim() !== '') {
                 // Found first non-empty line - get its indentation
-                const match = line.match(/^[ \t]*/);
+                const match = bare.match(/^[ \t]*/);
                 baseIndent = match ? match[0].length : 0;
                 break;
             }
