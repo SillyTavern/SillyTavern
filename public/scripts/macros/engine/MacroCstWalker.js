@@ -706,7 +706,7 @@ class MacroCstWalker {
 
         switch (operation) {
             case 'get':
-                return normalize(vars.get(varName));
+                return normalize(stripProtected(String(vars.get(varName) ?? '')));
 
             case 'set':
                 vars.set(varName, lazyValue());
@@ -734,14 +734,14 @@ class MacroCstWalker {
                 // Returns default value if variable is falsy, otherwise returns variable value
                 // Value is only resolved if needed (when variable is falsy)
                 const currentValue = vars.get(varName);
-                return isFalsy(currentValue) ? normalize(lazyValue()) : normalize(currentValue);
+                return isFalsy(currentValue) ? normalize(lazyValue()) : normalize(stripProtected(String(currentValue ?? '')));
             }
 
             case 'nullishCoalescing': {
                 // Returns default value only if variable doesn't exist, otherwise returns variable value (even if falsy)
                 // Value is only resolved if needed (when variable doesn't exist)
                 const exists = vars.has(varName);
-                return exists ? normalize(vars.get(varName)) : normalize(lazyValue());
+                return exists ? normalize(stripProtected(String(vars.get(varName) ?? ''))) : normalize(lazyValue());
             }
 
             case 'logicalOrAssign': {
@@ -768,21 +768,21 @@ class MacroCstWalker {
 
             case 'equals': {
                 // String equality comparison - value is always needed
-                const currentValue = normalize(vars.get(varName));
+                const currentValue = normalize(stripProtected(String(vars.get(varName) ?? '')));
                 const compareValue = normalize(lazyValue());
                 return currentValue === compareValue ? 'true' : 'false';
             }
 
             case 'notEquals': {
                 // String inequality comparison - value is always needed
-                const currentValue = normalize(vars.get(varName));
+                const currentValue = normalize(stripProtected(String(vars.get(varName) ?? '')));
                 const compareValue = normalize(lazyValue());
                 return currentValue !== compareValue ? 'true' : 'false';
             }
 
             case 'greaterThan': {
                 // Numeric greater than comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand ">" operator requires numeric values. Got: "${vars.get(varName)}" > "${lazyValue()}"` });
@@ -793,7 +793,7 @@ class MacroCstWalker {
 
             case 'greaterThanOrEqual': {
                 // Numeric greater than or equal comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand ">=" operator requires numeric values. Got: "${vars.get(varName)}" >= "${lazyValue()}"` });
@@ -804,7 +804,7 @@ class MacroCstWalker {
 
             case 'lessThan': {
                 // Numeric less than comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand "<" operator requires numeric values. Got: "${vars.get(varName)}" < "${lazyValue()}"` });
@@ -815,7 +815,7 @@ class MacroCstWalker {
 
             case 'lessThanOrEqual': {
                 // Numeric less than or equal comparison
-                const currentNum = Number(vars.get(varName));
+                const currentNum = Number(stripProtected(String(vars.get(varName) ?? '')));
                 const compareNum = Number(lazyValue());
                 if (isNaN(currentNum) || isNaN(compareNum)) {
                     logMacroRuntimeWarning({ message: `Variable shorthand "<=" operator requires numeric values. Got: "${vars.get(varName)}" <= "${lazyValue()}"` });
@@ -929,8 +929,10 @@ class MacroCstWalker {
         const newContextOffset = contextOffset + location.startOffset;
 
         // Arguments are semantic values, not document text: evaluate WITHOUT
-        // protection so handlers always receive plain strings.
-        return this.#evaluateRawContent(rawContent, newContextOffset, { ...context, keepProtection: false });
+        // protection and strip any sentinels produced by inner document
+        // evaluations (e.g. delayed-resolution handlers calling resolve()), so
+        // handlers always receive plain strings regardless of nesting.
+        return stripProtected(this.#evaluateRawContent(rawContent, newContextOffset, { ...context, keepProtection: false }));
     }
 
     /**

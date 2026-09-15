@@ -51,7 +51,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{addvar::mystrvar::foo}}', '{{addvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.local.add(name, stripProtected(value));
+            ctx.variables.local.add(stripProtected(name), stripProtected(value));
             return '';
         },
     });
@@ -255,7 +255,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{addglobalvar::mystrvar::foo}}', '{{addglobalvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.global.add(name, stripProtected(value));
+            ctx.variables.global.add(stripProtected(name), stripProtected(value));
             return '';
         },
     });
