@@ -153,6 +153,7 @@ class MacroEngine {
                 trimContent: this.trimScopedContent.bind(this),
             });
         } catch (error) {
+            this.#evaluationDepth--;
             logMacroGeneralError({ message: 'Macro evaluation failed. Returning original input.', error: { input, error } });
             return input;
         }
