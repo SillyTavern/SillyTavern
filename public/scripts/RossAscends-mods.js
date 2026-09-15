@@ -411,6 +411,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.MINIMAX] && oai_settings.chat_completion_source == chat_completion_sources.MINIMAX)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                     || (secret_state[SECRET_KEYS.AZURE_OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI)
+                    || (secret_state[SECRET_KEYS.AVIAN] && oai_settings.chat_completion_source == chat_completion_sources.AVIAN)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }
