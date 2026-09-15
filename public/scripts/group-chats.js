@@ -531,7 +531,8 @@ export function getGroupCharacterCardsLazy(groupId, characterId) {
         if (typeof preprocess === 'function') {
             value = preprocess(value);
         }
-        const prefix = customTransform(group.generation_mode_join_prefix, fieldName, characterName, false);
+        const prefixTemplate = group.generation_mode_join_prefix || '{{char}}: ';
+        const prefix = customTransform(prefixTemplate, fieldName, characterName, false);
         const suffix = customTransform(group.generation_mode_join_suffix, fieldName, characterName, false);
         value = customTransform(value, fieldName, characterName, true);
         return `${prefix}${value}${suffix}`;
