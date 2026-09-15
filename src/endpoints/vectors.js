@@ -40,6 +40,7 @@ const SOURCES = [
     'nanogpt',
     'siliconflow',
     'workers_ai',
+    'voyageai',
 ];
 
 /**
@@ -91,6 +92,8 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return getOpenAIVector(text, source, directories, sourceSettings.model, sourceSettings.urlOverride);
         case 'workers_ai':
             return getOpenAIVector(text, source, directories, sourceSettings.model, sourceSettings.urlOverride);
+        case 'voyageai':
+            return getOpenAIVector(text, source, directories, sourceSettings.model);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -167,6 +170,9 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 break;
             case 'workers_ai':
                 results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model, sourceSettings.urlOverride));
+                break;
+            case 'voyageai':
+                results.push(...await getOpenAIBatchVector(batch, source, directories, sourceSettings.model));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -275,6 +281,10 @@ function getSourceSettings(source, request) {
                     : null,
             };
         }
+        case 'voyageai':
+            return {
+                model: String(request.body.model || 'voyage-4-large'),
+            };
         default:
             return {};
     }
