@@ -185,6 +185,13 @@ export function registerCoreMacros() {
                 const macroDef = MacroRegistry.getPrimaryMacro(condition);
                 if (macroDef && macroDef.minArgs === 0) {
                     condition = resolve(`{{${condition}}}`);
+                } else {
+                    // Check if condition looks like a valid variable name
+                    // If so, resolve it as a local variable (same as .varname shorthand)
+                    const varNameRegex = new RegExp(`^${MACRO_VARIABLE_SHORTHAND_PATTERN.source}$`);
+                    if (varNameRegex.test(condition)) {
+                        condition = resolve(`{{getvar::${condition}}}`);
+                    }
                 }
             }
 
