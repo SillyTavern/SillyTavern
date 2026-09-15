@@ -14,7 +14,7 @@ import storage from 'node-persist';
 
 import { AVATAR_WIDTH, AVATAR_HEIGHT, DEFAULT_AVATAR_PATH } from '../constants.js';
 import { default as validateAvatarUrlMiddleware, getFileNameValidationFunction, forbiddenRegExp } from '../middleware/validateFileName.js';
-import { deepMerge, humanizedDateTime, tryParse, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements } from '../util.js';
+import { deepMerge, humanizedDateTime, tryParse, MemoryLimitedMap, getConfigValue, mutateJsonString, clientRelativePath, getUniqueName, sanitizeSafeCharacterReplacements, getArrayBufferSlice } from '../util.js';
 import { TavernCardValidator } from '../validator/TavernCardValidator.js';
 import { parse, read, write } from '../character-card-parser.js';
 import { readWorldInfoFile } from './worldinfo.js';
@@ -765,7 +765,7 @@ async function importFromYaml(uploadPath, context, preservedFileName) {
 async function importFromCharX(uploadPath, { request }, preservedFileName) {
     const fileBuffer = fs.readFileSync(uploadPath);
     // Create a properly-sized ArrayBuffer (Node's buffer pool can cause oversized .buffer)
-    const data = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
+    const data = getArrayBufferSlice(fileBuffer);
     fs.unlinkSync(uploadPath);
 
     const parser = new CharXParser(data);
@@ -801,7 +801,7 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
 }
 
 async function importFromByaf(uploadPath, { request }, preservedFileName) {
-    const data = (await fsPromises.readFile(uploadPath)).buffer;
+    const data = getArrayBufferSlice(await fsPromises.readFile(uploadPath));
     await fsPromises.unlink(uploadPath);
     console.info('Importing from BYAF');
 
@@ -1081,7 +1081,9 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 
         // Rename chats folder
         if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
-            fs.cpSync(oldChatsPath, newChatsPath, { recursive: true });
+            // Supplying a filter avoids a Node.js Windows copyDir crash while preserving all entries.
+            // https://github.com/nodejs/node/issues/63970
+            fs.cpSync(oldChatsPath, newChatsPath, { recursive: true, filter: () => true });
             fs.rmSync(oldChatsPath, { recursive: true, force: true });
         }
 

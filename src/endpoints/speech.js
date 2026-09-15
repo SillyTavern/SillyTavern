@@ -101,7 +101,7 @@ pollinations.post('/voices', async (req, res) => {
             throw new Error('Invalid data format received from Pollinations');
         }
 
-        const audioModelData = data.find(m => m.name === model);
+        const audioModelData = data.find(m => m.name === model || m.aliases?.includes(model));
         if (!audioModelData || !Array.isArray(audioModelData.voices)) {
             throw new Error('No voices found for the specified model');
         }

@@ -42,7 +42,7 @@ function migrateSettings() {
     if (extension_settings.caption.source === 'openai') {
         extension_settings.caption.source = 'multimodal';
         extension_settings.caption.multimodal_api = 'openai';
-        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
+        extension_settings.caption.multimodal_model = 'gpt-5.6-luna';
     }
 
     if (['google', 'vertexai'].includes(extension_settings.caption.multimodal_api)) {
@@ -55,7 +55,7 @@ function migrateSettings() {
     }
 
     if (!extension_settings.caption.multimodal_model) {
-        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
+        extension_settings.caption.multimodal_model = 'gpt-5.6-luna';
     }
 
     if (!extension_settings.caption.prompt) {
