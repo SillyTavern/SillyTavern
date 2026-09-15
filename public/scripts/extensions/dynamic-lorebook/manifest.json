@@ -1,0 +1,12 @@
+{
+    "display_name": "Dynamic Lorebook Manager",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "styles/main.css",
+    "author": "SillyTavern Community",
+    "version": "1.0.0",
+    "homePage": "https://github.com/SillyTavern/SillyTavern",
+    "description": "Automatically detect and update lorebook entries based on AI responses"
+}

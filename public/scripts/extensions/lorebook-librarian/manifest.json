@@ -1,0 +1,13 @@
+{
+    "display_name": "Lorebook Librarian",
+    "loading_order": 101,
+    "requires": [],
+    "optional": [
+        "connection-manager"
+    ],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "SillyTavern Contributors",
+    "version": "0.1.0",
+    "homePage": "https://github.com/SillyTavern/SillyTavern"
+}

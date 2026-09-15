@@ -1,0 +1,53 @@
+<div class="lorebook-librarian-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Lorebook Librarian</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="lorebook-librarian-row">
+                <label for="lorebook_librarian_profile">Summary connection profile</label>
+                <select id="lorebook_librarian_profile" class="text_pole">
+                    <option value="">Select a Chat Completion profile</option>
+                </select>
+            </div>
+
+            <div class="flex-container lorebook-librarian-number-row">
+                <div class="flex1">
+                    <label for="lorebook_librarian_message_count">Assistant messages</label>
+                    <input id="lorebook_librarian_message_count" class="text_pole" type="number" min="1" max="25" step="1">
+                </div>
+                <div class="flex1">
+                    <label for="lorebook_librarian_max_tokens">Proposal max tokens</label>
+                    <input id="lorebook_librarian_max_tokens" class="text_pole" type="number" min="128" max="8192" step="64">
+                </div>
+            </div>
+
+            <label class="checkbox_label" for="lorebook_librarian_debug_visible">
+                <input id="lorebook_librarian_debug_visible" type="checkbox" class="checkbox">
+                <span>Show diagnostics by default</span>
+            </label>
+
+            <div class="flex-container lorebook-librarian-actions">
+                <div id="lorebook_librarian_run" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                    <span>Run Librarian</span>
+                </div>
+                <div id="lorebook_librarian_refresh_profiles" class="menu_button menu_button_icon" title="Refresh connection profiles">
+                    <i class="fa-solid fa-rotate"></i>
+                </div>
+            </div>
+
+            <div id="lorebook_librarian_status" class="lorebook-librarian-status">
+                Configure a Chat Completion profile, then run from here or with /lorelibrarian.
+            </div>
+
+            <div id="lorebook_librarian_results" class="lorebook-librarian-results"></div>
+
+            <details id="lorebook_librarian_debug" class="lorebook-librarian-debug">
+                <summary>Diagnostics</summary>
+                <pre id="lorebook_librarian_debug_output"></pre>
+            </details>
+        </div>
+    </div>
+</div>

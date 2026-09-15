@@ -1,0 +1,124 @@
+/* Dynamic Lorebook Manager — Diff Viewer Styles */
+
+.dlm-diff-viewer {
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius-sm);
+    overflow: hidden;
+}
+
+/* Header row: stats + mode toggle */
+.dlm-diff-header {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--dlm-card-border);
+    display: flex;
+    justify-content: space-between;
+    padding: 4px var(--dlm-spacing-sm);
+}
+
+.dlm-diff-stats {
+    display: flex;
+    font-size: 0.75rem;
+    gap: var(--dlm-spacing-sm);
+}
+
+.dlm-stat-add    { color: var(--dlm-success); }
+.dlm-stat-remove { color: var(--dlm-danger); }
+
+.dlm-diff-mode-toggle {
+    display: flex;
+    gap: 2px;
+}
+
+.dlm-diff-mode-btn {
+    background: none;
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius-sm);
+    color: var(--dlm-muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 1px 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.dlm-diff-mode-btn.dlm-active,
+.dlm-diff-mode-btn:hover {
+    background: rgba(74, 158, 255, 0.15);
+    color: var(--dlm-primary);
+}
+
+/* Content area */
+.dlm-diff-content {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: var(--dlm-spacing-sm);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Inline mode: spans inline within the text flow */
+.dlm-diff-equal  { color: var(--dlm-text); }
+
+.dlm-diff-insert {
+    background: rgba(40, 167, 69, 0.2);
+    border-bottom: 1px solid rgba(40, 167, 69, 0.5);
+    color: #6fcf97;
+}
+
+.dlm-diff-delete {
+    background: rgba(220, 53, 69, 0.2);
+    border-bottom: 1px solid rgba(220, 53, 69, 0.5);
+    color: #eb5757;
+    text-decoration: line-through;
+}
+
+/* Side-by-side mode */
+.dlm-diff-content[data-mode="side-by-side"] {
+    display: grid;
+    gap: var(--dlm-spacing-sm);
+    grid-template-columns: 1fr 1fr;
+    max-height: 260px;
+}
+
+.dlm-diff-side {
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius-sm);
+    overflow-y: auto;
+    padding: var(--dlm-spacing-xs) var(--dlm-spacing-sm);
+}
+
+.dlm-diff-side-label {
+    color: var(--dlm-muted);
+    font-size: 0.7rem;
+    font-style: italic;
+    margin-bottom: 2px;
+}
+
+/* Legend */
+.dlm-diff-legend {
+    border-top: 1px solid var(--dlm-card-border);
+    display: flex;
+    font-size: 0.7rem;
+    gap: var(--dlm-spacing-md);
+    padding: 3px var(--dlm-spacing-sm);
+}
+
+.dlm-legend-item {
+    align-items: center;
+    display: flex;
+    gap: 4px;
+}
+
+.dlm-legend-dot {
+    border-radius: 50%;
+    display: inline-block;
+    height: 8px;
+    width: 8px;
+}
+
+.dlm-legend-equal  { background: var(--dlm-muted); }
+.dlm-legend-insert { background: var(--dlm-success); }
+.dlm-legend-delete { background: var(--dlm-danger); }

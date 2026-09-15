@@ -1,0 +1,641 @@
+/* Dynamic Lorebook Manager — Main Styles
+ * All classes are prefixed with .dlm- to avoid collisions.
+ * Colors defer to SillyTavern CSS variables wherever possible.
+ */
+
+@import './diff-viewer.css';
+
+/* -----------------------------------------------------------------------
+ * CSS Variables
+ * ---------------------------------------------------------------------- */
+:root {
+    --dlm-primary: #4a9eff;
+    --dlm-success: #28a745;
+    --dlm-warning: #ffc107;
+    --dlm-danger: #dc3545;
+    --dlm-info: #17a2b8;
+    --dlm-muted: #6c757d;
+
+    --dlm-card-bg: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.3));
+    --dlm-card-border: var(--SmartThemeBorderColor, rgba(255,255,255,0.15));
+    --dlm-text: var(--SmartThemeBodyColor, #ccc);
+
+    --dlm-spacing-xs: 4px;
+    --dlm-spacing-sm: 8px;
+    --dlm-spacing-md: 16px;
+    --dlm-spacing-lg: 24px;
+    --dlm-spacing-xl: 32px;
+
+    --dlm-radius: 6px;
+    --dlm-radius-sm: 3px;
+}
+
+/* -----------------------------------------------------------------------
+ * Settings Panel
+ * ---------------------------------------------------------------------- */
+.dlm-settings .inline-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dlm-spacing-sm);
+    padding: var(--dlm-spacing-sm) 0;
+}
+
+.dlm-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dlm-spacing-xs);
+    padding: var(--dlm-spacing-xs) 0;
+}
+
+.dlm-row label {
+    color: var(--dlm-text);
+    font-size: 0.9rem;
+}
+
+.dlm-row input[type="range"] {
+    width: 100%;
+    cursor: pointer;
+}
+
+.dlm-row input[type="number"] {
+    width: 80px;
+}
+
+.dlm-help {
+    color: var(--dlm-muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.dlm-radio-group,
+.dlm-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dlm-spacing-sm);
+}
+
+.dlm-advanced {
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius);
+    padding: var(--dlm-spacing-sm);
+}
+
+.dlm-advanced summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--dlm-muted);
+    user-select: none;
+}
+
+.dlm-warning {
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid var(--dlm-warning);
+    border-radius: var(--dlm-radius);
+    color: var(--dlm-warning);
+    font-size: 0.85rem;
+    padding: var(--dlm-spacing-sm);
+}
+
+/* -----------------------------------------------------------------------
+ * Status Widget
+ * ---------------------------------------------------------------------- */
+.dlm-status-widget {
+    border-top: 1px solid var(--dlm-card-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--dlm-spacing-xs);
+    margin-top: var(--dlm-spacing-xs);
+    padding-top: var(--dlm-spacing-sm);
+}
+
+.dlm-status-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dlm-spacing-sm);
+    min-height: 24px;
+}
+
+.dlm-status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dlm-spacing-xs);
+}
+
+.dlm-status-actions .menu_button {
+    font-size: 0.8rem;
+    padding: 3px 8px;
+}
+
+.dlm-badge {
+    align-items: center;
+    border-radius: 12px;
+    display: inline-flex;
+    font-size: 0.8rem;
+    gap: 4px;
+    padding: 2px 8px;
+}
+
+.dlm-badge-info {
+    background: rgba(23, 162, 184, 0.2);
+    border: 1px solid var(--dlm-info);
+    color: var(--dlm-info);
+}
+
+.dlm-badge-success {
+    background: rgba(40, 167, 69, 0.2);
+    border: 1px solid var(--dlm-success);
+    color: var(--dlm-success);
+}
+
+.dlm-muted {
+    color: var(--dlm-muted);
+    font-size: 0.78rem;
+}
+
+/* -----------------------------------------------------------------------
+ * Modal overlay (shared by ApprovalDialog and HistoryPanel)
+ * ---------------------------------------------------------------------- */
+.dlm-modal-overlay {
+    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.6);
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 9998;
+}
+
+.dlm-modal {
+    bottom: 0;
+    display: none;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 9999;
+}
+
+.dlm-modal.dlm-open {
+    display: block;
+}
+
+.dlm-modal-content {
+    animation: dlmSlideIn 0.25s ease-out;
+    background: var(--SmartThemeBodyColor, #1a1a2e) !important;
+    background: var(--SmartThemeChatTintColor, #1a1a2e);
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    color: var(--dlm-text);
+    display: flex;
+    flex-direction: column;
+    left: 50%;
+    max-height: 85vh;
+    max-width: 90vw;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 900px;
+}
+
+@media (max-width: 768px) {
+    .dlm-modal-content {
+        max-height: 95vh;
+        max-width: 98vw;
+        width: 98vw;
+    }
+}
+
+@keyframes dlmSlideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% - 20px));
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+.dlm-modal-header {
+    align-items: center;
+    border-bottom: 1px solid var(--dlm-card-border);
+    display: flex;
+    justify-content: space-between;
+    padding: var(--dlm-spacing-md);
+}
+
+.dlm-modal-title {
+    align-items: center;
+    display: flex;
+    font-size: 1.1rem;
+    font-weight: 600;
+    gap: var(--dlm-spacing-sm);
+    margin: 0;
+}
+
+.dlm-modal-close {
+    background: none;
+    border: none;
+    color: var(--dlm-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    transition: color 0.2s;
+}
+
+.dlm-modal-close:hover {
+    color: var(--dlm-text);
+}
+
+.dlm-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--dlm-spacing-md);
+}
+
+.dlm-modal-footer {
+    border-top: 1px solid var(--dlm-card-border);
+    display: flex;
+    justify-content: space-between;
+    padding: var(--dlm-spacing-md);
+}
+
+/* -----------------------------------------------------------------------
+ * Summary stats bar
+ * ---------------------------------------------------------------------- */
+.dlm-summary-bar {
+    display: flex;
+    gap: var(--dlm-spacing-md);
+    padding: var(--dlm-spacing-sm) var(--dlm-spacing-md);
+    border-bottom: 1px solid var(--dlm-card-border);
+}
+
+.dlm-stat-box {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    min-width: 70px;
+}
+
+.dlm-stat-number {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.dlm-stat-label {
+    color: var(--dlm-muted);
+    font-size: 0.75rem;
+    margin-top: 2px;
+}
+
+/* -----------------------------------------------------------------------
+ * Toolbar (filter + sort)
+ * ---------------------------------------------------------------------- */
+.dlm-toolbar {
+    align-items: center;
+    border-bottom: 1px solid var(--dlm-card-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dlm-spacing-sm);
+    justify-content: space-between;
+    padding: var(--dlm-spacing-sm) var(--dlm-spacing-md);
+}
+
+.dlm-toolbar-left,
+.dlm-toolbar-right {
+    align-items: center;
+    display: flex;
+    gap: var(--dlm-spacing-sm);
+}
+
+.dlm-toolbar select {
+    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.3));
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius-sm);
+    color: var(--dlm-text);
+    font-size: 0.85rem;
+    padding: 3px 6px;
+}
+
+.dlm-toolbar input[type="range"] {
+    width: 100px;
+}
+
+.dlm-filter-label {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------------
+ * Suggestion card
+ * ---------------------------------------------------------------------- */
+.dlm-card {
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius);
+    margin-bottom: var(--dlm-spacing-sm);
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+
+.dlm-card[data-status="approved"] { border-color: var(--dlm-success); }
+.dlm-card[data-status="rejected"] { border-color: var(--dlm-danger); opacity: 0.6; }
+.dlm-card[data-status="editing"]  { border-color: var(--dlm-warning); }
+.dlm-card[data-status="edited"]   { border-color: var(--dlm-primary); }
+
+.dlm-card-header {
+    align-items: flex-start;
+    background: var(--dlm-card-bg);
+    cursor: pointer;
+    display: flex;
+    gap: var(--dlm-spacing-sm);
+    justify-content: space-between;
+    padding: var(--dlm-spacing-sm) var(--dlm-spacing-md);
+}
+
+.dlm-card-title-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dlm-entry-name {
+    font-weight: 600;
+}
+
+.dlm-world-name {
+    color: var(--dlm-muted);
+    font-size: 0.8rem;
+}
+
+.dlm-card-meta {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: var(--dlm-spacing-xs);
+}
+
+.dlm-confidence-bar-wrap {
+    align-items: center;
+    display: flex;
+    gap: 6px;
+}
+
+.dlm-confidence-bar {
+    background: var(--dlm-card-border);
+    border-radius: 2px;
+    height: 4px;
+    overflow: hidden;
+    width: 80px;
+}
+
+.dlm-confidence-fill {
+    border-radius: 2px;
+    height: 100%;
+    transition: width 0.3s;
+}
+
+.dlm-confidence-fill[data-level="high"]   { background: var(--dlm-success); }
+.dlm-confidence-fill[data-level="medium"] { background: var(--dlm-warning); }
+.dlm-confidence-fill[data-level="low"]    { background: var(--dlm-danger); }
+
+.dlm-confidence-text {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.dlm-change-badge {
+    border-radius: 10px;
+    font-size: 0.7rem;
+    padding: 1px 7px;
+    text-transform: capitalize;
+}
+
+.dlm-change-badge[data-type="expansion"]  { background: rgba(40,167,69,0.2); color: var(--dlm-success); }
+.dlm-change-badge[data-type="correction"] { background: rgba(220,53,69,0.2); color: var(--dlm-danger); }
+.dlm-change-badge[data-type="addition"]   { background: rgba(23,162,184,0.2); color: var(--dlm-info); }
+
+.dlm-card-body {
+    padding: var(--dlm-spacing-sm) var(--dlm-spacing-md);
+}
+
+.dlm-card-body.dlm-collapsed {
+    display: none;
+}
+
+/* Reasoning section */
+.dlm-reasoning-toggle {
+    background: none;
+    border: none;
+    color: var(--dlm-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 4px 0;
+    text-align: left;
+}
+
+.dlm-reasoning-toggle:hover { color: var(--dlm-text); }
+
+.dlm-reasoning-content {
+    background: rgba(0,0,0,0.2);
+    border-left: 3px solid var(--dlm-muted);
+    border-radius: 0 var(--dlm-radius-sm) var(--dlm-radius-sm) 0;
+    color: var(--dlm-muted);
+    font-size: 0.82rem;
+    margin-top: var(--dlm-spacing-xs);
+    padding: var(--dlm-spacing-xs) var(--dlm-spacing-sm);
+}
+
+/* Keyword tags */
+.dlm-keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dlm-spacing-xs);
+    margin-top: var(--dlm-spacing-xs);
+}
+
+.dlm-keyword-add-label {
+    color: var(--dlm-muted);
+    font-size: 0.75rem;
+    margin-right: 2px;
+}
+
+.dlm-tag {
+    background: rgba(74, 158, 255, 0.15);
+    border: 1px solid var(--dlm-primary);
+    border-radius: 10px;
+    color: var(--dlm-primary);
+    font-size: 0.72rem;
+    padding: 1px 7px;
+}
+
+/* Edit mode */
+.dlm-edit-area {
+    margin-top: var(--dlm-spacing-sm);
+}
+
+.dlm-edit-textarea {
+    background: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.3));
+    border: 1px solid var(--dlm-primary);
+    border-radius: var(--dlm-radius-sm);
+    box-sizing: border-box;
+    color: var(--dlm-text);
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    min-height: 120px;
+    padding: var(--dlm-spacing-sm);
+    resize: vertical;
+    width: 100%;
+}
+
+.dlm-edit-actions {
+    display: flex;
+    gap: var(--dlm-spacing-xs);
+    justify-content: flex-end;
+    margin-top: var(--dlm-spacing-xs);
+}
+
+/* Card footer */
+.dlm-card-footer {
+    align-items: center;
+    border-top: 1px solid var(--dlm-card-border);
+    display: flex;
+    gap: var(--dlm-spacing-xs);
+    justify-content: flex-end;
+    padding: var(--dlm-spacing-xs) var(--dlm-spacing-md);
+}
+
+/* -----------------------------------------------------------------------
+ * Buttons
+ * ---------------------------------------------------------------------- */
+.dlm-btn {
+    align-items: center;
+    border: none;
+    border-radius: var(--dlm-radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.85rem;
+    gap: 5px;
+    padding: 5px 12px;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.dlm-btn:hover  { opacity: 0.85; }
+.dlm-btn:active { transform: scale(0.97); }
+
+.dlm-btn-primary   { background: var(--dlm-primary); color: #fff; }
+.dlm-btn-success   { background: var(--dlm-success); color: #fff; }
+.dlm-btn-danger    { background: var(--dlm-danger); color: #fff; }
+.dlm-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--dlm-card-border);
+    color: var(--dlm-text);
+}
+.dlm-btn-sm { font-size: 0.78rem; padding: 3px 8px; }
+
+/* -----------------------------------------------------------------------
+ * History panel
+ * ---------------------------------------------------------------------- */
+.dlm-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dlm-spacing-xs);
+}
+
+.dlm-history-item {
+    align-items: center;
+    border: 1px solid var(--dlm-card-border);
+    border-radius: var(--dlm-radius-sm);
+    display: flex;
+    gap: var(--dlm-spacing-sm);
+    padding: var(--dlm-spacing-sm);
+}
+
+.dlm-history-item.dlm-undone {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.dlm-history-icon {
+    color: var(--dlm-muted);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.dlm-history-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.dlm-history-title {
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dlm-history-meta {
+    color: var(--dlm-muted);
+    font-size: 0.75rem;
+}
+
+.dlm-history-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--dlm-spacing-xs);
+}
+
+/* -----------------------------------------------------------------------
+ * Loading spinner
+ * ---------------------------------------------------------------------- */
+.dlm-spinner-wrap {
+    align-items: center;
+    display: flex;
+    gap: var(--dlm-spacing-sm);
+    justify-content: center;
+    padding: var(--dlm-spacing-lg);
+}
+
+.dlm-spinner {
+    animation: dlmSpin 0.8s linear infinite;
+    border: 2px solid var(--dlm-card-border);
+    border-radius: 50%;
+    border-top-color: var(--dlm-primary);
+    height: 20px;
+    width: 20px;
+}
+
+@keyframes dlmSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* -----------------------------------------------------------------------
+ * "Analyze" button injected into message extras
+ * ---------------------------------------------------------------------- */
+.dlm-analyze-btn {
+    color: var(--dlm-muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    margin-left: 4px;
+    padding: 1px 4px;
+    transition: color 0.2s;
+}
+
+.dlm-analyze-btn:hover {
+    color: var(--dlm-primary);
+}
+
+/* -----------------------------------------------------------------------
+ * Empty state
+ * ---------------------------------------------------------------------- */
+.dlm-empty {
+    color: var(--dlm-muted);
+    font-size: 0.9rem;
+    padding: var(--dlm-spacing-lg);
+    text-align: center;
+}
