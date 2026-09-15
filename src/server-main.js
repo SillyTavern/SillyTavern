@@ -139,7 +139,20 @@ if (corsEnabled) {
 }
 
 if (cliArgs.listen && cliArgs.basicAuthMode) {
-    app.use(basicAuthMiddleware);
+    // Paths allowed without basic auth (manifest.json and related frontend static assets) for PWA
+    const allowedUnauthenticated = (req) => {
+        const p = req.path || '';
+        return (
+            p === '/manifest.json' ||
+            // Match pattern like '/apple-icon-{width}x{height}.png'
+            /^\/img\/apple-icon-\d+x\d+\.png$/.test(p)
+        );
+    };
+
+    app.use((req, res, next) => {
+        if (allowedUnauthenticated(req)) return next();
+        return basicAuthMiddleware(req, res, next);
+    });
 }
 
 if (cliArgs.whitelistMode) {
