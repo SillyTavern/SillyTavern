@@ -4,6 +4,7 @@
 /** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
 
 import { logMacroInternalError, logMacroRuntimeWarning } from './MacroDiagnostics.js';
+import { stripProtected } from '../protected-whitespace.js';
 import { MacroEngine } from './MacroEngine.js';
 import { parseFlags, createEmptyFlags, MacroFlagType } from './MacroFlags.js';
 import { MacroParser } from './MacroParser.js';
@@ -637,7 +638,8 @@ class MacroCstWalker {
 
         return () => {
             if (!resolved) {
-                cached = this.#evaluateVariableValue(operatorChildren, context);
+                // Strip sentinels so macro results persist as plain values in variables
+                cached = stripProtected(this.#evaluateVariableValue(operatorChildren, context));
                 resolved = true;
             }
             return cached;

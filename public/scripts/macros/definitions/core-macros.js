@@ -3,6 +3,7 @@ import { chat_metadata, main_api, getMaxPromptTokens, getMaxContextTokens, getMa
 import { getStringHash, isFalseBoolean } from '../../utils.js';
 import { textgenerationwebui_banned_in_macros } from '../../textgen-settings.js';
 import { inject_ids } from '../../constants.js';
+import { PROTECTED } from '../protected-whitespace.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 import { MACRO_VARIABLE_SHORTHAND_PATTERN } from '../engine/MacroLexer.js';
 import { MacroParser } from '../engine/MacroParser.js';
@@ -64,12 +65,15 @@ export function registerCoreMacros() {
         handler: ({ unnamedArgs: [count] }) => '\n'.repeat(Number(count ?? 1)),
     });
 
-    // {{noop}} -> ''
+    // {{noop}} -> protected sentinel. Historically {{noop}} acted as a stopper
+    // that prevented newline trimming around itself (see issues #5673/#5674).
+    // It now resolves to a sentinel character which blocks trim operations and
+    // the legacy {{trim}} post-processor regex; it is stripped from final output.
     MacroRegistry.registerMacro('noop', {
         category: MacroCategory.UTILITY,
-        description: 'Does nothing and produces an empty string.',
+        description: 'Does nothing and produces an empty string. As a legacy behavior, it prevents newline trimming around itself.',
         returns: '',
-        handler: () => '',
+        handler: () => PROTECTED,
     });
 
     // {{trim}} -> macro will currently replace itself with itself. Trimming is handled in post-processing.
