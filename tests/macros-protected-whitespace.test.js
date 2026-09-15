@@ -4,8 +4,14 @@ describe('protected-whitespace sentinels', () => {
     describe('protect', () => {
         test('wraps values with edge whitespace', () => {
             expect(protect(' \n')).toBe(PROTECTED + ' \n' + PROTECTED);
-            expect(protect(' bar')).toBe(PROTECTED + ' bar' + PROTECTED);
-            expect(protect('\nx')).toBe(PROTECTED + '\nx' + PROTECTED);
+            expect(protect(' bar')).toBe(PROTECTED + ' bar');
+            expect(protect('\nx')).toBe(PROTECTED + '\nx');
+        });
+
+        test('wraps only whitespace edges', () => {
+            expect(protect('x\n')).toBe('x\n' + PROTECTED);
+            expect(protect('\nx')).toBe(PROTECTED + '\nx');
+            expect(protect(' \n ')).toBe(PROTECTED + ' \n ' + PROTECTED);
         });
 
         test('leaves values without edge whitespace unchanged', () => {

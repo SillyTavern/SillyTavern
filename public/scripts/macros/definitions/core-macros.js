@@ -31,6 +31,7 @@ export const ELSE_MARKER = '\u0000\u001FELSE\u001F\u0000';
 export function registerCoreMacros() {
     // {{space}} -> ' '
     MacroRegistry.registerMacro('space', {
+        protectsWhitespace: true,
         category: MacroCategory.UTILITY,
         unnamedArgs: [
             {
@@ -49,6 +50,7 @@ export function registerCoreMacros() {
 
     // {{newline}} -> '\n'
     MacroRegistry.registerMacro('newline', {
+        protectsWhitespace: true,
         category: MacroCategory.UTILITY,
         unnamedArgs: [
             {
@@ -70,6 +72,7 @@ export function registerCoreMacros() {
     // It now resolves to a sentinel character which blocks trim operations and
     // the legacy {{trim}} post-processor regex; it is stripped from final output.
     MacroRegistry.registerMacro('noop', {
+        protectsWhitespace: true,
         category: MacroCategory.UTILITY,
         description: 'Does nothing and produces an empty string. As a legacy behavior, it prevents newline trimming around itself.',
         returns: '',

@@ -2,7 +2,7 @@ import { MacroParser } from './MacroParser.js';
 import { MacroCstWalker } from './MacroCstWalker.js';
 import { MacroRegistry, MacroValueType } from './MacroRegistry.js';
 import { logMacroGeneralError, logMacroInternalError, logMacroRuntimeWarning, logMacroSyntaxWarning } from './MacroDiagnostics.js';
-import { protect, stripProtected } from '../protected-whitespace.js';
+import { stripProtected } from '../protected-whitespace.js';
 import { ELSE_MARKER } from '../definitions/core-macros.js';
 
 /** @typedef {import('./MacroCstWalker.js').MacroCall} MacroCall */
@@ -35,8 +35,6 @@ let instance;
 export { instance as MacroEngine };
 
 class MacroEngine {
-    /** Tracks nested evaluate() calls; sentinels are only stripped at depth 1. */
-    #evaluationDepth = 0;
     /** @type {MacroEngine} */ static #instance;
     /** @type {MacroEngine} */ static get instance() { return MacroEngine.#instance ?? (MacroEngine.#instance = new MacroEngine()); }
 
@@ -115,9 +113,10 @@ class MacroEngine {
      * @param {number} [options.contextOffset=0] - Base offset from the original top-level document.
      *        Used when evaluating nested content (via resolve() in handlers) to preserve global
      *        positioning for macros like {{pick}} that seed on position.
+     * @param {boolean} [options.isNested=false] - Preserve sentinels for the calling macro's trim passes.
      * @returns {string} The resolved string.
      */
-    evaluate(input, env, { contextOffset = 0 } = {}) {
+    evaluate(input, env, { contextOffset = 0, isNested = false } = {}) {
         if (!input) {
             return '';
         }
@@ -141,7 +140,6 @@ class MacroEngine {
             return input;
         }
 
-        this.#evaluationDepth++;
         let evaluated;
         try {
             evaluated = MacroCstWalker.evaluateDocument({
@@ -153,18 +151,12 @@ class MacroEngine {
                 trimContent: this.trimScopedContent.bind(this),
             });
         } catch (error) {
-            this.#evaluationDepth--;
             logMacroGeneralError({ message: 'Macro evaluation failed. Returning original input.', error: { input, error } });
             return input;
         }
 
-        try {
-            const result = this.#runPostProcessors(evaluated, safeEnv);
-
-            return result;
-        } finally {
-            this.#evaluationDepth--;
-        }
+        const result = this.#runPostProcessors(evaluated, safeEnv);
+        return isNested ? result : stripProtected(result);
     }
 
     /**
@@ -230,8 +222,7 @@ class MacroEngine {
             const result = MacroRegistry.executeMacro(call, { defOverride });
 
             try {
-                // Protect macro-produced whitespace so trim passes leave it intact
-                return protect(call.env.functions.postProcess(result));
+                return call.env.functions.postProcess(result);
             } catch (error) {
                 logMacroInternalError({ message: `Macro "${name}" postProcess function failed.`, call, error });
                 return result;
@@ -330,15 +321,6 @@ class MacroEngine {
             text => text.replaceAll(ELSE_MARKER, ''),
             { priority: 30, source: 'core:cleanup-else-marker' },
         );
-
-        // Strip whitespace-protection sentinels after all trim/legacy passes have run.
-        // Only in the outermost evaluation: nested evaluate() calls (e.g. from the
-        // {{if}} macro's resolve()) must keep sentinels intact so the caller's trim
-        // passes still respect them (see issues #5673/#5674).
-        this.addPostProcessor(
-            text => (this.#evaluationDepth <= 1 ? stripProtected(text) : text),
-            { priority: 40, source: 'core:strip-protected' },
-        );
     }
 
     /**
@@ -402,9 +384,10 @@ class MacroEngine {
         // Find the first non-empty line (has non-whitespace characters)
         let baseIndent = 0;
         for (const line of lines) {
-            if (line.trim() !== '') {
+            const bare = stripProtected(line);
+            if (bare.trim() !== '') {
                 // Found first non-empty line - get its indentation
-                const match = line.match(/^[ \t]*/);
+                const match = bare.match(/^[ \t]*/);
                 baseIndent = match ? match[0].length : 0;
                 break;
             }

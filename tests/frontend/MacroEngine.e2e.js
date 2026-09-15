@@ -5,6 +5,37 @@ test.describe('MacroEngine', () => {
     test.beforeEach(testSetup.awaitST);
 
     test.describe('Whitespace regressions (#5673, #5674)', () => {
+
+        test('stored variables never contain protection artifacts via named macros', async ({ page }) => {
+            await evaluateWithEngine(page, '{{setvar::x::{{newline}}}}');
+            expect(await evaluateWithEngine(page, '{{getvar::x}}')).toBe('\n');
+            await evaluateWithEngine(page, '{{setvar::y::a{{noop}}b}}');
+            expect(await evaluateWithEngine(page, '{{getvar::y}}')).toBe('ab');
+        });
+
+        test('sentinel-free corpus sweep', async ({ page }) => {
+            for (const name of ['newline', 'space', 'noop', 'char', 'user', 'model', 'time', 'date']) {
+                expect(await evaluateWithEngine(page, `x{{${name}}}y`)).not.toContain('\uFDD0');
+            }
+        });
+
+        test('comparison operands unaffected by protection', async ({ page }) => {
+            // the == operator is a variable-shorthand operator, not an {{if}} argument
+            const output = await evaluateWithEngine(page, '{{setvar::a:: 5 }}{{.a == 5}}');
+            expect(output).toBe('true');
+        });
+
+        test('comparison result usable in {{if}}', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{setvar::c:: 5 }}{{if {{.c == 5}} }}Y{{else}}N{{/if}}');
+            expect(output).toBe('Y');
+        });
+
+        test('depth restore after error', async ({ page }) => {
+            await evaluateWithEngine(page, '{{if 1}}{{nonexistentmacrowithargs::x::y::z}}{{/if}}');
+            const output = await evaluateWithEngine(page, 'a {{newline}} b');
+            expect(output).toBe('a \n b');
+            expect(output).not.toContain('\uFDD0');
+        });
         test('{{noop}} prevents newline trimming around {{trim}}', async ({ page }) => {
             const output = await evaluateWithEngine(page, 'foo\n{{noop}}{{trim}}\nbar');
             expect(output).toBe('foo\nbar');
@@ -43,7 +74,7 @@ test.describe('MacroEngine', () => {
         test('macro results stored in variables contain no protection artifacts', async ({ page }) => {
             const output = await evaluateWithEngine(page, '{{.myvar = a{{newline}}b}}{{.myvar}}');
             expect(output).toBe('a\nb');
-            expect(output).not.toContain('\uE000');
+            expect(output).not.toContain('\uFDD0');
         });
     });
 

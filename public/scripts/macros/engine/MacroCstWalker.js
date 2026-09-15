@@ -4,7 +4,7 @@
 /** @typedef {import('./MacroFlags.js').MacroFlags} MacroFlags */
 
 import { logMacroInternalError, logMacroRuntimeWarning } from './MacroDiagnostics.js';
-import { stripProtected } from '../protected-whitespace.js';
+import { protect, stripProtected } from '../protected-whitespace.js';
 import { MacroEngine } from './MacroEngine.js';
 import { parseFlags, createEmptyFlags, MacroFlagType } from './MacroFlags.js';
 import { MacroParser } from './MacroParser.js';
@@ -136,7 +136,9 @@ class MacroCstWalker {
                 result += text.slice(item.startOffset, item.endOffset + 1);
                 cursor = item.endOffset + 1;
             } else {
-                result += this.#evaluateMacroNode(item.node, context, item.scopedContent);
+                const value = this.#evaluateMacroNode(item.node, context, item.scopedContent);
+                const name = this.extractMacroInfo(item.node)?.name ?? '';
+                result += this.#protectIfFlagged(name, value);
                 // If this macro has scoped content, skip past the closing macro
                 if (item.scopedContent && item.scopedContent.closingEndOffset > item.endOffset) {
                     cursor = item.scopedContent.closingEndOffset + 1;
@@ -151,6 +153,18 @@ class MacroCstWalker {
         }
 
         return result;
+    }
+
+    /**
+     * Protects flagged macro results when splicing them into document text.
+     *
+     * @param {string} name - Macro name.
+     * @param {string} value - Evaluated macro result.
+     * @returns {string} The document text result.
+     */
+    #protectIfFlagged(name, value) {
+        const def = MacroRegistry.getPrimaryMacro(name.toLowerCase());
+        return def?.protectsWhitespace === true ? protect(value) : value;
     }
 
     /**
@@ -851,22 +865,26 @@ class MacroCstWalker {
 
         nestedWithRange.sort((a, b) => a.range.startOffset - b.range.startOffset);
 
+        const first = nestedWithRange[0].range;
+        const last = nestedWithRange[nestedWithRange.length - 1].range;
+        const leading = text.slice(startOffset, first.startOffset).trimStart();
+        const trailing = text.slice(last.endOffset + 1, endOffset + 1).trimEnd();
         let result = '';
         let cursor = startOffset;
 
         for (const entry of nestedWithRange) {
             if (entry.range.startOffset > cursor) {
-                result += text.slice(cursor, entry.range.startOffset);
+                result += entry.range === first ? leading : text.slice(cursor, entry.range.startOffset);
             }
             result += this.#evaluateMacroNode(entry.node, context);
             cursor = entry.range.endOffset + 1;
         }
 
         if (cursor <= endOffset) {
-            result += text.slice(cursor, endOffset + 1);
+            result += trailing;
         }
 
-        return result.trim();
+        return result;
     }
 
     /**

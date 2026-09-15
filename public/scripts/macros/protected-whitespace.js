@@ -15,12 +15,11 @@
  * 2. in a final pass at the end of `MacroEngine.evaluate`, after all
  *    post-processors have run.
  *
- * The sentinel is a private-use-area codepoint, which should never appear in
- * user content.
+ * The sentinel is a Unicode noncharacter (permanently reserved, unassignable), chosen so it cannot collide with user content.
  */
 
 /** Sentinel character used to protect macro-produced whitespace. */
-export const PROTECTED = '\uE000';
+export const PROTECTED = '\uFDD0';
 
 /**
  * Wraps the given macro result in sentinels if it has leading or trailing
@@ -41,7 +40,7 @@ export function protect(value) {
     if (!isTrimTarget(first) && !isTrimTarget(last)) {
         return text;
     }
-    return PROTECTED + text + PROTECTED;
+    return (isTrimTarget(first) ? PROTECTED : '') + text + (isTrimTarget(last) ? PROTECTED : '');
 }
 
 /**

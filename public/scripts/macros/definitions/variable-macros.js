@@ -1,3 +1,4 @@
+import { stripProtected } from '../protected-whitespace.js';
 import { MacroRegistry, MacroCategory, MacroValueType } from '../engine/MacroRegistry.js';
 
 /**
@@ -26,7 +27,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setvar::myvar::foo}}', '{{setvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.local.set(name, value);
+            ctx.variables.local.set(name, stripProtected(value));
             return '';
         },
     });
@@ -180,7 +181,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setvarkey::myarray::0::foo}}', '{{setvarkey::myobj::uniquekey::somevalue}}'],
         handler: ({ unnamedArgs: [name, key, value] }) => {
-            ctx.variables.local.set(name, value, { index: key });
+            ctx.variables.local.set(name, stripProtected(value), { index: key });
             return '';
         },
     });
@@ -230,7 +231,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setglobalvar::myvar::foo}}', '{{setglobalvar::myintvar::3}}'],
         handler: ({ unnamedArgs: [name, value] }) => {
-            ctx.variables.global.set(name, value);
+            ctx.variables.global.set(name, stripProtected(value));
             return '';
         },
     });
@@ -384,7 +385,7 @@ export function registerVariableMacros() {
         returns: '',
         exampleUsage: ['{{setglobalvarkey::myarray::0::foo}}', '{{setglobalvarkey::myobj::uniquekey::bar}}'],
         handler: ({ unnamedArgs: [name, key, value] }) => {
-            ctx.variables.global.set(name, value, { index: key });
+            ctx.variables.global.set(name, stripProtected(value), { index: key });
             return '';
         },
     });
