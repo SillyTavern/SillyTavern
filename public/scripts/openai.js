@@ -201,6 +201,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    YAPI: 'yapi',
 };
 
 const character_names_behavior = {
@@ -358,6 +359,7 @@ export const settingsToUpdate = {
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
     workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
     workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
+    yapi_model: ['#model_yapi_select', 'yapi_model', false, true],
     openai_max_context: ['#openai_max_context', 'openai_max_context', false, false],
     openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false, false],
     names_behavior: ['#names_behavior', 'names_behavior', false, false],
@@ -467,6 +469,7 @@ const default_settings = {
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     workers_ai_account_id: '',
+    yapi_model: 'deepseek/deepseek-v4-flash',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -1775,6 +1778,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.zai_model;
         case chat_completion_sources.WORKERS_AI:
             return settings.workers_ai_model;
+        case chat_completion_sources.YAPI:
+            return settings.yapi_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -2404,6 +2409,20 @@ function saveModelList(data) {
 
         $('#model_moonshot_select').val(oai_settings.moonshot_model).trigger('change');
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.YAPI) {
+        $('#model_yapi_select').empty();
+        model_list.forEach((model) => {
+            $('#model_yapi_select').append(new Option(model.id, model.id));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.yapi_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.yapi_model)) {
+            oai_settings.yapi_model = model_list[0].id;
+        }
+
+        $('#model_yapi_select').val(oai_settings.yapi_model).trigger('change');
+    }
 }
 
 /**
@@ -2561,6 +2580,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.FIREWORKS,
+        chat_completion_sources.YAPI,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -2588,6 +2608,22 @@ function getReasoningEffort(settings = null, model = null) {
                     return undefined;
                 case reasoning_effort_types.min:
                     return reasoning_effort_types.low;
+                default:
+                    return settings.reasoning_effort;
+            }
+        }
+
+        if (settings.chat_completion_source === chat_completion_sources.YAPI) {
+            switch (settings.reasoning_effort) {
+                case reasoning_effort_types.auto:
+                    return undefined;
+                case reasoning_effort_types.min:
+                    return reasoning_effort_types.low;
+                case reasoning_effort_types.max:
+                    // Only the GPT-5.6 and GPT-6 families accept the "xhigh" alias.
+                    return /^(?:[^/]+\/)?(gpt-5\.6|gpt-6-astra)/.test(model)
+                        ? 'xhigh'
+                        : reasoning_effort_types.high;
                 default:
                     return settings.reasoning_effort;
             }
@@ -3043,6 +3079,15 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
+    // https://y-api.bestvirtualgoods.com/docs
+    if (settings.chat_completion_source === chat_completion_sources.YAPI) {
+        // GPT-6 Astra rejects max_tokens and only accepts max_completion_tokens.
+        if (/^(?:[^/]+\/)?gpt-6-astra$/.test(model)) {
+            generate_data.max_completion_tokens = generate_data.max_tokens;
+            delete generate_data.max_tokens;
+        }
+    }
+
     if (seedSupportedSources.includes(settings.chat_completion_source) && settings.seed >= 0) {
         generate_data.seed = settings.seed;
     }
@@ -3286,7 +3331,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.YAPI].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -5604,6 +5649,16 @@ async function onModelChange() {
         syncNanoGptProvidersForModel(value, '#nanogpt_provider');
     }
 
+    if ($(this).is('#model_yapi_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null Y-API model selected. Ignoring.');
+            return;
+        }
+
+        console.log('Y-API model changed to', value);
+        oai_settings.yapi_model = value;
+    }
+
     if ($(this).is('#model_deepseek_select')) {
         if (!value) {
             console.debug('Null DeepSeek model selected. Ignoring.');
@@ -5867,6 +5922,16 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.YAPI) {
+        // The /models endpoint only reports model IDs, so use a static upper bound.
+        const maxContext = oai_settings.max_context_unlocked ? unlocked_max : max_1mil;
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.POLLINATIONS) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -6063,6 +6128,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.YAPI]: { key: SECRET_KEYS.YAPI, selector: '#api_key_yapi', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -6157,6 +6223,8 @@ function toggleChatCompletionForms() {
         $('#model_zai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.YAPI) {
+        $('#model_yapi_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -7377,6 +7445,7 @@ export function initOpenAI() {
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
     $('#model_workers_ai_select').on('change', onModelChange);
+    $('#model_yapi_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
