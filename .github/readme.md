@@ -29,7 +29,7 @@ Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over
 
 1. We aim to empower users with as much utility and control over their LLM prompts as possible. The steep learning curve is part of the fun!
 2. We do not provide any online or hosted services, nor programmatically track any user data.
-3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open sourced.
+3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open source.
 
 ## Do I need a powerful PC to run SillyTavern?
 
