@@ -2756,6 +2756,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.IONET,
     ];
 
     // Sources that support proxying
@@ -2801,6 +2802,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.MOONSHOT,
+        chat_completion_sources.IONET,
     ];
 
     const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(model);
