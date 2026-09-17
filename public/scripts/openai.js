@@ -2347,7 +2347,6 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source === chat_completion_sources.IONET) {
         $('#model_ionet_select').empty();
-        model_list.sort((a, b) => (a?.id || '').localeCompare(b?.id || ''));
         model_list.forEach((model) => {
             $('#model_ionet_select').append(
                 $('<option>', {
