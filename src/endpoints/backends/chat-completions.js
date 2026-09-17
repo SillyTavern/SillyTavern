@@ -2583,6 +2583,9 @@ router.post('/generate', async function (request, response) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.IONET, request.body.secret_id);
             headers = {};
             bodyParams = {};
+            if (request.body.repetition_penalty !== undefined) {
+                bodyParams['repetition_penalty'] = request.body.repetition_penalty;
+            }
             if (request.body.json_schema) {
                 setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
             }

@@ -694,6 +694,24 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.IONET && oai_settings.ionet_model) {
+        const model = oai_settings.ionet_model.toLowerCase();
+
+        if (model.includes('deepseek')) {
+            return deepseekTokenizer;
+        } else if (model.includes('qwen') || model.includes('qwq')) {
+            return qwen2Tokenizer;
+        } else if (model.includes('llama') || model.includes('hermes')) {
+            return llama3Tokenizer;
+        } else if (model.includes('gemma')) {
+            return gemmaTokenizer;
+        } else if (model.includes('mistral')) {
+            return mistralTokenizer;
+        } else if (model.includes('gpt-oss')) {
+            return gpt4oTokenizer;
+        }
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
         // MiniMax uses a proprietary tokenizer; fall back to a coarse OpenAI estimation.
         return 'gpt-3.5-turbo';
