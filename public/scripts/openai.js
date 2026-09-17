@@ -201,6 +201,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    CHEAPERINFERENCE: 'cheaperinference',
 };
 
 const character_names_behavior = {
@@ -346,6 +347,7 @@ export const settingsToUpdate = {
     moonshot_model: ['#model_moonshot_select', 'moonshot_model', false, true],
     fireworks_model: ['#model_fireworks_select', 'fireworks_model', false, true],
     cometapi_model: ['#model_cometapi_select', 'cometapi_model', false, true],
+    cheaperinference_model: ['#model_cheaperinference_select', 'cheaperinference_model', false, true],
     custom_model: ['#custom_model_id', 'custom_model', false, true],
     custom_url: ['#custom_api_url_text', 'custom_url', false, true],
     custom_include_body: ['#custom_include_body', 'custom_include_body', false, true],
@@ -461,6 +463,7 @@ const default_settings = {
     pollinations_model: 'openai',
     pollinations_endpoint: POLLINATIONS_ENDPOINT.AUTHENTICATED,
     cometapi_model: 'gpt-4o',
+    cheaperinference_model: 'claude-haiku-4.5',
     moonshot_model: 'kimi-latest',
     fireworks_model: 'accounts/fireworks/models/kimi-k2-instruct',
     zai_model: 'glm-4.6',
@@ -1765,6 +1768,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.pollinations_model;
         case chat_completion_sources.COMETAPI:
             return settings.cometapi_model;
+        case chat_completion_sources.CHEAPERINFERENCE:
+            return settings.cheaperinference_model;
         case chat_completion_sources.MOONSHOT:
             return settings.moonshot_model;
         case chat_completion_sources.FIREWORKS:
@@ -2363,6 +2368,22 @@ function saveModelList(data) {
         $('#model_cometapi_select').val(oai_settings.cometapi_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.CHEAPERINFERENCE) {
+        $('#model_cheaperinference_select').empty();
+
+        model_list.forEach((model) => {
+            $('#model_cheaperinference_select').append(new Option(model.id, model.id));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.cheaperinference_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.cheaperinference_model)) {
+            oai_settings.cheaperinference_model = model_list[0].id;
+            saveSettingsDebounced();
+        }
+
+        $('#model_cheaperinference_select').val(oai_settings.cheaperinference_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.AZURE_OPENAI) {
         const modelId = model_list?.[0]?.id || '';
         oai_settings.azure_openai_model = modelId;
@@ -2561,6 +2582,7 @@ function getReasoningEffort(settings = null, model = null) {
         chat_completion_sources.CHUTES,
         chat_completion_sources.DEEPSEEK,
         chat_completion_sources.FIREWORKS,
+        chat_completion_sources.CHEAPERINFERENCE,
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
@@ -3286,7 +3308,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.CHEAPERINFERENCE].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -5670,6 +5692,15 @@ async function onModelChange() {
         oai_settings.cometapi_model = value;
     }
 
+    if ($(this).is('#model_cheaperinference_select')) {
+        if (!value) {
+            console.debug('Null Cheaper Inference model selected. Ignoring.');
+            return;
+        }
+        console.log('Cheaper Inference model changed to', value);
+        oai_settings.cheaperinference_model = value;
+    }
+
     if ($(this).is('#azure_openai_model')) {
         if (!value) {
             console.debug('Null Azure OpenAI model selected. Ignoring.');
@@ -6063,6 +6094,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.CHEAPERINFERENCE]: { key: SECRET_KEYS.CHEAPERINFERENCE, selector: '#api_key_cheaperinference', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -6130,6 +6162,8 @@ function toggleChatCompletionForms() {
         $('#model_siliconflow_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MINIMAX) {
         $('#model_minimax_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.CHEAPERINFERENCE) {
+        $('#model_cheaperinference_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         $('#model_electronhub_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.NANOGPT) {
@@ -6338,6 +6372,8 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.pollinations_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.COMETAPI:
             return true;
+        case chat_completion_sources.CHEAPERINFERENCE:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.cheaperinference_model)?.capabilities?.vision);
         case chat_completion_sources.MOONSHOT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.moonshot_model)?.supports_image_in);
         case chat_completion_sources.NANOGPT:
@@ -7253,6 +7289,12 @@ export function initOpenAI() {
             templateResult: getNanoGptModelTemplate,
             matcher: textValueMatcher,
         });
+        $('#model_cheaperinference_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+        });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
             placeholder: t`All types (default)`,
             width: '100%',
@@ -7372,6 +7414,7 @@ export function initOpenAI() {
     $('#model_xai_select').on('change', onModelChange);
     $('#model_pollinations_select').on('change', onModelChange);
     $('#model_cometapi_select').on('change', onModelChange);
+    $('#model_cheaperinference_select').on('change', onModelChange);
     $('#model_moonshot_select').on('change', onModelChange);
     $('#model_fireworks_select').on('change', onModelChange);
     $('#azure_openai_model').on('change', onModelChange);
