@@ -99,6 +99,7 @@ const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
+const API_IONET = 'https://api.intelligence.io.solutions/api/v1';
 
 /**
  * Module-scoped Claude caching configuration values.
@@ -2016,6 +2017,10 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
             headers = {};
             queryParams = { type: 'text', sub_type: 'chat' };
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.IONET) {
+            apiUrl = API_IONET;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.IONET, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
 
@@ -2568,6 +2573,14 @@ router.post('/generate', async function (request, response) {
                 ? API_SILICONFLOW_CN : API_SILICONFLOW;
             apiUrl = defaultApiUrl;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.SILICONFLOW, request.body.secret_id);
+            headers = {};
+            bodyParams = {};
+            if (request.body.json_schema) {
+                setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
+            }
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.IONET) {
+            apiUrl = API_IONET;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.IONET, request.body.secret_id);
             headers = {};
             bodyParams = {};
             if (request.body.json_schema) {
