@@ -2793,6 +2793,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.CUSTOM,
+        chat_completion_sources.IONET,
     ];
 
     // Sources that support "n" parameter for multi-swipe
@@ -5482,6 +5483,27 @@ function getElectronHubMaxContext(model, isUnlocked) {
 }
 
 /**
+ * Get the maximum context size for the IO Intelligence model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getIonetMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list)) {
+        const modelInfo = model_list.find(m => m.id === model);
+        if (modelInfo?.context_window) {
+            return modelInfo.context_window;
+        }
+    }
+
+    return max_128k;
+}
+
+/**
  * Get the maximum context size for the NanoGPT model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked Whether context limits are unlocked
@@ -5953,7 +5975,8 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.IONET) {
-        $('#openai_max_context').attr('max', oai_settings.max_context_unlocked ? unlocked_max : max_128k);
+        const maxContext = getIonetMaxContext(oai_settings.ionet_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
@@ -6384,6 +6407,8 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
         case chat_completion_sources.CHUTES:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.chutes_model)?.input_modalities?.includes('image'));
+        case chat_completion_sources.IONET:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.ionet_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.ELECTRONHUB:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
         case chat_completion_sources.POLLINATIONS:
@@ -6444,6 +6469,8 @@ export function isVideoInliningSupported() {
             return videoSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
         case chat_completion_sources.OPENROUTER:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.input_modalities?.includes('video'));
+        case chat_completion_sources.IONET:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.ionet_model)?.input_modalities?.includes('video'));
         case chat_completion_sources.ZAI:
             return videoSupportedModels.some(model => oai_settings.zai_model.includes(model));
         default:

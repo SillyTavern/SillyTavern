@@ -2593,9 +2593,6 @@ router.post('/generate', async function (request, response) {
                 bodyParams['top_logprobs'] = request.body.logprobs;
                 bodyParams['logprobs'] = true;
             }
-            if (request.body.json_schema) {
-                setJsonObjectFormat(bodyParams, request.body.messages, request.body.json_schema);
-            }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.WORKERS_AI) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI, request.body.secret_id);
             const accountId = String(request.body.workers_ai_account_id || '').trim();
