@@ -9774,7 +9774,7 @@ export async function createOrEditCharacter(e) {
             return;
         }
         try {
-            //if the character name text area isn't empty (only posible when creating a new character)
+            //if the character name text area isn't empty (only possible when creating a new character)
             let url = '/api/characters/create';
 
             if (crop_data != undefined) {
