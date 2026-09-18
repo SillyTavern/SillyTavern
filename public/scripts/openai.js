@@ -2346,14 +2346,22 @@ function saveModelList(data) {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.IONET) {
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.IONET);
         $('#model_ionet_select').empty();
-        model_list.forEach((model) => {
-            $('#model_ionet_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model.id,
-                }));
-        });
+
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.IONET).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.id }));
+                });
+                $('#model_ionet_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_ionet_select').append($('<option>', { value: model.id, text: model.id }));
+            });
+        }
 
         const selectedModel = model_list.find(model => model.id === oai_settings.ionet_model);
         if (model_list.length > 0 && (!selectedModel || !oai_settings.ionet_model)) {
@@ -2462,6 +2470,18 @@ function sortModelsBy(data, property, source) {
                     return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
                 }
             });
+        case chat_completion_sources.IONET:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.context_window || 0) - (a.context_window || 0);
+                } else if (property === 'pricing.input' || property === 'pricing.prompt') {
+                    return parseFloat(a.input_token_price || 0) - parseFloat(b.input_token_price || 0);
+                } else if (property === 'pricing.output' || property === 'pricing.completion') {
+                    return parseFloat(a.output_token_price || 0) - parseFloat(b.output_token_price || 0);
+                } else {
+                    return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
+                }
+            });
         case chat_completion_sources.ELECTRONHUB:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
@@ -2537,6 +2557,15 @@ function groupModelsByVendor(array, source) {
                 return acc;
             }, new Map());
         case chat_completion_sources.CHUTES:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.id.split('/')[0];
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.IONET:
             return array.reduce((acc, curr) => {
                 const vendor = curr.id.split('/')[0];
                 if (!acc.has(vendor)) {
@@ -5979,6 +6008,7 @@ async function onModelChange() {
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
