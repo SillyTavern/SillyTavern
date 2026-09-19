@@ -8,7 +8,7 @@ const fetchMock = jest.fn();
 jest.unstable_mockModule('node-fetch', () => ({ default: fetchMock }));
 jest.unstable_mockModule('../src/endpoints/secrets.js', () => ({
     readSecret: jest.fn(),
-    SECRET_KEYS: {},
+    SECRET_KEYS: { IONET: 'api_key_ionet' },
     writeSecret: jest.fn(),
     allowKeysExposure: jest.fn(),
     SECRETS_FILE: 'stub-secrets.json',
@@ -186,6 +186,7 @@ describe('IO Intelligence (io.net) chat completion source', () => {
                 messages: [{ role: 'user', content: 'hi' }],
                 repetition_penalty: 1.15,
                 min_p: 0.05,
+                top_k: 40,
                 logprobs: 3,
             }),
         });
@@ -193,8 +194,10 @@ describe('IO Intelligence (io.net) chat completion source', () => {
         const parsed = JSON.parse(fetchMock.mock.calls[0][1].body);
         expect(parsed.repetition_penalty).toBe(1.15);
         expect(parsed.min_p).toBe(0.05);
+        expect(parsed.top_k).toBe(40);
         expect(parsed.top_logprobs).toBe(3);
         expect(parsed.logprobs).toBe(true);
+        expect(readSecret).toHaveBeenCalledWith({}, 'api_key_ionet', undefined);
     });
 
     test('/generate omits sampler overrides that were not requested', async () => {
@@ -219,6 +222,7 @@ describe('IO Intelligence (io.net) chat completion source', () => {
         const parsed = JSON.parse(fetchMock.mock.calls[0][1].body);
         expect(parsed).not.toHaveProperty('repetition_penalty');
         expect(parsed).not.toHaveProperty('min_p');
+        expect(parsed).not.toHaveProperty('top_k');
         expect(parsed).not.toHaveProperty('top_logprobs');
         expect(parsed).not.toHaveProperty('logprobs');
     });
