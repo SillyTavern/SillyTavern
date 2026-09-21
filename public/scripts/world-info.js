@@ -23,6 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
+import { ToolManager } from './tool-calling.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -2006,6 +2007,100 @@ function registerWorldInfoSlashCommands() {
             }),
         ],
     }));
+
+    registerWorldInfoFunctionTools();
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tools-worldinfo',
+        aliases: ['tool-worldinfo', 'tools-lorebook', 'tool-lorebook'],
+        helpString: 'Enables or disables native function calling tools (SearchWorldInfo) for the current chat.',
+        returns: 'Current state of world info tool calling ("true" or "false")',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Action: "on", "off", "toggle", or "status"',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'status',
+                enumList: ['on', 'off', 'toggle', 'status'],
+                forceEnum: true,
+            }),
+        ],
+        callback: async (_, action) => {
+            const act = String(action || 'status').trim().toLowerCase();
+            if (act === 'on' || act === 'true') {
+                chat_metadata.worldinfo_tool_calling = true;
+            } else if (act === 'off' || act === 'false') {
+                chat_metadata.worldinfo_tool_calling = false;
+            } else if (act === 'toggle') {
+                chat_metadata.worldinfo_tool_calling = !chat_metadata.worldinfo_tool_calling;
+            }
+            await saveMetadata();
+            return String(!!chat_metadata.worldinfo_tool_calling);
+        },
+    }));
+}
+
+/**
+ * Registers native function-calling tools for searching and reading World Info / Lorebook entries.
+ */
+export function registerWorldInfoFunctionTools() {
+    ToolManager.registerFunctionTool({
+        name: 'SearchWorldInfo',
+        displayName: 'Search World Info',
+        description: 'Searches active World Info and Lorebook entries for lore, character backgrounds, locations, factions, and world details.',
+        parameters: {
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                query: {
+                    type: 'string',
+                    description: 'The topic, keyword, name, concept, or location to search for in the lorebooks.',
+                },
+                book: {
+                    type: 'string',
+                    description: 'Optional name of a specific lorebook file to restrict the search to.',
+                },
+            },
+            required: ['query'],
+        },
+        action: async (args) => {
+            if (!args?.query) throw new Error('Search query is required.');
+            let entries = await getSortedEntries();
+            if (args.book) {
+                const targetBook = String(args.book).trim().toLowerCase();
+                entries = entries.filter(e => String(e.world ?? '').toLowerCase() === targetBook);
+            }
+            const activeEntries = entries.filter(e => !e.disable && e.content);
+            if (!activeEntries.length) {
+                return 'No active lorebook entries found.';
+            }
+
+            const fuse = new Fuse(activeEntries, {
+                keys: [
+                    { name: 'key', weight: 0.5 },
+                    { name: 'comment', weight: 0.3 },
+                    { name: 'content', weight: 0.2 },
+                ],
+                includeScore: true,
+                threshold: 0.4,
+            });
+
+            const results = fuse.search(args.query);
+            if (!results.length) {
+                return `No lorebook entries found matching "${args.query}".`;
+            }
+
+            const topResults = results.slice(0, 3).map(r => {
+                const item = r.item;
+                const title = item.comment || (Array.isArray(item.key) ? item.key.join(', ') : item.key) || 'Untitled';
+                const bookLabel = item.world ? ` (${item.world})` : '';
+                return `### ${title}${bookLabel}\n${item.content}`;
+            });
+
+            return topResults.join('\n\n');
+        },
+        formatMessage: (args) => `Searching Lorebook: ${args?.query ?? 'unknown'}`,
+        shouldRegister: () => Boolean(chat_metadata?.worldinfo_tool_calling),
+    });
 }
 
 
