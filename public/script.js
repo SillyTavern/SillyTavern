@@ -12279,6 +12279,7 @@ jQuery(async function () {
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
             dragElement(newElement);
+            enableZoomedAvatarTouchGestures(newElement);
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
@@ -12299,6 +12300,108 @@ jQuery(async function () {
             });
         }
     });
+
+    /**
+     * Enables 1-finger touch dragging and 2-finger pinch scaling for zoomed avatars on mobile devices.
+     * @param {JQuery<HTMLElement>|HTMLElement} element The zoomed avatar container element.
+     */
+    function enableZoomedAvatarTouchGestures(element) {
+        const el = element instanceof $ ? element[0] : element;
+        if (!el || el.dataset.mobileTouchInit === 'true') return;
+        el.dataset.mobileTouchInit = 'true';
+
+        let isDragging = false;
+        let isPinching = false;
+        let startX = 0;
+        let startY = 0;
+        let initialLeft = 0;
+        let initialTop = 0;
+        let initialPinchDist = 0;
+        let initialWidth = 0;
+
+        function getDistance(t1, t2) {
+            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+
+        function onTouchStart(e) {
+            if (e.target && e.target.closest && e.target.closest('.dragClose')) return;
+            if (e.touches.length === 2) {
+                isDragging = false;
+                isPinching = true;
+                initialPinchDist = getDistance(e.touches[0], e.touches[1]);
+                initialWidth = el.getBoundingClientRect().width;
+                window.addEventListener('touchmove', onTouchMove, { passive: false });
+                window.addEventListener('touchend', onTouchEnd);
+                window.addEventListener('touchcancel', onTouchEnd);
+            } else if (e.touches.length === 1) {
+                isPinching = false;
+                isDragging = true;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                const rect = el.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                window.addEventListener('touchmove', onTouchMove, { passive: false });
+                window.addEventListener('touchend', onTouchEnd);
+                window.addEventListener('touchcancel', onTouchEnd);
+            }
+        }
+
+        function onTouchMove(e) {
+            if (isPinching && e.touches.length === 2) {
+                if (e.cancelable) e.preventDefault();
+                const currentDist = getDistance(e.touches[0], e.touches[1]);
+                const scale = currentDist / (initialPinchDist || 1);
+                const minWidth = 100;
+                const maxWidth = window.innerWidth * 0.95;
+                const newWidth = Math.max(minWidth, Math.min(maxWidth, initialWidth * scale));
+                el.style.width = `${newWidth}px`;
+                el.style.height = 'auto';
+
+                const rect = el.getBoundingClientRect();
+                if (rect.right > window.innerWidth - 5) {
+                    el.style.left = `${Math.max(5, window.innerWidth - rect.width - 5)}px`;
+                }
+                if (rect.bottom > window.innerHeight - 5) {
+                    el.style.top = `${Math.max(5, window.innerHeight - rect.height - 5)}px`;
+                }
+                return;
+            }
+            if (isDragging && e.touches.length === 1) {
+                if (e.cancelable) e.preventDefault();
+                const deltaX = e.touches[0].clientX - startX;
+                const deltaY = e.touches[0].clientY - startY;
+                const width = el.offsetWidth || 160;
+                const height = el.offsetHeight || 200;
+                const maxLeft = Math.max(0, window.innerWidth - width - 5);
+                const maxTop = Math.max(0, window.innerHeight - height - 5);
+                el.style.left = `${Math.max(5, Math.min(maxLeft, initialLeft + deltaX))}px`;
+                el.style.top = `${Math.max(5, Math.min(maxTop, initialTop + deltaY))}px`;
+            }
+        }
+
+        function onTouchEnd(e) {
+            if (e.touches && e.touches.length === 1 && isPinching) {
+                isPinching = false;
+                isDragging = true;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                const rect = el.getBoundingClientRect();
+                initialLeft = rect.left;
+                initialTop = rect.top;
+                return;
+            }
+            if (!e.touches || e.touches.length === 0) {
+                isDragging = false;
+                isPinching = false;
+                window.removeEventListener('touchmove', onTouchMove);
+                window.removeEventListener('touchend', onTouchEnd);
+                window.removeEventListener('touchcancel', onTouchEnd);
+            }
+        }
+
+        el.addEventListener('touchstart', onTouchStart, { passive: false });
+    }
 
     document.addEventListener('click', function (e) {
         if (!(e.target instanceof HTMLElement)) return;
