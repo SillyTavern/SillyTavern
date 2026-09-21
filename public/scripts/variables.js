@@ -12,6 +12,7 @@ import { SlashCommandEnumValue, enumTypes } from './slash-commands/SlashCommandE
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { slashCommandReturnHelper } from './slash-commands/SlashCommandReturnHelper.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
+import { ToolManager } from './tool-calling.js';
 import { isFalseBoolean, convertValueType, isTrueBoolean } from './utils.js';
 
 /** @typedef {import('./slash-commands/SlashCommandParser.js').NamedArguments} NamedArguments */
@@ -2345,4 +2346,121 @@ export function registerVariableCommands() {
             </div>
         `,
     }));
+
+    registerVariableFunctionTools();
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tools-variables',
+        aliases: ['tool-variables', 'tools-variable'],
+        helpString: 'Enables or disables native function calling tools (GetVariable, SetVariable, ListVariables) for the current chat.',
+        returns: 'Current state of variables tool calling ("true" or "false")',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'Action: "on", "off", "toggle", or "status"',
+                typeList: [ARGUMENT_TYPE.STRING],
+                defaultValue: 'status',
+                enumList: ['on', 'off', 'toggle', 'status'],
+                forceEnum: true,
+            }),
+        ],
+        callback: async (_, action) => {
+            const act = String(action || 'status').trim().toLowerCase();
+            if (act === 'on' || act === 'true') {
+                chat_metadata.variables_tool_calling = true;
+            } else if (act === 'off' || act === 'false') {
+                chat_metadata.variables_tool_calling = false;
+            } else if (act === 'toggle') {
+                chat_metadata.variables_tool_calling = !chat_metadata.variables_tool_calling;
+            }
+            await saveMetadataDebounced();
+            return String(!!chat_metadata.variables_tool_calling);
+        },
+    }));
 }
+
+/**
+ * Registers native function-calling tools for reading and modifying chat variables.
+ */
+export function registerVariableFunctionTools() {
+    ToolManager.registerFunctionTool({
+        name: 'GetVariable',
+        displayName: 'Get Variable',
+        description: 'Gets the value of a chat variable by key.',
+        parameters: {
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                key: {
+                    type: 'string',
+                    description: 'The name of the variable to retrieve.',
+                },
+                index: {
+                    type: 'string',
+                    description: 'Optional list index or dictionary key if the variable holds a JSON structure.',
+                },
+            },
+            required: ['key'],
+        },
+        action: async (args) => {
+            if (!args?.key) throw new Error('Variable "key" argument is required.');
+            const val = getLocalVariable(args.key, args);
+            if (val === undefined || val === null || val === '') {
+                return `Variable "${args.key}" is not set or empty.`;
+            }
+            return typeof val === 'object' ? JSON.stringify(val) : String(val);
+        },
+        formatMessage: (args) => `Reading variable: ${args?.key ?? 'unknown'}`,
+        shouldRegister: () => Boolean(chat_metadata?.variables_tool_calling),
+    });
+
+    ToolManager.registerFunctionTool({
+        name: 'SetVariable',
+        displayName: 'Set Variable',
+        description: 'Sets the value of a chat variable by key.',
+        parameters: {
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {
+                key: {
+                    type: 'string',
+                    description: 'The name of the variable to set.',
+                },
+                value: {
+                    type: 'string',
+                    description: 'The value to store in the variable.',
+                },
+                index: {
+                    type: 'string',
+                    description: 'Optional list index or dictionary key if updating an existing JSON array or dictionary.',
+                },
+            },
+            required: ['key', 'value'],
+        },
+        action: async (args) => {
+            if (!args?.key) throw new Error('Variable "key" argument is required.');
+            if (args.value === undefined) throw new Error('Variable "value" argument is required.');
+            setLocalVariable(args.key, args.value, args);
+            return `Variable "${args.key}" set to: ${args.value}`;
+        },
+        formatMessage: (args) => `Updating variable: ${args?.key ?? 'unknown'} = ${args?.value ?? ''}`,
+        shouldRegister: () => Boolean(chat_metadata?.variables_tool_calling),
+    });
+
+    ToolManager.registerFunctionTool({
+        name: 'ListVariables',
+        displayName: 'List Variables',
+        description: 'Lists all current chat variable names and their values.',
+        parameters: {
+            $schema: 'http://json-schema.org/draft-04/schema#',
+            type: 'object',
+            properties: {},
+        },
+        action: async () => {
+            const vars = chat_metadata?.variables || {};
+            return JSON.stringify(vars);
+        },
+        formatMessage: () => 'Listing chat variables',
+        shouldRegister: () => Boolean(chat_metadata?.variables_tool_calling),
+    });
+}
+
