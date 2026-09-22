@@ -454,7 +454,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const toolNameMap = {};
 
     // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
-    const noPrefillModel = /gemini-3\.[67]-flash|gemini-3\.5-flash-lite/.test(model);
+    const noPrefillModel = /gemini-3\.[6-9]-flash|gemini-3\.5-flash-lite/.test(model);
 
     const contents = [];
     messages.forEach((message, index) => {
