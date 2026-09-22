@@ -458,6 +458,13 @@ export const AZURE_OPENAI_KEYS = [
 
 export const OPENAI_VERBOSITY_MODELS = /^(?:gpt-5|gpt-6-astra)/;
 
+export const OPENAI_VERBOSITY_LEVELS = ['low', 'medium', 'high'];
+
+export const OPENAI_VERBOSITY_MAP = {
+    xhigh: 'high',
+    max: 'high',
+};
+
 export const OPENAI_REASONING_EFFORT_MODELS = [
     'o1',
     'o3-mini',

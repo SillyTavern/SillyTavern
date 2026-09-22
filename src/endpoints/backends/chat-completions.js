@@ -15,6 +15,8 @@ import {
     OPENAI_FIXED_REASONING_EFFORT,
     OPENAI_REASONING_EFFORT_MAP,
     OPENAI_REASONING_EFFORT_MODELS,
+    OPENAI_VERBOSITY_LEVELS,
+    OPENAI_VERBOSITY_MAP,
     OPENAI_VERBOSITY_MODELS,
     OPENROUTER_HEADERS,
     VERTEX_SAFETY,
@@ -2609,7 +2611,12 @@ router.post('/generate', async function (request, response) {
 
         if (request.body.verbosity && [CHAT_COMPLETION_SOURCES.CUSTOM, CHAT_COMPLETION_SOURCES.OPENAI].includes(request.body.chat_completion_source)) {
             if (OPENAI_VERBOSITY_MODELS.test(request.body.model)) {
-                bodyParams['verbosity'] = request.body.verbosity;
+                const verbosity = OPENAI_VERBOSITY_LEVELS.includes(request.body.verbosity)
+                    ? request.body.verbosity
+                    : OPENAI_VERBOSITY_MAP[request.body.verbosity];
+                if (verbosity) {
+                    bodyParams['verbosity'] = verbosity;
+                }
             }
         }
 
