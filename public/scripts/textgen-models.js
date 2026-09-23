@@ -21,98 +21,6 @@ let llamacppModels = [];
 export let openRouterModels = [];
 
 /**
- * List of OpenRouter providers.
- * @type {string[]}
- */
-const OPENROUTER_PROVIDERS = [
-    // Providers endpoint: https://openrouter.ai/api/v1/providers
-    // The list should resemble the sidebar from https://openrouter.ai/models
-    // Their docs no longer displays the list, which had "super dead" ones at top, thankfully gone from /v1/providers
-    'AI21',
-    'AionLabs',
-    'Alibaba',
-    'AkashML',
-    'Amazon Bedrock',
-    'Amazon Nova',
-    'Ambient',
-    'Anthropic',
-    'Arcee AI',
-    'AtlasCloud',
-    'Avian',
-    'Azure',
-    'Baidu',
-    'BaseTen',
-    'Black Forest Labs',
-    'Cerebras',
-    'Chutes',
-    'Cirrascale',
-    'Clarifai',
-    'Cloudflare',
-    'Cohere',
-    'Crucible',
-    'Crusoe',
-    'DeepInfra',
-    'DeepSeek',
-    'DekaLLM',
-    'FakeProvider',
-    'Featherless',
-    'Fireworks',
-    'Friendli',
-    'GMICloud',
-    'Google',
-    'Google AI Studio',
-    'Groq',
-    'Hyperbolic',
-    'Inception',
-    'Inceptron',
-    'InferenceNet',
-    'Infermatic',
-    'Inflection',
-    'Io Net',
-    'Ionstream',
-    'Liquid',
-    'Mancer 2',
-    'Mara',
-    'Minimax',
-    'Mistral',
-    'ModelRun',
-    'Modular',
-    'Moonshot AI',
-    'Morph',
-    'NCompass',
-    'Nebius',
-    'Nex AGI',
-    'NextBit',
-    'Novita',
-    'Nvidia',
-    'OpenAI',
-    'OpenInference',
-    'Parasail',
-    'Perceptron',
-    'Perplexity',
-    'Phala',
-    'Poolside',
-    'Recraft',
-    'Reka',
-    'Relace',
-    'SambaNova',
-    'Seed',
-    'SiliconFlow',
-    'Sourceful',
-    'Stealth',
-    'StepFun',
-    'StreamLake',
-    'Switchpoint',
-    'Together',
-    'Upstage',
-    'Venice',
-    'WandB',
-    'xAI',
-    'Xiaomi',
-    'Z.AI',
-];
-
-/**
  * List of NanoGPT providers.
  * Providers endpoint: https://nano-gpt.com/api/models/providers
  * @type {{id: string, label: string}[]}
@@ -347,6 +255,9 @@ const OPENROUTER_PROVIDER_WARNING_SELECTORS = {
     },
 };
 
+/** @type {Map<string, number>} */
+const openRouterProviderSyncSeq = new Map();
+
 export function updateOpenRouterProvidersWarning(providersSelector) {
     const $providers = $(providersSelector);
 
@@ -367,49 +278,163 @@ export function updateOpenRouterProvidersWarning(providersSelector) {
     $warning.toggleClass('displayNone', !showWarning);
 }
 
-export async function syncOpenRouterProvidersForModel(modelId, providersSelector) {
+/**
+ * Normalize API provider rows (objects or legacy strings) to { slug, name, label }.
+ * @param {any[]} providers
+ * @returns {{ slug: string, name: string, label: string }[]}
+ */
+function normalizeOpenRouterProviderRows(providers) {
+    if (!Array.isArray(providers)) {
+        return [];
+    }
+
+    return providers.map(provider => {
+        if (typeof provider === 'string') {
+            return { slug: provider, name: provider, label: provider };
+        }
+        const slug = provider?.slug || '';
+        const name = provider?.name || slug;
+        const label = provider?.label || name;
+        return { slug, name, label };
+    }).filter(provider => provider.slug);
+}
+
+/**
+ * Map saved display names to routing slugs. Drops unknown display names.
+ * @param {string[]} saved
+ * @param {{ slug: string, name: string }[]} providers
+ * @returns {string[]}
+ */
+export function migrateOpenRouterProviderSelection(saved, providers) {
+    if (!Array.isArray(saved)) {
+        return [];
+    }
+
+    const bySlug = new Map();
+    const byName = new Map();
+    for (const provider of providers) {
+        if (provider.slug) {
+            bySlug.set(String(provider.slug).toLowerCase(), provider.slug);
+        }
+        if (provider.name) {
+            const nameKey = String(provider.name).toLowerCase();
+            if (!byName.has(nameKey) || !provider.slug.includes('/')) {
+                byName.set(nameKey, provider.slug);
+            }
+        }
+    }
+
+    const migrated = [];
+    for (const raw of saved) {
+        if (typeof raw !== 'string' || !raw) {
+            continue;
+        }
+        const key = raw.toLowerCase();
+        if (bySlug.has(key)) {
+            migrated.push(bySlug.get(key));
+            continue;
+        }
+        if (byName.has(key)) {
+            migrated.push(byName.get(key));
+            continue;
+        }
+        // Keep unknown slug-like values (e.g. fireworks/fast saved from another model).
+        if (!/\s/.test(raw) && /^[a-z0-9._-]+(?:\/[a-z0-9._-]+)*$/i.test(raw)) {
+            migrated.push(raw);
+        }
+    }
+
+    return [...new Set(migrated)];
+}
+
+export async function syncOpenRouterProvidersForModel(modelId, providersSelector, savedProviders = null) {
     const $providers = $(providersSelector);
+    const seq = (openRouterProviderSyncSeq.get(providersSelector) || 0) + 1;
+    openRouterProviderSyncSeq.set(providersSelector, seq);
+
+    const isCurrent = () => openRouterProviderSyncSeq.get(providersSelector) === seq;
 
     const refreshWarningState = () => {
         updateOpenRouterProvidersWarning(providersSelector);
     };
 
-    if (!modelId || !modelId.includes('/')) {
-        $providers.find('option').prop('disabled', false);
+    const selectedSource = Array.isArray(savedProviders)
+        ? savedProviders
+        : $providers.find('option:selected').map(function () { return this.value; }).get();
+
+    const applyProviders = (providers) => {
+        const rows = normalizeOpenRouterProviderRows(providers);
+        const migrated = migrateOpenRouterProviderSelection(selectedSource, rows);
+        const selected = new Set(migrated);
+        const present = new Set();
+
+        $providers.empty();
+        for (const provider of rows) {
+            $providers.append($('<option>', {
+                value: provider.slug,
+                text: provider.label,
+                selected: selected.has(provider.slug),
+            }));
+            present.add(provider.slug);
+        }
+
+        for (const slug of migrated) {
+            if (!present.has(slug)) {
+                $providers.append($('<option>', {
+                    value: slug,
+                    text: slug,
+                    selected: true,
+                    disabled: true,
+                }));
+            }
+        }
+
+        // Reorder selected options to match saved priority order
+        for (const slug of migrated) {
+            $providers.append($providers.find(`option[value="${CSS.escape(slug)}"]`).detach());
+        }
+
+        $providers.trigger('change');
         $providers.trigger('change.select2');
         refreshWarningState();
-        return;
-    }
+    };
 
-    try {
-        const response = await fetch('/api/openrouter/models/providers', {
+    const fetchProviders = async (url, body) => {
+        const response = await fetch(url, {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ model: modelId }),
+            body: JSON.stringify(body),
         });
-
         if (!response.ok) {
+            return [];
+        }
+        const providers = await response.json();
+        return Array.isArray(providers) ? providers : [];
+    };
+
+    try {
+        let providers = [];
+        if (modelId) {
+            providers = await fetchProviders('/api/openrouter/models/providers', { model: modelId });
+            if (!isCurrent()) {
+                return;
+            }
+        }
+        if (providers.length === 0) {
+            providers = await fetchProviders('/api/openrouter/providers', {});
+            if (!isCurrent()) {
+                return;
+            }
+        }
+        if (providers.length === 0) {
             refreshWarningState();
             return;
         }
-
-        const providerNames = await response.json();
-
-        if (!Array.isArray(providerNames) || providerNames.length === 0) {
-            $providers.find('option').prop('disabled', false);
-            $providers.trigger('change.select2');
-            refreshWarningState();
-            return;
-        }
-
-        $providers.find('option').each(function () {
-            const isAvailable = providerNames.includes($(this).val());
-            $(this).prop('disabled', !isAvailable);
-        });
-
-        $providers.trigger('change.select2');
-        refreshWarningState();
+        applyProviders(providers);
     } catch (error) {
+        if (!isCurrent()) {
+            return;
+        }
         console.error('Failed to fetch OpenRouter providers for model', error);
         refreshWarningState();
     }
@@ -717,7 +742,7 @@ export async function loadOpenRouterModels(data) {
 
     // Calculate the cost of the selected model + update on settings change
     calculateOpenRouterCost();
-    syncOpenRouterProvidersForModel(textgen_settings.openrouter_model, '#openrouter_providers_text');
+    syncOpenRouterProvidersForModel(textgen_settings.openrouter_model, '#openrouter_providers_text', textgen_settings.openrouter_providers);
 }
 
 export async function loadVllmModels(data) {
@@ -1085,7 +1110,7 @@ function onOpenRouterModelSelect() {
     textgen_settings.openrouter_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
-    syncOpenRouterProvidersForModel(modelId, '#openrouter_providers_text');
+    syncOpenRouterProvidersForModel(modelId, '#openrouter_providers_text', textgen_settings.openrouter_providers);
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
@@ -1401,12 +1426,6 @@ export function initTextGenModels() {
     $('#featherless_model').on('change', () => onFeatherlessModelSelect(String($('#featherless_model').val())));
 
     const providersSelect = $('.openrouter_providers');
-    for (const provider of OPENROUTER_PROVIDERS) {
-        providersSelect.append($('<option>', {
-            value: provider,
-            text: provider,
-        }));
-    }
 
     const nanoGptProvidersSelect = $('#nanogpt_provider');
     for (const provider of NANOGPT_PROVIDERS) {
