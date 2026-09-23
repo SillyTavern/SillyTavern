@@ -55,7 +55,7 @@ function migrateSettings() {
     }
 
     if (!extension_settings.caption.multimodal_model) {
-        extension_settings.caption.multimodal_model = 'gpt-5.6-luna';
+        extension_settings.caption.multimodal_model = 'gpt-6-luna';
     }
 
     if (!extension_settings.caption.prompt) {
