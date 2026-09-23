@@ -34,7 +34,7 @@
  * @property {boolean} vectorized - Indicates if the extension is optimized for vectorized processing.
  * @property {number} display_index - The order in which the extension should be displayed for user interfaces.
  * @property {boolean} match_persona_description - Whether to match against the persona description.
- * @property {boolean} match_character_description - Whether to match against the persona description.
+ * @property {boolean} match_character_description - Whether to match against the character description.
  * @property {boolean} match_character_personality - Whether to match against the character personality.
  * @property {boolean} match_character_depth_prompt - Whether to match against the character depth prompt.
  * @property {boolean} match_scenario - Whether to match against the character scenario.
