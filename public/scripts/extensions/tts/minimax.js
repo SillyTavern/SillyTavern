@@ -38,10 +38,14 @@ class MiniMaxTtsProvider {
 
     // default models (by MiniMax doc)
     static defaultModels = [
+        { id: 'speech-2.8-hd', name: 'Speech-2.8-HD (High Quality)' },
+        { id: 'speech-2.8-turbo', name: 'Speech-2.8-Turbo (Fast)' },
+        { id: 'speech-2.6-hd', name: 'Speech-2.6-HD (High Quality)' },
+        { id: 'speech-2.6-turbo', name: 'Speech-2.6-Turbo (Fast)' },
         { id: 'speech-02-hd', name: 'Speech-02-HD (High Quality)' },
         { id: 'speech-02-turbo', name: 'Speech-02-Turbo (Fast)' },
-        { id: 'speech-01', name: 'Speech-01 (Legacy)' },
-        { id: 'speech-01-240228', name: 'Speech-01-240228 (Legacy)' },
+        { id: 'speech-01-hd', name: 'Speech-01-HD (High Quality)' },
+        { id: 'speech-01-turbo', name: 'Speech-01-Turbo (Fast)' },
     ];
 
     availableModels = [];
