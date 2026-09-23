@@ -27,7 +27,7 @@ router.post('/models/providers', async (req, res) => {
         const providerNames = endpoints.map(e => e.provider_name);
 
         const getTier = (tag) => tag?.endsWith('/flex') ? 'flex'
-            : tag?.endsWith('/priority') ? 'priority'
+            : tag?.endsWith('/priority') || tag?.endsWith('/fast') ? 'priority'
                 : 'standard';
 
         const tiers = [...new Set(endpoints.filter(e => e.status === 0).map(e => getTier(e.tag)))];

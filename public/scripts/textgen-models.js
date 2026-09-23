@@ -19,6 +19,7 @@ let featherlessModels = [];
 let tabbyModels = [];
 let llamacppModels = [];
 export let openRouterModels = [];
+const openRouterProviderSyncSeq = new Map();
 
 /**
  * List of OpenRouter providers.
@@ -369,6 +370,8 @@ export function updateOpenRouterProvidersWarning(providersSelector) {
 
 export async function syncOpenRouterProvidersForModel(modelId, providersSelector, tiersSelector = null, preferredTier = null) {
     const $providers = $(providersSelector);
+    const seq = (openRouterProviderSyncSeq.get(providersSelector) || 0) + 1;
+    openRouterProviderSyncSeq.set(providersSelector, seq);
 
     const refreshWarningState = () => {
         updateOpenRouterProvidersWarning(providersSelector);
@@ -398,12 +401,15 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
             body: JSON.stringify({ model: modelId }),
         });
 
+        if (openRouterProviderSyncSeq.get(providersSelector) !== seq) return;
+
         if (!response.ok) {
             refreshWarningState();
             return;
         }
 
         const data = await response.json();
+        if (openRouterProviderSyncSeq.get(providersSelector) !== seq) return;
         const providerNames = Array.isArray(data) ? data : data?.providers;
         const tiers = Array.isArray(data) ? [] : data?.tiers;
 
@@ -446,6 +452,7 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
             }
         }
     } catch (error) {
+        if (openRouterProviderSyncSeq.get(providersSelector) !== seq) return;
         console.error('Failed to fetch OpenRouter providers for model', error);
         refreshWarningState();
     }
