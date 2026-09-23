@@ -37,6 +37,7 @@ import EventSourceStream from './sse-stream.js';
  * @property {string} [name] - The name of the message author (optional)
  * @property {string} role - The role of the message author (e.g., "user", "assistant", "system")
  * @property {string} content - The content of the message
+ * @property {string} [reasoning_content] - The reasoning content of the message, sent as a prefill (optional)
  */
 
 /**
