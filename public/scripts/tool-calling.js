@@ -680,6 +680,7 @@ export class ToolManager {
             chat_completion_sources.NANOGPT,
             chat_completion_sources.WORKERS_AI,
             chat_completion_sources.MINIMAX,
+            chat_completion_sources.YAPI,
         ];
         return supportedSources.includes(settings.chat_completion_source);
     }
