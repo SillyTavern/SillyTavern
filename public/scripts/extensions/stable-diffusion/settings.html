@@ -39,6 +39,14 @@
                 <input id="sd_minimal_prompt_processing" type="checkbox" />
                 <span data-i18n="sd_minimal_prompt_processing_txt">Minimal response prompt processing</span>
             </label>
+            <label for="sd_use_connection_profile" class="checkbox_label" title="Generate the SD prompt via a Connection Profile (different model/preset/endpoint) instead of the main API.">
+                <input id="sd_use_connection_profile" type="checkbox" />
+                <span data-i18n="Generate prompt with connection profile">Generate prompt with connection profile</span>
+            </label>
+            <div id="sd_connection_profile_block" style="display:none;">
+                <label for="sd_connection_profile" data-i18n="Profile">Profile</label>
+                <select id="sd_connection_profile" class="text_pole"></select>
+            </div>
             <label for="sd_source" data-i18n="Source">Source</label>
             <select id="sd_source" class="text_pole">
                 <option value="aimlapi">AI/ML API</option>
