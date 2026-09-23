@@ -1450,5 +1450,8 @@
     "Deleting chat…": "Chat verwijderen…",
     "Loading chat…": "Chat laden…",
     "Bulk Delete": "Bulkverwijdering",
-    "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…"
+    "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…",
+    "Service Tier": "Serviceniveau",
+    "Flex (cheap, slower)": "Flex (goedkoop, langzamer)",
+    "Priority (fast, expensive)": "Priority (snel, duur)"
 }

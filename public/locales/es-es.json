@@ -1561,5 +1561,8 @@
     "Deleting chat…": "Eliminando chat…",
     "Loading chat…": "Cargando chat…",
     "Bulk Delete": "Eliminación masiva",
-    "Deleting ${0} character(s)…": "Eliminando ${0} personaje(s)…"
+    "Deleting ${0} character(s)…": "Eliminando ${0} personaje(s)…",
+    "Service Tier": "Nivel de servicio",
+    "Flex (cheap, slower)": "Flex (barato, más lento)",
+    "Priority (fast, expensive)": "Priority (rápido, caro)"
 }

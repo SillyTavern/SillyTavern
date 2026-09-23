@@ -1459,5 +1459,8 @@
     "Deleting chat…": "チャットを削除中…",
     "Loading chat…": "チャットを読み込み中…",
     "Bulk Delete": "一括削除",
-    "Deleting ${0} character(s)…": "${0}人のキャラクターを削除中…"
+    "Deleting ${0} character(s)…": "${0}人のキャラクターを削除中…",
+    "Service Tier": "サービスティア",
+    "Flex (cheap, slower)": "Flex（安い、遅い）",
+    "Priority (fast, expensive)": "Priority（速い、高い）"
 }
