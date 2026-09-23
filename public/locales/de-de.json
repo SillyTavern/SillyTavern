@@ -396,7 +396,7 @@
     "Available Models": "Verfügbare Modelle",
     "Prompt Post-Processing": "Zeitnahe Nachbearbeitung",
     "Applies additional processing to the prompt before sending it to the API.": "Wendet zusätzliche Verarbeitungsvorgänge auf die Eingabeaufforderung an, bevor sie an die API gesendet wird.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "Überprüft deine API-Verbindung durch Senden einer kurzen Testnachricht. Sei dir bewusst, dass du dafür gutgeschrieben wirst!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "Überprüft deine API-Verbindung durch Senden einer kurzen Testnachricht. Dabei können Nutzungsgebühren anfallen.",
     "Test Message": "Testnachricht",
     "Auto-connect to Last Server": "Automatisch mit dem letzten Server verbinden",
     "Missing key": "❌ Fehlender Schlüssel",
