@@ -240,7 +240,10 @@ thumbnails:
   # JPG thumbnail quality (0-100)
   quality: 95
   # Maximum thumbnail dimensions per type [width, height]
-  dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144] }
+  # 'avatar' and 'persona' are cropped to these exact dimensions,
+  # 'avatarPreview' is an upper bound for the on-demand high-resolution
+  # avatar preview (aspect ratio preserved, never upscaled).
+  dimensions: { 'bg': [160, 90], 'avatar': [96, 144], 'persona': [96, 144], 'avatarPreview': [512, 768] }
 
 # PERFORMANCE-RELATED CONFIGURATION
 performance:
