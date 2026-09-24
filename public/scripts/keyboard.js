@@ -33,6 +33,13 @@ if (CSS.supports('selector(:has(*))')) {
     interactableSelectors.push('#extensionsMenu div:has(.extensionsMenuExtensionButton)');
 }
 
+/**
+ * All interactable selectors joined into one selector list, so a node is matched or
+ * queried once instead of once per selector. Rebuilt when a type is registered.
+ * @type {string}
+ */
+let interactableSelectorList = interactableSelectors.join(', ');
+
 export const INTERACTABLE_CONTROL_CLASS = 'interactable';
 export const CUSTOM_INTERACTABLE_CONTROL_CLASS = 'custom_interactable';
 
@@ -63,17 +70,28 @@ const observer = new MutationObserver(mutations => {
  */
 function handleNodeChange(node) {
     if (node.nodeType === Node.ELEMENT_NODE && node instanceof Element) {
+        // <option> and <optgroup> are never interactables and never contain any
+        if (node instanceof HTMLOptionElement || node instanceof HTMLOptGroupElement) {
+            return;
+        }
+
         // Handle keyboard interactables
         if (isKeyboardInteractable(node)) {
             makeKeyboardInteractable(node);
         }
-        initializeInteractables(node);
 
         // Handle scroll reset containers
         if (node.classList.contains('scroll-reset-container')) {
             applyScrollResetBehavior(node);
         }
-        initializeScrollResetBehaviors(node);
+
+        // Descendant queries only make sense for nodes that have descendants. A huge
+        // model list adds tens of thousands of childless <option> elements, and running
+        // the full selector list against each of them froze the UI for a minute.
+        if (node.firstElementChild) {
+            initializeInteractables(node);
+            initializeScrollResetBehaviors(node);
+        }
     }
 }
 
@@ -87,9 +105,11 @@ function handleNodeChange(node) {
  * @param {boolean} [options.notFocusableByDefault=false] - Whether interactables of this class should not be focusable by default
  */
 export function registerInteractableType(interactableSelector, { disabledByDefault = false, notFocusableByDefault = false } = {}) {
-    interactableSelectors.push(interactableSelector);
-
+    // Query first: an invalid selector throws here, before it can poison the combined list.
     const interactables = document.querySelectorAll(interactableSelector);
+
+    interactableSelectors.push(interactableSelector);
+    interactableSelectorList = interactableSelectors.join(', ');
 
     if (disabledByDefault || notFocusableByDefault) {
         interactables.forEach(interactable => {
@@ -109,7 +129,7 @@ export function registerInteractableType(interactableSelector, { disabledByDefau
  */
 export function isKeyboardInteractable(control) {
     // Check if this control matches any of the selectors
-    return interactableSelectors.some(selector => control.matches(selector));
+    return control.matches(interactableSelectorList);
 }
 
 /**
@@ -175,8 +195,7 @@ function initializeInteractables(element = document) {
  * @returns {HTMLElement[]} An array containing all the interactables that match the given selectors
  */
 function getAllInteractables(element) {
-    // Query each selector individually and combine all to a big array to return
-    return [].concat(...interactableSelectors.map(selector => Array.from(element.querySelectorAll(`${selector}`))));
+    return Array.from(element.querySelectorAll(interactableSelectorList));
 }
 
 /**
