@@ -200,6 +200,7 @@ export const CHAT_COMPLETION_SOURCES = {
     ELECTRONHUB: 'electronhub',
     NANOGPT: 'nanogpt',
     DEEPSEEK: 'deepseek',
+    OPENCODEGO: 'opencodego',
     AIMLAPI: 'aimlapi',
     XAI: 'xai',
     POLLINATIONS: 'pollinations',
