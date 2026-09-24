@@ -644,7 +644,7 @@ export class ToolManager {
                 case chat_completion_sources.MISTRALAI:
                     return currentModel.capabilities?.function_calling;
                 case chat_completion_sources.AIMLAPI:
-                    return currentModel.features?.includes('openai/chat-completion.function');
+                    return currentModel.capabilities?.includes('tools');
                 case chat_completion_sources.CHUTES:
                     return currentModel.supported_features?.includes('tools');
                 case chat_completion_sources.ELECTRONHUB:

@@ -1818,7 +1818,7 @@ aimlapi.post('/models', async (request, response) => {
         const data = await modelsResponse.json();
         const models = (data.data || [])
             .filter(model =>
-                model.type === 'image' &&
+                model.type === 'openai/image-generations' &&
                 model.id !== 'triposr' &&
                 model.id !== 'flux/dev/image-to-image',
             )

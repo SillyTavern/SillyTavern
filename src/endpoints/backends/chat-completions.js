@@ -1831,6 +1831,7 @@ router.post('/status', async function (request, statusResponse) {
             apiUrl = API_AIMLAPI;
             apiKey = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI, request.body.secret_id);
             headers = { ...AIMLAPI_HEADERS };
+            queryParams = { include: 'capabilities' };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
             apiUrl = 'https://gen.pollinations.ai/text';
@@ -2758,7 +2759,7 @@ multimodalModels.post('/pollinations', async (_req, res) => {
 
 multimodalModels.post('/aimlapi', async (_req, res) => {
     try {
-        const response = await fetch('https://api.aimlapi.com/v1/models');
+        const response = await fetch('https://api.aimlapi.com/v1/models?include=capabilities');
 
         if (!response.ok) {
             return res.json([]);
@@ -2771,7 +2772,7 @@ multimodalModels.post('/aimlapi', async (_req, res) => {
             return res.json([]);
         }
 
-        const multimodalModels = data.data.filter(m => m?.features?.includes('openai/chat-completion.vision')).map(m => m.id);
+        const multimodalModels = data.data.filter(m => m?.capabilities?.includes('vision')).map(m => m.id);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
