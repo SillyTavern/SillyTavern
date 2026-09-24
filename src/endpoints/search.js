@@ -389,6 +389,53 @@ router.post('/zai', async (request, response) => {
     }
 });
 
+router.post('/firecrawl', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.FIRECRAWL);
+
+        if (!key) {
+            console.error('No Firecrawl key found');
+            return response.sendStatus(400);
+        }
+
+        const { query } = request.body;
+
+        if (!query) {
+            console.error('No query provided for /firecrawl');
+            return response.sendStatus(400);
+        }
+
+        console.debug('Firecrawl search query', query);
+
+        const result = await fetch('https://api.firecrawl.dev/v2/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+            body: JSON.stringify({
+                query: query,
+                limit: 10,
+                sources: ['web'],
+                highlights: false,
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.error('Firecrawl request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.debug('Firecrawl search response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/visit', async (request, response) => {
     try {
         const url = request.body.url;
