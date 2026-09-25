@@ -29,6 +29,7 @@
                     <option value="siliconflow">SiliconFlow</option>
                     <option value="togetherai">TogetherAI</option>
                     <option value="vllm">vLLM</option>
+                    <option value="voyageai">Voyage AI</option>
                     <option value="webllm" data-i18n="WebLLM Extension">WebLLM Extension</option>
                 </select>
             </div>
@@ -183,6 +184,35 @@
                     <span data-i18n="NomicAI API Key">NomicAI API Key</span>
                 </label>
                 <div id="api_key_nomicai" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_nomicai">
+                    <i class="fa-solid fa-key"></i>
+                    <span data-i18n="Click to set">Click to set</span>
+                </div>
+            </div>
+            <div class="flex-container flexFlowColumn" id="voyageai_vectorsModel">
+                <label for="vectors_voyageai_model" data-i18n="Vectorization Model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_voyageai_model" class="text_pole">
+                    <option value="voyage-4-large">voyage-4-large</option>
+                    <option value="voyage-4">voyage-4</option>
+                    <option value="voyage-4-lite">voyage-4-lite</option>
+                    <option value="voyage-4-nano">voyage-4-nano</option>
+                    <option value="voyage-3.5">voyage-3.5</option>
+                    <option value="voyage-3.5-lite">voyage-3.5-lite</option>
+                    <option value="voyage-3-large">voyage-3-large</option>
+                    <option value="voyage-3">voyage-3</option>
+                    <option value="voyage-3-lite">voyage-3-lite</option>
+                    <option value="voyage-code-3">voyage-code-3</option>
+                    <option value="voyage-finance-2">voyage-finance-2</option>
+                    <option value="voyage-law-2">voyage-law-2</option>
+                    <option value="voyage-multilingual-2">voyage-multilingual-2</option>
+                </select>
+            </div>
+            <div class="flex-container alignItemsCenter" id="voyageai_apiKey">
+                <label for="api_key_voyageai" class="flex1">
+                    <span data-i18n="Voyage AI API Key">Voyage AI API Key</span>
+                </label>
+                <div id="api_key_voyageai" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_voyageai">
                     <i class="fa-solid fa-key"></i>
                     <span data-i18n="Click to set">Click to set</span>
                 </div>
