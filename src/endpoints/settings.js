@@ -10,6 +10,8 @@ import { SETTINGS_FILE } from '../constants.js';
 import { getConfigValue, generateTimestamp, removeOldBackups } from '../util.js';
 import { getAllUserHandles, getUserDirectories } from '../users.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
+import { MULTI_WINDOW_ENABLED, poisonAllSessions } from '../multi-window.js';
+import { getSessionIdentity } from './sessions.js';
 
 const ENABLE_EXTENSIONS = !!getConfigValue('extensions.enabled', true, 'boolean');
 const ENABLE_EXTENSIONS_AUTO_UPDATE = !!getConfigValue('extensions.autoUpdate', true, 'boolean');
@@ -208,6 +210,20 @@ router.post('/save', function (request, response) {
         const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
         writeFileAtomicSync(pathToSettings, JSON.stringify(request.body, null, 4), 'utf8');
         triggerAutoSave(request.user.profile.handle);
+        // An EXPLICIT settings save is a global barrier: every window -
+        // including the saver - reboots from the freshly persisted blob.
+        // Self-serializing: a racing second save arrives already poisoned and
+        // bounces (410). Boot-time normalization saves (no explicit header)
+        // write without poisoning.
+        if (MULTI_WINDOW_ENABLED && request.get('X-Settings-Explicit') === 'true') {
+            const identity = getSessionIdentity(request);
+            const poisoned = poisonAllSessions(
+                request.user.profile.handle,
+                identity?.windowId ?? 'unknown',
+                'global settings saved',
+            );
+            return response.send({ result: 'ok', poisonedSessions: poisoned });
+        }
         response.send({ result: 'ok' });
     } catch (err) {
         console.error(err);
