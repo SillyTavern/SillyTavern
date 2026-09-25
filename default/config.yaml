@@ -137,6 +137,8 @@ sso:
   trustedProxies:
     - ::1
     - 127.0.0.1
+  # Automatically create accounts for users logging in via SSO if they don't exist.
+  autoCreateUser: false
 
 # Host whitelist configuration. Recommended if you're using a listen mode
 hostWhitelist:

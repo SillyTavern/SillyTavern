@@ -19,7 +19,7 @@ import ipMatching from 'ip-matching';
 import { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, SETTINGS_FILE, UPLOADS_DIRECTORY } from './constants.js';
 import { getConfigValue, color, delay, generateTimestamp, invalidateFirefoxCache, isPathUnderParent, setPermissionsSync } from './util.js';
 import { allowKeysExposure, readSecret, writeSecret, SECRETS_FILE } from './endpoints/secrets.js';
-import { getContentOfType } from './endpoints/content-manager.js';
+import { getContentOfType, checkForNewContent, CONTENT_TYPES } from './endpoints/content-manager.js';
 import { serverDirectory } from './server-directory.js';
 import { filterValidIpPatterns, getIpFromRequest } from './express-common.js';
 import { extensionsEnabledFeatureGuard } from './endpoints/extensions.js';
@@ -32,6 +32,7 @@ const AUTHENTIK_AUTH = getConfigValue('sso.authentikAuth', false, 'boolean');
 const PER_USER_BASIC_AUTH = getConfigValue('perUserBasicAuth', false, 'boolean');
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 const TRUSTED_PROXIES = filterValidIpPatterns(getConfigValue('sso.trustedProxies', ['127.0.0.1', '::1']) ?? [], (entry, message) => `${color.red('Warning')}: Ignoring invalid sso.trustedProxies entry ${color.yellow(entry)} - ${message}`);
+const AUTO_CREATE_USER = getConfigValue('sso.autoCreateUser', false, 'boolean');
 
 /**
  * Cache for user directories.
@@ -889,6 +890,32 @@ async function headerUserLogin(request, header = 'Remote-User') {
             }
         }
     }
+
+    if (AUTO_CREATE_USER) {
+        const handle = remoteUser.toLowerCase();
+        const salt = getPasswordSalt();
+        const newUser = {
+            handle: handle,
+            name: remoteUser,
+            created: Date.now(),
+            password: '',
+            salt: salt,
+            admin: false,
+            enabled: true,
+        };
+
+        await storage.setItem(toKey(handle), newUser);
+        console.info(color.green(`Auto-created account for SSO user: ${handle}`));
+
+        await ensurePublicDirectoriesExist();
+        const directories = getUserDirectories(handle);
+        await checkForNewContent([directories], [CONTENT_TYPES.SETTINGS]);
+
+        request.session.handle = handle;
+        request.session.version = getAccountVersion(newUser);
+        return true;
+    }
+
     return false;
 }
 
