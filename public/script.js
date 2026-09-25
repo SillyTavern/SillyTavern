@@ -269,7 +269,7 @@ import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningFromString, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, ReasoningState, ReasoningType, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
@@ -3298,7 +3298,7 @@ export function getExtensionPromptMaxDepth() {
  * @param {boolean} [wrap] Wrap start and end with a separator
  * @returns {Promise<string>} Extension prompt
  */
-export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
+export async function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n\n', role = undefined, wrap = true) {
     const filterByFunction = async (prompt) => {
         const hasFilter = typeof prompt.filter === 'function';
         if (hasFilter && !await prompt.filter()) {
@@ -3656,12 +3656,40 @@ class StreamingProcessor {
             }
         }
 
+        let includeUserPromptBias = !isContinue && (this.reasoningHandler.state == ReasoningState.None || this.reasoningHandler.type == ReasoningType.Parsed);
+        let parsedBias = substituteParams(power_user.user_prompt_bias);
+        if (!includeUserPromptBias && this.reasoningHandler.type == ReasoningType.Model) {
+            this.reasoningHandler.reasoning = substituteParams(parsedBias) + this.reasoningHandler.reasoning;
+            includeUserPromptBias = false;
+        } else if (includeUserPromptBias && parsedBias.trim() == power_user.reasoning.prefix) {
+            let reasoning = (parsedBias + this.reasoningHandler.reasoning).slice(power_user.reasoning.prefix.length);
+            includeUserPromptBias = !this.reasoningHandler.updateReasoning(messageId, reasoning);
+        }
+
+        if (this.reasoningHandler.reasoning.startsWith(power_user.reasoning.prefix)) {
+            if (this.reasoningHandler.reasoning.includes(power_user.reasoning.suffix)) {
+                let reParse = this.reasoningHandler.reasoning + text;
+                ({ reasoning: this.reasoningHandler.reasoning, content: text } =
+                    parseReasoningFromString(reParse) ?? { reasoning: this.reasoningHandler.reasoning, content: text });
+            } else {
+                this.reasoningHandler.reasoning = this.reasoningHandler.reasoning.slice(power_user.reasoning.prefix.length);
+            }
+            includeUserPromptBias = false;
+        }
+
+        this.reasoningHandler.reasoning = getRegexedString(this.reasoningHandler.reasoning, regex_placement.REASONING);
+
+        if (power_user.trim_spaces) {
+            this.reasoningHandler.reasoning = this.reasoningHandler.reasoning.trim();
+        }
+
         let processedText = cleanUpMessage({
             getMessage: text,
             isImpersonate: isImpersonate,
             isContinue: isContinue,
             displayIncompleteSentences: !isFinal,
             stoppingStrings: this.stoppingStrings,
+            includeUserPromptBias: includeUserPromptBias,
         });
 
         const charsToBalance = ['*', '"', '```', '~~~'];
@@ -5492,13 +5520,24 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         const swipes = extractMultiSwipes(data, type);
 
-        messageChunk = cleanUpMessage({
-            getMessage: getMessage,
-            isImpersonate: isImpersonate,
-            isContinue: isContinue,
-            displayIncompleteSentences: false,
-        });
+        let includeUserPromptBias = true;
+        if (isContinue) {
+            continue_mag = promptReasoning.removePrefix(continue_mag);
+            getMessage = continue_mag + getMessage;
+        } else if (reasoning && power_user.user_prompt_bias) {
+            reasoning = substituteParams(power_user.user_prompt_bias) + reasoning;
+            includeUserPromptBias = false;
+        }
 
+        if (reasoning.startsWith(power_user.reasoning.prefix)) {
+            if (reasoning.includes(power_user.reasoning.suffix)) {
+                let reParse = reasoning + getMessage;
+                ({ reasoning, content: getMessage } = parseReasoningFromString(reParse) ?? { reasoning, content: getMessage });
+            } else {
+                reasoning = reasoning.slice(power_user.reasoning.prefix.length);
+            }
+            includeUserPromptBias = false;
+        }
 
         reasoning = getRegexedString(reasoning, regex_placement.REASONING);
 
@@ -5506,10 +5545,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             reasoning = reasoning.trim();
         }
 
-        if (isContinue) {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
-            getMessage = continue_mag + getMessage;
-        }
+        messageChunk = cleanUpMessage({
+            getMessage: getMessage,
+            isImpersonate: isImpersonate,
+            isContinue: isContinue,
+            displayIncompleteSentences: false,
+            includeUserPromptBias: includeUserPromptBias,
+        });
 
         //Formating
         const displayIncomplete = type === 'quiet' && !quietToLoud;
@@ -5518,6 +5560,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             isImpersonate: isImpersonate,
             isContinue: isContinue,
             displayIncompleteSentences: displayIncomplete,
+            includeUserPromptBias: includeUserPromptBias,
         });
 
         if (isImpersonate) {
