@@ -997,6 +997,9 @@ async function importTags(character, { importSetting = null } = {}) {
  * @returns {Promise<string[]>} Array of strings representing the tags to import
  */
 async function handleTagImport(character, { importSetting = null } = {}) {
+    if (!character?.tags?.length)
+        return [];
+    
     /** @type {string[]} */
     const alreadyAssignedTags = tag_map[character.avatar] ?? [];
     const importTags = character.tags.map(t => t.trim()).filter(t => t)
