@@ -237,6 +237,30 @@ export function resolveSecretKey() {
 }
 
 /**
+ * Resolves the secret key for a specific API configuration without relying on global state.
+ * @param {string} mainApi The main API type ('openai', 'textgenerationwebui', etc.)
+ * @param {string} [source] The chat completion source (for openai)
+ * @param {string} [type] The text generation type (for textgenerationwebui)
+ * @returns {string|null} The secret key, or null if not found.
+ */
+export function resolveSecretKeyForApi(mainApi, source, type) {
+    if (mainApi === 'koboldhorde') return SECRET_KEYS.HORDE;
+    if (mainApi === 'novel') return SECRET_KEYS.NOVEL;
+
+    if (mainApi === 'textgenerationwebui' && type) {
+        const [key] = Object.entries(textgen_types).find(([, value]) => value === type) ?? [null];
+        if (key && SECRET_KEYS[key]) return SECRET_KEYS[key];
+    }
+
+    if (mainApi === 'openai' && source) {
+        const [key] = Object.entries(chat_completion_sources).find(([, value]) => value === source) ?? [null];
+        if (key && SECRET_KEYS[key]) return SECRET_KEYS[key];
+    }
+
+    return null;
+}
+
+/**
  * Gets the label of a secret by its ID.
  * @param {string} id The ID of the secret to find.
  * @returns {string} The label of the secret with the given ID, or an empty string if not found.
