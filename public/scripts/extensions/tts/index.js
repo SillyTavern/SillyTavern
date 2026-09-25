@@ -50,6 +50,8 @@ let lastMessageHash = null;
 let periodicMessageGenerationTimer = null;
 let lastPositionOfParagraphEnd = -1;
 let currentInitVoiceMapPromise = null;
+let isStreamStoppedForTts = false;
+let stoppedStreamMessageId = null;
 
 const DEFAULT_VOICE_MARKER = '[Default Voice]';
 const DISABLED_VOICE_MARKER = 'disabled';
@@ -256,6 +258,32 @@ function isTtsProcessing() {
  */
 
 /**
+ * Truncates text at the first occurrence of the termination regex marker.
+ * Leaves all text preceding the marker intact and discards everything from the marker onward.
+ * @param {string} text - The input text to truncate.
+ * @returns {{ text: string, matched: boolean }} Truncated text and whether the pattern matched.
+ */
+function applyStopRegex(text) {
+    if (!extension_settings.tts.apply_stop_regex || !extension_settings.tts.stop_regex_pattern || !text) {
+        return { text, matched: false };
+    }
+
+    try {
+        const regex = regexFromString(extension_settings.tts.stop_regex_pattern);
+        if (regex) {
+            const match = regex.exec(text);
+            if (match && match.index !== undefined) {
+                return { text: text.substring(0, match.index).trim(), matched: true };
+            }
+        }
+    } catch (error) {
+        console.warn('TTS stop regex matching error:', error);
+    }
+
+    return { text, matched: false };
+}
+
+/**
  * Clones a message, attaches the given message ID, then splits by paragraphs
  * (if enabled) and adds each part to the TTS job queue.
  * @param {ChatMessage} message - The message object to be processed.
@@ -269,6 +297,13 @@ function processAndQueueTtsMessage(message, messageId = null, { manual = false }
     const clone = structuredClone(message);
     clone.id = messageId ?? null;
     clone.manual = manual ?? false;
+
+    // Truncate before anything else touches it
+    const stopResult = applyStopRegex(clone.mes);
+    clone.mes = stopResult.text;
+    if (!clone.mes) {
+        return;
+    }
 
     if (!extension_settings.tts.narrate_by_paragraphs) {
         ttsJobQueue.push(clone);
@@ -675,6 +710,14 @@ async function processTtsQueue() {
     // Process unsegmented job (first time processing)
     let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes;
 
+    // Apply stop regex truncation before any filters or modifiers can alter or remove markers
+    const stopResult = applyStopRegex(text);
+    text = stopResult.text;
+    if (!text) {
+        completeTtsJob();
+        return;
+    }
+
     // Substitute macros
     text = substituteParams(text);
 
@@ -894,6 +937,10 @@ function loadSettings() {
     $('#tts_skip_codeblocks').prop('checked', extension_settings.tts.skip_codeblocks);
     $('#tts_skip_tags').prop('checked', extension_settings.tts.skip_tags);
     $('#tts_multi_voice_enabled').prop('checked', extension_settings.tts.multi_voice_enabled);
+    $('#tts_apply_stop_regex').prop('checked', extension_settings.tts.apply_stop_regex);
+    $('#tts_stop_regex_pattern').val(extension_settings.tts.stop_regex_pattern);
+    $('#tts_stop_regex_block').toggle(extension_settings.tts.apply_stop_regex);
+    updateStopRegexPatternWarning();
     $('#tts_apply_regex').prop('checked', extension_settings.tts.apply_regex);
     $('#tts_regex_pattern').val(extension_settings.tts.regex_pattern);
     $('#tts_regex_block').toggle(extension_settings.tts.apply_regex);
@@ -913,6 +960,8 @@ const defaultSettings = {
     narrate_user: false,
     playback_rate: 1,
     multi_voice_enabled: false,
+    apply_stop_regex: false,
+    stop_regex_pattern: '',
     apply_regex: false,
     regex_pattern: '',
 };
@@ -1013,6 +1062,36 @@ function onMultiVoiceClick() {
     saveSettingsDebounced();
     // Reinitialize voice map to show/hide voices
     initVoiceMap();
+}
+
+function onApplyStopRegexChange() {
+    extension_settings.tts.apply_stop_regex = !!$('#tts_apply_stop_regex').prop('checked');
+    saveSettingsDebounced();
+    $('#tts_stop_regex_block').toggle(extension_settings.tts.apply_stop_regex);
+    updateStopRegexPatternWarning();
+}
+
+function onStopRegexPatternChange() {
+    extension_settings.tts.stop_regex_pattern = $('#tts_stop_regex_pattern').val().toString();
+    saveSettingsDebounced();
+    updateStopRegexPatternWarning();
+}
+
+function updateStopRegexPatternWarning() {
+    const warning = $('#tts_stop_regex_warning');
+    if (!extension_settings.tts.apply_stop_regex) {
+        warning.hide();
+        return;
+    }
+
+    const pattern = extension_settings.tts.stop_regex_pattern;
+    if (!pattern) {
+        warning.hide();
+        return;
+    }
+
+    const regex = regexFromString(pattern);
+    warning.toggle(!regex);
 }
 
 function onApplyRegexChange() {
@@ -1137,6 +1216,11 @@ async function onMessageEvent(messageId, lastCharIndex) {
         return;
     }
 
+    // If this stream was already terminated by a stop regex marker, ignore all further chunks
+    if (isStreamStoppedForTts && messageId === stoppedStreamMessageId) {
+        return;
+    }
+
     const context = getContext();
 
     // no characters or group selected
@@ -1214,6 +1298,19 @@ async function onMessageEvent(messageId, lastCharIndex) {
     console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
 
     if (extension_settings.tts.periodic_auto_generation && isStreamingEnabled()) {
+        const stopResult = applyStopRegex(message.mes);
+        message.mes = stopResult.text;
+        if (stopResult.matched) {
+            isStreamStoppedForTts = true;
+            stoppedStreamMessageId = messageId;
+            if (periodicMessageGenerationTimer) {
+                clearInterval(periodicMessageGenerationTimer);
+                periodicMessageGenerationTimer = null;
+            }
+        }
+        if (!message.mes) {
+            return;
+        }
         message.id = messageId;
         ttsJobQueue.push(message);
     } else {
@@ -1244,6 +1341,10 @@ async function onGenerationStarted(generationType, _args, isDryRun) {
     if (isDryRun || ['quiet', 'impersonate'].includes(generationType)) {
         return;
     }
+
+    // Reset stream-level stop state for new generation
+    isStreamStoppedForTts = false;
+    stoppedStreamMessageId = null;
 
     // If TTS is disabled, do nothing
     if (!extension_settings.tts.enabled) {
@@ -1280,6 +1381,11 @@ async function onGenerationEnded() {
 }
 
 async function onPeriodicMessageGenerationTick() {
+    // If this stream was already stopped by a stop marker, do nothing
+    if (isStreamStoppedForTts) {
+        return;
+    }
+
     const context = getContext();
 
     // no characters or group selected
@@ -1296,6 +1402,31 @@ async function onPeriodicMessageGenerationTick() {
 
     const lastMessage = structuredClone(context.chat[lastMessageId]);
     const lastMessageText = lastMessage?.mes ?? '';
+
+    // If stop regex matches anywhere in the streamed message, terminate further generation
+    if (extension_settings.tts.apply_stop_regex && extension_settings.tts.stop_regex_pattern) {
+        try {
+            const regex = regexFromString(extension_settings.tts.stop_regex_pattern);
+            if (regex) {
+                const match = regex.exec(lastMessageText);
+                if (match && match.index !== undefined) {
+                    isStreamStoppedForTts = true;
+                    stoppedStreamMessageId = lastMessageId;
+                    if (periodicMessageGenerationTimer) {
+                        clearInterval(periodicMessageGenerationTimer);
+                        periodicMessageGenerationTimer = null;
+                    }
+                    // Send up to the stop marker if there is any new text to narrate
+                    if (match.index > (lastPositionOfParagraphEnd + 1)) {
+                        onMessageEvent(lastMessageId, match.index);
+                    }
+                    return;
+                }
+            }
+        } catch (error) {
+            console.warn('TTS stop regex matching error in periodic tick:', error);
+        }
+    }
 
     // look for double ending lines which should indicate the end of a paragraph
     let newLastPositionOfParagraphEnd = lastMessageText
@@ -1576,6 +1707,8 @@ export async function init() {
         $('#tts_narrate_by_paragraphs').on('click', onNarrateByParagraphsClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_multi_voice_enabled').on('click', onMultiVoiceClick);
+        $('#tts_apply_stop_regex').on('change', onApplyStopRegexChange);
+        $('#tts_stop_regex_pattern').on('input', onStopRegexPatternChange);
         $('#tts_apply_regex').on('change', onApplyRegexChange);
         $('#tts_regex_pattern').on('input', onRegexPatternChange);
 
