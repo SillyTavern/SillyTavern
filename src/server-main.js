@@ -101,6 +101,9 @@ http.globalAgent = new http.Agent({ keepAlive: cliArgs.enableKeepAlive });
 https.globalAgent = new https.Agent({ keepAlive: cliArgs.enableKeepAlive });
 
 const app = express();
+if (getConfigValue('trustProxy', false, 'boolean')) {
+    app.set('trust proxy', true);
+}
 app.use(helmet({
     contentSecurityPolicy: false,
 }));
@@ -153,9 +156,19 @@ if (cliArgs.listen) {
     app.use(accessLoggerMiddleware());
 }
 
+const SESSION_COOKIE_SAME_SITE = {
+    LAX: 'lax',
+    STRICT: 'strict',
+    NONE: 'none',
+};
+const SESSION_COOKIE_SAME_SITE_VALUES = Object.values(SESSION_COOKIE_SAME_SITE);
+const sessionCookieSameSite = getConfigValue('sessionCookie.sameSite', SESSION_COOKIE_SAME_SITE.LAX, SESSION_COOKIE_SAME_SITE_VALUES);
+const sessionCookieSecure = getConfigValue('sessionCookie.secure', sessionCookieSameSite === SESSION_COOKIE_SAME_SITE.NONE, 'boolean');
+
 app.use(cookieSession({
     name: getCookieSessionName(),
-    sameSite: 'lax',
+    sameSite: sessionCookieSameSite,
+    secure: sessionCookieSecure,
     httpOnly: true,
     maxAge: getSessionCookieAge(),
     secret: getCookieSecret(globalThis.DATA_ROOT),
