@@ -409,9 +409,13 @@ export function registerCoreMacros() {
     /** @param {string} listString @return {string[]} */
     function readSingleArgsRandomList(listString) {
         // If it contains double colons, those will have precedence over comma-separated lists.
-        // This can only happen if the macro only had a single colon to introduce the list...
+        // This can happen if the macro only had a single colon to introduce the list...
         // like, {{random:a::b::c}}
         if (listString.includes('::')) {
+            // A leading separator can remain after nested macros resolve their scoped content.
+            if (listString.startsWith('::')) {
+                listString = listString.slice(2);
+            }
             return listString.split('::').map((/** @type {string} */ item) => item.trim());
         }
         // Otherwise, we fall back and split by commas that may be present
