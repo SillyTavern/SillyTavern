@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import express from 'express';
 import { translate as bingTranslate } from 'bing-translate-api';
 import urlJoin from 'url-join';

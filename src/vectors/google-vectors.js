@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { getGoogleApiConfig } from '../endpoints/google.js';
 
 /**

@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import express from 'express';
 import { AIHorde, ModelGenerationInputStableSamplers, ModelInterrogationFormTypes, HordeAsyncRequestStates } from '@zeldafan0225/ai_horde';
 import { getVersion, delay, Cache } from '../util.js';
