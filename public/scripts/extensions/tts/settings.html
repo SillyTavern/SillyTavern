@@ -7,6 +7,18 @@
         <div class="inline-drawer-content">
             <div id="tts_status">
             </div>
+            <label class="checkbox_label" for="tts_apply_stop_regex" title="Stops TTS narration when a matching pattern is encountered.">
+                <input type="checkbox" id="tts_apply_stop_regex">
+                <small data-i18n="Stop narration at regex pattern">Stop narration at regex pattern</small>
+            </label>
+            <div id="tts_stop_regex_block" class="marginTop5" style="display: none;">
+                <div class="range-block-title justifyLeft">
+                    <small data-i18n="Termination Pattern">Termination Pattern (narrates up to match, stops remaining)</small>
+                </div>
+                <input type="text" id="tts_stop_regex_pattern" class="text_pole width100p" placeholder="Example: /###/ or /<stop>/i" />
+                <small id="tts_stop_regex_warning" class="warning" style="display: none;" data-i18n="Invalid regex pattern.">Invalid regex pattern.</small>
+            </div>
+            <hr>
             <span data-i18n="Select TTS Provider">Select TTS Provider</span>
             <br>
             <div class="tts_block">
