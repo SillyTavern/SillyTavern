@@ -417,6 +417,11 @@ export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
+/**
+ * Whether a chat load has emptied the chat and not yet replaced it with the loaded messages.
+ * Saving in that state would overwrite the chat file with a partial chat.
+ */
+export let isChatLoading = false;
 let firstRun = false;
 export let settingsReady = false;
 let currentVersion = '0.0.0';
@@ -1601,7 +1606,10 @@ export async function clearChat({ clearData = false } = {}) {
     await saveItemizedPrompts(getCurrentChatId());
     itemizedPrompts.length = 0;
 
-    if (clearData) chat.length = 0;
+    if (clearData) {
+        chat.length = 0;
+        isChatLoading = true;
+    }
 }
 
 export async function deleteLastMessage() {
@@ -7116,6 +7124,14 @@ export function setExternalAbortController(controller) {
 }
 
 /**
+ * Sets whether a chat load is in progress. See {@link isChatLoading}.
+ * @param {boolean} value
+ */
+export function setChatLoading(value) {
+    isChatLoading = value;
+}
+
+/**
  * Sets a character array index.
  * @param {number|string|undefined} value
  */
@@ -7416,6 +7432,11 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
         return;
     }
 
+    if (isChatLoading) {
+        console.warn('saveChat skipped: the chat is still loading');
+        return;
+    }
+
     characters[this_chid].date_last_chat = Date.now();
 
     const trimmedChat = Array.isArray(chatData)
@@ -7662,6 +7683,7 @@ export async function getChat() {
             chat.splice(0, chat.length);
             chat_metadata = {};
         }
+        isChatLoading = false;
         if (!chat_metadata.integrity) {
             chat_metadata.integrity = uuidv4();
         }
@@ -7676,6 +7698,7 @@ export async function getChat() {
             $('#send_textarea').trigger('click').trigger('focus');
         });
     } catch (error) {
+        isChatLoading = false;
         await getChatResult();
         console.log(error);
     }

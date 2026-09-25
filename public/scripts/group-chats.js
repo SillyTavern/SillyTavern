@@ -68,6 +68,8 @@ import {
     setCharacterSettingsOverrides,
     system_avatar,
     isChatSaving,
+    isChatLoading,
+    setChatLoading,
     setExternalAbortController,
     baseChatReplace,
     createLazyFields,
@@ -282,6 +284,7 @@ export async function getGroupChat(groupId, reload = false) {
 
     if (group && Array.isArray(group.members) && freshChat) {
         chat.splice(0, chat.length);
+        setChatLoading(false);
         chatElement.find('.mes').remove();
         for (let member of group.members) {
             const character = characters.find(x => x.avatar === member || x.name === member);
@@ -310,6 +313,7 @@ export async function getGroupChat(groupId, reload = false) {
     }
 
     updateChatMetadata(metadata, true);
+    setChatLoading(false);
 
     if (reload) {
         select_group_chats(groupId, true);
@@ -624,6 +628,10 @@ async function saveGroupChat(groupId, shouldSaveGroup, force = false) {
     const group = groups.find(x => x.id == groupId);
     if (!group) {
         console.warn('Group not found', groupId);
+        return;
+    }
+    if (isChatLoading) {
+        console.warn('saveGroupChat skipped: the chat is still loading');
         return;
     }
     const chatId = group.chat_id;
