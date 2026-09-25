@@ -37,6 +37,39 @@ export const tokenizers = {
     BEST_MATCH: 99,
 };
 
+export const tokenizer_settings = {
+    COUNTING: 'counting',
+    ENCODING: 'encoding',
+    BOTH: 'both',
+};
+
+const TOKENIZER_SELECTORS = {
+    [tokenizer_settings.COUNTING]: '#counting_tokenizer',
+    [tokenizer_settings.ENCODING]: '#encoding_tokenizer',
+};
+
+const TOKENIZER_OPTIONS = [
+    { tokenizerId: tokenizers.BEST_MATCH, tokenizerName: 'Best match (recommended)' },
+    { tokenizerId: tokenizers.NONE, tokenizerName: 'None / Estimated' },
+    { tokenizerId: tokenizers.GPT2, tokenizerName: 'GPT-2' },
+    // Option #2 was a legacy GPT-2/3 tokenizer setting and is no longer selectable.
+    { tokenizerId: tokenizers.LLAMA, tokenizerName: 'Llama 1/2' },
+    { tokenizerId: tokenizers.LLAMA3, tokenizerName: 'Llama 3' },
+    { tokenizerId: tokenizers.GEMMA, tokenizerName: 'Gemma / Gemini' },
+    { tokenizerId: tokenizers.JAMBA, tokenizerName: 'Jamba' },
+    { tokenizerId: tokenizers.QWEN2, tokenizerName: 'Qwen2' },
+    { tokenizerId: tokenizers.COMMAND_R, tokenizerName: 'Command-R' },
+    { tokenizerId: tokenizers.COMMAND_A, tokenizerName: 'Command-A' },
+    { tokenizerId: tokenizers.NERD, tokenizerName: 'NerdStash (NovelAI Clio)' },
+    { tokenizerId: tokenizers.NERD2, tokenizerName: 'NerdStash v2 (NovelAI Kayra)' },
+    { tokenizerId: tokenizers.MISTRAL, tokenizerName: 'Mistral V1' },
+    { tokenizerId: tokenizers.NEMO, tokenizerName: 'Mistral Nemo' },
+    { tokenizerId: tokenizers.YI, tokenizerName: 'Yi' },
+    { tokenizerId: tokenizers.CLAUDE, tokenizerName: 'Claude 1/2' },
+    { tokenizerId: tokenizers.DEEPSEEK, tokenizerName: 'DeepSeek V3' },
+    { tokenizerId: tokenizers.API_CURRENT, tokenizerName: 'API (WebUI / koboldcpp)' },
+];
+
 // A list of local tokenizers that support encoding and decoding token ids.
 export const ENCODE_TOKENIZERS = [
     tokenizers.LLAMA,
@@ -210,45 +243,116 @@ async function resetTokenCache() {
  * @returns {Tokenizer[]} Tokenizer info.
  */
 export function getAvailableTokenizers() {
-    const tokenizerOptions = $('#tokenizer').find('option').toArray();
-    return tokenizerOptions.map(tokenizerOption => ({
-        tokenizerId: Number(tokenizerOption.value),
-        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === Number(tokenizerOption.value))[0].toLocaleLowerCase(),
-        tokenizerName: tokenizerOption.text,
+    return TOKENIZER_OPTIONS.map(tokenizerOption => ({
+        ...tokenizerOption,
+        tokenizerKey: Object.entries(tokenizers).find(([_, value]) => value === tokenizerOption.tokenizerId)[0].toLocaleLowerCase(),
     }));
+}
+
+/**
+ * Checks if a tokenizer type is selectable in the tokenizer settings UI.
+ * @param {number} tokenizerType Tokenizer type.
+ * @returns {boolean} True if tokenizer is selectable.
+ */
+export function isSelectableTokenizer(tokenizerType) {
+    return TOKENIZER_OPTIONS.some(tokenizerOption => tokenizerOption.tokenizerId === tokenizerType);
+}
+
+export function initTokenizerSelects() {
+    const options = getAvailableTokenizers().map(tokenizer => new Option(tokenizer.tokenizerName, String(tokenizer.tokenizerId)));
+
+    for (const selector of Object.values(TOKENIZER_SELECTORS)) {
+        const select = $(selector);
+        const selected = select.val();
+
+        select.empty().append(options.map(option => option.cloneNode(true)));
+
+        if (selected !== null) {
+            select.val(selected);
+        }
+    }
+}
+
+/**
+ * Gets tokenizer info by tokenizer ID.
+ * @param {number} tokenizerId Tokenizer ID.
+ * @returns {Tokenizer|null} Tokenizer info.
+ */
+function getTokenizerInfo(tokenizerId) {
+    return getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === tokenizerId) ?? null;
+}
+
+/**
+ * Gets the selected tokenizer setting value.
+ * @param {string} target Tokenizer setting target.
+ * @returns {number} Tokenizer type.
+ */
+function getTokenizerSetting(target) {
+    const tokenizerType = target === tokenizer_settings.ENCODING
+        ? power_user.encoding_tokenizer
+        : power_user.counting_tokenizer;
+    return typeof tokenizerType === 'number' ? tokenizerType : tokenizers.BEST_MATCH;
+}
+
+/**
+ * Gets the counting tokenizer setting value.
+ * @returns {number} Tokenizer type.
+ */
+export function getCountingTokenizerType() {
+    return getTokenizerSetting(tokenizer_settings.COUNTING);
+}
+
+/**
+ * Gets the encoding tokenizer setting value.
+ * @returns {number} Tokenizer type.
+ */
+export function getEncodingTokenizerType() {
+    return getTokenizerSetting(tokenizer_settings.ENCODING);
 }
 
 /**
  * Selects tokenizer if not already selected.
  * @param {number} tokenizerId Tokenizer ID.
+ * @param {object} [options] Options.
+ * @param {string} [options.target] Tokenizer setting target.
  */
-export function selectTokenizer(tokenizerId) {
-    if (tokenizerId !== power_user.tokenizer) {
-        const tokenizer = getAvailableTokenizers().find(tokenizer => tokenizer.tokenizerId === tokenizerId);
-        if (!tokenizer) {
-            console.warn('Failed to find tokenizer with id', tokenizerId);
-            return;
-        }
-        $('#tokenizer').val(tokenizer.tokenizerId).trigger('change');
-        toastr.info(`Tokenizer: "${tokenizer.tokenizerName}" selected`);
+export function selectTokenizer(tokenizerId, { target = tokenizer_settings.BOTH } = {}) {
+    const tokenizer = getTokenizerInfo(tokenizerId);
+    if (!tokenizer) {
+        console.warn('Failed to find tokenizer with id', tokenizerId);
+        return;
     }
+
+    const targets = target === tokenizer_settings.BOTH
+        ? [tokenizer_settings.COUNTING, tokenizer_settings.ENCODING]
+        : [target];
+
+    for (const tokenizerTarget of targets) {
+        if (tokenizerId !== getTokenizerSetting(tokenizerTarget)) {
+            $(TOKENIZER_SELECTORS[tokenizerTarget]).val(tokenizer.tokenizerId).trigger('change');
+        }
+    }
+
+    const targetName = target === tokenizer_settings.BOTH ? 'Tokenizer' : `${target} tokenizer`;
+    toastr.info(`${targetName}: "${tokenizer.tokenizerName}" selected`);
 }
 
 /**
  * Gets the friendly name of the current tokenizer.
  * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
+ * @param {object} [options] Options.
+ * @param {string} [options.target] Tokenizer setting target.
  * @returns {Tokenizer} Tokenizer info
  */
-export function getFriendlyTokenizerName(forApi) {
+export function getFriendlyTokenizerName(forApi, { target = tokenizer_settings.COUNTING } = {}) {
     if (!forApi) {
         forApi = main_api;
     }
 
-    const tokenizerOption = $('#tokenizer').find(':selected');
-    let tokenizerId = Number(tokenizerOption.val());
-    let tokenizerName = tokenizerOption.text();
+    let tokenizerId = getTokenizerSetting(target);
+    let tokenizerName = getTokenizerInfo(tokenizerId)?.tokenizerName ?? '';
 
-    if (forApi !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
+    if (tokenizerId === tokenizers.BEST_MATCH) {
         tokenizerId = getTokenizerBestMatch(forApi);
 
         switch (tokenizerId) {
@@ -259,22 +363,32 @@ export function getFriendlyTokenizerName(forApi) {
                 tokenizerName = 'API (Text Completion)';
                 break;
             default:
-                tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+                tokenizerName = getTokenizerInfo(tokenizerId)?.tokenizerName ?? '';
                 break;
         }
     }
 
-    tokenizerName = forApi == 'openai'
+    tokenizerName = forApi == 'openai' && getTokenizerSetting(target) === tokenizers.BEST_MATCH
         ? getTokenizerModel()
         : tokenizerName;
 
-    tokenizerId = forApi == 'openai'
+    tokenizerId = forApi == 'openai' && getTokenizerSetting(target) === tokenizers.BEST_MATCH
         ? tokenizers.OPENAI
         : tokenizerId;
 
     const tokenizerKey = Object.entries(tokenizers).find(([_, value]) => value === tokenizerId)[0].toLocaleLowerCase();
 
     return { tokenizerName, tokenizerKey, tokenizerId };
+}
+
+/**
+ * Resolves a tokenizer setting into an actual tokenizer type.
+ * @param {number} tokenizerType Tokenizer setting value.
+ * @param {string} forApi API to resolve best match for.
+ * @returns {number} Resolved tokenizer type.
+ */
+function resolveTokenizerType(tokenizerType, forApi = main_api) {
+    return tokenizerType === tokenizers.BEST_MATCH ? getTokenizerBestMatch(forApi) : tokenizerType;
 }
 
 /**
@@ -377,6 +491,17 @@ function currentRemoteTokenizerAPI() {
 }
 
 /**
+ * Gets model-specific cache suffix for remote API tokenizers.
+ * @param {number} tokenizerType Tokenizer type.
+ * @returns {string} Cache suffix.
+ */
+function getTokenizerModelHash(tokenizerType) {
+    return tokenizerType === tokenizers.API_TEXTGENERATIONWEBUI
+        ? getStringHash(getTextGenModel() || online_status).toString()
+        : '';
+}
+
+/**
  * Calls the underlying tokenizer model to the token count for a string.
  * @param {number} type Tokenizer type.
  * @param {string} str String to tokenize.
@@ -445,26 +570,23 @@ export async function getTokenCountAsync(str, padding = undefined) {
         return 0;
     }
 
-    let tokenizerType = power_user.tokenizer;
+    const selectedTokenizerType = getCountingTokenizerType();
+    let tokenizerType = selectedTokenizerType;
     let modelHash = '';
 
     if (main_api === 'openai') {
-        if (padding === power_user.token_padding) {
+        if (selectedTokenizerType === tokenizers.BEST_MATCH && padding === power_user.token_padding) {
             // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
-        } else {
+        } else if (selectedTokenizerType === tokenizers.BEST_MATCH) {
             // For extensions and WI
             return counterWrapperOpenAIAsync(str);
         }
     }
 
-    if (tokenizerType === tokenizers.BEST_MATCH) {
-        tokenizerType = getTokenizerBestMatch(main_api);
-    }
+    tokenizerType = resolveTokenizerType(tokenizerType, main_api);
 
-    if (tokenizerType === tokenizers.API_TEXTGENERATIONWEBUI) {
-        modelHash = getStringHash(getTextGenModel() || online_status).toString();
-    }
+    modelHash = getTokenizerModelHash(tokenizerType);
 
     if (padding === undefined) {
         padding = 0;
@@ -501,26 +623,23 @@ export function getTokenCount(str, padding = undefined) {
         return 0;
     }
 
-    let tokenizerType = power_user.tokenizer;
+    const selectedTokenizerType = getCountingTokenizerType();
+    let tokenizerType = selectedTokenizerType;
     let modelHash = '';
 
     if (main_api === 'openai') {
-        if (padding === power_user.token_padding) {
+        if (selectedTokenizerType === tokenizers.BEST_MATCH && padding === power_user.token_padding) {
             // For main "shadow" prompt building
             tokenizerType = tokenizers.NONE;
-        } else {
+        } else if (selectedTokenizerType === tokenizers.BEST_MATCH) {
             // For extensions and WI
             return counterWrapperOpenAI(str);
         }
     }
 
-    if (tokenizerType === tokenizers.BEST_MATCH) {
-        tokenizerType = getTokenizerBestMatch(main_api);
-    }
+    tokenizerType = resolveTokenizerType(tokenizerType, main_api);
 
-    if (tokenizerType === tokenizers.API_TEXTGENERATIONWEBUI) {
-        modelHash = getStringHash(getTextGenModel() || online_status).toString();
-    }
+    modelHash = getTokenizerModelHash(tokenizerType);
 
     if (padding === undefined) {
         padding = 0;
@@ -566,7 +685,45 @@ function counterWrapperOpenAIAsync(text) {
     return countTokensOpenAIAsync(message, true);
 }
 
-export function getTokenizerModel() {
+export function getTokenizerModel({ tokenizerType = tokenizers.BEST_MATCH } = {}) {
+    switch (tokenizerType) {
+        case tokenizers.GPT2:
+            return 'gpt2';
+        case tokenizers.LLAMA:
+            return 'llama';
+        case tokenizers.NERD:
+            return 'nerdstash';
+        case tokenizers.NERD2:
+            return 'nerdstash_v2';
+        case tokenizers.MISTRAL:
+            return 'mistral';
+        case tokenizers.YI:
+            return 'yi';
+        case tokenizers.CLAUDE:
+            return 'claude';
+        case tokenizers.LLAMA3:
+            return 'llama3';
+        case tokenizers.GEMMA:
+            return 'gemma';
+        case tokenizers.JAMBA:
+            return 'jamba';
+        case tokenizers.QWEN2:
+            return 'qwen2';
+        case tokenizers.COMMAND_R:
+            return 'command-r';
+        case tokenizers.COMMAND_A:
+            return 'command-a';
+        case tokenizers.NEMO:
+            return 'nemo';
+        case tokenizers.DEEPSEEK:
+            return 'deepseek';
+        case tokenizers.BEST_MATCH:
+        case tokenizers.OPENAI:
+            break;
+        default:
+            return null;
+    }
+
     // OpenAI models always provide their own tokenizer
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         return oai_settings.openai_model;
@@ -794,28 +951,46 @@ export function getTokenizerModel() {
  * @deprecated Use countTokensOpenAIAsync instead.
  */
 export function countTokensOpenAI(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    const selectedTokenizerType = getCountingTokenizerType();
+    const resolvedTokenizerType = resolveTokenizerType(selectedTokenizerType, 'openai');
+    const countingTokenizerType = resolvedTokenizerType === tokenizers.API_CURRENT
+        ? currentRemoteTokenizerAPI()
+        : resolvedTokenizerType;
+    const model = selectedTokenizerType === tokenizers.BEST_MATCH
+        ? getTokenizerModel()
+        : getTokenizerModel({ tokenizerType: countingTokenizerType });
+    const tokenizerEndpoint = model ? `/api/tokenizers/openai/count?model=${model}` : null;
     const cacheObject = getTokenCacheObject();
+    const modelHash = getTokenizerModelHash(countingTokenizerType);
 
     if (!Array.isArray(messages)) {
         messages = [messages];
     }
 
+    if (!tokenizerEndpoint) {
+        full = true;
+    }
+
     let token_count = 0;
 
     for (const message of messages) {
-        const model = getTokenizerModel();
+        const cacheModel = model ?? `${countingTokenizerType}${modelHash}`;
 
         if (model === 'claude') {
             full = true;
         }
 
         const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
+        const cacheKey = `${cacheModel}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
+        } else if (!tokenizerEndpoint) {
+            const jsonBody = Object.values(message).join('\n\n');
+            const count = callTokenizer(countingTokenizerType, jsonBody);
+            token_count += count;
+            cacheObject[cacheKey] = count;
         } else {
             jQuery.ajax({
                 async: false,
@@ -844,28 +1019,46 @@ export function countTokensOpenAI(messages, full = false) {
  * @returns {Promise<number>} Token count.
  */
 export async function countTokensOpenAIAsync(messages, full = false) {
-    const tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    const selectedTokenizerType = getCountingTokenizerType();
+    const resolvedTokenizerType = resolveTokenizerType(selectedTokenizerType, 'openai');
+    const countingTokenizerType = resolvedTokenizerType === tokenizers.API_CURRENT
+        ? currentRemoteTokenizerAPI()
+        : resolvedTokenizerType;
+    const model = selectedTokenizerType === tokenizers.BEST_MATCH
+        ? getTokenizerModel()
+        : getTokenizerModel({ tokenizerType: countingTokenizerType });
+    const tokenizerEndpoint = model ? `/api/tokenizers/openai/count?model=${model}` : null;
     const cacheObject = getTokenCacheObject();
+    const modelHash = getTokenizerModelHash(countingTokenizerType);
 
     if (!Array.isArray(messages)) {
         messages = [messages];
     }
 
+    if (!tokenizerEndpoint) {
+        full = true;
+    }
+
     let token_count = 0;
 
     for (const message of messages) {
-        const model = getTokenizerModel();
+        const cacheModel = model ?? `${countingTokenizerType}${modelHash}`;
 
         if (model === 'claude') {
             full = true;
         }
 
         const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
+        const cacheKey = `${cacheModel}-${hash}`;
         const cachedCount = cacheObject[cacheKey];
 
         if (typeof cachedCount === 'number') {
             token_count += cachedCount;
+        } else if (!tokenizerEndpoint) {
+            const jsonBody = Object.values(message).join('\n\n');
+            const count = await callTokenizerAsync(countingTokenizerType, jsonBody);
+            token_count += count;
+            cacheObject[cacheKey] = count;
         } else {
             const data = await jQuery.ajax({
                 async: true,
@@ -1030,7 +1223,7 @@ function apiFailureTokenCount(str) {
     }
 
     // Only try again if we guarantee not to be looped by the same error
-    if (shouldTryAgain && power_user.tokenizer === tokenizers.BEST_MATCH) {
+    if (shouldTryAgain && getCountingTokenizerType() === tokenizers.BEST_MATCH) {
         return getTokenCount(str);
     }
 
@@ -1211,6 +1404,8 @@ export function decodeTextTokens(tokenizerType, ids) {
 }
 
 export async function initTokenizers() {
+    initTokenizerSelects();
+
     TEXTGEN_TOKENIZERS.push(
         textgen_types.OOBA,
         textgen_types.TABBY,
@@ -1228,4 +1423,3 @@ export async function initTokenizers() {
     await loadTokenCache();
     registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
 }
-
