@@ -44,6 +44,7 @@ export const SECRET_KEYS = {
     HUGGINGFACE: 'api_key_huggingface',
     STABILITY: 'api_key_stability',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
+    GANDR: 'api_key_gandr',
     TAVILY: 'api_key_tavily',
     CHUTES: 'api_key_chutes',
     ELECTRONHUB: 'api_key_electronhub',
