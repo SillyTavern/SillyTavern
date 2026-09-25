@@ -143,8 +143,8 @@ router.post('/install', async (request, response) => {
             if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
                 throw new Error('Manifest is not a valid JSON object.');
             }
-            const { version, author, display_name } = manifest;
-            return response.send({ version, author, display_name, extensionPath, folderName });
+            const { version, author, display_name, name } = manifest;
+            return response.send({ version, author, display_name: display_name || name, extensionPath, folderName });
         } catch (manifestError) {
             await fs.promises.rm(extensionPath, { recursive: true, force: true });
             throw manifestError;
