@@ -24,6 +24,7 @@ export const SECRET_KEYS = {
     AI21: 'api_key_ai21',
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
+    TRANSLATE_OPENAI_COMPATIBLE: 'translate_openai_compatible',
     MAKERSUITE: 'api_key_makersuite',
     VERTEXAI: 'api_key_vertexai',
     SERPAPI: 'api_key_serpapi',
@@ -103,6 +104,7 @@ const EXPORTABLE_KEYS = [
     SECRET_KEYS.LINGVA_URL,
     SECRET_KEYS.ONERING_URL,
     SECRET_KEYS.DEEPLX_URL,
+    SECRET_KEYS.TRANSLATE_OPENAI_COMPATIBLE_URL,
 ];
 
 export const allowKeysExposure = !!getConfigValue('allowKeysExposure', false, 'boolean');
