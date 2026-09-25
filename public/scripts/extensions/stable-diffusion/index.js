@@ -88,6 +88,7 @@ const sources = {
     chutes: 'chutes',
     electronhub: 'electronhub',
     nanogpt: 'nanogpt',
+    minimax: 'minimax',
     bfl: 'bfl',
     falai: 'falai',
     xai: 'xai',
@@ -356,6 +357,10 @@ const defaultSettings = {
     // BFL API settings
     bfl_upsampling: false,
 
+    // MiniMax API settings
+    minimax_optimizer: false,
+    minimax_style_type: '漫画',
+
     // Google settings
     google_api: 'makersuite',
     google_enhance: true,
@@ -459,6 +464,17 @@ function toggleSourceControls() {
     });
 }
 
+function toggleMinimaxModelControls() {
+    const currentModel = extension_settings.sd.model || '';
+    $('[data-minimax-model]').each(function () {
+        const match = $(this).data('minimax-model').split(',');
+        $(this).toggle(match.includes(currentModel));
+    });
+    const isMinimax = extension_settings.sd.source === sources.minimax;
+    $('#sd_negative_prompt').closest('label, .flex-container, .marginTopBot5, div').first().toggle(!isMinimax);
+    $('#sd_character_negative_prompt').closest('label, .flex-container, .marginTopBot5, div').first().toggle(!isMinimax);
+}
+
 async function loadSettings() {
     // Initialize settings
     if (Object.keys(extension_settings.sd).length === 0) {
@@ -557,6 +573,8 @@ async function loadSettings() {
     $('#sd_huggingface_model_id').val(extension_settings.sd.huggingface_model_id);
     $('#sd_function_tool').prop('checked', extension_settings.sd.function_tool);
     $('#sd_bfl_upsampling').prop('checked', extension_settings.sd.bfl_upsampling);
+    $('#sd_minimax_optimizer').prop('checked', !!extension_settings.sd.minimax_optimizer);
+    $('#sd_minimax_style_type').val(extension_settings.sd.minimax_style_type);
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
     $('#sd_google_duration').val(extension_settings.sd.google_duration);
@@ -1139,6 +1157,7 @@ async function onSourceChange() {
     extension_settings.sd.scheduler = null;
     extension_settings.sd.vae = null;
     toggleSourceControls();
+    toggleMinimaxModelControls();
     saveSettingsDebounced();
     await loadSettingOptions();
 }
@@ -1488,6 +1507,7 @@ async function onModelChange() {
     const selectedModel = $('#sd_model').find(':selected');
     extension_settings.sd.model = selectedModel.val();
     saveSettingsDebounced();
+    toggleMinimaxModelControls();
 
     if (extension_settings.sd.model && extension_settings.sd.source === sources.electronhub) {
         const cachedModel = selectedModel.data('model');
@@ -1746,6 +1766,9 @@ async function loadSamplers() {
         case sources.workersai:
             samplers = ['N/A'];
             break;
+        case sources.minimax:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1999,6 +2022,9 @@ async function loadModels() {
         case sources.workersai:
             models = await loadWorkersAIImageModels();
             break;
+        case sources.minimax:
+            models = await loadMinimaxModels();
+            break;
     }
 
     if (extension_settings.sd.source === sources.electronhub) {
@@ -2101,6 +2127,13 @@ async function loadBflModels() {
         { value: 'flux-pro-1.1', text: 'flux-pro-1.1' },
         { value: 'flux-pro', text: 'flux-pro' },
         { value: 'flux-dev', text: 'flux-dev' },
+    ];
+}
+
+async function loadMinimaxModels() {
+    return [
+        { value: 'image-01', text: 'image-01' },
+        { value: 'image-01-live', text: 'image-01-live' },
     ];
 }
 
@@ -3400,6 +3433,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.bfl:
                 result = await generateBflImage(prefixedPrompt, signal);
                 break;
+            case sources.minimax:
+                result = await generateMinimaxImage(prefixedPrompt, signal);
+                break;
             case sources.falai:
                 result = await generateFalaiImage(prefixedPrompt, negativePrompt, signal);
                 break;
@@ -3562,7 +3598,7 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'|'zai'|'xai'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'|'xai'|'minimax'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
@@ -3609,6 +3645,17 @@ function getClosestAspectRatio(width, height, source) {
                     '20:9': 20 / 9,
                     '1:2': 1 / 2,
                     '2:1': 2 / 1,
+                };
+            case 'minimax':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '4:3': 4 / 3,
+                    '3:2': 3 / 2,
+                    '2:3': 2 / 3,
+                    '3:4': 3 / 4,
+                    '9:16': 9 / 16,
+                    '21:9': 21 / 9,
                 };
             default:
                 console.warn(`Unknown source "${source}" for aspect ratio calculation.`);
@@ -4489,6 +4536,44 @@ async function generateBflImage(prompt, signal) {
 }
 
 /**
+ * Generates an image using the MiniMax API.
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {AbortSignal} signal - An AbortSignal object that can be used to cancel the request.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves with the generated image.
+ */
+async function generateMinimaxImage(prompt, signal) {
+    const body = {
+        prompt: prompt,
+        model: extension_settings.sd.model,
+        aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'minimax'),
+        prompt_optimizer: !!extension_settings.sd.minimax_optimizer,
+    };
+
+    if (Number.isInteger(extension_settings.sd.seed) && extension_settings.sd.seed >= 0) {
+        body.seed = extension_settings.sd.seed;
+    }
+
+    if (extension_settings.sd.model === 'image-01-live') {
+        body.style_type = extension_settings.sd.minimax_style_type;
+    }
+
+    const result = await fetch('/api/sd/minimax/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal: signal,
+        body: JSON.stringify(body),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: data.format || 'jpeg', data: data.image };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image using the xAI API.
  * @param {string} prompt The main instruction used to guide the image generation.
  * @param {string} _negativePrompt Negative prompt is not used in this API
@@ -5119,6 +5204,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NANOGPT];
         case sources.bfl:
             return secret_state[SECRET_KEYS.BFL];
+        case sources.minimax:
+            return secret_state[SECRET_KEYS.MINIMAX];
         case sources.falai:
             return secret_state[SECRET_KEYS.FALAI];
         case sources.xai:
@@ -5880,6 +5967,16 @@ export async function init() {
     $('#sd_huggingface_model_id').on('input', onHFModelInput);
     $('#sd_function_tool').on('input', onFunctionToolInput);
     $('#sd_bfl_upsampling').on('input', onBflUpsamplingInput);
+
+    $('#sd_minimax_optimizer').on('input', function () {
+        extension_settings.sd.minimax_optimizer = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#sd_minimax_style_type').on('change', function () {
+        extension_settings.sd.minimax_style_type = String($(this).val() || '漫画');
+        saveSettingsDebounced();
+    });
 
     $('#sd_google_api').on('input', function () {
         extension_settings.sd.google_api = String($(this).val());
