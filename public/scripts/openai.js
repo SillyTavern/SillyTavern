@@ -2122,6 +2122,23 @@ function saveModelList(data) {
         $('#model_mistralai_select').val(oai_settings.mistralai_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
+        const modelSelect = $('#model_cohere_select');
+        modelSelect.empty();
+
+        model_list.forEach((model) => {
+            modelSelect.append(new Option(model.id, model.id));
+        });
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.cohere_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.cohere_model)) {
+            const defaultModel = model_list.find(model => model.id === default_settings.cohere_model);
+            oai_settings.cohere_model = defaultModel?.id || model_list[0].id;
+        }
+
+        modelSelect.val(oai_settings.cohere_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.ELECTRONHUB) {
         model_list = model_list.filter(model => model?.endpoints?.includes('/v1/chat/completions'));
         model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.ELECTRONHUB);
