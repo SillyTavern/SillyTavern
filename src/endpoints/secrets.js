@@ -62,6 +62,7 @@ export const SECRET_KEYS = {
     MINIMAX_GROUP_ID: 'minimax_group_id',
     MOONSHOT: 'api_key_moonshot',
     COMETAPI: 'api_key_cometapi',
+    HUBRIS: 'api_key_hubris',
     AZURE_OPENAI: 'api_key_azure_openai',
     ZAI: 'api_key_zai',
     SILICONFLOW: 'api_key_siliconflow',
