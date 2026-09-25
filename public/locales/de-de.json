@@ -1454,5 +1454,6 @@
     "Deleting chat…": "Chat wird gelöscht…",
     "Loading chat…": "Chat wird geladen…",
     "Bulk Delete": "Massenlöschung",
-    "Deleting ${0} character(s)…": "${0} Charakter(e) werden gelöscht…"
+    "Deleting ${0} character(s)…": "${0} Charakter(e) werden gelöscht…",
+    "Select tag to merge into": "Tag zum Zusammenführen auswählen"
 }
