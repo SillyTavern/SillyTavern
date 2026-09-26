@@ -4374,7 +4374,7 @@ export async function deleteWorldInfo(worldInfoName) {
     if ($('#character_world').val() === worldInfoName) {
         $('#character_world').val('').trigger('change');
         setWorldInfoButtonClass(undefined, false);
-        if (menu_type != 'create') {
+        if (menu_type != 'create' && this_chid !== undefined) {
             saveCharacterDebounced();
         }
     }
