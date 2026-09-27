@@ -3476,8 +3476,8 @@ export function getCharacterCardFieldsLazy({ chid = undefined } = {}) {
 export function getCharacterCardFields({ chid = undefined } = {}) {
     const lazy = getCharacterCardFieldsLazy({ chid });
 
-    // Resolve all lazy fields into a plain object
-    return {
+    // Resolve all non-greeting fields eagerly, as before.
+    const fields = /** @type {CharacterCardFields} */ ({
         system: lazy.system,
         mesExamples: lazy.mesExamples,
         description: lazy.description,
@@ -3488,9 +3488,21 @@ export function getCharacterCardFields({ chid = undefined } = {}) {
         version: lazy.version,
         charDepthPrompt: lazy.charDepthPrompt,
         creatorNotes: lazy.creatorNotes,
-        firstMessage: lazy.firstMessage,
-        alternateGreetings: lazy.alternateGreetings,
-    };
+    });
+
+    // Keep the greetings lazy. Resolving them runs macro substitution, and macros
+    // like {{setvar}} write chat variables. Callers that only need the prompt fields
+    // would otherwise overwrite variables from greetings they never display, and the
+    // memoized value would hide that from whoever reads the greeting later.
+    for (const key of ['firstMessage', 'alternateGreetings']) {
+        Object.defineProperty(fields, key, {
+            get: () => lazy[key],
+            enumerable: true,
+            configurable: true,
+        });
+    }
+
+    return fields;
 }
 
 /**
