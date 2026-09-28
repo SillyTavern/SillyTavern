@@ -1455,5 +1455,15 @@
     "Deleting ${0} character(s)…": "A eliminar ${0} personagem(ns)…",
     "Service Tier": "Nível de serviço",
     "Flex (cheap, slower)": "Flex (barato, mais lento)",
-    "Priority (fast, expensive)": "Priority (rápido, caro)"
+    "Priority (fast, expensive)": "Priority (rápido, caro)",
+    "${0} — currently unavailable": "${0} — indisponível no momento",
+    "${0} — supported by fallback providers only": "${0} — suportado apenas por provedores de fallback",
+    "${0} — supported by some selected providers": "${0} — suportado por alguns provedores selecionados",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} não está disponível para os provedores e o modelo atuais. As solicitações são atendidas com tarifas padrão.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Nenhum dos provedores selecionados oferece ${0}. Como os fallbacks são permitidos, outro provedor pode atender à solicitação.",
+    "${0} is only offered by: ${1}.": "${0} é oferecido apenas por: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (preço base)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Estimativa com base no preço base do modelo. As tarifas de provedores e de níveis de serviço não estão incluídas.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "O nível de serviço do OpenRouter selecionado, ${0}, não está disponível para os provedores e o modelo atuais. As solicitações são atendidas com tarifas padrão. Você pode alterar o nível de serviço no menu Conexões da API."
 }

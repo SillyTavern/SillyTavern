@@ -7,6 +7,42 @@ import { OPENROUTER_HEADERS } from '../constants.js';
 export const router = express.Router();
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 
+/**
+ * Maps an OpenRouter endpoint tag to the service tier that endpoint serves.
+ * Tier endpoints use a suffix, e.g. `google-vertex/global/flex` or `fireworks/fast`.
+ * `fast` is OpenRouter's alias for the priority tier.
+ * @param {string} [tag] Endpoint tag
+ * @returns {'flex' | 'priority' | 'standard'} Service tier
+ */
+export function getOpenRouterEndpointTier(tag) {
+    if (tag?.endsWith('/flex')) {
+        return 'flex';
+    }
+
+    if (tag?.endsWith('/priority') || tag?.endsWith('/fast')) {
+        return 'priority';
+    }
+
+    return 'standard';
+}
+
+/**
+ * Converts the raw OpenRouter endpoints response into the provider and service tier data the UI
+ * needs to work out which tiers a model can actually serve.
+ * @param {any[]} endpoints Endpoints as returned by the OpenRouter API
+ * @returns {{ providers: string[], endpoints: { provider: string, tier: string, online: boolean }[] }} Client payload
+ */
+export function buildOpenRouterProviderPayload(endpoints) {
+    return {
+        providers: endpoints.map(e => e.provider_name),
+        endpoints: endpoints.map(e => ({
+            provider: e.provider_name,
+            tier: getOpenRouterEndpointTier(e.tag),
+            online: e.status === 0,
+        })),
+    };
+}
+
 router.post('/models/providers', async (req, res) => {
     try {
         const { model } = req.body;
@@ -18,21 +54,14 @@ router.post('/models/providers', async (req, res) => {
         });
 
         if (!response.ok) {
-            return res.json([]);
+            return res.json({ providers: [], endpoints: [] });
         }
 
         /** @type {any} */
         const data = await response.json();
         const endpoints = data?.data?.endpoints || [];
-        const providerNames = endpoints.map(e => e.provider_name);
 
-        const getTier = (tag) => tag?.endsWith('/flex') ? 'flex'
-            : tag?.endsWith('/priority') || tag?.endsWith('/fast') ? 'priority'
-                : 'standard';
-
-        const tiers = [...new Set(endpoints.filter(e => e.status === 0).map(e => getTier(e.tag)))];
-
-        return res.json({ providers: providerNames, tiers });
+        return res.json(buildOpenRouterProviderPayload(endpoints));
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);

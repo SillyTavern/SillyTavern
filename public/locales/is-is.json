@@ -1455,5 +1455,15 @@
     "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…",
     "Service Tier": "Þjónustustig",
     "Flex (cheap, slower)": "Flex (ódýr, hægari)",
-    "Priority (fast, expensive)": "Priority (hratt, dýrt)"
+    "Priority (fast, expensive)": "Priority (hratt, dýrt)",
+    "${0} — currently unavailable": "${0} — ekki í boði eins og er",
+    "${0} — supported by fallback providers only": "${0} — aðeins stutt af varaveitendum",
+    "${0} — supported by some selected providers": "${0} — stutt af sumum völdum veitendum",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} er ekki í boði fyrir núverandi veitendur og módel. Beiðnir eru afgreiddar á stöðluðu verði.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Enginn hinna völdu veitenda býður ${0}. Þar sem varaveitendur eru leyfðir getur annar veitandi afgreitt beiðnina.",
+    "${0} is only offered by: ${1}.": "${0} er aðeins í boði hjá: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (grunnverð)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Áætlað út frá grunnverði módelsins. Verð veitenda og þjónustustiga er ekki innifalið.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Valið OpenRouter-þjónustustig, ${0}, er ekki í boði fyrir núverandi veitendur og módel. Beiðnir eru afgreiddar á stöðluðu verði. Þú getur breytt þjónustustiginu í valmyndinni Tengingar við API."
 }

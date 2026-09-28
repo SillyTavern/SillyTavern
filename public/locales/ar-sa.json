@@ -1457,5 +1457,15 @@
     "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…",
     "Service Tier": "مستوى الخدمة",
     "Flex (cheap, slower)": "Flex (رخيص، أبطأ)",
-    "Priority (fast, expensive)": "Priority (سريع، مكلف)"
+    "Priority (fast, expensive)": "Priority (سريع، مكلف)",
+    "${0} — currently unavailable": "${0} — غير متاح حاليًا",
+    "${0} — supported by fallback providers only": "${0} — مدعوم من مزودي الاحتياط فقط",
+    "${0} — supported by some selected providers": "${0} — مدعوم من بعض المزودين المحددين",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} غير متاح للمزودين والنموذج الحاليين. تتم خدمة الطلبات بالأسعار القياسية.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "لا يقدم أي من المزودين المحددين ${0}. ولأن مزودي الاحتياط مسموح بهم، فقد يتولى مزود آخر خدمة الطلب.",
+    "${0} is only offered by: ${1}.": "${0} متاح فقط من: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (السعر الأساسي)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "تقدير استنادًا إلى السعر الأساسي للنموذج. لا تتضمن أسعار المزودين وأسعار مستويات الخدمة.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "مستوى الخدمة المحدد في OpenRouter، ${0}، غير متاح للمزودين والنموذج الحاليين. تتم خدمة الطلبات بالأسعار القياسية. يمكنك تغيير مستوى الخدمة من قائمة اتصالات واجهة برمجة التطبيقات."
 }

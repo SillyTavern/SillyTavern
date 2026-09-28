@@ -1455,5 +1455,15 @@
     "Deleting ${0} character(s)…": "Đang xóa ${0} nhân vật…",
     "Service Tier": "Cấp độ dịch vụ",
     "Flex (cheap, slower)": "Flex (rẻ, chậm hơn)",
-    "Priority (fast, expensive)": "Priority (nhanh, đắt)"
+    "Priority (fast, expensive)": "Priority (nhanh, đắt)",
+    "${0} — currently unavailable": "${0} — hiện không khả dụng",
+    "${0} — supported by fallback providers only": "${0} — chỉ được hỗ trợ bởi nhà cung cấp dự phòng",
+    "${0} — supported by some selected providers": "${0} — chỉ được hỗ trợ bởi một số nhà cung cấp đã chọn",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} không khả dụng với nhà cung cấp và model hiện tại. Yêu cầu được xử lý với mức giá tiêu chuẩn.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Không có nhà cung cấp nào được chọn cung cấp ${0}. Vì nhà cung cấp dự phòng được cho phép, một nhà cung cấp khác có thể xử lý yêu cầu.",
+    "${0} is only offered by: ${1}.": "${0} chỉ được cung cấp bởi: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (giá cơ bản)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Ước tính dựa trên giá cơ bản của model. Không bao gồm mức giá của nhà cung cấp và cấp độ dịch vụ.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Cấp độ dịch vụ OpenRouter đã chọn, ${0}, không khả dụng với nhà cung cấp và model hiện tại. Yêu cầu được xử lý với mức giá tiêu chuẩn. Bạn có thể thay đổi cấp độ dịch vụ trong menu Kết nối API."
 }

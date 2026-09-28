@@ -1453,5 +1453,15 @@
     "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…",
     "Service Tier": "Serviceniveau",
     "Flex (cheap, slower)": "Flex (goedkoop, langzamer)",
-    "Priority (fast, expensive)": "Priority (snel, duur)"
+    "Priority (fast, expensive)": "Priority (snel, duur)",
+    "${0} — currently unavailable": "${0} — momenteel niet beschikbaar",
+    "${0} — supported by fallback providers only": "${0} — alleen ondersteund door fallbackaanbieders",
+    "${0} — supported by some selected providers": "${0} — ondersteund door sommige geselecteerde aanbieders",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} is niet beschikbaar voor de huidige aanbieders en het huidige model. Verzoeken worden tegen standaardtarieven verwerkt.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Geen van de geselecteerde aanbieders biedt ${0} aan. Omdat fallbacks zijn toegestaan, kan een andere aanbieder het verzoek verwerken.",
+    "${0} is only offered by: ${1}.": "${0} wordt alleen aangeboden door: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (basisprijs)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Schatting op basis van de basisprijs van het model. Tarieven van aanbieders en serviceniveaus zijn niet inbegrepen.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Het geselecteerde OpenRouter-serviceniveau, ${0}, is niet beschikbaar voor de huidige aanbieders en het huidige model. Verzoeken worden tegen standaardtarieven verwerkt. U kunt het serviceniveau wijzigen in het menu API-verbindingen."
 }

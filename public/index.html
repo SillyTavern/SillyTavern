@@ -3261,10 +3261,17 @@
                                 </select>
                             </div>
                             <div>
-                                <h4 data-i18n="Service Tier">Service Tier</h4>
+                                <h4>
+                                    <!-- The label has to be its own span: data-i18n on the heading would replace its text content, icon included. -->
+                                    <span data-i18n="Service Tier">Service Tier</span>
+                                    <i id="openrouter_service_tier_warning" class="fa-solid fa-circle-exclamation displayNone"></i>
+                                </h4>
                                 <select id="openrouter_service_tier" class="text_pole">
-                                    <option value="">Default</option>
+                                    <option value="" data-i18n="Default">Default</option>
+                                    <option value="flex" data-i18n="Flex (cheap, slower)">Flex (cheap, slower)</option>
+                                    <option value="priority" data-i18n="Priority (fast, expensive)">Priority (fast, expensive)</option>
                                 </select>
+                                <small id="openrouter_service_tier_note" class="displayNone"></small>
                             </div>
                         </form>
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">

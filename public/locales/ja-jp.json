@@ -1462,5 +1462,15 @@
     "Deleting ${0} character(s)…": "${0}人のキャラクターを削除中…",
     "Service Tier": "サービスティア",
     "Flex (cheap, slower)": "Flex（安い、遅い）",
-    "Priority (fast, expensive)": "Priority（速い、高い）"
+    "Priority (fast, expensive)": "Priority（速い、高い）",
+    "${0} — currently unavailable": "${0}：現在利用できません",
+    "${0} — supported by fallback providers only": "${0}：フォールバックプロバイダーのみが対応",
+    "${0} — supported by some selected providers": "${0}：一部の選択したプロバイダーのみが対応",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} は現在のプロバイダーとモデルでは利用できません。リクエストは標準料金で処理されます。",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "選択したプロバイダーのいずれも ${0} を提供していません。フォールバックが許可されているため、別のプロバイダーがリクエストを処理する場合があります。",
+    "${0} is only offered by: ${1}.": "${0} を提供しているのは ${1} のみです。",
+    "${0} (${1})": "${0}（${1}）",
+    "${0} (base price)": "${0}（基本価格）",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "モデルの基本価格に基づく概算です。プロバイダーおよびサービスティアの料金は含まれていません。",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "選択した OpenRouter のサービスティア ${0} は現在のプロバイダーとモデルでは利用できません。リクエストは標準料金で処理されます。サービスティアはAPI接続メニューで変更できます。"
 }
