@@ -6291,6 +6291,7 @@ export function isImageInliningSupported() {
         'kimi-latest',
         // DeepSeek
         'deepseek-v4-flash-vision-exp',
+        'deepseek-flash',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
