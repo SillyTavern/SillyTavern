@@ -2697,7 +2697,10 @@ export async function createGenerationParameters(settings, model, type, messages
 
     // DeepSeek only accepts image blocks in user messages. Media can also be
     // attached to system and assistant messages by the shared inlining path.
-    const isDeepSeekVisionModel = typeof model === 'string' && model.toLowerCase().includes('deepseek-v4-flash-vision-exp');
+    // Matches the native API ids as well as vendor-prefixed ones (e.g. OpenRouter).
+    const deepseekVisionModels = ['deepseek-v4-flash-vision-exp', 'deepseek-flash', 'deepseek-v4.1-flash'];
+    const lowerModel = typeof model === 'string' ? model.toLowerCase() : '';
+    const isDeepSeekVisionModel = deepseekVisionModels.some(visionModel => lowerModel.includes(visionModel));
     if (isDeepSeekVisionModel) {
         messages = messages.flatMap((message) => {
             if (!['system', 'assistant'].includes(message.role) || !Array.isArray(message.content)) {
