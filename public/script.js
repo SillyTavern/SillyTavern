@@ -184,6 +184,9 @@ import {
     clamp,
     shakeElement,
     createTimeout,
+    extractDataFromPng,
+    getFileBuffer,
+    parseJsonFile,
 } from './scripts/utils.js';
 import { debounce_timeout, GENERATION_TYPE_TRIGGERS, IGNORE_SYMBOL, inject_ids, MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, OVERSWIPE_BEHAVIOR, SCROLL_BEHAVIOR, SWIPE_DIRECTION, SWIPE_SOURCE, SWIPE_STATE } from './scripts/constants.js';
 
@@ -12553,9 +12556,46 @@ jQuery(async function () {
         }
     });
 
+    /**
+     * Extracts the character name from a dropped file by reading its embedded data.
+     * @param {File} file Dropped file
+     * @returns {Promise<string|null>} Character name, or null if not extractable
+     */
+    async function getCharacterNameFromFile(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        try {
+            if (ext === 'png') {
+                const buffer = new Uint8Array(await getFileBuffer(file));
+                const data = extractDataFromPng(buffer);
+                if (data?.name) return data.name;
+            } else if (ext === 'json') {
+                const data = await parseJsonFile(file);
+                if (data?.name) return data.name;
+            }
+        } catch {
+            // Parsing failed; fall through to filename-based comparison
+        }
+        // Fallback: compare by filename base (e.g. "CharacterName.png" vs "CharacterName")
+        return file.name.replace(/\.[^/.]+$/, '') || null;
+    }
+
     charDragDropHandler = new DragAndDropHandler('body', async (files, event) => {
         if (!files.length) {
             await importFromURL(event.originalEvent.dataTransfer.items, files);
+        }
+        // Filter out files that match the currently loaded character
+        if (this_chid !== undefined && characters[this_chid]) {
+            const currentChar = characters[this_chid];
+            const filteredFiles = [];
+            for (const file of files) {
+                const charName = await getCharacterNameFromFile(file);
+                if (charName && equalsIgnoreCaseAndAccents(charName, currentChar.name)) {
+                    toastr.info(t`"${currentChar.name}" is already loaded — skipped re-import.`);
+                    continue;
+                }
+                filteredFiles.push(file);
+            }
+            files = filteredFiles;
         }
         await processDroppedFiles(files);
     }, { noAnimation: true });
