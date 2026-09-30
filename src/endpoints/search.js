@@ -265,6 +265,53 @@ router.post('/tavily', async (request, response) => {
     }
 });
 
+router.post('/parallel', async (request, response) => {
+    try {
+        const { query, max_chars_total = 2000 } = request.body;
+        if (typeof query !== 'string' || !query.trim() || query.length > 2000
+            || !Number.isInteger(max_chars_total) || max_chars_total < 1 || max_chars_total > 20000) {
+            return response.status(400).json({ error: 'Invalid Parallel search query or excerpt budget.' });
+        }
+
+        const key = readSecret(request.user.directories, SECRET_KEYS.PARALLEL);
+        if (!key) {
+            return response.status(400).json({ error: 'No Parallel API key found.' });
+        }
+
+        const result = await fetch('https://api.parallel.ai/v1/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': key,
+            },
+            body: JSON.stringify({
+                search_queries: [query.trim()],
+                mode: 'fast',
+                max_chars_total,
+                advanced_settings: { max_results: 10 },
+            }),
+            signal: AbortSignal.timeout(15000),
+        });
+
+        if (!result.ok) {
+            console.warn('Parallel search request failed', result.status);
+            const status = result.status >= 400 && result.status < 600 ? result.status : 502;
+            return response.status(status).json({ error: `Parallel search failed (HTTP ${status}).` });
+        }
+
+        const data = await result.json();
+        if (!Array.isArray(data?.results)) {
+            return response.status(502).json({ error: 'Invalid Parallel search response.' });
+        }
+        return response.json(data);
+    } catch (error) {
+        const timedOut = error.name === 'AbortError' || error.name === 'TimeoutError';
+        return response.status(timedOut ? 504 : 502).json({
+            error: timedOut ? 'Parallel search timed out.' : 'Parallel search request failed.',
+        });
+    }
+});
+
 router.post('/koboldcpp', async (request, response) => {
     try {
         const { query, url } = request.body;

@@ -45,6 +45,7 @@ export const SECRET_KEYS = {
     STABILITY: 'api_key_stability',
     CUSTOM_OPENAI_TTS: 'api_key_custom_openai_tts',
     TAVILY: 'api_key_tavily',
+    PARALLEL: 'api_key_parallel',
     CHUTES: 'api_key_chutes',
     ELECTRONHUB: 'api_key_electronhub',
     NANOGPT: 'api_key_nanogpt',
