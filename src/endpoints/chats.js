@@ -360,7 +360,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
 
     // If the chat has no integrity metadata, assume it's intact (legacy chats created before integrity checks existed)
     if (!chatIntegrity) {
-        console.debug(`File "${filePath}" does not have integrity metadata matching "${integritySlug}". The integrity validation has been skipped.`);
+        console.debug(`File "${filePath}" does not have integrity metadata. The integrity validation has been skipped.`);
         return true;
     }
 
@@ -524,7 +524,7 @@ class IntegrityMismatchError extends Error {
  * Tries to save the chat data to a file, performing an integrity check if required.
  * @param {Array} chatData The chat array to save.
  * @param {string} filePath Target file path for the data.
- * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
+ * @param {boolean} skipIntegrityCheck Whether to skip the integrity check.
  * @param {string} handle The users handle, passed to getBackupFunction.
  * @param {string} cardName Passed to backupChat.
  * @param {string} backupDirectory Passed to backupChat.
@@ -535,8 +535,8 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
-    if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
+    if (doIntegrityCheck && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
+        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The incoming integrity slug was "${chatIntegritySlug ?? 'missing'}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle, cardName)(backupDirectory, cardName, jsonlData);
