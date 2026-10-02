@@ -42,6 +42,7 @@ const CC_COMMANDS = [
     'api',
     'api-url',
     'model',
+    'openrouter-providers',
     'proxy',
     'stop-strings',
     'start-reply-with',
@@ -74,6 +75,7 @@ const FANCY_NAMES = {
     'api-url': 'Server URL',
     'preset': 'Settings Preset',
     'model': 'Model',
+    'openrouter-providers': 'OpenRouter Providers',
     'proxy': 'Proxy Preset',
     'sysprompt-state': 'Use System Prompt',
     'sysprompt': 'System Prompt Name',
@@ -164,6 +166,7 @@ const profilesProvider = () => [
  * @property {string} [api] API
  * @property {string} [preset] Settings Preset
  * @property {string} [model] Model
+ * @property {string} [openrouter-providers] JSON array of OpenRouter providers
  * @property {string} [proxy] Proxy Preset
  * @property {string} [instruct] Instruct Template
  * @property {string} [context] Context Template

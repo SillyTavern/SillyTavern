@@ -6760,6 +6760,32 @@ function updateFeatureSupportFlags() {
 
 export function initOpenAI() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'openrouter-providers',
+        callback: (_args, value) => {
+            if (value) {
+                const providers = JSON.parse(String(value));
+                if (!Array.isArray(providers) || !providers.every(provider => typeof provider === 'string')) {
+                    throw new Error('OpenRouter providers must be a JSON array of strings.');
+                }
+                oai_settings.openrouter_providers = providers;
+                // Refresh the widget without dropping selected providers disabled for the current model.
+                $('#openrouter_providers_chat').val(providers).trigger('change.select2');
+                updateOpenRouterProvidersWarning('#openrouter_providers_chat');
+                saveSettingsDebounced();
+            }
+            return JSON.stringify(oai_settings.openrouter_providers);
+        },
+        returns: 'JSON array of selected OpenRouter providers',
+        unnamedArgumentList: [
+            SlashCommandArgument.fromProps({
+                description: 'JSON array of provider names; [] clears the selection',
+                typeList: [ARGUMENT_TYPE.LIST],
+            }),
+        ],
+        helpString: 'Gets or sets the OpenRouter providers for Chat Completion. Omit the argument to read the current selection.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'proxy',
         callback: runProxyCallback,
         returns: 'current proxy',

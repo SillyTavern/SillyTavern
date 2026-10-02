@@ -447,6 +447,8 @@ export class ConnectionManagerRequestService {
                         max_tokens: maxTokens,
                         model: profile.model,
                         chat_completion_source: selectedApiMap.source,
+                        ...(selectedApiMap.source === 'openrouter' && profile['openrouter-providers']
+                            ? { provider: JSON.parse(profile['openrouter-providers']) } : {}),
                         secret_id: profile['secret-id'],
                         custom_url: profile['api-url'],
                         vertexai_region: profile['api-url'],
