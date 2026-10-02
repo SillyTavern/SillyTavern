@@ -4,6 +4,7 @@ import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique, regexFro
 import { accountStorage } from '../../util/AccountStorage.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
+import { FishAudioTtsProvider } from './fish-audio.js';
 import { SileroTtsProvider } from './silerotts.js';
 import { GptSovitsV2Provider } from './gpt-sovits-v2.js';
 import { GptSoVITSAdapterProvider } from './gpt-sovits-adapter.js';
@@ -131,6 +132,7 @@ const ttsProviders = {
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     'Electron Hub': ElectronHubTtsProvider,
+    'Fish Audio': FishAudioTtsProvider,
     'Google Translate': GoogleTranslateTtsProvider,
     'Google Gemini TTS': GoogleNativeTtsProvider,
     GSVI: GSVITtsProvider,
@@ -1078,9 +1080,20 @@ function onTtsProviderChange() {
 }
 
 // Ensure that TTS provider settings are saved to extension settings.
-export function saveTtsProviderSettings() {
+export function saveTtsProviderSettings({ syncVoiceMapFromUi = true } = {}) {
     extension_settings.tts[ttsProviderName] = ttsProvider.settings;
-    updateVoiceMap();
+    if (syncVoiceMapFromUi) {
+        updateVoiceMap();
+    } else {
+        // A rebuild can be skipped while TTS is disabled. Keep both state and visible selections in sync.
+        for (const entry of voiceMapEntries) {
+            if (Object.hasOwn(ttsProvider.settings.voiceMap, entry.name)) {
+                entry.voiceId = ttsProvider.settings.voiceMap[entry.name];
+                voiceMap[entry.name] = entry.voiceId;
+                entry.selectElement?.val(entry.voiceId);
+            }
+        }
+    }
     saveSettingsDebounced();
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`);
 }
