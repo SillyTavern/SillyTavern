@@ -1,6 +1,8 @@
 import { EventEmitter } from '../lib/eventemitter.js';
 
 export const event_types = {
+    CUSTOM_PROVIDER_REGISTRY_CHANGED: 'custom_provider_registry_changed',
+    CUSTOM_CONNECTION_CHANGED: 'custom_connection_changed',
     APP_INITIALIZED: 'app_initialized',
     APP_READY: 'app_ready',
     EXTRAS_CONNECTED: 'extras_connected',
