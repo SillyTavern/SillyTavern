@@ -24,7 +24,6 @@ import { AzureTtsProvider } from './azure.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
-import { debounce_timeout } from '../../constants.js';
 import { SlashCommandEnumValue, enumTypes } from '../../slash-commands/SlashCommandEnumValue.js';
 import { enumIcons } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
@@ -1090,11 +1089,34 @@ export function saveTtsProviderSettings() {
 // voiceMap Handling //
 //###################//
 
+/**
+ * Bounded wait for a voice map re-initialisation.
+ *
+ * A cloud provider's checkReady() is a real network round-trip (ElevenLabs and friends), so the
+ * safety net has to be generous enough not to be tripped by ordinary API latency: giving up
+ * early leaves the stale voice map in place for the rest of the chat switch.
+ */
+const VOICE_MAP_INIT_TIMEOUT = 10000;
+
+/**
+ * Waits for an in-flight voice map initialisation, bounded so an unresponsive provider cannot
+ * hang a chat switch forever.
+ * @param {Promise<void>} voiceMapInit Promise returned by initVoiceMap()
+ * @returns {Promise<boolean>} True when the initialisation completed within the timeout
+ */
+async function waitForVoiceMapInit(voiceMapInit) {
+    const completed = voiceMapInit.then(() => true);
+    const timedOut = delay(VOICE_MAP_INIT_TIMEOUT).then(() => false);
+    return Promise.race([completed, timedOut]);
+}
+
 async function onChatChanged() {
     await onGenerationEnded();
     resetTtsPlayback();
     const voiceMapInit = initVoiceMap();
-    await Promise.race([voiceMapInit, delay(debounce_timeout.relaxed)]);
+    if (!await waitForVoiceMapInit(voiceMapInit)) {
+        console.warn(`TTS: voice map initialisation exceeded ${VOICE_MAP_INIT_TIMEOUT}ms, voices may be stale for this chat`);
+    }
     lastMessage = null;
 }
 
