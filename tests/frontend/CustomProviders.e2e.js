@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 
-test.describe.configure({ mode: 'serial' });
 // This suite installs a fixture and writes synthetic vault entries: explicitly opt into a disposable data root.
 const dataRoot = process.env.ST_TEST_DATA_ROOT;
+// eslint-disable-next-line playwright/no-skipped-test -- Refuse fixture/key writes unless the runner explicitly selects disposable data.
 test.skip(!dataRoot, 'Set ST_TEST_DATA_ROOT to the disposable server data directory.');
 const owner = 'third-party/custom-provider-extension';
 let upstream;
@@ -201,6 +201,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         const dialog = page.locator('dialog[open]');
         await expect(dialog.locator('input[name="exclude"][value="Custom connection"]')).toHaveCount(1);
         await expect(dialog.locator('input[name="exclude"][value="API"]')).toHaveCount(0);
+        // eslint-disable-next-line playwright/no-conditional-in-test -- Parameterized control input, not conditional assertions.
         if (excluded) await dialog.locator('input[value="Custom connection"]').uncheck();
         await dialog.locator('.popup-input').fill(name);
         await dialog.locator('.popup-button-ok').click();
@@ -318,4 +319,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         await expect(page.locator('#model_custom_select option[value="late-model"]')).toHaveCount(0);
         await expect(page.locator('#custom_model_id')).toHaveValue(model);
     });
+    await page.screenshot({ path: 'artifacts/browser/custom-provider-controls-desktop.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: 'artifacts/browser/custom-provider-controls-mobile.png' });
 });
