@@ -250,6 +250,8 @@ export const verbosity_levels = {
     low: 'low',
     medium: 'medium',
     high: 'high',
+    xhigh: 'xhigh',
+    max: 'max',
 };
 
 export const tool_reasoning_modes = {
@@ -2663,20 +2665,40 @@ function getReasoningEffort(settings = null, model = null) {
     return reasoningEffort;
 }
 
+// Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-opus-4.7'
+const ANTHROPIC_MAX_EFFORT_MODELS = /claude-(opus-4[.-](6|7|8)|sonnet-4[.-]6|opus-5|sonnet-5|fable-5)/;
+const ANTHROPIC_XHIGH_EFFORT_MODELS = /claude-(opus-4[.-](7|8)|opus-5|sonnet-5|fable-5)/;
+
 /**
  * Get the verbosity from chat completion settings
  * @param {ChatCompletionSettings} settings Chat completion settings
+ * @param {string} model Model name (optional, used for per-model aliasing)
  * @returns {string} Verbosity level, if present
  */
-function getVerbosity(settings = null) {
+function getVerbosity(settings = null, model = null) {
     settings = settings ?? oai_settings;
+    model = model ?? getChatCompletionModel(settings);
 
     if (settings.verbosity === verbosity_levels.auto) {
         return undefined;
     }
 
-    // TODO: Adjust verbosity based on model capabilities
-    return settings.verbosity;
+    // Anthropic rejects an unsupported effort level with a 400, and not every model that supports max also supports xhigh.
+    const anthropicEffortSources = [chat_completion_sources.CLAUDE, chat_completion_sources.OPENROUTER];
+    const supportsEffortScale = anthropicEffortSources.includes(settings.chat_completion_source);
+
+    switch (settings.verbosity) {
+        case verbosity_levels.xhigh:
+            return supportsEffortScale && ANTHROPIC_XHIGH_EFFORT_MODELS.test(model)
+                ? settings.verbosity
+                : verbosity_levels.high;
+        case verbosity_levels.max:
+            return supportsEffortScale && ANTHROPIC_MAX_EFFORT_MODELS.test(model)
+                ? settings.verbosity
+                : verbosity_levels.high;
+        default:
+            return settings.verbosity;
+    }
 }
 
 /**
@@ -2824,7 +2846,7 @@ export async function createGenerationParameters(settings, model, type, messages
         'request_image_resolution': String(settings.request_image_resolution),
         'request_image_aspect_ratio': String(settings.request_image_aspect_ratio),
         'custom_prompt_post_processing': settings.custom_prompt_post_processing,
-        'verbosity': getVerbosity(settings),
+        'verbosity': getVerbosity(settings, model),
     };
 
     if (settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
