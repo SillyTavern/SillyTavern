@@ -62,6 +62,16 @@ Write at least somewhat meaningful PR descriptions and commit messages. There's 
 - What did you do to achieve this?
 - How would a reviewer test the change?
 
+### Discuss new provider integrations before implementing them
+
+Do not use a completed pull request as the first product discussion for a new named external provider or service.
+
+- Model routers, resellers, rerouters, gateways, and aggregators should use **Custom (OpenAI-compatible)** and publish provider-owned setup instructions. Provider-specific convenience may be implemented as a third-party UI extension or server plugin.
+- New first-party model, TTS, speech, web search, image, vectorization, embedding, reranking, and similar integrations are exceptional and should begin with a public issue and maintainer discussion before implementation.
+- Existing-provider maintenance and provider-neutral improvements to generic compatibility remain welcome.
+
+Read [Integrating an External Provider](https://docs.sillytavern.app/for-contributors/provider-integrations/) before starting implementation.
+
 ### We (likely) don't speak your language
 
 English is the primary language of communication in this project. Please use only English when writing commit messages, PR descriptions, comments and other text. This does not apply to contributions to localization files.
@@ -81,5 +91,6 @@ We do not prohibit nor encourage the use of AI tools for coding assistance to he
 
 ## Further reading
 
-1. [How to write UI extensions](https://docs.sillytavern.app/for-contributors/writing-extensions/)
-2. [How to write server plugins](https://docs.sillytavern.app/for-contributors/server-plugins)
+1. [How to integrate an external provider](https://docs.sillytavern.app/for-contributors/provider-integrations/)
+2. [How to write UI extensions](https://docs.sillytavern.app/for-contributors/writing-extensions/)
+3. [How to write server plugins](https://docs.sillytavern.app/for-contributors/server-plugins)
