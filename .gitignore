@@ -59,3 +59,4 @@ public/scripts/extensions/third-party
 yarn.lock
 *.code-workspace
 test-results/
+tests/jar.txt

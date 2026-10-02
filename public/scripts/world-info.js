@@ -1,5 +1,6 @@
 import { Fuse } from '../lib.js';
 
+import { leaseWorld, isLeaseRejection } from './multi-window.js';
 import { saveSettings, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles, create_save, createOrEditCharacter, name1, getOneCharacter, select_selected_character } from '../script.js';
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, getSanitizedFilename, checkOverwriteExistingData, getStringHash, parseStringArray, cancelDebounce, findChar, onlyUnique, equalsIgnoreCaseAndAccents, uuidv4, normalizeArray, getUniqueName, logSlashCommandWarn, addLongPressEvent, escapeHtml, setInfoBlock, clearInfoBlock } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
@@ -2022,6 +2023,7 @@ export async function showWorldEditor(name) {
     }
 
     const wiData = await loadWorldInfo(name);
+    await leaseWorld(name);
     await displayWorldEntries(name, wiData);
 }
 
@@ -4152,11 +4154,29 @@ async function _save(name, data) {
     // Prevent double saving if both immediate and debounced save are called
     cancelDebounce(saveWorldDebounced);
 
-    await fetch('/api/worldinfo/edit', {
+    const response = await fetch('/api/worldinfo/edit', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name, data: data }),
     });
+    if (response.status === 409) {
+        // No write lease yet (e.g. book created or edited outside the
+        // editor): acquire and retry once before reporting.
+        if (await leaseWorld(name) === 'acquired') {
+            const retry = await fetch('/api/worldinfo/edit', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ name: name, data: data }),
+            });
+            if (!retry.ok) {
+                isLeaseRejection(retry);
+                return;
+            }
+        } else {
+            isLeaseRejection(response);
+            return;
+        }
+    }
     await eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
 }
 

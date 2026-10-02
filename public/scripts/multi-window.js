@@ -1,0 +1,820 @@
+import { POPUP_TYPE, callGenericPopup } from './popup.js';
+
+/**
+ * Client side of the multi-window session system.
+ *
+ * Identity: a windowId in sessionStorage (unique per tab, survives reload of
+ * the tab) plus an epoch bumped on every registration. A poisoned session is
+ * dead to the server (HTTP 410 on everything); the only path back is a
+ * reload, which re-registers with epoch+1 and lands neutral.
+ */
+
+const HEARTBEAT_INTERVAL_MS = 15 * 1000;
+const STORAGE_WINDOW_ID = 'mw_window_id';
+const STORAGE_EPOCH = 'mw_epoch';
+const STORAGE_NEUTRAL_LANDING = 'mw_neutral_landing';
+
+let enabled = false;
+let registered = false;
+let windowId = '';
+let epoch = 0;
+/** @type {Map<string, {key: string, revision: number}>} One held lease per slot (chat, world, ...). */
+const currentLeases = new Map();
+/**
+ * Read leases held purely to track other windows' writes (staleness).
+ * key -> last seen revision. Auto-released on drain, re-acquired later.
+ * @type {Map<string, number>}
+ */
+const watchLeases = new Map();
+/** @type {((key: string, revision: number) => void)[]} */
+const staleHandlers = [];
+/** Delay before re-acquiring a drained watch (writer finishes quickly). */
+const REWATCH_DELAY_MS = 30 * 1000;
+/** @type {?object} */
+let rebirthReason = null;
+
+function getIdentity() {
+    if (!windowId) {
+        windowId = sessionStorage.getItem(STORAGE_WINDOW_ID) || crypto.randomUUID();
+        sessionStorage.setItem(STORAGE_WINDOW_ID, windowId);
+    }
+    if (!epoch) {
+        epoch = Number(sessionStorage.getItem(STORAGE_EPOCH) || 0) + 1;
+        sessionStorage.setItem(STORAGE_EPOCH, String(epoch));
+    }
+    return { windowId, epoch };
+}
+
+/**
+ * Session headers to include on every API request.
+ * @returns {object}
+ */
+export function getMultiWindowHeaders() {
+    if (!enabled) {
+        return {};
+    }
+    const identity = getIdentity();
+    return {
+        'X-Window-Id': identity.windowId,
+        'X-Window-Epoch': String(identity.epoch),
+    };
+}
+
+let dead = false;
+
+/**
+ * The death ritual: this session is dead to the server (every request now
+ * returns 410), but the page deliberately does NOT auto-reload. A sticky
+ * toast with a Reload button lets the user copy anything they need from the
+ * page first; the reload lands neutral with the poison reason shown again.
+ * @param {?object} poisonReason
+ */
+function die(poisonReason) {
+    if (dead) {
+        return;
+    }
+    dead = true;
+    try {
+        sessionStorage.setItem(STORAGE_NEUTRAL_LANDING, JSON.stringify(poisonReason ?? { reason: 'unknown' }));
+    } catch {
+        // sessionStorage full/unavailable: the rebirth toast is lost, nothing else.
+    }
+    const by = poisonReason?.byWindow
+        ? (poisonReason.byWindow === windowId ? ' by this window' : ' by another window')
+        : '';
+    const entity = poisonReason?.entity ? ` over <code>${poisonReason.entity}</code>` : '';
+    const $toast = toastr.error(
+        `<div>This window's session was ended${by}${entity}. Nothing here can be saved anymore.</div>
+         <div>Copy anything you still need, then reload.</div>
+         <div class="menu_button mw-reload-button" style="margin-top: 8px;">Reload now</div>`,
+        'Session ended',
+        { timeOut: 0, extendedTimeOut: 0, closeButton: false, tapToDismiss: false, escapeHtml: false },
+    );
+    $toast?.find?.('.mw-reload-button')?.on?.('click', () => location.reload());
+}
+
+/**
+ * If this boot follows a poisoning, returns the reason (once) - the caller
+ * must skip active character/group restoration to land neutral.
+ * @returns {?object}
+ */
+export function consumeNeutralLanding() {
+    const raw = sessionStorage.getItem(STORAGE_NEUTRAL_LANDING);
+    if (!raw) {
+        return null;
+    }
+    sessionStorage.removeItem(STORAGE_NEUTRAL_LANDING);
+    try {
+        rebirthReason = JSON.parse(raw);
+    } catch {
+        rebirthReason = { reason: 'unknown' };
+    }
+    return rebirthReason;
+}
+
+/**
+ * Wraps fetch so any 410 response from our own API triggers the death ritual.
+ */
+/**
+ * Low-contention entities (characters, themes, Quick Reply sets) save
+ * through transient write leases: acquired on the way into a gated request
+ * and released right after it completes, so a conflict only ever means a
+ * genuinely concurrent edit in another window. Keyed by pathname; the
+ * accessor reads fields from the request body (JSON string or FormData).
+ * @type {Map<string, (field: (name: string) => any) => {keys: string[], label: string}>}
+ */
+const TRANSIENT_LEASE_ROUTES = new Map([
+    ['/api/characters/edit', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/edit-avatar', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/edit-attribute', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/rename', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/delete', f => ({ keys: [`character/${f('avatar_url')}`], label: 'character' })],
+    ['/api/characters/merge-attributes', f => {
+        const avatars = Array.isArray(f('avatars')) ? f('avatars') : [f('avatar')];
+        return { keys: avatars.filter(Boolean).map(a => `character/${a}`), label: 'character' };
+    }],
+    ['/api/personas/save', f => ({ keys: [`persona/${f('persona')?.avatarId}`], label: 'persona' })],
+    ['/api/personas/delete', f => ({ keys: [`persona/${f('avatarId')}`], label: 'persona' })],
+    ['/api/themes/save', f => ({ keys: [`theme/${f('name')}`], label: 'theme' })],
+    ['/api/themes/delete', f => ({ keys: [`theme/${f('name')}`], label: 'theme' })],
+    ['/api/quick-replies/save', f => ({ keys: [`qr/${f('name')}`], label: 'Quick Reply set' })],
+    ['/api/quick-replies/delete', f => ({ keys: [`qr/${f('name')}`], label: 'Quick Reply set' })],
+]);
+
+/**
+ * Derives the transient lease target of an outgoing request, or null when
+ * the request is not lease-gated (or the body cannot be inspected).
+ * @param {RequestInfo | URL} resource
+ * @param {RequestInit} [options]
+ * @returns {?{keys: string[], label: string}}
+ */
+function transientLeaseTarget(resource, options) {
+    if (!enabled || !registered || dead || String(options?.method ?? 'GET').toUpperCase() !== 'POST') {
+        return null;
+    }
+    let pathname;
+    try {
+        pathname = new URL(typeof resource === 'string' ? resource : resource?.url ?? '', location.origin).pathname;
+    } catch {
+        return null;
+    }
+    const route = TRANSIENT_LEASE_ROUTES.get(pathname);
+    if (!route) {
+        return null;
+    }
+    const body = options?.body;
+    let field;
+    if (body instanceof FormData) {
+        field = (name) => body.get(name);
+    } else if (typeof body === 'string') {
+        try {
+            const parsed = JSON.parse(body);
+            field = (name) => parsed?.[name];
+        } catch {
+            return null;
+        }
+    } else {
+        return null;
+    }
+    const target = route(field);
+    return target.keys.length && target.keys.every(k => !k.endsWith('/undefined') && !k.endsWith('/null') && !k.endsWith('/')) ? target : null;
+}
+
+/**
+ * Acquires write leases on all keys; on any failure the ones already taken
+ * are released again.
+ * @param {string[]} keys
+ * @returns {Promise<boolean>} true when all leases are held
+ */
+async function acquireTransientLeases(keys) {
+    const taken = [];
+    for (const key of keys) {
+        try {
+            const response = await api('lease/acquire', { key, mode: 'write' });
+            if (!(response.ok && (await response.json()).ok === true)) {
+                throw new Error('conflict');
+            }
+            taken.push(key);
+        } catch {
+            for (const held of taken) {
+                api('lease/release', { key: held }).catch(() => { });
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+function installPoisonDetector() {
+    const origFetch = window.fetch.bind(window);
+    const checkedFetch = async function (resource, options) {
+        const response = await origFetch(resource, options);
+        const url = typeof resource === 'string' ? resource : resource?.url ?? '';
+        if (response.status === 410 && url.startsWith('/')) {
+            let reason = null;
+            try {
+                reason = (await response.clone().json())?.poisonReason ?? null;
+            } catch {
+                // Not JSON; die with unknown reason.
+            }
+            die(reason);
+        }
+        return response;
+    };
+    window.fetch = async function (resource, options) {
+        const target = transientLeaseTarget(resource, options);
+        if (!target) {
+            return checkedFetch(resource, options);
+        }
+        if (!await acquireTransientLeases(target.keys)) {
+            toastr.error(`Not saved: this ${target.label} is being edited in another window.`, 'Multi-window', { timeOut: 8000 });
+            return new Response(JSON.stringify({ error: 'no_lease' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+        }
+        try {
+            return await checkedFetch(resource, options);
+        } finally {
+            for (const key of target.keys) {
+                api('lease/release', { key }).catch(() => { });
+            }
+        }
+    };
+}
+
+async function api(path, body = {}) {
+    const { getRequestHeaders } = await import('../script.js');
+    return fetch(`/api/sessions/${path}`, {
+        method: 'POST',
+        headers: { ...getRequestHeaders(), ...getMultiWindowHeaders() },
+        body: JSON.stringify(body),
+    });
+}
+
+async function heartbeat() {
+    if (!registered || dead) {
+        return;
+    }
+    try {
+        const response = await api('heartbeat', {
+            heldLeases: [
+                ...currentLeases.values(),
+                ...[...watchLeases].map(([key, revision]) => ({ key, revision })),
+            ],
+        });
+        if (response.status === 440) {
+            // Server lost our session (restart or TTL after background-tab
+            // timer throttling): re-register and re-acquire our lease.
+            registered = false;
+            epoch = 0;
+            const lostLeases = new Map(currentLeases);
+            currentLeases.clear();
+            if (await register()) {
+                for (const [slot, lost] of lostLeases) {
+                    const reacquire = await api('lease/acquire', { key: lost.key, mode: 'write' });
+                    const result = reacquire.ok ? await reacquire.json() : null;
+                    if (result?.ok) {
+                        currentLeases.set(slot, { key: lost.key, revision: result.revision });
+                    } else {
+                        toastr.warning(
+                            `"${lost.key}" was taken by another window while this one was inactive. It is now read-only here.`,
+                            'Multi-window', { timeOut: 10000 },
+                        );
+                    }
+                }
+            }
+            return;
+        }
+        if (!response.ok) {
+            return;
+        }
+        const data = await response.json();
+        for (const bump of data.revisionBumps ?? []) {
+            for (const lease of currentLeases.values()) {
+                if (lease.key === bump.key) {
+                    lease.revision = bump.revision;
+                }
+            }
+            if (watchLeases.has(bump.key)) {
+                watchLeases.set(bump.key, bump.revision);
+                staleHandlers.forEach(h => h(bump.key, bump.revision));
+            }
+        }
+        for (const key of data.drainRequests ?? []) {
+            // Pure readers comply at zero cost: release, re-acquire later to
+            // resume revision tracking. Never auto-release write intents.
+            const isWriteHeld = [...currentLeases.values()].some(lease => lease.key === key);
+            if (isWriteHeld) {
+                continue;
+            }
+            api('lease/release', { key }).catch(() => { });
+            if (watchLeases.has(key)) {
+                const lastSeen = watchLeases.get(key);
+                watchLeases.delete(key);
+                setTimeout(() => rewatch(key, lastSeen), REWATCH_DELAY_MS);
+            }
+        }
+    } catch {
+        // Network hiccup: next tick will retry.
+    }
+}
+
+async function rewatch(key, lastSeenRevision) {
+    if (dead || watchLeases.has(key)) {
+        return;
+    }
+    const revision = await watchEntity(key);
+    if (revision !== null && revision !== lastSeenRevision) {
+        staleHandlers.forEach(h => h(key, revision));
+    }
+}
+
+/**
+ * Registers the handler notified when a watched entity's revision changes
+ * (i.e. another window saved it).
+ * @param {(key: string, revision: number) => void} handler
+ */
+export function onEntityStale(handler) {
+    staleHandlers.push(handler);
+}
+
+/**
+ * Starts revision-tracking an entity via a read lease.
+ * @param {string} key Entity key
+ * @returns {Promise<?number>} The current revision, or null if unavailable
+ */
+export async function watchEntity(key) {
+    if (!enabled || !registered || dead) {
+        return null;
+    }
+    try {
+        const response = await api('lease/acquire', { key, mode: 'read' });
+        const result = response.ok ? await response.json() : null;
+        if (result?.ok) {
+            watchLeases.set(key, result.revision);
+            return result.revision;
+        }
+    } catch {
+        // Watching is best-effort.
+    }
+    return null;
+}
+
+/**
+ * Stops watching an entity and releases its read lease.
+ * @param {string} key Entity key
+ */
+export function unwatchEntity(key) {
+    if (watchLeases.delete(key)) {
+        api('lease/release', { key }).catch(() => { });
+    }
+}
+
+/**
+ * Records a revision this window itself produced (its own save), so the
+ * watch does not misreport it as another window's update.
+ * @param {string} key Entity key
+ * @param {number} revision
+ */
+export function noteEntityRevision(key, revision) {
+    if (watchLeases.has(key) && Number.isInteger(revision)) {
+        watchLeases.set(key, revision);
+    }
+}
+
+/**
+ * Whether the multi-window session system is active in this window.
+ * @returns {boolean}
+ */
+export function isMultiWindowActive() {
+    return enabled && registered;
+}
+
+// --- Global settings: explicit save + poison-all (design §6.1) ---
+// The settings blob never auto-persists in multi-window mode: changes are
+// local ⚠️-dirty state until an explicit save, which reloads EVERY window
+// (including this one) so no running window ever has globals differing from
+// disk. Boot-time normalizations (before APP_READY) still save normally.
+
+let appReady = false;
+let settingsDirty = false;
+/** @type {?string} Normalized JSON of the settings blob as last persisted. */
+let settingsBaseline = null;
+/** @type {(() => void)[]} Notified on every deferred settings-save attempt. */
+const settingsDirtyListeners = [];
+
+/**
+ * True when a settings blob save should be deferred to the explicit flow.
+ * @returns {boolean}
+ */
+export function shouldDeferSettingsSave() {
+    return enabled && registered && appReady && !dead;
+}
+
+/**
+ * Registers a handler fired on every deferred settings-save attempt - the
+ * "something just changed" signal. Entity syncs (personas, profile
+ * ephemerals) subscribe so an edit persists to its file right away instead
+ * of waiting for their periodic backstop pass.
+ * @param {() => void} handler
+ */
+export function onSettingsDirty(handler) {
+    settingsDirtyListeners.push(handler);
+}
+
+/**
+ * The settings payload with everything removed that is NOT the blob's to
+ * own anymore: per-window state (active chat), profile-owned connection +
+ * sampler sections, and file-owned persona/preset structures. Only a
+ * difference in what remains is a meaningful global change worth prompting
+ * the user to save.
+ * @param {object} payload
+ * @returns {string} Normalized JSON for comparison
+ */
+function normalizeSettingsPayload(payload) {
+    const clone = JSON.parse(JSON.stringify(payload));
+    delete clone.active_character;
+    delete clone.active_group;
+    // Per-window persona selection (mw_user_avatar in sessionStorage).
+    delete clone.user_avatar;
+    // Profile-owned sections (design §8.3): the blob copies are rollback
+    // shadows, kept for one release cycle but no longer authoritative.
+    delete clone.main_api;
+    delete clone.oai_settings;
+    delete clone.textgenerationwebui_settings;
+    delete clone.kai_settings;
+    delete clone.nai_settings;
+    if (clone.power_user) {
+        // File-owned (personas/*.json).
+        delete clone.power_user.personas;
+        delete clone.power_user.persona_descriptions;
+        delete clone.power_user.personasMigratedToFiles;
+        // The ACTIVE persona's working copy - mirrors the entry in
+        // persona_descriptions, which lives in the persona's file. The
+        // persona "Global Settings" (persona_show_notifications,
+        // persona_allow_multi_connections, persona_auto_lock, sort order,
+        // default_persona) intentionally stay: those are real globals.
+        delete clone.power_user.persona_description;
+        delete clone.power_user.persona_description_position;
+        delete clone.power_user.persona_description_role;
+        delete clone.power_user.persona_description_depth;
+        delete clone.power_user.persona_description_lorebook;
+    }
+    if (clone.extension_settings) {
+        // File-owned (connection-presets/*.json) + per-window selection.
+        delete clone.extension_settings.connectionManager;
+    }
+    return JSON.stringify(canonicalizeForComparison(clone));
+}
+
+/**
+ * Canonical form for payload comparison: object keys sorted, and object
+ * entries whose value is false/null/''/empty removed - so a key that a UI
+ * handler lazily materializes with its default value (a very common
+ * pattern) compares equal to the key never having existed. Real changes
+ * survive: a true<->false flip always keeps the `true` on one side. Array
+ * elements are never dropped (position matters).
+ * @param {any} value
+ * @returns {any}
+ */
+function canonicalizeForComparison(value) {
+    if (Array.isArray(value)) {
+        return value.map(canonicalizeForComparison);
+    }
+    if (value && typeof value === 'object') {
+        const result = {};
+        for (const key of Object.keys(value).sort()) {
+            const child = canonicalizeForComparison(value[key]);
+            const isEmptyObject = child && typeof child === 'object' && !Array.isArray(child) && !Object.keys(child).length;
+            const isEmptyArray = Array.isArray(child) && !child.length;
+            if (child === false || child === null || child === '' || isEmptyObject || isEmptyArray) {
+                continue;
+            }
+            result[key] = child;
+        }
+        return result;
+    }
+    return value;
+}
+
+/**
+ * Records the payload of a successful settings persist (boot-grace or
+ * explicit) as the clean baseline for dirty comparison.
+ * @param {object} payload
+ */
+export function noteSettingsPersisted(payload) {
+    try {
+        settingsBaseline = normalizeSettingsPayload(payload);
+    } catch {
+        settingsBaseline = null;
+    }
+    settingsDirty = false;
+    updateSettingsSaveButton();
+}
+
+function updateSettingsSaveButton() {
+    let button = document.getElementById('mw_settings_save');
+    if (!button) {
+        if (!settingsDirty) {
+            return;
+        }
+        button = document.createElement('div');
+        button.id = 'mw_settings_save';
+        button.classList.add('menu_button');
+        button.title = 'Unsaved global settings - lost on reload or server restart. Saving reloads ALL open windows.';
+        button.innerHTML = '<span style="color: #ffc107; text-shadow: 0 0 2px #000;">&#9888;&#65039;</span><span>Save settings</span>';
+        button.addEventListener('click', explicitSettingsSave);
+        // In-flow at the end of the top drawer-icon bar, where it cannot
+        // cover the chat input or the side panels.
+        const topBar = document.getElementById('top-settings-holder');
+        if (topBar) {
+            button.style.cssText = 'align-self: center; margin-left: 10px; display: flex; align-items: center; gap: 6px; white-space: nowrap;';
+            topBar.appendChild(button);
+        } else {
+            button.style.cssText = 'position: fixed; bottom: 8px; right: 8px; z-index: 10000; display: flex; align-items: center; gap: 6px;';
+            document.body.appendChild(button);
+        }
+    }
+    button.style.display = settingsDirty ? 'flex' : 'none';
+}
+
+/**
+ * Handles a deferred settings save: notifies the entity syncs immediately,
+ * and shows the explicit save control only when the blob meaningfully
+ * differs from what is on disk (trivia like the active chat, sampler
+ * tweaks owned by the profile, or persona edits owned by their files do
+ * not prompt - and reverting a change hides the prompt again).
+ * @param {object} [payload] The settings payload that would have been saved
+ */
+export function markSettingsDirty(payload) {
+    settingsDirtyListeners.forEach(h => h());
+    if (payload && settingsBaseline) {
+        try {
+            settingsDirty = normalizeSettingsPayload(payload) !== settingsBaseline;
+        } catch {
+            settingsDirty = true;
+        }
+    } else {
+        settingsDirty = true;
+    }
+    updateSettingsSaveButton();
+}
+
+async function explicitSettingsSave() {
+    const confirmed = await callGenericPopup(
+        '<h3>Save global settings?</h3><p>All open windows (including this one) will be reloaded; unsaved changes in them will be discarded.</p>',
+        POPUP_TYPE.CONFIRM, '', { okButton: 'Save and reload all', cancelButton: 'Cancel' });
+    if (confirmed !== 1) {
+        return;
+    }
+    const { saveSettings } = await import('../script.js');
+    try {
+        await saveSettings(0, { explicit: true });
+    } catch (error) {
+        console.error('Explicit settings save failed', error);
+        toastr.error('Settings could not be saved.', 'Multi-window');
+        return;
+    }
+    settingsDirty = false;
+    // The server has poisoned every session including ours. The user just
+    // consented to "Save and reload all": record the landing reason and
+    // reload right away instead of parking this window on the death toast
+    // (other windows still get it - they may hold unsaved work).
+    die({ reason: 'global settings saved', byWindow: windowId, entity: 'settings' });
+    location.reload();
+}
+
+/** @type {object[]} Ephemeral profiles returned by the last registration. */
+let bootEphemeralProfiles = [];
+
+/**
+ * Ephemeral profiles this window held before its last reload (restored by
+ * the server on re-registration).
+ * @returns {object[]}
+ */
+export function getBootEphemeralProfiles() {
+    return bootEphemeralProfiles;
+}
+
+async function register() {
+    const response = await api('register', {});
+    if (response.status === 404) {
+        enabled = false;
+        return false;
+    }
+    if (!response.ok) {
+        return false;
+    }
+    const data = await response.json();
+    bootEphemeralProfiles = data.ephemeralProfiles ?? [];
+    registered = true;
+    return true;
+}
+
+/**
+ * Initializes the multi-window session. Safe to call unconditionally: if the
+ * server has the feature disabled, this becomes a no-op module.
+ */
+export async function initMultiWindow() {
+    enabled = true; // provisional, so the register call carries identity headers
+    getIdentity();
+    if (!await register()) {
+        return;
+    }
+    installPoisonDetector();
+    setInterval(heartbeat, HEARTBEAT_INTERVAL_MS);
+    // Background tabs get their timers throttled: beat immediately when the
+    // tab becomes visible again.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            heartbeat();
+        }
+    });
+    // The settings-save shim only kicks in after boot: normalization saves
+    // during init (and its debounced tail shortly after APP_READY) persist
+    // normally, so a clean boot never starts ⚠️-dirty.
+    import('../script.js').then(({ eventSource, event_types }) => {
+        eventSource.once(event_types.APP_READY, () => {
+            setTimeout(() => {
+                appReady = true;
+            }, 5000);
+        });
+    });
+    // The landing flag may not have been consumed yet (init order): peek it.
+    let reason = rebirthReason;
+    if (!reason) {
+        try {
+            reason = JSON.parse(sessionStorage.getItem(STORAGE_NEUTRAL_LANDING) ?? 'null');
+        } catch {
+            reason = null;
+        }
+    }
+    if (reason) {
+        const by = reason.byWindow
+            ? (reason.byWindow === windowId ? ' by this window' : ' by another window')
+            : '';
+        const entity = reason.entity ? ` (${reason.entity})` : '';
+        const showToast = () => toastr.warning(
+            `This window was reloaded: ${reason.reason}${by}${entity}. Unsaved changes were discarded.`,
+            'Multi-window',
+            { timeOut: 15000 },
+        );
+        // Init runs behind the splash screen: defer the toast until the app
+        // is actually visible.
+        const { eventSource, event_types } = await import('../script.js');
+        eventSource.once(event_types.APP_READY, showToast);
+    }
+}
+
+/**
+ * Acquires the write lease for a chat, releasing any previously held lease.
+ * On conflict, offers to take over (force-write), which reloads the other
+ * holders.
+ * @param {string} key Entity key, matching the server's chatKey/groupChatKey
+ * @returns {Promise<'acquired'|'readonly'|'disabled'>}
+ */
+/**
+ * Slots currently in read-only mode: the user declined a take-over and the
+ * entity is revision-watched instead - other windows' saves refresh the
+ * view (chats only). Re-acquiring the same key stays read-only silently, so
+ * the refresh reload does not re-prompt the take-over dialog.
+ * @type {Map<string, string>} slot -> entity key
+ */
+const readonlySlots = new Map();
+
+/** Enters read-only mode for a slot: watch the entity for live updates. */
+function enterReadonly(slot, key) {
+    readonlySlots.set(slot, key);
+    watchEntity(key);
+    return 'readonly';
+}
+
+async function acquireWriteLease(key, slot, label) {
+    if (!enabled || !registered) {
+        return 'disabled';
+    }
+    const held = currentLeases.get(slot);
+    if (held && held.key !== key) {
+        api('lease/release', { key: held.key }).catch(() => { });
+        currentLeases.delete(slot);
+    }
+    const readonlyHeld = readonlySlots.get(slot);
+    if (readonlyHeld && readonlyHeld !== key) {
+        unwatchEntity(readonlyHeld);
+        readonlySlots.delete(slot);
+    }
+    if (currentLeases.get(slot)?.key === key) {
+        return 'acquired';
+    }
+    if (readonlySlots.get(slot) === key) {
+        // Already viewing read-only (e.g. the live-view refresh re-opening
+        // the chat): upgrade silently if the owner has left, otherwise stay
+        // read-only without re-prompting the take-over dialog. The watch is
+        // released first so our own read lease cannot block the attempt.
+        unwatchEntity(key);
+        const upgrade = await api('lease/acquire', { key, mode: 'write' });
+        const upgradeResult = upgrade.ok ? await upgrade.json() : null;
+        if (upgradeResult?.ok) {
+            readonlySlots.delete(slot);
+            currentLeases.set(slot, { key, revision: upgradeResult.revision });
+            toastr.info(`The other window released this ${label.toLowerCase()}: it is now editable here.`, 'Multi-window');
+            return 'acquired';
+        }
+        watchEntity(key);
+        return 'readonly';
+    }
+
+    const response = await api('lease/acquire', { key, mode: 'write' });
+    if (!response.ok) {
+        return 'readonly';
+    }
+    const result = await response.json();
+    if (result.ok) {
+        currentLeases.set(slot, { key, revision: result.revision });
+        return 'acquired';
+    }
+
+    const takeOver = await callGenericPopup(
+        `<h3>${label} in use</h3><p>This ${label.toLowerCase()} is open in ${result.holders ?? 'another'} other window(s).</p>
+         <p>Take over? The other window(s) will be reloaded and their unsaved changes discarded.</p>`,
+        POPUP_TYPE.CONFIRM, '', { okButton: 'Take over', cancelButton: 'Stay read-only' });
+
+    if (takeOver !== 1) {
+        toastr.info(`${label} is read-only in this window: another window holds it. The view follows the owner's saves.`, 'Multi-window');
+        return enterReadonly(slot, key);
+    }
+
+    const forceResponse = await api('lease/force-write', { key });
+    if (forceResponse.ok) {
+        const forceResult = await forceResponse.json();
+        if (forceResult.ok) {
+            currentLeases.set(slot, { key, revision: forceResult.revision });
+            return 'acquired';
+        }
+    }
+    toastr.error(`Could not take over the ${label.toLowerCase()}.`, 'Multi-window');
+    return enterReadonly(slot, key);
+}
+
+/**
+ * Read-only live chat view (design §4, Chats row): while this window views
+ * a chat another window owns, the owner's saves arrive as revision bumps on
+ * the watch lease and re-render the chat from disk. Never merges - this
+ * window cannot save the chat anyway (leases gate persistence).
+ */
+let refreshingReadonlyChat = false;
+staleHandlers.push(async (key) => {
+    if (readonlySlots.get('chat') !== key || refreshingReadonlyChat) {
+        return;
+    }
+    refreshingReadonlyChat = true;
+    try {
+        const { reloadCurrentChat } = await import('../script.js');
+        await reloadCurrentChat();
+        toastr.info('Chat updated in the owning window - view refreshed.', 'Multi-window', { timeOut: 4000 });
+    } catch (error) {
+        console.error('Multi-window: failed to refresh the read-only chat view', error);
+    } finally {
+        refreshingReadonlyChat = false;
+    }
+});
+
+/**
+ * Acquires the write lease for a character chat.
+ * @param {string} avatarUrl Character avatar file name
+ * @param {string} fileName Chat file name (no extension)
+ * @returns {Promise<'acquired'|'readonly'|'disabled'>}
+ */
+export function leaseChat(avatarUrl, fileName) {
+    return acquireWriteLease(`chat/${avatarUrl}/${fileName}`, 'chat', 'Chat');
+}
+
+/**
+ * Acquires the write lease for a group chat.
+ * @param {string} chatId Group chat id
+ * @returns {Promise<'acquired'|'readonly'|'disabled'>}
+ */
+export function leaseGroupChat(chatId) {
+    return acquireWriteLease(`groupchat/${chatId}`, 'chat', 'Chat');
+}
+
+/**
+ * Acquires the write lease for a World Info book.
+ * @param {string} name Book name
+ * @returns {Promise<'acquired'|'readonly'|'disabled'>}
+ */
+export function leaseWorld(name) {
+    return acquireWriteLease(`world/${name}`, 'world', 'Lorebook');
+}
+
+/**
+ * Handles a lease rejection on a save (HTTP 409): the chat is owned by
+ * another window.
+ * @param {Response} response
+ * @returns {boolean} true if the response was a lease rejection
+ */
+export function isLeaseRejection(response) {
+    if (!enabled || response.status !== 409) {
+        return false;
+    }
+    toastr.error('Not saved: this chat is owned by another window.', 'Multi-window', { timeOut: 8000 });
+    return true;
+}

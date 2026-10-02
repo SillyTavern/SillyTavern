@@ -252,6 +252,9 @@ import { getPresetManager, initPresetManager } from './scripts/preset-manager.js
 import { evaluateMacros, getLastMessageId, initMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
+import { initMultiWindow, getMultiWindowHeaders, consumeNeutralLanding, leaseChat, isLeaseRejection, isMultiWindowActive, shouldDeferSettingsSave, markSettingsDirty, noteSettingsPersisted } from './scripts/multi-window.js';
+import { initConnectionProfiles } from './scripts/connection-profiles-client.js';
+import { initPersonaFiles } from './scripts/personas-files.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { initScrapers } from './scripts/scrapers.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
@@ -648,6 +651,7 @@ export function getRequestHeaders({ omitContentType = false } = {}) {
     const headers = {
         'Content-Type': 'application/json',
         'X-CSRF-Token': token,
+        ...getMultiWindowHeaders(),
     };
 
     if (omitContentType) {
@@ -700,6 +704,10 @@ async function firstLoadInit() {
         toastr.error(t`Couldn't get CSRF token. Please refresh the page.`, t`Error`, { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
         throw new Error('Initialization failed');
     }
+
+    await initMultiWindow();
+    initConnectionProfiles();
+    initPersonaFiles();
 
     const initLoaderOverlay = loader.createOverlay();
     initLoaderOverlay.classList.add('splash-screen');
@@ -836,6 +844,10 @@ export function setAnimationDuration(ms = null) {
 export function setActiveCharacter(entityOrKey) {
     active_character = entityOrKey ? getTagKeyForEntity(entityOrKey) : null;
     if (active_character) active_group = null;
+    if (isMultiWindowActive()) {
+        sessionStorage.setItem('mw_active_character', active_character ?? '');
+        sessionStorage.setItem('mw_active_group', active_group ?? '');
+    }
 }
 
 /**
@@ -845,6 +857,10 @@ export function setActiveCharacter(entityOrKey) {
 export function setActiveGroup(entityOrKey) {
     active_group = entityOrKey ? getTagKeyForEntity(entityOrKey) : null;
     if (active_group) active_character = null;
+    if (isMultiWindowActive()) {
+        sessionStorage.setItem('mw_active_character', active_character ?? '');
+        sessionStorage.setItem('mw_active_group', active_group ?? '');
+    }
 }
 
 export function startStatusLoading() {
@@ -7450,6 +7466,10 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
             return;
         }
 
+        if (isLeaseRejection(result)) {
+            return;
+        }
+
         const errorData = await result.json();
         const isIntegrityError = errorData?.error === 'integrity' && !force;
         if (!isIntegrityError) {
@@ -7665,6 +7685,7 @@ export async function getChat() {
         if (!chat_metadata.integrity) {
             chat_metadata.integrity = uuidv4();
         }
+        await leaseChat(characters[this_chid].avatar, characters[this_chid].chat);
         await getChatResult();
         eventSource.emit(event_types.CHAT_LOADED, { detail: { id: this_chid, character: characters[this_chid] } });
 
@@ -8003,12 +8024,22 @@ export async function getSettings(initLoaderHandle = null) {
         changeMainAPI();
 
         //Load User's Name and Avatar
-        initUserAvatar(settings.user_avatar);
+        // In multi-window mode each window remembers its own persona
+        // selection (the blob copy is not read back).
+        const windowAvatar = isMultiWindowActive() ? sessionStorage.getItem('mw_user_avatar') : null;
+        initUserAvatar(windowAvatar || settings.user_avatar);
         setPersonaDescription();
 
         //Load the active character and group
-        active_character = settings.active_character;
-        active_group = settings.active_group;
+        // After a poisoning, land neutral: no chat, no active character/group.
+        // In multi-window mode each window remembers its own active chat
+        // (sessionStorage), since the blob no longer auto-persists.
+        if (!consumeNeutralLanding()) {
+            const windowCharacter = isMultiWindowActive() ? sessionStorage.getItem('mw_active_character') : null;
+            const windowGroup = isMultiWindowActive() ? sessionStorage.getItem('mw_active_group') : null;
+            active_character = windowCharacter !== null ? (windowCharacter || null) : settings.active_character;
+            active_group = windowGroup !== null ? (windowGroup || null) : settings.active_group;
+        }
 
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
@@ -8048,25 +8079,8 @@ export async function getSettings(initLoaderHandle = null) {
 }
 
 //MARK: saveSettings()
-export async function saveSettings(loopCounter = 0) {
-    if (!settingsReady) {
-        console.warn('Settings not ready, scheduling another save');
-        saveSettingsDebounced();
-        return;
-    }
-
-    const MAX_RETRIES = 3;
-    if (TempResponseLength.isCustomized()) {
-        if (loopCounter < MAX_RETRIES) {
-            console.warn('Response length is currently being overridden, scheduling another save');
-            saveSettingsDebounced(++loopCounter);
-            return;
-        }
-        console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
-        TempResponseLength.restore(null);
-    }
-
-    const payload = {
+function collectSettingsPayload() {
+    return {
         firstRun: firstRun,
         accountStorage: accountStorage.getState(),
         currentVersion: currentVersion,
@@ -8092,11 +8106,40 @@ export async function saveSettings(loopCounter = 0) {
         proxies: proxies,
         selected_proxy: selected_proxy,
     };
+}
+
+export async function saveSettings(loopCounter = 0, { explicit = false } = {}) {
+    // Multi-window mode: the settings blob never auto-persists. Changes stay
+    // local until the user explicitly saves, which reloads all windows. The
+    // would-be payload lets the dirty check compare against what is on disk,
+    // so trivia (per-window/profile/file-owned fields) does not prompt.
+    if (!explicit && shouldDeferSettingsSave()) {
+        markSettingsDirty(settingsReady ? collectSettingsPayload() : undefined);
+        return;
+    }
+    if (!settingsReady) {
+        console.warn('Settings not ready, scheduling another save');
+        saveSettingsDebounced();
+        return;
+    }
+
+    const MAX_RETRIES = 3;
+    if (TempResponseLength.isCustomized()) {
+        if (loopCounter < MAX_RETRIES) {
+            console.warn('Response length is currently being overridden, scheduling another save');
+            saveSettingsDebounced(++loopCounter);
+            return;
+        }
+        console.error('Response length is currently being overridden, but the save loop has reached the maximum number of retries');
+        TempResponseLength.restore(null);
+    }
+
+    const payload = collectSettingsPayload();
 
     try {
         const saveSettingsRequest = await compressRequest({
             method: 'POST',
-            headers: getRequestHeaders(),
+            headers: { ...getRequestHeaders(), ...(explicit ? { 'X-Settings-Explicit': 'true' } : {}) },
             body: JSON.stringify(payload),
             cache: 'no-cache',
         });
@@ -8107,6 +8150,7 @@ export async function saveSettings(loopCounter = 0) {
         }
 
         settings = payload;
+        noteSettingsPersisted(payload);
         await eventSource.emit(event_types.SETTINGS_UPDATED);
     } catch (error) {
         console.error('Error saving settings:', error);
