@@ -27,7 +27,8 @@ import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { macros, MacroCategory } from '../../macros/macro-system.js';
-import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported } from '../shared.js';
+import { countWebLlmTokens, generateWebLlmChatPrompt, getWebLlmContextSize, isWebLlmSupported, ConnectionManagerRequestService } from '../shared.js';
+import { buildLeanChatPrompt, prepareLeanPromptForTransport, LEAN_PROMPT_CANCELLED } from '../lean-chat-prompt.js';
 import { commonEnumProviders } from '../../slash-commands/SlashCommandCommonEnumsProvider.js';
 import { removeReasoningFromString } from '../../reasoning.js';
 import { MacrosParser } from '/scripts/macros.js';
@@ -94,6 +95,7 @@ const summary_sources = {
     'extras': 'extras',
     'main': 'main',
     'webllm': 'webllm',
+    'connection_profile': 'connection_profile',
 };
 
 const prompt_builders = {
@@ -136,6 +138,7 @@ const defaultSettings = {
     maxMessagesPerRequestMax: 250,
     maxMessagesPerRequestStep: 1,
     prompt_builder: prompt_builders.DEFAULT,
+    connectionProfileId: '',
 };
 
 function loadSettings() {
@@ -485,9 +488,18 @@ async function forceSummarizeChat(quiet) {
     const skipWIAN = extension_settings.memory.SkipWIAN;
 
     const toast = quiet ? jQuery() : toastr.info('Summarizing chat...', 'Please wait', { timeOut: 0, extendedTimeOut: 0 });
-    const value = extension_settings.memory.source === summary_sources.main
-        ? await summarizeChatMain(context, true, skipWIAN)
-        : await summarizeChatWebLLM(context, true);
+    let value = '';
+    switch (extension_settings.memory.source) {
+        case summary_sources.main:
+            value = await summarizeChatMain(context, true, skipWIAN);
+            break;
+        case summary_sources.connection_profile:
+            value = await summarizeChatConnectionProfile(context, true);
+            break;
+        default:
+            value = await summarizeChatWebLLM(context, true);
+            break;
+    }
 
     toastr.clear(toast);
 
@@ -527,6 +539,8 @@ async function summarizeCallback(args, text) {
                 const params = extension_settings.memory.overrideResponseLength > 0 ? { max_tokens: extension_settings.memory.overrideResponseLength } : {};
                 return await generateWebLlmChatPrompt(messages, params);
             }
+            case summary_sources.connection_profile:
+                return await summarizeWithConnectionProfile(text, prompt);
             default:
                 toastr.warning('Invalid summarization source specified');
                 return '';
@@ -536,6 +550,34 @@ async function summarizeCallback(args, text) {
         console.log(error);
         return '';
     }
+}
+
+/**
+ * Summarize via the Connection Profile route — uses ConnectionManagerRequestService
+ * with messages built by the lean chat prompt builder so the request is sized to the
+ * chosen profile's budget rather than the globally selected one.
+ */
+async function summarizeWithConnectionProfile(text, prompt) {
+    const profileId = extension_settings.memory.connectionProfileId;
+    if (!profileId) {
+        toastr.warning('No connection profile selected for summarization');
+        return '';
+    }
+    const messages = await buildLeanChatPrompt({
+        profileId,
+        quietPrompt: `${prompt}\n\n${text}`,
+        includeCharacter: true,
+        includeChatHistory: false,
+        includeWorldInfo: false,
+        includeSystemPrompt: false,
+    });
+    const maxTokens = extension_settings.memory.overrideResponseLength > 0
+        ? extension_settings.memory.overrideResponseLength
+        : 1024;
+    const prepared = await prepareLeanPromptForTransport(messages, profileId);
+    if (prepared === LEAN_PROMPT_CANCELLED) return '';
+    const result = await ConnectionManagerRequestService.sendRequest(profileId, prepared, maxTokens);
+    return removeReasoningFromString(result.content || '');
 }
 
 async function summarizeChat(context) {
@@ -549,6 +591,9 @@ async function summarizeChat(context) {
             break;
         case summary_sources.webllm:
             await summarizeChatWebLLM(context, false);
+            break;
+        case summary_sources.connection_profile:
+            await summarizeChatConnectionProfile(context, false);
             break;
         default:
             break;
@@ -667,6 +712,75 @@ async function summarizeChatWebLLM(context, force) {
         }
 
         // something changed during summarization request
+        if (isContextChanged(context)) {
+            return;
+        }
+
+        setMemoryContext(summary, true, lastUsedIndex);
+        return summary;
+    } finally {
+        inApiCall = false;
+    }
+}
+
+async function summarizeChatConnectionProfile(context, force) {
+    const prompt = await getSummaryPromptForNow(context, force);
+    if (!prompt) {
+        return;
+    }
+
+    const profileId = extension_settings.memory.connectionProfileId;
+    if (!profileId) {
+        toastr.warning('No connection profile selected for summarization');
+        return;
+    }
+
+    try {
+        inApiCall = true;
+        const chat = context.chat;
+        const latestSummary = getLatestMemoryFromChat(chat);
+        const latestSummaryIndex = getIndexOfLatestChatSummary(chat);
+
+        const startIdx = latestSummaryIndex + 1;
+        const endIdx = chat.length - 1;
+        const rangeAll = chat.slice(startIdx, endIdx).filter(m => !m.is_system && m.mes);
+
+        const maxMsg = extension_settings.memory.maxMessagesPerRequest;
+        const range = maxMsg > 0 ? rangeAll.slice(0, maxMsg) : rangeAll;
+        if (!range.length) {
+            if (force) {
+                toastr.info('To try again, remove the latest summary.', 'No messages found to summarize');
+            }
+            return null;
+        }
+        const lastUsedIndex = chat.indexOf(range[range.length - 1]);
+
+        const instruction = latestSummary
+            ? `${prompt}\n\nPrevious summary so far:\n${latestSummary}`
+            : prompt;
+
+        const messages = await buildLeanChatPrompt({
+            profileId,
+            quietPrompt: instruction,
+            chatHistory: range,
+            includeChatHistory: true,
+            historyMaxMessages: maxMsg > 0 ? maxMsg : null,
+            historyPacking: 'oldest-first',
+            includeCharacter: true,
+        });
+        const maxTokens = extension_settings.memory.overrideResponseLength > 0
+            ? extension_settings.memory.overrideResponseLength
+            : 1024;
+        const prepared = await prepareLeanPromptForTransport(messages, profileId);
+        if (prepared === LEAN_PROMPT_CANCELLED) return null;
+        const result = await ConnectionManagerRequestService.sendRequest(profileId, prepared, maxTokens);
+        const summary = removeReasoningFromString(result.content || '');
+
+        if (!summary) {
+            console.warn('Empty summary received');
+            return;
+        }
+
         if (isContextChanged(context)) {
             return;
         }
@@ -1061,6 +1175,23 @@ function setupListeners() {
     $('#summarySettingsBlockToggle').off('click').on('click', function () {
         $('#summarySettingsBlock').slideToggle(200, 'swing');
     });
+
+    // Connection Profile dropdown — populated by ConnectionManagerRequestService.
+    // Wrap in try/catch because the connection-manager extension may be disabled, in which
+    // case the helper throws. The connection_profile source option is unusable in that
+    // case but the rest of the memory extension still works.
+    try {
+        ConnectionManagerRequestService.handleDropdown(
+            '#memory_connection_profile',
+            extension_settings.memory.connectionProfileId,
+            (profile) => {
+                extension_settings.memory.connectionProfileId = profile?.id ?? '';
+                saveSettingsDebounced();
+            },
+        );
+    } catch (e) {
+        console.warn('[memory] connection-manager unavailable, profile source disabled', e);
+    }
 }
 
 export async function init() {
