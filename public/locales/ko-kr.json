@@ -1633,5 +1633,18 @@
     "Deleting chat…": "채팅 삭제 중…",
     "Loading chat…": "채팅 불러오는 중…",
     "Bulk Delete": "대량 삭제",
-    "Deleting ${0} character(s)…": "${0}개 캐릭터 삭제 중…"
+    "Deleting ${0} character(s)…": "${0}개 캐릭터 삭제 중…",
+    "Service Tier": "서비스 등급",
+    "Flex (cheap, slower)": "Flex(저렴, 느림)",
+    "Priority (fast, expensive)": "Priority(빠름, 비쌈)",
+    "${0} — currently unavailable": "${0} — 현재 사용할 수 없음",
+    "${0} — supported by fallback providers only": "${0} — 대체 제공자만 지원",
+    "${0} — supported by some selected providers": "${0} — 일부 선택한 제공자만 지원",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "현재 제공자와 모델에서는 ${0} 서비스를 사용할 수 없습니다. 요청은 표준 요금으로 처리됩니다.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "선택한 제공자 중 ${0} 서비스를 제공하는 제공자는 없습니다. 대체 제공자가 허용되어 있으므로 다른 제공자가 요청을 처리할 수 있습니다.",
+    "${0} is only offered by: ${1}.": "${0} 서비스를 제공하는 곳은 ${1}뿐입니다.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (기본 가격)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "모델의 기본 가격을 기준으로 한 추정치입니다. 제공자 및 서비스 등급 요금은 포함되지 않습니다.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "선택한 OpenRouter 서비스 등급(${0})은 현재 제공자와 모델에서는 사용할 수 없습니다. 요청은 표준 요금으로 처리됩니다. 서비스 등급은 API 연결 메뉴에서 변경할 수 있습니다."
 }

@@ -2754,5 +2754,18 @@
     "Deleting chat…": "Удаление чата…",
     "Loading chat…": "Загрузка чата…",
     "Bulk Delete": "Массовое удаление",
-    "Deleting ${0} character(s)…": "Удаление ${0} персонажа(ей)…"
+    "Deleting ${0} character(s)…": "Удаление ${0} персонажа(ей)…",
+    "Service Tier": "Уровень обслуживания",
+    "Flex (cheap, slower)": "Flex (дешевле, медленнее)",
+    "Priority (fast, expensive)": "Priority (быстро, дорого)",
+    "${0} — currently unavailable": "${0} — сейчас недоступен",
+    "${0} — supported by fallback providers only": "${0} — поддерживается только резервными провайдерами",
+    "${0} — supported by some selected providers": "${0} — поддерживается лишь некоторыми выбранными провайдерами",
+    "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} недоступен для текущих провайдеров и модели. Запросы обслуживаются по стандартным тарифам.",
+    "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "Ни один из выбранных провайдеров не предлагает ${0}. Поскольку резервные провайдеры разрешены, запрос может обслужить другой провайдер.",
+    "${0} is only offered by: ${1}.": "${0} доступен только у: ${1}.",
+    "${0} (${1})": "${0} (${1})",
+    "${0} (base price)": "${0} (базовая цена)",
+    "Estimated from the model's base price. Provider and service tier rates are not included.": "Оценка на основе базовой цены модели. Тарифы провайдеров и уровней обслуживания не учитываются.",
+    "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "Выбранный уровень обслуживания OpenRouter, ${0}, недоступен для текущих провайдеров и модели. Запросы обслуживаются по стандартным тарифам. Изменить уровень обслуживания можно в меню Соединение с API."
 }

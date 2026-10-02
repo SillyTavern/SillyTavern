@@ -1471,5 +1471,18 @@
     "Deleting chat…": "กำลังลบแชท…",
     "Loading chat…": "กำลังโหลดแชท…",
     "Bulk Delete": "ลบจำนวนมาก",
-    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…"
+    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…",
+  "Service Tier": "ระดับบริการ",
+  "Flex (cheap, slower)": "Flex (ถูก, ช้ากว่า)",
+  "Priority (fast, expensive)": "Priority (เร็ว, แพง)",
+  "${0} — currently unavailable": "${0} — ไม่พร้อมใช้งานในขณะนี้",
+  "${0} — supported by fallback providers only": "${0} — รองรับโดยผู้ให้บริการสำรองเท่านั้น",
+  "${0} — supported by some selected providers": "${0} — รองรับโดยผู้ให้บริการที่เลือกไว้เพียงบางราย",
+  "${0} is not available for the current providers and model. Requests are served at standard rates.": "${0} ไม่พร้อมใช้งานสำหรับผู้ให้บริการและโมเดลปัจจุบัน คำขอจะให้บริการในอัตรามาตรฐาน",
+  "None of the selected providers offers ${0}. Because fallbacks are allowed, another provider may serve the request.": "ไม่มีผู้ให้บริการที่เลือกไว้รายใดให้บริการ ${0} เนื่องจากอนุญาตให้ใช้ผู้ให้บริการสำรอง ผู้ให้บริการรายอื่นอาจให้บริการคำขอนี้",
+  "${0} is only offered by: ${1}.": "${0} ให้บริการเฉพาะโดย: ${1}",
+  "${0} (${1})": "${0} (${1})",
+  "${0} (base price)": "${0} (ราคาพื้นฐาน)",
+  "Estimated from the model's base price. Provider and service tier rates are not included.": "ประมาณการจากราคาพื้นฐานของโมเดล ไม่รวมอัตราค่าบริการของผู้ให้บริการและระดับบริการ",
+  "The selected OpenRouter service tier, ${0}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.": "ระดับบริการ OpenRouter ที่เลือกไว้ ${0} ไม่พร้อมใช้งานสำหรับผู้ให้บริการและโมเดลปัจจุบัน คำขอจะให้บริการในอัตรามาตรฐาน คุณสามารถเปลี่ยนระดับบริการได้ในเมนูการเชื่อมต่อ API"
 }

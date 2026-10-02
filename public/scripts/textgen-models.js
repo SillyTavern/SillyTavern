@@ -8,6 +8,7 @@ import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { localizePagination, PAGINATION_TEMPLATE, textValueMatcher } from './utils.js';
+import { getOpenRouterServiceTierStates } from './openrouter-tiers.js';
 
 let mancerModels = [];
 let togetherModels = [];
@@ -19,6 +20,15 @@ let featherlessModels = [];
 let tabbyModels = [];
 let llamacppModels = [];
 export let openRouterModels = [];
+const openRouterProviderSyncSeq = new Map();
+
+/**
+ * Endpoints last reported for the model of each provider selector.
+ * Kept around so tier availability can be recomputed when the provider selection or the
+ * fallback setting changes, without asking the backend again.
+ * @type {Map<string, import('./openrouter-tiers.js').OpenRouterEndpoint[]>}
+ */
+const openRouterEndpointsForSelector = new Map();
 
 /**
  * List of OpenRouter providers.
@@ -344,8 +354,360 @@ const OPENROUTER_PROVIDER_WARNING_SELECTORS = {
     '#openrouter_providers_chat': {
         fallbackSelector: '#openrouter_allow_fallbacks',
         warningSelector: '#openrouter_provider_warning_chat',
+        tiersSelector: '#openrouter_service_tier',
+        tierNoteSelector: '#openrouter_service_tier_note',
+        tierWarningSelector: '#openrouter_service_tier_warning',
     },
 };
+
+/**
+ * User-facing names of the known service tiers.
+ * @type {Record<string, () => string>}
+ */
+const OPENROUTER_SERVICE_TIER_LABELS = {
+    standard: () => t`Default`,
+    flex: () => t`Flex (cheap, slower)`,
+    priority: () => t`Priority (fast, expensive)`,
+};
+
+/**
+ * Short tier names, used where the full label would not fit, e.g. next to a provider.
+ *
+ * These are OpenRouter's own tier names, so they are deliberately not translated. The full labels
+ * keep the tier name as-is too and only localize the description in brackets, and reusing the
+ * generic `Priority` translation here would make the same tier read differently in the two places.
+ * @type {Record<string, string>}
+ */
+const OPENROUTER_SERVICE_TIER_SHORT_LABELS = {
+    flex: 'Flex',
+    priority: 'Priority',
+};
+
+/** Tiers worth mentioning next to a provider, in display order. */
+const OPENROUTER_ANNOTATED_SERVICE_TIERS = ['flex', 'priority'];
+
+/**
+ * Extra class on the tier heading icon while only fallback providers can serve the tier.
+ *
+ * That case is a caution rather than a failure: the request still gets the tier, just not from a
+ * provider the user picked. The stylesheet colors the icon accordingly.
+ */
+const OPENROUTER_FALLBACK_ONLY_ICON_CLASS = 'fallback_only_warning';
+
+/**
+ * @param {string} tier Tier identifier
+ * @returns {string} Localized tier name, falling back to the raw identifier
+ */
+function getOpenRouterServiceTierLabel(tier) {
+    return OPENROUTER_SERVICE_TIER_LABELS[tier] ? OPENROUTER_SERVICE_TIER_LABELS[tier]() : tier;
+}
+
+/**
+ * Builds a dropdown label that spells out how well the selected providers cover the tier, so an
+ * offered tier never looks usable when it is not.
+ *
+ * `Default` is exempt: it only means "do not request a tier", so it stays plain (and enabled) even
+ * when no endpoint serves the standard rates, and none of the coverage caveats apply to it either.
+ * @param {import('./openrouter-tiers.js').OpenRouterServiceTierState} state Tier state
+ * @returns {string} Localized label
+ */
+function getOpenRouterServiceTierOptionLabel(state) {
+    const label = getOpenRouterServiceTierLabel(state.tier);
+
+    if (state.tier === 'standard') {
+        return label;
+    }
+
+    if (!state.available) {
+        return t`${label} — currently unavailable`;
+    }
+    if (state.onlyFromFallback) {
+        return t`${label} — supported by fallback providers only`;
+    }
+    if (state.partiallySupported) {
+        return t`${label} — supported by some selected providers`;
+    }
+
+    return label;
+}
+
+/**
+ * Describes what the selected tier will actually do, which matters most for flex: without an
+ * eligible flex endpoint the request is served at standard rates instead.
+ * @param {import('./openrouter-tiers.js').OpenRouterServiceTierState} [state] Selected tier state
+ * @returns {string} Note text, or an empty string when there is nothing to explain
+ */
+function getOpenRouterServiceTierNote(state) {
+    if (!state || state.tier === 'standard') {
+        return '';
+    }
+
+    const label = getOpenRouterServiceTierLabel(state.tier);
+
+    if (!state.available) {
+        return t`${label} is not available for the current providers and model. Requests are served at standard rates.`;
+    }
+    if (state.onlyFromFallback) {
+        return t`None of the selected providers offers ${label}. Because fallbacks are allowed, another provider may serve the request.`;
+    }
+    if (state.partiallySupported) {
+        return t`${label} is only offered by: ${state.selectedProviders.join(', ')}.`;
+    }
+
+    return '';
+}
+
+/**
+ * Decides how loudly the tier heading warns about the selected tier.
+ *
+ * Only the two states that change what the request ends up doing get an icon: a tier nothing can
+ * serve, and a tier only fallback providers can serve. Partial coverage is the ordinary state of a
+ * broad provider selection, so the note alone explains it and the icon keeps meaning "this costs
+ * you something" instead of just "there is text below".
+ * @param {import('./openrouter-tiers.js').OpenRouterServiceTierState} [state] Selected tier state
+ * @returns {'unavailable' | 'fallback' | 'none'} Warning level
+ */
+function getOpenRouterServiceTierWarningLevel(state) {
+    if (!state || state.tier === 'standard') {
+        return 'none';
+    }
+    if (!state.available) {
+        return 'unavailable';
+    }
+    if (state.onlyFromFallback) {
+        return 'fallback';
+    }
+
+    return 'none';
+}
+
+/**
+ * Shows what the selected tier will actually do: a note under the dropdown that always explains the
+ * state, and an icon next to the heading when the tier is at risk — red when nothing can serve it,
+ * yellow when only fallbacks can. Partial coverage keeps the note but gets no icon.
+ * @param {string} providersSelector Provider selector the tiers belong to
+ * @param {import('./openrouter-tiers.js').OpenRouterServiceTierState} [state] Selected tier state
+ */
+function updateOpenRouterServiceTierNote(providersSelector, state) {
+    const selectors = OPENROUTER_PROVIDER_WARNING_SELECTORS[providersSelector];
+
+    if (!selectors?.tierNoteSelector) {
+        return;
+    }
+
+    const text = getOpenRouterServiceTierNote(state);
+    const warningLevel = getOpenRouterServiceTierWarningLevel(state);
+
+    $(selectors.tierNoteSelector).text(text).toggleClass('displayNone', !text);
+
+    $(selectors.tierWarningSelector)
+        .toggleClass('displayNone', warningLevel === 'none')
+        .toggleClass(OPENROUTER_FALLBACK_ONLY_ICON_CLASS, warningLevel === 'fallback')
+        // The icon has no room for an explanation of its own, so the note doubles as its tooltip.
+        .attr('title', warningLevel === 'none' ? null : text);
+}
+
+/**
+ * Builds the toast for a saved tier the current model cannot serve.
+ *
+ * Unlike the note under the dropdown this message has to stand on its own: the user may not be
+ * looking at the API Connections panel, and may not know that the tier comes from OpenRouter, so
+ * it names the setting and where to change it.
+ * @param {import('./openrouter-tiers.js').OpenRouterServiceTierState} state Selected tier state
+ * @returns {string} Localized warning text
+ */
+function getOpenRouterUnavailableServiceTierWarning(state) {
+    const label = getOpenRouterServiceTierLabel(state.tier);
+
+    return t`The selected OpenRouter service tier, ${label}, is not available for the current providers and model. Requests are served at standard rates. You can change the service tier in the API Connections menu.`;
+}
+
+/**
+ * Reports a tier that has just stopped being servable, so the request does not quietly fall back to
+ * standard rates without the user noticing.
+ *
+ * Warning on the change, rather than on every evaluation, is what keeps it from repeating while the
+ * situation stays the same, and it comes back if the tier works again and later breaks again. The
+ * provider list needs this in particular: its dropdown covers the tier control while it is open, so a
+ * provider click that drops the tier would otherwise stay invisible until the dropdown is closed.
+ *
+ * What was known last time is remembered on the dropdown itself, so it is forgotten with the panel
+ * and cannot outlive it.
+ * @param {JQuery<HTMLSelectElement>} $tiers Tier dropdown
+ * @param {import('./openrouter-tiers.js').OpenRouterServiceTierState} [state] Selected tier state
+ */
+function warnAboutUnavailableServiceTier($tiers, state) {
+    if (!state || state.tier === 'standard') {
+        return;
+    }
+
+    const previous = $tiers.data('serviceTierAvailability');
+    // Nothing remembered counts as servable: both a first look and a tier this dropdown has not
+    // judged before mean the user has not been told about the situation yet.
+    const wasServable = !previous || previous.tier !== state.tier || previous.available;
+    const hasStoppedBeingServable = !state.available && wasServable;
+
+    $tiers.data('serviceTierAvailability', { tier: state.tier, available: state.available });
+
+    if (hasStoppedBeingServable) {
+        toastr.warning(getOpenRouterUnavailableServiceTierWarning(state));
+    }
+}
+
+/**
+ * Collects the non-default service tiers each provider serves for a model.
+ * @param {import('./openrouter-tiers.js').OpenRouterEndpoint[] | null | undefined} endpoints Endpoints
+ * @returns {Map<string, string[]>} Provider name to the tiers it serves, in display order
+ */
+function getOpenRouterProviderTiers(endpoints) {
+    /** @type {Map<string, Set<string>>} */
+    const tiersByProvider = new Map();
+
+    if (!Array.isArray(endpoints)) {
+        return new Map();
+    }
+
+    for (const endpoint of endpoints) {
+        if (!endpoint?.provider || endpoint.online === false) {
+            continue;
+        }
+        if (!OPENROUTER_ANNOTATED_SERVICE_TIERS.includes(endpoint.tier)) {
+            continue;
+        }
+        if (!tiersByProvider.has(endpoint.provider)) {
+            tiersByProvider.set(endpoint.provider, new Set());
+        }
+        tiersByProvider.get(endpoint.provider).add(endpoint.tier);
+    }
+
+    return new Map([...tiersByProvider].map(([provider, tiers]) => [
+        provider,
+        OPENROUTER_ANNOTATED_SERVICE_TIERS.filter(tier => tiers.has(tier)),
+    ]));
+}
+
+/**
+ * Replaces an option element with an identical one carrying a new label.
+ *
+ * select2 remembers the data it rendered for an option on the option element itself, so rewriting
+ * the text of an existing option never reaches the dropdown or its tags. Recreating the element is
+ * the only way to make it read the label again without reaching into select2 internals.
+ *
+ * The replacement is inserted in place, so the order of the options (selected providers are moved
+ * to the end of the list) is preserved, and value, selection and disabled state are copied over
+ * explicitly. Cloning must not be used: select2 marks up the elements it has already read, and a
+ * clone would inherit that mark and keep rendering the old label.
+ *
+ * The discarded element leaves its cache entry behind, since select2 only clears those when it is
+ * itself destroyed. One entry per relabelled option is not worth reaching into the library to purge.
+ * @param {JQuery<HTMLOptionElement>} $option Option to relabel
+ * @param {string} label New option label
+ */
+function setOpenRouterProviderOptionLabel($option, label) {
+    if ($option.text() === label) {
+        return;
+    }
+
+    const isSelected = $option.prop('selected');
+    const $replacement = $('<option>', {
+        value: String($option.val()),
+        text: label,
+        disabled: $option.prop('disabled'),
+    }).insertBefore($option);
+
+    $replacement.prop('selected', isSelected);
+    $option.remove();
+}
+
+/**
+ * Appends the service tiers a provider serves to its option label, e.g. `Google (Flex, Priority)`.
+ * Providers that serve no such tier keep their plain name. Option values are left untouched.
+ *
+ * Only annotated where a service tier can actually be selected, so the hint is never shown next
+ * to a dropdown that cannot act on it.
+ * @param {string} providersSelector Provider selector to update
+ */
+function updateOpenRouterProviderTierLabels(providersSelector) {
+    const selectors = OPENROUTER_PROVIDER_WARNING_SELECTORS[providersSelector];
+
+    if (!selectors?.tiersSelector) {
+        return;
+    }
+
+    const $providers = $(providersSelector);
+
+    if ($providers.length === 0) {
+        return;
+    }
+
+    const tiersByProvider = getOpenRouterProviderTiers(openRouterEndpointsForSelector.get(providersSelector));
+
+    $providers.find('option').each(function () {
+        const provider = String($(this).val());
+        const tiers = tiersByProvider.get(provider) ?? [];
+        const tierNames = tiers.map(tier => OPENROUTER_SERVICE_TIER_SHORT_LABELS[tier] ?? tier);
+
+        setOpenRouterProviderOptionLabel($(this), tierNames.length > 0 ? t`${provider} (${tierNames.join(', ')})` : provider);
+    });
+}
+
+/**
+ * Rebuilds the service tier dropdown from the endpoints already known for a provider selector.
+ *
+ * This never writes to the settings. A saved tier stays selected even when the current model
+ * cannot serve it, so switching models back and forth cannot silently discard the preference.
+ * Only the user changing the dropdown updates the setting.
+ * @param {string} providersSelector Provider selector the tiers belong to
+ * @param {string} [selectedTier] Tier saved in the settings
+ * @returns {import('./openrouter-tiers.js').OpenRouterServiceTierState[] | null} Tier states, if any
+ */
+export function refreshOpenRouterServiceTierOptions(providersSelector, selectedTier = '') {
+    const selectors = OPENROUTER_PROVIDER_WARNING_SELECTORS[providersSelector];
+    const tiersSelector = selectors?.tiersSelector;
+
+    if (!tiersSelector) {
+        return null;
+    }
+
+    const $tiers = $(tiersSelector);
+    if ($tiers.length === 0) {
+        return null;
+    }
+
+    const selectedProviders = $(providersSelector).val();
+    const states = getOpenRouterServiceTierStates(openRouterEndpointsForSelector.get(providersSelector), {
+        selectedProviders: Array.isArray(selectedProviders) ? selectedProviders.map(String) : [],
+        allowFallbacks: !!$(selectors.fallbackSelector).prop('checked'),
+        selectedTier,
+    });
+
+    $tiers.empty();
+    for (const state of states) {
+        $tiers.append($('<option>', {
+            value: state.tier === 'standard' ? '' : state.tier,
+            text: getOpenRouterServiceTierOptionLabel(state),
+            // The default option only means "do not request a tier", so it is never disabled.
+            disabled: state.tier !== 'standard' && !state.available,
+        }));
+    }
+
+    // Select the saved tier on the option element itself. jQuery's .val() deliberately ignores
+    // disabled options, which is exactly the state a saved-but-unavailable tier is in.
+    let hasSelection = false;
+    $tiers.find('option').each(function () {
+        this.selected = this.value === selectedTier;
+        hasSelection = hasSelection || this.selected;
+    });
+    if (!hasSelection) {
+        $tiers.find('option').first().prop('selected', true);
+    }
+
+    const selectedState = states.find(state => state.tier === selectedTier);
+    updateOpenRouterServiceTierNote(providersSelector, selectedState);
+    warnAboutUnavailableServiceTier($tiers, selectedState);
+
+    return states;
+}
 
 export function updateOpenRouterProvidersWarning(providersSelector) {
     const $providers = $(providersSelector);
@@ -367,16 +729,40 @@ export function updateOpenRouterProvidersWarning(providersSelector) {
     $warning.toggleClass('displayNone', !showWarning);
 }
 
-export async function syncOpenRouterProvidersForModel(modelId, providersSelector) {
+/**
+ * Loads the providers and service tiers offered for a model.
+ *
+ * The loaded endpoints are remembered so tier availability can be refreshed on its own when the
+ * provider selection or the fallback setting changes.
+ * @param {string} modelId OpenRouter model identifier
+ * @param {string} providersSelector Provider selector to update
+ * @param {Object} [options] Sync options
+ * @param {string} [options.selectedTier] Tier saved in the settings, kept selected after the update
+ * @returns {Promise<void>}
+ */
+export async function syncOpenRouterProvidersForModel(modelId, providersSelector, { selectedTier = '' } = {}) {
     const $providers = $(providersSelector);
+    const seq = (openRouterProviderSyncSeq.get(providersSelector) || 0) + 1;
+    openRouterProviderSyncSeq.set(providersSelector, seq);
 
     const refreshWarningState = () => {
         updateOpenRouterProvidersWarning(providersSelector);
     };
 
+    const refreshTierState = () => {
+        refreshOpenRouterServiceTierOptions(providersSelector, selectedTier);
+    };
+
+    const forgetEndpoints = () => {
+        openRouterEndpointsForSelector.delete(providersSelector);
+    };
+
     if (!modelId || !modelId.includes('/')) {
+        forgetEndpoints();
         $providers.find('option').prop('disabled', false);
+        updateOpenRouterProviderTierLabels(providersSelector);
         $providers.trigger('change.select2');
+        refreshTierState();
         refreshWarningState();
         return;
     }
@@ -388,29 +774,53 @@ export async function syncOpenRouterProvidersForModel(modelId, providersSelector
             body: JSON.stringify({ model: modelId }),
         });
 
+        if (openRouterProviderSyncSeq.get(providersSelector) !== seq) return;
+
         if (!response.ok) {
+            forgetEndpoints();
+            updateOpenRouterProviderTierLabels(providersSelector);
+            $providers.trigger('change.select2');
+            refreshTierState();
             refreshWarningState();
             return;
         }
 
-        const providerNames = await response.json();
+        const data = await response.json();
+        if (openRouterProviderSyncSeq.get(providersSelector) !== seq) return;
+
+        // Tolerate the legacy array-only response shape.
+        const payload = Array.isArray(data) ? { providers: data, endpoints: [] } : data;
+        const providerNames = payload?.providers;
+        const endpoints = Array.isArray(payload?.endpoints) ? payload.endpoints : null;
 
         if (!Array.isArray(providerNames) || providerNames.length === 0) {
+            forgetEndpoints();
             $providers.find('option').prop('disabled', false);
+            updateOpenRouterProviderTierLabels(providersSelector);
             $providers.trigger('change.select2');
+            refreshTierState();
             refreshWarningState();
             return;
         }
+
+        openRouterEndpointsForSelector.set(providersSelector, endpoints);
 
         $providers.find('option').each(function () {
             const isAvailable = providerNames.includes($(this).val());
             $(this).prop('disabled', !isAvailable);
         });
 
+        updateOpenRouterProviderTierLabels(providersSelector);
         $providers.trigger('change.select2');
+        refreshTierState();
         refreshWarningState();
     } catch (error) {
+        if (openRouterProviderSyncSeq.get(providersSelector) !== seq) return;
         console.error('Failed to fetch OpenRouter providers for model', error);
+        forgetEndpoints();
+        updateOpenRouterProviderTierLabels(providersSelector);
+        $providers.trigger('change.select2');
+        refreshTierState();
         refreshWarningState();
     }
 }
@@ -1400,6 +1810,9 @@ export function initTextGenModels() {
     $('#generic_model_select').on('change', onGenericModelSelect);
     $('#featherless_model').on('change', () => onFeatherlessModelSelect(String($('#featherless_model').val())));
 
+    // Labels of these options are rewritten later to show the service tiers a provider offers.
+    // setOpenRouterProviderOptionLabel() recreates an option for that, so any attribute added here
+    // has to be copied there as well.
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {
         providersSelect.append($('<option>', {

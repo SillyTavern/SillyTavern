@@ -81,7 +81,7 @@ import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
-import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { refreshOpenRouterServiceTierOptions, syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
 
 export {
     openai_messages_count,
@@ -322,6 +322,7 @@ export const settingsToUpdate = {
     openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false, true],
     openrouter_quantizations: ['#openrouter_quantizations_chat', 'openrouter_quantizations', false, true],
     openrouter_allow_fallbacks: ['#openrouter_allow_fallbacks', 'openrouter_allow_fallbacks', true, true],
+    openrouter_service_tier: ['#openrouter_service_tier', 'openrouter_service_tier', false, true],
     openrouter_middleout: ['#openrouter_middleout', 'openrouter_middleout', false, true],
     tool_reasoning_mode: ['#tool_reasoning_mode', 'tool_reasoning_mode', false, false],
     ai21_model: ['#model_ai21_select', 'ai21_model', false, true],
@@ -481,6 +482,7 @@ const default_settings = {
     openrouter_providers: [],
     openrouter_quantizations: [],
     openrouter_allow_fallbacks: true,
+    openrouter_service_tier: '',
     openrouter_middleout: openrouter_middleout_types.ON,
     tool_reasoning_mode: tool_reasoning_modes.DISABLED,
     reverse_proxy: '',
@@ -1800,6 +1802,14 @@ function getOpenRouterModelTemplate(option) {
     `));
 }
 
+/**
+ * Refreshes the service tier dropdown and its note for the current providers and fallback
+ * setting. Reads the tier saved in the settings, so a model switch cannot reset it.
+ */
+function updateOpenRouterServiceTierState() {
+    refreshOpenRouterServiceTierOptions('#openrouter_providers_chat', oai_settings.openrouter_service_tier);
+}
+
 function calculateOpenRouterCost() {
     if (oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
         return;
@@ -1819,12 +1829,20 @@ function calculateOpenRouterCost() {
         }
     }
 
+    // Whether the figure above is a real base-price estimate rather than `Unknown`. Captured before
+    // the web search surcharge is appended, which would otherwise hide that the model price is missing.
+    const hasBasePriceEstimate = cost !== 'Unknown';
+
     if (oai_settings.enable_web_search) {
         const webSearchCost = (0.02).toFixed(2);
         cost = t`${cost} + $${webSearchCost}`;
     }
 
-    $('#openrouter_max_prompt_cost').text(cost);
+    // This estimate uses the model's base price. Provider rates and service tier pricing are not
+    // part of it, so label it instead of presenting it as an exact figure.
+    $('#openrouter_max_prompt_cost')
+        .text(hasBasePriceEstimate ? t`${cost} (base price)` : cost)
+        .attr('title', hasBasePriceEstimate ? t`Estimated from the model's base price. Provider and service tier rates are not included.` : null);
 }
 
 function getElectronHubModelTemplate(option) {
@@ -2891,6 +2909,9 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.quantizations = settings.openrouter_quantizations;
         generate_data.allow_fallbacks = settings.openrouter_allow_fallbacks;
         generate_data.middleout = settings.openrouter_middleout;
+        if (settings.openrouter_service_tier) {
+            generate_data.service_tier = settings.openrouter_service_tier;
+        }
     }
 
     if (settings.chat_completion_source === chat_completion_sources.NANOGPT) {
@@ -5502,7 +5523,7 @@ async function onModelChange() {
 
         console.log('OpenRouter model changed to', value);
         oai_settings.openrouter_model = value;
-        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat');
+        syncOpenRouterProvidersForModel(value, '#openrouter_providers_chat', { selectedTier: oai_settings.openrouter_service_tier });
     }
 
     if ($(this).is('#model_ai21_select')) {
@@ -7023,6 +7044,7 @@ export function initOpenAI() {
     $('#openrouter_allow_fallbacks').on('input', function () {
         oai_settings.openrouter_allow_fallbacks = !!$(this).prop('checked');
         updateOpenRouterProvidersWarning('#openrouter_providers_chat');
+        updateOpenRouterServiceTierState();
         saveSettingsDebounced();
     });
 
@@ -7275,6 +7297,7 @@ export function initOpenAI() {
         oai_settings.openrouter_providers = selectedProviders;
 
         updateOpenRouterProvidersWarning('#openrouter_providers_chat');
+        updateOpenRouterServiceTierState();
         saveSettingsDebounced();
     });
 
@@ -7288,6 +7311,12 @@ export function initOpenAI() {
 
         oai_settings.openrouter_quantizations = selectedQuantizations;
 
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_service_tier').on('change', function () {
+        oai_settings.openrouter_service_tier = String($(this).val());
+        updateOpenRouterServiceTierState();
         saveSettingsDebounced();
     });
 
