@@ -756,7 +756,7 @@ async function firstLoadInit() {
     initTags();
     initBookmarks();
     await getUserAvatars(true, user_avatar);
-    await getCharacters();
+    await getCharacters(true);
     await getBackgrounds();
     await initTokenizers();
     initBackgrounds();
@@ -1220,7 +1220,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     return entities;
 }
 
-export async function getOneCharacter(avatarUrl) {
+export async function getOneCharacter(avatarUrl, allowCreate = false) {
     const response = await fetch('/api/characters/get', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1238,10 +1238,17 @@ export async function getOneCharacter(avatarUrl) {
 
         if (indexOf !== -1) {
             characters[indexOf] = getData;
+        } else if (allowCreate) {
+            characters.push(getData);
+            await printCharacters(true);
         } else {
             toastr.error(t`Character ${avatarUrl} not found in the list`, t`Error`, { timeOut: 5000, preventDuplicates: true });
         }
+
+        return getData;
     }
+
+    return null;
 }
 
 export function getCharacterSource(chId = this_chid) {
@@ -1291,7 +1298,7 @@ export function getCharacterSource(chId = this_chid) {
     return '';
 }
 
-export async function getCharacters() {
+export async function getCharacters(retry = false) {
     const response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1299,8 +1306,16 @@ export async function getCharacters() {
     });
     if (response.ok) {
         const previousAvatar = this_chid !== undefined ? characters[this_chid]?.avatar : null;
-        characters.splice(0, characters.length);
-        const getData = await response.json();
+        characters.length = 0;
+        let getData;
+
+        try {
+            getData = await response.json();
+        } catch (error) {
+            console.error('Failed to parse characters:', error);
+            return retry ? getCharacters(true) : undefined;
+        }
+
         for (let i = 0; i < getData.length; i++) {
             characters[i] = getData[i];
             characters[i].name = DOMPurify.sanitize(characters[i].name);
@@ -1332,6 +1347,8 @@ export async function getCharacters() {
         if (errorData?.overflow) {
             await Popup.show.text(t`Character data length limit reached`, t`To resolve this, set "performance.lazyLoadCharacters" to "true" in config.yaml and restart the server.`);
         }
+
+        return retry ? getCharacters(true) : undefined;
     }
 }
 
@@ -6075,7 +6092,11 @@ export async function duplicateCharacter({ avatar = null, silent = false } = {})
     toastr.success(t`Character Duplicated`);
     const data = await response.json();
     await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: targetAvatar, newAvatar: data.path });
-    await getCharacters();
+
+    const charData = await getOneCharacter(data.path, true);
+    if (charData == null) {
+        await getCharacters();
+    }
 
     return data.path;
 }
@@ -7088,7 +7109,7 @@ export function deactivateSendButtons() {
     document.body.dataset.generating = 'true';
 }
 
-export function resetChatState() {
+export function resetChatState(clearCharacters = true) {
     // replaces deleted charcter name with system user since it will be displayed next.
     name2 = (this_chid === undefined && neutralCharacterName) ? neutralCharacterName : systemUserName;
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
@@ -7097,8 +7118,10 @@ export function resetChatState() {
     chat.splice(0, chat.length, ...SAFETY_CHAT);
     // resets chat metadata
     chat_metadata = {};
-    // resets the characters array, forcing getcharacters to reset
-    characters.length = 0;
+    if (clearCharacters) {
+        // resets the characters array, forcing getcharacters to reset
+        characters.length = 0;
+    }
 }
 
 /**
@@ -9855,7 +9878,11 @@ export async function createOrEditCharacter(e) {
 
             console.log(`new avatar id: ${avatarId}`);
             createTagMapFromList('#tagList', avatarId);
-            await getCharacters();
+
+            const charData = await getOneCharacter(avatarId, true);
+            if (charData == null) {
+                await getCharacters();
+            }
 
             select_rm_info('char_create', avatarId, oldSelectedChar);
 
@@ -10473,23 +10500,23 @@ export async function processDroppedFiles(files, data = new Map()) {
         'byaf',
     ];
 
-    const avatarFileNames = [];
     for (const file of files) {
         const extension = file.name.split('.').pop().toLowerCase();
         if (allowedMimeTypes.some(x => file.type.startsWith(x)) || allowedExtensions.includes(extension)) {
             const preservedName = data instanceof Map && data.get(file);
             const avatarFileName = await importCharacter(file, { preserveFileName: preservedName });
             if (avatarFileName !== undefined) {
-                avatarFileNames.push(avatarFileName);
+                const charData = await getOneCharacter(avatarFileName, true);
+                if (charData) {
+                    if (power_user.tag_import_setting !== tag_import_setting.NONE) {
+                        await importTags(charData);
+                    }
+                    selectImportedChar(avatarFileName);
+                }
             }
         } else {
             toastr.warning(t`Unsupported file type: ` + file.name);
         }
-    }
-
-    if (avatarFileNames.length > 0) {
-        await importCharactersTags(avatarFileNames);
-        selectImportedChar(avatarFileNames[avatarFileNames.length - 1]);
     }
 }
 
@@ -10887,8 +10914,9 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
 
         await eventSource.emit(event_types.CHARACTER_DELETED, { id: chid, character: character });
         deleted = true;
-    }
 
+        characters.splice(chid, 1);
+    }
     await removeCharacterFromUI();
     return deleted;
 }
@@ -10897,17 +10925,17 @@ export async function deleteCharacter(characterKey, { deleteChats = true } = {})
  * Function to delete a character from UI after character deletion API success.
  * It manages necessary UI changes such as closing advanced editing popup, unsetting
  * character ID, resetting characters array and chat metadata, deselecting character's tab
- * panel, removing character name from navigation tabs, clearing chat, fetching updated list of characters.
+ * panel, removing character name from navigation tabs, clearing chat, reloading character list.
  * It also ensures to save the settings after all the operations.
  */
 async function removeCharacterFromUI() {
     preserveNeutralChat();
     await clearChat();
     $('#character_cross').trigger('click');
-    resetChatState();
+    resetChatState(false);
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     restoreNeutralChat();
-    await getCharacters();
+    await printCharacters(true);
     await printMessages();
     saveSettingsDebounced();
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -12012,17 +12040,17 @@ jQuery(async function () {
             return;
         }
 
-        const avatarFileNames = [];
         for (const file of e.target.files) {
             const avatarFileName = await importCharacter(file);
             if (avatarFileName !== undefined) {
-                avatarFileNames.push(avatarFileName);
+                const charData = await getOneCharacter(avatarFileName, true);
+                if (charData) {
+                    if (power_user.tag_import_setting !== tag_import_setting.NONE) {
+                        await importTags(charData);
+                    }
+                    selectImportedChar(avatarFileName);
+                }
             }
-        }
-
-        if (avatarFileNames.length > 0) {
-            await importCharactersTags(avatarFileNames);
-            selectImportedChar(avatarFileNames[avatarFileNames.length - 1]);
         }
 
         // Clear the file input value to allow re-uploading the same file
