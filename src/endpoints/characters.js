@@ -1116,10 +1116,15 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
     char.create_date = request.body.create_date;
     char = JSON.stringify(char);
     let targetFile = (request.body.avatar_url).replace('.png', '');
+    const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
+
+    if (!fs.existsSync(avatarPath)) {
+        console.warn(`Error: character file does not exist: ${request.body.avatar_url}`);
+        return response.status(404).send('Error: character file does not exist');
+    }
 
     try {
         if (!request.file) {
-            const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
             await writeCharacterData(avatarPath, char, targetFile, request);
         } else {
             const crop = tryParse(request.query.crop);
