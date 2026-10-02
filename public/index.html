@@ -3816,6 +3816,24 @@
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">
+                            <div id="custom_provider_setup" class="hidden">
+                                <label for="custom_provider_select" data-i18n="Provider setup">Provider setup</label>
+                                <select id="custom_provider_select" class="text_pole wide100p" aria-describedby="custom_provider_info"></select>
+                                <small id="custom_provider_info"></small>
+                                <div class="flex-container marginTop5">
+                                    <a id="custom_provider_documentation" target="_blank" rel="noopener noreferrer" data-i18n="Documentation">Documentation</a>
+                                    <a id="custom_provider_support" target="_blank" rel="noopener noreferrer" data-i18n="Support">Support</a>
+                                    <button id="custom_provider_reset" type="button" class="menu_button" data-i18n="Reset provider defaults">Reset provider defaults</button>
+                                    <button id="custom_provider_detach" type="button" class="menu_button" data-i18n="Use these settings manually">Use these settings manually</button>
+                                    <button id="custom_provider_forget" type="button" class="menu_button" data-i18n="Forget saved setup">Forget saved setup</button>
+                                </div>
+                            </div>
+                            <div id="custom_credential_binding" class="hidden">
+                                <label for="custom_credential_select" data-i18n="Connection key">Connection key</label>
+                                <select id="custom_credential_select" class="text_pole wide100p" aria-describedby="custom_credential_info"></select>
+                                <small id="custom_credential_info" data-i18n="Select a stored key to approve sending it to this exact API root. New keys are saved through the existing key input and Connect.">Select a stored key to approve sending it to this exact API root. New keys are saved through the existing key input and Connect.</small>
+                            </div>
+                            <div id="custom_provider_error" role="status" aria-live="polite"></div>
                             <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
                                 <input id="custom_api_url_text" class="text_pole wide100p" value="" autocomplete="off" data-i18n="[placeholder]Example: http://localhost:1234/v1" placeholder="Example: http://localhost:1234/v1">
