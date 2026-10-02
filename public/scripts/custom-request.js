@@ -541,6 +541,7 @@ export class ChatCompletionService {
      * @param {Object} options - Configuration options
      * @param {string?} [options.presetName] - Name of the preset to use for generation settings
      * @param {array?} [options.tools] - list of custom tool definitions
+     * @param {string?} [options.tool_choice] - Tool choice to use for the request. Default "auto"
      * @param {import('./custom-providers.js').CustomConnectionSnapshot} [options.customConnection] - Complete isolated Custom tuple
      * @param {boolean} [extractData=true] - Whether to extract structured data from response
      * @param {AbortSignal?} [signal] - Abort signal
@@ -654,7 +655,7 @@ export class ChatCompletionService {
                 tool.action,
                 tool.formatMessage,
                 () => true,  // Always considered enabled
-                tool.stealth
+                tool.stealth,
             ));
         }
 

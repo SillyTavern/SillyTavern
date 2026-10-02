@@ -420,7 +420,8 @@ export class ConnectionManagerRequestService {
      * @param {boolean?} [custom.extractData=true]
      * @param {boolean?} [custom.includePreset=true]
      * @param {boolean?} [custom.includeInstruct=true]
-     * @param {array?} [custom.tools]  A list of custom tool definitions to use for this request, independent of any registered ToolManager tools.
+     * @param {array?} [custom.tools]  A list of custom tool definitions to use for this request, independent of any registered ToolManager tools
+     * @param {string?} [custom.tool_choice]  The tool_choice parameter to use with tools. Default "auto"
      * @param {Partial<InstructSettings>?} [custom.instructSettings] Override instruct settings
      * @param {Record<string, any>} [overridePayload] - Override payload for the request
      * @returns {Promise<import('../custom-request.js').ExtractedData | (() => AsyncGenerator<import('../custom-request.js').StreamResponse>)>} If not streaming, returns extracted data; if streaming, returns a function that creates an AsyncGenerator
