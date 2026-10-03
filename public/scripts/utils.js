@@ -1675,6 +1675,45 @@ export async function saveBase64AsFile(base64Data, subFolder, fileName, extensio
 }
 
 /**
+ * Sends a media file to the backend to be saved as-is, without base64 encoding.
+ * Use this instead of saveBase64AsFile for large media files to avoid
+ * materializing the file contents as a base64 string in memory.
+ *
+ * @param {File} file - The file to upload.
+ * @param {string} subFolder - The character name to determine the sub-directory for saving.
+ * @param {string} fileName - The name of the file to save the media as (without extension).
+ * @param {string} extension - The file extension for the media (e.g., 'jpg', 'png', 'mp4').
+ *
+ * @returns {Promise<string>} - Resolves to the saved media file's path on the server.
+ *                              Rejects with an error if the upload fails.
+ */
+export async function saveFileAsMediaToServer(file, subFolder, fileName, extension) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('format', extension);
+    formData.append('filename', String(fileName).replace(/\./g, '_'));
+    if (subFolder) {
+        formData.append('ch_name', subFolder);
+    }
+
+    const response = await fetch('/api/images/upload-form', {
+        method: 'POST',
+        headers: getRequestHeaders({ omitContentType: true }),
+        cache: 'no-cache',
+        body: formData,
+    });
+
+    // If the response is successful, get the saved media path from the server's response
+    if (response.ok) {
+        const responseData = await response.json();
+        return responseData.path;
+    } else {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to upload the file to the server');
+    }
+}
+
+/**
  * Gets the file extension from a File object.
  * @param {File} file The file to get the extension from
  * @returns {string} The file extension of the given file

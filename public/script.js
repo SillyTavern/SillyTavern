@@ -4280,6 +4280,41 @@ function removeLastMessage() {
  */
 
 /**
+ * Builds a sanitized copy of a chat-completion prompt for itemized-prompt storage,
+ * replacing any inline base64 media (image/video/audio data URLs) with a short
+ * placeholder so large media is never persisted with the itemized prompts.
+ * Copy-on-write: the original messages and their content arrays are never mutated.
+ * Non-array prompts (e.g. text-completion `input` strings) are returned unchanged.
+ * @param {any} prompt The prompt to sanitize (messages array or a string).
+ * @returns {any} A sanitized copy for storage, or the original for non-array prompts.
+ */
+function sanitizeRawPromptForItemization(prompt) {
+    if (!Array.isArray(prompt)) {
+        return prompt;
+    }
+    const mediaKeys = { image_url: 'image', video_url: 'video', audio_url: 'audio' };
+    return prompt.map((message) => {
+        if (!message || !Array.isArray(message.content)) {
+            return message;
+        }
+        let changed = false;
+        const content = message.content.map((part) => {
+            const kind = part && mediaKeys[part.type];
+            const media = kind && part[part.type];
+            const url = media?.url;
+            if (kind && typeof url === 'string' && url.startsWith('data:')) {
+                changed = true;
+                const base64Length = url.length - (url.indexOf(',') + 1);
+                const megabytes = (base64Length * 3 / 4 / (1024 * 1024)).toFixed(1);
+                return { ...part, [part.type]: { ...media, url: `[inline ${kind} omitted: ${megabytes} MB]` } };
+            }
+            return part;
+        });
+        return changed ? { ...message, content } : message;
+    });
+}
+
+/**
  * MARK:Generate()
  * Runs a generation using the current chat context.
  * @param {string} type Generation type
@@ -5339,7 +5374,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let currentArrayEntry = Number(thisPromptBits.length - 1);
         let additionalPromptStuff = {
             ...thisPromptBits[currentArrayEntry],
-            rawPrompt: generate_data.prompt || generate_data.input,
+            rawPrompt: sanitizeRawPromptForItemization(generate_data.prompt) || generate_data.input,
             mesId: getNextMessageId(type),
             allAnchors: await getAllExtensionPrompts(),
             chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',

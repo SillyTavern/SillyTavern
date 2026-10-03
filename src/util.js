@@ -1414,6 +1414,122 @@ export function isPathUnderParent(parentPath, childPath) {
 }
 
 /**
+ * Maps server-relative user media URL prefixes to the corresponding
+ * user directory key. Mirrors the static routes served from users.js.
+ * @type {ReadonlyArray<{ prefix: string, dir: string }>}
+ */
+const LOCAL_MEDIA_URL_PREFIXES = Object.freeze([
+    { prefix: 'user/images/', dir: 'userImages' },
+    { prefix: 'user/files/', dir: 'files' },
+    { prefix: 'characters/', dir: 'characters' },
+    { prefix: 'backgrounds/', dir: 'backgrounds' },
+    { prefix: 'assets/', dir: 'assets' },
+    { prefix: 'user avatars/', dir: 'avatars' },
+]);
+
+/**
+ * Resolves a server-relative user media URL (e.g. '/user/images/foo.mp4') to an
+ * absolute path on disk, verifying the resolved path stays inside the matching
+ * user data subdirectory. Returns null for anything that is not a safe local
+ * file path (data: URLs, http(s):, protocol-relative, unknown prefixes,
+ * traversal attempts, absolute/UNC paths, or malformed encodings).
+ * @param {string} url The media URL from a message content part.
+ * @param {Record<string, string>} directories The requesting user's directories (request.user.directories).
+ * @returns {string|null} Absolute file path inside the user data root, or null if invalid/unsafe.
+ */
+export function resolveLocalUserMediaPath(url, directories) {
+    if (typeof url !== 'string' || !url || !directories) {
+        return null;
+    }
+    // Must be a server-rooted relative path; reject protocol-relative and any URL with a scheme.
+    if (!url.startsWith('/') || url.startsWith('//')) {
+        return null;
+    }
+    // Reject raw backslashes (Windows/UNC style) before decoding.
+    if (url.includes('\\')) {
+        return null;
+    }
+
+    // Drop any query string or fragment, then strip the leading slash.
+    const withoutQuery = url.replace(/[?#].*$/, '');
+    let relative;
+    try {
+        relative = decodeURIComponent(withoutQuery.slice(1));
+    } catch {
+        // Malformed percent-encoding.
+        return null;
+    }
+    // Reject decoded backslashes, NUL bytes, or empty results.
+    if (!relative || relative.includes('\\') || relative.includes('\0')) {
+        return null;
+    }
+
+    const lower = relative.toLowerCase();
+    const mapping = LOCAL_MEDIA_URL_PREFIXES.find(m => lower.startsWith(m.prefix));
+    if (!mapping) {
+        return null;
+    }
+    const baseDir = directories[mapping.dir];
+    if (!baseDir) {
+        return null;
+    }
+    const subRelative = relative.slice(mapping.prefix.length);
+    if (!subRelative) {
+        return null;
+    }
+
+    const resolvedBase = path.resolve(baseDir);
+    const fullPath = path.resolve(resolvedBase, subRelative);
+    if (!isPathUnderParent(resolvedBase, fullPath)) {
+        return null;
+    }
+    return fullPath;
+}
+
+/**
+ * Walks a chat-completion messages array and, for any 'video_url' content part
+ * whose URL is a local user-file path, reads the file and replaces the URL with
+ * a base64 data URL. Mutates the provided messages in place. Parts that are
+ * already data: URLs, remote URLs, or fail the path-safety check are left as-is
+ * (unsafe local paths are skipped with a warning).
+ * @param {any[]} messages The request.body.messages array.
+ * @param {Record<string, string>} directories The requesting user's directories.
+ * @returns {void}
+ */
+export function inlineLocalVideoMedia(messages, directories) {
+    if (!Array.isArray(messages) || !directories) {
+        return;
+    }
+    for (const message of messages) {
+        if (!message || !Array.isArray(message.content)) {
+            continue;
+        }
+        for (const part of message.content) {
+            if (!part || part.type !== 'video_url') {
+                continue;
+            }
+            const url = part.video_url?.url;
+            if (typeof url !== 'string' || url.startsWith('data:') || /^[a-z][a-z0-9+.-]*:/i.test(url)) {
+                // Already inlined or a remote/scheme URL - leave untouched.
+                continue;
+            }
+            const filePath = resolveLocalUserMediaPath(url, directories);
+            if (!filePath) {
+                console.warn('Skipping video inlining for unsafe or unknown media path:', url);
+                continue;
+            }
+            try {
+                const data = fs.readFileSync(filePath);
+                const mimeType = mime.lookup(filePath) || 'video/mp4';
+                part.video_url.url = `data:${mimeType};base64,${data.toString('base64')}`;
+            } catch (error) {
+                console.warn('Failed to inline local video media:', url, error?.message ?? error);
+            }
+        }
+    }
+}
+
+/**
  * Checks if the given request is a file URL.
  * @param {string | URL | Request} request The request to check
  * @return {boolean} Returns true if the request is a file URL, false otherwise
