@@ -494,6 +494,51 @@ router.post('/chutes/models/embedding', async (request, response) => {
     }
 });
 
+// Gandr TTS
+router.post('/gandr/generate-voice', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.GANDR);
+
+        if (!key) {
+            console.warn('No Gandr key found');
+            return response.sendStatus(400);
+        }
+
+        const requestBody = {
+            model: request.body.model || 'tts-1',
+            input: request.body.input,
+            voice: request.body.voice || 'gandr-mia',
+            response_format: 'mp3',
+            speed: request.body.speed || 1,
+        };
+
+        console.debug('Gandr TTS request', requestBody);
+
+        const result = await fetch('https://tts.gandr.ai/v1/audio/speech', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Gandr TTS request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const contentType = result.headers.get('content-type') || 'audio/mpeg';
+        const buffer = await result.arrayBuffer();
+        response.setHeader('Content-Type', contentType);
+        return response.send(Buffer.from(buffer));
+    } catch (error) {
+        console.error('Gandr TTS generation failed', error);
+        response.status(500).send('Internal server error');
+    }
+});
+
 router.post('/nanogpt/models/embedding', async (request, response) => {
     try {
         const key = readSecret(request.user.directories, SECRET_KEYS.NANOGPT);

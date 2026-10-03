@@ -38,6 +38,7 @@ import { MiniMaxTtsProvider } from './minimax.js';
 import { ElectronHubTtsProvider } from './electronhub.js';
 import { ChutesTtsProvider } from './chutes.js';
 import { VolcengineTtsProvider } from './volcengine.js';
+import { GandrTtsProvider } from './gandr.js';
 import { applyLocale, t } from '/scripts/i18n.js';
 
 const UPDATE_INTERVAL = 1000;
@@ -131,6 +132,7 @@ const ttsProviders = {
     Edge: EdgeTtsProvider,
     ElevenLabs: ElevenLabsTtsProvider,
     'Electron Hub': ElectronHubTtsProvider,
+    Gandr: GandrTtsProvider,
     'Google Translate': GoogleTranslateTtsProvider,
     'Google Gemini TTS': GoogleNativeTtsProvider,
     GSVI: GSVITtsProvider,
