@@ -2051,6 +2051,10 @@ export async function loadWorldInfo(name) {
 
     if (response.ok) {
         const data = await response.json();
+        // Normalize V2/V3 spec lorebooks (array-based entries) into the internal
+        // object-keyed format. Transparently self-heals files imported before this
+        // conversion existed, so the editor and save logic always see a valid object.
+        convertWorldInfoToInternalFormat(data);
         worldInfoCache.set(name, data);
         return data;
     }
@@ -2495,6 +2499,7 @@ async function displayWorldEntries(name, data, navigation = navigation_option.no
 
     $('#world_apply_current_sorting').off('click').on('click', async () => {
         const entryCount = Object.keys(data.entries).length;
+        const moreThan100 = entryCount > 100;
 
         const contentEl = document.createElement('div');
 
@@ -5673,6 +5678,103 @@ export function convertCharacterBook(characterBook) {
     return result;
 }
 
+/**
+ * Determines whether a World Info entry uses V2/V3 character book spec field names
+ * (e.g. 'keys', 'insertion_order', 'secondary_keys') rather than SillyTavern's
+ * internal field names ('key', 'order', 'keysecondary').
+ * @param {object} entry World Info entry
+ * @returns {boolean} True if the entry uses spec field names
+ */
+function isSpecWorldInfoEntry(entry) {
+    return Array.isArray(entry?.keys)
+        || Object.hasOwn(entry ?? {}, 'insertion_order')
+        || Object.hasOwn(entry ?? {}, 'secondary_keys');
+}
+
+/**
+ * Converts an array of World Info entries (that already use SillyTavern field names)
+ * into an object keyed by numeric UID, assigning/repairing UIDs and resolving collisions.
+ * @param {object[]} entries Array of entries
+ * @returns {Record<string, object>} Object keyed by UID
+ */
+function worldInfoArrayToObject(entries) {
+    /** @type {Record<string, object>} */
+    const result = {};
+    const usedUids = new Set();
+
+    entries.forEach((entry, index) => {
+        if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+            return;
+        }
+
+        // Prefer an existing numeric uid, then a numeric spec `id`, then the index
+        let uid = Number.isInteger(entry.uid) ? entry.uid : (Number.isInteger(entry.id) ? entry.id : index);
+
+        // Resolve collisions with already-assigned UIDs
+        while (usedUids.has(uid)) {
+            uid++;
+        }
+        usedUids.add(uid);
+
+        entry.uid = uid;
+        result[uid] = entry;
+    });
+
+    return result;
+}
+
+/**
+ * Ensures that a World Info object uses SillyTavern's internal entries format:
+ * a plain object keyed by numeric UID, where every entry has a valid `uid`.
+ *
+ * The V2/V3 character book spec (and many third-party tools) store `entries` as an
+ * ARRAY. SillyTavern's editor and save logic assume an OBJECT keyed by UID. Feeding
+ * it an array scrambles entries (Object.keys returns indices instead of UIDs),
+ * drops data (spec field names like `keys`/`insertion_order` are ignored in favor
+ * of `key`/`order`), and breaks deletions (`delete arr[i]` leaves a sparse hole
+ * rather than removing the entry).
+ *
+ * This converter is idempotent and handles three cases:
+ *  1. Array entries with V2/V3 spec field names -> full field mapping (reuses
+ *     `convertCharacterBook`), preserving all top-level lorebook metadata.
+ *  2. Array entries that already use ST field names -> structural conversion,
+ *     assigning/repairing UIDs and resolving collisions.
+ *  3. Object entries (the internal format) -> no-op, only backfills missing UIDs.
+ *
+ * @param {any} data World Info data
+ * @returns {any} The same object, with `entries` normalized in place
+ */
+export function convertWorldInfoToInternalFormat(data) {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+
+    // Case 1 & 2: entries stored as an array
+    if (Array.isArray(data.entries)) {
+        if (data.entries.some(entry => entry && typeof entry === 'object' && isSpecWorldInfoEntry(entry))) {
+            // Reuse the character book converter for spec-formatted entries, then keep
+            // our own top-level metadata (name, description, extensions, ...).
+            const converted = convertCharacterBook(data);
+            data.entries = converted.entries;
+        } else {
+            data.entries = worldInfoArrayToObject(data.entries);
+        }
+        return data;
+    }
+
+    // Case 3: entries already an object -> only backfill missing UIDs from the key
+    if (data.entries && typeof data.entries === 'object') {
+        for (const uid of Object.keys(data.entries)) {
+            const entry = data.entries[uid];
+            if (entry && typeof entry === 'object' && !Number.isInteger(entry.uid)) {
+                entry.uid = Number(uid);
+            }
+        }
+    }
+
+    return data;
+}
+
 export function setWorldInfoButtonClass(chid, forceValue = undefined) {
     if (forceValue !== undefined) {
         $('#set_character_world, #world_button').toggleClass('world_set', forceValue);
@@ -5871,22 +5973,29 @@ export async function importWorldInfo(file) {
             return;
         }
 
+        let convertedData = null;
+
         // Convert Novel Lorebook
         if (jsonData.lorebookVersion !== undefined) {
             console.log('Converting Novel Lorebook');
-            formData.append('convertedData', JSON.stringify(convertNovelLorebook(jsonData)));
-        }
-
-        // Convert Agnai Memory Book
-        if (jsonData.kind === 'memory') {
+            convertedData = convertNovelLorebook(jsonData);
+        } else if (jsonData.kind === 'memory') {
+            // Convert Agnai Memory Book
             console.log('Converting Agnai Memory Book');
-            formData.append('convertedData', JSON.stringify(convertAgnaiMemoryBook(jsonData)));
+            convertedData = convertAgnaiMemoryBook(jsonData);
+        } else if (jsonData.type === 'risu') {
+            // Convert Risu Lorebook
+            console.log('Converting Risu Lorebook');
+            convertedData = convertRisuLorebook(jsonData);
+        } else if (Array.isArray(jsonData.entries)) {
+            // Convert V2/V3 spec lorebooks that store `entries` as an array into the
+            // internal object-keyed format (the editor and save logic assume an object).
+            console.log('Converting array-based World Info entries to object format');
+            convertedData = convertWorldInfoToInternalFormat(jsonData);
         }
 
-        // Convert Risu Lorebook
-        if (jsonData.type === 'risu') {
-            console.log('Converting Risu Lorebook');
-            formData.append('convertedData', JSON.stringify(convertRisuLorebook(jsonData)));
+        if (convertedData !== null) {
+            formData.append('convertedData', JSON.stringify(convertedData));
         }
     } catch (error) {
         toastr.error(`Error parsing file: ${error}`);
