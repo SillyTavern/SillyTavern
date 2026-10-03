@@ -645,6 +645,19 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Max Context Window (cache optimization)" title="Upper bound of the dynamic context window. The window grows from Context Size up to this value, keeping the chat prefix stable for maximum cache hits. When the cap is reached, the window truncates back to Context Size in one shot. Set equal to Context Size to disable.">
+                                        Max Context Window (cache optimization)
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="openai_max_context_cap" name="volume" min="512" max="2000000" step="1">
+                                        </div>
+                                        <div class="range-block-counter" data-randomization-disabled="true">
+                                            <input type="number" min="512" max="2000000" step="1" data-for="openai_max_context_cap" id="openai_max_context_cap_counter">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
                                     <div class="range-block-title" data-i18n="Max Response Length (tokens)">
                                         Max Response Length (tokens)
                                     </div>
