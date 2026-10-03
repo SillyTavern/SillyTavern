@@ -201,6 +201,7 @@ export const chat_completion_sources = {
     SILICONFLOW: 'siliconflow',
     WORKERS_AI: 'workers_ai',
     MINIMAX: 'minimax',
+    IONET: 'ionet',
 };
 
 const character_names_behavior = {
@@ -340,6 +341,7 @@ export const settingsToUpdate = {
     nanogpt_payg_override: ['#nanogpt_payg_override', 'nanogpt_payg_override', true, true],
     deepseek_model: ['#model_deepseek_select', 'deepseek_model', false, true],
     aimlapi_model: ['#model_aimlapi_select', 'aimlapi_model', false, true],
+    ionet_model: ['#model_ionet_select', 'ionet_model', false, true],
     xai_model: ['#model_xai_select', 'xai_model', false, true],
     pollinations_model: ['#model_pollinations_select', 'pollinations_model', false, true],
     pollinations_endpoint: ['#pollinations_endpoint', 'pollinations_endpoint', false, true],
@@ -467,6 +469,7 @@ const default_settings = {
     zai_endpoint: ZAI_ENDPOINT.COMMON,
     workers_ai_model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     workers_ai_account_id: '',
+    ionet_model: 'meta-llama/Llama-3.3-70B-Instruct',
     azure_base_url: '',
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
@@ -1775,6 +1778,8 @@ export function getChatCompletionModel(settings = null) {
             return settings.zai_model;
         case chat_completion_sources.WORKERS_AI:
             return settings.workers_ai_model;
+        case chat_completion_sources.IONET:
+            return settings.ionet_model;
         default:
             console.error(`Unknown chat completion source: ${source}`);
             return '';
@@ -1904,6 +1909,45 @@ function getChutesModelTemplate(option) {
     const visionIcon = model.input_modalities?.includes('image') ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
     const reasoningIcon = model.supported_features?.includes('reasoning') ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
     const toolCallsIcon = model.supported_features?.includes('structured_outputs') ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports function tools"></i>' : '';
+
+    const iconsContainer = document.createElement('span');
+    iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', reasoningIcon);
+    iconsContainer.insertAdjacentHTML('beforeend', toolCallsIcon);
+
+    const capabilities = (iconsContainer.children.length) ? ` | ${iconsContainer.innerHTML}` : '';
+
+    return $((`
+        <div class="flex-container alignItemsBaseline" title="${DOMPurify.sanitize(model.id)}">
+            <strong>${DOMPurify.sanitize(model.id)}</strong> | ${contextLength} ctx | <small>${price}</small>${capabilities}
+        </div>
+    `));
+}
+
+function getIonetModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    const inputPrice = model.input_token_price;
+    const outputPrice = model.output_token_price;
+
+    let price = 'Unknown';
+    if (inputPrice !== undefined && outputPrice !== undefined) {
+        // Check if both prices are 0 (free model)
+        if (inputPrice === 0 && outputPrice === 0) {
+            price = 'Free';
+        } else {
+            price = `$${(inputPrice * 1000000).toFixed(4)}/$${(outputPrice * 1000000).toFixed(4)} in/out Mtoken`;
+        }
+    }
+
+    const contextLength = model.context_window || 'Unknown';
+    const visionIcon = model.input_modalities?.includes('image') ? '<i class="fa-solid fa-eye fa-sm" title="This model supports vision"></i>' : '';
+    const reasoningIcon = model.supports_reasoning ? '<i class="fa-solid fa-brain fa-sm" title="This model supports reasoning"></i>' : '';
+    const toolCallsIcon = model.supports_tools ? '<i class="fa-solid fa-wrench fa-sm" title="This model supports function tools"></i>' : '';
 
     const iconsContainer = document.createElement('span');
     iconsContainer.insertAdjacentHTML('beforeend', visionIcon);
@@ -2340,6 +2384,32 @@ function saveModelList(data) {
         $('#model_workers_ai_select').val(oai_settings.workers_ai_model).trigger('change');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.IONET) {
+        model_list = sortModelsBy(model_list, oai_settings.sort_models, chat_completion_sources.IONET);
+        $('#model_ionet_select').empty();
+
+        if (oai_settings.group_models) {
+            groupModelsByVendor(model_list, chat_completion_sources.IONET).forEach((models, vendor) => {
+                const optgroup = $('<optgroup>').attr('label', vendor);
+                models.forEach((model) => {
+                    optgroup.append($('<option>', { value: model.id, text: model.id }));
+                });
+                $('#model_ionet_select').append(optgroup);
+            });
+        } else {
+            model_list.forEach((model) => {
+                $('#model_ionet_select').append($('<option>', { value: model.id, text: model.id }));
+            });
+        }
+
+        const selectedModel = model_list.find(model => model.id === oai_settings.ionet_model);
+        if (model_list.length > 0 && (!selectedModel || !oai_settings.ionet_model)) {
+            oai_settings.ionet_model = model_list[0].id;
+        }
+
+        $('#model_ionet_select').val(oai_settings.ionet_model).trigger('change');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.COMETAPI) {
         $('#model_cometapi_select').empty();
 
@@ -2439,6 +2509,18 @@ function sortModelsBy(data, property, source) {
                     return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
                 }
             });
+        case chat_completion_sources.IONET:
+            return data.sort((a, b) => {
+                if (property === 'context_length') {
+                    return (b.context_window || 0) - (a.context_window || 0);
+                } else if (property === 'pricing.input' || property === 'pricing.prompt') {
+                    return parseFloat(a.input_token_price || 0) - parseFloat(b.input_token_price || 0);
+                } else if (property === 'pricing.output' || property === 'pricing.completion') {
+                    return parseFloat(a.output_token_price || 0) - parseFloat(b.output_token_price || 0);
+                } else {
+                    return a?.id && b?.id ? a.id.localeCompare(b.id) : 0;
+                }
+            });
         case chat_completion_sources.ELECTRONHUB:
             return data.sort((a, b) => {
                 if (property === 'context_length') {
@@ -2514,6 +2596,15 @@ function groupModelsByVendor(array, source) {
                 return acc;
             }, new Map());
         case chat_completion_sources.CHUTES:
+            return array.reduce((acc, curr) => {
+                const vendor = curr.id.split('/')[0];
+                if (!acc.has(vendor)) {
+                    acc.set(vendor, []);
+                }
+                acc.get(vendor).push(curr);
+                return acc;
+            }, new Map());
+        case chat_completion_sources.IONET:
             return array.reduce((acc, curr) => {
                 const vendor = curr.id.split('/')[0];
                 if (!acc.has(vendor)) {
@@ -2733,6 +2824,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.VERTEXAI,
         chat_completion_sources.MAKERSUITE,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.IONET,
     ];
 
     // Sources that support proxying
@@ -2758,6 +2850,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.CHUTES,
+        chat_completion_sources.IONET,
     ];
 
     // Sources that support logit bias
@@ -2768,6 +2861,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.ELECTRONHUB,
         chat_completion_sources.CHUTES,
         chat_completion_sources.CUSTOM,
+        chat_completion_sources.IONET,
     ];
 
     // Sources that support "n" parameter for multi-swipe
@@ -2778,6 +2872,7 @@ export async function createGenerationParameters(settings, model, type, messages
         chat_completion_sources.XAI,
         chat_completion_sources.AIMLAPI,
         chat_completion_sources.MOONSHOT,
+        chat_completion_sources.IONET,
     ];
 
     const isO1 = gptSources.includes(settings.chat_completion_source) && ['o1-2024-12-17', 'o1'].includes(model);
@@ -3022,6 +3117,12 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.top_p = Math.max(Number(settings.top_p_openai), 0.001);
         delete generate_data.n;
         delete generate_data.logit_bias;
+    }
+
+    if (settings.chat_completion_source === chat_completion_sources.IONET) {
+        generate_data.top_k = settings.top_k_openai > 0 ? Number(settings.top_k_openai) : undefined;
+        generate_data.min_p = Number(settings.min_p_openai);
+        generate_data.repetition_penalty = Number(settings.repetition_penalty_openai);
     }
 
     // https://docs.nano-gpt.com/api-reference/endpoint/chat-completion#temperature-&-nucleus
@@ -3288,7 +3389,7 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             }
         });
         return data.choices?.[0]?.delta?.content ?? data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? '';
-    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS].includes(chat_completion_source)) {
+    } else if ([chat_completion_sources.CUSTOM, chat_completion_sources.POLLINATIONS, chat_completion_sources.AIMLAPI, chat_completion_sources.MOONSHOT, chat_completion_sources.COMETAPI, chat_completion_sources.ELECTRONHUB, chat_completion_sources.NANOGPT, chat_completion_sources.ZAI, chat_completion_sources.SILICONFLOW, chat_completion_sources.CHUTES, chat_completion_sources.WORKERS_AI, chat_completion_sources.FIREWORKS, chat_completion_sources.IONET].includes(chat_completion_source)) {
         if (show_thoughts) {
             state.reasoning +=
                 data.choices?.filter(x => x?.delta?.reasoning_content)?.[0]?.delta?.reasoning_content ??
@@ -3330,6 +3431,7 @@ function parseChatCompletionLogprobs(data) {
         case chat_completion_sources.XAI:
         case chat_completion_sources.CUSTOM:
         case chat_completion_sources.CHUTES:
+        case chat_completion_sources.IONET:
             if (!data.choices?.length) {
                 return null;
             }
@@ -5451,6 +5553,27 @@ function getElectronHubMaxContext(model, isUnlocked) {
 }
 
 /**
+ * Get the maximum context size for the IO Intelligence model
+ * @param {string} model Model identifier
+ * @param {boolean} isUnlocked Whether context limits are unlocked
+ * @returns {number} Maximum context size in tokens
+ */
+function getIonetMaxContext(model, isUnlocked) {
+    if (isUnlocked) {
+        return unlocked_max;
+    }
+
+    if (Array.isArray(model_list)) {
+        const modelInfo = model_list.find(m => m.id === model);
+        if (modelInfo?.context_window) {
+            return modelInfo.context_window;
+        }
+    }
+
+    return max_128k;
+}
+
+/**
  * Get the maximum context size for the NanoGPT model
  * @param {string} model Model identifier
  * @param {boolean} isUnlocked Whether context limits are unlocked
@@ -5694,6 +5817,15 @@ async function onModelChange() {
         oai_settings.workers_ai_model = value;
     }
 
+    if ($(this).is('#model_ionet_select')) {
+        if (!value || !hasModelsLoaded) {
+            console.debug('Null IO Intelligence model selected. Ignoring.');
+            return;
+        }
+        console.log('IO Intelligence model changed to', value);
+        oai_settings.ionet_model = value;
+    }
+
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
         const contextSize = getGeminiMaxContext(value, oai_settings.max_context_unlocked);
         const maxTemp = getGeminiMaxTemp(value);
@@ -5912,6 +6044,15 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.IONET) {
+        const maxContext = getIonetMaxContext(oai_settings.ionet_model, oai_settings.max_context_unlocked);
+        $('#openai_max_context').attr('max', maxContext);
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source === chat_completion_sources.XAI) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -6065,6 +6206,7 @@ async function onConnectButtonClick(e) {
         [chat_completion_sources.POLLINATIONS]: { key: SECRET_KEYS.POLLINATIONS, selector: '#api_key_pollinations', proxy: false, keyless: oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS },
         [chat_completion_sources.WORKERS_AI]: { key: SECRET_KEYS.WORKERS_AI, selector: '#api_key_workers_ai', proxy: false },
         [chat_completion_sources.MINIMAX]: { key: SECRET_KEYS.MINIMAX, selector: '#api_key_minimax', proxy: false },
+        [chat_completion_sources.IONET]: { key: SECRET_KEYS.IONET, selector: '#api_key_ionet', proxy: false },
     };
 
     // Vertex AI Express version - use API key
@@ -6159,6 +6301,8 @@ function toggleChatCompletionForms() {
         $('#model_zai_select').trigger('change');
     } else if (oai_settings.chat_completion_source == chat_completion_sources.WORKERS_AI) {
         $('#model_workers_ai_select').trigger('change');
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.IONET) {
+        $('#model_ionet_select').trigger('change');
     }
 
     $('[data-source]').each(function () {
@@ -6336,6 +6480,8 @@ export function isImageInliningSupported() {
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.aimlapi_model)?.features?.includes('openai/chat-completion.vision'));
         case chat_completion_sources.CHUTES:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.chutes_model)?.input_modalities?.includes('image'));
+        case chat_completion_sources.IONET:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.ionet_model)?.input_modalities?.includes('image'));
         case chat_completion_sources.ELECTRONHUB:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.electronhub_model)?.metadata?.vision);
         case chat_completion_sources.POLLINATIONS:
@@ -6396,6 +6542,8 @@ export function isVideoInliningSupported() {
             return videoSupportedModels.some(model => oai_settings.vertexai_model.includes(model));
         case chat_completion_sources.OPENROUTER:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.openrouter_model)?.architecture?.input_modalities?.includes('video'));
+        case chat_completion_sources.IONET:
+            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.ionet_model)?.input_modalities?.includes('video'));
         case chat_completion_sources.ZAI:
             return videoSupportedModels.some(model => oai_settings.zai_model.includes(model));
         default:
@@ -7257,6 +7405,14 @@ export function initOpenAI() {
             templateResult: getNanoGptModelTemplate,
             matcher: textValueMatcher,
         });
+        $('#model_ionet_select').select2({
+            placeholder: t`Select a model`,
+            searchInputPlaceholder: t`Search models...`,
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getIonetModelTemplate,
+            matcher: textValueMatcher,
+        });
         $('#completion_prompt_manager_popup_entry_form_injection_trigger').select2({
             placeholder: t`All types (default)`,
             width: '100%',
@@ -7381,6 +7537,7 @@ export function initOpenAI() {
     $('#azure_openai_model').on('change', onModelChange);
     $('#model_zai_select').on('change', onModelChange);
     $('#model_workers_ai_select').on('change', onModelChange);
+    $('#model_ionet_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
