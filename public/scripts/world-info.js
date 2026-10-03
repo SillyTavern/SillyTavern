@@ -110,6 +110,7 @@ const KNOWN_DECORATORS = ['@@activate', '@@dont_activate'];
  * @property {string} scenario Character defined scenario
  * @property {string} creatorNotes Character creator notes
  * @property {string} trigger The type that triggered the scan, e.g. 'normal', 'continue', etc.
+ * @property {boolean} ignoreChecks Whether this world scan should ignore probability and activation checks
  */
 
 /**
@@ -4892,6 +4893,13 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
             // Now do checks for immediate activations
             if (entry.constant) {
                 log('activated because of constant');
+                activatedNow.add(entry);
+                continue;
+            }
+
+            // Caller requested all checks to be ignored
+            if (globalScanData.ignoreChecks) {
+                log('activated because of globalScanData.ignoreChecks');
                 activatedNow.add(entry);
                 continue;
             }
