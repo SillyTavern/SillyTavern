@@ -12243,7 +12243,8 @@ jQuery(async function () {
             });
         }
 
-        const avatarSrc = (isDataURL(thumbURL) || /^\/?img\/(?:.+)/.test(thumbURL)) ? thumbURL : charsPath + targetAvatarImg;
+        const previewUrl = `/thumbnail?type=avatar&file=${encodeURIComponent(targetAvatarImg)}&size=preview`;
+        const avatarSrc = (isDataURL(thumbURL) || /^\/?img\/(?:.+)/.test(thumbURL)) ? thumbURL : previewUrl;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed');
             $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
@@ -12275,6 +12276,9 @@ jQuery(async function () {
             } else if (messageElement.attr('is_user') == 'false') { //handle char avatars
                 zoomedAvatarImgElement.attr('src', avatarSrc);
                 zoomedAvatarImgElement.attr('data-izoomify-url', avatarSrc);
+                zoomedAvatarImgElement.one('error', function () {
+                    $(this).attr('src', charsPath + targetAvatarImg);
+                });
             }
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');

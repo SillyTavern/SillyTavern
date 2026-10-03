@@ -42,6 +42,7 @@ export const thumbnailDimensions = {
     'bg': getConfigValue('thumbnails.dimensions.bg', [160, 90]),
     'avatar': getConfigValue('thumbnails.dimensions.avatar', [96, 144]),
     'persona': getConfigValue('thumbnails.dimensions.persona', [96, 144]),
+    'avatarPreview': getConfigValue('thumbnails.dimensions.avatarPreview', [512, 768]),
 };
 
 /**
