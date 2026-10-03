@@ -290,6 +290,7 @@ const defaultSettings = {
 
     // stable-diffusion.cpp settings
     sdcpp_url: 'http://127.0.0.1:1234',
+    sdcpp_auth: '',
 
     vlad_url: 'http://localhost:7860',
     vlad_auth: '',
@@ -530,6 +531,7 @@ async function loadSettings() {
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_sdcpp_url').val(extension_settings.sd.sdcpp_url);
+    $('#sd_sdcpp_auth').val(extension_settings.sd.sdcpp_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
     $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
@@ -1259,6 +1261,11 @@ function onSdcppUrlInput() {
     saveSettingsDebounced();
 }
 
+function onSdcppAuthInput() {
+    extension_settings.sd.sdcpp_auth = $('#sd_sdcpp_auth').val();
+    saveSettingsDebounced();
+}
+
 function onVladUrlInput() {
     extension_settings.sd.vlad_url = $('#sd_vlad_url').val();
     saveSettingsDebounced();
@@ -1376,7 +1383,7 @@ async function validateSdcppUrl() {
         const result = await fetch('/api/sd/sdcpp/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url }),
+            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url, auth: extension_settings.sd.sdcpp_auth }),
         });
 
         if (!result.ok) {
@@ -1823,7 +1830,7 @@ async function loadSdcppModels() {
         const result = await fetch('/api/sd/sdcpp/models', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url }),
+            body: JSON.stringify({ url: extension_settings.sd.sdcpp_url, auth: extension_settings.sd.sdcpp_auth }),
         });
 
         if (!result.ok) {
@@ -3872,6 +3879,7 @@ async function generateAutoImage(prompt, negativePrompt, signal) {
 async function generateSdcppImage(prompt, negativePrompt, signal) {
     const payload = {
         url: extension_settings.sd.sdcpp_url,
+        auth: extension_settings.sd.sdcpp_auth,
         model: extension_settings.sd.model || undefined,
         prompt: prompt,
         negative_prompt: negativePrompt,
@@ -5828,6 +5836,7 @@ export async function init() {
     $('#sd_auto_auth').on('input', onAutoAuthInput);
     $('#sd_sdcpp_validate').on('click', validateSdcppUrl);
     $('#sd_sdcpp_url').on('input', onSdcppUrlInput);
+    $('#sd_sdcpp_auth').on('input', onSdcppAuthInput);
     $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
     $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
     $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
