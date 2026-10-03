@@ -158,9 +158,23 @@ describe('trySaveChat integrity check', () => {
         expect(fs.readFileSync(chatFile, 'utf8')).toBe(toJsonl(newChat));
     });
 
-    test('skips the check when the incoming chat has no integrity slug (existing behavior)', async () => {
-        fs.writeFileSync(chatFile, toJsonl(makeChat(SLUG)));
+    test('refuses to overwrite an intact chat with a header-only chat lacking integrity metadata', async () => {
+        const originalBytes = toJsonl(makeChat(SLUG));
+        fs.writeFileSync(chatFile, originalBytes);
+        await expect(save(makeChat(null).slice(0, 1))).rejects.toThrow(/integrity check failed/i);
+        expect(fs.readFileSync(chatFile, 'utf8')).toBe(originalBytes);
+    });
+
+    test('allows saving a new chat without integrity metadata', async () => {
         const newChat = makeChat(null);
+        await save(newChat);
+        expect(fs.readFileSync(chatFile, 'utf8')).toBe(toJsonl(newChat));
+    });
+
+    test('allows saving a legacy chat without integrity metadata', async () => {
+        fs.writeFileSync(chatFile, toJsonl(makeChat(null)));
+        const newChat = makeChat(null);
+        newChat[1].mes = 'Updated';
         await save(newChat);
         expect(fs.readFileSync(chatFile, 'utf8')).toBe(toJsonl(newChat));
     });
