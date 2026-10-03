@@ -2564,7 +2564,7 @@ function getReasoningEffort(settings = null, model = null) {
     ];
 
     if (!reasoningEffortSources.includes(settings.chat_completion_source)) {
-        return settings.reasoning_effort;
+        return settings.reasoning_effort === reasoning_effort_types.auto ? undefined : settings.reasoning_effort;
     }
 
     function resolveReasoningEffort() {
