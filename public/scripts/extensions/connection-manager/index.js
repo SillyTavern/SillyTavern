@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { activateSendButtons, cancelStatusCheck, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { activateSendButtons, cancelStatusCheck, deactivateSendButtons, event_types, eventSource, main_api, online_status, resultCheckStatus, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -436,6 +436,7 @@ async function applyConnectionProfile(profile, isCurrent) {
         refreshCustomConnection();
     };
 
+    let failed = false;
     try {
         if (resolvedCustomConnection) await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
         for (const command of commands) {
@@ -460,9 +461,14 @@ async function applyConnectionProfile(profile, isCurrent) {
             await restorePrevious();
         }
     } catch (error) {
+        failed = true;
         await restorePrevious();
         throw error;
-    } finally { spinner.stop(); release(); }
+    } finally {
+        spinner.stop();
+        release();
+        if (failed && transactional) resultCheckStatus();
+    }
 
     if (transactional && !compositional) {
         commitCustomConnection(previousProviderId);
@@ -777,7 +783,16 @@ export async function init() {
     function selectProfile(profileId) {
         const revision = ++selectionRevision;
         // Cancel an already-running qualification before waiting for its serialized state operation.
-        if (applyingProfile) cancelStatusCheck('Canceled because another connection Profile was selected');
+        const admittedProfile = extension_settings.connectionManager.profiles.find(p => p.id === profileId);
+        const replacesConnection = admittedProfile && !admittedProfile['custom-connection']?.excluded && (
+            Object.hasOwn(admittedProfile, 'custom-connection')
+            || ['api', 'api-url', 'secret-id', 'proxy'].some(command => admittedProfile[command] && !admittedProfile.exclude?.includes(command))
+            || oai_settings.bind_preset_to_connection && admittedProfile.preset && !admittedProfile.exclude?.includes('preset')
+        );
+        if (applyingProfile || replacesConnection && $('.api_button.disabled').length) {
+            cancelStatusCheck('Canceled because another connection Profile was selected');
+            resultCheckStatus();
+        }
         const operation = selectionQueue.catch(() => {}).then(async () => {
             if (revision !== selectionRevision) return;
             const profile = profileId ? extension_settings.connectionManager.profiles.find(p => p.id === profileId) : null;

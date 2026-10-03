@@ -6972,11 +6972,13 @@ function renderCustomProviderSetup() {
     $('#api_key_custom').prop('disabled', active?.auth.mode === 'none');
     const credentialSelect = document.getElementById('custom_credential_select');
     if (!credentialSelect) return;
-    credentialSelect.replaceChildren(new Option(t`Choose a stored key`, ''));
+    const unbound = new Option(t`Choose a stored key (unbound)`, 'unbound');
+    unbound.disabled = active?.auth.mode === 'none';
+    credentialSelect.replaceChildren(unbound);
     if (active && (active.auth.mode === 'none' || !active.auth.required)) credentialSelect.add(new Option(t`No key`, 'none'));
     if (active?.credential.mode === 'legacy-custom') credentialSelect.add(new Option(t`Captured Manual key selection`, 'legacy'));
     if (active?.auth.mode !== 'none') for (const key of CUSTOM_CREDENTIAL_KEYS) for (const secret of secret_state[key] ?? []) credentialSelect.add(new Option(`${key.replace('api_key_', '')}: ${secret.label || t`Unlabeled`} (••••••••)`, JSON.stringify([key, secret.id])));
-    credentialSelect.value = active?.credential.mode === 'reference' ? JSON.stringify([active.credential.key, active.credential.id]) : active?.credential.mode === 'none' ? 'none' : active?.credential.mode === 'legacy-custom' ? 'legacy' : '';
+    credentialSelect.value = active?.credential.mode === 'reference' ? JSON.stringify([active.credential.key, active.credential.id]) : active?.credential.mode === 'none' ? 'none' : active?.credential.mode === 'legacy-custom' ? 'legacy' : 'unbound';
 }
 
 function initCustomProviderSetup() {
@@ -6985,7 +6987,10 @@ function initCustomProviderSetup() {
     $('#custom_credential_select').on('change', async function () {
         const value = String($(this).val());
         try {
-            if (value === 'none') {
+            if (value === 'unbound') {
+                oai_settings.custom_provider_state.active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'unbound' } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true });
+            } else if (value === 'none') {
                 const active = oai_settings.custom_provider_state.active;
                 if (active.auth.mode === 'bearer' && active.auth.required) throw new Error('This provider requires a key.');
                 active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'none' } }).credential;

@@ -298,7 +298,13 @@ export function resolveLegacyCustomConnection(settings, profile, preset = {}, le
         if (!excluded.includes(command) && profile[command] !== undefined) snapshot.settings[field] = text(profile[command], command);
     }
     if (!excluded.includes('secret-id') && profile['secret-id']) snapshot.credential = { mode: 'legacy-custom', id: profile['secret-id'] };
-    else if (snapshot.settings.custom_url !== baseline.settings.custom_url && snapshot.credential.mode !== 'none') snapshot.credential = { mode: 'unbound' };
+    else if (snapshot.credential.mode === 'reference' || snapshot.credential.mode === 'legacy-custom' && snapshot.credential.id !== null) {
+        let sameRoot = snapshot.settings.custom_url === baseline.settings.custom_url;
+        try {
+            sameRoot = normalizeCustomEndpoint(snapshot.settings.custom_url) === normalizeCustomEndpoint(baseline.settings.custom_url);
+        } catch { /* An incomplete or invalid changed root cannot retain credential approval. */ }
+        if (!sameRoot) snapshot.credential = { mode: 'unbound' };
+    }
     return validateCustomSnapshot(snapshot);
 }
 

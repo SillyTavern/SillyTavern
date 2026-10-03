@@ -11,6 +11,8 @@ const owner = 'third-party/custom-provider-extension';
 let upstream;
 let root;
 const received = [];
+let upstreamRequests = 0;
+let heldModels;
 
 test.beforeAll(async () => {
     if (!dataRoot) return;
@@ -18,7 +20,17 @@ test.beforeAll(async () => {
     fs.mkdirSync(destination, { recursive: true });
     fs.cpSync(new URL('../fixtures/custom-provider-extension', import.meta.url), destination, { recursive: true });
     upstream = http.createServer(async (req, res) => {
+        upstreamRequests++;
         if (req.url.endsWith('/models')) {
+            if (heldModels?.path === req.url) {
+                const held = heldModels;
+                held.started();
+                await held.release;
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ data: [{ id: 'obsolete-connect-model' }] }));
+                held.responded();
+                return;
+            }
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ data: [{ id: 'discovered-model' }, { id: 'second-model' }] }));
             return;
@@ -161,7 +173,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         await syntheticKey(page, 'a', 'api_key_custom');
         await page.locator('#custom_api_url_text').fill(`${root}/changed/v1`);
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('unbound');
-        await expect(page.locator('#custom_credential_select')).toHaveValue('');
+        await expect(page.locator('#custom_credential_select')).toHaveValue('unbound');
         async function reset(auth) {
             await page.evaluate(async ({ root, auth }) => {
                 (await import('/scripts/extensions/third-party/custom-provider-extension/index.js')).configure(`${root}/a/v1`, `${root}/b/v1`, auth);
@@ -188,6 +200,27 @@ test('Custom setup and Profile journey through the installed extension', async (
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('none');
         await reset({ mode: 'bearer', required: true });
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('unbound');
+    });
+
+    await test.step('choosing unbound removes the effective key and blocks status and generation', async () => {
+        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await syntheticKey(page, 'a', 'api_key_openai');
+        const before = upstreamRequests;
+        await page.selectOption('#custom_credential_select', 'unbound');
+        await expect(page.locator('#custom_credential_select')).toHaveValue('unbound');
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential)).toEqual({ mode: 'unbound' });
+        await page.locator('#api_button_openai').click();
+        await expect(page.locator('#custom_provider_error')).toContainText('Choose a stored key');
+        const error = await page.evaluate(async () => {
+            try {
+                await (await import('/scripts/openai.js')).sendOpenAIRequest('quiet', [{ role: 'user', content: 'Synthetic unbound request' }], new AbortController().signal);
+                return '';
+            } catch (error) { return error.message; }
+        });
+        expect(error).toContain('Choose a stored key');
+        expect(upstreamRequests).toBe(before);
+        await expect(page.locator('#api_button_openai')).not.toHaveClass(/\bdisabled\b/);
+        await page.screenshot({ path: 'artifacts/browser/custom-provider-unbound.png' });
     });
 
     await test.step('two full profiles request concurrently without changing the active form', async () => {
@@ -341,6 +374,128 @@ test('Custom setup and Profile journey through the installed extension', async (
             });
             expect(result).toBe('Synthetic completion');
             expect(received.at(-1)).toEqual({ path: '/b/v1/chat/completions', marker: 'b', bodyMarker: 'b', model: 'legacy-model', correctKey: true, localMetadata: false });
+        }
+    });
+
+    await test.step('keyless legacy replay changes roots and equivalent roots retain an approved key', async () => {
+        await page.selectOption('#custom_provider_select', '');
+        await page.evaluate(async root => {
+            const { oai_settings } = await import('/scripts/openai.js');
+            const { applyCustomSnapshot, captureCustomConnection, captureCustomFields } = await import('/scripts/custom-providers.js');
+            // Seed a remembered legacy keyless Manual tuple despite other synthetic vault entries.
+            const manual = captureCustomConnection(captureCustomFields({ custom_url: `${root}/a/v1`, custom_model: 'keyless-manual' }));
+            applyCustomSnapshot(oai_settings, manual);
+            const profile = { id: 'legacy-keyless', name: 'Legacy keyless', api: 'custom', mode: 'cc', 'api-url': `${root}/b/v1`, model: 'keyless-legacy' };
+            SillyTavern.getContext().extensionSettings.connectionManager.profiles.push(profile);
+            $('#connection_profiles').append(new Option(profile.name, profile.id));
+        }, root);
+        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await page.selectOption('#connection_profiles', 'legacy-keyless');
+        await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('legacy-keyless');
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential)).toEqual({ mode: 'legacy-custom', id: null });
+        // Inspect only a boolean at the upstream; do not retain request headers.
+        let authorizationPresent;
+        const observe = req => { authorizationPresent = Boolean(req.headers.authorization); };
+        upstream.once('request', observe);
+        const generate = () => page.evaluate(async () => {
+            const openai = await import('/scripts/openai.js');
+            return openai.getStreamingReply(await openai.sendOpenAIRequest('quiet', [{ role: 'user', content: 'Synthetic legacy replay' }], new AbortController().signal), {});
+        });
+        expect(await generate()).toBe('Synthetic completion');
+        expect(authorizationPresent).toBe(false);
+        upstream.off('request', observe);
+
+        const id = await syntheticKey(page, 'b', 'api_key_openai');
+        await page.evaluate(root => {
+            const profile = { id: 'legacy-equivalent', name: 'Legacy equivalent', api: 'custom', mode: 'cc', 'api-url': `${root}/b/v1/`, model: 'equivalent-legacy' };
+            SillyTavern.getContext().extensionSettings.connectionManager.profiles.push(profile);
+            $('#connection_profiles').append(new Option(profile.name, profile.id));
+        }, root);
+        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await page.selectOption('#connection_profiles', 'legacy-equivalent');
+        await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('legacy-equivalent');
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential)).toEqual({ mode: 'reference', key: 'api_key_openai', id, endpoint: `${root}/b/v1` });
+        expect(await generate()).toBe('Synthetic completion');
+        expect(received.at(-1).correctKey).toBe(true);
+    });
+
+    await test.step('ordinary Connect is canceled before a first Profile fails and rolls back', async () => {
+        await page.selectOption('#connection_profiles', 'synthetic-b');
+        await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('synthetic-b');
+        const before = await page.evaluate(async () => {
+            const openai = await import('/scripts/openai.js');
+            const script = await import('/script.js');
+            window.ordinaryStatusSignal = script.abortStatusCheck.signal;
+            window.failedProfileLoads = [];
+            window.failedProfileListener = name => window.failedProfileLoads.push(name);
+            const context = SillyTavern.getContext();
+            context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_LOADED, window.failedProfileListener);
+            for (const profile of [
+                { id: 'status-excluded', name: 'Status excluded', mode: 'cc', api: 'custom', 'custom-connection': { version: 1, excluded: true } },
+                { id: 'status-compositional', name: 'Status compositional', mode: 'cc', 'start-reply-with': '' },
+            ]) {
+                context.extensionSettings.connectionManager.profiles.push(profile);
+                $('#connection_profiles').append(new Option(profile.name, profile.id));
+            }
+            return { tuple: openai.captureCurrentCustomConnection(), selected: context.extensionSettings.connectionManager.selectedProfile };
+        });
+        let releaseStatus;
+        let statusStarted;
+        let statusResponded;
+        const started = new Promise(resolve => { statusStarted = resolve; });
+        const responded = new Promise(resolve => { statusResponded = resolve; });
+        heldModels = { path: '/b/v1/models', started: statusStarted, responded: statusResponded, release: new Promise(resolve => { releaseStatus = resolve; }) };
+        try {
+            await page.locator('#api_button_openai').click();
+            await started;
+            await expect(page.locator('#api_button_openai')).toHaveClass(/\bdisabled\b/);
+            for (const id of ['status-excluded', 'status-compositional']) {
+                await page.selectOption('#connection_profiles', id);
+                await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe(id);
+                expect(await page.evaluate(() => window.ordinaryStatusSignal.aborted)).toBe(false);
+                await expect(page.locator('#api_button_openai')).toHaveClass(/\bdisabled\b/);
+            }
+            before.selected = 'status-compositional';
+            await page.evaluate(() => { window.failedProfileLoads.length = 0; });
+            await page.evaluate(async () => {
+                const { SlashCommandParser } = await import('/scripts/slash-commands/SlashCommandParser.js');
+                const state = SillyTavern.getContext().extensionSettings.connectionManager;
+                const profile = { ...structuredClone(state.profiles.find(value => value.id === 'synthetic-a')), id: 'held-failure', name: 'Held failure', preset: 'synthetic staged failure' };
+                state.profiles.push(profile);
+                $('#connection_profiles').append(new Option(profile.name, profile.id));
+                window.originalPresetCallback = SlashCommandParser.commands.preset.callback;
+                SlashCommandParser.commands.preset.callback = async () => {
+                    window.stagedProfileEntered = true;
+                    await new Promise(resolve => { window.failStagedProfile = resolve; });
+                    throw new Error('Synthetic staged failure');
+                };
+            });
+            await page.selectOption('#connection_profiles', 'held-failure');
+            await page.waitForFunction(() => window.stagedProfileEntered);
+            expect(await page.evaluate(async () => ({ aborted: window.ordinaryStatusSignal.aborted, transitioning: (await import('/scripts/openai.js')).isCustomConnectionTransition() }))).toEqual({ aborted: true, transitioning: true });
+            const during = await page.evaluate(async () => ({ status: (await import('/script.js')).online_status, models: $('#model_custom_select option').map((_, option) => option.value).get() }));
+            releaseStatus();
+            await responded;
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            expect(await page.evaluate(async () => ({ status: (await import('/script.js')).online_status, models: $('#model_custom_select option').map((_, option) => option.value).get() }))).toEqual(during);
+            await page.evaluate(() => window.failStagedProfile());
+            await expect(page.locator('#connection_profiles')).toHaveValue(before.selected);
+            expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection())).toEqual(before.tuple);
+            expect(await page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe(before.selected);
+            expect(await page.evaluate(() => window.failedProfileLoads)).toEqual([]);
+            await expect(page.locator('#api_button_openai')).not.toHaveClass(/\bdisabled\b/);
+            await expect(page.locator('#rm_api_block .api_loading').first()).toBeHidden();
+            await expect(page.locator('#model_custom_select option[value="obsolete-connect-model"]')).toHaveCount(0);
+            await page.screenshot({ path: 'artifacts/browser/custom-profile-rollback.png' });
+        } finally {
+            releaseStatus();
+            heldModels = undefined;
+            await page.evaluate(async () => {
+                window.failStagedProfile?.();
+                (await import('/scripts/slash-commands/SlashCommandParser.js')).SlashCommandParser.commands.preset.callback = window.originalPresetCallback;
+                const context = SillyTavern.getContext();
+                context.eventSource.removeListener(context.eventTypes.CONNECTION_PROFILE_LOADED, window.failedProfileListener);
+            });
         }
     });
 

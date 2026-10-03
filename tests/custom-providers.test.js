@@ -170,6 +170,29 @@ describe('resolved connection state', () => {
         expect(legacy.credential).toEqual({ mode: 'legacy-custom', id: 'legacy-id' });
         expect(legacy.provider).toBeNull();
     });
+    test('keyless legacy Profiles can change roots without becoming unbound', () => {
+        const settings = manual();
+        const a = registerCustomProvider(owner, 'a', definition());
+        switchCustomProvider(settings, a.id);
+        const legacy = resolveLegacyCustomConnection(settings, { api: 'custom', 'api-url': 'https://keyless.test/v1' });
+        expect(legacy.credential).toEqual({ mode: 'legacy-custom', id: null });
+        applyCustomSnapshot(settings, legacy);
+        expect(getCustomAuth(settings).credential).toEqual({ mode: 'legacy-custom', id: null });
+    });
+    test.each([
+        { mode: 'legacy-custom', id: 'captured-id' },
+        { mode: 'reference', key: 'api_key_openai', id: 'reference-id', endpoint: 'http://localhost:1234/v1' },
+    ])('legacy replay preserves normalized-equivalent roots for %j', credential => {
+        const settings = manual();
+        const baseline = { ...captureCustomConnection(settings), credential };
+        applyCustomSnapshot(settings, baseline);
+        const a = registerCustomProvider(owner, 'a', definition());
+        switchCustomProvider(settings, a.id);
+        const legacy = resolveLegacyCustomConnection(settings, { api: 'custom', 'api-url': 'http://localhost:1234/v1/' });
+        expect(legacy.credential).toEqual(credential);
+        const changed = resolveLegacyCustomConnection(settings, { api: 'custom', 'api-url': 'https://different.test/v1' });
+        expect(changed.credential).toEqual({ mode: 'unbound' });
+    });
     test('isolated request overlays preserve empties and reject unapproved rerouting', () => {
         const snapshot = captureCustomConnection(manual());
         snapshot.credential = { mode: 'none' };
