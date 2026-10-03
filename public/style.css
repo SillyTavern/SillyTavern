@@ -147,6 +147,17 @@ html {
     -webkit-perspective: 1000;
 }
 
+/* The Chromium workaround above promotes the root element to its own
+   compositing layer. Firefox 157+ stops compositing backdrop-filter
+   correctly once that layer exists, so blurred surfaces lose their
+   transparency. Keep the workaround for Chromium/WebKit and opt Firefox
+   out of it. */
+@supports (-moz-appearance: none) {
+    html {
+        -webkit-transform: none;
+    }
+}
+
 body {
     margin: 0;
     padding: 0;
