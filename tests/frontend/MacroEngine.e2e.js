@@ -196,6 +196,49 @@ test.describe('MacroEngine', () => {
         });
     });
 
+    test.describe('Case macros', () => {
+        test('should uppercase plain text', async ({ page }) => {
+            const input = 'foo{{uppercase::blaHblah}}bar';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('fooBLAHBLAHbar');
+        });
+        test('should uppercase nested macro', async ({ page }) => {
+            const input = 'HI {{uppercase::{{user}}}}!';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('HI USER!');
+        });
+        test('should lowercase plain text', async ({ page }) => {
+            const input = '{{lowercase::X Y z 1 2 3 a B}} c';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('x y z 1 2 3 a b c');
+        });
+        test('should lowercase nested macro', async ({ page }) => {
+            const input = 'She sent the text message: `{{lowercase::{{user}} did it lol}}`';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('She sent the text message: `user did it lol`');
+        });
+        test('should titlecase single word plain text', async ({ page }) => {
+            const input = '{{titlecase::abcDE}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Abcde');
+        });
+        test('should titlecase multi-word plain text', async ({ page }) => {
+            const input = '{{titlecase::abCde fhGi JkLmN}}';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Abcde Fghi Jklmn');
+        });
+        test('should titlecase multi-word nested macro', async ({ page }) => {
+            const input = '{{titlecase::abc {{reverse::def GHI {{user}}}} JKL}}`';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Abc Resu Ihg Fed Jkl');
+        });
+        test('should titlecase unicode correctly', async ({ page }) => {
+            const input = '{{titlecase::éOWYN åSTRÖM}}`';
+            const output = await evaluateWithEngine(page, input);
+            expect(output).toBe('Éowyn Åström');
+        })
+    });
+
     test.describe('Legacy compatibility', () => {
         test('should strip trim macro and surrounding newlines (legacy behavior)', async ({ page }) => {
             const input = 'foo\n\n{{trim}}\n\nbar';
