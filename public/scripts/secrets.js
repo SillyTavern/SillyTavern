@@ -79,6 +79,7 @@ export const SECRET_KEYS = {
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
     WORKERS_AI: 'api_key_workers_ai',
+    VOYAGEAI: 'api_key_voyageai',
 };
 
 const FRIENDLY_NAMES = {
@@ -144,6 +145,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
     [SECRET_KEYS.VOLCENGINE_ACCESS_KEY]: 'Volcengine Access Key',
     [SECRET_KEYS.WORKERS_AI]: 'Cloudflare Workers AI',
+    [SECRET_KEYS.VOYAGEAI]: 'Voyage AI',
 };
 
 const INPUT_MAP = {
