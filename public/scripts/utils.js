@@ -4,6 +4,8 @@ import {
     Readability,
     isProbablyReaderable,
     lodash,
+    jxlDecode,
+    initJxlDecode,
 } from '../lib.js';
 
 import { getContext } from './extensions.js';
@@ -1851,7 +1853,52 @@ export const supportedImageMimeTypes = Object.freeze([
     'image/apng',
     'image/webp',
     'image/avif',
+    'image/jxl',
 ]);
+
+/**
+ * Checks whether a file is a JXL image by MIME type or file extension.
+ * @param {File} file The file to check.
+ * @returns {boolean} True if the file is a JXL image.
+ */
+export function isJxlFile(file) {
+    return file.type === 'image/jxl' || file.name.toLowerCase().endsWith('.jxl');
+}
+
+/**
+ * Decodes a JXL image file to a PNG data URL using the WASM-based @jsquash/jxl decoder.
+ * The browser cannot natively display JXL images, so we decode them to PNG via WebAssembly.
+ * @param {File} file The JXL image file to decode.
+ * @returns {Promise<string>} A promise that resolves to a PNG data URL.
+ */
+export async function decodeJxlToDataUrl(file) {
+    await initJxlDecode({
+        locateFile: (filename) => `/lib/jxl/${filename}`,
+    });
+
+    const buffer = await file.arrayBuffer();
+    const imageData = await jxlDecode(buffer);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = imageData.width;
+    canvas.height = imageData.height;
+    const ctx = canvas.getContext('2d');
+    ctx.putImageData(imageData, 0, 0);
+
+    return canvas.toDataURL('image/png');
+}
+
+/**
+ * Converts a JXL image file to a PNG File object using the WASM decoder.
+ * @param {File} file The JXL image file to convert.
+ * @returns {Promise<File>} A promise that resolves to a PNG File.
+ */
+export async function convertJxlToPngFile(file) {
+    const dataUrl = await decodeJxlToDataUrl(file);
+    const blob = await fetch(dataUrl).then(res => res.blob());
+    const pngName = file.name.replace(/\.jxl$/i, '.png');
+    return new File([blob], pngName, { type: 'image/png' });
+}
 
 /**
  * Ensure that we can import war crime image formats like WEBP and AVIF.
@@ -1859,6 +1906,11 @@ export const supportedImageMimeTypes = Object.freeze([
  * @returns {Promise<File>} A promise that resolves to the supported file.
  */
 export async function ensureImageFormatSupported(file) {
+    // JXL requires WASM decoding; canvas-based conversion won't work
+    if (isJxlFile(file)) {
+        return await convertJxlToPngFile(file);
+    }
+
     if (supportedImageMimeTypes.includes(file.type) || !file.type.startsWith('image/')) {
         return file;
     }
