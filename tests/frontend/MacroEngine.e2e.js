@@ -745,6 +745,18 @@ test.describe('MacroEngine', () => {
             expect(options.includes(second)).toBeTruthy();
         });
 
+        test('should not treat a leading separator from resolved scoped arguments as a choice', async ({ page }) => {
+            await page.evaluate(async () => {
+                const { chat_metadata } = await import('./script.js');
+                chat_metadata.chat_id_hash = 1;
+            });
+
+            const input = '{{pick\n{{if 1}}::a{{/if}}\n{{if 1}}::b{{/if}}\n}}';
+            const output = await evaluateWithEngine(page, input);
+
+            expect(['a', 'b']).toContain(output);
+        });
+
         test('should use different seeds for identical picks at different positions', async ({ page }) => {
             await registerTestablePick(page);
 
