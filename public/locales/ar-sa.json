@@ -1454,5 +1454,6 @@
     "Deleting chat…": "جارٍ حذف المحادثة…",
     "Loading chat…": "جارٍ تحميل المحادثة…",
     "Bulk Delete": "حذف جماعي",
-    "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…"
+    "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…",
+    "Select tag to merge into": "اختر الوسم للدمج إليه"
 }

@@ -291,3 +291,11 @@
     width: var(--avatar-base-width);
     justify-content: center;
 }
+
+#merge_tag_select+.select2-container .select2-selection--single .select2-selection__rendered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 20px 0 10px;
+}

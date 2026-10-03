@@ -1459,5 +1459,6 @@
     "Deleting chat…": "チャットを削除中…",
     "Loading chat…": "チャットを読み込み中…",
     "Bulk Delete": "一括削除",
-    "Deleting ${0} character(s)…": "${0}人のキャラクターを削除中…"
+    "Deleting ${0} character(s)…": "${0}人のキャラクターを削除中…",
+    "Select tag to merge into": "統合先のタグを選択"
 }

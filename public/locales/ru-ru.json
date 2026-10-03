@@ -2754,5 +2754,6 @@
     "Deleting chat…": "Удаление чата…",
     "Loading chat…": "Загрузка чата…",
     "Bulk Delete": "Массовое удаление",
-    "Deleting ${0} character(s)…": "Удаление ${0} персонажа(ей)…"
+    "Deleting ${0} character(s)…": "Удаление ${0} персонажа(ей)…",
+    "Select tag to merge into": "Выберите тег для слияния"
 }
