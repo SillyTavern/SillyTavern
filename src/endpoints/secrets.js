@@ -53,6 +53,7 @@ export const SECRET_KEYS = {
     FALAI: 'api_key_falai',
     GENERIC: 'api_key_generic',
     DEEPSEEK: 'api_key_deepseek',
+    OPENCODEGO: 'api_key_opencodego',
     SERPER: 'api_key_serper',
     AIMLAPI: 'api_key_aimlapi',
     XAI: 'api_key_xai',
