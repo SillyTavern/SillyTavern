@@ -89,14 +89,23 @@ const a11yRules = {
  * @param {Element} element Element to process.
  */
 function applyA11yRules(element) {
+    // <option> and <optgroup> match no rule and contain no element that could
+    if (element instanceof HTMLOptionElement || element instanceof HTMLOptGroupElement) {
+        return;
+    }
     try {
+        // Childless elements (e.g. the tens of thousands of <option>s of a large model
+        // list) have no descendants to query, so only match the element itself.
+        const hasChildren = Boolean(element.firstElementChild);
         for (const [selector, rule] of Object.entries(a11yRules)) {
             // Apply if the element directly matches the selector
             if (element.matches(selector)) {
                 rule(element);
             }
             // Apply the rule to descendants
-            element.querySelectorAll(selector).forEach(rule);
+            if (hasChildren) {
+                element.querySelectorAll(selector).forEach(rule);
+            }
         }
     } catch (error) {
         console.error('Error applying accessibility rules to element:', element, error);
