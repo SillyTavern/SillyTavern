@@ -66,6 +66,10 @@ router.post('/caption-image', async (request, response) => {
             key = readSecret(request.user.directories, SECRET_KEYS.AIMLAPI);
         }
 
+        if (request.body.api === 'concentrate') {
+            key = readSecret(request.user.directories, SECRET_KEYS.CONCENTRATE);
+        }
+
         if (request.body.api === 'groq') {
             key = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         }
@@ -162,6 +166,10 @@ router.post('/caption-image', async (request, response) => {
         if (request.body.api === 'aimlapi') {
             apiUrl = 'https://api.aimlapi.com/v1/chat/completions';
             Object.assign(headers, AIMLAPI_HEADERS);
+        }
+
+        if (request.body.api === 'concentrate') {
+            apiUrl = 'https://api.concentrate.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'groq') {
