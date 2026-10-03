@@ -157,6 +157,18 @@ function getRelatedDOMElement(samplerName) {
         displayname = 'Smoothing Block';
     }
 
+    if (samplerName === 'mlx_lm_stream_options') {
+        relatedDOMElement = $('#stream_options_block_mlx_lm');
+        targetDisplayType = 'block';
+        displayname = 'Stream Options Block';
+    }
+
+    if (samplerName === 'mlx_lm_custom_parameters') {
+        relatedDOMElement = $('#custom_parameters_block_mlx_lm');
+        targetDisplayType = 'block';
+        displayname = 'Custom Parameters Block';
+    }
+
     return { relatedDOMElement, targetDisplayType, displayname };
 }
 
@@ -220,7 +232,7 @@ async function listSamplers(main_api, arrayOnly = false) {
     let availableSamplers;
     if (main_api === 'textgenerationwebui') {
         availableSamplers = TGsamplerNames;
-        const valuesToRemove = new Set(['streaming', 'bypass_status_check', 'custom_model', 'generic_model', 'openrouter_allow_fallbacks', 'legacy_api', 'extensions']);
+        const valuesToRemove = new Set(['streaming', 'bypass_status_check', 'custom_model', 'generic_model', 'openrouter_allow_fallbacks', 'legacy_api', 'extensions', 'mlx_lm_adapters', 'mlx_lm_draft_model']);
         availableSamplers = availableSamplers.filter(sampler => !valuesToRemove.has(sampler));
         availableSamplers.sort();
     }
