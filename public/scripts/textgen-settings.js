@@ -24,7 +24,7 @@ import { getActiveManualApiSamplers, loadApiSelectedSamplers, isSamplerManualPri
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadLlamaCppModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels, updateOpenRouterProvidersWarning } from './textgen-models.js';
-import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, getTokenizerBestMatch, tokenizers } from './tokenizers.js';
+import { TOKENIZER_SUPPORTED_KEY, getEncodingTokenizerType, getTextTokens, getTokenizerBestMatch, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual, isObject } from './utils.js';
 
@@ -406,17 +406,19 @@ function convertPresets(presets) {
 }
 
 function getTokenizerForTokenIds() {
+    const encodingTokenizer = getEncodingTokenizerType();
+
+    if (encodingTokenizer === tokenizers.NONE) {
+        return tokenizers.NONE;
+    }
+
+    if (encodingTokenizer !== tokenizers.BEST_MATCH) {
+        return encodingTokenizer;
+    }
+
     const bestMatchTokenizer = getTokenizerBestMatch('textgenerationwebui');
     if (bestMatchTokenizer === tokenizers.API_TEXTGENERATIONWEBUI) {
         return tokenizers.API_CURRENT;
-    }
-
-    if (power_user.tokenizer === tokenizers.API_CURRENT && TEXTGEN_TOKENIZERS.includes(textgenerationwebui_settings.type)) {
-        return tokenizers.API_CURRENT;
-    }
-
-    if (ENCODE_TOKENIZERS.includes(power_user.tokenizer)) {
-        return power_user.tokenizer;
     }
 
     if (textgenerationwebui_settings.type === OPENROUTER) {
