@@ -147,6 +147,8 @@
     "Allow fallback routes": "Разрешить резервные маршруты",
     "Allow fallback routes Description": "Автоматически выбирает альтернативную модель, если выбранная модель не может обслужить ваш запрос.",
     "OpenRouter API Key": "Ключ от OpenRouter API",
+    "Hubris API Key": "Ключ от Hubris API",
+    "Hubris Model": "Модель Hubris",
     "OpenRouter Model": "Модель OpenRouter",
     "View Remaining Credits": "Посмотреть оставшиеся кредиты",
     "Click Authorize below or get the key from": "Нажмите «Авторизоваться» ниже или получите ключ от",
