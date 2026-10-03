@@ -1,10 +1,232 @@
 import process from 'node:process';
 import http from 'node:http';
 import https from 'node:https';
+import net from 'node:net';
+import dns from 'node:dns';
 import { ProxyAgent } from 'proxy-agent';
 import { isValidUrl, color } from './util.js';
 
 const LOG_HEADER = '[Request Proxy]';
+
+/**
+ * Parse a bypass list entry and determine its type.
+ * @param {string} entry A single bypass entry from the config.
+ * @returns {{type: 'all'} | {type: 'cidr', ip: string, prefix: number} | {type: 'ip-wildcard', parts: string[]} | {type: 'domain', pattern: string, port?: number} | null}
+ */
+function parseBypassEntry(entry) {
+    // Guard against non-string entries (malformed config)
+    if (typeof entry !== 'string') return null;
+    const trimmed = entry.trim();
+    if (!trimmed) return null;
+
+    // '*' matches everything (same as proxy-from-env behavior)
+    if (trimmed === '*') {
+        return { type: 'all' };
+    }
+
+    // CIDR notation: 192.168.0.0/16
+    const cidrMatch = trimmed.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2})$/);
+    if (cidrMatch && net.isIPv4(cidrMatch[1])) {
+        const prefix = parseInt(cidrMatch[2], 10);
+        if (prefix >= 0 && prefix <= 32) {
+            return { type: 'cidr', ip: cidrMatch[1], prefix };
+        }
+    }
+
+    // IP wildcard: 192.168.*.*
+    if (trimmed.includes('*')) {
+        const parts = trimmed.split('.');
+        if (parts.length === 4) {
+            return { type: 'ip-wildcard', parts };
+        }
+    }
+
+    // Check for port-qualified host (host:port) — strip port for matching
+    const portMatch = trimmed.match(/^(.+):(\d{1,5})$/);
+    if (portMatch) {
+        const port = parseInt(portMatch[2], 10);
+        if (port >= 1 && port <= 65535) {
+            return { type: 'domain', pattern: portMatch[1], port };
+        }
+    }
+
+    // Everything else is treated as a domain/hostname pattern
+    return { type: 'domain', pattern: trimmed };
+}
+
+/**
+ * Check if an IPv4 address falls within a CIDR range.
+ * @param {string} ip - The IP address to check.
+ * @param {string} cidrIP - The network address.
+ * @param {number} prefix - The subnet prefix length (0-32).
+ * @returns {boolean}
+ */
+function ipInCIDR(ip, cidrIP, prefix) {
+    const ipParts = ip.split('.').map(Number);
+    const cidrParts = cidrIP.split('.').map(Number);
+
+    const ipNum = ((ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3]) >>> 0;
+    const cidrNum = ((cidrParts[0] << 24) | (cidrParts[1] << 16) | (cidrParts[2] << 8) | cidrParts[3]) >>> 0;
+    const mask = prefix === 0 ? 0 : (~((1 << (32 - prefix)) - 1)) >>> 0;
+
+    return (ipNum & mask) === (cidrNum & mask);
+}
+
+/**
+ * Check if an IPv4 address matches a wildcard pattern like 192.168.*.*
+ * @param {string} ip - The IP address to check.
+ * @param {string[]} wildcardParts - The wildcard pattern split by '.'.
+ * @returns {boolean}
+ */
+function ipMatchesWildcard(ip, wildcardParts) {
+    const ipParts = ip.split('.');
+    if (ipParts.length !== 4) return false;
+    for (let i = 0; i < 4; i++) {
+        if (wildcardParts[i] !== '*' && wildcardParts[i] !== ipParts[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Check if a hostname matches a domain bypass pattern.
+ * Supports exact match, leading dot (`.example.com` matches `example.com` and any subdomain),
+ * and leading wildcard (`*.example.com` — same as leading dot).
+ * @param {string} hostname
+ * @param {string} pattern
+ * @returns {boolean}
+ */
+function hostnameMatchesDomain(hostname, pattern) {
+    // *.example.com -> .example.com
+    if (pattern.startsWith('*.')) {
+        pattern = pattern.slice(1);
+    }
+    // .example.com matches example.com and any subdomain
+    if (pattern.startsWith('.')) {
+        const lowerHost = hostname.toLowerCase();
+        const lowerPattern = pattern.toLowerCase();
+        return lowerHost === lowerPattern.slice(1) || lowerHost.endsWith(lowerPattern);
+    }
+    // Exact match (case-insensitive, since hostnames are)
+    return hostname.toLowerCase() === pattern.toLowerCase();
+}
+
+/**
+ * Check whether a URL should bypass the proxy based on the bypass list.
+ * Handles CIDR notation, IP wildcards, and domain/hostname patterns.
+ * @param {string} urlStr - The URL being requested.
+ * @param {string[]} bypassList - List of bypass patterns from config.
+ * @returns {Promise<boolean>}
+ */
+async function shouldBypassProxy(urlStr, bypassList, fallbackHostname) {
+    // Guard against non-array bypassList
+    if (!Array.isArray(bypassList)) return false;
+
+    let url;
+    try {
+        url = new URL(urlStr);
+    } catch {
+        return false;
+    }
+
+    let hostname = url.hostname;
+
+    // Fallback: for HTTPS CONNECT requests, proxy-agent v6 constructs an
+    // opaque URL (e.g. 'api.openai.com:443') whose WHATWG-parsed hostname
+    // is empty because the parser treats the hostname portion as a URL scheme.
+    // When the caller provides a fallbackHostname (from the request Host header),
+    // use it instead.
+    if (!hostname && fallbackHostname) {
+        hostname = fallbackHostname;
+    }
+
+    if (!hostname) return false;
+
+    // Resolve DNS once if any CIDR or IP-wildcard rules need it.
+    // Only needed when the URL uses a hostname (not a raw IP).
+    const isRawIP = net.isIPv4(hostname);
+    let resolvedIPs = null;
+
+    if (!isRawIP) {
+        const needDNS = bypassList.some(entry => {
+            const rule = parseBypassEntry(entry);
+            return rule && (rule.type === 'cidr' || rule.type === 'ip-wildcard');
+        });
+        if (needDNS) {
+            try {
+                // dns.lookup uses the OS resolver (getaddrinfo), which respects
+                // /etc/hosts, mDNS, and VPN resolvers — matching how Node.js
+                // resolves hostnames for outbound connections.
+                const results = await dns.promises.lookup(hostname, { family: 4, all: true });
+                resolvedIPs = results.map(r => r.address);
+            } catch {
+                // DNS resolution failed; IP-based rules will simply not match.
+            }
+        }
+    }
+
+    const urlPort = parseInt(url.port, 10) || null;
+
+    // Compute effective port for comparisons: when a URL omits the port,
+    // use the protocol default (e.g., 443 for https, 80 for http).
+    // This is needed so bypass entries like 'example.com:443' match
+    // requests to 'https://example.com/' (no explicit port).
+    let effectivePort = urlPort;
+    if (effectivePort === null) {
+        if (url.protocol === 'https:') {
+            effectivePort = 443;
+        } else if (url.protocol === 'http:') {
+            effectivePort = 80;
+        }
+    }
+
+    for (const entry of bypassList) {
+        const rule = parseBypassEntry(entry);
+        if (!rule) continue;
+
+        switch (rule.type) {
+            case 'all':
+                return true;
+
+            case 'domain':
+                if (hostnameMatchesDomain(hostname, rule.pattern)) {
+                    // If rule specifies a port, the effective request port must match.
+                    // No port on the rule means match any port.
+                    if (rule.port === undefined || rule.port === effectivePort) {
+                        return true;
+                    }
+                }
+                break;
+
+            case 'ip-wildcard':
+                if (isRawIP) {
+                    if (ipMatchesWildcard(hostname, rule.parts)) {
+                        return true;
+                    }
+                } else if (resolvedIPs) {
+                    if (resolvedIPs.some(addr => ipMatchesWildcard(addr, rule.parts))) {
+                        return true;
+                    }
+                }
+                break;
+
+            case 'cidr':
+                if (isRawIP) {
+                    if (ipInCIDR(hostname, rule.ip, rule.prefix)) {
+                        return true;
+                    }
+                } else if (resolvedIPs) {
+                    if (resolvedIPs.some(addr => ipInCIDR(addr, rule.ip, rule.prefix))) {
+                        return true;
+                    }
+                }
+                break;
+        }
+    }
+
+    return false;
+}
 
 /**
  * Initialize request proxy.
@@ -13,6 +235,8 @@ const LOG_HEADER = '[Request Proxy]';
  * @property {boolean} enabled Whether proxy is enabled.
  * @property {string} url Proxy URL.
  * @property {string[]} bypass List of URLs to bypass proxy.
+ *   Supports: domain patterns (example.com, .example.com, *.example.com),
+ *   CIDR notation (192.168.0.0/16), and IP wildcards (192.168.*.*).
  * @property {boolean} enableKeepAlive Enable HTTP/HTTPS keep-alive.
  * @property {boolean} privateRequestFilterEnabled Whether the private request filter is enabled.
  */
@@ -38,18 +262,54 @@ export default function initRequestProxy({ enabled, url, bypass, enableKeepAlive
             return;
         }
 
-        // ProxyAgent uses proxy-from-env under the hood
-        // Reference: https://github.com/Rob--W/proxy-from-env
+        // Set environment variables for libraries that read them directly
         process.env.all_proxy = url;
 
-        if (Array.isArray(bypass) && bypass.length > 0) {
+        const hasBypass = Array.isArray(bypass) && bypass.length > 0;
+        if (hasBypass) {
             process.env.no_proxy = bypass.join(',');
         }
 
         const httpAgent = http.globalAgent;
         const httpsAgent = https.globalAgent;
 
-        const proxyAgent = new ProxyAgent({ httpAgent, httpsAgent, keepAlive: enableKeepAlive });
+        /**
+         * Custom proxy resolution callback.
+         * Uses our own bypass logic to support CIDR notation, IP wildcards,
+         * and legacy patterns (*, host:port) that proxy-from-env doesn't handle.
+         * @param {string} urlStr — URL being requested (may be a CONNECT target for HTTPS)
+         * @param {import('node:http').ClientRequest} req — the outgoing request
+         * @returns {Promise<string>}
+         */
+        async function getProxyForUrl(urlStr, req) {
+            // For HTTPS requests through an HTTP proxy, proxy-agent v6 constructs
+            // a CONNECT URL like 'api.openai.com:443' whose WHATWG hostname is empty.
+            // Extract the real hostname from the request Host header as a fallback.
+            let fallbackHostname = null;
+            if (req) {
+                try {
+                    const hostHeader = req.getHeader('host');
+                    if (hostHeader) {
+                        // Strip port if present (Host header is 'host:port')
+                        fallbackHostname = String(hostHeader).split(':')[0];
+                    }
+                } catch {
+                    // getHeader may throw on some request types — safe to ignore
+                }
+            }
+
+            if (hasBypass && await shouldBypassProxy(urlStr, bypass, fallbackHostname)) {
+                return ''; // falsy return = bypass proxy
+            }
+            return url;
+        }
+
+        const proxyAgent = new ProxyAgent({
+            httpAgent,
+            httpsAgent,
+            keepAlive: enableKeepAlive,
+            getProxyForUrl,
+        });
 
         http.globalAgent = proxyAgent;
         https.globalAgent = proxyAgent;
