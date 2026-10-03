@@ -78,6 +78,7 @@ export const SECRET_KEYS = {
     POLLINATIONS: 'api_key_pollinations',
     VOLCENGINE_APP_ID: 'volcengine_app_id',
     VOLCENGINE_ACCESS_KEY: 'volcengine_access_key',
+    PLAYER2: 'api_key_player2',
     WORKERS_AI: 'api_key_workers_ai',
 };
 
@@ -143,6 +144,7 @@ const FRIENDLY_NAMES = {
     [SECRET_KEYS.POLLINATIONS]: 'Pollinations',
     [SECRET_KEYS.VOLCENGINE_APP_ID]: 'Volcengine App ID',
     [SECRET_KEYS.VOLCENGINE_ACCESS_KEY]: 'Volcengine Access Key',
+    [SECRET_KEYS.PLAYER2]: 'Player2',
     [SECRET_KEYS.WORKERS_AI]: 'Cloudflare Workers AI',
 };
 
@@ -188,6 +190,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.SILICONFLOW]: '#api_key_siliconflow',
     [SECRET_KEYS.MINIMAX]: '#api_key_minimax',
     [SECRET_KEYS.POLLINATIONS]: '#api_key_pollinations',
+    [SECRET_KEYS.PLAYER2]: '#api_key_player2',
     [SECRET_KEYS.WORKERS_AI]: '#api_key_workers_ai',
 };
 
