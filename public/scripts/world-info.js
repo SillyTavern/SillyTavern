@@ -38,6 +38,34 @@ export const world_info_logic = {
 };
 
 /**
+ * @enum {string} Types for character filter items
+ */
+export const CHARACTER_FILTER_TYPES = {
+    CHARACTER: 'character',
+    TAG: 'tag',
+    PERSONA: 'persona',
+};
+
+/**
+ * @enum {string} Filter states for individual character filter items.
+ * - ONE_OF: At least one item with this state must match (OR logic). This is the default.
+ * - REQUIRED: This specific item must match (AND logic).
+ * - EXCLUDED: If this item matches, the entry is filtered out (NOT logic).
+ */
+export const CHARACTER_FILTER_STATES = {
+    ONE_OF: 'oneOf',
+    REQUIRED: 'required',
+    EXCLUDED: 'excluded',
+};
+
+/** Ordered cycle for clicking through filter states */
+const CHARACTER_FILTER_STATE_CYCLE = [
+    CHARACTER_FILTER_STATES.ONE_OF,
+    CHARACTER_FILTER_STATES.REQUIRED,
+    CHARACTER_FILTER_STATES.EXCLUDED,
+];
+
+/**
  * @enum {number} Possible states of the WI evaluation
  */
 export const scan_state = {
@@ -1274,26 +1302,28 @@ function registerWorldInfoSlashCommands() {
         }
 
         // handle special cases, otherwise execute default logic
+        const filterItems = Array.isArray(entry.characterFilter) ? entry.characterFilter : [];
         let fieldValue;
         switch (field) {
+            case 'characterFilter':
+                // Return raw JSON — don't go through substituteParams array path
+                return JSON.stringify(filterItems);
             case 'characterFilterNames':
-                if (entry.characterFilter) {
-                    fieldValue = entry.characterFilter.names;
-                }
+                toastr.warning('[WI] characterFilterNames is deprecated. Use characterFilter instead.');
+                fieldValue = filterItems
+                    .filter(f => f.type === CHARACTER_FILTER_TYPES.CHARACTER)
+                    .map(f => f.name);
                 break;
             case 'characterFilterTags':
-                if (entry.characterFilter) {
-                    if (!entry.characterFilter.tags) {
-                        return '';
-                    }
-                    //Find the tag objects corresponding to each ID in the array, then return the names
-                    fieldValue = tags.filter((tag) => entry.characterFilter.tags.includes(tag.id)).map((tag) => tag.name);
-                }
+                toastr.warning('[WI] characterFilterTags is deprecated. Use characterFilter instead.');
+                fieldValue = tags
+                    .filter(tag => filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.TAG && f.name === tag.id))
+                    .map(tag => tag.name);
                 break;
             case 'characterFilterExclude':
-                if (entry.characterFilter) {
-                    fieldValue = entry.characterFilter.isExclude;
-                }
+                toastr.warning('[WI] characterFilterExclude is deprecated. Use characterFilter instead.');
+                // Return true if all items are excluded (backwards compat approximation)
+                fieldValue = filterItems.length > 0 && filterItems.every(f => f.state === CHARACTER_FILTER_STATES.EXCLUDED);
                 break;
             default:
                 fieldValue = entry[field] ?? newWorldInfoEntryDefinition[field]?.default;
@@ -1346,19 +1376,10 @@ function registerWorldInfoSlashCommands() {
         const field = args.field || 'content';
         const tags = getContext().tags;
 
-        // characterFilter is an object with internal fields we need to access, which may also may be null and need to be populated
-        const createCharacterFilterFieldObjectIfNeeded = (currentEntry) => {
-            if (!currentEntry.characterFilter) {
-                Object.assign(
-                    currentEntry,
-                    {
-                        characterFilter: {
-                            isExclude: false,
-                            names: [],
-                            tags: [],
-                        },
-                    },
-                );
+        /** Ensures entry.characterFilter is a valid array */
+        const ensureCharacterFilterArray = (currentEntry) => {
+            if (!Array.isArray(currentEntry.characterFilter)) {
+                currentEntry.characterFilter = [];
             }
         };
 
@@ -1404,27 +1425,69 @@ function registerWorldInfoSlashCommands() {
         let tagNames;
         let charNames;
         switch (field) {
-            case 'characterFilterNames':
-                createCharacterFilterFieldObjectIfNeeded(entry);
+            case 'characterFilter': {
+                ensureCharacterFilterArray(entry);
+                try {
+                    const parsed = JSON.parse(value);
+                    if (!Array.isArray(parsed)) {
+                        toastr.warning('characterFilter must be a JSON array');
+                        return '';
+                    }
+                    entry.characterFilter = parsed.filter(item =>
+                        item && typeof item === 'object' &&
+                        Object.values(CHARACTER_FILTER_TYPES).includes(item.type) &&
+                        typeof item.name === 'string' &&
+                        Object.values(CHARACTER_FILTER_STATES).includes(item.state),
+                    );
+                } catch {
+                    toastr.warning('characterFilter must be valid JSON');
+                    return '';
+                }
+                warnCharacterFilterSingletonConflicts(entry.characterFilter);
+                setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
+                break;
+            }
+            case 'characterFilterNames': {
+                toastr.warning('[WI] characterFilterNames is deprecated. Use characterFilter instead.');
+                ensureCharacterFilterArray(entry);
                 charNames = parseStringArray(value);
-                entry.characterFilter.names = charNames
+                const resolvedNames = charNames
                     .map((name) => getCharaFilename(null, { manualAvatarKey: findChar({ name, allowAvatar: true, preferCurrentChar: false, quiet: true })?.avatar }))
                     .filter(Boolean)
                     .filter(onlyUnique);
+                // Remove existing character items, then add new ones with default oneOf state
+                entry.characterFilter = entry.characterFilter.filter(f => f.type !== CHARACTER_FILTER_TYPES.CHARACTER);
+                for (const charName of resolvedNames) {
+                    entry.characterFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name: charName, state: CHARACTER_FILTER_STATES.ONE_OF });
+                }
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
-            case 'characterFilterTags':
-                createCharacterFilterFieldObjectIfNeeded(entry);
+            }
+            case 'characterFilterTags': {
+                toastr.warning('[WI] characterFilterTags is deprecated. Use characterFilter instead.');
+                ensureCharacterFilterArray(entry);
                 tagNames = parseStringArray(value);
-                //Find the tag objects corresponding to each name in the user array, then return an array of the corresponding IDs
-                entry.characterFilter.tags = tags.filter((tag) => tagNames.includes(tag.name)).map((tag) => tag.id);
+                const tagIds = tags.filter((tag) => tagNames.includes(tag.name)).map((tag) => tag.id);
+                // Remove existing tag items, then add new ones with default oneOf state
+                entry.characterFilter = entry.characterFilter.filter(f => f.type !== CHARACTER_FILTER_TYPES.TAG);
+                for (const tagId of tagIds) {
+                    entry.characterFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tagId, state: CHARACTER_FILTER_STATES.ONE_OF });
+                }
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
-            case 'characterFilterExclude':
-                createCharacterFilterFieldObjectIfNeeded(entry);
-                entry.characterFilter.isExclude = isTrueBoolean(value);
+            }
+            case 'characterFilterExclude': {
+                toastr.warning('[WI] characterFilterExclude is deprecated. Use characterFilter instead.');
+                ensureCharacterFilterArray(entry);
+                const excludeValue = isTrueBoolean(value);
+                // Set state on all existing filter items (backwards compat: global toggle)
+                const targetState = excludeValue ? CHARACTER_FILTER_STATES.EXCLUDED : CHARACTER_FILTER_STATES.ONE_OF;
+                for (const item of entry.characterFilter) {
+                    item.state = targetState;
+                }
                 setWIOriginalDataValue(data, uid, 'character_filter', entry.characterFilter);
                 break;
+            }
             default:
                 if (Array.isArray(entry[field])) {
                     entry[field] = parseStringArray(value).filter(arrayFilter);
@@ -1565,9 +1628,11 @@ function registerWorldInfoSlashCommands() {
     /** A collection of local enum providers for this context of world info */
     const localEnumProviders = {
         /** All possible fields that can be set in a WI entry */
-        wiEntryFields: () => Object.entries(newWorldInfoEntryDefinition).map(([key, value]) =>
-            new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : JSON.stringify(value.default))}`,
-                enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
+        wiEntryFields: () => Object.entries(newWorldInfoEntryDefinition)
+            .filter(([_, value]) => !value.deprecated)
+            .map(([key, value]) =>
+                new SlashCommandEnumValue(key, `[${value.type}] default: ${(typeof value.default === 'string' ? `'${value.default}'` : JSON.stringify(value.default))}`,
+                    enumTypes.enum, enumIcons.getDataTypeIcon(value.type))),
 
         /** All existing UIDs based on the file argument as world name */
         wiUids: (/** @type {import('./slash-commands/SlashCommandExecutor.js').SlashCommandExecutor} */ executor) => {
@@ -2051,6 +2116,7 @@ export async function loadWorldInfo(name) {
 
     if (response.ok) {
         const data = await response.json();
+        migrateWorldInfoData(name, data);
         worldInfoCache.set(name, data);
         return data;
     }
@@ -2122,17 +2188,105 @@ function addMissingWorldInfoFields(data) {
             entry.keysecondary = [];
         }
 
-        // Ensure that the characterFilter is an object with the expected structure
-        if (!entry.characterFilter || typeof entry.characterFilter !== 'object' || Array.isArray(entry.characterFilter)) {
-            entry.characterFilter = {
-                isExclude: false,
-                names: [],
-                tags: [],
-            };
-        }
+        // Ensure that the characterFilter is a valid array (migrate old format if needed)
+        migrateCharacterFilter(entry);
     });
 
     return data;
+}
+
+/**
+ * Adds missing fields to WI entries that are present in the entry template, but not in the data.
+ * Additionally verify that array/object fields are of the expected type.
+ * @param {string} name - The name of the world to migrate
+ * @param {any[]} data WI entries
+ */
+function migrateWorldInfoData(name, data) {
+    let migrated = false;
+
+    // Migrate characterFilter format for all entries on load
+    if (data?.entries) {
+        for (const entry of Object.values(data.entries)) {
+            if (migrateCharacterFilter(entry))
+                migrated = true;
+        }
+    }
+
+    if (migrated) {
+        saveWorldInfo(name, data);
+    }
+}
+
+/**
+ * Migrates an entry's characterFilter from old formats to the current format.
+ * Handles: legacy object with isExclude/names/tags, and intermediate array with boolean exclude.
+ * Target format: array of `{ type, name, state }` items.
+ * @param {object} entry - The WI entry to migrate
+ * @returns {boolean} - Whether anything was migrated
+ */
+function migrateCharacterFilter(entry) {
+    // Legacy object format: { isExclude, names, tags }
+    if (entry.characterFilter && !Array.isArray(entry.characterFilter) && typeof entry.characterFilter === 'object') {
+        const oldFilter = entry.characterFilter;
+        const newFilter = [];
+        const hasNames = Array.isArray(oldFilter.names) && oldFilter.names.length > 0;
+        const hasTags = Array.isArray(oldFilter.tags) && oldFilter.tags.length > 0;
+
+        if (oldFilter.isExclude) {
+            // Exclude mode: all items become EXCLUDED
+            if (hasNames) {
+                for (const name of oldFilter.names) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.EXCLUDED });
+                }
+            }
+            if (hasTags) {
+                for (const tag of oldFilter.tags) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.EXCLUDED });
+                }
+            }
+        } else if (hasNames && hasTags) {
+            // Both names and tags in include mode: old logic was AND between groups.
+            // Names → ONE_OF (character must be one of these)
+            // Tags → REQUIRED (preserves AND relationship: tags must also match)
+            for (const name of oldFilter.names) {
+                newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.ONE_OF });
+            }
+            for (const tag of oldFilter.tags) {
+                newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.REQUIRED });
+            }
+        } else {
+            // Only names or only tags: ONE_OF preserves exact old behavior
+            if (hasNames) {
+                for (const name of oldFilter.names) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.ONE_OF });
+                }
+            }
+            if (hasTags) {
+                for (const tag of oldFilter.tags) {
+                    newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.ONE_OF });
+                }
+            }
+        }
+        console.debug('[WI] Migrated old characterFilter object format for entry', entry.uid);
+        entry.characterFilter = newFilter;
+        return true;
+    }
+
+    // Normalize non-array to empty array
+    if (!Array.isArray(entry.characterFilter)) {
+        entry.characterFilter = [];
+        return true;
+    }
+
+    // Intermediate array format: items may have boolean 'exclude' instead of 'state'
+    for (const item of entry.characterFilter) {
+        if (!item.state || !Object.values(CHARACTER_FILTER_STATES).includes(item.state)) {
+            item.state = item.exclude ? CHARACTER_FILTER_STATES.EXCLUDED : CHARACTER_FILTER_STATES.ONE_OF;
+            delete item.exclude;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -3083,50 +3237,132 @@ function updatePosOrdDisplayHelper({ template, data, uid }) {
     template.find('.world_entry_form_position_value').text(`(${posText} ${entry.order})`);
 }
 
+/** FA icon classes for each character filter type */
+const CHARACTER_FILTER_TYPE_ICONS = {
+    [CHARACTER_FILTER_TYPES.CHARACTER]: 'fa-solid fa-address-card',
+    [CHARACTER_FILTER_TYPES.TAG]: 'fa-solid fa-tags',
+    [CHARACTER_FILTER_TYPES.PERSONA]: 'fa-solid fa-face-smile',
+};
+
+/** State indicator symbols for rendering in dropdown and chips */
+const CHARACTER_FILTER_STATE_INDICATORS = {
+    [CHARACTER_FILTER_STATES.ONE_OF]: { icon: '○', cls: 'cf_state_oneOf' },
+    [CHARACTER_FILTER_STATES.REQUIRED]: { icon: '✓', cls: 'cf_state_required' },
+    [CHARACTER_FILTER_STATES.EXCLUDED]: { icon: '✗', cls: 'cf_state_excluded' },
+};
+
 /**
- * Helper to initialize character filter select2.
+ * Helper to initialize character filter select2 with custom templates.
  * @param {JQuery<HTMLElement>} characterFilter - The select element for character filter.
+ * @param {object} wiData - The world info data object (for reading current filter states).
  */
-function initCharacterFilterSelect2Helper(characterFilter) {
+function initCharacterFilterSelect2Helper(characterFilter, wiData) {
+    /** Gets the current filter state for an option element, or null if not selected */
+    const getItemState = (optionElement) => {
+        const uid = characterFilter.data('uid');
+        const filter = Array.isArray(wiData.entries[uid]?.characterFilter) ? wiData.entries[uid].characterFilter : [];
+        const type = optionElement?.getAttribute('data-type');
+        const value = optionElement?.value;
+        const item = filter.find(f => f.type === type && f.name === value);
+        return item?.state ?? null;
+    };
+
+    /** Renders an option in the dropdown list */
+    const templateResult = (selectData) => {
+        if (!selectData.element) return selectData.text;
+        const type = selectData.element.getAttribute('data-type');
+        if (!type) return selectData.text;
+        const iconClass = CHARACTER_FILTER_TYPE_ICONS[type] || '';
+        const state = getItemState(selectData.element);
+        const $span = $('<span class="cf_option"></span>');
+        $span.append($(`<i class="${iconClass}"></i>`));
+        $span.append(document.createTextNode(` ${selectData.text} `));
+        if (state) {
+            const indicator = CHARACTER_FILTER_STATE_INDICATORS[state];
+            $span.append($(`<span class="cf_state_indicator ${indicator.cls}"></span>`).text(indicator.icon));
+        }
+        return $span;
+    };
+
+    /** Renders a selected item (chip) */
+    const templateSelection = (selectData) => {
+        if (!selectData.element) return selectData.text;
+        const type = selectData.element.getAttribute('data-type');
+        const iconClass = CHARACTER_FILTER_TYPE_ICONS[type] || '';
+        const $el = $('<span></span>').attr('data-filter-type', type).attr('data-filter-value', selectData.id);
+        $el.append($(`<i class="${iconClass}"></i>`));
+        $el.append(document.createTextNode(` ${selectData.text}`));
+        return $el;
+    };
+
     if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
-            placeholder: t`Tie this entry to specific characters or characters with specific tags`,
+            placeholder: t`Filter to characters, tags, or personas`,
             allowClear: true,
             closeOnSelect: false,
+            templateResult,
+            templateSelection,
         });
     }
 }
 
 /**
- * Helper to fill character and tag options for character filter.
+ * Helper to fill character, tag, and persona options for character filter.
  * @param {object} params - Parameters for filling options.
  * @param {JQuery<HTMLElement>} params.characterFilter - The select element to fill with options.
  * @param {object} params.entry - The entry object containing character filter data.
  */
-function fillCharacterAndTagOptionsHelper({ characterFilter, entry }) {
+function fillCharacterFilterOptionsHelper({ characterFilter, entry }) {
+    const filterItems = Array.isArray(entry.characterFilter) ? entry.characterFilter : [];
+
+    // Characters optgroup
+    const charGroup = document.createElement('optgroup');
+    charGroup.label = t`Characters`;
     const characters = getContext().characters;
     characters.forEach((character) => {
         const option = document.createElement('option');
         const name = character.avatar.replace(/\.[^/.]+$/, '') ?? character.name;
         option.innerText = name;
-        option.selected = entry.characterFilter?.names?.includes(name);
-        option.setAttribute('data-type', 'character');
-        characterFilter.append(option);
+        option.value = name;
+        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.CHARACTER && f.name === name);
+        option.setAttribute('data-type', CHARACTER_FILTER_TYPES.CHARACTER);
+        charGroup.append(option);
     });
+    characterFilter.append(charGroup);
+
+    // Tags optgroup
+    const tagGroup = document.createElement('optgroup');
+    tagGroup.label = t`Tags`;
     const tags = getContext().tags;
     tags.forEach((tag) => {
         const option = document.createElement('option');
-        option.innerText = `[Tag] ${tag.name}`;
-        option.selected = entry.characterFilter?.tags?.includes(tag.id);
+        option.innerText = tag.name;
         option.value = tag.id;
-        option.setAttribute('data-type', 'tag');
-        characterFilter.append(option);
+        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.TAG && f.name === tag.id);
+        option.setAttribute('data-type', CHARACTER_FILTER_TYPES.TAG);
+        tagGroup.append(option);
     });
+    characterFilter.append(tagGroup);
+
+    // Personas optgroup
+    const personaGroup = document.createElement('optgroup');
+    personaGroup.label = t`Personas`;
+    const personas = power_user.personas;
+    Object.entries(personas).forEach(([avatarId, personaName]) => {
+        const option = document.createElement('option');
+        option.innerText = personaName;
+        option.value = avatarId;
+        option.selected = filterItems.some(f => f.type === CHARACTER_FILTER_TYPES.PERSONA && f.name === avatarId);
+        option.setAttribute('data-type', CHARACTER_FILTER_TYPES.PERSONA);
+        personaGroup.append(option);
+    });
+    characterFilter.append(personaGroup);
 }
 
 /**
  * Helper to handle character filter changes.
+ * Rebuilds the characterFilter array from the selected options, preserving existing filter states.
  * @param {object} params - Parameters for handling character filter changes.
  * @param {JQuery<HTMLElement>} params.characterFilter - The select element for character filter.
  * @param {object} params.data - The data object containing entries.
@@ -3141,24 +3377,109 @@ function handleCharacterFilterChangeHelper({ characterFilter, data, entry, name 
         }
         const uid = $(this).data('uid');
         const selected = $(this).find(':selected');
-        if ((!selected || selected?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
-            delete data.entries[uid].characterFilter;
+        if (!selected || selected.length === 0) {
+            data.entries[uid].characterFilter = [];
         } else {
-            const names = selected.filter('[data-type="character"]').map((_, e) => e instanceof HTMLOptionElement && e.innerText).toArray();
-            const tags = selected.filter('[data-type="tag"]').map((_, e) => e instanceof HTMLOptionElement && e.value).toArray();
-            Object.assign(
-                data.entries[uid],
-                {
-                    characterFilter: {
-                        isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
-                        names: names,
-                        tags: tags,
-                    },
-                },
-            );
+            const existingFilter = Array.isArray(data.entries[uid].characterFilter) ? data.entries[uid].characterFilter : [];
+            /** @type {Array<{type: string, name: string, state: string}>} */
+            const newFilter = [];
+
+            selected.each((_, el) => {
+                if (!(el instanceof HTMLOptionElement)) return;
+                const type = el.getAttribute('data-type');
+                const itemName = el.value;
+                // Preserve filter state from existing filter
+                const existing = existingFilter.find(f => f.type === type && f.name === itemName);
+                newFilter.push({
+                    type,
+                    name: itemName,
+                    state: existing?.state ?? CHARACTER_FILTER_STATES.ONE_OF,
+                });
+            });
+
+            data.entries[uid].characterFilter = newFilter;
         }
         setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
         await saveWorldInfo(name, data);
+        // Update visual state indicators after select2 re-renders
+        setTimeout(() => updateCharacterFilterStateStyles(characterFilter, data.entries[uid].characterFilter), 0);
+    });
+}
+
+/**
+ * Warns about singleton type conflicts in a character filter array.
+ * Character and persona can only be one active at a time, so multiple required items of those types are impossible.
+ * @param {Array<{type: string, name: string, state: string}>} filterItems - The character filter array.
+ */
+function warnCharacterFilterSingletonConflicts(filterItems) {
+    const SINGLETON_TYPES = [CHARACTER_FILTER_TYPES.CHARACTER, CHARACTER_FILTER_TYPES.PERSONA];
+    for (const type of SINGLETON_TYPES) {
+        const requiredCount = filterItems.filter(f => f.type === type && f.state === CHARACTER_FILTER_STATES.REQUIRED).length;
+        if (requiredCount > 1) {
+            toastr.warning(t`Only one ${type} can be active at a time. Multiple required ${type}s will make this filter impossible to match.`);
+        }
+    }
+}
+
+/**
+ * Finds the filter item that corresponds to a rendered select2 choice element.
+ * Uses data attributes embedded by templateSelection for robust matching.
+ * @param {Array<{type: string, name: string, state: string}>} filterItems - The character filter array.
+ * @param {JQuery<HTMLElement>} element - The .select2-selection__choice__display element.
+ * @returns {object|undefined} The matching filter item, or undefined.
+ */
+function getFilterItemForChoice(filterItems, element) {
+    const $el = $(element);
+    // Navigate up to .select2-selection__choice__display if target is a child element
+    const display = $el.hasClass('select2-selection__choice__display')
+        ? $el
+        : $el.closest('.select2-selection__choice__display');
+    const searchRoot = display.length ? display : $el;
+    const templateSpan = searchRoot.find('span[data-filter-type]');
+    if (!templateSpan.length) return undefined;
+    const type = templateSpan.attr('data-filter-type');
+    const value = templateSpan.attr('data-filter-value');
+    return filterItems.find(f => f.type === type && f.name === value);
+}
+
+/**
+ * Updates the visual filter state styling on rendered select2 choice elements.
+ * @param {JQuery<HTMLElement>} characterFilterSelect - The select element.
+ * @param {Array<{type: string, name: string, state: string}>} entryFilter - The character filter array.
+ */
+function updateCharacterFilterStateStyles(characterFilterSelect, entryFilter) {
+    const filterItems = Array.isArray(entryFilter) ? entryFilter : [];
+    const container = characterFilterSelect.next('span.select2-container');
+    const tooltips = {
+        [CHARACTER_FILTER_STATES.ONE_OF]: t`One of (OR): At least one of these must match`,
+        [CHARACTER_FILTER_STATES.REQUIRED]: t`Required (AND): This must match`,
+        [CHARACTER_FILTER_STATES.EXCLUDED]: t`Excluded (NOT): Must not match`,
+    };
+
+    // Singleton types: only one can be active at a time, so having a required item makes others redundant
+    const SINGLETON_TYPES = [CHARACTER_FILTER_TYPES.CHARACTER, CHARACTER_FILTER_TYPES.PERSONA];
+    const hasRequiredSingleton = new Set(
+        SINGLETON_TYPES.filter(type => filterItems.some(f => f.type === type && f.state === CHARACTER_FILTER_STATES.REQUIRED)),
+    );
+
+    container.find('.select2-selection__choice').each(function () {
+        const display = $(this).find('.select2-selection__choice__display');
+        const filterItem = getFilterItemForChoice(filterItems, display);
+        const state = filterItem?.state ?? CHARACTER_FILTER_STATES.ONE_OF;
+        const type = filterItem?.type;
+
+        // Remove all state classes, then add the current one
+        $(this).removeClass('character_filter_oneOf character_filter_required character_filter_excluded character_filter_redundant');
+        $(this).addClass(`character_filter_${state}`);
+
+        // Mark non-required items of singleton types as redundant when a required item of the same type exists
+        const isRedundant = type && hasRequiredSingleton.has(type) && state !== CHARACTER_FILTER_STATES.REQUIRED;
+        if (isRedundant) {
+            $(this).addClass('character_filter_redundant');
+            $(this).attr('title', t`Redundant: another ${type} is already required (only one can be active)`);
+        } else {
+            $(this).attr('title', tooltips[state] ?? '');
+        }
     });
 }
 
@@ -3630,40 +3951,43 @@ export async function getWorldEntry(name, data, entry) {
         selectiveInput.parent().hide();
 
         // Character filter
-        const characterFilterLabel = editTemplate.find('label[for="characterFilter"] > small');
-        characterFilterLabel.text(entry.characterFilter?.isExclude ? 'Exclude Character(s)' : 'Filter to Character(s)');
-        const characterExclusionInput = editTemplate.find('input[name="character_exclusion"]');
-        characterExclusionInput.data('uid', entry.uid);
-        characterExclusionInput.on('input', async function (_, { noSave = false } = {}) {
-            const uid = $(this).data('uid');
-            const value = $(this).prop('checked');
-            characterFilterLabel.text(value ? 'Exclude Character(s)' : 'Filter to Character(s)');
-            if (data.entries[uid].characterFilter) {
-                if (!value && data.entries[uid].characterFilter.names.length === 0 && data.entries[uid].characterFilter.tags.length === 0) {
-                    delete data.entries[uid].characterFilter;
-                } else {
-                    data.entries[uid].characterFilter.isExclude = value;
-                }
-            } else if (value) {
-                Object.assign(data.entries[uid], { characterFilter: { isExclude: true, names: [], tags: [] } });
-            }
-            if (data.entries[uid]?.characterFilter?.names?.length > 0) {
-                for (const name of [...data.entries[uid].characterFilter.names]) {
-                    if (!getContext().characters.find(x => x.avatar.replace(/\.[^/.]+$/, '') === name)) {
-                        data.entries[uid].characterFilter.names = data.entries[uid].characterFilter.names.filter(x => x !== name);
-                    }
-                }
-            }
-            setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
-            !noSave && await saveWorldInfo(name, data);
-        });
-        characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input', { noSave: true });
-
         const characterFilter = editTemplate.find('select[name="characterFilter"]');
         characterFilter.data('uid', entry.uid);
-        initCharacterFilterSelect2Helper(characterFilter);
-        fillCharacterAndTagOptionsHelper({ characterFilter, entry });
+        fillCharacterFilterOptionsHelper({ characterFilter, entry });
+        initCharacterFilterSelect2Helper(characterFilter, data);
         handleCharacterFilterChangeHelper({ characterFilter, data, entry, name });
+
+        // Click-to-toggle filter state on individual character filter choices (oneOf → required → excluded → oneOf)
+        const SINGLETON_TYPES = [CHARACTER_FILTER_TYPES.CHARACTER, CHARACTER_FILTER_TYPES.PERSONA];
+        select2ChoiceClickSubscribe(characterFilter, async (target) => {
+            const uid = characterFilter.data('uid');
+            const filter = Array.isArray(data.entries[uid].characterFilter) ? data.entries[uid].characterFilter : [];
+            const item = getFilterItemForChoice(filter, $(target));
+            if (item) {
+                const currentIndex = CHARACTER_FILTER_STATE_CYCLE.indexOf(item.state);
+                const nextIndex = (currentIndex + 1) % CHARACTER_FILTER_STATE_CYCLE.length;
+                const newState = CHARACTER_FILTER_STATE_CYCLE[nextIndex];
+
+                // Warn about singleton type conflicts when setting to REQUIRED
+                if (newState === CHARACTER_FILTER_STATES.REQUIRED && SINGLETON_TYPES.includes(item.type)) {
+                    const othersOfType = filter.filter(f => f.type === item.type && f !== item);
+                    const otherRequired = othersOfType.find(f => f.state === CHARACTER_FILTER_STATES.REQUIRED);
+                    if (otherRequired) {
+                        toastr.warning(t`Only one ${item.type} can be active at a time. Multiple required ${item.type}s will make this filter impossible to match.`);
+                    } else if (othersOfType.length > 0) {
+                        toastr.info(t`Only one ${item.type} can be active at a time. Other ${item.type} items become redundant when one is required.`);
+                    }
+                }
+
+                item.state = newState;
+                updateCharacterFilterStateStyles(characterFilter, data.entries[uid].characterFilter);
+                setWIOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
+                await saveWorldInfo(name, data);
+            }
+        }, { closeDrawer: true });
+
+        // Apply initial filter state styles after select2 renders
+        setTimeout(() => updateCharacterFilterStateStyles(characterFilter, entry.characterFilter), 0);
 
         // Content
         const counter = editTemplate.find('.world_entry_form_token_counter');
@@ -4077,7 +4401,7 @@ export async function deleteWorldInfoEntry(data, uid, { silent = false } = {}) {
  *
  * Use `newEntryTemplate` if you just need the template that contains default values
  *
- * @type {{[key: string]: WIEntryFieldDefinition}}
+ * @type {{[key: string]: WIEntryFieldDefinition & { deprecated?: boolean } }}
  */
 export const newWorldInfoEntryDefinition = {
     key: { default: [], type: 'array' },
@@ -4118,9 +4442,11 @@ export const newWorldInfoEntryDefinition = {
     sticky: { default: null, type: 'number?' },
     cooldown: { default: null, type: 'number?' },
     delay: { default: null, type: 'number?' },
-    characterFilterNames: { default: [], type: 'array', excludeFromTemplate: true },
-    characterFilterTags: { default: [], type: 'array', excludeFromTemplate: true },
-    characterFilterExclude: { default: false, type: 'boolean', excludeFromTemplate: true },
+    characterFilter: { default: [], type: 'array', excludeFromTemplate: true },
+    // Deprecated: kept for slash command backwards compatibility, hidden from enum
+    characterFilterNames: { default: [], type: 'array', excludeFromTemplate: true, deprecated: true },
+    characterFilterTags: { default: [], type: 'array', excludeFromTemplate: true, deprecated: true },
+    characterFilterExclude: { default: false, type: 'boolean', excludeFromTemplate: true, deprecated: true },
     triggers: { default: [], type: 'array', arrayFilter: (value) => GENERATION_TYPE_TRIGGERS.includes(value) },
 };
 
@@ -4812,33 +5138,48 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                 }
             }
 
-            // Check if this entry applies to the character or if it's excluded
-            if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
-                const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
-                const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded;
+            // Check if this entry applies based on character filter (characters, tags, personas)
+            if (Array.isArray(entry.characterFilter) && entry.characterFilter.length > 0) {
+                const oneOfItems = entry.characterFilter.filter(f => f.state === CHARACTER_FILTER_STATES.ONE_OF);
+                const requiredItems = entry.characterFilter.filter(f => f.state === CHARACTER_FILTER_STATES.REQUIRED);
+                const excludedItems = entry.characterFilter.filter(f => f.state === CHARACTER_FILTER_STATES.EXCLUDED);
 
-                if (filtered) {
-                    log('filtered out by character');
+                /** Checks whether a single filter item matches the current context */
+                const matchesItem = (item) => {
+                    switch (item.type) {
+                        case CHARACTER_FILTER_TYPES.CHARACTER:
+                            return item.name === getCharaFilename();
+                        case CHARACTER_FILTER_TYPES.TAG: {
+                            const tagKey = getTagKeyForEntity(this_chid);
+                            if (tagKey) {
+                                const tagMapEntry = context.tagMap[tagKey];
+                                return Array.isArray(tagMapEntry) && tagMapEntry.includes(item.name);
+                            }
+                            return false;
+                        }
+                        case CHARACTER_FILTER_TYPES.PERSONA:
+                            return item.name === user_avatar;
+                        default:
+                            return false;
+                    }
+                };
+
+                // EXCLUDED: If any excluded item matches, filter out this entry
+                if (excludedItems.length > 0 && excludedItems.some(matchesItem)) {
+                    log('filtered out by character filter (excluded item matched)');
                     continue;
                 }
-            }
 
-            if (entry.characterFilter && entry.characterFilter?.tags?.length > 0) {
-                const tagKey = getTagKeyForEntity(this_chid);
+                // REQUIRED: Every required item must match
+                if (requiredItems.length > 0 && !requiredItems.every(matchesItem)) {
+                    log('filtered out by character filter (required item not matched)');
+                    continue;
+                }
 
-                if (tagKey) {
-                    const tagMapEntry = context.tagMap[tagKey];
-
-                    if (Array.isArray(tagMapEntry)) {
-                        // If tag map intersects with the tag exclusion list, skip
-                        const includesTag = tagMapEntry.some((tag) => entry.characterFilter.tags.includes(tag));
-                        const filtered = entry.characterFilter.isExclude ? includesTag : !includesTag;
-
-                        if (filtered) {
-                            log('filtered out by tag');
-                            continue;
-                        }
-                    }
+                // ONE_OF: At least one must match (OR logic)
+                if (oneOfItems.length > 0 && !oneOfItems.some(matchesItem)) {
+                    log('filtered out by character filter (no oneOf item matched)');
+                    continue;
                 }
             }
 
