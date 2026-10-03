@@ -142,6 +142,13 @@
     width: 100%;
     padding: 5px;
     border-radius: 10px;
+    position: relative;
+    transition:
+        transform var(--animation-duration-2x) ease-in-out,
+        margin var(--animation-duration-2x) ease-in-out,
+        opacity var(--animation-duration-2x) ease-in-out,
+        outline-color var(--animation-duration-2x) ease-in-out,
+        background-color var(--animation-duration-2x) ease-in-out;
 }
 
 .group_member .group_member_name {
@@ -155,6 +162,46 @@
     height: 100%;
     flex-direction: column;
     justify-content: center;
+}
+
+#rm_group_members .group_member[draggable="true"] {
+    cursor: grab;
+}
+
+#rm_group_members .group_member.dragging {
+    opacity: 0.6;
+    cursor: grabbing;
+}
+
+#rm_group_members .group_member.dragover {
+    outline: 2px dashed var(--SmartThemeBorderColor);
+    outline-offset: 4px;
+
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+#rm_group_members .group_member.dragover.insert-above::before,
+#rm_group_members .group_member.dragover.insert-below::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    height: 0px;
+    border-top: 3px solid var(--SmartThemeBorderColor);
+    border-radius: 3px;
+    filter: drop-shadow(0px 0px 6px rgba(0, 0, 0, 0.35));
+    pointer-events: none;
+}
+
+#rm_group_members .group_member.dragover.insert-above::before {
+    top: -8px;
+}
+
+#rm_group_members .group_member.dragover.insert-below::after {
+    bottom: -8px;
 }
 
 .group_member_icon .flex-container {
