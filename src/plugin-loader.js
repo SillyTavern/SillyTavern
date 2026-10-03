@@ -52,25 +52,25 @@ export async function loadPlugins(app, pluginsPath) {
             return emptyFn;
         }
 
-        const files = fs.readdirSync(pluginsPath);
+        const dirents = fs.readdirSync(pluginsPath, { withFileTypes: true });
 
         // No plugins to load.
-        if (files.length === 0) {
+        if (dirents.length === 0) {
             return emptyFn;
         }
 
         await updatePlugins(pluginsPath);
 
-        for (const file of files) {
-            const pluginFilePath = path.join(pluginsPath, file);
+        for (const dirent of dirents) {
+            const pluginFilePath = path.join(pluginsPath, dirent.name);
 
-            if (fs.statSync(pluginFilePath).isDirectory()) {
+            if (dirent.isDirectory() || dirent.isSymbolicLink()) {
                 await loadFromDirectory(app, pluginFilePath, exitHooks);
                 continue;
             }
 
             // Not a JavaScript file.
-            if (!isCommonJS(file) && !isESModule(file)) {
+            if (!isCommonJS(dirent.name) && !isESModule(dirent.name)) {
                 continue;
             }
 
@@ -239,9 +239,10 @@ async function updatePlugins(pluginsPath) {
         return;
     }
 
-    const directories = fs.readdirSync(pluginsPath)
-        .filter(file => !file.startsWith('.'))
-        .filter(file => fs.statSync(path.join(pluginsPath, file)).isDirectory());
+    const directories = fs.readdirSync(pluginsPath, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory() || dirent.isSymbolicLink())
+        .filter(dirent => !dirent.name.startsWith('.'))
+        .map(dirent => dirent.name);
 
     if (directories.length === 0) {
         return;
