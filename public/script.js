@@ -215,7 +215,7 @@ import {
 } from './scripts/tags.js';
 import { checkOpenRouterAuth, initSecrets, readSecretState } from './scripts/secrets.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
-import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
+import { markdownUnderscoreExt, fixNestedEmphasis } from './scripts/showdown-emphasis.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
@@ -1866,6 +1866,12 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = MessageFormatter.runStage(MessageFormatter.stage.AFTER_REGEX, mes,
             { ch_name, isSystem, isUser, messageId, isReasoning },
         );
+    }
+
+    // Convert nested same-delimiter emphasis to bold before any markdown fixing.
+    // Must run before fixMarkdown which would strip the spaces that indicate nesting.
+    if (!isSystem) {
+        mes = fixNestedEmphasis(mes);
     }
 
     if (power_user.auto_fix_generated_markdown) {
