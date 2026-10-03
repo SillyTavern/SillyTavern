@@ -45,7 +45,7 @@ import {
 
 import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret, updateSecretDisplay } from './secrets.js';
-import { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, applyCustomSnapshot, captureCustomConnection, captureCustomFields, ensureCustomProviderState, getCustomAuth, getCustomProvider, listCustomProviders, normalizeCustomEndpoint, settingsForCustomRequest, switchCustomProvider, validateCustomSnapshot } from './custom-providers.js';
+import { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, applyCustomSnapshot, captureCustomConnection, captureCustomFields, ensureCustomProviderState, getCustomAuth, getCustomProvider, listCustomProviders, normalizeCustomEndpoint, reconcileCustomCredential, settingsForCustomRequest, switchCustomProvider, validateCustomSnapshot } from './custom-providers.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
@@ -5067,40 +5067,44 @@ function onSettingsPresetChange() {
         presetNameBefore: presetNameBefore,
     }).finally(async () => {
         const replacingConnection = oai_settings.bind_preset_to_connection && CUSTOM_CONNECTION_FIELDS.some(field => preset[field] !== undefined && preset[field] !== oai_settings[field]);
-        if (replacingConnection && oai_settings.custom_provider_state?.active?.provider && !customConnectionTransition) {
-            switchCustomProvider(oai_settings, null, currentCustomSecretId());
-        }
-        const previousConnection = captureCustomFields(oai_settings, true);
-        if (oai_settings.bind_preset_to_connection) {
-            $('.model_custom_select').empty();
-        }
-
-        for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
-            if (isConnection && !oai_settings.bind_preset_to_connection) {
-                continue;
+        const ownsTransition = !customConnectionTransition;
+        const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+        const release = ownsTransition ? beginCustomConnectionTransition() : () => {};
+        try {
+            if (replacingConnection && oai_settings.custom_provider_state?.active?.provider && ownsTransition) {
+                switchCustomProvider(oai_settings, null, currentCustomSecretId());
             }
+            const previousConnection = captureCustomFields(oai_settings, true);
 
-            // Extensions don't need UI updates and shouldn't fallback to current settings
-            if (key === 'extensions') {
-                oai_settings.extensions = preset.extensions || {};
-                continue;
-            }
-
-            if (preset[key] !== undefined) {
-                if (isCheckbox) {
-                    updateCheckbox(selector, preset[key]);
-                } else {
-                    updateInput(selector, preset[key]);
+            for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
+                if (isConnection && !oai_settings.bind_preset_to_connection) {
+                    continue;
                 }
-                oai_settings[setting] = preset[key];
-            }
-        }
 
-        // These cannot be changed via preset if unbound to connection
-        if (replacingConnection && oai_settings.custom_provider_state?.active && !customConnectionTransition) {
-            if (oai_settings.custom_url !== previousConnection.custom_url) oai_settings.custom_provider_state.active.credential = { mode: 'unbound' };
-            customConnectionChanged('edit');
-        }
+                // Extensions don't need UI updates and shouldn't fallback to current settings
+                if (key === 'extensions') {
+                    oai_settings.extensions = preset.extensions || {};
+                    continue;
+                }
+
+                if (preset[key] !== undefined) {
+                    if (isCheckbox) {
+                        updateCheckbox(selector, preset[key]);
+                    } else {
+                        updateInput(selector, preset[key]);
+                    }
+                    oai_settings[setting] = preset[key];
+                }
+            }
+
+            // These cannot be changed via preset if unbound to connection
+            if (replacingConnection && oai_settings.custom_provider_state?.active && ownsTransition) {
+                const active = oai_settings.custom_provider_state.active;
+                active.credential = oai_settings.custom_url !== previousConnection.custom_url && active.credential.mode === 'legacy-custom' && active.credential.id
+                    ? { mode: 'unbound' } : reconcileCustomCredential(active.auth, active.credential, oai_settings.custom_url);
+            }
+        } finally { release(); }
+        if (replacingConnection && ownsTransition) commitCustomConnection(oldProviderId, 'preset');
         if (oai_settings.bind_preset_to_connection) {
             $('#chat_completion_source').trigger('change');
             $('#openrouter_providers_chat').trigger('change');
@@ -6122,14 +6126,15 @@ async function onConnectButtonClick(e) {
         if (apiKey.length) {
             const managed = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM && oai_settings.custom_provider_state?.active;
             if (managed) {
+                if (managed.auth.mode === 'none') { showCustomProviderError(new Error(t`This setup does not accept a key.`)); return; }
                 const revision = customConnectionRevision;
                 const endpoint = normalizeCustomEndpoint(oai_settings.custom_url);
                 if (endpoint.startsWith('http:') && !await Popup.show.confirm(t`Send a key over HTTP?`, t`This API root is not encrypted. Only approve it on a trusted local network.`)) return;
                 const id = await writeSecret(config.key, apiKey, undefined, { activate: false });
                 if (!id) { showCustomProviderError(new Error(t`Could not save the connection key.`)); return; }
                 if (revision !== customConnectionRevision) return;
-                oai_settings.custom_provider_state.active.credential = { mode: 'reference', key: config.key, id, endpoint };
-                customConnectionChanged('edit');
+                managed.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'reference', key: config.key, id, endpoint } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true, clearKey: true });
             } else await writeSecret(config.key, apiKey);
         }
 
@@ -6233,6 +6238,7 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
+    if (customConnectionTransition) return;
     if (main_api == 'openai') {
         setOnlineStatus('no_connection');
         resultCheckStatus();
@@ -6250,19 +6256,19 @@ async function onCustomizeParametersClick() {
 
     template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
         oai_settings.custom_include_body = String($(this).val());
-        customConnectionChanged('edit');
+        customConnectionEdited('custom_include_body');
         saveSettingsDebounced();
     });
 
     template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function () {
         oai_settings.custom_exclude_body = String($(this).val());
-        customConnectionChanged('edit');
+        customConnectionEdited('custom_exclude_body');
         saveSettingsDebounced();
     });
 
     template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function () {
         oai_settings.custom_include_headers = String($(this).val());
-        customConnectionChanged('edit');
+        customConnectionEdited('custom_include_headers');
         saveSettingsDebounced();
     });
 
@@ -6812,7 +6818,6 @@ let customConnectionTransition = 0;
 /** Suppress connection-dependent requests during a profile's final overlay. */
 export function beginCustomConnectionTransition() {
     customConnectionTransition++;
-    cancelStatusCheck();
     return () => { customConnectionTransition--; };
 }
 
@@ -6823,7 +6828,19 @@ export function isCustomConnectionTransition() {
 
 /** Reproject a restored tuple after a compositional load or rollback. */
 export function refreshCustomConnection() {
-    customConnectionChanged('profile restore');
+    renderCustomProviderSetup();
+    updateSecretDisplay();
+}
+
+/** Publish the final tuple after staging has ended; only real connection replacements invalidate discovery. */
+export function commitCustomConnection(oldProviderId, reason = 'profile restore') {
+    customConnectionChanged(reason, { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/** Connect the committed Chat Completion source once, without submitting pending key input. */
+export async function connectChatCompletion() {
+    startStatusLoading();
+    await getStatusOpen();
 }
 
 function currentCustomSecretId() {
@@ -6839,18 +6856,34 @@ function showCustomProviderError(error) {
     $('#custom_provider_error').text(error.message);
 }
 
-function customConnectionChanged(reason, oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null) {
-    customConnectionRevision++;
-    cancelStatusCheck();
-    model_list = [];
-    $('.model_custom_select').empty().append(new Option(t`None`, ''));
-    $('#api_key_custom').val('');
-    $('#custom_provider_error').text('');
-    setOnlineStatus('no_connection');
+function customConnectionChanged(reason, { oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null, invalidateStatus = false, clearModels = false, clearKey = false } = {}) {
+    if (customConnectionTransition) return;
+    if (invalidateStatus) {
+        customConnectionRevision++;
+        cancelStatusCheck();
+        $('#custom_provider_error').text('');
+        if (main_api === 'openai' && oai_settings.chat_completion_source === 'custom') setOnlineStatus('no_connection');
+    }
+    if (clearModels) {
+        model_list = [];
+        $('.model_custom_select').empty().append(new Option(t`None`, ''));
+    }
+    if (clearKey) $('#api_key_custom').val('');
     renderCustomProviderSetup();
     updateSecretDisplay();
     saveSettingsDebounced();
     void eventSource.emit(event_types.CUSTOM_CONNECTION_CHANGED, { oldProviderId, newProviderId: oai_settings.custom_provider_state?.active?.provider?.id ?? null, reason });
+}
+
+function customConnectionEdited(field, previousValue) {
+    if (customConnectionTransition) return;
+    const endpointChanged = field === 'custom_url' && previousValue !== oai_settings.custom_url;
+    const active = oai_settings.custom_provider_state?.active;
+    if (endpointChanged && active) {
+        active.credential = active.credential.mode === 'legacy-custom' && active.credential.id
+            ? { mode: 'unbound' } : reconcileCustomCredential(active.auth, active.credential, oai_settings.custom_url);
+    }
+    customConnectionChanged('edit', { invalidateStatus: endpointChanged || field === 'custom_include_headers', clearModels: endpointChanged });
 }
 
 /** Restore a resolved tuple; a missing helper does not prevent using saved values. */
@@ -6861,7 +6894,7 @@ export function restoreCustomConnection(snapshot, reason = 'profile restore') {
     if (value.credential.mode === 'reference' && value.credential.endpoint !== normalizeCustomEndpoint(value.settings.custom_url)) throw new Error('The profile key is not approved for this API root.');
     const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
     applyCustomSnapshot(oai_settings, value, currentCustomSecretId());
-    customConnectionChanged(reason, oldProviderId);
+    customConnectionChanged(reason, { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
 }
 
 /**
@@ -6874,7 +6907,7 @@ export async function selectCustomProvider(id) {
     if ((oai_settings.custom_provider_state?.active?.provider?.id ?? null) === id) return;
     const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
     switchCustomProvider(oai_settings, id, currentCustomSecretId());
-    customConnectionChanged('selection', oldProviderId);
+    customConnectionChanged('selection', { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
 }
 
 /** Bind a masked vault entry to the visible connection, without rotating its category. */
@@ -6886,8 +6919,8 @@ export async function bindCustomCredential(key, id) {
     if (oai_settings.custom_provider_state.active.auth.mode === 'none') throw new Error('This connection does not accept a key.');
     if (endpoint.startsWith('http:') && !await Popup.show.confirm(t`Send a key over HTTP?`, t`This API root is not encrypted. Only approve it on a trusted local network.`)) return;
     if (revision !== customConnectionRevision) throw new Error('The connection changed. Select its key again.');
-    oai_settings.custom_provider_state.active.credential = { mode: 'reference', key, id, endpoint };
-    customConnectionChanged('edit');
+    oai_settings.custom_provider_state.active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'reference', key, id, endpoint } }).credential;
+    customConnectionChanged('edit', { invalidateStatus: true });
 }
 
 function renderCustomProviderSetup() {
@@ -6932,6 +6965,7 @@ function renderCustomProviderSetup() {
         models.replaceChildren(new Option(t`None`, ''), ...active.models.suggestions.map(model => new Option(model.label ?? model.id, model.id)));
     }
     $('#custom_credential_binding').toggleClass('hidden', !active);
+    $('#api_key_custom').prop('disabled', active?.auth.mode === 'none');
     const credentialSelect = document.getElementById('custom_credential_select');
     if (!credentialSelect) return;
     credentialSelect.replaceChildren(new Option(t`Choose a stored key`, ''));
@@ -6950,8 +6984,8 @@ function initCustomProviderSetup() {
             if (value === 'none') {
                 const active = oai_settings.custom_provider_state.active;
                 if (active.auth.mode === 'bearer' && active.auth.required) throw new Error('This provider requires a key.');
-                active.credential = { mode: 'none' };
-                customConnectionChanged('edit');
+                active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'none' } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true });
             } else if (value && value !== 'legacy') await bindCustomCredential(...JSON.parse(value));
         } catch (error) { handleError(error); }
     });
@@ -6959,7 +6993,7 @@ function initCustomProviderSetup() {
         const active = oai_settings.custom_provider_state?.active;
         const definition = getCustomProvider(active?.provider?.id);
         if (!definition || !await Popup.show.confirm(t`Reset provider defaults?`, t`This replaces the connection fields. Your stored keys are kept.`)) return;
-        const credential = oai_settings.custom_url === definition.defaults.custom_url ? active.credential : { mode: definition.auth.mode === 'bearer' && definition.auth.required ? 'unbound' : 'none' };
+        const credential = reconcileCustomCredential(definition.auth, active.credential, definition.defaults.custom_url);
         restoreCustomConnection({ version: 1, settings: definition.defaults, provider: active.provider, models: definition.models, auth: definition.auth, credential }, 'reset');
     });
     $('#custom_provider_detach').on('click', () => {
@@ -7200,6 +7234,11 @@ export function initOpenAI() {
     });
 
     $('#chat_completion_source').on('change', function () {
+        if (customConnectionTransition) {
+            oai_settings.chat_completion_source = String($(this).find(':selected').val());
+            toggleChatCompletionForms();
+            return;
+        }
         cancelStatusCheck('Chat Completion source changed');
         model_list = [];
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
@@ -7315,20 +7354,21 @@ export function initOpenAI() {
     });
 
     $('#custom_api_url_text').on('input', function () {
+        const previous = oai_settings.custom_url;
         oai_settings.custom_url = String($(this).val());
-        customConnectionChanged('edit');
+        customConnectionEdited('custom_url', previous);
         saveSettingsDebounced();
     });
 
     $('#custom_model_id').on('input', function () {
         oai_settings.custom_model = String($(this).val());
-        customConnectionChanged('edit');
+        customConnectionEdited('custom_model');
         saveSettingsDebounced();
     });
 
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
-        customConnectionChanged('edit');
+        customConnectionEdited('custom_prompt_post_processing');
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });

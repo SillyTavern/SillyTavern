@@ -98,6 +98,19 @@ describe('exact per-account Custom credentials', () => {
         expect(response.status).toBe(200);
         expect(upstream.mock.calls[0][1].headers.Authorization).toBeUndefined();
     });
+    test.each([
+        { auth: { mode: 'none' }, credential: { mode: 'legacy-custom', id: null } },
+        { auth: { mode: 'none' }, credential: { mode: 'legacy-custom', id: 'captured' } },
+        { auth: { mode: 'none' }, credential: { mode: 'reference', key: SECRET_KEYS.OPENAI, id: 'captured', endpoint } },
+        { auth: { mode: 'bearer', required: true }, credential: { mode: 'legacy-custom', id: null } },
+        { auth: { mode: 'bearer', required: true }, credential: { mode: 'none' } },
+    ])('contradictory policy fails at every route: %j', async tuple => {
+        for (const route of ['/chat/status', '/chat/generate', '/openai/caption-image']) {
+            const response = await post(route, { api: 'custom', chat_completion_source: 'custom', custom_url: endpoint, server_url: endpoint, custom_auth: { version: 1, ...tuple }, messages: [] });
+            expect(response.status).toBe(400);
+        }
+        expect(upstream).not.toHaveBeenCalled();
+    });
     test('legacy captured null is keyless and a captured ID remains exact', () => {
         const keyless = resolveCustomAuth({ root: directory }, { custom_url: endpoint, custom_auth: { version: 1, auth: { mode: 'bearer', required: false }, credential: { mode: 'legacy-custom', id: null } } });
         expect(keyless.headers).toEqual({});

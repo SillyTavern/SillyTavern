@@ -20,7 +20,7 @@ test.beforeAll(async () => {
     upstream = http.createServer(async (req, res) => {
         if (req.url.endsWith('/models')) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ data: [{ id: 'discovered-model' }] }));
+            res.end(JSON.stringify({ data: [{ id: 'discovered-model' }, { id: 'second-model' }] }));
             return;
         }
         let text = '';
@@ -75,7 +75,7 @@ async function syntheticKey(page, provider, key) {
 
 test('Custom setup and Profile journey through the installed extension', async ({ page }) => {
     // This serial account journey shares one browser; cold application startup is the expensive boundary.
-    test.setTimeout(180_000);
+    test.setTimeout(240_000);
     await test.step('installed extension exposes safe labels, neutral defaults, and remembered Manual', async () => {
         await openCustom(page);
         await page.evaluate(async () => {
@@ -127,6 +127,68 @@ test('Custom setup and Profile journey through the installed extension', async (
         await page.evaluate(async owner => { await (await import('/scripts/extensions.js')).enableExtension(owner, false); }, owner);
     });
 
+    await test.step('Manual without helpers retains discovery, pending key and online status on ordinary edits', async () => {
+        await page.selectOption('#custom_provider_select', '');
+        await page.evaluate(async owner => { await (await import('/scripts/extensions.js')).disableExtension(owner, false); }, owner);
+        await page.evaluate(async () => {
+            // Exercise legacy Manual, with no opted-in state or registered helper.
+            delete (await import('/scripts/openai.js')).oai_settings.custom_provider_state;
+            await (await import('/scripts/secrets.js')).writeSecret('api_key_custom', 'synthetic-a', 'Synthetic Manual');
+        });
+        await page.locator('#custom_api_url_text').fill(`${root}/a/v1`);
+        await page.locator('#api_button_openai').click();
+        await expect(page.locator('#model_custom_select option[value="second-model"]')).toHaveCount(1);
+        const online = await page.evaluate(async () => (await import('/script.js')).online_status);
+        expect(online).not.toBe('no_connection');
+        await page.locator('#api_key_custom').fill('pending-unsaved-synthetic');
+        await page.selectOption('#model_custom_select', 'discovered-model');
+        await page.selectOption('#model_custom_select', 'second-model');
+        await expect(page.locator('#custom_model_id')).toHaveValue('second-model');
+        await page.locator('#customize_additional_parameters').click();
+        await page.locator('#custom_include_body').fill('marker: manual-edit');
+        await page.locator('dialog[open] .popup-button-ok').click();
+        await expect(page.locator('#api_key_custom')).toHaveValue('pending-unsaved-synthetic');
+        await expect(page.locator('#model_custom_select option[value="discovered-model"]')).toHaveCount(1);
+        expect(await page.evaluate(async () => (await import('/script.js')).online_status)).toBe(online);
+        await page.evaluate(async ({ owner, root }) => {
+            await (await import('/scripts/extensions.js')).enableExtension(owner, false);
+            (await import('/scripts/extensions/third-party/custom-provider-extension/index.js')).configure(`${root}/a/v1`, `${root}/b/v1`);
+        }, { owner, root });
+    });
+
+    await test.step('endpoint edits and descriptor policy resets immediately reconcile credentials', async () => {
+        await page.selectOption('#custom_provider_select', `${owner}:a`);
+        await syntheticKey(page, 'a', 'api_key_custom');
+        await page.locator('#custom_api_url_text').fill(`${root}/changed/v1`);
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('unbound');
+        await expect(page.locator('#custom_credential_select')).toHaveValue('');
+        async function reset(auth) {
+            await page.evaluate(async ({ root, auth }) => {
+                (await import('/scripts/extensions/third-party/custom-provider-extension/index.js')).configure(`${root}/a/v1`, `${root}/b/v1`, auth);
+            }, { root, auth });
+            await page.locator('#custom_provider_reset').click();
+            await page.locator('dialog[open] .popup-button-ok').click();
+            await expect(page.locator('dialog[open]')).toHaveCount(0);
+        }
+        await reset({ mode: 'bearer', required: true });
+        await syntheticKey(page, 'a', 'api_key_custom');
+        await reset({ mode: 'none' });
+        await expect(page.locator('#api_key_custom')).toBeDisabled();
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('none');
+        let writes = 0;
+        const countWrite = request => { writes += Number(request.url().endsWith('/api/secrets/write')); };
+        page.on('request', countWrite);
+        await page.evaluate(() => { $('#api_key_custom').val('synthetic-injected'); });
+        await page.locator('#api_button_openai').click();
+        await expect(page.locator('#custom_provider_error')).toContainText('does not accept');
+        expect(writes).toBe(0);
+        page.off('request', countWrite);
+        await reset({ mode: 'bearer', required: false });
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('none');
+        await reset({ mode: 'bearer', required: true });
+        expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('unbound');
+    });
+
     await test.step('two full profiles request concurrently without changing the active form', async () => {
         await openCustom(page);
         const profiles = [];
@@ -141,6 +203,7 @@ test('Custom setup and Profile journey through the installed extension', async (
                 const value = { id: `synthetic-${provider}`, name: `Synthetic ${provider}`, api: 'custom', mode: 'cc', 'custom-connection': captureCurrentCustomConnection() };
                 const context = SillyTavern.getContext();
                 context.extensionSettings.connectionManager.profiles.push(value);
+                $('#connection_profiles').append(new Option(value.name, value.id));
                 // Existing profile command is the public UI-selection journey; background requests use neither.
                 await context.executeSlashCommandsWithOptions(`/profile "Synthetic ${provider}" timeout=0`);
                 return value;
@@ -169,6 +232,73 @@ test('Custom setup and Profile journey through the installed extension', async (
         });
         expect(streamed).toBe('Synthetic stream');
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
+    });
+
+    await test.step('Profile commits reconnect once, emit only final state and preserve excluded or failed native connections', async () => {
+        let checks = 0;
+        const countStatus = request => { checks += Number(request.url().endsWith('/api/backends/chat-completions/status')); };
+        page.on('request', countStatus);
+        await page.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            window.customEvents = [];
+            context.eventSource.on(context.eventTypes.CUSTOM_CONNECTION_CHANGED, value => window.customEvents.push(value));
+            $('#main_api').val('kobold').trigger('change');
+            (await import('/script.js')).setOnlineStatus('Synthetic native ready');
+        });
+        await page.selectOption('#connection_profiles', 'synthetic-a');
+        await expect.poll(async () => page.evaluate(async () => (await import('/script.js')).online_status)).toBe('Valid');
+        expect(checks).toBe(1);
+        expect(await page.evaluate(() => window.customEvents.map(({ oldProviderId, newProviderId }) => ({ oldProviderId, newProviderId })))).toEqual([{ oldProviderId: null, newProviderId: `${owner}:a` }]);
+        // Exercise the active connection's main-chat transport immediately after Profile commit.
+        const response = await page.evaluate(async () => {
+            const openai = await import('/scripts/openai.js');
+            const result = await openai.sendOpenAIRequest('quiet', [{ role: 'user', content: 'Synthetic main chat' }], new AbortController().signal);
+            return openai.getStreamingReply(result, {});
+        });
+        expect(response).toBe('Synthetic completion');
+        await page.selectOption('#connection_profiles', 'synthetic-b');
+        await expect(page.locator('#custom_provider_select')).toHaveValue(`${owner}:b`);
+        await expect.poll(async () => page.evaluate(async () => (await import('/script.js')).online_status)).toBe('Valid');
+        expect(checks).toBe(2);
+        expect(await page.evaluate(() => window.customEvents.map(({ oldProviderId, newProviderId }) => ({ oldProviderId, newProviderId })))).toEqual([
+            { oldProviderId: null, newProviderId: `${owner}:a` },
+            { oldProviderId: `${owner}:a`, newProviderId: `${owner}:b` },
+        ]);
+        const preserved = await page.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            const { SlashCommandParser } = await import('/scripts/slash-commands/SlashCommandParser.js');
+            const { oai_settings } = await import('/scripts/openai.js');
+            const script = await import('/script.js');
+            $('#main_api').val('kobold').trigger('change');
+            script.setOnlineStatus('Synthetic native ready');
+            window.customEvents.length = 0;
+            const profile = { id: 'native-excluded', name: 'Native excluded', api: 'custom', mode: 'cc', 'custom-connection': { version: 1, excluded: true } };
+            context.extensionSettings.connectionManager.profiles.push(profile);
+            const before = JSON.stringify(oai_settings);
+            await SlashCommandParser.commands.profile.callback({ await: 'true', timeout: '0' }, profile.name);
+            const excluded = { main: script.main_api, online: script.online_status, unchanged: before === JSON.stringify(oai_settings), events: window.customEvents.length };
+            const fail = { ...profile, id: 'native-fail', name: 'Native failed', 'custom-connection': context.extensionSettings.connectionManager.profiles.find(value => value.id === 'synthetic-a')['custom-connection'], preset: 'ignored' };
+            context.extensionSettings.connectionManager.profiles.push(fail);
+            const callback = SlashCommandParser.commands.preset.callback;
+            SlashCommandParser.commands.preset.callback = async () => { throw new Error('Synthetic staged failure'); };
+            let failed = false;
+            try { await SlashCommandParser.commands.profile.callback({ await: 'true', timeout: '0' }, fail.name); }
+            catch { failed = true; }
+            finally { SlashCommandParser.commands.preset.callback = callback; }
+            return { excluded, failed, main: script.main_api, online: script.online_status, unchanged: before === JSON.stringify(oai_settings), events: window.customEvents.length };
+        });
+        expect(preserved.excluded).toEqual({ main: 'kobold', online: 'Synthetic native ready', unchanged: true, events: 0 });
+        expect(preserved.failed).toBe(true);
+        expect(preserved.main).toBe('kobold');
+        expect(preserved.online).toBe('Synthetic native ready');
+        expect(preserved.unchanged).toBe(true);
+        expect(preserved.events).toBe(0);
+        expect(checks).toBe(2);
+        page.off('request', countStatus);
+        await page.evaluate(async () => {
+            const context = SillyTavern.getContext();
+            await context.executeSlashCommandsWithOptions('/profile "Synthetic a" timeout=0');
+        });
     });
 
     await test.step('profile failure resolves its promise, keeps selection, and rejects missing API/version', async () => {
@@ -248,6 +378,11 @@ test('Custom setup and Profile journey through the installed extension', async (
 
     await test.step('preset binding and rapid Profile selection leave one coherent final tuple', async () => {
         await openCustom(page);
+        await page.evaluate(() => {
+            const context = SillyTavern.getContext();
+            window.customEvents = [];
+            context.eventSource.on(context.eventTypes.CUSTOM_CONNECTION_CHANGED, value => window.customEvents.push(value));
+        });
         await page.selectOption('#custom_provider_select', `${owner}:a`);
         await syntheticKey(page, 'a', 'api_key_custom');
         const saved = await page.evaluate(async () => {
@@ -275,8 +410,18 @@ test('Custom setup and Profile journey through the installed extension', async (
         await page.evaluate(async () => { (await import('/scripts/openai.js')).oai_settings.bind_preset_to_connection = true; });
         await page.selectOption('#connection_profiles', included.id);
         await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/a/v1`);
+        await expect.poll(async () => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe(included.id);
+        await expect.poll(async () => page.evaluate(async () => (await import('/script.js')).online_status)).toBe('Valid');
+        await page.locator('#api_key_custom').fill('pending-excluded-synthetic');
+        await page.evaluate(() => { window.customEvents.length = 0; });
         await page.selectOption('#connection_profiles', excluded.id);
+        await expect.poll(async () => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe(excluded.id);
         await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/a/v1`);
+        await expect(page.locator('#api_key_custom')).toHaveValue('pending-excluded-synthetic');
+        await expect(page.locator('#model_custom_select option[value="second-model"]')).toHaveCount(1);
+        expect(await page.evaluate(async () => (await import('/script.js')).online_status)).toBe('Valid');
+        expect(await page.evaluate(() => window.customEvents)).toEqual([]);
+        await page.evaluate(() => { window.customEvents.length = 0; });
         await page.evaluate(async preset => {
             const manager = (await import('/scripts/preset-manager.js')).getPresetManager('openai');
             await manager.selectPreset(manager.findPreset(preset));
@@ -284,6 +429,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         }, saved);
         await expect(page.locator('#custom_provider_select')).toHaveValue('');
         await expect(page.locator('#custom_api_url_text')).toHaveValue('https://preset.invalid/v1');
+        expect(await page.evaluate(() => window.customEvents)).toEqual([{ oldProviderId: `${owner}:a`, newProviderId: null, reason: 'preset' }]);
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).oai_settings.custom_provider_state.active.credential.mode)).toBe('unbound');
         const loaded = await page.evaluate(async () => {
             const context = SillyTavern.getContext();

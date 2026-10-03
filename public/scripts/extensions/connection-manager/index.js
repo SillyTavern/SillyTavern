@@ -19,7 +19,7 @@ import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
 import { formatReasoning } from '/scripts/reasoning.js';
-import { beginCustomConnectionTransition, captureCurrentCustomConnection, oai_settings, restoreCustomConnection, refreshCustomConnection } from '../../openai.js';
+import { beginCustomConnectionTransition, captureCurrentCustomConnection, commitCustomConnection, connectChatCompletion, oai_settings, restoreCustomConnection, refreshCustomConnection, settingsToUpdate } from '../../openai.js';
 import { CUSTOM_CONNECTION_FIELDS, getCustomProvider, getProfileCustomConnection, resolveLegacyCustomConnection } from '../../custom-providers.js';
 import { getPresetManager } from '../../preset-manager.js';
 
@@ -99,41 +99,20 @@ const FANCY_NAMES = {
  * A wrapper for the connection manager spinner.
  */
 class ConnectionManagerSpinner {
-    /**
-     * @type {AbortController[]}
-     */
-    static abortControllers = [];
-
     /** @type {HTMLElement} */
     spinnerElement;
-
-    /** @type {AbortController} */
-    abortController = new AbortController();
 
     constructor() {
         // @ts-ignore
         this.spinnerElement = document.getElementById('connection_profile_spinner');
-        this.abortController = new AbortController();
     }
 
     start() {
-        ConnectionManagerSpinner.abortControllers.push(this.abortController);
         this.spinnerElement.classList.remove('hidden');
     }
 
     stop() {
         this.spinnerElement.classList.add('hidden');
-    }
-
-    isAborted() {
-        return this.abortController.signal.aborted;
-    }
-
-    static abort() {
-        for (const controller of ConnectionManagerSpinner.abortControllers) {
-            controller.abort();
-        }
-        ConnectionManagerSpinner.abortControllers = [];
     }
 }
 
@@ -426,53 +405,69 @@ async function applyConnectionProfile(profile) {
 
     const snapshot = getProfileCustomConnection(profile);
     if (profile.api && !getContext().CONNECT_API_MAP[profile.api]) throw new Error(`Unknown API: ${profile.api}`);
-    const previous = { ...Object.fromEntries(CUSTOM_CONNECTION_FIELDS.map(field => [field, oai_settings[field]])), custom_provider_state: structuredClone(oai_settings.custom_provider_state), chat_completion_source: oai_settings.chat_completion_source };
+    const connectionFields = Object.values(settingsToUpdate).filter(([, , , connection]) => connection).map(([, field]) => field);
+    const previous = { ...Object.fromEntries(connectionFields.map(field => [field, structuredClone(oai_settings[field])])), custom_provider_state: structuredClone(oai_settings.custom_provider_state) };
+    const previousMainApi = main_api;
+    const previousProviderId = previous.custom_provider_state?.active?.provider?.id ?? null;
     const previousApi = await SlashCommandParser.commands.api.callback(getNamedArguments(), '');
     const preset = getPresetManager('openai')?.getCompletionPresetByName(profile.preset) ?? {};
     const changesLegacyRoot = profile['api-url'] !== undefined && profile['api-url'] !== oai_settings.custom_url || oai_settings.bind_preset_to_connection && CUSTOM_CONNECTION_FIELDS.some(field => field !== 'custom_model' && preset[field] !== undefined && preset[field] !== oai_settings[field]);
     const legacy = snapshot === undefined && (profile.api === 'custom' || !profile.api && oai_settings.chat_completion_source === 'custom' && changesLegacyRoot) ? resolveLegacyCustomConnection(oai_settings, profile, preset) : undefined;
     const compositional = snapshot === null;
-    const release = beginCustomConnectionTransition();
+    const transactional = snapshot !== undefined || legacy !== undefined;
+    const release = transactional ? beginCustomConnectionTransition() : () => {};
 
     const mode = profile.mode;
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
     const spinner = new ConnectionManagerSpinner();
     spinner.start();
 
+    const restorePrevious = async () => {
+        await SlashCommandParser.commands.api.callback(getNamedArguments(), previousApi);
+        Object.assign(oai_settings, previous);
+        if (previous.custom_provider_state === undefined) delete oai_settings.custom_provider_state;
+        for (const [selector, field, checkbox, connection] of Object.values(settingsToUpdate)) {
+            if (!connection) continue;
+            if (checkbox) $(selector).prop('checked', oai_settings[field]);
+            else $(selector).val(oai_settings[field]);
+        }
+        refreshCustomConnection();
+    };
+
     try {
         if (snapshot) await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
         for (const command of commands) {
             if (snapshot !== undefined && CUSTOM_CONNECTION_COMMANDS.includes(command)) continue;
-            if (spinner.isAborted()) {
-                throw new Error('Profile application aborted');
-            }
-
             const argument = profile[command];
             const allowEmpty = ALLOW_EMPTY.includes(command);
             if (!argument && !(allowEmpty && argument === '')) {
                 continue;
             }
             try {
-                const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
+                const args = getNamedArguments({ ...(allowEmpty ? { force: 'true' } : {}), ...(transactional ? { connect: 'false', quiet: 'true' } : {}) });
                 await SlashCommandParser.commands[command].callback(args, argument);
             } catch (error) { throw new Error(`Could not apply profile setting ${command}.`, { cause: error }); }
         }
         if (snapshot || legacy) {
             await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
+            // Save the actual outgoing tuple, never a preset's temporary connection fields.
+            Object.assign(oai_settings, Object.fromEntries(CUSTOM_CONNECTION_FIELDS.map(field => [field, previous[field]])));
+            oai_settings.custom_provider_state = structuredClone(previous.custom_provider_state);
             restoreCustomConnection(snapshot ?? legacy);
         } else if (compositional) {
-            await SlashCommandParser.commands.api.callback(getNamedArguments(), previousApi);
-            Object.assign(oai_settings, previous);
-            if (previous.custom_provider_state === undefined) delete oai_settings.custom_provider_state;
-            refreshCustomConnection();
+            await restorePrevious();
         }
     } catch (error) {
-        await SlashCommandParser.commands.api.callback(getNamedArguments(), previousApi);
-        Object.assign(oai_settings, previous);
-        if (previous.custom_provider_state === undefined) delete oai_settings.custom_provider_state;
-        refreshCustomConnection();
+        await restorePrevious();
         throw error;
     } finally { spinner.stop(); release(); }
+
+    if (transactional && !compositional) {
+        commitCustomConnection(previousProviderId);
+        if (previousMainApi !== main_api) await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
+        if (previous.chat_completion_source !== oai_settings.chat_completion_source) await eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
+        await connectChatCompletion();
+    }
 }
 
 /**

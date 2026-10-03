@@ -190,7 +190,24 @@ export function validateCustomSnapshot(value) {
     } else if (!['unbound', 'none'].includes(credential.mode)) {
         throw new Error('Unsupported credential binding.');
     } else if (Object.keys(credential).length !== 1) throw new Error('A keyless binding cannot carry key fields.');
+    if (auth.mode === 'none' && credential.mode !== 'none') throw new Error('A no-auth connection cannot carry a credential.');
+    if (auth.mode === 'bearer' && auth.required && credential.mode === 'none') throw new Error('Required bearer authentication must be bound or unbound.');
+    if (credential.mode === 'legacy-custom' && (auth.mode !== 'bearer' || auth.required)) throw new Error('A captured Manual binding requires optional bearer authentication.');
+    if (credential.mode === 'reference' && credential.endpoint !== normalizeCustomEndpoint(settings.custom_url)) throw new Error('The key is not approved for this exact API root. Select it again.');
     return { version: 1, settings, provider: copy(value.provider), models, auth, credential };
+}
+
+/** Reconcile a deliberate policy/root edit; persisted snapshots are validated, never silently repaired. */
+export function reconcileCustomCredential(auth, credential, endpoint) {
+    const policy = normalizeAuth(auth);
+    if (policy.mode === 'none') return { mode: 'none' };
+    if (credential.mode === 'reference') {
+        try { if (credential.endpoint === normalizeCustomEndpoint(endpoint)) return copy(credential); } catch { /* An incomplete edited URL also loses its approval. */ }
+        return { mode: 'unbound' };
+    }
+    if (credential.mode === 'none' && policy.required) return { mode: 'unbound' };
+    if (credential.mode === 'legacy-custom' && policy.required) return { mode: 'unbound' };
+    return copy(credential);
 }
 
 /** Snapshot current execution fields, never a stale draft. */

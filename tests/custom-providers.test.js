@@ -1,6 +1,6 @@
 /* eslint-disable playwright/no-standalone-expect -- Jest test.each is not recognized by the shared Playwright rule. */
 import { afterEach, describe, expect, test } from '@jest/globals';
-import { applyCustomSnapshot, captureCustomConnection, captureCustomFields, getCustomAuth, getCustomProvider, getProfileCustomConnection, listCustomProviders, normalizeCustomEndpoint, registerCustomProvider, resolveLegacyCustomConnection, resumeCustomProviderOwner, settingsForCustomRequest, suspendCustomProviderOwner, switchCustomProvider, validateCustomSnapshot } from '../public/scripts/custom-providers.js';
+import { applyCustomSnapshot, captureCustomConnection, captureCustomFields, getCustomAuth, getCustomProvider, getProfileCustomConnection, listCustomProviders, normalizeCustomEndpoint, reconcileCustomCredential, registerCustomProvider, resolveLegacyCustomConnection, resumeCustomProviderOwner, settingsForCustomRequest, suspendCustomProviderOwner, switchCustomProvider, validateCustomSnapshot } from '../public/scripts/custom-providers.js';
 
 const owner = 'third-party/test-providers';
 const definition = (url = 'https://example.test/v1') => ({ label: 'Test', defaults: { custom_url: url }, models: { mode: 'discover' }, auth: { mode: 'bearer', required: true } });
@@ -46,6 +46,50 @@ describe('Custom provider registration', () => {
 });
 
 describe('resolved connection state', () => {
+    const policies = [{ mode: 'none' }, { mode: 'bearer', required: false }, { mode: 'bearer', required: true }];
+    const bindings = [
+        { mode: 'none' }, { mode: 'unbound' },
+        { mode: 'reference', key: 'api_key_openai', id: 'id', endpoint: 'https://example.test/v1' },
+        { mode: 'legacy-custom', id: null }, { mode: 'legacy-custom', id: 'id' },
+    ];
+    test.each(policies.flatMap((auth, policy) => bindings.map((credential, binding) => [auth, credential, [[0], [0, 1, 2, 3, 4], [1, 2]][policy].includes(binding)])))('authentication matrix %j / %j allowed=%s', (auth, credential, allowed) => {
+        const snapshot = { ...captureCustomConnection(manual()), auth, credential };
+        snapshot.settings.custom_url = 'https://example.test/v1';
+        let actual = null;
+        try { actual = validateCustomSnapshot(snapshot); } catch { /* Invalid tuples must fail at this boundary. */ }
+        expect(actual).toEqual(allowed ? snapshot : null);
+    });
+    test.each(policies.flatMap((before, previous) => policies.map((after, next) => [before, after, previous, next])))('reset reconciles policy %j → %j', (before, after, previous, next) => {
+        const credential = previous === 2 ? bindings[2] : bindings[0];
+        const reconciled = reconcileCustomCredential(after, credential, 'https://example.test/v1');
+        expect(reconciled.mode).toBe(next === 0 ? 'none' : previous === 2 ? 'reference' : next === 2 ? 'unbound' : 'none');
+        const snapshot = { ...captureCustomConnection(manual()), auth: after, credential: reconciled };
+        snapshot.settings.custom_url = 'https://example.test/v1';
+        expect(validateCustomSnapshot(snapshot).credential).toEqual(reconciled);
+    });
+    test('root reconciliation keeps only exact normalized approval and isolated overrides share validation', () => {
+        expect(reconcileCustomCredential(policies[2], bindings[2], 'https://example.test/v1/')).toEqual(bindings[2]);
+        expect(reconcileCustomCredential(policies[1], bindings[2], 'https://example.test/other')).toEqual({ mode: 'unbound' });
+        expect(reconcileCustomCredential(policies[2], bindings[2], 'https://')).toEqual({ mode: 'unbound' });
+        const snapshot = { ...captureCustomConnection(manual()), auth: policies[2], credential: bindings[2] };
+        snapshot.settings.custom_url = 'https://example.test/v1';
+        expect(() => settingsForCustomRequest(manual(), snapshot, { custom_auth: { auth: policies[0], credential: bindings[2] } })).toThrow('no-auth');
+    });
+    test.each([
+        [{ mode: 'none' }, { mode: 'reference', key: 'api_key_openai', id: 'id', endpoint: 'https://example.test/v1' }],
+        [{ mode: 'none' }, { mode: 'legacy-custom', id: 'id' }],
+        [{ mode: 'bearer', required: true }, { mode: 'none' }],
+        [{ mode: 'bearer', required: true }, { mode: 'legacy-custom', id: null }],
+        [{ mode: 'bearer', required: false }, { mode: 'reference', key: 'api_key_openai', id: 'id', endpoint: 'https://other.test/v1' }],
+    ])('rejects incompatible authentication tuple %j / %j at capture and restoration', (auth, credential) => {
+        const snapshot = captureCustomConnection(manual());
+        snapshot.settings.custom_url = 'https://example.test/v1';
+        Object.assign(snapshot, { auth, credential });
+        expect(() => validateCustomSnapshot(snapshot)).toThrow();
+        const settings = { ...snapshot.settings, custom_provider_state: { version: 1, active: { provider: snapshot.provider, models: snapshot.models, auth, credential } } };
+        expect(() => captureCustomConnection(settings)).toThrow();
+        expect(() => applyCustomSnapshot(manual(), snapshot)).toThrow();
+    });
     test('Manual → A → B → Manual retains exact values and captured key ID', () => {
         const settings = manual();
         const a = registerCustomProvider(owner, 'a', definition());
