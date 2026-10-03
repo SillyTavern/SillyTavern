@@ -91,6 +91,7 @@ const API_POLLINATIONS_ANON = 'https://text.pollinations.ai/v1';
 const API_MOONSHOT = 'https://api.moonshot.ai/v1';
 const API_FIREWORKS = 'https://api.fireworks.ai/inference/v1';
 const API_COMETAPI = 'https://api.cometapi.com/v1';
+const API_CHEAPERINFERENCE = 'https://api.cheaperinference.com/v1';
 const API_ZAI_COMMON = 'https://api.z.ai/api/paas/v4';
 const API_ZAI_CODING = 'https://api.z.ai/api/coding/paas/v4';
 const API_SILICONFLOW = 'https://api.siliconflow.com/v1';
@@ -1845,6 +1846,10 @@ router.post('/status', async function (request, statusResponse) {
             apiKey = readSecret(request.user.directories, SECRET_KEYS.COMETAPI, request.body.secret_id);
             headers = {};
             throw new Error('This provider is temporarily disabled.');
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHEAPERINFERENCE) {
+            apiUrl = API_CHEAPERINFERENCE;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CHEAPERINFERENCE, request.body.secret_id);
+            headers = {};
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MOONSHOT) {
             apiUrl = new URL(request.body.reverse_proxy || API_MOONSHOT).toString();
             apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MOONSHOT, request.body.secret_id);
@@ -2548,6 +2553,13 @@ router.post('/generate', async function (request, response) {
                 reasoning_effort: request.body.reasoning_effort,
             };
             throw new Error('This provider is temporarily disabled.');
+        } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CHEAPERINFERENCE) {
+            apiUrl = API_CHEAPERINFERENCE;
+            apiKey = readSecret(request.user.directories, SECRET_KEYS.CHEAPERINFERENCE, request.body.secret_id);
+            headers = {};
+            bodyParams = {
+                reasoning_effort: request.body.reasoning_effort,
+            };
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.ZAI) {
             const defaultApiUrl = request.body.zai_endpoint === ZAI_ENDPOINT.CODING ? API_ZAI_CODING : API_ZAI_COMMON;
             apiUrl = new URL(request.body.reverse_proxy || defaultApiUrl).toString();
