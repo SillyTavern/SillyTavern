@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { activateSendButtons, cancelStatusCheck, deactivateSendButtons, event_types, eventSource, main_api, online_status, resultCheckStatus, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -19,6 +19,11 @@ import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
 import { formatReasoning } from '/scripts/reasoning.js';
+import { beginCustomConnectionTransition, captureCurrentCustomConnection, commitCustomConnection, connectChatCompletion, oai_settings, restoreCustomConnection, refreshCustomConnection, settingsToUpdate } from '../../openai.js';
+import { CUSTOM_CONNECTION_FIELDS, getCustomProvider, getProfileCustomConnection, resolveLegacyCustomConnection } from '../../custom-providers.js';
+import { getPresetManager } from '../../preset-manager.js';
+
+const CUSTOM_CONNECTION_COMMANDS = ['api', 'api-url', 'model', 'prompt-post-processing', 'secret-id'];
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -70,6 +75,7 @@ const TC_COMMANDS = [
 ];
 
 const FANCY_NAMES = {
+    'custom-connection': 'Custom connection',
     'api': 'API',
     'api-url': 'Server URL',
     'preset': 'Settings Preset',
@@ -93,41 +99,20 @@ const FANCY_NAMES = {
  * A wrapper for the connection manager spinner.
  */
 class ConnectionManagerSpinner {
-    /**
-     * @type {AbortController[]}
-     */
-    static abortControllers = [];
-
     /** @type {HTMLElement} */
     spinnerElement;
-
-    /** @type {AbortController} */
-    abortController = new AbortController();
 
     constructor() {
         // @ts-ignore
         this.spinnerElement = document.getElementById('connection_profile_spinner');
-        this.abortController = new AbortController();
     }
 
     start() {
-        ConnectionManagerSpinner.abortControllers.push(this.abortController);
         this.spinnerElement.classList.remove('hidden');
     }
 
     stop() {
         this.spinnerElement.classList.add('hidden');
-    }
-
-    isAborted() {
-        return this.abortController.signal.aborted;
-    }
-
-    static abort() {
-        for (const controller of ConnectionManagerSpinner.abortControllers) {
-            controller.abort();
-        }
-        ConnectionManagerSpinner.abortControllers = [];
     }
 }
 
@@ -179,6 +164,7 @@ const profilesProvider = () => [
  * @property {string} [secret-id] Secret ID
  * @property {string} [regex-preset] Regex Preset ID
  * @property {string[]} [exclude] Commands to exclude
+ * @property {import('../../custom-providers.js').CustomConnectionSnapshot | {version: 1, excluded: true}} [custom-connection] Atomic resolved Custom connection
  */
 
 /**
@@ -216,6 +202,8 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
     const opposingCommands = mode === 'cc' ? TC_COMMANDS : CC_COMMANDS;
     const excludeList = Array.isArray(profile.exclude) ? profile.exclude : [];
+    const custom = mode === 'cc' && oai_settings.chat_completion_source === 'custom';
+    const atomic = Object.hasOwn(profile, 'custom-connection') || custom && !CUSTOM_CONNECTION_COMMANDS.some(command => excludeList.includes(command));
     for (const command of commands) {
         try {
             if (excludeList.includes(command)) {
@@ -248,6 +236,19 @@ async function readProfileFromCommands(mode, profile, cleanUp = false) {
             delete profile[command];
         }
     }
+    if (custom && atomic) {
+        profile.api = 'custom';
+        if (excludeList.includes('custom-connection')) profile['custom-connection'] = { version: 1, excluded: true };
+        else {
+            const snapshot = captureCurrentCustomConnection();
+            profile['custom-connection'] = snapshot;
+            profile['api-url'] = snapshot.settings.custom_url;
+            profile.model = snapshot.settings.custom_model;
+            profile['prompt-post-processing'] = snapshot.settings.custom_prompt_post_processing;
+            if (snapshot.credential.mode === 'legacy-custom' || snapshot.credential.mode === 'reference' && snapshot.credential.key === 'api_key_custom') profile['secret-id'] = snapshot.credential.id;
+            else delete profile['secret-id'];
+        }
+    } else if (!custom) delete profile['custom-connection'];
 }
 
 /**
@@ -309,7 +310,8 @@ async function createConnectionProfile(forceName = null) {
 
     if (Array.isArray(profile.exclude)) {
         for (const command of profile.exclude) {
-            delete profile[command];
+            if (command === 'custom-connection') profile[command] = { version: 1, excluded: true };
+            else delete profile[command];
         }
     }
 
@@ -354,6 +356,13 @@ async function deleteConnectionProfile() {
  */
 function makeFancyProfile(profile) {
     return Object.entries(FANCY_NAMES).reduce((acc, [key, value]) => {
+        if (Object.hasOwn(profile, 'custom-connection') && CUSTOM_CONNECTION_COMMANDS.includes(key)) return acc;
+        if (key === 'custom-connection' && profile[key]) {
+            let snapshot;
+            try { snapshot = getProfileCustomConnection(profile); } catch (error) { acc[value] = error.message; return acc; }
+            acc[value] = snapshot ? `${snapshot.provider?.label ?? t`Manual`} · ${snapshot.settings.custom_url} · ${snapshot.settings.custom_model}${snapshot.provider && !getCustomProvider(snapshot.provider.id) ? ` (${t`extension unavailable`})` : ''}` : t`Excluded: keep the current connection. Background requests require a complete override.`;
+            return acc;
+        }
         const allowEmpty = ALLOW_EMPTY.includes(key);
         if (!profile[key]) {
             if (profile[key] === '' && allowEmpty) {
@@ -387,40 +396,87 @@ function makeFancyProfile(profile) {
 /**
  * Applies the connection profile.
  * @param {ConnectionProfile} profile Connection profile
+ * @param {function(): boolean} isCurrent Whether this selection still owns connection qualification
  * @returns {Promise<void>}
  */
-async function applyConnectionProfile(profile) {
+async function applyConnectionProfile(profile, isCurrent) {
     if (!profile) {
         return;
     }
 
-    // Abort any ongoing profile application
-    ConnectionManagerSpinner.abort();
+    const snapshot = getProfileCustomConnection(profile);
+    if (profile.api && !getContext().CONNECT_API_MAP[profile.api]) throw new Error(`Unknown API: ${profile.api}`);
+    const connectionFields = Object.values(settingsToUpdate).filter(([, , , connection]) => connection).map(([, field]) => field);
+    const previous = { ...Object.fromEntries(connectionFields.map(field => [field, structuredClone(oai_settings[field])])), custom_provider_state: structuredClone(oai_settings.custom_provider_state) };
+    const previousMainApi = main_api;
+    const previousProviderId = previous.custom_provider_state?.active?.provider?.id ?? null;
+    const previousApi = await SlashCommandParser.commands.api.callback(getNamedArguments(), '');
+    const preset = getPresetManager('openai')?.getCompletionPresetByName(profile.preset) ?? {};
+    const changesLegacyRoot = profile['api-url'] !== undefined && profile['api-url'] !== oai_settings.custom_url || oai_settings.bind_preset_to_connection && CUSTOM_CONNECTION_FIELDS.some(field => field !== 'custom_model' && preset[field] !== undefined && preset[field] !== oai_settings[field]);
+    const legacy = snapshot === undefined && (profile.api === 'custom' || !profile.api && oai_settings.chat_completion_source === 'custom' && changesLegacyRoot) ? resolveLegacyCustomConnection(oai_settings, profile, preset) : undefined;
+    const resolvedCustomConnection = snapshot ?? legacy;
+    const compositional = snapshot === null;
+    const transactional = snapshot !== undefined || legacy !== undefined;
+    const release = transactional ? beginCustomConnectionTransition() : () => {};
 
     const mode = profile.mode;
     const commands = mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
     const spinner = new ConnectionManagerSpinner();
     spinner.start();
 
-    for (const command of commands) {
-        if (spinner.isAborted()) {
-            throw new Error('Profile application aborted');
+    const restorePrevious = async () => {
+        await SlashCommandParser.commands.api.callback(getNamedArguments(), previousApi);
+        Object.assign(oai_settings, previous);
+        if (previous.custom_provider_state === undefined) delete oai_settings.custom_provider_state;
+        for (const [selector, field, checkbox, connection] of Object.values(settingsToUpdate)) {
+            if (!connection) continue;
+            if (checkbox) $(selector).prop('checked', oai_settings[field]);
+            else $(selector).val(oai_settings[field]);
         }
+        refreshCustomConnection();
+    };
 
-        const argument = profile[command];
-        const allowEmpty = ALLOW_EMPTY.includes(command);
-        if (!argument && !(allowEmpty && argument === '')) {
-            continue;
+    let failed = false;
+    try {
+        if (resolvedCustomConnection) await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
+        for (const command of commands) {
+            if ((snapshot !== undefined || resolvedCustomConnection) && CUSTOM_CONNECTION_COMMANDS.includes(command)) continue;
+            const argument = profile[command];
+            const allowEmpty = ALLOW_EMPTY.includes(command);
+            if (!argument && !(allowEmpty && argument === '')) {
+                continue;
+            }
+            try {
+                const args = getNamedArguments({ ...(allowEmpty ? { force: 'true' } : {}), ...(transactional ? { connect: 'false', quiet: 'true' } : {}) });
+                await SlashCommandParser.commands[command].callback(args, argument);
+            } catch (error) { throw new Error(`Could not apply profile setting ${command}.`, { cause: error }); }
         }
-        try {
-            const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
-            await SlashCommandParser.commands[command].callback(args, argument);
-        } catch (error) {
-            console.error(`Failed to execute command: ${command} ${argument}`, error);
+        if (resolvedCustomConnection) {
+            await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
+            // Save the actual outgoing tuple, never a preset's temporary connection fields.
+            Object.assign(oai_settings, Object.fromEntries(CUSTOM_CONNECTION_FIELDS.map(field => [field, previous[field]])));
+            oai_settings.custom_provider_state = structuredClone(previous.custom_provider_state);
+            restoreCustomConnection(resolvedCustomConnection);
+        } else if (compositional) {
+            await restorePrevious();
         }
+    } catch (error) {
+        failed = true;
+        await restorePrevious();
+        throw error;
+    } finally {
+        spinner.stop();
+        release();
+        if (failed && transactional) resultCheckStatus();
     }
 
-    spinner.stop();
+    if (transactional && !compositional) {
+        commitCustomConnection(previousProviderId);
+        if (previousMainApi !== main_api) await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
+        if (previous.chat_completion_source !== oai_settings.chat_completion_source) await eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
+        // A newer selection may have arrived while commands or final events were awaited.
+        if (isCurrent()) await connectChatCompletion();
+    }
 }
 
 /**
@@ -720,37 +776,51 @@ export async function init() {
     }
     toggleProfileSpecificButtons();
 
-    profiles.addEventListener('change', async function () {
-        const selectedProfile = profiles.selectedOptions[0];
-        if (!selectedProfile) {
-            // Safety net for preventing the command getting stuck
-            await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
-            return;
+    // Serialize command side effects, while suppressing obsolete selection success.
+    let selectionRevision = 0;
+    let selectionQueue = Promise.resolve();
+    let applyingProfile = false;
+    function selectProfile(profileId) {
+        const revision = ++selectionRevision;
+        // Cancel an already-running qualification before waiting for its serialized state operation.
+        const admittedProfile = extension_settings.connectionManager.profiles.find(p => p.id === profileId);
+        const replacesConnection = admittedProfile && !admittedProfile['custom-connection']?.excluded && (
+            Object.hasOwn(admittedProfile, 'custom-connection')
+            || ['api', 'api-url', 'secret-id', 'proxy'].some(command => admittedProfile[command] && !admittedProfile.exclude?.includes(command))
+            || oai_settings.bind_preset_to_connection && admittedProfile.preset && !admittedProfile.exclude?.includes('preset')
+        );
+        if (applyingProfile || replacesConnection && $('.api_button.disabled').length) {
+            cancelStatusCheck('Canceled because another connection Profile was selected');
+            resultCheckStatus();
         }
-
-        const profileId = selectedProfile.value;
-        extension_settings.connectionManager.selectedProfile = profileId;
-        saveSettingsDebounced();
-        await renderDetailsContent(detailsContent);
-
-        toggleProfileSpecificButtons();
-
-        // None option selected
-        if (!profileId) {
-            await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, NONE);
-            return;
-        }
-
-        const profile = extension_settings.connectionManager.profiles.find(p => p.id === profileId);
-
-        if (!profile) {
-            console.log(`Profile not found: ${profileId}`);
-            return;
-        }
-
-        await applyConnectionProfile(profile);
-        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
-    });
+        const operation = selectionQueue.catch(() => {}).then(async () => {
+            if (revision !== selectionRevision) return;
+            const profile = profileId ? extension_settings.connectionManager.profiles.find(p => p.id === profileId) : null;
+            if (profileId && !profile) throw new Error('Connection profile no longer exists.');
+            if (profile) {
+                applyingProfile = true;
+                try {
+                    await applyConnectionProfile(profile, () => revision === selectionRevision);
+                } finally {
+                    applyingProfile = false;
+                }
+            }
+            if (revision !== selectionRevision) return;
+            extension_settings.connectionManager.selectedProfile = profileId || null;
+            profiles.value = profileId;
+            saveSettingsDebounced();
+            await renderDetailsContent(detailsContent);
+            toggleProfileSpecificButtons();
+            await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile?.name ?? NONE);
+        });
+        selectionQueue = operation;
+        return operation;
+    }
+    function selectionError(error) {
+        profiles.value = extension_settings.connectionManager.selectedProfile ?? '';
+        toastr.error(error.message, t`Could not load connection profile`);
+    }
+    profiles.addEventListener('change', () => { void selectProfile(profiles.value).catch(selectionError); });
 
     const reloadButton = document.getElementById('reload_connection_profile');
     reloadButton.addEventListener('click', async () => {
@@ -760,9 +830,7 @@ export async function init() {
             console.log('No profile selected');
             return;
         }
-        await applyConnectionProfile(profile);
-        await renderDetailsContent(detailsContent);
-        await eventSource.emit(event_types.CONNECTION_PROFILE_LOADED, profile.name);
+        try { await selectProfile(profile.id); } catch (error) { selectionError(error); return; }
         toastr.success('Connection profile reloaded', '', { timeOut: 1500 });
     });
 
@@ -820,7 +888,7 @@ export async function init() {
 
         let saveChanges = false;
         const sortByViewOrder = (a, b) => Object.keys(FANCY_NAMES).indexOf(a) - Object.keys(FANCY_NAMES).indexOf(b);
-        const commands = profile.mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
+        const commands = Object.hasOwn(profile, 'custom-connection') ? ['custom-connection', ...CC_COMMANDS.filter(command => !CUSTOM_CONNECTION_COMMANDS.includes(command))] : profile.mode === 'cc' ? CC_COMMANDS : TC_COMMANDS;
         const settings = commands.slice().sort(sortByViewOrder).reduce((acc, command) => {
             const fancyName = FANCY_NAMES[command];
             acc[fancyName] = !profile.exclude.includes(command);
@@ -861,7 +929,8 @@ export async function init() {
         if (newExcludeList.length !== profile.exclude.length || !newExcludeList.every(e => profile.exclude.includes(e))) {
             profile.exclude = newExcludeList;
             for (const command of newExcludeList) {
-                delete profile[command];
+                if (command === 'custom-connection') profile[command] = { version: 1, excluded: true };
+                else delete profile[command];
             }
             if (saveChanges) {
                 await updateConnectionProfile(profile);
@@ -929,8 +998,7 @@ export async function init() {
             }
 
             if (value === NONE) {
-                profiles.selectedIndex = 0;
-                profiles.dispatchEvent(new Event('change'));
+                await selectProfile('');
                 return NONE;
             }
 
@@ -941,13 +1009,10 @@ export async function init() {
             }
 
             const shouldAwait = !isFalseBoolean(String(args?.await));
-            const awaitPromise = new Promise((resolve) => eventSource.once(event_types.CONNECTION_PROFILE_LOADED, resolve));
-
-            profiles.selectedIndex = Array.from(profiles.options).findIndex(o => o.value === profile.id);
-            profiles.dispatchEvent(new Event('change'));
+            const selection = selectProfile(profile.id);
 
             if (shouldAwait) {
-                await awaitPromise;
+                await selection;
 
                 // We should also await the connection to be established
                 const parsedTimeout = parseInt(args?.timeout?.toString());
@@ -955,7 +1020,7 @@ export async function init() {
                 if (timeout > 0) {
                     await waitUntilCondition(() => online_status !== 'no_connection', timeout, 100, { rejectOnTimeout: false });
                 }
-            }
+            } else void selection.catch(selectionError);
 
             return profile.name;
         },

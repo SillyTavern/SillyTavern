@@ -86,7 +86,8 @@ import { addLocaleData, getCurrentLocale, t, translate } from './i18n.js';
 import { hideLoader, showLoader } from './loader.js';
 import { loader } from './action-loader.js';
 import { MacrosParser } from './macros.js';
-import { getChatCompletionModel, oai_settings } from './openai.js';
+import { getChatCompletionModel, oai_settings, selectCustomProvider } from './openai.js';
+import { CUSTOM_PROVIDER_API_VERSION, registerCustomProvider, getCustomProvider, listCustomProviders } from './custom-providers.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { getPresetManager } from './preset-manager.js';
@@ -114,6 +115,7 @@ import { MessageFormatter } from './message-formatter.js';
 
 export function getContext() {
     return {
+        customProviders: { apiVersion: CUSTOM_PROVIDER_API_VERSION, register: registerCustomProvider, get: getCustomProvider, list: listCustomProviders, select: selectCustomProvider },
         accountStorage,
         chat,
         characters,

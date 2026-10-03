@@ -1,0 +1,8 @@
+{
+    "display_name": "Custom provider test fixture",
+    "author": "SillyTavern",
+    "version": "1.0.0",
+    "js": "index.js",
+    "auto_update": false,
+    "hooks": { "activate": "onActivate", "enable": "onActivate", "disable": "onDisable", "delete": "onDisable", "clean": "onDisable" }
+}

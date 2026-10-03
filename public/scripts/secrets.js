@@ -1,7 +1,7 @@
 import { DOMPurify, moment, sha256 } from '../lib.js';
 import { event_types, eventSource, getRequestHeaders, saveSettings } from '../script.js';
 import { t } from './i18n.js';
-import { chat_completion_sources } from './openai.js';
+import { chat_completion_sources, oai_settings, bindCustomCredential } from './openai.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
@@ -218,6 +218,7 @@ export function resolveSecretKey() {
     }
 
     if (mainApi === 'openai') {
+        if (chatCompletionSource === chat_completion_sources.CUSTOM && chatCompletionSettings.custom_provider_state?.active?.credential?.mode === 'reference') return chatCompletionSettings.custom_provider_state.active.credential.key;
         if (chatCompletionSource === chat_completion_sources.VERTEXAI) {
             switch (chatCompletionSettings.vertexai_auth_mode) {
                 case 'express':
@@ -262,6 +263,12 @@ export function updateSecretDisplay() {
         const label = getActiveSecretLabel(secret_key);
         const placeholderWithLabel = label ? `${placeholder} (${label})` : placeholder;
         $(input_selector).attr('placeholder', placeholderWithLabel);
+    }
+    const binding = oai_settings.custom_provider_state?.active?.credential;
+    if (binding) {
+        const key = binding.mode === 'reference' ? binding.key : SECRET_KEYS.CUSTOM;
+        const entry = secret_state[key]?.find(item => item.id === binding.id);
+        $('#api_key_custom').attr('placeholder', entry ? `${t`Connection key saved`} (${entry.label || t`Unlabeled`})` : t`No connection key selected`);
     }
 }
 
@@ -344,9 +351,10 @@ export let secret_state = {};
  * @param {string} [label] (Optional) Label for the key. If not provided, generated automatically.
  * @param {Object} [options] Additional options
  * @param {boolean} [options.allowEmpty] Whether to allow writing empty values. If false and value is empty, the secret will be deleted.
+ * @param {boolean} [options.activate=true] Whether the new entry replaces its category's active selection
  * @return {Promise<string?>} The ID of the newly created secret key, or null if no value is provided.
  */
-export async function writeSecret(key, value, label, { allowEmpty } = {}) {
+export async function writeSecret(key, value, label, { allowEmpty, activate = true } = {}) {
     try {
         if (!value && !allowEmpty) {
             console.warn(`No value provided for ${key} in writeSecret, redirecting to deleteSecret`);
@@ -361,7 +369,7 @@ export async function writeSecret(key, value, label, { allowEmpty } = {}) {
         const response = await fetch('/api/secrets/write', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ key, value, label }),
+            body: JSON.stringify({ key, value, label, activate }),
         });
 
         if (!response.ok) {
@@ -797,6 +805,16 @@ function registerSecretSlashCommands() {
             const quiet = isTrueBoolean(args?.quiet?.toString());
             const id = value?.toString()?.trim();
             const key = args?.key?.toString()?.trim() || resolveSecretKey();
+
+            const context = SillyTavern.getContext();
+            const binding = !args?.key && context.mainApi === 'openai' && oai_settings.chat_completion_source === 'custom' ? oai_settings.custom_provider_state?.active?.credential : null;
+            if (binding) {
+                if (!id) return binding.id ?? '';
+                const entry = secret_state[key]?.find(item => item.id === id || item.label === id);
+                if (!entry) throw new Error('No eligible stored key matches this ID or label.');
+                await bindCustomCredential(key, entry.id);
+                return entry.id;
+            }
 
             if (!key) {
                 if (!quiet) {
