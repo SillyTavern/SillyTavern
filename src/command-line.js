@@ -9,6 +9,7 @@ import { initConfig } from './config-init.js';
 
 /**
  * @typedef {object} CommandLineArguments Parsed command line arguments
+ * @property {string} masterPassword Master password for encrypting secrets (if not set, secrets will be stored in plaintext)
  * @property {string} configPath Path to the config file
  * @property {string} dataRoot Data root directory
  * @property {number} port Port number
@@ -57,6 +58,7 @@ export class CommandLineParser {
         return Object.freeze({
             configPath: configPath,
             dataRoot: dataPath,
+            masterPassword: '',
             port: 8000,
             listen: false,
             listenAddressIPv6: '[::]',
@@ -118,6 +120,11 @@ export class CommandLineParser {
                 type: 'string',
                 default: null,
                 describe: 'Path to the config file (only for standalone mode)',
+            })
+            .option('masterPassword', {
+                type: 'string',
+                default: null,
+                describe: 'Master password for encrypting secrets (if not set, secrets will be stored in plaintext)',
             })
             .option('enableIPv6', {
                 type: 'string',
@@ -300,6 +307,7 @@ export class CommandLineParser {
         const result = {
             configPath: configPath,
             dataRoot: dataRoot,
+            masterPassword: cliArguments.masterPassword ?? getConfigValue('masterPassword', defaultConfig.masterPassword),
             port: cliArguments.port ?? getConfigValue('port', defaultConfig.port, 'number'),
             listen: cliArguments.listen ?? getConfigValue('listen', defaultConfig.listen, 'boolean'),
             listenAddressIPv6: cliArguments.listenAddressIPv6 ?? getConfigValue('listenAddress.ipv6', defaultConfig.listenAddressIPv6),
