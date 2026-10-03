@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import express from 'express';
-import fetch from 'node-fetch';
 
 import { forwardFetchResponse, delay } from '../../util.js';
 import { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } from '../../additional-headers.js';

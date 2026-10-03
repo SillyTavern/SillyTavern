@@ -1,5 +1,4 @@
 import express from 'express';
-import fetch from 'node-fetch';
 import mime from 'mime-types';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { OPENROUTER_HEADERS } from '../constants.js';

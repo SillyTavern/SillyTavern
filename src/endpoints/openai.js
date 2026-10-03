@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
 
-import fetch from 'node-fetch';
 import FormData from 'form-data';
 import express from 'express';
 

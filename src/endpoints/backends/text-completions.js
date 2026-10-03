@@ -1,5 +1,4 @@
 import { Readable } from 'node:stream';
-import fetch from 'node-fetch';
 import express from 'express';
 import _ from 'lodash';
 
@@ -21,7 +20,7 @@ export const router = express.Router();
 
 /**
  * Special boy's steaming routine. Wrap this abomination into proper SSE stream.
- * @param {import('node-fetch').Response} jsonStream JSON stream
+ * @param {Response} jsonStream JSON stream
  * @param {import('express').Request} request Express request
  * @param {import('express').Response} response Express response
  * @returns {Promise<any>} Nothing valuable
