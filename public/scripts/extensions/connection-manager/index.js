@@ -1,6 +1,6 @@
 import { DOMPurify, Fuse } from '../../../lib.js';
 
-import { activateSendButtons, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
+import { activateSendButtons, cancelStatusCheck, deactivateSendButtons, event_types, eventSource, main_api, online_status, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, getContext, renderExtensionTemplateAsync } from '../../extensions.js';
 import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from '../../popup.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
@@ -396,9 +396,10 @@ function makeFancyProfile(profile) {
 /**
  * Applies the connection profile.
  * @param {ConnectionProfile} profile Connection profile
+ * @param {function(): boolean} isCurrent Whether this selection still owns connection qualification
  * @returns {Promise<void>}
  */
-async function applyConnectionProfile(profile) {
+async function applyConnectionProfile(profile, isCurrent) {
     if (!profile) {
         return;
     }
@@ -413,6 +414,7 @@ async function applyConnectionProfile(profile) {
     const preset = getPresetManager('openai')?.getCompletionPresetByName(profile.preset) ?? {};
     const changesLegacyRoot = profile['api-url'] !== undefined && profile['api-url'] !== oai_settings.custom_url || oai_settings.bind_preset_to_connection && CUSTOM_CONNECTION_FIELDS.some(field => field !== 'custom_model' && preset[field] !== undefined && preset[field] !== oai_settings[field]);
     const legacy = snapshot === undefined && (profile.api === 'custom' || !profile.api && oai_settings.chat_completion_source === 'custom' && changesLegacyRoot) ? resolveLegacyCustomConnection(oai_settings, profile, preset) : undefined;
+    const resolvedCustomConnection = snapshot ?? legacy;
     const compositional = snapshot === null;
     const transactional = snapshot !== undefined || legacy !== undefined;
     const release = transactional ? beginCustomConnectionTransition() : () => {};
@@ -435,9 +437,9 @@ async function applyConnectionProfile(profile) {
     };
 
     try {
-        if (snapshot) await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
+        if (resolvedCustomConnection) await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
         for (const command of commands) {
-            if (snapshot !== undefined && CUSTOM_CONNECTION_COMMANDS.includes(command)) continue;
+            if ((snapshot !== undefined || resolvedCustomConnection) && CUSTOM_CONNECTION_COMMANDS.includes(command)) continue;
             const argument = profile[command];
             const allowEmpty = ALLOW_EMPTY.includes(command);
             if (!argument && !(allowEmpty && argument === '')) {
@@ -448,12 +450,12 @@ async function applyConnectionProfile(profile) {
                 await SlashCommandParser.commands[command].callback(args, argument);
             } catch (error) { throw new Error(`Could not apply profile setting ${command}.`, { cause: error }); }
         }
-        if (snapshot || legacy) {
+        if (resolvedCustomConnection) {
             await SlashCommandParser.commands.api.callback(getNamedArguments(), 'custom');
             // Save the actual outgoing tuple, never a preset's temporary connection fields.
             Object.assign(oai_settings, Object.fromEntries(CUSTOM_CONNECTION_FIELDS.map(field => [field, previous[field]])));
             oai_settings.custom_provider_state = structuredClone(previous.custom_provider_state);
-            restoreCustomConnection(snapshot ?? legacy);
+            restoreCustomConnection(resolvedCustomConnection);
         } else if (compositional) {
             await restorePrevious();
         }
@@ -466,7 +468,8 @@ async function applyConnectionProfile(profile) {
         commitCustomConnection(previousProviderId);
         if (previousMainApi !== main_api) await eventSource.emit(event_types.MAIN_API_CHANGED, { apiId: main_api });
         if (previous.chat_completion_source !== oai_settings.chat_completion_source) await eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
-        await connectChatCompletion();
+        // A newer selection may have arrived while commands or final events were awaited.
+        if (isCurrent()) await connectChatCompletion();
     }
 }
 
@@ -770,13 +773,23 @@ export async function init() {
     // Serialize command side effects, while suppressing obsolete selection success.
     let selectionRevision = 0;
     let selectionQueue = Promise.resolve();
+    let applyingProfile = false;
     function selectProfile(profileId) {
         const revision = ++selectionRevision;
+        // Cancel an already-running qualification before waiting for its serialized state operation.
+        if (applyingProfile) cancelStatusCheck('Canceled because another connection Profile was selected');
         const operation = selectionQueue.catch(() => {}).then(async () => {
             if (revision !== selectionRevision) return;
             const profile = profileId ? extension_settings.connectionManager.profiles.find(p => p.id === profileId) : null;
             if (profileId && !profile) throw new Error('Connection profile no longer exists.');
-            if (profile) await applyConnectionProfile(profile);
+            if (profile) {
+                applyingProfile = true;
+                try {
+                    await applyConnectionProfile(profile, () => revision === selectionRevision);
+                } finally {
+                    applyingProfile = false;
+                }
+            }
             if (revision !== selectionRevision) return;
             extension_settings.connectionManager.selectedProfile = profileId || null;
             profiles.value = profileId;

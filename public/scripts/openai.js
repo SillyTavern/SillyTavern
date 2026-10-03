@@ -4469,6 +4469,7 @@ function setToolReasoningControls() {
 async function getStatusOpen() {
     if (customConnectionTransition) return;
     const revision = customConnectionRevision;
+    const statusSignal = abortStatusCheck.signal;
     let customAuth;
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
         try { customAuth = getCustomAuth(oai_settings); } catch (error) { showCustomProviderError(error); setOnlineStatus('no_connection'); return resultCheckStatus(); }
@@ -4566,12 +4567,12 @@ async function getStatusOpen() {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(data),
-            signal: abortStatusCheck.signal,
+            signal: statusSignal,
             cache: 'no-cache',
         });
 
         const responseData = await response.json();
-        if (revision !== customConnectionRevision || customConnectionTransition) return;
+        if (revision !== customConnectionRevision || customConnectionTransition || statusSignal.aborted) return;
         if (responseData.error?.code === 'CUSTOM_AUTH') {
             showCustomProviderError(new Error(responseData.error.message));
             setOnlineStatus('no_connection');
@@ -4590,6 +4591,7 @@ async function getStatusOpen() {
         }
     } catch (error) {
         if (revision !== customConnectionRevision || customConnectionTransition) return;
+        if (statusSignal.aborted) return resultCheckStatus();
         console.error(error);
 
         if (!canBypass) {
@@ -6863,6 +6865,7 @@ function customConnectionChanged(reason, { oldProviderId = oai_settings.custom_p
         cancelStatusCheck();
         $('#custom_provider_error').text('');
         if (main_api === 'openai' && oai_settings.chat_completion_source === 'custom') setOnlineStatus('no_connection');
+        resultCheckStatus();
     }
     if (clearModels) {
         model_list = [];
@@ -6871,6 +6874,7 @@ function customConnectionChanged(reason, { oldProviderId = oai_settings.custom_p
     if (clearKey) $('#api_key_custom').val('');
     renderCustomProviderSetup();
     updateSecretDisplay();
+    updateFeatureSupportFlags();
     saveSettingsDebounced();
     void eventSource.emit(event_types.CUSTOM_CONNECTION_CHANGED, { oldProviderId, newProviderId: oai_settings.custom_provider_state?.active?.provider?.id ?? null, reason });
 }

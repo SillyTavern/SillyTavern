@@ -169,6 +169,7 @@ test('Custom setup and Profile journey through the installed extension', async (
             await page.locator('#custom_provider_reset').click();
             await page.locator('dialog[open] .popup-button-ok').click();
             await expect(page.locator('dialog[open]')).toHaveCount(0);
+            await expect.poll(() => page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().auth.mode)).toBe(auth.mode);
         }
         await reset({ mode: 'bearer', required: true });
         await syntheticKey(page, 'a', 'api_key_custom');
@@ -299,6 +300,123 @@ test('Custom setup and Profile journey through the installed extension', async (
             const context = SillyTavern.getContext();
             await context.executeSlashCommandsWithOptions('/profile "Synthetic a" timeout=0');
         });
+    });
+
+    await test.step('legacy Custom Profiles resolve independently of no-auth and OpenAI-key named setups', async () => {
+        for (const auth of [{ mode: 'none' }, { mode: 'bearer', required: true }]) {
+            await page.selectOption('#custom_provider_select', '');
+            await page.locator('#custom_api_url_text').fill(`${root}/b/v1`);
+            await page.evaluate(async () => {
+                const { oai_settings } = await import('/scripts/openai.js');
+                oai_settings.custom_include_headers = 'X-Marker: b';
+                oai_settings.custom_include_body = 'marker: b';
+                oai_settings.custom_exclude_body = '';
+                oai_settings.custom_prompt_post_processing = '';
+            });
+            const profileId = await page.evaluate(async ({ root, auth }) => {
+                const { writeSecret } = await import('/scripts/secrets.js');
+                const id = await writeSecret('api_key_custom', 'synthetic-b', 'Synthetic legacy Custom', { activate: false });
+                const profile = { id: `legacy-${auth.mode}`, name: `Legacy ${auth.mode}`, api: 'custom', mode: 'cc', 'api-url': `${root}/b/v1`, model: 'legacy-model', 'prompt-post-processing': '', 'secret-id': id };
+                SillyTavern.getContext().extensionSettings.connectionManager.profiles.push(profile);
+                $('#connection_profiles').append(new Option(profile.name, profile.id));
+                (await import('/scripts/extensions/third-party/custom-provider-extension/index.js')).configure(`${root}/a/v1`, `${root}/b/v1`, auth);
+                return profile.id;
+            }, { root, auth });
+            await page.selectOption('#custom_provider_select', `${owner}:a`);
+            await page.locator('#custom_provider_reset').click();
+            await page.locator('dialog[open] .popup-button-ok').click();
+            await expect(page.locator('dialog[open]')).toHaveCount(0);
+            await expect.poll(() => page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().auth.mode)).toBe(auth.mode);
+            // eslint-disable-next-line playwright/no-conditional-in-test -- Two explicit outgoing credential policies.
+            if (auth.mode === 'bearer') await syntheticKey(page, 'a', 'api_key_openai');
+            await page.selectOption('#connection_profiles', profileId);
+            await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe(profileId);
+            await expect(page.locator('#custom_provider_select')).toHaveValue('');
+            await expect(page.locator('#custom_api_url_text')).toHaveValue(`${root}/b/v1`);
+            await expect(page.locator('#custom_model_id')).toHaveValue('legacy-model');
+            expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('legacy-custom');
+            const result = await page.evaluate(async () => {
+                const openai = await import('/scripts/openai.js');
+                return openai.getStreamingReply(await openai.sendOpenAIRequest('quiet', [{ role: 'user', content: 'Synthetic legacy replay' }], new AbortController().signal), {});
+            });
+            expect(result).toBe('Synthetic completion');
+            expect(received.at(-1)).toEqual({ path: '/b/v1/chat/completions', marker: 'b', bodyMarker: 'b', model: 'legacy-model', correctKey: true, localMetadata: false });
+        }
+    });
+
+    await test.step('B and None replace a Profile whose status response has already started', async () => {
+        for (const replacement of ['synthetic-b', '']) {
+            await page.selectOption('#connection_profiles', 'synthetic-b');
+            await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('synthetic-b');
+            await page.evaluate(() => {
+                const context = SillyTavern.getContext();
+                window.heldProfileLoads = [];
+                window.heldProfileListener = name => window.heldProfileLoads.push(name);
+                context.eventSource.on(context.eventTypes.CONNECTION_PROFILE_LOADED, window.heldProfileListener);
+            });
+            let release;
+            let intercepted;
+            let responded;
+            const started = new Promise(resolve => { intercepted = resolve; });
+            const completed = new Promise(resolve => { responded = resolve; });
+            const routeStatus = async route => {
+                // eslint-disable-next-line playwright/no-conditional-in-test -- Hold A only; B must use the real synthetic upstream.
+                if (route.request().postDataJSON().custom_url !== `${root}/a/v1`) return route.continue();
+                intercepted();
+                await new Promise(resolve => { release = resolve; });
+                await route.fulfill({ json: { data: [{ id: 'obsolete-profile-model' }] } }).catch(() => {});
+                responded();
+            };
+            const finalState = () => page.evaluate(async () => {
+                const script = await import('/script.js');
+                return { selected: SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile, control: $('#connection_profiles').val(), model: $('#custom_model_id').val(), models: $('#model_custom_select option').map((_, option) => option.value).get(), status: script.online_status, loads: [...window.heldProfileLoads] };
+            });
+            await page.route('**/api/backends/chat-completions/status', routeStatus);
+            try {
+                await page.selectOption('#connection_profiles', 'synthetic-a');
+                await started;
+                await page.selectOption('#connection_profiles', replacement);
+                // The held A response is still unreleased when the replacement finishes and emits its load event.
+                await expect.poll(() => page.evaluate(() => window.heldProfileLoads)).toEqual([replacement ? 'Synthetic b' : '<None>']);
+                const state = await finalState();
+                expect(state.selected).toBe(replacement || null);
+                expect(state.status).toBe(replacement ? 'Valid' : 'no_connection');
+                await expect(page.locator('#api_button_openai')).not.toHaveClass(/\bdisabled\b/);
+                release();
+                await completed;
+                await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+                expect(await finalState()).toEqual(state);
+                await expect(page.locator('#model_custom_select option[value="obsolete-profile-model"]')).toHaveCount(0);
+            } finally {
+                release?.();
+                await page.unroute('**/api/backends/chat-completions/status', routeStatus);
+                await page.evaluate(() => {
+                    const context = SillyTavern.getContext();
+                    context.eventSource.removeListener(context.eventTypes.CONNECTION_PROFILE_LOADED, window.heldProfileListener);
+                });
+            }
+        }
+    });
+
+    await test.step('manual-model Profile commits refresh existing capability indicators', async () => {
+        await page.evaluate(async () => {
+            const { oai_settings } = await import('/scripts/openai.js');
+            oai_settings.function_calling = true;
+            $('#custom_prompt_post_processing').val('').trigger('change');
+            const state = SillyTavern.getContext().extensionSettings.connectionManager;
+            const profile = structuredClone(state.profiles.find(value => value.id === 'synthetic-a'));
+            profile.id = 'manual-capabilities';
+            profile.name = 'Manual capabilities';
+            profile['custom-connection'].models = { mode: 'manual', suggestions: [] };
+            profile['custom-connection'].settings.custom_prompt_post_processing = 'merge';
+            state.profiles.push(profile);
+            $('#connection_profiles').append(new Option(profile.name, profile.id));
+        });
+        await expect(page.locator('#openai_function_calling_supported')).toHaveAttribute('data-cc-toggle', 'true');
+        await page.selectOption('#connection_profiles', 'manual-capabilities');
+        await expect.poll(() => page.evaluate(() => SillyTavern.getContext().extensionSettings.connectionManager.selectedProfile)).toBe('manual-capabilities');
+        await expect.poll(() => page.evaluate(async () => (await import('/script.js')).online_status)).toBe('Not checked; use Test Message');
+        await expect(page.locator('#openai_function_calling_supported')).toHaveAttribute('data-cc-toggle', 'false');
     });
 
     await test.step('profile failure resolves its promise, keeps selection, and rejects missing API/version', async () => {
@@ -464,6 +582,7 @@ test('Custom setup and Profile journey through the installed extension', async (
         finish();
         await expect(page.locator('#model_custom_select option[value="late-model"]')).toHaveCount(0);
         await expect(page.locator('#custom_model_id')).toHaveValue(model);
+        await expect(page.locator('#api_button_openai')).not.toHaveClass(/\bdisabled\b/);
     });
     await page.screenshot({ path: 'artifacts/browser/custom-provider-controls-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
