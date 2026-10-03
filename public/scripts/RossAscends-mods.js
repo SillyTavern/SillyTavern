@@ -146,6 +146,14 @@ export function isMobile() {
     return mobileTypes.includes(getParsedUA()?.platform?.type);
 }
 
+/**
+ * Checks if SillyTavern should automatically focus text inputs.
+ * @returns {boolean} True when automatic focus should run.
+ */
+export function shouldAutoFocusTextInput() {
+    return !isMobile();
+}
+
 export function shouldSendOnEnter() {
     if (!power_user) {
         return false;
@@ -1046,12 +1054,16 @@ export function initRossMods() {
             const reasoningMesDone = $('.mes_reasoning_edit_done:visible');
             if (editMesDone.length > 0) {
                 console.debug('Accepting edits with Ctrl+Enter');
-                $('#send_textarea').trigger('focus');
+                if (shouldAutoFocusTextInput()) {
+                    $('#send_textarea').trigger('focus');
+                }
                 editMesDone.trigger('click');
                 return;
             } else if (reasoningMesDone.length > 0) {
                 console.debug('Accepting edits with Ctrl+Enter');
-                $('#send_textarea').trigger('focus');
+                if (shouldAutoFocusTextInput()) {
+                    $('#send_textarea').trigger('focus');
+                }
                 reasoningMesDone.trigger('click');
                 return;
             } else if (is_send_press == false) {

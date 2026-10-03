@@ -54,7 +54,7 @@ import { ScraperManager } from './scrapers.js';
 import { DragAndDropHandler } from './dragdrop.js';
 import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
-import { humanizedDateTime } from './RossAscends-mods.js';
+import { humanizedDateTime, shouldAutoFocusTextInput } from './RossAscends-mods.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { MEDIA_DISPLAY, MEDIA_SOURCE, MEDIA_TYPE, SCROLL_BEHAVIOR, SWIPE_DIRECTION } from './constants.js';
 
@@ -2106,6 +2106,26 @@ async function onImageSwiped(messageId, element, direction) {
     appendMediaToMessage(message, element);
 }
 
+function scrollElementBottomIntoChatView(element) {
+    requestAnimationFrame(() => {
+        const chat = chatElement[0];
+        if (!chat) {
+            return;
+        }
+
+        if (element instanceof HTMLTextAreaElement) {
+            element.scrollTop = element.scrollHeight;
+        }
+
+        const elementRect = element.getBoundingClientRect();
+        const chatRect = chat.getBoundingClientRect();
+
+        if (elementRect.bottom > chatRect.bottom) {
+            chat.scrollTop += elementRect.bottom - chatRect.bottom;
+        }
+    });
+}
+
 export function initChatUtilities() {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
@@ -2294,7 +2314,12 @@ export function initChatUtilities() {
         if ($('.edit_textarea').length) return;
         $(this).closest('.mes').find('.mes_edit').trigger('click');
         if ($(event.target).closest('.mes_reasoning').length) {
-            $('.reasoning_edit_textarea').trigger('focus');
+            const reasoningEditTextarea = $('.reasoning_edit_textarea').last();
+            if (shouldAutoFocusTextInput()) {
+                reasoningEditTextarea.trigger('focus');
+            } else if (reasoningEditTextarea[0] instanceof HTMLElement) {
+                scrollElementBottomIntoChatView(reasoningEditTextarea[0]);
+            }
         }
     });
 
