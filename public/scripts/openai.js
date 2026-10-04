@@ -44,7 +44,8 @@ import {
 } from './PromptManager.js';
 
 import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
-import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
+import { SECRET_KEYS, secret_state, writeSecret, updateSecretDisplay } from './secrets.js';
+import { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, applyCustomSnapshot, captureCustomConnection, captureCustomFields, ensureCustomProviderState, getCustomAuth, getCustomProvider, listCustomProviders, normalizeCustomEndpoint, reconcileCustomCredential, settingsForCustomRequest, switchCustomProvider, validateCustomSnapshot } from './custom-providers.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
@@ -2076,7 +2077,7 @@ function saveModelList(data) {
                 }));
         });
 
-        if (!oai_settings.custom_model && model_list.length > 0) {
+        if (!oai_settings.custom_model && model_list.length > 0 && !oai_settings.custom_provider_state?.active) {
             $('#model_custom_select').val(model_list[0].id).trigger('change');
         }
     }
@@ -2689,6 +2690,9 @@ function getVerbosity(settings = null) {
  * @returns {Promise<object>} Final generation parameters object appropriate for the chat completion source
  */
 export async function createGenerationParameters(settings, model, type, messages, { jsonSchema = null } = {}) {
+    if (settings === oai_settings && customConnectionTransition) throw new Error('A connection profile is still being applied.');
+    // Tool/bias preparation can await; freeze a managed tuple before another selection can change it.
+    if (settings === oai_settings && settings.chat_completion_source === chat_completion_sources.CUSTOM && settings.custom_provider_state?.active) settings = settingsForCustomRequest(settings, captureCurrentCustomConnection());
     // HACK: Filter out null and non-object messages
     if (!Array.isArray(messages)) {
         throw new Error('messages must be an array');
@@ -2924,6 +2928,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.custom_include_body = substituteParams(settings.custom_include_body);
         generate_data.custom_exclude_body = substituteParams(settings.custom_exclude_body);
         generate_data.custom_include_headers = substituteParams(settings.custom_include_headers);
+        generate_data.custom_auth = getCustomAuth(settings);
     }
 
     if (settings.chat_completion_source === chat_completion_sources.COHERE) {
@@ -4320,6 +4325,9 @@ function migrateChatCompletionSettings(settings) {
  * @param {ChatCompletionSettings} settings Saved settings from backend
  */
 function loadOpenAISettings(data, settings) {
+    // Private metadata is deliberately absent from settingsToUpdate/preset serialization.
+    if (settings.custom_provider_state !== undefined) oai_settings.custom_provider_state = structuredClone(settings.custom_provider_state);
+    else delete oai_settings.custom_provider_state;
     openai_setting_names = data.openai_setting_names;
     openai_settings = data.openai_settings;
     openai_settings.forEach(function (item, i) {
@@ -4459,6 +4467,17 @@ function setToolReasoningControls() {
 }
 
 async function getStatusOpen() {
+    if (customConnectionTransition) return;
+    const revision = customConnectionRevision;
+    const statusSignal = abortStatusCheck.signal;
+    let customAuth;
+    if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
+        try { customAuth = getCustomAuth(oai_settings); } catch (error) { showCustomProviderError(error); setOnlineStatus('no_connection'); return resultCheckStatus(); }
+        if (customAuth && oai_settings.custom_provider_state.active.models.mode === 'manual') {
+            setOnlineStatus(t`Not checked; use Test Message`);
+            return resultCheckStatus();
+        }
+    }
     const noValidateSources = [
         chat_completion_sources.CLAUDE,
         chat_completion_sources.AI21,
@@ -4511,6 +4530,9 @@ async function getStatusOpen() {
         $('.model_custom_select').empty();
         data.custom_url = oai_settings.custom_url;
         data.custom_include_headers = substituteParams(oai_settings.custom_include_headers);
+        data.custom_include_body = substituteParams(oai_settings.custom_include_body);
+        data.custom_exclude_body = substituteParams(oai_settings.custom_exclude_body);
+        data.custom_auth = customAuth;
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.AZURE_OPENAI) {
@@ -4537,7 +4559,7 @@ async function getStatusOpen() {
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
     if (canBypass) {
-        setOnlineStatus(t`Status check bypassed`);
+        setOnlineStatus(customAuth ? t`Not checked; use Test Message` : t`Status check bypassed`);
     }
 
     try {
@@ -4545,15 +4567,18 @@ async function getStatusOpen() {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(data),
-            signal: abortStatusCheck.signal,
+            signal: statusSignal,
             cache: 'no-cache',
         });
 
-        if (!response.ok) {
-            throw new Error(response.statusText);
-        }
-
         const responseData = await response.json();
+        if (revision !== customConnectionRevision || customConnectionTransition || statusSignal.aborted) return;
+        if (responseData.error?.code === 'CUSTOM_AUTH') {
+            showCustomProviderError(new Error(responseData.error.message));
+            setOnlineStatus('no_connection');
+            return resultCheckStatus();
+        }
+        if (!response.ok) throw new Error(response.statusText);
 
         if ('data' in responseData && Array.isArray(responseData.data)) {
             saveModelList(responseData.data);
@@ -4562,9 +4587,11 @@ async function getStatusOpen() {
             setOnlineStatus(t`Valid`);
         }
         if (responseData.bypass) {
-            setOnlineStatus(t`Status check bypassed`);
+            setOnlineStatus(customAuth ? t`Not checked; use Test Message` : t`Status check bypassed`);
         }
     } catch (error) {
+        if (revision !== customConnectionRevision || customConnectionTransition) return;
+        if (statusSignal.aborted) return resultCheckStatus();
         console.error(error);
 
         if (!canBypass) {
@@ -5041,32 +5068,45 @@ function onSettingsPresetChange() {
         savePreset: saveOpenAIPreset,
         presetNameBefore: presetNameBefore,
     }).finally(async () => {
-        if (oai_settings.bind_preset_to_connection) {
-            $('.model_custom_select').empty();
-        }
-
-        for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
-            if (isConnection && !oai_settings.bind_preset_to_connection) {
-                continue;
+        const replacingConnection = oai_settings.bind_preset_to_connection && CUSTOM_CONNECTION_FIELDS.some(field => preset[field] !== undefined && preset[field] !== oai_settings[field]);
+        const ownsTransition = !customConnectionTransition;
+        const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+        const release = ownsTransition ? beginCustomConnectionTransition() : () => {};
+        try {
+            if (replacingConnection && oai_settings.custom_provider_state?.active?.provider && ownsTransition) {
+                switchCustomProvider(oai_settings, null, currentCustomSecretId());
             }
+            const previousConnection = captureCustomFields(oai_settings, true);
 
-            // Extensions don't need UI updates and shouldn't fallback to current settings
-            if (key === 'extensions') {
-                oai_settings.extensions = preset.extensions || {};
-                continue;
-            }
-
-            if (preset[key] !== undefined) {
-                if (isCheckbox) {
-                    updateCheckbox(selector, preset[key]);
-                } else {
-                    updateInput(selector, preset[key]);
+            for (const [key, [selector, setting, isCheckbox, isConnection]] of Object.entries(settingsToUpdate)) {
+                if (isConnection && !oai_settings.bind_preset_to_connection) {
+                    continue;
                 }
-                oai_settings[setting] = preset[key];
-            }
-        }
 
-        // These cannot be changed via preset if unbound to connection
+                // Extensions don't need UI updates and shouldn't fallback to current settings
+                if (key === 'extensions') {
+                    oai_settings.extensions = preset.extensions || {};
+                    continue;
+                }
+
+                if (preset[key] !== undefined) {
+                    if (isCheckbox) {
+                        updateCheckbox(selector, preset[key]);
+                    } else {
+                        updateInput(selector, preset[key]);
+                    }
+                    oai_settings[setting] = preset[key];
+                }
+            }
+
+            // These cannot be changed via preset if unbound to connection
+            if (replacingConnection && oai_settings.custom_provider_state?.active && ownsTransition) {
+                const active = oai_settings.custom_provider_state.active;
+                active.credential = oai_settings.custom_url !== previousConnection.custom_url && active.credential.mode === 'legacy-custom' && active.credential.id
+                    ? { mode: 'unbound' } : reconcileCustomCredential(active.auth, active.credential, oai_settings.custom_url);
+            }
+        } finally { release(); }
+        if (replacingConnection && ownsTransition) commitCustomConnection(oldProviderId, 'preset');
         if (oai_settings.bind_preset_to_connection) {
             $('#chat_completion_source').trigger('change');
             $('#openrouter_providers_chat').trigger('change');
@@ -6037,6 +6077,7 @@ function onReverseProxyInput() {
 
 async function onConnectButtonClick(e) {
     e.stopPropagation();
+    if (customConnectionTransition) return;
 
     /** @type {Object.<string, {key: string, selector: string, proxy?: boolean, keyless?: boolean}>} */
     const apiSourceConfig = {
@@ -6085,7 +6126,18 @@ async function onConnectButtonClick(e) {
     if (config) {
         const apiKey = String($(config.selector).val()).trim();
         if (apiKey.length) {
-            await writeSecret(config.key, apiKey);
+            const managed = oai_settings.chat_completion_source === chat_completion_sources.CUSTOM && oai_settings.custom_provider_state?.active;
+            if (managed) {
+                if (managed.auth.mode === 'none') { showCustomProviderError(new Error(t`This setup does not accept a key.`)); return; }
+                const revision = customConnectionRevision;
+                const endpoint = normalizeCustomEndpoint(oai_settings.custom_url);
+                if (endpoint.startsWith('http:') && !await Popup.show.confirm(t`Send a key over HTTP?`, t`This API root is not encrypted. Only approve it on a trusted local network.`)) return;
+                const id = await writeSecret(config.key, apiKey, undefined, { activate: false });
+                if (!id) { showCustomProviderError(new Error(t`Could not save the connection key.`)); return; }
+                if (revision !== customConnectionRevision) return;
+                managed.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'reference', key: config.key, id, endpoint } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true, clearKey: true });
+            } else await writeSecret(config.key, apiKey);
         }
 
         if (!secret_state[config.key] && (!config.proxy || !oai_settings.reverse_proxy) && !config.keyless) {
@@ -6188,6 +6240,7 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
+    if (customConnectionTransition) return;
     if (main_api == 'openai') {
         setOnlineStatus('no_connection');
         resultCheckStatus();
@@ -6205,16 +6258,19 @@ async function onCustomizeParametersClick() {
 
     template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
         oai_settings.custom_include_body = String($(this).val());
+        customConnectionEdited('custom_include_body');
         saveSettingsDebounced();
     });
 
     template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function () {
         oai_settings.custom_exclude_body = String($(this).val());
+        customConnectionEdited('custom_exclude_body');
         saveSettingsDebounced();
     });
 
     template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function () {
         oai_settings.custom_include_headers = String($(this).val());
+        customConnectionEdited('custom_include_headers');
         saveSettingsDebounced();
     });
 
@@ -6758,7 +6814,225 @@ function updateFeatureSupportFlags() {
     }
 }
 
+let customConnectionRevision = 0;
+let customConnectionTransition = 0;
+
+/** Suppress connection-dependent requests during a profile's final overlay. */
+export function beginCustomConnectionTransition() {
+    customConnectionTransition++;
+    return () => { customConnectionTransition--; };
+}
+
+/** Whether the active Custom tuple is being restored by a Profile. */
+export function isCustomConnectionTransition() {
+    return customConnectionTransition > 0;
+}
+
+/** Reproject a restored tuple after a compositional load or rollback. */
+export function refreshCustomConnection() {
+    renderCustomProviderSetup();
+    updateSecretDisplay();
+}
+
+/** Publish the final tuple after staging has ended; only real connection replacements invalidate discovery. */
+export function commitCustomConnection(oldProviderId, reason = 'profile restore') {
+    customConnectionChanged(reason, { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/** Connect the committed Chat Completion source once, without submitting pending key input. */
+export async function connectChatCompletion() {
+    startStatusLoading();
+    await getStatusOpen();
+}
+
+function currentCustomSecretId() {
+    return secret_state[SECRET_KEYS.CUSTOM]?.find(item => item.active)?.id ?? null;
+}
+
+/** Capture the active tuple for private Profile persistence. */
+export function captureCurrentCustomConnection() {
+    return captureCustomConnection(oai_settings, currentCustomSecretId());
+}
+
+function showCustomProviderError(error) {
+    $('#custom_provider_error').text(error.message);
+}
+
+function customConnectionChanged(reason, { oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null, invalidateStatus = false, clearModels = false, clearKey = false } = {}) {
+    if (customConnectionTransition) return;
+    if (invalidateStatus) {
+        customConnectionRevision++;
+        cancelStatusCheck();
+        $('#custom_provider_error').text('');
+        if (main_api === 'openai' && oai_settings.chat_completion_source === 'custom') setOnlineStatus('no_connection');
+        resultCheckStatus();
+    }
+    if (clearModels) {
+        model_list = [];
+        $('.model_custom_select').empty().append(new Option(t`None`, ''));
+    }
+    if (clearKey) $('#api_key_custom').val('');
+    renderCustomProviderSetup();
+    updateSecretDisplay();
+    updateFeatureSupportFlags();
+    saveSettingsDebounced();
+    void eventSource.emit(event_types.CUSTOM_CONNECTION_CHANGED, { oldProviderId, newProviderId: oai_settings.custom_provider_state?.active?.provider?.id ?? null, reason });
+}
+
+function customConnectionEdited(field, previousValue) {
+    if (customConnectionTransition) return;
+    const endpointChanged = field === 'custom_url' && previousValue !== oai_settings.custom_url;
+    const active = oai_settings.custom_provider_state?.active;
+    if (endpointChanged && active) {
+        active.credential = active.credential.mode === 'legacy-custom' && active.credential.id
+            ? { mode: 'unbound' } : reconcileCustomCredential(active.auth, active.credential, oai_settings.custom_url);
+    }
+    customConnectionChanged('edit', { invalidateStatus: endpointChanged || field === 'custom_include_headers', clearModels: endpointChanged });
+}
+
+/** Restore a resolved tuple; a missing helper does not prevent using saved values. */
+export function restoreCustomConnection(snapshot, reason = 'profile restore') {
+    const value = validateCustomSnapshot(snapshot);
+    if (value.credential.mode === 'reference' && !secret_state[value.credential.key]?.some(item => item.id === value.credential.id)) throw new Error('The profile key no longer exists. Choose a stored key.');
+    if (value.credential.mode === 'legacy-custom' && value.credential.id && !secret_state[SECRET_KEYS.CUSTOM]?.some(item => item.id === value.credential.id)) throw new Error('The captured Custom key no longer exists. Choose a stored key.');
+    if (value.credential.mode === 'reference' && value.credential.endpoint !== normalizeCustomEndpoint(value.settings.custom_url)) throw new Error('The profile key is not approved for this API root.');
+    const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+    applyCustomSnapshot(oai_settings, value, currentCustomSecretId());
+    customConnectionChanged(reason, { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/**
+ * Select within Chat Completion / Custom only. No implicit API switch or paid request.
+ * @param {string|null} id Opaque registered/saved provider ID, or null for remembered Manual
+ * @returns {Promise<void>}
+ */
+export async function selectCustomProvider(id) {
+    if (main_api !== 'openai' || oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM) throw new Error('Select Chat Completion → Custom before choosing a provider setup.');
+    if ((oai_settings.custom_provider_state?.active?.provider?.id ?? null) === id) return;
+    const oldProviderId = oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+    switchCustomProvider(oai_settings, id, currentCustomSecretId());
+    customConnectionChanged('selection', { oldProviderId, invalidateStatus: true, clearModels: true, clearKey: true });
+}
+
+/** Bind a masked vault entry to the visible connection, without rotating its category. */
+export async function bindCustomCredential(key, id) {
+    if (!oai_settings.custom_provider_state?.active) throw new Error('No managed Custom connection is selected.');
+    if (!CUSTOM_CREDENTIAL_KEYS.includes(key) || !secret_state[key]?.some(item => item.id === id)) throw new Error('Choose an existing eligible Chat Completion key.');
+    const endpoint = normalizeCustomEndpoint(oai_settings.custom_url);
+    const revision = customConnectionRevision;
+    if (oai_settings.custom_provider_state.active.auth.mode === 'none') throw new Error('This connection does not accept a key.');
+    if (endpoint.startsWith('http:') && !await Popup.show.confirm(t`Send a key over HTTP?`, t`This API root is not encrypted. Only approve it on a trusted local network.`)) return;
+    if (revision !== customConnectionRevision) throw new Error('The connection changed. Select its key again.');
+    oai_settings.custom_provider_state.active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'reference', key, id, endpoint } }).credential;
+    customConnectionChanged('edit', { invalidateStatus: true });
+}
+
+function renderCustomProviderSetup() {
+    const state = oai_settings.custom_provider_state;
+    const select = document.getElementById('custom_provider_select');
+    if (!select) return;
+    select.disabled = Boolean(state && state.version !== 1);
+    if (select.disabled) {
+        select.replaceChildren(new Option(t`Unsupported saved setup`, ''));
+        $('#custom_provider_setup').removeClass('hidden');
+        $('#custom_credential_binding').addClass('hidden');
+        showCustomProviderError(new Error('Unsupported Custom provider state version. Keep this record and use a supporting build.'));
+        return;
+    }
+    const registrations = listCustomProviders();
+    const active = state?.active;
+    const id = active?.provider?.id ?? '';
+    const saved = Object.values(state?.drafts ?? {});
+    if (active?.provider) saved.push({ provider: active.provider });
+    const entries = new Map(registrations.map(entry => [entry.id, { label: entry.definition.label, owner: entry.ownerExtension }]));
+    for (const slot of saved) {
+        if (!entries.has(slot.provider.id)) entries.set(slot.provider.id, { label: `${slot.provider.label} (${t`extension unavailable`})`, owner: slot.provider.id });
+    }
+    select.replaceChildren(new Option(t`Manual`, ''));
+    const labels = registrations.map(entry => entry.definition.label);
+    for (const [key, entry] of [...entries].sort((a, b) => a[1].label.localeCompare(b[1].label) || a[0].localeCompare(b[0]))) {
+        const label = labels.filter(label => label === entry.label).length > 1 ? `${entry.label} (${entry.owner})` : entry.label;
+        select.add(new Option(label, key));
+    }
+    select.value = id;
+    $('#custom_provider_setup').toggleClass('hidden', !entries.size);
+    const definition = getCustomProvider(id);
+    const modified = definition && CUSTOM_CONNECTION_FIELDS.some(field => definition.defaults[field] !== oai_settings[field]);
+    $('#custom_provider_info').text(id ? `${entries.get(id)?.owner} · ${oai_settings.custom_url} · ${definition ? modified ? t`modified` : t`defaults` : t`extension unavailable`}${definition?.note ? ` · ${definition.note}` : ''}` : t`Your remembered Manual Custom connection.`);
+    for (const [selector, url] of [['#custom_provider_documentation', definition?.documentationUrl], ['#custom_provider_support', definition?.supportUrl]]) $(selector).attr('href', url ?? '').toggleClass('hidden', !url);
+    $('#custom_provider_reset').prop('disabled', !definition);
+    $('#custom_provider_detach').prop('disabled', !active?.provider);
+    $('#custom_provider_forget').prop('disabled', !saved.some(slot => slot.provider.id !== id));
+    for (const [field, selector] of [['custom_url', '#custom_api_url_text'], ['custom_model', '#custom_model_id'], ['custom_prompt_post_processing', '#custom_prompt_post_processing'], ['custom_include_headers', '#custom_include_headers'], ['custom_include_body', '#custom_include_body'], ['custom_exclude_body', '#custom_exclude_body']]) $(selector).val(oai_settings[field]);
+    if (active?.models.suggestions?.length && !model_list.length) {
+        const models = document.getElementById('model_custom_select');
+        models.replaceChildren(new Option(t`None`, ''), ...active.models.suggestions.map(model => new Option(model.label ?? model.id, model.id)));
+    }
+    $('#custom_credential_binding').toggleClass('hidden', !active);
+    $('#api_key_custom').prop('disabled', active?.auth.mode === 'none');
+    const credentialSelect = document.getElementById('custom_credential_select');
+    if (!credentialSelect) return;
+    const unbound = new Option(t`Choose a stored key (unbound)`, 'unbound');
+    unbound.disabled = active?.auth.mode === 'none';
+    credentialSelect.replaceChildren(unbound);
+    if (active && (active.auth.mode === 'none' || !active.auth.required)) credentialSelect.add(new Option(t`No key`, 'none'));
+    if (active?.credential.mode === 'legacy-custom') credentialSelect.add(new Option(t`Captured Manual key selection`, 'legacy'));
+    if (active?.auth.mode !== 'none') for (const key of CUSTOM_CREDENTIAL_KEYS) for (const secret of secret_state[key] ?? []) credentialSelect.add(new Option(`${key.replace('api_key_', '')}: ${secret.label || t`Unlabeled`} (••••••••)`, JSON.stringify([key, secret.id])));
+    credentialSelect.value = active?.credential.mode === 'reference' ? JSON.stringify([active.credential.key, active.credential.id]) : active?.credential.mode === 'none' ? 'none' : active?.credential.mode === 'legacy-custom' ? 'legacy' : 'unbound';
+}
+
+function initCustomProviderSetup() {
+    const handleError = error => { showCustomProviderError(error); renderCustomProviderSetup(); };
+    $('#custom_provider_select').on('change', function () { void selectCustomProvider(String($(this).val()) || null).catch(handleError); });
+    $('#custom_credential_select').on('change', async function () {
+        const value = String($(this).val());
+        try {
+            if (value === 'unbound') {
+                oai_settings.custom_provider_state.active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'unbound' } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true });
+            } else if (value === 'none') {
+                const active = oai_settings.custom_provider_state.active;
+                if (active.auth.mode === 'bearer' && active.auth.required) throw new Error('This provider requires a key.');
+                active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'none' } }).credential;
+                customConnectionChanged('edit', { invalidateStatus: true });
+            } else if (value && value !== 'legacy') await bindCustomCredential(...JSON.parse(value));
+        } catch (error) { handleError(error); }
+    });
+    $('#custom_provider_reset').on('click', async () => {
+        const active = oai_settings.custom_provider_state?.active;
+        const definition = getCustomProvider(active?.provider?.id);
+        if (!definition || !await Popup.show.confirm(t`Reset provider defaults?`, t`This replaces the connection fields. Your stored keys are kept.`)) return;
+        const credential = reconcileCustomCredential(definition.auth, active.credential, definition.defaults.custom_url);
+        restoreCustomConnection({ version: 1, settings: definition.defaults, provider: active.provider, models: definition.models, auth: definition.auth, credential }, 'reset');
+    });
+    $('#custom_provider_detach').on('click', () => {
+        const snapshot = captureCurrentCustomConnection();
+        snapshot.provider = null;
+        restoreCustomConnection(snapshot, 'detach');
+    });
+    $('#custom_provider_forget').on('click', async () => {
+        const state = ensureCustomProviderState(oai_settings);
+        const select = document.createElement('select');
+        for (const [id, snapshot] of Object.entries(state.drafts)) select.add(new Option(snapshot.provider.label, id));
+        if (!select.options.length || !await Popup.show.confirm(t`Forget saved setup?`, select)) return;
+        delete state.drafts[select.value];
+        renderCustomProviderSetup();
+        saveSettingsDebounced();
+    });
+    eventSource.on(event_types.CUSTOM_PROVIDER_REGISTRY_CHANGED, renderCustomProviderSetup);
+    eventSource.on(event_types.SETTINGS_LOADED_AFTER, renderCustomProviderSetup);
+    eventSource.on(event_types.SECRET_WRITTEN, renderCustomProviderSetup);
+    eventSource.on(event_types.SECRET_DELETED, renderCustomProviderSetup);
+    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => {
+        customConnectionRevision++;
+        cancelStatusCheck();
+        renderCustomProviderSetup();
+    });
+    renderCustomProviderSetup();
+}
+
 export function initOpenAI() {
+    initCustomProviderSetup();
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'proxy',
         callback: runProxyCallback,
@@ -6969,6 +7243,11 @@ export function initOpenAI() {
     });
 
     $('#chat_completion_source').on('change', function () {
+        if (customConnectionTransition) {
+            oai_settings.chat_completion_source = String($(this).find(':selected').val());
+            toggleChatCompletionForms();
+            return;
+        }
         cancelStatusCheck('Chat Completion source changed');
         model_list = [];
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
@@ -7084,17 +7363,21 @@ export function initOpenAI() {
     });
 
     $('#custom_api_url_text').on('input', function () {
+        const previous = oai_settings.custom_url;
         oai_settings.custom_url = String($(this).val());
+        customConnectionEdited('custom_url', previous);
         saveSettingsDebounced();
     });
 
     $('#custom_model_id').on('input', function () {
         oai_settings.custom_model = String($(this).val());
+        customConnectionEdited('custom_model');
         saveSettingsDebounced();
     });
 
     $('#custom_prompt_post_processing').on('change', function () {
         oai_settings.custom_prompt_post_processing = String($(this).val());
+        customConnectionEdited('custom_prompt_post_processing');
         updateFeatureSupportFlags();
         saveSettingsDebounced();
     });

@@ -4,6 +4,7 @@ import { Buffer } from 'node:buffer';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import express from 'express';
+import { CustomAuthError, resolveCustomAuth } from '../custom-auth.js';
 
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
@@ -15,6 +16,7 @@ export const router = express.Router();
 
 router.post('/caption-image', async (request, response) => {
     try {
+        const customAuth = request.body.api === 'custom' ? resolveCustomAuth(request.user.directories, request.body, request.body.server_url) : undefined;
         let key = '';
         let headers = {};
         let bodyParams = {};
@@ -36,7 +38,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'custom') {
-            key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
+            key = customAuth?.key ?? readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
             mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
         }
@@ -156,7 +158,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'custom') {
-            apiUrl = `${request.body.server_url}/chat/completions`;
+            apiUrl = `${customAuth?.endpoint ?? request.body.server_url}/chat/completions`;
         }
 
         if (request.body.api === 'aimlapi') {
@@ -236,27 +238,28 @@ router.post('/caption-image', async (request, response) => {
         }
 
         setAdditionalHeaders(request, { headers }, apiUrl);
-        console.debug('Multimodal captioning request', body);
+        if (!customAuth) console.debug('Multimodal captioning request', body);
 
         const result = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${key}`,
+                ...(customAuth ? customAuth.headers : { Authorization: `Bearer ${key}` }),
                 ...headers,
             },
             body: JSON.stringify(body),
+            redirect: customAuth?.redirect,
         });
 
         if (!result.ok) {
             const text = await result.text();
-            console.warn('Multimodal captioning request failed', result.statusText, text);
-            return response.status(500).send(text);
+            console.warn('Multimodal captioning request failed', result.statusText, customAuth ? '(managed Custom response omitted)' : text);
+            return response.status(500).send(customAuth ? 'Custom caption request failed. Check the model and connection.' : text);
         }
 
         /** @type {any} */
         const data = await result.json();
-        console.info('Multimodal captioning response', data);
+        if (!customAuth) console.info('Multimodal captioning response', data);
         const caption = data?.choices?.[0]?.message?.content ?? data?.message?.content?.[0]?.text;
 
         if (!caption) {
@@ -265,6 +268,7 @@ router.post('/caption-image', async (request, response) => {
 
         return response.json({ caption });
     } catch (error) {
+        if (error instanceof CustomAuthError) return response.status(400).json({ error: { message: error.message, code: error.code } });
         console.error(error);
         response.status(500).send('Internal server error');
     }

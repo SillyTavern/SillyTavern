@@ -199,22 +199,23 @@ export class SecretManager {
      * @param {string} key Secret key
      * @param {string} value Secret value
      * @param {string} label Label for the secret
+     * @param {{activate?: boolean}} [options] Keep category selection unchanged when false
      * @returns {string} The ID of the newly created secret
      */
-    writeSecret(key, value, label = 'Unlabeled') {
+    writeSecret(key, value, label = 'Unlabeled', { activate = true } = {}) {
         const secrets = this._readSecretsFile();
 
         if (!Array.isArray(secrets[key])) {
             secrets[key] = [];
         }
 
-        this._deactivateAllSecrets(secrets[key]);
+        if (activate) this._deactivateAllSecrets(secrets[key]);
 
         const secret = {
             id: uuidv4(),
             value: value,
             label: label,
-            active: true,
+            active: activate,
         };
         secrets[key].push(secret);
 
@@ -510,14 +511,14 @@ export const router = express.Router();
 
 router.post('/write', (request, response) => {
     try {
-        const { key, value, label } = request.body;
+        const { key, value, label, activate = true } = request.body;
 
-        if (!key || typeof value !== 'string') {
+        if (!key || typeof value !== 'string' || typeof activate !== 'boolean') {
             return response.status(400).send('Invalid key or value');
         }
 
         const manager = new SecretManager(request.user.directories);
-        const id = manager.writeSecret(key, value, label);
+        const id = manager.writeSecret(key, value, label, { activate });
 
         return response.send({ id });
     } catch (error) {

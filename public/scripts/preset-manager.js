@@ -23,7 +23,7 @@ import { t } from './i18n.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { convertNovelPreset } from './nai-settings.js';
-import { getPresetApplicationPromise, oai_settings, openai_setting_names, openai_settings } from './openai.js';
+import { getPresetApplicationPromise, isCustomConnectionTransition, oai_settings, openai_setting_names, openai_settings } from './openai.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
 import { reasoning_templates } from './reasoning.js';
@@ -915,7 +915,7 @@ class PresetManager {
  * @returns {Promise<string>} Selected or current preset name
  */
 async function presetCommandCallback(_, name) {
-    const shouldReconnect = online_status !== 'no_connection';
+    const shouldReconnect = !isCustomConnectionTransition() && online_status !== 'no_connection';
     const presetManager = getPresetManager();
     const allPresets = presetManager.getAllPresets();
     const currentPreset = presetManager.getSelectedPresetName();

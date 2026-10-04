@@ -1,8 +1,10 @@
 import { CONNECT_API_MAP, createModelIcon, getRequestHeaders, substituteParams } from '../../script.js';
 import { extension_settings, openThirdPartyExtensionMenu } from '../extensions.js';
 import { t } from '../i18n.js';
-import { oai_settings, proxies, ZAI_ENDPOINT, POLLINATIONS_ENDPOINT } from '../openai.js';
+import { oai_settings, proxies, ZAI_ENDPOINT, POLLINATIONS_ENDPOINT, isCustomConnectionTransition } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
+import { getCustomAuth, getProfileCustomConnection, resolveLegacyCustomConnection } from '../custom-providers.js';
+import { getPresetManager } from '../preset-manager.js';
 import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { getTokenCountAsync } from '../tokenizers.js';
 import { createThumbnail, isValidUrl } from '../utils.js';
@@ -108,6 +110,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     if (isCustom) {
+        if (isCustomConnectionTransition()) throw new Error('A connection profile is still being applied.');
         if (extension_settings.caption.multimodal_model === 'custom_current') {
             requestBody.model = oai_settings.custom_model || '';
         }
@@ -120,6 +123,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
         requestBody.custom_include_headers = substituteParams(oai_settings.custom_include_headers);
         requestBody.custom_include_body = substituteParams(oai_settings.custom_include_body);
         requestBody.custom_exclude_body = substituteParams(oai_settings.custom_exclude_body);
+        requestBody.custom_auth = getCustomAuth(oai_settings);
     }
 
     if (extension_settings.caption.multimodal_api === 'zai') {
@@ -441,6 +445,22 @@ export class ConnectionManagerRequestService {
                     const proxyPreset = proxies.find((p) => p.name === profile.proxy);
 
                     const messages = Array.isArray(prompt) ? prompt : [{ role: 'user', content: prompt }];
+                    let customConnection = getProfileCustomConnection(profile);
+                    if (customConnection === null) {
+                        if (!overridePayload.custom_connection) throw new Error('This profile excludes its Custom connection. Supply a complete custom_connection override.');
+                        customConnection = overridePayload.custom_connection;
+                    } else if (customConnection === undefined && selectedApiMap.source === 'custom') {
+                        const preset = includePreset ? getPresetManager('openai')?.getCompletionPresetByName(profile.preset) : {};
+                        customConnection = resolveLegacyCustomConnection(oai_settings, profile, preset ?? {}, secret_state[SECRET_KEYS.CUSTOM]?.find(item => item.active)?.id ?? null);
+                    }
+                    if (customConnection) {
+                        const overrides = { ...overridePayload };
+                        delete overrides.custom_connection;
+                        return await context.ChatCompletionService.processRequest({ stream, messages, max_tokens: maxTokens, ...overrides }, {
+                            presetName: includePreset ? profile.preset : undefined,
+                            customConnection,
+                        }, extractData, signal);
+                    }
                     return await context.ChatCompletionService.processRequest({
                         stream,
                         messages,
@@ -487,7 +507,7 @@ export class ConnectionManagerRequestService {
                 }
             }
         } catch (error) {
-            throw new Error('API request failed', { cause: error });
+            throw new Error(Object.hasOwn(profile, 'custom-connection') ? `API request failed: ${error.message}` : 'API request failed', { cause: error });
         }
     }
 
@@ -582,7 +602,7 @@ export class ConnectionManagerRequestService {
         }
 
         const apiMap = CONNECT_API_MAP[profile.api];
-        if (!Object.hasOwn(this.getAllowedTypes(), apiMap.selected)) {
+        if (!apiMap || !Object.hasOwn(this.getAllowedTypes(), apiMap.selected)) {
             return false;
         }
 
