@@ -3166,6 +3166,7 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
         return async function* streamData() {
             let text = '';
             const swipes = [];
+            const swipeStates = [];
             const toolCalls = [];
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
             while (true) {
@@ -3176,17 +3177,24 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
 
-                if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
-                    const swipeIndex = parsed.choices[0].index - 1;
-                    // FIXME: state.reasoning should be an array to support multi-swipe
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { overrideShowThoughts: false });
+                if (canMultiSwipe && Array.isArray(parsed?.choices)) {
+                    for (const choice of parsed.choices) {
+                        const choiceData = { ...parsed, choices: [choice] };
+                        if (choice.index > 0) {
+                            const swipeIndex = choice.index - 1;
+                            swipeStates[swipeIndex] ??= { reasoning: '', images: [], signature: '', toolSignatures: {} };
+                            swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(choiceData, swipeStates[swipeIndex]);
+                        } else {
+                            text += getStreamingReply(choiceData, state);
+                        }
+                    }
                 } else {
                     text += getStreamingReply(parsed, state);
                 }
 
                 ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
 
-                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
+                yield { text, swipes: swipes, swipeStates, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
             }
         };
     } else {

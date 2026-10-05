@@ -269,7 +269,7 @@ import { initServerHistory } from './scripts/server-history.js';
 import { initSettingsSearch } from './scripts/setting-search.js';
 import { initBulkEdit } from './scripts/bulk-edit.js';
 import { getContext } from './scripts/st-context.js';
-import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, updateReasoningUI } from './scripts/reasoning.js';
+import { extractReasoningFromData, extractReasoningSignatureFromData, initReasoning, parseReasoningInSwipes, PromptReasoning, ReasoningHandler, removeReasoningFromString, saveReasoningInSwipes, updateReasoningUI } from './scripts/reasoning.js';
 import { accountStorage } from './scripts/util/AccountStorage.js';
 import { initWelcomeScreen, openPermanentAssistantChat, openPermanentAssistantCard, getPermanentAssistantAvatar } from './scripts/welcome-screen.js';
 import { initDataMaid } from './scripts/data-maid.js';
@@ -3572,6 +3572,7 @@ class StreamingProcessor {
         this.createdAt = new Date();
         this.continueMessage = type === 'continue' ? continueMessage : '';
         this.swipes = [];
+        this.swipeStates = [];
         /** @type {import('./scripts/logprobs.js').TokenLogprobs[]} */
         this.messageLogprobs = [];
         this.toolCalls = [];
@@ -3765,6 +3766,8 @@ class StreamingProcessor {
             delete swipeInfoExtra.token_count;
             delete swipeInfoExtra.reasoning;
             delete swipeInfoExtra.reasoning_duration;
+            delete swipeInfoExtra.reasoning_type;
+            delete swipeInfoExtra.reasoning_signature;
             const swipeInfo = {
                 send_date: message.send_date,
                 gen_started: message.gen_started,
@@ -3773,6 +3776,7 @@ class StreamingProcessor {
             };
             const swipeInfoArray = Array(this.swipes.length).fill().map(() => structuredClone(swipeInfo));
             parseReasoningInSwipes(this.swipes, swipeInfoArray, message.extra?.reasoning_duration);
+            saveReasoningInSwipes(swipeInfoArray, this.swipeStates);
             message.swipes.push(...this.swipes);
             message.swipe_info.push(...swipeInfoArray);
         }
@@ -3872,7 +3876,7 @@ class StreamingProcessor {
         try {
             const sw = new Stopwatch(1000 / power_user.streaming_fps);
             const timestamps = [];
-            for await (const { text, swipes, logprobs, toolCalls, state } of this.generator()) {
+            for await (const { text, swipes, swipeStates, logprobs, toolCalls, state } of this.generator()) {
                 const now = Date.now();
                 timestamps.push(now);
                 if (!this.timeToFirstToken) {
@@ -3885,6 +3889,7 @@ class StreamingProcessor {
                 this.toolCalls = toolCalls;
                 this.result = text;
                 this.swipes = Array.from(swipes ?? []);
+                this.swipeStates = Array.from(swipeStates ?? []);
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
@@ -5491,6 +5496,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         kobold_horde_model = title;
 
         const swipes = extractMultiSwipes(data, type);
+        const swipeStates = swipes.map((_, index) => {
+            const swipeData = { choices: [data.choices?.[index + 1]] };
+            return { reasoning: extractReasoningFromData(swipeData), signature: extractReasoningSignatureFromData(swipeData) };
+        });
 
         messageChunk = cleanUpMessage({
             getMessage: getMessage,
@@ -5529,9 +5538,9 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         } else {
             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
             if (originalType !== 'continue') {
-                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type, getMessage, title, swipes, swipeStates, reasoning, imageUrls, reasoningSignature }));
             } else {
-                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, reasoning, imageUrls, reasoningSignature }));
+                ({ type, getMessage } = await saveReply({ type: 'appendFinal', getMessage, title, swipes, swipeStates, reasoning, imageUrls, reasoningSignature }));
             }
 
             // This relies on `saveReply` having been called to add the message to the chat, so it must be last.
@@ -6631,6 +6640,7 @@ async function processImageAttachment(message, { imageUrls }) {
  * @property {boolean} [fromStreaming] If the message is from streaming
  * @property {string} [title] Message tooltip
  * @property {string[]} [swipes] Extra swipes
+ * @property {{reasoning?: string, signature?: string}[]} [swipeStates] Reasoning for extra swipes
  * @property {string} [reasoning] Message reasoning
  * @property {string[]} [imageUrls] Links to images
  * @property {string?} [reasoningSignature] Encrypted signature of the reasoning text
@@ -6639,7 +6649,7 @@ async function processImageAttachment(message, { imageUrls }) {
  * @property {string} type Type of generation
  * @property {string} getMessage Generated message
  */
-export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], reasoning = '', imageUrls = [], reasoningSignature = null }) {
+export async function saveReply({ type, getMessage, fromStreaming = false, title = '', swipes = [], swipeStates = [], reasoning = '', imageUrls = [], reasoningSignature = null }) {
     // Backward compatibility
     if (arguments.length > 1 && typeof arguments[0] !== 'object') {
         console.trace('saveReply called with positional arguments. Please use an object instead.');
@@ -6813,6 +6823,8 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         delete swipeInfoExtra.token_count;
         delete swipeInfoExtra.reasoning;
         delete swipeInfoExtra.reasoning_duration;
+        delete swipeInfoExtra.reasoning_type;
+        delete swipeInfoExtra.reasoning_signature;
         const swipeInfo = {
             send_date: item.send_date,
             gen_started: item.gen_started,
@@ -6821,6 +6833,7 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         };
         const swipeInfoArray = Array(swipes.length).fill().map(() => structuredClone(swipeInfo));
         parseReasoningInSwipes(swipes, swipeInfoArray, item.extra?.reasoning_duration);
+        saveReasoningInSwipes(swipeInfoArray, swipeStates);
         item.swipes.push(...swipes);
         item.swipe_info.push(...swipeInfoArray);
     }

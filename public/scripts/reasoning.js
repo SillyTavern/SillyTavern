@@ -1551,6 +1551,27 @@ export function parseReasoningInSwipes(swipes, swipeInfoArray, duration) {
     }
 }
 
+/**
+ * Saves model-provided reasoning for extra swipes, retaining parsed reasoning as a fallback.
+ * @param {{extra: Partial<ReasoningMessageExtra>}[]} swipeInfoArray Swipe metadata
+ * @param {{reasoning?: string, signature?: string}[]} states Per-swipe reasoning states
+ */
+export function saveReasoningInSwipes(swipeInfoArray, states) {
+    for (let index = 0; index < swipeInfoArray.length; index++) {
+        const state = states[index];
+        const extra = swipeInfoArray[index].extra;
+        if (state?.reasoning) {
+            extra.reasoning = getRegexedString(trimSpaces(state.reasoning), regex_placement.REASONING);
+            // The first swipe's reasoning timer does not measure the other choices.
+            extra.reasoning_duration = null;
+            extra.reasoning_type = ReasoningType.Model;
+        }
+        if (state?.signature) {
+            extra.reasoning_signature = state.signature;
+        }
+    }
+}
+
 function registerReasoningAppEvents() {
     const eventHandler = (/** @type {string} */ type, /** @type {number} */ idx) => {
         if (!power_user.reasoning.auto_parse) {
