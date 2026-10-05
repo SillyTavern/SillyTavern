@@ -491,6 +491,9 @@ export class ReasoningHandler {
 
         // If we are done with reasoning parse, we just split the message correctly so the reasoning doesn't show up inside of it.
         if (this.#parsingReasoningMesStartIndex) {
+            // Locate the suffix again: the text before it can change between ticks (e.g. deferred regex scripts run on the final text)
+            const suffixIndex = parseTarget.indexOf(power_user.reasoning.suffix);
+            this.#parsingReasoningMesStartIndex = suffixIndex === -1 ? this.#parsingReasoningMesStartIndex : suffixIndex + power_user.reasoning.suffix.length;
             message.mes = trimSpaces(parseTarget.slice(this.#parsingReasoningMesStartIndex));
             return mesChanged;
         }
