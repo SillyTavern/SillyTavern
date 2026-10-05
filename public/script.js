@@ -3652,6 +3652,7 @@ class StreamingProcessor {
                     isContinue: false,
                     displayIncompleteSentences: true,
                     stoppingStrings: this.stoppingStrings,
+                    isPartial: !isFinal,
                 });
             }
         }
@@ -3662,6 +3663,7 @@ class StreamingProcessor {
             isContinue: isContinue,
             displayIncompleteSentences: !isFinal,
             stoppingStrings: this.stoppingStrings,
+            isPartial: !isFinal,
         });
 
         const charsToBalance = ['*', '"', '```', '~~~'];
@@ -5394,11 +5396,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
             hideSwipeButtons();
             let getMessage = await streamingProcessor.generate();
+            // The chunk is only checked by auto-continue. Regex scripts have already run on the final text, don't run them twice.
             let messageChunk = cleanUpMessage({
                 getMessage: getMessage,
                 isImpersonate: isImpersonate,
                 isContinue: isContinue,
                 displayIncompleteSentences: false,
+                skipRegex: true,
             });
 
             if (isContinue) {
@@ -5492,11 +5496,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         const swipes = extractMultiSwipes(data, type);
 
+        // The chunk is only checked by auto-continue. The full message is cleaned up below, don't run regex scripts twice.
         messageChunk = cleanUpMessage({
             getMessage: getMessage,
             isImpersonate: isImpersonate,
             isContinue: isContinue,
             displayIncompleteSentences: false,
+            skipRegex: true,
         });
 
 
@@ -6436,10 +6442,12 @@ function extractMultiSwipes(data, type) {
  * @param {boolean} [options.includeUserPromptBias] Whether to permit prepending the user prompt bias at the beginning.
  * @param {boolean} [options.trimNames] Whether to allow trimming "{{char}}:" or "{{user}}:" from the beginning.
  * @param {boolean} [options.trimWrongNames] Whether to allow deleting responses prefixed by the incorrect name, depending on isImpersonate
+ * @param {boolean} [options.isPartial] Whether the message is still being generated. Regex scripts with macros in the replacement are deferred until the final text.
+ * @param {boolean} [options.skipRegex] Whether to skip regex scripts, e.g. when the same text is cleaned up elsewhere.
  *
  * @returns {string} The formatted message
  */
-export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayIncompleteSentences = false, stoppingStrings = null, includeUserPromptBias = true, trimNames = true, trimWrongNames = true } = {}) {
+export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayIncompleteSentences = false, stoppingStrings = null, includeUserPromptBias = true, trimNames = true, trimWrongNames = true, isPartial = false, skipRegex = false } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('cleanUpMessage called with positional arguments. Please use an object instead.');
         [getMessage, isImpersonate, isContinue, displayIncompleteSentences, stoppingStrings, includeUserPromptBias, trimNames, trimWrongNames] = arguments;
@@ -6478,7 +6486,9 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
     }
 
     // Regex uses vars, so add before formatting
-    getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
+    if (!skipRegex) {
+        getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT, { isPartial });
+    }
 
     if (power_user.collapse_newlines) {
         getMessage = collapseNewlines(getMessage);
