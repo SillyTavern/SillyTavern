@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { color, getConfigValue, safeReadFileSync } from '../util.js';
-import { serverDirectory } from '../server-directory.js';
 import { isHostAllowed, hostValidationMiddleware } from 'host-validation-middleware';
 
 const knownHosts = new Set();
@@ -10,11 +9,9 @@ const hostWhitelistEnabled = !!getConfigValue('hostWhitelist.enabled', false);
 const hostWhitelist = Object.freeze(getConfigValue('hostWhitelist.hosts', []));
 const hostWhitelistScan = !!getConfigValue('hostWhitelist.scan', false, 'boolean');
 
-const hostNotAllowedHtml = safeReadFileSync(path.join(serverDirectory, 'public/error/host-not-allowed.html'))?.toString() ?? '';
-
 const validationMiddleware = hostValidationMiddleware({
     allowedHosts: hostWhitelist,
-    generateErrorMessage: () => hostNotAllowedHtml,
+    generateErrorMessage: () => safeReadFileSync(path.join(globalThis.DATA_ROOT, '_errors', 'host-not-allowed.html'))?.toString() ?? '',
     errorResponseContentType: 'text/html',
 });
 

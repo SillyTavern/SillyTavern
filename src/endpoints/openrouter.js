@@ -38,11 +38,11 @@ router.post('/models/providers', async (req, res) => {
  * @param {string} endpoint - The API endpoint to fetch from
  * @param {string} inputModality - Required input modality
  * @param {string} outputModality - Required output modality
- * @param {boolean} [idsOnly=false] - Whether to return only model IDs
- * @returns {Promise<any[]>} Filtered models or model IDs
+ * @param {((model: any) => any) | null} [mapFn=null] - Optional mapping function to transform the results
+ * @returns {Promise<any[]>} Filtered and/or mapped models
  */
-async function fetchModelsByModality(endpoint, inputModality, outputModality, idsOnly = false) {
-    const response = await fetch(`${API_OPENROUTER}${endpoint}`, {
+async function fetchModelsByModality(endpoint, inputModality, outputModality, mapFn = null) {
+    const response = await fetch(`${API_OPENROUTER}${endpoint}?output_modalities=${encodeURIComponent(outputModality)}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
     });
@@ -67,12 +67,12 @@ async function fetchModelsByModality(endpoint, inputModality, outputModality, id
         .filter(m => m.architecture.output_modalities.includes(outputModality))
         .sort((a, b) => a?.id && b?.id ? a.id.localeCompare(b.id) : 0);
 
-    return idsOnly ? filtered.map(m => m.id) : filtered;
+    return typeof mapFn === 'function' ? filtered.map(mapFn) : filtered;
 }
 
 router.post('/models/multimodal', async (_req, res) => {
     try {
-        const models = await fetchModelsByModality('/models', 'image', 'text', true);
+        const models = await fetchModelsByModality('/models', 'image', 'text', m => m.id);
         return res.json(models);
     } catch (error) {
         console.error(error);
@@ -82,7 +82,7 @@ router.post('/models/multimodal', async (_req, res) => {
 
 router.post('/models/embedding', async (_req, res) => {
     try {
-        const models = await fetchModelsByModality('/embeddings/models', 'text', 'embeddings');
+        const models = await fetchModelsByModality('/models', 'text', 'embeddings', m => ({ id: m.id, name: m.name }));
         return res.json(models);
     } catch (error) {
         console.error(error);
@@ -92,8 +92,43 @@ router.post('/models/embedding', async (_req, res) => {
 
 router.post('/models/image', async (_req, res) => {
     try {
-        const models = await fetchModelsByModality('/models', 'text', 'image');
-        return res.json(models.map(m => ({ value: m.id, text: m.name || m.id })));
+        const models = await fetchModelsByModality('/models', 'text', 'image', m => ({ value: m.id, text: m.name || m.id }));
+        return res.json(models);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+router.post('/credits', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.OPENROUTER);
+
+        if (!key) {
+            console.warn('OpenRouter API key not found');
+            return res.sendStatus(400);
+        }
+
+        const response = await fetch(`${API_OPENROUTER}/credits`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!response.ok) {
+            console.warn('OpenRouter credits request failed', response.statusText);
+            return res.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await response.json();
+        const totalCredits = data.data?.total_credits ?? 0;
+        const totalUsage = data.data?.total_usage ?? 0;
+        const remaining = totalCredits - totalUsage;
+
+        return res.json({ remaining, total_credits: totalCredits, total_usage: totalUsage });
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
@@ -132,7 +167,7 @@ router.post('/image/generate', async (req, res) => {
                         content: prompt,
                     },
                 ],
-                modalities: ['image', 'text'],
+                modalities: ['image'],
                 image_config: {
                     aspect_ratio: req.body.aspect_ratio || '1:1',
                 },

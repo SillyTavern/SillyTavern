@@ -394,7 +394,7 @@
     "Available Models": "Módel í boði",
     "Prompt Post-Processing": "Skjót eftirvinnsla",
     "Applies additional processing to the prompt before sending it to the API.": "Beitir viðbótarvinnslu á boðunina áður en hún er send í API.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "Sannreynir API tengingu þína með því að senda stutt skilaboð til að prófa. Vertu meðvituð(ur/ur) um að þú færð fyrir það!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "Staðfestir API tenginguna þína með því að senda stutt prufuskilaboð. Þetta gæti haft afnotagjöld í för með sér.",
     "Test Message": "Prufu skilaboð",
     "Auto-connect to Last Server": "Tengjast sjálfkrafa við síðustu framendurnar",
     "Missing key": "❌ Vantar lykil",

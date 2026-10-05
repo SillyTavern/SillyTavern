@@ -126,9 +126,17 @@ export class AutoComplete {
         });
         textarea.addEventListener('blur', () => this.hide());
         if (isFloating) {
-            textarea.addEventListener('scroll', () => this.updateFloatingPositionDebounced());
+            textarea.addEventListener('scroll', () => {
+                if (this.isActive) {
+                    this.updateFloatingPositionDebounced();
+                }
+            });
         }
-        window.addEventListener('resize', () => this.updatePositionDebounced());
+        window.addEventListener('resize', () => {
+            if (this.isActive) {
+                this.updatePositionDebounced();
+            }
+        });
     }
 
     /**
@@ -666,7 +674,9 @@ export class AutoComplete {
                     this.clone.remove();
                 }
             });
-            mo.observe(this.textarea.parentElement, { childList: true });
+            if (this.textarea.parentElement) {
+                mo.observe(this.textarea.parentElement, { childList: true });
+            }
         }
         this.clone.style.height = `${inputRect.height}px`;
         this.clone.style.left = `${inputRect.left}px`;

@@ -8,5 +8,8 @@
     "css": "style.css",
     "author": "City-Unit",
     "version": "1.5.0",
-    "homePage": "https://github.com/SillyTavern/SillyTavern"
+    "homePage": "https://github.com/SillyTavern/SillyTavern",
+    "hooks": {
+        "activate": "init"
+    }
 }

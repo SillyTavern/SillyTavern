@@ -390,7 +390,7 @@ export function convertCohereMessages(messages, names) {
     }
 
     messages.forEach((msg, index) => {
-        // Tool calls require an assistent primer
+        // Tool calls require an assistant primer
         if (Array.isArray(msg.tool_calls)) {
             if (index > 0 && messages[index - 1].role === 'assistant') {
                 msg.content = messages[index - 1].content;
@@ -453,13 +453,17 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const system_instruction = { parts: sysPrompt.map(text => ({ text })) };
     const toolNameMap = {};
 
+    // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
+    const noPrefillModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
+
     const contents = [];
     messages.forEach((message, index) => {
         // fix the roles
         if (message.role === 'system' || message.role === 'tool') {
             message.role = 'user';
         } else if (message.role === 'assistant') {
-            message.role = 'model';
+            // A trailing model turn is a prefill, which is rejected by the newest models
+            message.role = noPrefillModel && index === messages.length - 1 ? 'user' : 'model';
         }
 
         // Convert the content to an array of parts
@@ -1040,7 +1044,7 @@ export function cachingAtDepthForOpenRouterClaude(messages, cachingAtDepth, ttl)
                         text: content,
                         cache_control: { type: 'ephemeral', ttl: ttl },
                     }];
-                } else {
+                } else if (content?.length > 0) {
                     const contentPartCount = content.length;
                     content[contentPartCount - 1].cache_control = {
                         type: 'ephemeral',
@@ -1259,11 +1263,13 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
     }
 
     function getGemini3FlashBudget() {
+        // https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash
+        const noMinimalThinking = /gemini-3\.[78]-flash/.test(model);
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;
             case REASONING_EFFORT.min:
-                return 'minimal';
+                return noMinimalThinking ? 'low' : 'minimal';
             case REASONING_EFFORT.low:
                 return 'low';
             case REASONING_EFFORT.medium:

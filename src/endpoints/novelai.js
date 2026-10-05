@@ -140,7 +140,7 @@ router.post('/status', async function (req, res) {
     }
 
     try {
-        const response = await fetch(API_NOVELAI + '/user/subscription', {
+        const response = await fetch(IMAGE_NOVELAI + '/user/subscription', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ router.post('/generate', async function (req, res) {
 
         if (req.body.streaming) {
             // Pipe remote SSE stream to Express response
-            forwardFetchResponse(response, res);
+            await forwardFetchResponse(response, res);
         } else {
             if (!response.ok) {
                 const text = await response.text();

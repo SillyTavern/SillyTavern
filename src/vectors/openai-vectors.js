@@ -61,6 +61,13 @@ const SOURCES = {
         headers: {},
         processBody: () => {},
     },
+    'workers_ai': {
+        secretKey: SECRET_KEYS.WORKERS_AI,
+        url: '', // Constructed at runtime from account ID via urlOverride
+        model: '@cf/baai/bge-m3',
+        headers: {},
+        processBody: () => {},
+    },
 };
 
 /**
@@ -88,7 +95,12 @@ export async function getOpenAIBatchVector(texts, source, directories, model = '
     }
 
     const modelName = model || config.model;
-    const url = urlOverride || config.url.replace('{{MODEL}}', modelName);
+    const url = urlOverride || config.url?.replace('{{MODEL}}', modelName);
+
+    if (!url) {
+        throw new Error(`No API URL configured for source ${source}`);
+    }
+
     const body = {
         input: texts,
         model: modelName,

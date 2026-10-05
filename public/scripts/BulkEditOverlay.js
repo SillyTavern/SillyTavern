@@ -848,6 +848,7 @@ class BulkEditOverlay {
                 const deleteChats = checkbox.prop('checked') ?? false;
 
                 const loaderHandle = loader.show({
+                    slug: 'bulk-delete',
                     title: t`Bulk Delete`,
                     message: t`Deleting ${characterIds.length} character(s)…`,
                     toastMode: loader.ToastMode.STATIC,

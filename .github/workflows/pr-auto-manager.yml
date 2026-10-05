@@ -31,7 +31,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -40,7 +40,7 @@ jobs:
       - name: Label PR Size
         # Pull Request Size Labeler
         # https://github.com/marketplace/actions/pull-request-size-labeler
-        uses: codelytv/pr-size-labeler@v1.10.2
+        uses: codelytv/pr-size-labeler@4ec67706cd878fbc1c8db0a5dcd28b6bb412e85a # v1.10.3
         with:
           GITHUB_TOKEN: ${{ steps.app.outputs.token }}
           xs_label: '🟩 ⬤○○○○'
@@ -68,7 +68,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -77,12 +77,12 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Apply Labels Based on Branch Name and Target Branch
         # Pull Request Labeler
         # https://github.com/marketplace/actions/labeler
-        uses: actions/labeler@v5.0.0
+        uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
         with:
           configuration-path: .github/pr-auto-labels-by-branch.yml
           repo-token: ${{ steps.app.outputs.token }}
@@ -99,7 +99,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -108,12 +108,12 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Apply Labels Based on Changed Files
         # Pull Request Labeler
         # https://github.com/marketplace/actions/labeler
-        uses: actions/labeler@v5.0.0
+        uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
         env:
           GITHUB_TOKEN: ${{ steps.app.outputs.token }} # labeler action needs some handholding
         with:
@@ -133,7 +133,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -142,7 +142,7 @@ jobs:
       - name: Add Vibe Coded Label
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'add-labels'
           token: ${{ steps.app.outputs.token }}
@@ -170,7 +170,7 @@ jobs:
         # This action runs on comments, which will not receive the env vars for this
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -180,7 +180,7 @@ jobs:
         if: always()
         # 🤖 Issues Helper
         # https://github.com/marketplace/actions/issues-helper
-        uses: actions-cool/issues-helper@v3.6.0
+        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
         with:
           actions: 'remove-labels'
           token: ${{ steps.app.outputs.token || github.token }} # Use fallback to GITHUB_TOKEN if app token is not available
@@ -205,7 +205,7 @@ jobs:
         # GitHub Script
         # https://github.com/marketplace/actions/github-script
         id: label-check
-        uses: actions/github-script@v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const prLabels = context.payload.pull_request.labels.map(label => label.name);
@@ -249,7 +249,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}
@@ -258,12 +258,12 @@ jobs:
       - name: Checkout Repository
         # Checkout
         # https://github.com/marketplace/actions/checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Post PR Comments Based on Labels
         # Label Commenter for PRs
         # https://github.com/marketplace/actions/label-commenter
-        uses: peaceiris/actions-label-commenter@v1.10.0
+        uses: peaceiris/actions-label-commenter@f0dbbef043eb1b150b566db36b0bdc8b7f505579 # v1.10.0
         with:
           config_file: .github/pr-auto-comments.yml
           github_token: ${{ steps.app.outputs.token }}
@@ -289,7 +289,7 @@ jobs:
         id: app
         # Create a GitHub App token
         # https://github.com/marketplace/actions/create-github-app-token
-        uses: actions/create-github-app-token@v2
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ vars.ST_BOT_APP_ID }}
           private-key: ${{ secrets.ST_BOT_PRIVATE_KEY }}

@@ -818,7 +818,7 @@ function addGalleryWandButton() {
 }
 
 // On extension load, ensure the settings are initialized
-(function () {
+export async function init() {
     initSettings();
     eventSource.on(event_types.CHARACTER_RENAMED, (oldAvatar, newAvatar) => {
         const context = SillyTavern.getContext();
@@ -850,4 +850,4 @@ function addGalleryWandButton() {
         }),
     );
     addGalleryWandButton();
-})();
+}

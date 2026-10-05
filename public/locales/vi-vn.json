@@ -394,7 +394,7 @@
     "Available Models": "Các Model hiện có",
     "Prompt Post-Processing": "Xử lý hậu kỳ Prompt",
     "Applies additional processing to the prompt before sending it to the API.": "Áp dụng xử lý bổ sung cho Prompt trước khi gửi nó tới API.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "Xác minh kết nối API của bạn bằng cách gửi một tin nhắn kiểm tra ngắn. Hãy nhớ rằng bạn sẽ được ghi nhận về điều đó!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "Xác minh kết nối API của bạn bằng cách gửi tin nhắn kiểm tra ngắn. Việc này có thể phát sinh phí sử dụng.",
     "Test Message": "Test tin nhắn",
     "Auto-connect to Last Server": "Tự động kết nối với link trước đó",
     "Missing key": "❌ Thiếu Key",

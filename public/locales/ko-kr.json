@@ -404,7 +404,7 @@
     "Prompt Post-Processing": "신속한 후처리",
     "api_no_connection": "연결이 되지 않았습니다...",
     "Applies additional processing to the prompt before sending it to the API.": "API로 보내기 전에 프롬프트에 추가 처리를 적용합니다.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "짧은 테스트 메시지를 보내어 API 연결을 확인합니다. 이에 대해 유료 크레딧이 지불될 수 있음을 인식하세요!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "짧은 테스트 메시지를 보내 API 연결을 확인합니다. 이로 인해 사용 요금이 부과될 수 있습니다.",
     "Test Message": "테스트 메시지",
     "Auto-connect to Last Server": "마지막 서버에 자동으로 연결",
     "Missing key": "❌ 현재 저장된 키가 존재하지 않습니다.",

@@ -11,6 +11,6 @@
     "start": "electron ."
   },
   "dependencies": {
-    "electron": "^35.0.0"
+    "electron": "^41.1.1"
   }
 }

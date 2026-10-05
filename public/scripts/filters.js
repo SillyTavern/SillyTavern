@@ -289,6 +289,16 @@ export class FilterHelper {
         return this.filterDataByState(data, state, isFolder);
     }
 
+    /**
+     * Filters an array of entities based on a tri-state filter value.
+     * SELECTED keeps entities where filterFunc returns true; EXCLUDED removes them; UNDEFINED returns data unchanged.
+     * @param {any[]} data The data to filter
+     * @param {FilterState|string} state The tri-state filter value (SELECTED, EXCLUDED, or UNDEFINED)
+     * @param {Function} filterFunc A predicate function applied to each entity
+     * @param {object} [options] Options object
+     * @param {boolean} [options.includeFolders=false] If true, entities with type 'tag' always pass through
+     * @returns {any[]} The filtered data
+     */
     filterDataByState(data, state, filterFunc, { includeFolders = false } = {}) {
         if (isFilterState(state, FILTER_STATES.SELECTED)) {
             return data.filter(entity => filterFunc(entity) || (includeFolders && entity.type == 'tag'));
@@ -414,7 +424,7 @@ export class FilterHelper {
             typeScores.set(uid, score);
         }
         this.scoreCache.set(type, typeScores);
-        console.debug('search scores chached', type, typeScores);
+        console.debug('search scores cached', type, typeScores);
     }
 
     /**

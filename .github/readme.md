@@ -29,7 +29,7 @@ Beginning in February 2023 as a fork of TavernAI 1.2.8, SillyTavern now has over
 
 1. We aim to empower users with as much utility and control over their LLM prompts as possible. The steep learning curve is part of the fun!
 2. We do not provide any online or hosted services, nor programmatically track any user data.
-3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open sourced.
+3. SillyTavern is a passion project brought to you by a dedicated community of LLM enthusiasts, and will always be free and open source.
 
 ## Do I need a powerful PC to run SillyTavern?
 
@@ -75,7 +75,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.**
 
-* [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 by Humi: MIT License
+* [TavernAI](https://github.com/TavernAI/TavernAI-v1) 1.2.8 by Humi: MIT License
 * Portions of CncAnon's TavernAITurbo mod used with permission
 * Visual Novel Mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Noto Sans font by Google (OFL license)

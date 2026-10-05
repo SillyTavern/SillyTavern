@@ -52,6 +52,7 @@ export const macros = {
 
     // enums
     category: MacroCategory,
+    valueType: MacroValueType,
 
     // shorthand functions
     register: MacroRegistry.registerMacro.bind(MacroRegistry),

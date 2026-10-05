@@ -1,0 +1,236 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Streaming Display — floating toast panel for live LLM generation output.
+   Shows reasoning (thinking) and content as they stream in.
+   Used by extensions that leverage ConnectionManagerRequestService streaming.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.streaming-display {
+    position: fixed;
+    bottom: max(calc(var(--bottomFormBlockSize) + 5px), 20px);
+    right: 20px;
+    width: min(550px, calc(100vw - 40px));
+    max-height: 70vh;
+    background: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 14px;
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity var(--animation-duration, 125ms) ease, transform var(--animation-duration, 125ms) ease;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
+}
+
+.streaming-display-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Header label with animated activity indicator */
+.streaming-display-label {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--SmartThemeBodyColor);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+
+/* LED status indicator - pulsing while streaming */
+.streaming-display-led {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(225, 138, 36);
+    animation: streaming-display-pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+/* Completed state: solid green LED */
+.streaming-display-complete .streaming-display-led {
+    background: #4caf50;
+    animation: none;
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
+}
+
+/* Stopped state: solid red LED */
+.streaming-display-stopped .streaming-display-led {
+    background: #f44336;
+    animation: none;
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.6);
+}
+
+@keyframes streaming-display-pulse {
+    0%, 100% { opacity: 0.4; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Label text takes available space */
+.streaming-display-label-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Window control buttons container */
+.streaming-display-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Window control buttons */
+.streaming-display-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--SmartThemeBodyColor);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.streaming-display-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.streaming-display-btn-close:hover {
+    background-color: rgba(244, 67, 54, 0.2);
+}
+
+.streaming-display-btn-stop {
+    font-size: 10px;
+}
+
+.streaming-display-btn-stop:hover {
+    background-color: rgba(244, 150, 36, 0.2);
+    color: rgb(225, 138, 36);
+}
+
+/* Content container - collapsible for minimize */
+.streaming-display-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    transition: max-height var(--animation-duration, 125ms) ease, opacity var(--animation-duration, 125ms) ease;
+}
+
+/* Minimized state - hide content sections */
+.streaming-display-minimized .streaming-display-content {
+    max-height: 0;
+    opacity: 0;
+}
+
+.streaming-display-minimized {
+    gap: 0;
+}
+
+/* Model/API icon in the label */
+.streaming-display-icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+}
+
+/* Minimized state adjustments */
+.streaming-display-minimized.streaming-display {
+    padding: 10px 14px;
+}
+
+/* Reasoning (thinking) section */
+.streaming-display-reasoning {
+    background: color-mix(in srgb, var(--SmartThemeBodyColor) 5%, transparent);
+    border-radius: 6px;
+    padding: 8px 10px;
+    border-left: 3px solid color-mix(in srgb, var(--SmartThemeBodyColor) 25%, transparent);
+}
+
+.streaming-display-reasoning-label {
+    font-size: 0.8em;
+    font-weight: 600;
+    opacity: 0.5;
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.streaming-display-reasoning-content {
+    font-size: 0.82em;
+    opacity: 0.65;
+    max-height: 25vh;
+    overflow-y: auto;
+    word-break: break-word;
+    line-height: 1.45;
+    scrollbar-width: thin;
+}
+
+.streaming-display-reasoning-content p {
+    margin: 0.3em 0;
+}
+
+.streaming-display-reasoning-content p:first-child {
+    margin-top: 0;
+}
+
+.streaming-display-reasoning-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Main content section */
+.streaming-display-text {
+    border-top: 1px solid color-mix(in srgb, var(--SmartThemeBorderColor) 50%, transparent);
+    padding-top: 8px;
+    min-height: 1.5em;
+}
+
+.streaming-display-text-content {
+    font-size: 0.9em;
+    color: var(--SmartThemeBodyColor);
+    max-height: 40vh;
+    overflow-y: auto;
+    word-break: break-word;
+    line-height: 1.5;
+    scrollbar-width: thin;
+}
+
+.streaming-display-text-content p {
+    margin: 0.4em 0;
+}
+
+.streaming-display-text-content p:first-child {
+    margin-top: 0;
+}
+
+.streaming-display-text-content p:last-child {
+    margin-bottom: 0;
+}
+
+/* Strip auto-added quotes from <q> tags, as message formatting adds them */
+.streaming-display-reasoning-content q:before,
+.streaming-display-reasoning-content q:after,
+.streaming-display-text-content q:before,
+.streaming-display-text-content q:after {
+    content: '';
+}

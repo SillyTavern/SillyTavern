@@ -1063,7 +1063,7 @@ function setupListeners() {
     });
 }
 
-jQuery(async function () {
+export async function init() {
     async function addExtensionControls() {
         const settingsHtml = await renderExtensionTemplateAsync('memory', 'settings', { defaultSettings });
         $('#summarize_container').append(settingsHtml);
@@ -1128,4 +1128,4 @@ jQuery(async function () {
             () => summaryMacroHandler(),
             'Returns the latest memory/summary from the current chat.');
     }
-});
+}

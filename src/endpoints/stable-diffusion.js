@@ -5,7 +5,6 @@ import express from 'express';
 import fetch from 'node-fetch';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
-import FormData from 'form-data';
 import urlJoin from 'url-join';
 import _ from 'lodash';
 import mime from 'mime-types';
@@ -587,7 +586,7 @@ comfy.post('/generate', async (request, response) => {
         /** @type {any} */
         const data = await promptResult.json();
         const id = data.prompt_id;
-        const historyUrl = new URL(urlJoin(request.body.url, '/history'));
+        const historyUrl = new URL(urlJoin(request.body.url, `/history/${id}`));
         while (true) {
             const result = await fetch(historyUrl);
             if (!result.ok) {
@@ -612,7 +611,8 @@ comfy.post('/generate', async (request, response) => {
         }
         const outputs = Object.keys(item.outputs).map(it => item.outputs[it]);
         console.debug('ComfyUI outputs:', outputs);
-        const imgInfo = outputs.map(it => it.images).flat()[0] ?? outputs.map(it => it.gifs).flat()[0];
+        const imgInfo = outputs.map(it => it.images).filter(Array.isArray).flat()[0]
+            ?? outputs.map(it => it.gifs).filter(Array.isArray).flat()[0];
         if (!imgInfo) {
             throw new Error('ComfyUI did not return any recognizable outputs.');
         }
@@ -833,8 +833,7 @@ const sdcpp = express.Router();
 
 sdcpp.post('/ping', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = '/v1/images/generations';
+        const url = new URL(urlJoin(request.body.url, '/v1/images/generations'));
 
         const result = await fetch(url, { method: 'OPTIONS' });
         if (!result.ok) {
@@ -848,12 +847,29 @@ sdcpp.post('/ping', async (request, response) => {
     }
 });
 
+sdcpp.post('/models', async (request, response) => {
+    try {
+        const url = new URL(urlJoin(request.body.url, '/v1/models'));
+
+        const result = await fetch(url);
+        if (!result.ok) {
+            throw new Error('stable-diffusion.cpp server returned an error.');
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
 sdcpp.post('/generate', async (request, response) => {
     try {
-        const url = new URL(request.body.url);
-        url.pathname = '/sdapi/v1/txt2img';
+        const url = new URL(urlJoin(request.body.url, '/sdapi/v1/txt2img'));
 
         const payload = {
+            model: request.body.model,
             prompt: request.body.prompt,
             negative_prompt: request.body.negative_prompt,
             width: request.body.width,
@@ -864,7 +880,9 @@ sdcpp.post('/generate', async (request, response) => {
             batch_size: request.body.batch_size,
             sampler_name: request.body.sampler_name,
             scheduler: request.body.scheduler,
-            clip_skip: request.body.clip_skip,
+            // sd.cpp produces blank images when clip_skip is 1, which is the
+            // default (no skipping). Only send clip_skip when it's > 1.
+            clip_skip: request.body.clip_skip > 1 ? request.body.clip_skip : undefined,
         };
 
         for (const [key, value] of Object.entries(payload)) {
@@ -1511,7 +1529,7 @@ bfl.post('/generate', async (request, response) => {
 
         console.debug('BFL request:', requestBody);
 
-        const result = await fetch(`https://api.bfl.ml/v1/${request.body.model}`, {
+        const result = await fetch(`https://api.bfl.ai/v1/${request.body.model}`, {
             method: 'POST',
             body: JSON.stringify(requestBody),
             headers: {
@@ -1528,12 +1546,18 @@ bfl.post('/generate', async (request, response) => {
         /** @type {any} */
         const taskData = await result.json();
         const { id } = taskData;
+        const pollingUrl = taskData.polling_url ?? `https://api.bfl.ai/v1/get_result?id=${id}`;
 
         const MAX_ATTEMPTS = 100;
         for (let i = 0; i < MAX_ATTEMPTS; i++) {
             await delay(2500);
 
-            const statusResult = await fetch(`https://api.bfl.ml/v1/get_result?id=${id}`);
+            // The bfl.ai API requires authentication on the polling request as well
+            const statusResult = await fetch(pollingUrl, {
+                headers: {
+                    'x-key': key,
+                },
+            });
 
             if (!statusResult.ok) {
                 const text = await statusResult.text();
@@ -1889,23 +1913,41 @@ zai.post('/generate', async (request, response) => {
         const data = await generateResponse.json();
         console.debug('Z.AI image response:', data);
 
-        const url = data?.data?.[0]?.url;
-        if (!url || !isValidUrl(url) || !new URL(url).hostname.endsWith('.z.ai')) {
+        const urlString = String(data?.data?.[0]?.url ?? '');
+        if (!urlString || !isValidUrl(urlString)) {
             console.warn('Z.AI returned an invalid image URL.');
             return response.sendStatus(500);
         }
 
-        const imageResponse = await fetch(url);
-        if (!imageResponse.ok) {
-            console.warn('Z.AI image fetch returned an error. Status:', imageResponse.status, imageResponse.statusText);
+        const url = new URL(urlString);
+        if (!url.hostname.endsWith('.z.ai') && !url.hostname.endsWith('.ufileos.com')) {
+            console.warn('Z.AI returned a URL with an unrecognized hostname.');
             return response.sendStatus(500);
         }
 
-        const buffer = await imageResponse.arrayBuffer();
-        const image = Buffer.from(buffer).toString('base64');
-        const format = path.extname(url).substring(1).toLowerCase() || 'png';
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const imageResponse = await fetch(url);
+            if (!imageResponse.ok) {
+                // Sometimes the URL is valid but the image isn't immediately available
+                if (imageResponse.status === 404) {
+                    console.info('Z.AI image not found yet, retrying...', { attempt: attempt + 1 });
+                    await delay(1000);
+                    continue;
+                }
 
-        return response.send({ image, format });
+                console.warn('Z.AI image fetch returned an error. Status:', imageResponse.status, imageResponse.statusText);
+                return response.sendStatus(500);
+            }
+
+            const buffer = await imageResponse.arrayBuffer();
+            const image = Buffer.from(buffer).toString('base64');
+            const format = path.extname(url.pathname).substring(1).toLowerCase() || 'png';
+
+            return response.send({ image, format });
+        }
+
+        console.warn('Z.AI image was not available after multiple attempts.');
+        return response.sendStatus(500);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -2007,6 +2049,147 @@ zai.post('/generate-video', async (request, response) => {
                 return response.send({ format: 'mp4', video: Buffer.from(contentBuffer).toString('base64') });
             }
         }
+        console.warn('Z.AI video was not available after multiple attempts.');
+        return response.sendStatus(500);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+const workersai = express.Router();
+
+workersai.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
+
+        if (!key) {
+            console.warn('Cloudflare Workers AI API key not found.');
+            return response.sendStatus(400);
+        }
+
+        const accountId = String(request.body.account_id || '').trim();
+        if (!accountId) {
+            console.warn('Cloudflare Workers AI Account ID not found.');
+            return response.sendStatus(400);
+        }
+
+        const apiUrl = new URL(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/models/search`);
+        apiUrl.searchParams.set('task', 'Text-to-Image');
+        apiUrl.searchParams.set('per_page', '1000');
+        const result = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            console.warn('Cloudflare Workers AI returned an error.', result.statusText);
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        if (!data.success || !Array.isArray(data.result)) {
+            console.warn('Cloudflare Workers AI returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        const models = data.result.map(x => ({ value: x.name, text: x.name }));
+        return response.send(models);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+workersai.post('/generate', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
+
+        if (!key) {
+            console.warn('Cloudflare Workers AI API key not found.');
+            return response.sendStatus(400);
+        }
+
+        const accountId = String(request.body.account_id || '').trim();
+        if (!accountId) {
+            console.warn('Cloudflare Workers AI Account ID not found.');
+            return response.sendStatus(400);
+        }
+
+        const model = String(request.body.model || '').trim();
+        if (!model) {
+            console.warn('Cloudflare Workers AI model not specified.');
+            return response.sendStatus(400);
+        }
+
+        const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`;
+
+        const body = {
+            prompt: request.body.prompt,
+            negative_prompt: request.body.negative_prompt || undefined,
+            width: request.body.width ? Number(request.body.width) : undefined,
+            height: request.body.height ? Number(request.body.height) : undefined,
+            num_steps: request.body.steps ? Number(request.body.steps) : undefined,
+            guidance: request.body.scale ? Number(request.body.scale) : undefined,
+            seed: request.body.seed >= 0 ? Number(request.body.seed) : undefined,
+        };
+
+        // Remove undefined values
+        for (const prop of Object.keys(body)) {
+            if (body[prop] === undefined) {
+                delete body[prop];
+            }
+        }
+
+        console.debug('Cloudflare Workers AI request:', model, body);
+
+        /** @type {import('node-fetch').RequestInit} */
+        const apiRequest = {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        };
+
+        if (/flux-2/.test(model)) {
+            const formData = new FormData();
+            for (const [key, value] of Object.entries(body)) {
+                formData.append(key, String(value));
+            }
+            apiRequest.body = formData;
+        } else {
+            apiRequest.headers = { ...apiRequest.headers, 'Content-Type': 'application/json' };
+            apiRequest.body = JSON.stringify(body);
+        }
+
+        const result = await fetch(apiUrl, apiRequest);
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Cloudflare Workers AI returned an error.', result.status, result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const contentType = result.headers.get('content-type') || '';
+
+        // Partner models return JSON with base64 image
+        if (contentType.includes('application/json')) {
+            /** @type {any} */
+            const data = await result.json();
+            const image = data?.result?.image || data?.image;
+            if (!image) {
+                console.warn('Cloudflare Workers AI returned JSON without image data.');
+                return response.sendStatus(500);
+            }
+            return response.send({ format: 'png', image: image });
+        }
+
+        // Non-partner models return raw binary image data
+        const buffer = await result.arrayBuffer();
+        return response.send({ format: 'png', image: Buffer.from(buffer).toString('base64') });
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -2029,3 +2212,4 @@ router.use('/falai', falai);
 router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
 router.use('/zai', zai);
+router.use('/workersai', workersai);

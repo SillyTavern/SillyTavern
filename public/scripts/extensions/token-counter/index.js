@@ -101,7 +101,7 @@ async function doCount() {
     return count;
 }
 
-jQuery(() => {
+export function init() {
     const buttonHtml = `
         <div id="token_counter" class="list-group-item flex-container flexGap5">
             <div class="fa-solid fa-1 extensionsMenuExtensionButton" /></div>` +
@@ -115,4 +115,4 @@ jQuery(() => {
         returns: 'number of tokens',
         helpString: 'Counts the number of tokens in the current chat.',
     }));
-});
+}

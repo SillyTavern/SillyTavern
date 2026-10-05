@@ -8,6 +8,7 @@ import express from 'express';
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
+import { POLLINATIONS_ENDPOINT } from '../constants.js';
 import { AIMLAPI_HEADERS, OPENROUTER_HEADERS, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from '../constants.js';
 
 export const router = express.Router();
@@ -98,8 +99,13 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'pollinations') {
-            key = readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+            key = isAnonymous ? 'anonymous' : readSecret(request.user.directories, SECRET_KEYS.POLLINATIONS);
             bodyParams.seed = Math.floor(Math.random() * Math.pow(2, 32));
+        }
+
+        if (request.body.api === 'workers_ai') {
+            key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
         }
 
         const noKeyTypes = ['custom', 'ooba', 'koboldcpp', 'vllm', 'llamacpp'];
@@ -178,7 +184,8 @@ router.post('/caption-image', async (request, response) => {
         }
 
         if (request.body.api === 'pollinations') {
-            apiUrl = 'https://gen.pollinations.ai/v1/chat/completions';
+            const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
+            apiUrl = isAnonymous ? 'https://text.pollinations.ai/v1/chat/completions' : 'https://gen.pollinations.ai/v1/chat/completions';
         }
 
         if (request.body.api === 'moonshot' && !request.body.reverse_proxy) {
@@ -216,21 +223,16 @@ router.post('/caption-image', async (request, response) => {
             }
         }
 
-        if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
-            apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
+        if (request.body.api === 'workers_ai') {
+            const accountId = String(request.body.workers_ai_account_id || '').trim();
+            if (!accountId) {
+                return response.status(400).send({ error: 'Cloudflare Workers AI Account ID is required' });
+            }
+            apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/v1/chat/completions`;
         }
 
-        if (request.body.api === 'ooba') {
-            const imgMessage = body.messages.pop();
-            body.messages.push({
-                role: 'user',
-                content: imgMessage?.content?.[0]?.text,
-            });
-            body.messages.push({
-                role: 'user',
-                content: [],
-                image_url: imgMessage?.content?.[1]?.image_url?.url,
-            });
+        if (['koboldcpp', 'vllm', 'llamacpp', 'ooba'].includes(request.body.api)) {
+            apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
         }
 
         setAdditionalHeaders(request, { headers }, apiUrl);
@@ -566,6 +568,50 @@ router.post('/siliconflow/models/embedding', async (request, response) => {
         return response.json(data.data);
     } catch (error) {
         console.error('SiliconFlow embedding models fetch failed', error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/workers-ai/models/embedding', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.WORKERS_AI);
+
+        if (!key) {
+            console.warn('No Workers AI key found');
+            return response.sendStatus(400);
+        }
+
+        const accountId = String(request.body.workers_ai_account_id || '').trim();
+        if (!accountId) {
+            console.warn('No Workers AI account ID found');
+            return response.sendStatus(400);
+        }
+
+        const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/models/search?task=Text+Embeddings&per_page=100`;
+        const result = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.warn('Workers AI embedding models request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        /** @type {any} */
+        const data = await result.json();
+
+        if (!Array.isArray(data?.result)) {
+            console.warn('Workers AI embedding models response invalid', data);
+            return response.sendStatus(500);
+        }
+
+        return response.json(data.result.map(m => ({ ...m, id: m.name })));
+    } catch (error) {
+        console.error('Workers AI embedding models fetch failed', error);
         response.sendStatus(500);
     }
 });

@@ -1,8 +1,9 @@
 import { ensureImageFormatSupported, getBase64Async, getFileExtension, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules, renderExtensionTemplateAsync } from '../../extensions.js';
-import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParamsExtended } from '../../../script.js';
+import { appendMediaToMessage, chat_metadata, eventSource, event_types, getRequestHeaders, saveChatConditional, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { oai_settings, POLLINATIONS_ENDPOINT } from '../../openai.js';
 import { getMultimodalCaption } from '../shared.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -17,6 +18,11 @@ const MODULE_NAME = 'caption';
 
 const PROMPT_DEFAULT = 'What\'s in this image?';
 const TEMPLATE_DEFAULT = '[{{user}} sends {{char}} a picture that contains: {{caption}}]';
+const GOOGLE_MODEL_MIGRATIONS = new Map([
+    ['gemini-3.1-flash-lite-preview', 'gemini-3.1-flash-lite'],
+    ['gemini-3.1-flash-image-preview', 'gemini-3.1-flash-image'],
+    ['gemini-3-pro-image-preview', 'gemini-3-pro-image'],
+]);
 
 /**
  * Migrates old extension settings to the new format.
@@ -36,7 +42,12 @@ function migrateSettings() {
     if (extension_settings.caption.source === 'openai') {
         extension_settings.caption.source = 'multimodal';
         extension_settings.caption.multimodal_api = 'openai';
-        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
+        extension_settings.caption.multimodal_model = 'gpt-5.6-luna';
+    }
+
+    if (['google', 'vertexai'].includes(extension_settings.caption.multimodal_api)) {
+        extension_settings.caption.multimodal_model = GOOGLE_MODEL_MIGRATIONS.get(extension_settings.caption.multimodal_model)
+            ?? extension_settings.caption.multimodal_model;
     }
 
     if (!extension_settings.caption.multimodal_api) {
@@ -44,7 +55,7 @@ function migrateSettings() {
     }
 
     if (!extension_settings.caption.multimodal_model) {
-        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
+        extension_settings.caption.multimodal_model = 'gpt-6-luna';
     }
 
     if (!extension_settings.caption.prompt) {
@@ -99,7 +110,7 @@ async function wrapCaptionTemplate(caption) {
         template += ' {{caption}}';
     }
 
-    let messageText = substituteParamsExtended(template, { caption: caption });
+    let messageText = substituteParams(template, { dynamicMacros: { caption: caption } });
 
     if (extension_settings.caption.refine_mode) {
         messageText = await Popup.show.input(
@@ -321,6 +332,8 @@ async function captionMultimodal(base64Img, externalPrompt) {
         prompt = String(customPrompt).trim();
     }
 
+    prompt = substituteParams(prompt);
+
     const caption = await getMultimodalCaption(base64Img, prompt);
     return { caption };
 }
@@ -454,7 +467,7 @@ function isVideoCaptioningAvailable() {
     return ['google', 'vertexai', 'zai'].includes(extension_settings.caption.multimodal_api);
 }
 
-jQuery(async function () {
+export async function init() {
     function addSendPictureButton() {
         const sendButton = $(`
         <div id="send_picture" class="list-group-item flex-container flexGap5">
@@ -504,6 +517,7 @@ jQuery(async function () {
                         'chutes': SECRET_KEYS.CHUTES,
                         'electronhub': SECRET_KEYS.ELECTRONHUB,
                         'pollinations': SECRET_KEYS.POLLINATIONS,
+                        'workers_ai': SECRET_KEYS.WORKERS_AI,
                     };
 
                     if (chatCompletionApis[api] && secret_state[chatCompletionApis[api]]) {
@@ -526,8 +540,8 @@ jQuery(async function () {
                         return true;
                     }
 
-                    // Custom API doesn't need additional checks
-                    if (api === 'custom') {
+                    // Custom API and anonymous Pollinations don't need additional checks
+                    if (api === 'custom' || (api === 'pollinations' && oai_settings.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS)) {
                         return true;
                     }
                 }
@@ -580,7 +594,7 @@ jQuery(async function () {
     }
 
     async function addRemoteEndpointModels() {
-        async function processEndpoint(api, url) {
+        async function processEndpoint(api, url, additionalParams = {}) {
             const dropdown = document.getElementById('caption_multimodal_model');
             if (!(dropdown instanceof HTMLSelectElement)) {
                 return;
@@ -591,7 +605,8 @@ jQuery(async function () {
             const options = Array.from(dropdown.options);
             const response = await fetch(url, {
                 method: 'POST',
-                headers: getRequestHeaders({ omitContentType: true }),
+                headers: getRequestHeaders(),
+                body: JSON.stringify(additionalParams),
             });
             if (!response.ok) {
                 return;
@@ -620,6 +635,7 @@ jQuery(async function () {
         await processEndpoint('mistral', '/api/backends/chat-completions/multimodal-models/mistral');
         await processEndpoint('xai', '/api/backends/chat-completions/multimodal-models/xai');
         await processEndpoint('moonshot', '/api/backends/chat-completions/multimodal-models/moonshot');
+        await processEndpoint('workers_ai', '/api/backends/chat-completions/multimodal-models/workers_ai', { workers_ai_account_id: oai_settings.workers_ai_account_id });
     }
 
     await addSettings();
@@ -804,4 +820,4 @@ jQuery(async function () {
     }));
 
     document.body.classList.add('caption');
-});
+}

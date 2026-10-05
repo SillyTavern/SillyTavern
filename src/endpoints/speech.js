@@ -101,7 +101,7 @@ pollinations.post('/voices', async (req, res) => {
             throw new Error('Invalid data format received from Pollinations');
         }
 
-        const audioModelData = data.find(m => m.name === model);
+        const audioModelData = data.find(m => m.name === model || m.aliases?.includes(model));
         if (!audioModelData || !Array.isArray(audioModelData.voices)) {
             throw new Error('No voices found for the specified model');
         }
@@ -264,7 +264,7 @@ elevenlabs.post('/synthesize', async (req, res) => {
         }
 
         res.set('Content-Type', 'audio/mpeg');
-        forwardFetchResponse(response, res);
+        await forwardFetchResponse(response, res);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
@@ -328,7 +328,7 @@ elevenlabs.post('/history-audio', async (req, res) => {
         }
 
         res.set('Content-Type', 'audio/mpeg');
-        forwardFetchResponse(response, res);
+        await forwardFetchResponse(response, res);
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);

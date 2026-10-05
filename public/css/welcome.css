@@ -17,6 +17,7 @@
 .welcomePanel.recentHidden .welcomeRecent,
 .welcomePanel.recentHidden .recentChatsTitle,
 .welcomePanel.recentHidden .hideRecentChats,
+.welcomePanel.recentHidden .recentChatsSettings,
 .welcomePanel:not(.recentHidden) .showRecentChats {
     display: none;
 }

@@ -213,7 +213,7 @@ import {
     tag_import_setting,
     applyCharacterTagsToMessageDivs,
 } from './scripts/tags.js';
-import { initSecrets, readSecretState } from './scripts/secrets.js';
+import { checkOpenRouterAuth, initSecrets, readSecretState } from './scripts/secrets.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
@@ -282,6 +282,7 @@ import { initDomHandlers } from './scripts/dom-handlers.js';
 import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
+import { MessageFormatter } from './scripts/message-formatter.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
@@ -603,6 +604,7 @@ export let is_send_press = false; //Send generation
 export const isGenerating = () => (is_send_press || is_group_generating);
 
 let this_del_mes = -1;
+let deleteToolCallsInDeleteMode = true;
 
 /** @type {string} */
 let this_edit_mes_chname = '';
@@ -717,6 +719,7 @@ async function firstLoadInit() {
     initLoaderOverlay.appendChild(splashMessage);
 
     const initLoaderHandle = loader.show({
+        slug: 'app-init',
         toastMode: loader.ToastMode.NONE,
         overlayContent: initLoaderOverlay,
     });
@@ -741,12 +744,13 @@ async function firstLoadInit() {
     initKoboldSettings();
     initNovelAISettings();
     initSystemPrompts();
-    initExtensions();
+    await initExtensions();
     initExtensionSlashCommands();
     ToolManager.initToolSlashCommands();
     await initPresetManager();
     await initSystemMessages();
     await getSettings(initLoaderHandle);
+    await checkOpenRouterAuth();
     initKeyboard();
     initDynamicStyles();
     initTags();
@@ -1607,13 +1611,32 @@ export async function deleteLastMessage() {
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
 }
 
+function getMessageDeletionStartId(id, deleteToolCalls = true) {
+    const message = chat[id];
+    if (!deleteToolCalls || message?.is_user || message?.is_system) {
+        return id;
+    }
+
+    let startId = id;
+    while (startId > 0) {
+        const previousMessage = chat[startId - 1];
+        if (!previousMessage?.is_system || !Array.isArray(previousMessage.extra?.tool_invocations)) {
+            break;
+        }
+        startId--;
+    }
+
+    return startId;
+}
+
 /**
  * Deletes a message from the chat by its ID, optionally asking for confirmation.
  * @param {number} id The ID of the message to delete.
  * @param {number} [swipeDeletionIndex] Deletes the swipe with that index.
  * @param {boolean} [askConfirmation=false] Whether to ask for confirmation before deleting.
+ * @param {boolean} [deleteToolCalls=true] Whether to delete preceding tool-call messages.
  */
-export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfirmation = false) {
+export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfirmation = false, deleteToolCalls = true) {
     const canDeleteSwipe = swipeDeletionIndex !== undefined && swipeDeletionIndex !== null;
     if (canDeleteSwipe) {
         if (swipeDeletionIndex < 0) {
@@ -1651,13 +1674,19 @@ export async function deleteMessage(id, swipeDeletionIndex = undefined, askConfi
         return;
     }
 
-    chat.splice(id, 1);
-    messageElement.remove();
+    const firstMessageId = getMessageDeletionStartId(id, deleteToolCalls);
+    const messageIds = Array.from({ length: id - firstMessageId + 1 }, (_, index) => id - index);
+
+    // Delete from the end so earlier indices remain stable.
+    for (const messageId of messageIds) {
+        chat.splice(messageId, 1);
+        chatElement.find(`.mes[mesid="${messageId}"]`).remove();
+        deleteItemizedPromptForMessage(messageId);
+    }
 
     chat_metadata.tainted = true;
 
-    const startIndex = [0, minId].includes(id) ? id : null;
-    deleteItemizedPromptForMessage(id);
+    const startIndex = firstMessageId <= minId ? firstMessageId : null;
     updateViewMessageIds(startIndex);
     saveChatDebounced();
 
@@ -1738,15 +1767,35 @@ export async function sendTextareaMessage() {
 }
 
 /**
- * Formats the message text into an HTML string using Markdown and other formatting.
- * @param {string} mes Message text
- * @param {string} ch_name Character name
- * @param {boolean} isSystem If the message was sent by the system
- * @param {boolean} isUser If the message was sent by the user
- * @param {number} messageId Message index in chat array
- * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] DOMPurify sanitizer option overrides
- * @param {boolean} [isReasoning] If the message is reasoning output
- * @returns {string} HTML string
+ * Formats raw message text into an HTML string ready for DOM insertion.
+ *
+ * The pipeline is, in order:
+ *   1. Prompt-bias stripping (message 0 only)
+ *   2. Comment / hidden-message normalisation
+ *   3. `beforeRegex` extension hooks (see {@link MessageFormatter})
+ *   4. Custom regex rules (`getRegexedString`)
+ *   5. `afterRegex` extension hooks
+ *   6. Markdown auto-fix (`fixMarkdown`)
+ *   7. HTML tag encoding (`encode_tags`)
+ *   8. Showdown Markdown → HTML conversion
+ *   9. `afterMarkdown` extension hooks
+ *  10. Name-prefix stripping (`allow_name2_display`)
+ *  11. DOMPurify sanitization
+ *
+ * All extension hooks run **before** DOMPurify (steps 3, 5, 9) so their
+ * output is always sanitised.
+ *
+ * @param {string} mes - Raw message text.
+ * @param {string} ch_name - Character name associated with the message.
+ * @param {boolean} isSystem - Whether the message is a system message.
+ * @param {boolean} isUser - Whether the message was sent by the user.
+ * @param {number} messageId - Index of the message in the chat array, or -1
+ *   for transient messages (e.g. streaming previews).
+ * @param {Partial<DOMPurify.Config>} [sanitizerOverrides] - DOMPurify option
+ *   overrides. Merged on top of the default config.
+ * @param {boolean} [isReasoning=false] - Whether the message is reasoning/thinking
+ *   output (affects regex placement and some display rules).
+ * @returns {string} Sanitized HTML string ready to assign to `innerHTML`.
  */
 export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false) {
     if (!mes) {
@@ -1803,12 +1852,20 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         const indexOf = usableMessages.findIndex(x => x.index === Number(messageId));
         const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
 
+        mes = MessageFormatter.runStage(MessageFormatter.stage.BEFORE_REGEX, mes,
+            { ch_name, isSystem, isUser, messageId, isReasoning },
+        );
+
         // Always override the character name
         mes = getRegexedString(mes, regexPlacement, {
             characterOverride: ch_name,
             isMarkdown: true,
             depth: depth,
         });
+
+        mes = MessageFormatter.runStage(MessageFormatter.stage.AFTER_REGEX, mes,
+            { ch_name, isSystem, isUser, messageId, isReasoning },
+        );
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -1887,6 +1944,10 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             return match.replace(/&amp;/g, '&');
         });
+
+        mes = MessageFormatter.runStage(MessageFormatter.stage.AFTER_MARKDOWN, mes,
+            { ch_name, isSystem, isUser, messageId, isReasoning },
+        );
     }
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
@@ -1910,17 +1971,32 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 }
 
 /**
+ * Creates an Image element for the given API/model icon.
+ * The image references the matching SVG file from `/img/` and includes a tooltip with API and model info.
+ * The caller is responsible for appending the image to the DOM and optionally calling `SVGInject` on it.
+ *
+ * @param {string} apiName - API identifier matching an SVG file in /img/ (e.g. 'openai', 'openrouter', 'claude')
+ * @param {string} [modelName=''] - Model name shown in the tooltip
+ * @returns {HTMLImageElement} The image element (not yet in the DOM)
+ */
+export function createModelIcon(apiName, modelName = '') {
+    const image = new Image();
+    image.classList.add('icon-svg');
+    image.src = `/img/${apiName}.svg`;
+    image.title = modelName ? `${apiName} - ${modelName}` : apiName;
+    return image;
+}
+
+/**
  * Inserts or replaces an SVG icon adjacent to the provided message's timestamp.
  *
  * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {ChatMessageExtra} extra - Contains the API and model details.
  */
 function insertSVGIcon(mes, extra) {
-    // Determine the SVG filename
-    let modelName = extra?.api || '';
+    const apiName = extra?.api || '';
 
-    // If there's no API information, we can't determine which SVG to use
-    if (!modelName) {
+    if (!apiName) {
         return;
     }
 
@@ -1937,16 +2013,14 @@ function insertSVGIcon(mes, extra) {
         };
     };
 
-    const createModelImage = (className, targetSelector, insertBefore) => {
-        const image = new Image();
-        image.classList.add('icon-svg', className);
-        image.src = `/img/${modelName}.svg`;
-        image.title = `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`;
+    const insertIcon = (className, targetSelector, insertBefore) => {
+        const image = createModelIcon(apiName, extra?.model);
+        image.classList.add(className);
         insertOrReplaceSVG(image, className, targetSelector, insertBefore);
     };
 
-    createModelImage('timestamp-icon', '.timestamp');
-    createModelImage('thinking-icon', '.mes_reasoning_header_title', true);
+    insertIcon('timestamp-icon', '.timestamp');
+    insertIcon('thinking-icon', '.mes_reasoning_header_title', true);
 }
 
 /**
@@ -2907,6 +2981,11 @@ export function substituteParamsLegacy(content, _name1, _name2, _original, _grou
 export function substituteParams(content, options = {}) {
     if (!content) return '';
 
+    if (typeof content !== 'string') {
+        console.warn('substituteParams: content will be coerced to string', content);
+        content = String(content);
+    }
+
     // Handle legacy signature calls to substituteParams
     // We'll simply re-route them to a temporary legacy function. In the future, we'll remove this and cleanly build the options object ourselves.
     const isOptionsObject = options && typeof options === 'object' && !Array.isArray(options);
@@ -3864,9 +3943,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
 
     // If the prompt was given as a string, convert to a message-style object assuming user role
     if (typeof prompt === 'string') {
-        const message = api === 'openai'
-            ? { role: 'user', content: prompt.trim() }
-            : { role: 'system', content: prompt };
+        const message = { role: 'user', content: prompt.trim() };
         prompt = [message];
     } else {  // checks for message-style object
         if (prompt.length === 0 && !systemPrompt) throw Error('No messages provided');
@@ -3893,7 +3970,12 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
     // prepend system prompt, if provided
     if (systemPrompt) {
         systemPrompt = substituteParams(systemPrompt);
-        systemPrompt = isInstruct ? (formatInstructModeStoryString(systemPrompt) + '\n') : systemPrompt.trim();
+        systemPrompt = isInstruct ? formatInstructModeStoryString(systemPrompt) : systemPrompt.trim();
+        if (isInstruct && systemPrompt.length > 0 && !systemPrompt.endsWith('\n')) {
+            if (power_user.instruct.wrap && !power_user.instruct.story_string_suffix) {
+                systemPrompt += '\n';
+            }
+        }
         prompt.unshift({ role: 'system', content: systemPrompt });
     }
 
@@ -3923,7 +4005,7 @@ export function createRawPrompt(prompt, api, instructOverride, quietToLoud, syst
  * @prop {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @prop {boolean} [trimNames] Whether to allow trimming "{{user}}:" and "{{char}}:" from the response.
  * @prop {string} [prefill] An optional prefill for the prompt.
- * @prop {object} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
+ * @prop {JsonSchema} [jsonSchema] JSON schema to use for the structured generation. Usually requires a special instruction.
  */
 
 /**
@@ -4035,7 +4117,7 @@ export async function generateRawData({ prompt = '', api = null, instructOverrid
         }
 
         if (jsonSchema) {
-            return extractJsonFromData(data, { mainApi: api });
+            return extractJsonFromData(data, { mainApi: api, returnInvalidJson: jsonSchema.returnInvalid });
         }
 
         return data;
@@ -4198,6 +4280,7 @@ function removeLastMessage() {
  * @property {object} value JSON schema value.
  * @property {string} [description] Description of the schema.
  * @property {boolean} [strict] If true, the schema will be used in strict mode, meaning that only the fields defined in the schema will be allowed.
+ * @property {boolean} [returnInvalid] If true, a string that can't be parsed as a JSON will be returned as is, instead of an empty object.
  *
  * @typedef {object} GenerateOptions
  * @property {boolean} [automatic_trigger] If the generation was triggered automatically (e.g. group auto mode).
@@ -4284,7 +4367,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (selected_group && !is_group_generating) {
         if (!dryRun) {
             // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage });
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, jsonSchema });
         }
 
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
@@ -4466,18 +4549,24 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     for (let i = coreChat.length - 1; i >= 0; i--) {
         const depth = coreChat.length - i - (isContinue ? 2 : 1);
         const isPrefix = isContinue && i === coreChat.length - 1;
+
+        // In group chats, only include reasoning from the currently generating character
+        const isOtherGroupMember = selected_group && coreChat[i].name !== name2;
+
         coreChat[i] = {
             ...coreChat[i],
-            mes: promptReasoning.addToMessage(
-                coreChat[i].mes,
-                getRegexedString(
-                    String(coreChat[i].extra?.reasoning ?? ''),
-                    regex_placement.REASONING,
-                    { isPrompt: true, depth: depth },
+            mes: isOtherGroupMember
+                ? coreChat[i].mes
+                : promptReasoning.addToMessage(
+                    coreChat[i].mes,
+                    getRegexedString(
+                        String(coreChat[i].extra?.reasoning ?? ''),
+                        regex_placement.REASONING,
+                        { isPrompt: true, depth: depth },
+                    ),
+                    isPrefix,
+                    coreChat[i].extra?.reasoning_duration,
                 ),
-                isPrefix,
-                coreChat[i].extra?.reasoning_duration,
-            ),
         };
         if (promptReasoning.isLimitReached()) {
             break;
@@ -4714,7 +4803,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
         }
 
-        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct) {
+        if (lastUserMessageIndex >= 0 && j === lastUserMessageIndex && isInstruct && !isImpersonate) {
             // Reformat with the last input sequence (if any)
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
         }
@@ -5318,7 +5407,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
                 streamingProcessor.firstMessageText = '';
             }
 
-            streamingProcessor.generator = await sendStreamingRequest(type, generate_data);
+            streamingProcessor.generator = await sendStreamingRequest(type, generate_data, { jsonSchema });
 
             hideSwipeButtons();
             let getMessage = await streamingProcessor.generate();
@@ -5407,7 +5496,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (jsonSchema) {
             unblockGeneration(type);
-            return extractJsonFromData(data);
+            return extractJsonFromData(data, { returnInvalidJson: jsonSchema.returnInvalid ?? false });
         }
 
         //const getData = await response.json();
@@ -5841,11 +5930,11 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
     } else {
         chat.push(message);
+        await saveChatConditional();
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
         addOneMessage(message);
         await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
-        await saveChatConditional();
     }
 
     return message;
@@ -6021,7 +6110,7 @@ function setInContextMessages(msgInContextCount, type) {
 
     if (lastMessageBlock.length === 0) {
         const firstMessageId = getFirstDisplayedMessageId();
-        chatElement.find(`.mes[mesid="${firstMessageId}"`).addClass('lastInContext');
+        chatElement.find(`.mes[mesid="${firstMessageId}"]`).addClass('lastInContext');
     }
 
     // Update last id to chat. No metadata save on purpose, gets hopefully saved via another call
@@ -6269,9 +6358,13 @@ export function extractMessageFromData(data, activeApi = null) {
 /**
  * Extracts JSON from the response data.
  * @param {object} data Response data
+ * @param {object} [options] Extraction options
+ * @param {string} [options.mainApi] Main API to use
+ * @param {string} [options.chatCompletionSource] Chat completion source
+ * @param {boolean} [options.returnInvalidJson=false] Whether to return the raw JSON string even if it fails to parse
  * @returns {string} Extracted JSON string from the response data
  */
-export function extractJsonFromData(data, { mainApi = null, chatCompletionSource = null } = {}) {
+export function extractJsonFromData(data, { mainApi = null, chatCompletionSource = null, returnInvalidJson = false } = {}) {
     mainApi = mainApi ?? main_api;
     chatCompletionSource = chatCompletionSource ?? oai_settings.chat_completion_source;
 
@@ -6294,6 +6387,9 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                     break;
                 case chat_completion_sources.PERPLEXITY:
                     result = tryParse(removeReasoningFromString(text));
+                    if (!result && returnInvalidJson) {
+                        return text;
+                    }
                     break;
                 case chat_completion_sources.VERTEXAI:
                 case chat_completion_sources.MAKERSUITE:
@@ -6314,6 +6410,9 @@ export function extractJsonFromData(data, { mainApi = null, chatCompletionSource
                 case chat_completion_sources.ZAI:
                 default:
                     result = tryParse(text);
+                    if (!result && returnInvalidJson) {
+                        return text;
+                    }
                     break;
             }
         } break;
@@ -8003,6 +8102,15 @@ export async function getSettings(initLoaderHandle = null) {
             const isVersionChanged = settings.currentVersion !== currentVersion;
             await loadExtensionSettings(settings, isVersionChanged, enableAutoUpdate);
             await eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+        } else {
+            Object.assign(extension_settings, (settings.extension_settings ?? {}));
+            $('#third_party_extension_button').addClass('disabled');
+            $('#extensions_details').addClass('disabled');
+            $('#extensions_connect').addClass('disabled');
+            $('#extensions_notify_updates').attr('disabled', 'disabled');
+            $('#extensions_autoconnect').attr('disabled', 'disabled');
+            $('#extensions_url').attr('disabled', 'disabled');
+            $('#extensions_api_key').attr('disabled', 'disabled');
         }
 
         firstRun = !!settings.firstRun;
@@ -8163,7 +8271,7 @@ function updateMessage(div) {
     return { mesBlock, text, mes, bias };
 }
 
-function openMessageDelete(fromSlashCommand) {
+function openMessageDelete(fromSlashCommand, deleteToolCalls = true) {
     closeMessageEditor();
     hideSwipeButtons();
     if (fromSlashCommand || (!is_send_press) || (selected_group && !is_group_generating)) {
@@ -8182,6 +8290,7 @@ function openMessageDelete(fromSlashCommand) {
             is_group_generating: ${is_group_generating}`);
     }
     this_del_mes = -1;
+    deleteToolCallsInDeleteMode = deleteToolCalls;
     is_delete_mode = true;
 }
 
@@ -9744,7 +9853,7 @@ export async function createOrEditCharacter(e) {
             return;
         }
         try {
-            //if the character name text area isn't empty (only posible when creating a new character)
+            //if the character name text area isn't empty (only possible when creating a new character)
             let url = '/api/characters/create';
 
             if (crop_data != undefined) {
@@ -10644,6 +10753,7 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
     }
 
     const loaderHandle = showLoader ? loader.show({
+        slug: 'chat-rename',
         title: t`Rename Chat`,
         message: t`Renaming chat…`,
         toastMode: loader.ToastMode.STATIC,
@@ -10681,6 +10791,9 @@ export async function renameGroupOrCharacterChat({ characterId, groupId, oldFile
         if (currentChatId) {
             await reloadCurrentChat();
         }
+
+        const eventData = { avatarId: body.avatar_url, groupId, oldFileName: body.original_file, newFileName: body.renamed_file };
+        await eventSource.emit(event_types.CHAT_RENAMED, eventData);
     } catch {
         await delay(500);
         await callGenericPopup('An error has occurred. Chat was not renamed.', POPUP_TYPE.TEXT);
@@ -11222,6 +11335,7 @@ jQuery(async function () {
         });
         $(this).addClass('selected'); //sets the bg of the mes selected for deletion
         var i = Number($(this).attr('mesid')); //checks the message ID in the chat
+        i = getMessageDeletionStartId(i, deleteToolCallsInDeleteMode);
         this_del_mes = i;
         //as long as the current message ID is less than the total chat length
         while (i < chat.length) {
@@ -11245,6 +11359,7 @@ jQuery(async function () {
         $('#select_chat_cross').trigger('click');
 
         const loaderHandle = loader.show({
+            slug: 'chat-delete',
             title: t`Delete Chat`,
             message: t`Deleting chat…`,
             toastMode: loader.ToastMode.STATIC,
@@ -11545,6 +11660,7 @@ jQuery(async function () {
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
     $('#options [id]').on('click', async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
+        const deleteToolCalls = customData?.deleteToolCalls ?? true;
         var id = $(this).attr('id');
 
         // Check whether a custom prompt was provided via custom data (for example through a slash command)
@@ -11623,7 +11739,7 @@ jQuery(async function () {
                 Generate('continue', buildOrFillAdditionalArgs());
             }
         } else if (id == 'option_delete_mes') {
-            setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
+            setTimeout(() => openMessageDelete(fromSlashCommand, deleteToolCalls), animation_duration);
         } else if (id == 'option_close_chat') {
             await closeCurrentChat();
         } else if (id === 'option_settings') {
@@ -12539,7 +12655,9 @@ jQuery(async function () {
         $('#avatar-and-name-block').slideToggle();
     });
 
-    $(document).on('mouseup touchend', '#show_more_messages', async function () {
+    $(document).on('click', '#show_more_messages', async function (event) {
+        event.stopPropagation();
+        event.preventDefault();
         await showMoreMessages();
     });
 

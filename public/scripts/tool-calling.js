@@ -21,11 +21,12 @@ import { isTrueBoolean } from './utils.js';
  * @property {string} result - The result of the tool invocation.
  * @property {string?} signature - The thought signature associated with the tool invocation.
  * @property {string?} reasoning - The plaintext reasoning associated with this tool call turn.
+ * @property {boolean} [error] - Whether the tool invocation failed.
  */
 
 /**
  * @typedef {object} ToolInvocationResult
- * @property {ToolInvocation[]} invocations Successful tool invocations
+ * @property {ToolInvocation[]} invocations Tool invocations (both successful and failed)
  * @property {Error[]} errors Errors that occurred during tool invocation
  * @property {string[]} stealthCalls Names of stealth tools that were invoked
  */
@@ -336,10 +337,10 @@ export class ToolManager {
 
             if (error instanceof Error) {
                 error.cause = name;
-                return error.toString();
+                return error;
             }
 
-            return new Error('Unknown error occurred while invoking the tool.', { cause: name }).toString();
+            return new Error('Unknown error occurred while invoking the tool.', { cause: name });
         }
     }
 
@@ -579,7 +580,13 @@ export class ToolManager {
             }
 
             if (typeof deltaValue === 'string') {
-                if (typeof targetValue === 'string') {
+                // `id`, `name`, `type` are sent in full by some providers on every
+                // streaming chunk; concatenating them would duplicate the value.
+                if (key === 'id' || key === 'name' || key === 'type') {
+                    if (!targetValue) {
+                        target[key] = deltaValue;
+                    }
+                } else if (typeof targetValue === 'string') {
                     // Concatenate strings
                     target[key] = targetValue + deltaValue;
                 } else {
@@ -612,6 +619,12 @@ export class ToolManager {
             return false;
         }
 
+        // GPT-6 Astra requires Responses for tools. Sol and Luna allow Chat Completions tools only without reasoning.
+        if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
+            && (/^gpt-6-astra/.test(model) || (/^gpt-6-(sol|luna)/.test(model) && settings.reasoning_effort !== 'min'))) {
+            return false;
+        }
+
         // Post-processing will forcefully remove past tool calls from the prompt, making them useless
         const { NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS } = custom_prompt_post_processing_types;
         const allowedPromptPostProcessing = [NONE, MERGE_TOOLS, SEMI_TOOLS, STRICT_TOOLS];
@@ -636,6 +649,8 @@ export class ToolManager {
                     return currentModel.supported_features?.includes('tools');
                 case chat_completion_sources.ELECTRONHUB:
                     return currentModel.metadata?.function_call;
+                case chat_completion_sources.WORKERS_AI:
+                    return Array.isArray(currentModel.properties) && currentModel.properties.some(p => p.property_id === 'function_calling' && p.value === 'true');
             }
         }
 
@@ -663,6 +678,8 @@ export class ToolManager {
             chat_completion_sources.ZAI,
             chat_completion_sources.SILICONFLOW,
             chat_completion_sources.NANOGPT,
+            chat_completion_sources.WORKERS_AI,
+            chat_completion_sources.MINIMAX,
         ];
         return supportedSources.includes(settings.chat_completion_source);
     }
@@ -796,9 +813,23 @@ export class ToolManager {
             toastr.clear(toast);
             console.log('[ToolManager] Function tool result:', result);
 
-            // Save a successful invocation
+            // Handle tool errors — still create an invocation so the LLM sees the failure
             if (toolResult instanceof Error) {
                 result.errors.push(toolResult);
+                if (isStealth) {
+                    result.stealthCalls.push(name);
+                } else {
+                    result.invocations.push({
+                        id,
+                        displayName,
+                        name,
+                        parameters: stringify(parameters),
+                        result: toolResult.toString(),
+                        error: true,
+                        signature: toolCall.signature || null,
+                        reasoning: reasoningText || null,
+                    });
+                }
                 continue;
             }
 
@@ -814,6 +845,7 @@ export class ToolManager {
                 name,
                 parameters: stringify(parameters),
                 result: toolResult,
+                error: false,
                 signature: toolCall.signature || null,
                 reasoning: reasoningText || null,
             };

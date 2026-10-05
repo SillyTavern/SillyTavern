@@ -97,11 +97,21 @@ label[for="extensions_autoconnect"] {
     font-size: 1.05em;
 }
 
-.extensions_info .extension_version {
+.extensions_info :is(.extension_version, .extension_author) {
     opacity: 0.8;
     font-size: 0.8em;
     font-weight: normal;
     margin-left: 2px;
+}
+
+.extensions_info :is(.extension_version, .extension_author):empty {
+    display: none;
+}
+
+.extensions_info .extension_author {
+    display: inline-flex;
+    gap: 2px;
+    align-items: baseline;
 }
 
 .extensions_info .extension_block a {
