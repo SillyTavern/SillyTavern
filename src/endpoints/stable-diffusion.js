@@ -1448,14 +1448,26 @@ nanogpt.post('/generate', async (request, response) => {
         });
 
         if (!result.ok) {
-            console.warn('NanoGPT returned an error.');
-            return response.sendStatus(500);
+            const text = await result.text();
+            console.warn('NanoGPT returned an error.', text);
+            return response.status(500).send(text);
         }
 
         /** @type {any} */
         const data = await result.json();
+        const choice = data?.data?.[0];
+        let image = choice?.b64_json;
 
-        const image = data?.data?.[0]?.b64_json;
+        // Large images are returned as a download URL instead of inline base64.
+        if (!image && choice?.url) {
+            const imageResult = await fetch(choice.url);
+            if (!imageResult.ok) {
+                console.warn('NanoGPT image download failed.', imageResult.status);
+                return response.sendStatus(500);
+            }
+            image = Buffer.from(await imageResult.arrayBuffer()).toString('base64');
+        }
+
         if (!image) {
             console.warn('NanoGPT returned invalid data.');
             return response.sendStatus(500);
