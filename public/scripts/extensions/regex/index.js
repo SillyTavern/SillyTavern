@@ -389,7 +389,9 @@ class RegexPresetManager {
         // Render the changes to the UI
         await loadRegexScripts();
         // Apply the changes to the current chat
-        await reloadCurrentChat();
+        if (getCurrentChatId()) {
+            await reloadCurrentChat();
+        }
     }
 
     /**
