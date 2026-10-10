@@ -2,10 +2,17 @@ import http from 'node:http';
 import { test, expect } from '@playwright/test';
 import { testSetup } from './frontent-test-utils.js';
 
-let server, apiUrl;
+let server, apiUrl, pendingPing;
 let requests = 0;
 test.beforeAll(async () => {
     server = http.createServer(async (req, res) => {
+        if (req.url === '/v1/ping') {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token');
+            if (req.method === 'OPTIONS') res.writeHead(204).end();
+            else pendingPing = res;
+            return;
+        }
         const chunks = [];
         for await (const chunk of req) chunks.push(chunk);
         const body = JSON.parse(Buffer.concat(chunks).toString());
@@ -28,6 +35,7 @@ test.afterAll(async () => {
 });
 test.beforeEach(async ({ page }) => {
     requests = 0;
+    pendingPing = null;
     await testSetup.awaitST({ page });
     const welcome = page.locator('dialog[open]').filter({ hasText: 'Welcome to SillyTavern!' });
     await expect.poll(async () => {
@@ -136,33 +144,49 @@ for (const type of ['regenerate', 'quiet']) {
     });
 }
 
-test('stops waiting for a delayed ping before replacing an assistant message', async ({ page }) => {
-    let releasePing;
-    let pingEntered = false;
-    const ping = new Promise(resolve => releasePing = resolve);
-    await page.route('**/api/ping', async route => {
-        pingEntered = true;
-        await ping;
-        await route.fulfill({ status: 200, body: '{}' });
-    });
-    const before = await page.evaluate(async () => {
-        const st = await import('/script.js');
-        window.preparationTest = { settled: false };
-        st.setSendButtonState(true);
-        void st.Generate('regenerate').then(() => window.preparationTest.settled = true);
-        return JSON.stringify(st.chat);
-    });
-    await expect.poll(() => pingEntered).toBe(true);
-    await page.evaluate(async () => (await import('/script.js')).stopGeneration());
-    try {
+for (const cancellation of ['stop', 'external']) {
+    test(`aborts the delayed ping connection on ${cancellation} before replacing an assistant message`, async ({ page }) => {
+        const before = await page.evaluate(async pingUrl => {
+            const st = await import('/script.js');
+            const fetch = window.fetch.bind(window);
+            // Use an actual pending HTTP response to observe transport cancellation at the server.
+            window.fetch = (input, init) => fetch(input === 'api/ping' ? pingUrl : input, init);
+            const controller = new AbortController();
+            const state = window.preparationTest = { settled: false, controller };
+            st.setSendButtonState(true);
+            void st.Generate('regenerate', { signal: controller.signal }).then(() => state.settled = true);
+            return JSON.stringify(st.chat);
+        }, `${apiUrl}/ping`);
+        await expect.poll(() => !!pendingPing).toBe(true);
+        await page.evaluate(async cancellation => {
+            if (cancellation === 'external') window.preparationTest.controller.abort();
+            else (await import('/script.js')).stopGeneration();
+        }, cancellation);
         await expect.poll(() => page.evaluate(() => window.preparationTest.settled)).toBe(true);
-    } finally {
-        releasePing();
-    }
-    expect(await page.evaluate(async () => JSON.stringify((await import('/script.js')).chat))).toBe(before);
-    expect(await page.evaluate(async () => (await import('/script.js')).is_send_press)).toBe(false);
-    expect(requests).toBe(0);
-});
+        await expect.poll(() => pendingPing.destroyed).toBe(true);
+        expect(await page.evaluate(async () => JSON.stringify((await import('/script.js')).chat))).toBe(before);
+        expect(await page.evaluate(async () => (await import('/script.js')).is_send_press)).toBe(false);
+        expect(requests).toBe(0);
+    });
+}
+
+for (const response of ['ok', 'http-error', 'network-error']) {
+    test(`preserves ping results and generation cleanup on ${response}`, async ({ page }) => {
+        await page.route('**/api/ping', route => response === 'network-error'
+            ? route.abort('failed')
+            : route.fulfill({ status: response === 'ok' ? 200 : 503, body: '{}' }));
+        const result = await page.evaluate(async () => {
+            const st = await import('/script.js');
+            const withoutSignal = await st.pingServer();
+            const withSignal = await st.pingServer(new AbortController().signal);
+            st.setSendButtonState(true);
+            const error = await st.Generate('regenerate').then(() => null, error => error.message);
+            return { withoutSignal, withSignal, error, locked: st.is_send_press };
+        });
+        expect(result).toEqual({ withoutSignal: response === 'ok', withSignal: response === 'ok', error: response === 'ok' ? null : 'Server unreachable', locked: false });
+        expect(requests).toBe(response === 'ok' ? 1 : 0);
+    });
+}
 
 for (const phase of ['interceptor', 'world-info', 'prompt-data', 'prompt-anchors']) {
     test(`does not resume generation after a cancelled ${phase} finishes`, async ({ page }) => {

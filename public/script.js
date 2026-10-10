@@ -671,13 +671,15 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 
 /**
  * Pings the STserver to check if it is reachable.
+ * @param {AbortSignal} [signal] Signal to cancel the request
  * @returns {Promise<boolean>} True if the server is reachable, false otherwise.
  */
-export async function pingServer() {
+export async function pingServer(signal) {
     try {
         const result = await fetch('api/ping', {
             method: 'POST',
             headers: getRequestHeaders({ omitContentType: true }),
+            signal,
         });
 
         if (!result.ok) {
@@ -4363,7 +4365,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (!dryRun) {
             // Ping server to make sure it is still alive
-            const pingResult = await waitWithAbort(() => pingServer(), generationSignal);
+            const pingResult = await waitWithAbort(() => pingServer(generationSignal), generationSignal);
             generationSignal.throwIfAborted();
 
             if (!pingResult) {
