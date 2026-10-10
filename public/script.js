@@ -415,6 +415,8 @@ export let chat = [];
  */
 export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
+let chatSaveQueue = Promise.resolve();
+let pendingChatSaves = 0;
 let importFlashTimeout;
 export let isChatSaving = false;
 let firstRun = false;
@@ -1575,6 +1577,7 @@ export function cancelDebouncedChatSave() {
         console.debug('Debounced chat save cancelled');
         clearTimeout(chatSaveTimeout);
         chatSaveTimeout = null;
+        isChatSaving = pendingChatSaves > 0;
     }
 }
 
@@ -7361,24 +7364,29 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
 export function saveChatDebounced() {
     const chid = this_chid;
     const selectedGroup = selected_group;
+    const chatId = getCurrentChatId();
+    const avatar = characters[chid]?.avatar;
 
     cancelDebouncedChatSave();
 
     chatSaveTimeout = setTimeout(async () => {
+        cancelDebouncedChatSave();
         if (selectedGroup !== selected_group) {
             console.warn('Chat save timeout triggered, but group changed. Aborting.');
             return;
         }
 
-        if (chid !== this_chid) {
-            console.warn('Chat save timeout triggered, but chid changed. Aborting.');
+        if (chid !== this_chid || chatId !== getCurrentChatId() || avatar !== characters[this_chid]?.avatar) {
+            console.warn('Chat save timeout triggered, but chat changed. Aborting.');
             return;
         }
 
         console.debug('Chat save timeout triggered');
-        await saveChatConditional();
-        console.debug('Chat saved');
+        if (await saveChatConditional()) {
+            console.debug('Chat saved');
+        }
     }, DEFAULT_SAVE_EDIT_TIMEOUT);
+    isChatSaving = true;
 }
 
 /**
@@ -7431,51 +7439,65 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
         character_name: 'unused',
     };
 
+    await saveChatRequest('/api/chats/save', {
+        ch_name: characters[this_chid].name,
+        file_name: fileName,
+        chat: [chatHeader, ...trimmedChat],
+        avatar_url: characters[this_chid].avatar,
+        force: force,
+    }, t`Chat could not be saved`);
+}
+
+/**
+ * Queues an immutable chat snapshot, including any confirmed integrity retry.
+ * @param {string} url Chat save endpoint
+ * @param {object} data Chat save payload
+ * @param {string} errorTitle Title shown if saving fails
+ * @returns {Promise<void>} Resolves after this snapshot is saved, or rejects on failure
+ */
+export async function saveChatRequest(url, data, errorTitle) {
     try {
-        const saveChatRequest = await compressRequest({
-            method: 'POST',
-            cache: 'no-cache',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                ch_name: characters[this_chid].name,
-                file_name: fileName,
-                chat: [chatHeader, ...trimmedChat],
-                avatar_url: characters[this_chid].avatar,
-                force: force,
-            }),
+        // Serialize before waiting: the selected chat and its messages may change meanwhile.
+        let body = JSON.stringify(data);
+        let force = data.force;
+        pendingChatSaves++;
+        isChatSaving = true;
+        const save = chatSaveQueue.then(async () => {
+            while (true) {
+                const request = await compressRequest({ method: 'POST', cache: 'no-cache', headers: getRequestHeaders(), body });
+                const response = await fetch(url, request);
+                if (response.ok) return;
+
+                const errorData = await response.json();
+                if (errorData?.error !== 'integrity' || force) {
+                    throw new Error(response.statusText);
+                }
+
+                const popupResult = await Popup.show.input(
+                    t`ERROR: Chat integrity check failed while saving the file.`,
+                    t`<p>After you click OK, the page will be reloaded to prevent data corruption.</p>
+                      <p>To confirm an overwrite (and potentially <b>LOSE YOUR DATA</b>), enter <code>OVERWRITE</code> (in all caps) in the box below before clicking OK.</p>`,
+                    '',
+                    { okButton: 'OK', cancelButton: false },
+                );
+                if (popupResult !== 'OVERWRITE') {
+                    window.location.reload();
+                    throw new Error('Chat integrity overwrite was not confirmed');
+                }
+
+                force = true;
+                body = JSON.stringify({ ...JSON.parse(body), force });
+            }
+        }).finally(() => {
+            isChatSaving = --pendingChatSaves > 0 || !!chatSaveTimeout;
         });
-        const result = await fetch('/api/chats/save', saveChatRequest);
-
-        if (result.ok) {
-            return;
-        }
-
-        const errorData = await result.json();
-        const isIntegrityError = errorData?.error === 'integrity' && !force;
-        if (!isIntegrityError) {
-            throw new Error(result.statusText);
-        }
-
-        const popupResult = await Popup.show.input(
-            t`ERROR: Chat integrity check failed while saving the file.`,
-            t`<p>After you click OK, the page will be reloaded to prevent data corruption.</p>
-              <p>To confirm an overwrite (and potentially <b>LOSE YOUR DATA</b>), enter <code>OVERWRITE</code> (in all caps) in the box below before clicking OK.</p>`,
-            '',
-            { okButton: 'OK', cancelButton: false },
-        );
-
-        const forceSaveConfirmed = popupResult === 'OVERWRITE';
-
-        if (!forceSaveConfirmed) {
-            console.warn('Chat integrity check failed, and user did not confirm the overwrite. Reloading the page.');
-            window.location.reload();
-            return;
-        }
-
-        await saveChat({ chatName, withMetadata, mesId, force: true });
+        // A failed write must not discard later snapshots or poison the queue.
+        chatSaveQueue = save.catch(() => {});
+        await save;
     } catch (error) {
         console.error(error);
-        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Chat could not be saved`);
+        toastr.error(t`Check the server connection and reload the page to prevent data loss.`, errorTitle);
+        throw error;
     }
 }
 
@@ -9409,19 +9431,16 @@ export async function saveMetadata() {
     return await saveChatConditional();
 }
 
+/**
+ * Saves the current chat without interrupting generation cleanup on a save error.
+ * @returns {Promise<boolean>} False when saving failed
+ */
 export async function saveChatConditional() {
-    try {
-        await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
-    } catch {
-        console.warn('Timeout waiting for chat to save');
-        return;
-    }
-
+    const chatId = getCurrentChatId();
+    const groupId = selected_group;
+    const character = characters[this_chid];
     try {
         cancelDebouncedChatSave();
-
-        isChatSaving = true;
-
         if (selected_group) {
             await saveGroupChat(selected_group, true);
         } else {
@@ -9430,11 +9449,14 @@ export async function saveChatConditional() {
 
         // Save token and prompts cache to IndexedDB storage
         saveTokenCache();
-        saveItemizedPrompts(getCurrentChatId());
+        if (chatId === getCurrentChatId() && groupId === selected_group && (groupId || character === characters[this_chid])) {
+            saveItemizedPrompts(chatId);
+        }
+        return true;
     } catch (error) {
         console.error('Error saving chat', error);
-    } finally {
-        isChatSaving = false;
+        // Generation callers still need to finish their UI cleanup after a failed save.
+        return false;
     }
 }
 
