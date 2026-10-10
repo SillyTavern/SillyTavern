@@ -4,9 +4,11 @@ import { testSetup } from './frontent-test-utils.js';
 const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
 
 async function openCharacters(page) {
-    if (!await page.locator('#right-nav-panel').isVisible()) {
+    const drawer = page.locator('#right-nav-panel');
+    if (!await drawer.evaluate(element => element.classList.contains('openDrawer'))) {
         await page.locator('#rightNavDrawerIcon').click();
     }
+    await expect(drawer).toHaveClass(/openDrawer/);
     await page.locator('#rm_button_characters').click();
     if (!await page.locator('#character_search_bar').isVisible()) {
         await page.locator('#rm_button_search').click();
@@ -34,9 +36,11 @@ async function selectCharacter(page, name) {
 }
 
 async function openBackgrounds(page, tab = 'character') {
-    if (!await page.locator('#Backgrounds').isVisible()) {
+    const drawer = page.locator('#Backgrounds');
+    if (!await drawer.evaluate(element => element.classList.contains('openDrawer'))) {
         await page.locator('#backgrounds-drawer-toggle').click();
     }
+    await expect(drawer).toHaveClass(/openDrawer/);
     await page.locator(`a[href="#bg_${tab}_tab"]`).click();
 }
 
