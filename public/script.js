@@ -12,6 +12,7 @@ import {
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { waitWithAbort } from './scripts/util/abort.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -670,13 +671,15 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 
 /**
  * Pings the STserver to check if it is reachable.
+ * @param {AbortSignal} [signal] Signal to cancel the request
  * @returns {Promise<boolean>} True if the server is reachable, false otherwise.
  */
-export async function pingServer() {
+export async function pingServer(signal) {
     try {
         const result = await fetch('api/ping', {
             method: 'POST',
             headers: getRequestHeaders({ omitContentType: true }),
+            signal,
         });
 
         if (!result.ok) {
@@ -4292,65 +4295,99 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     setGenerationProgress(0);
     generation_started = new Date();
 
-    // Prevent generation from shallow characters
-    await unshallowCharacter(this_chid);
-
-    // Occurs every time, even if the generation is aborted due to slash commands execution
-    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
-
-    // Don't recreate abort controller if signal is passed
-    if (!(abortController && signal)) {
+    // Install cancellation before awaiting startup hooks, retaining a live group controller.
+    // Prompt previews must not replace the foreground controller.
+    if (!dryRun && (!signal || !abortController || (abortController.signal.aborted && !signal.aborted))) {
         abortController = new AbortController();
+    }
+    const generationController = abortController;
+    const generationSignal = dryRun ? undefined : signal
+        ? AbortSignal.any([generationController.signal, signal])
+        : generationController.signal;
+
+    function isGenerationAborted() {
+        if (!generationSignal?.aborted) return false;
+        // An old preparation must not unlock a newer generation.
+        if (abortController === generationController) unblockGeneration(type);
+        return true;
+    }
+
+    try {
+        // Prevent generation from shallow characters
+        await waitWithAbort(() => unshallowCharacter(this_chid), generationSignal);
+
+        // Occurs every time, even if the generation is aborted due to slash commands execution
+        await eventSource.emitWithSignal(generationSignal, event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
+        generationSignal?.throwIfAborted();
+    } catch (error) {
+        // A cancelled startup must not unlock a newer generation or a prompt preview.
+        if (!dryRun && abortController === generationController) {
+            unblockGeneration(type);
+        }
+        if (generationSignal?.aborted) {
+            return;
+        }
+        throw error;
     }
 
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == 'impersonate';
 
-    if (!(dryRun || depth || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
-        const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
+    try {
+        if (!(dryRun || depth || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
+            // Commands can mutate chat or run a nested generation; let them finish before checking cancellation.
+            const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
+            if (isGenerationAborted()) return;
 
-        if (interruptedByCommand) {
-            //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+            if (interruptedByCommand) {
+                //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+                unblockGeneration(type);
+                return Promise.resolve();
+            }
+        }
+
+        // Occurs only if the generation is not aborted due to slash commands execution.
+        // Cancellation stops dispatch/continuation, but cannot undo an already-running callback's effects.
+        await eventSource.emitWithSignal(generationSignal, event_types.GENERATION_AFTER_COMMANDS, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
+        generationSignal?.throwIfAborted();
+
+        if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
+            toastr.error(t`Streaming is enabled, but the version of Kobold used does not support token streaming.`, undefined, { timeOut: 10000, preventDuplicates: true });
             unblockGeneration(type);
             return Promise.resolve();
         }
-    }
 
-    // Occurs only if the generation is not aborted due to slash commands execution
-    await eventSource.emit(event_types.GENERATION_AFTER_COMMANDS, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
-
-    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
-        toastr.error(t`Streaming is enabled, but the version of Kobold used does not support token streaming.`, undefined, { timeOut: 10000, preventDuplicates: true });
-        unblockGeneration(type);
-        return Promise.resolve();
-    }
-
-    if (isHordeGenerationNotAllowed()) {
-        unblockGeneration(type);
-        return Promise.resolve();
-    }
-
-    if (!dryRun) {
-        // Ping server to make sure it is still alive
-        const pingResult = await pingServer();
-
-        if (!pingResult) {
+        if (isHordeGenerationNotAllowed()) {
             unblockGeneration(type);
-            toastr.error(t`Verify that the server is running and accessible.`, t`ST Server cannot be reached`);
-            throw new Error('Server unreachable');
+            return Promise.resolve();
         }
 
-        // Hide swipes if not in a dry run.
-        hideSwipeButtons();
-        // If generated any message, set the flag to indicate it can't be recreated again.
-        chat_metadata.tainted = true;
+        if (!dryRun) {
+            // Ping server to make sure it is still alive
+            const pingResult = await waitWithAbort(() => pingServer(generationSignal), generationSignal);
+            generationSignal.throwIfAborted();
+
+            if (!pingResult) {
+                unblockGeneration(type);
+                toastr.error(t`Verify that the server is running and accessible.`, t`ST Server cannot be reached`);
+                throw new Error('Server unreachable');
+            }
+
+            // Hide swipes if not in a dry run.
+            hideSwipeButtons();
+            // If generated any message, set the flag to indicate it can't be recreated again.
+            chat_metadata.tainted = true;
+        }
+    } catch (error) {
+        if (isGenerationAborted()) return;
+        throw error;
     }
 
     if (selected_group && !is_group_generating) {
         if (!dryRun) {
             // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, jsonSchema });
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: generationSignal, quietImage, jsonSchema });
         }
 
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
@@ -4411,6 +4448,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         }
     }
+    if (isGenerationAborted()) return;
 
     const isContinue = type == 'continue';
 
@@ -4456,6 +4494,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         // Use send_if_empty if set and the user message is empty. Only when sending messages normally
         await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
     }
+    if (isGenerationAborted()) return;
 
     let {
         description,
@@ -4527,6 +4566,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             index,
         };
     }));
+    if (isGenerationAborted()) return;
 
     const promptReasoning = new PromptReasoning();
     for (let i = coreChat.length - 1; i >= 0; i--) {
@@ -4561,7 +4601,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     if (!dryRun) {
         console.debug('Running extension interceptors');
-        const aborted = await runGenerationInterceptors(coreChat, this_max_context, type);
+        const aborted = await runGenerationInterceptors(coreChat, this_max_context, type, generationSignal);
+        if (isGenerationAborted()) return;
 
         if (aborted) {
             console.debug('Generation aborted by extension interceptors');
@@ -4615,6 +4656,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let mesExamplesArray = parseMesExamples(mesExamples, isInstruct);
 
+    if (isGenerationAborted()) return;
+
     // Set non-WI AN
     setFloatingPrompt();
 
@@ -4634,6 +4677,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     };
     const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth, outletEntries } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun, globalScanData);
     setExtensionPrompt(inject_ids.QUIET_PROMPT, '', extension_prompt_types.IN_PROMPT, 0, true);
+    // World info owns shared prompt/timed-effect updates; do not abandon it partway through.
+    if (isGenerationAborted()) return;
 
     // Add message example WI
     for (const example of worldInfoExamples) {
@@ -5316,6 +5361,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     await eventSource.emit(event_types.GENERATE_AFTER_DATA, generate_data, dryRun);
+    if (isGenerationAborted()) return;
 
     if (dryRun) {
         return Promise.resolve();
@@ -5370,6 +5416,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             messagesCount: main_api !== 'openai' ? mesSend.length : oaiMessages.length,
             examplesCount: main_api !== 'openai' ? (pinExmString ? mesExamplesArray.length : count_exm_add) : oaiMessageExamples.length,
         };
+        if (isGenerationAborted()) return;
 
         //console.log(additionalPromptStuff);
         const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === additionalPromptStuff.mesId);

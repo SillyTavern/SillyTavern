@@ -1,3 +1,5 @@
+import { waitWithAbort } from '../scripts/util/abort.js';
+
 /* Polyfill indexOf. */
 var indexOf;
 
@@ -127,8 +129,17 @@ EventEmitter.prototype.removeListener = function (event, listener) {
  * Emits an event with optional arguments.
  * @param {string} event Event name
  */
-EventEmitter.prototype.emit = async function (event) {
-    let args = [].slice.call(arguments, 1);
+EventEmitter.prototype.emit = function (event, ...args) {
+    return this.emitWithSignal(undefined, event, ...args);
+};
+
+/**
+ * Emits an event until all listeners finish or the signal is aborted.
+ * @param {AbortSignal} signal Signal to cancel listener dispatch and waiting
+ * @param {string} event Event name
+ */
+EventEmitter.prototype.emitWithSignal = async function (signal, event, ...args) {
+    signal?.throwIfAborted();
     if (localStorage.getItem('eventTracing') === 'true') {
         console.trace('Event emitted: ' + event, args);
     } else {
@@ -143,15 +154,19 @@ EventEmitter.prototype.emit = async function (event) {
 
         for (i = 0; i < length; i++) {
             try {
-                await listeners[i].apply(this, args);
+                await (signal
+                    ? waitWithAbort(() => listeners[i].apply(this, args), signal)
+                    : listeners[i].apply(this, args));
             }
             catch (err) {
+                signal?.throwIfAborted();
                 console.error(err);
                 console.trace('Error in event listener');
             }
         }
     }
 
+    signal?.throwIfAborted();
     if (this.autoFireAfterEmit.has(event)) {
         this.autoFireLastArgs.set(event, args);
     }
