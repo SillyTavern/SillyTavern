@@ -101,6 +101,31 @@ test('imports preserved media paths and renders a user-installed regex shortcut'
     await expect(regexImage).toBeVisible();
 });
 
+test('serves literal percent filenames without decoding them twice or allowing traversal', async ({ page }) => {
+    const name = `CharX percent ${Date.now()}`;
+    const assets = [
+        { name: '50%.png', content: image },
+        { name: 'literal%20name.png', content: image },
+        { name: 'literal name.png', content: Buffer.concat([image, Buffer.from('different asset')]) },
+        { name: 'literal%2Fname.png', content: image },
+    ].map(asset => ({ ...asset, type: 'custom', ext: 'png', archivePath: `assets/${asset.name}` }));
+    const folder = `/characters/${encodeURIComponent(name)}/images`;
+    const archive = await buildSyntheticCharXArchive(name, assets, { avatar: image });
+    await openApp(page);
+    await importCharacter(page, { name: 'percent.charx', mimeType: 'application/zip', buffer: archive });
+    for (const asset of assets) {
+        const response = await page.request.get(`${folder}/${encodeURIComponent(asset.name)}`);
+        expect(response.status(), asset.name).toBe(200);
+        expect((await response.body()).equals(asset.content), asset.name).toBe(true);
+    }
+
+    // The user settings file exists beside characters, outside this route's root.
+    const traversal = await page.request.get('/characters/%2e%2e%2fsettings.json');
+    expect(traversal.status()).toBe(403);
+    const doubleEncodedTraversal = await page.request.get('/characters/%252e%252e%252fsettings.json');
+    expect(doubleEncodedTraversal.status()).toBe(404);
+});
+
 // Opt in to local real/synthetic archives without committing private fixtures.
 const fixtureDirectory = process.env.ST_CHARX_FIXTURE_DIR;
 const fixturePaths = fixtureDirectory
