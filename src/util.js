@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import http2 from 'node:http2';
 import process from 'node:process';
 import { Readable } from 'node:stream';
+import { finished } from 'node:stream/promises';
 import { createRequire } from 'node:module';
 import { Buffer } from 'node:buffer';
 import { promises as dnsPromise } from 'node:dns';
@@ -727,7 +728,7 @@ export function getImages(directoryPath, sortBy = 'name', type = MEDIA_REQUEST_T
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {import('express').Response} to The Express response to pipe to.
- * @returns {Promise<void>}
+ * @returns {Promise<void>} Resolves when the response finishes or closes.
  */
 export async function forwardFetchResponse(from, to) {
     let statusCode = from.status;
@@ -745,36 +746,52 @@ export async function forwardFetchResponse(from, to) {
     to.statusCode = statusCode;
     to.statusMessage = statusText;
 
+    // Some callers remove the socket listeners which would normally close ServerResponse.
+    const socket = to.socket;
+    const controller = new AbortController();
+    const onSocketClose = () => { to.destroy(); controller.abort(); };
+    socket?.once('close', onSocketClose);
+    if (to.destroyed || socket?.destroyed) onSocketClose();
+
+    // A response can close while an upstream stream (including an error body) is still pending.
+    const responseDone = finished(to, { readable: false, cleanup: true, signal: controller.signal })
+        .catch(() => {})
+        .finally(() => {
+            socket?.removeListener('close', onSocketClose);
+            if (from.body instanceof Readable && !from.body.readableEnded) from.body.destroy();
+        });
+
     if (!from.ok) {
         try {
             const rawErrorText = await from.text();
             const detail = rawErrorText || 'Unknown error occurred';
 
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: ${detail}`);
-            to.end(rawErrorText, 'utf-8');
+            if (!to.destroyed) to.end(rawErrorText, 'utf-8');
         } catch {
             console.warn(`Streaming request failed with status ${from.status} ${statusText}: Unknown error occurred`);
-            to.end();
+            if (!to.destroyed) to.end();
         }
 
+        await responseDone;
         return;
     }
 
     if (from.body && to.socket) {
+        const sourceDone = finished(from.body, { writable: false, cleanup: true })
+            .then(() => console.info('Streaming request finished'))
+            .catch(error => {
+                if (!to.destroyed) console.warn('Streaming response interrupted:', error);
+                // Some callers send an error response unconditionally in their catch block.
+                // Close the partial response here instead of rejecting after headers were sent.
+                to.destroy();
+            });
         from.body.pipe(to);
-
-        to.socket.on('close', function () {
-            if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
-
-            to.end(); // End the Express response
-        });
-
-        from.body.on('end', function () {
-            console.info('Streaming request finished');
-            to.end();
-        });
+        await Promise.all([sourceDone, responseDone]);
+        from.body.unpipe(to);
     } else {
         to.end();
+        await responseDone;
     }
 }
 
