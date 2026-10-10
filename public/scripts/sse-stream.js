@@ -13,10 +13,11 @@ class EventSourceStream {
 
         let streamBuffer = '';
         let lastEventId = '';
+        let discardLeadingLF = false;
 
         function processChunk(controller) {
             // Events are separated by two newlines
-            const events = streamBuffer.split(/\r\n\r\n|\r\r|\n\n/g);
+            const events = streamBuffer.split('\n\n');
             if (events.length === 0) return;
 
             // The leftover text to remain in the buffer is whatever doesn't have two newlines after it. If the buffer ended
@@ -26,10 +27,10 @@ class EventSourceStream {
             for (const eventChunk of events) {
                 let eventType = '';
                 // Split up by single newlines.
-                const lines = eventChunk.split(/\n|\r|\r\n/g);
+                const lines = eventChunk.split('\n');
                 let eventData = '';
                 for (const line of lines) {
-                    const lineMatch = /([^:]+)(?:: ?(.*))?/.exec(line);
+                    const lineMatch = /^([^:]+)(?:: ?(.*))?$/s.exec(line);
                     if (lineMatch) {
                         const field = lineMatch[1];
                         const value = lineMatch[2] || '';
@@ -68,7 +69,12 @@ class EventSourceStream {
 
         const sseStream = new TransformStream({
             transform(chunk, controller) {
-                streamBuffer += chunk;
+                // CR, LF and CRLF are line endings, including CRLF split across chunks.
+                if (discardLeadingLF && chunk.startsWith('\n')) {
+                    chunk = chunk.slice(1);
+                }
+                discardLeadingLF = chunk.endsWith('\r');
+                streamBuffer += chunk.replace(/\r\n|\r/g, '\n');
                 processChunk(controller);
             },
         });
