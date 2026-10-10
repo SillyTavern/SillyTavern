@@ -32,6 +32,14 @@ test('queued normal/group edits survive switching and failed checkpoints do not 
         return route.abort();
     });
     await testSetup.awaitST({ page });
+    const welcome = page.locator('dialog[open]').filter({ hasText: 'Welcome to SillyTavern!' });
+    await expect.poll(async () => {
+        if (await welcome.isVisible()) await welcome.locator('.popup-button-ok').click();
+        return page.evaluate(async () => {
+            const st = await import('/script.js');
+            return st.eventSource.autoFireLastArgs.has(st.event_types.APP_READY);
+        });
+    }, { timeout: 15000 }).toBe(true);
     const ids = await page.evaluate(async () => {
         const st = await import('/script.js');
         const groups = await import('/scripts/group-chats.js');
