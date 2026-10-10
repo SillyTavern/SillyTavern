@@ -2019,9 +2019,10 @@ async function autoUpdateExtensions(forceAll) {
  * @param {any[]} chat Chat array
  * @param {number} contextSize Context size
  * @param {string} type Generation type
+ * @param {AbortSignal} [signal] Stops dispatching further interceptors after cancellation
  * @returns {Promise<boolean>} True if generation should be aborted
  */
-export async function runGenerationInterceptors(chat, contextSize, type) {
+export async function runGenerationInterceptors(chat, contextSize, type, signal) {
     let aborted = false;
     let exitImmediately = false;
 
@@ -2031,6 +2032,7 @@ export async function runGenerationInterceptors(chat, contextSize, type) {
     };
 
     for (const manifest of Object.values(manifests).filter(x => x.generate_interceptor).sort((a, b) => sortManifestsByOrder(a, b))) {
+        if (signal?.aborted) return true;
         const interceptorKey = manifest.generate_interceptor;
         if (typeof globalThis[interceptorKey] === 'function') {
             try {
