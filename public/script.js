@@ -12,6 +12,7 @@ import {
 } from './lib.js';
 
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { waitWithAbort } from './scripts/util/abort.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -4292,14 +4293,35 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     setGenerationProgress(0);
     generation_started = new Date();
 
-    // Prevent generation from shallow characters
-    await unshallowCharacter(this_chid);
+    // Install cancellation before awaiting startup hooks, retaining a live group controller.
+    if (!dryRun && (!signal || !abortController || (abortController.signal.aborted && !signal.aborted))) {
+        abortController = new AbortController();
+    }
+    const generationController = abortController;
+    const startupSignal = dryRun ? undefined : signal
+        ? AbortSignal.any([generationController.signal, signal])
+        : generationController.signal;
 
-    // Occurs every time, even if the generation is aborted due to slash commands execution
-    await eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
+    try {
+        // Prevent generation from shallow characters
+        await waitWithAbort(() => unshallowCharacter(this_chid), startupSignal);
 
-    // Don't recreate abort controller if signal is passed
-    if (!(abortController && signal)) {
+        // Occurs every time, even if the generation is aborted due to slash commands execution
+        await eventSource.emitWithSignal(startupSignal, event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage }, dryRun);
+        startupSignal?.throwIfAborted();
+    } catch (error) {
+        // A cancelled startup must not unlock a newer generation or a prompt preview.
+        if (!dryRun && abortController === generationController) {
+            unblockGeneration(type);
+        }
+        if (startupSignal?.aborted) {
+            return;
+        }
+        throw error;
+    }
+
+    // Preserve prompt previews' existing controller lifecycle.
+    if (dryRun && !(abortController && signal)) {
         abortController = new AbortController();
     }
 
