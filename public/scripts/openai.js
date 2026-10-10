@@ -9,6 +9,7 @@ import {
     abortStatusCheck,
     cancelStatusCheck,
     characters,
+    DEFAULT_SAVE_EDIT_TIMEOUT,
     event_types,
     eventSource,
     extension_prompt_roles,
@@ -25,6 +26,7 @@ import {
     name1,
     name2,
     resultCheckStatus,
+    saveSettings,
     saveSettingsDebounced,
     setOnlineStatus,
     startStatusLoading,
@@ -50,6 +52,7 @@ import { getEventSourceStream } from './sse-stream.js';
 import {
     clamp,
     createThumbnail,
+    debounceAsync,
     delay,
     download,
     getAudioDurationFromDataURL,
@@ -699,10 +702,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
         },
     };
 
-    promptManager.saveServiceSettings = () => {
-        saveSettingsDebounced();
-        return new Promise((resolve) => eventSource.once(event_types.SETTINGS_UPDATED, resolve));
-    };
+    promptManager.saveServiceSettings = debounceAsync(() => saveSettings(), DEFAULT_SAVE_EDIT_TIMEOUT);
 
     promptManager.tryGenerate = () => {
         if (characters[this_chid]) {
