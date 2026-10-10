@@ -227,10 +227,15 @@ export async function createBranch(mesId, { swipeId = null } = {}) {
         return;
     }
 
-    if (selected_group) {
-        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId, branchChatSnapshot);
-    } else {
-        await saveChat({ chatName: name, withMetadata: newMetadata, mesId, chatData: branchChatSnapshot });
+    try {
+        if (selected_group) {
+            await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId, branchChatSnapshot);
+        } else {
+            await saveChat({ chatName: name, withMetadata: newMetadata, mesId, chatData: branchChatSnapshot });
+        }
+    } catch (error) {
+        console.error('Could not save branch', error);
+        return null;
     }
     // append to branches list if it exists
     // otherwise create it
@@ -284,10 +289,15 @@ export async function createNewBookmark(mesId, { forceName = null } = {}) {
     const newMetadata = { main_chat: mainChat, integrity: uuidv4() };
     await saveItemizedPrompts(name);
 
-    if (selected_group) {
-        await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
-    } else {
-        await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
+    try {
+        if (selected_group) {
+            await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);
+        } else {
+            await saveChat({ chatName: name, withMetadata: newMetadata, mesId });
+        }
+    } catch (error) {
+        console.error('Could not save checkpoint', error);
+        return null;
     }
 
     lastMes.extra.bookmark_link = name;
