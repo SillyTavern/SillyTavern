@@ -1696,6 +1696,9 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
                     const avatarExt = path.extname(filename).slice(1).toLowerCase() || 'png';
                     const avatarArchivePath = `assets/icon/images/main.${avatarExt}`;
                     const charxCard = buildCharXCard(jsonObject, characterFolder, avatarArchivePath, avatarExt, exportAssets, mediaConfig);
+                    const avatarBuffer = await fsPromises.readFile(filename);
+                    const avatarData = mutateJsonString(read(avatarBuffer), unsetPrivateFields);
+                    const exportedAvatar = write(avatarBuffer, avatarData);
 
                     const archive = archiver('zip');
                     archive.on('error', function (error) {
@@ -1711,7 +1714,7 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
                     response.setHeader('Content-Disposition', `attachment; filename="${encodeURI(path.basename(filename, path.extname(filename)))}.charx"`);
                     archive.pipe(response);
                     archive.append(JSON.stringify(charxCard, null, 4), { name: 'card.json' });
-                    archive.file(filename, { name: avatarArchivePath });
+                    archive.append(exportedAvatar, { name: avatarArchivePath });
                     for (const asset of exportAssets) {
                         archive.file(asset.fullPath, { name: asset.archivePath });
                     }
