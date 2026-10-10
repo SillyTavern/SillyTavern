@@ -13,7 +13,7 @@ const CHARX_IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'ap
 const CHARX_AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'aiff']);
 const CHARX_VIDEO_EXTENSIONS = new Set(MEDIA_EXTENSIONS.filter(ext => !CHARX_IMAGE_EXTENSIONS.has(ext) && !CHARX_AUDIO_EXTENSIONS.has(ext)));
 const CHARX_JSON_EXTENSIONS = new Set(['json']);
-const CHARX_SUPPORTED_EXPORT_EXTENSIONS = new Set([...MEDIA_EXTENSIONS, ...CHARX_JSON_EXTENSIONS]);
+const CHARX_SUPPORTED_EXPORT_EXTENSIONS = new Set([...CHARX_IMAGE_EXTENSIONS, ...MEDIA_EXTENSIONS, ...CHARX_JSON_EXTENSIONS]);
 const CHARX_SPRITE_TYPES = new Set(['emotion', 'expression']);
 const CHARX_BACKGROUND_TYPES = new Set(['background']);
 const CHARX_REGEX_AI_OUTPUT = 2;
@@ -260,7 +260,7 @@ export class CharXParser {
     }
 
     mapCharXAssetsForStorage(assets) {
-        return assets.reduce((acc, asset) => {
+        const mappedAssets = assets.reduce((acc, asset) => {
             if (!asset?.zipPath) {
                 return acc;
             }
@@ -304,6 +304,26 @@ export class CharXParser {
 
             return acc;
         }, []);
+
+        // Preserve every packaged file when creator names collide after sanitizing.
+        // Reserve all original names first so a suffix cannot take a later asset's name.
+        // Background persistence replaces files by basename, regardless of extension.
+        const nonSprites = mappedAssets.filter(asset => asset.storageCategory !== 'sprite');
+        const storageKey = (asset, baseName = asset.baseName) => `${asset.storageCategory}/${baseName}${asset.storageCategory === 'background' ? '' : `.${asset.ext}`}`;
+        const reserved = new Set(nonSprites.map(asset => storageKey(asset)));
+        const used = new Set();
+        for (const asset of nonSprites) {
+            if (used.has(storageKey(asset))) {
+                let suffix = 2;
+                let candidate;
+                do {
+                    candidate = `${asset.baseName} (${suffix++})`;
+                } while (reserved.has(storageKey(asset, candidate)) || used.has(storageKey(asset, candidate)));
+                asset.baseName = candidate;
+            }
+            used.add(storageKey(asset));
+        }
+        return mappedAssets;
     }
 }
 
