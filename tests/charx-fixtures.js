@@ -98,7 +98,7 @@ function buildSyntheticCharXCard(characterName, assets) {
     };
 }
 
-export async function buildSyntheticCharXArchive(characterName = 'Purrsephone', assets = SYNTHETIC_CHARX_FIXTURE_ASSETS) {
+export async function buildSyntheticCharXArchive(characterName = 'Purrsephone', assets = SYNTHETIC_CHARX_FIXTURE_ASSETS, { avatar = Buffer.from('avatar'), firstMessage = '' } = {}) {
     const archive = archiver('zip');
     const output = new PassThrough();
     /** @type {Buffer[]} */
@@ -107,8 +107,10 @@ export async function buildSyntheticCharXArchive(characterName = 'Purrsephone', 
     output.on('data', chunk => chunks.push(Buffer.from(chunk)));
     archive.pipe(output);
 
-    archive.append(JSON.stringify(buildSyntheticCharXCard(characterName, assets), null, 2), { name: 'card.json' });
-    archive.append(Buffer.from('avatar'), { name: 'assets/icon/images/main.png' });
+    const card = buildSyntheticCharXCard(characterName, assets);
+    card.data.first_mes = firstMessage;
+    archive.append(JSON.stringify(card, null, 2), { name: 'card.json' });
+    archive.append(avatar, { name: 'assets/icon/images/main.png' });
 
     for (const asset of assets) {
         archive.append(Buffer.from(asset.content), { name: asset.archivePath });
