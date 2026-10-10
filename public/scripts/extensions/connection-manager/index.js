@@ -19,6 +19,7 @@ import { performFuzzySearch } from '/scripts/power-user.js';
 import { StreamingDisplay } from '/scripts/streaming-display.js';
 import { ConnectionManagerRequestService } from '../shared.js';
 import { formatReasoning } from '/scripts/reasoning.js';
+import { StreamingError } from '../../openai.js';
 
 const MODULE_NAME = 'connection-manager';
 const NONE = '<None>';
@@ -527,10 +528,12 @@ async function generateStreamCallback(args, value) {
 
     // Create abort controller for stop functionality (when stop is enabled)
     const abortController = enableStop ? new AbortController() : null;
+    const display = new StreamingDisplay();
 
     // Compose the stop handler: abort the request + optionally invoke user closure
     const onStopHandler = enableStop ? async () => {
         abortController.abort();
+        display.markStopped({ label: `${generatingLabel} [Stopped]` });
         if (onStopClosure) {
             try {
                 const localClosure = onStopClosure.getCopy();
@@ -578,7 +581,6 @@ async function generateStreamCallback(args, value) {
         }
 
         // Create streaming display
-        const display = new StreamingDisplay();
         display.show({
             label: generatingLabel,
             icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
@@ -592,6 +594,7 @@ async function generateStreamCallback(args, value) {
 
         let finalText = '';
         let finalReasoning = '';
+        let hasOutput = false;
 
         /** Gets the final (if requested, formatted) text to return for this command @returns {string} */
         function buildResultText() {
@@ -616,6 +619,7 @@ async function generateStreamCallback(args, value) {
             if (typeof streamResponse === 'function') {
                 const generator = streamResponse();
                 for await (const chunk of generator) {
+                    hasOutput ||= Boolean(chunk.text || chunk.state?.reasoning || chunk.state?.images?.length || chunk.swipes?.some(Boolean));
                     finalText = chunk.text;
                     finalReasoning = chunk.state?.reasoning || '';
                     display.updateReasoning(finalReasoning);
@@ -626,6 +630,7 @@ async function generateStreamCallback(args, value) {
                 const extracted = streamResponse;
                 finalText = extracted?.content || '';
                 finalReasoning = extracted?.reasoning || '';
+                hasOutput = Boolean(finalText || finalReasoning);
                 if (finalReasoning) {
                     display.updateReasoning(finalReasoning);
                 }
@@ -634,35 +639,36 @@ async function generateStreamCallback(args, value) {
         } catch (error) {
             // If the user clicked stop, don't retry — show stopped state and return empty
             if (abortController?.signal?.aborted) {
-                display.markStopped({ label: `${generatingLabel} [Stopped]` });
                 return buildResultText();
             }
 
+            // A provider rejection or a partly generated response is not a reason to replay the prompt.
+            if (error instanceof StreamingError || hasOutput) {
+                throw error;
+            }
+
             console.warn('[Slash Commands] Streaming failed, falling back to non-streaming:', error);
-            display.hide({ instant: true });
 
             // Retry with non-streaming
             const response = await ConnectionManagerRequestService.sendRequest(
                 effectiveProfileId,
                 messages,
                 maxTokens,
-                { extractData: true, includePreset: true, stream: false },
+                { extractData: true, includePreset: true, stream: false, signal: abortController?.signal ?? undefined },
             );
+            if (abortController?.signal?.aborted) return buildResultText();
 
             const extracted = /** @type {import('../../custom-request.js').ExtractedData} */ (response);
             finalText = extracted?.content || '';
             finalReasoning = extracted?.reasoning || '';
 
-            // Show quick non-streaming display
-            display.show({
-                label: generatingLabel,
-                icon: ConnectionManagerRequestService.getProfileIcon(effectiveProfileId),
-            });
             if (finalReasoning) {
                 display.updateReasoning(finalReasoning);
             }
             display.updateContent(finalText);
         }
+
+        if (abortController?.signal?.aborted) return buildResultText();
 
         // Mark as complete with delay (null = stay open until user closes)
         display.complete({ label: completedLabel, delay: completeDelay });
@@ -685,6 +691,8 @@ async function generateStreamCallback(args, value) {
 
         return buildResultText();
     } catch (err) {
+        if (abortController?.signal?.aborted) return '';
+        display.markStopped({ label: t`Generation failed` });
         console.error('Error on /genstream generation', err);
         toastr.error(err.message, t`API Error`, { preventDuplicates: true });
         return '';
