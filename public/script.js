@@ -8048,6 +8048,8 @@ export async function getSettings(initLoaderHandle = null) {
 }
 
 //MARK: saveSettings()
+let settingsSavePromise = Promise.resolve();
+
 export async function saveSettings(loopCounter = 0) {
     if (!settingsReady) {
         console.warn('Settings not ready, scheduling another save');
@@ -8094,19 +8096,27 @@ export async function saveSettings(loopCounter = 0) {
     };
 
     try {
-        const saveSettingsRequest = await compressRequest({
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(payload),
-            cache: 'no-cache',
+        // Capture nested settings before waiting for earlier saves to finish.
+        const body = JSON.stringify(payload);
+        const save = settingsSavePromise.then(async () => {
+            const saveSettingsRequest = await compressRequest({
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body,
+                cache: 'no-cache',
+            });
+            const result = await fetch('/api/settings/save', saveSettingsRequest);
+
+            if (!result.ok) {
+                throw new Error(`Failed to save settings: ${result.statusText}`);
+            }
+
+            settings = JSON.parse(body);
         });
-        const result = await fetch('/api/settings/save', saveSettingsRequest);
-
-        if (!result.ok) {
-            throw new Error(`Failed to save settings: ${result.statusText}`);
-        }
-
-        settings = payload;
+        // A failed request must not block subsequent saves. Listeners may save again,
+        // so only the request and its snapshot belong to the serialized queue.
+        settingsSavePromise = save.catch(() => {});
+        await save;
         await eventSource.emit(event_types.SETTINGS_UPDATED);
     } catch (error) {
         console.error('Error saving settings:', error);
