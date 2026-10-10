@@ -189,7 +189,7 @@ router.post('/character/all', function (request, response) {
         const sortOrder = String(request.body.sortOrder || 'az');
         const sortBy = sortOrder === 'newest' || sortOrder === 'oldest' ? 'date' : 'name';
         const images = getImages(bgDir, sortBy);
-        if (sortOrder === 'za' || sortOrder === 'oldest') {
+        if (sortOrder === 'za' || sortOrder === 'newest') {
             images.reverse();
         }
 

@@ -411,7 +411,10 @@ async function onCopyToSystemBackgroundClick(e) {
         return;
     }
 
-    const bgFile = await fetch(bgNames.oldBg);
+    const sourcePath = source === BG_SOURCES.CHARACTER
+        ? getBackgroundMediaPath(bgNames.oldBg, true, source)
+        : bgNames.oldBg;
+    const bgFile = await fetch(sourcePath);
 
     if (!bgFile.ok) {
         toastr.warning('Failed to copy background');
@@ -458,7 +461,7 @@ async function getThumbnailFromStorage(bg, isCustom, source = BG_SOURCES.GLOBAL)
     }
 
     try {
-        const url = source === BG_SOURCES.GLOBAL && !isCustom ? getBackgroundPath(bg) : encodeURI(bg);
+        const url = getBackgroundMediaPath(bg, isCustom, source);
         const response = await fetch(url, { cache: 'force-cache' });
         if (!response.ok) {
             throw new Error('Fetch failed with status: ' + response.status);
@@ -574,7 +577,10 @@ async function onDeleteBackgroundClick(e) {
                 toastr.warning(t`Select a character to manage its backgrounds`);
                 return;
             }
-            await delCharacterBackground(charName, String(bg).split('/').pop());
+            if (!await delCharacterBackground(charName, String(bg).split('/').pop())) {
+                toastr.error(t`Failed to delete background`);
+                return;
+            }
             if (getCharacterBackgroundSelectionUrl(charName) === url) {
                 delete background_settings.characterBackgrounds[charName];
                 saveSettingsDebounced();
@@ -872,6 +878,7 @@ function renderCharacterBackgrounds(backgrounds, pathPrefix = getCurrentCharacte
         container.append(thumbnail);
     }
 
+    onBackgroundFilterInput();
     activateLazyLoader();
 }
 
@@ -1577,7 +1584,14 @@ function getUrlParameter(block) {
 }
 
 function generateUrlParameter(bg, isCustom, source = BG_SOURCES.GLOBAL) {
-    return source === BG_SOURCES.GLOBAL && !isCustom ? `url("${getBackgroundPath(bg)}")` : `url("${encodeURI(bg)}")`;
+    return `url("${getBackgroundMediaPath(bg, isCustom, source)}")`;
+}
+
+function getBackgroundMediaPath(bg, isCustom, source) {
+    if (source === BG_SOURCES.CHARACTER) {
+        return bg.split('/').map(encodeURIComponent).join('/');
+    }
+    return source === BG_SOURCES.GLOBAL && !isCustom ? getBackgroundPath(bg) : encodeURI(bg);
 }
 
 function isAnimatedBackgroundExtension(fileName) {
@@ -1603,7 +1617,7 @@ async function resolveImageUrl(bg, isCustom, isAnimated = null, source = BG_SOUR
         ? await getThumbnailFromStorage(bg, isCustom, source)
         : source === BG_SOURCES.GLOBAL && !isCustom
             ? getThumbnailUrl('bg', bg)
-            : encodeURI(bg);
+            : getBackgroundMediaPath(bg, isCustom, source);
 
     return `url("${thumbnailUrl}")`;
 }
@@ -1645,16 +1659,23 @@ async function delBackground(bg) {
  * Deletes a character-specific background.
  * @param {string} charName
  * @param {string} bgFile
+ * @returns {Promise<boolean>}
  */
 async function delCharacterBackground(charName, bgFile) {
-    await fetch('/api/backgrounds/character/delete', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            name: charName,
-            bg: bgFile,
-        }),
-    });
+    try {
+        const response = await fetch('/api/backgrounds/character/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                name: charName,
+                bg: bgFile,
+            }),
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Failed to delete character background:', error);
+        return false;
+    }
 }
 
 /**
