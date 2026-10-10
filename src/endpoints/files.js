@@ -99,3 +99,41 @@ router.post('/verify', async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+router.post('/list', async (request, response) => {
+    try {
+        const baseName = String(request.body.base || 'files');
+        const baseDirectory = baseName === 'characters'
+            ? request.user.directories.characters
+            : request.user.directories.files;
+        const folderParts = String(request.body.folder || '')
+            .split(/[\\/]/)
+            .map(part => sanitize(part))
+            .filter(Boolean);
+
+        if (folderParts.length === 0) {
+            return response.status(400).send('No folder specified');
+        }
+
+        const resolvedBaseDirectory = path.resolve(baseDirectory);
+        const directoryPath = path.resolve(path.join(baseDirectory, ...folderParts));
+        const relativeToBase = path.relative(resolvedBaseDirectory, directoryPath);
+        if (relativeToBase.startsWith('..') || path.isAbsolute(relativeToBase)) {
+            return response.status(400).send('Invalid folder');
+        }
+
+        if (!fs.existsSync(directoryPath) || !fs.statSync(directoryPath).isDirectory()) {
+            return response.send([]);
+        }
+
+        const files = fs.readdirSync(directoryPath, { withFileTypes: true })
+            .filter(dirent => dirent.isFile() && !dirent.name.startsWith('.'))
+            .map(dirent => dirent.name)
+            .sort(Intl.Collator().compare);
+
+        return response.send(files);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});

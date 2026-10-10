@@ -4,6 +4,7 @@ import { promises as fsPromises } from 'node:fs';
 import { Buffer } from 'node:buffer';
 
 import express from 'express';
+import archiver from 'archiver';
 import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import yaml from 'yaml';
@@ -23,7 +24,7 @@ import { importRisuSprites } from './sprites.js';
 import { getUserDirectories } from '../users.js';
 import { getChatInfo } from './chats.js';
 import { ByafParser } from '../byaf.js';
-import { CharXParser, persistCharXAssets } from '../charx.js';
+import { buildCharXCard, CharXParser, collectCharXExportAssets, persistCharXAssets } from '../charx.js';
 import cacheBuster from '../middleware/cacheBuster.js';
 
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
@@ -789,7 +790,7 @@ async function importFromCharX(uploadPath, { request }, preservedFileName) {
         try {
             const summary = persistCharXAssets(auxiliaryAssets, extractedBuffers, request.user.directories, characterFolder);
             if (summary.sprites || summary.backgrounds || summary.misc) {
-                console.log(`CharX: Imported ${summary.sprites} sprite(s), ${summary.backgrounds} background(s), ${summary.misc} misc asset(s) for ${characterFolder}`);
+                console.log(`CharX: Imported ${summary.sprites} sprite(s), ${summary.backgrounds} background(s), ${summary.misc} additional asset(s) for ${characterFolder}`);
             }
         } catch (error) {
             console.warn(`CharX: Failed to persist auxiliary assets for ${characterFolder}`, error);
@@ -1675,6 +1676,57 @@ router.post('/export', validateAvatarUrlMiddleware, async function (request, res
                     return response.type('json').send(JSON.stringify(jsonObject, null, 4));
                 } catch {
                     return response.sendStatus(400);
+                }
+            }
+            case 'charx': {
+                try {
+                    const json = await readCharacterData(filename);
+                    if (json === undefined) return response.sendStatus(400);
+
+                    const jsonObject = getCharaCardV2(JSON.parse(json), request.user.directories);
+                    unsetPrivateFields(jsonObject);
+
+                    const characterFolder = sanitize(jsonObject.name);
+                    if (!characterFolder) {
+                        return response.status(400).send('Invalid character folder name for CharX export.');
+                    }
+
+                    const mediaConfig = _.get(jsonObject, 'data.extensions.charx_media');
+                    const exportAssets = collectCharXExportAssets(request.user.directories, characterFolder, mediaConfig);
+                    const avatarExt = path.extname(filename).slice(1).toLowerCase() || 'png';
+                    const avatarArchivePath = `assets/icon/images/main.${avatarExt}`;
+                    const charxCard = buildCharXCard(jsonObject, characterFolder, avatarArchivePath, avatarExt, exportAssets, mediaConfig);
+                    const avatarBuffer = await fsPromises.readFile(filename);
+                    const avatarData = mutateJsonString(read(avatarBuffer), unsetPrivateFields);
+                    const exportedAvatar = write(avatarBuffer, avatarData);
+
+                    const archive = archiver('zip');
+                    archive.on('error', function (error) {
+                        console.error('CharX archive error', error);
+                        if (!response.headersSent) {
+                            response.status(500).send(error.message);
+                            return;
+                        }
+                        response.end();
+                    });
+
+                    response.setHeader('Content-Type', 'application/zip');
+                    response.setHeader('Content-Disposition', `attachment; filename="${encodeURI(path.basename(filename, path.extname(filename)))}.charx"`);
+                    archive.pipe(response);
+                    archive.append(JSON.stringify(charxCard, null, 4), { name: 'card.json' });
+                    archive.append(exportedAvatar, { name: avatarArchivePath });
+                    for (const asset of exportAssets) {
+                        archive.file(asset.fullPath, { name: asset.archivePath });
+                    }
+                    await archive.finalize();
+                    return;
+                } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Failed to build CharX export.';
+                    console.error('CharX export failed', error);
+                    const statusCode = message.startsWith('Duplicate CharX archive path') || message.startsWith('Invalid character folder name')
+                        ? 400
+                        : 500;
+                    return response.status(statusCode).send(message);
                 }
             }
         }
