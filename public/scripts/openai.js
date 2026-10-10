@@ -80,6 +80,7 @@ import { callGenericPopup, Popup, POPUP_RESULT, POPUP_TYPE } from './popup.js';
 import { t } from './i18n.js';
 import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
+import { readStream } from './util/read-stream.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
 
@@ -1629,14 +1630,19 @@ export async function prepareOpenAIMessages({
  * a plain string. statusText is only used for non-2xx responses, since for an
  * HTTP 200 carrying an error payload it is just "OK" (#5647).
  * @param {object} data Parsed response body
- * @param {Response} response Fetch response
+ * @param {Response} [response] Fetch response
  * @returns {string} Error message to display and throw
  */
 function getChatCompletionErrorMessage(data, response) {
     const error = data?.error ?? data?.detail?.error;
     const message = typeof error === 'string' ? error : (error?.message || error?.code || error?.type);
-    return String(message || (!response.ok && response.statusText) || t`Unknown error`);
+    return String(message || (typeof data?.message === 'string' && data.message)
+        || (typeof data?.detail === 'string' && data.detail)
+        || (response?.ok === false && response.statusText) || t`Unknown error`);
 }
+
+/** A provider rejection that must not be retried as a streaming transport failure. */
+export class StreamingError extends Error {}
 
 /**
  * Handles errors during streaming requests.
@@ -1644,37 +1650,25 @@ function getChatCompletionErrorMessage(data, response) {
  * @param {string} decoded - response text or decoded stream data
  * @param {object} [options]
  * @param {boolean?} [options.quiet=false] Suppress toast messages
+ * @throws {StreamingError} If the response contains a provider error
  */
 export function tryParseStreamingError(response, decoded, { quiet = false } = {}) {
+    let data;
     try {
-        const data = JSON.parse(decoded);
-
-        if (!data) {
-            return;
-        }
-
-        checkQuotaError(data, { quiet });
-        checkModerationError(data, { quiet });
-
-        // these do not throw correctly (equiv to Error("[object Object]"))
-        // if trying to fix "[object Object]" displayed to users, start here
-
-        if (data.error) {
-            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
-            throw new Error(data);
-        }
-
-        if (data.message) {
-            !quiet && toastr.error(data.message, 'Chat Completion API');
-            throw new Error(data);
-        }
-
-        if (data.detail) {
-            !quiet && toastr.error(getChatCompletionErrorMessage(data, response), 'Chat Completion API');
-            throw new Error(data);
-        }
+        data = JSON.parse(decoded);
     } catch {
-        // No JSON. Do nothing.
+        return; // Non-JSON responses are handled by the caller.
+    }
+
+    if (!data) return;
+    checkQuotaError(data, { quiet });
+    checkModerationError(data, { quiet });
+
+    // Anthropic message_start carries a normal message object, not an error.
+    if (data.error || (typeof data.message === 'string' && data.message) || data.detail) {
+        const message = getChatCompletionErrorMessage(data, response);
+        !quiet && toastr.error(message, 'Chat Completion API');
+        throw new StreamingError(message);
     }
 }
 
@@ -1684,7 +1678,7 @@ export function tryParseStreamingError(response, decoded, { quiet = false } = {}
  * @param {object} [options]
  * @param {boolean?} [options.quiet=false] Suppress toast messages
  * @returns {void}
- * @throws {object} - response JSON
+ * @throws {StreamingError} If the provider rejected the request for exceeding quota
  */
 function checkQuotaError(data, { quiet = false } = {}) {
     if (!data) {
@@ -1694,9 +1688,7 @@ function checkQuotaError(data, { quiet = false } = {}) {
     if (data.quota_error) {
         !quiet && renderTemplateAsync('quotaError').then((html) => Popup.show.text('Quota Error', html));
 
-        // this does not throw correctly (equiv to Error("[object Object]"))
-        // if trying to fix "[object Object]" displayed to users, start here
-        throw new Error(data);
+        throw new StreamingError(getChatCompletionErrorMessage(data));
     }
 }
 
@@ -1706,7 +1698,7 @@ function checkQuotaError(data, { quiet = false } = {}) {
  * @param {boolean?} [options.quiet=false] Suppress toast messages
  */
 function checkModerationError(data, { quiet = false } = {}) {
-    const moderationError = data?.error?.message?.includes('requires moderation');
+    const moderationError = typeof data?.error?.message === 'string' && data.error.message.includes('requires moderation');
     if (moderationError && !quiet) {
         const moderationReason = `Reasons: ${data?.error?.metadata?.reasons?.join(', ') ?? '(N/A)'}`;
         const flaggedText = data?.error?.metadata?.flagged_input ?? '(N/A)';
@@ -3162,15 +3154,12 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     if (stream) {
         const eventStream = getEventSourceStream();
         response.body.pipeThrough(eventStream);
-        const reader = eventStream.readable.getReader();
         return async function* streamData() {
             let text = '';
             const swipes = [];
             const toolCalls = [];
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) return;
+            for await (const value of readStream(eventStream.readable)) {
                 const rawData = value.data;
                 if (rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData);

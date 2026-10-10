@@ -5,6 +5,7 @@ import { extractReasoningFromData } from './reasoning.js';
 import { formatInstructModeChat, formatInstructModePrompt, getInstructStoppingSequences } from './instruct-mode.js';
 import { getStreamingReply, tryParseStreamingError, createGenerationParameters, settingsToUpdate, oai_settings } from './openai.js';
 import EventSourceStream from './sse-stream.js';
+import { readStream } from './util/read-stream.js';
 
 // #region Type Definitions
 /**
@@ -161,14 +162,11 @@ export class TextCompletionService {
 
         const eventStream = new EventSourceStream();
         response.body.pipeThrough(eventStream);
-        const reader = eventStream.readable.getReader();
         return async function* streamData() {
             let text = '';
             const swipes = [];
             const state = { reasoning: '' };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) return;
+            for await (const value of readStream(eventStream.readable)) {
                 if (value.data === '[DONE]') return;
 
                 tryParseStreamingError(response, value.data, { quiet: true });
@@ -502,14 +500,11 @@ export class ChatCompletionService {
 
         const eventStream = new EventSourceStream();
         response.body.pipeThrough(eventStream);
-        const reader = eventStream.readable.getReader();
         return async function* streamData() {
             let text = '';
             const swipes = [];
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) return;
+            for await (const value of readStream(eventStream.readable)) {
                 const rawData = value.data;
                 if (rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData, { quiet: true });
