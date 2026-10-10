@@ -26,48 +26,57 @@ export const router = express.Router();
  * @param {import('express').Response} response Express response
  * @returns {Promise<any>} Nothing valuable
  */
-async function parseOllamaStream(jsonStream, request, response) {
+export async function parseOllamaStream(jsonStream, request, response) {
+    const cancel = () => {
+        if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
+        response.end();
+    };
     try {
+        if (response.writableEnded || response.destroyed) {
+            if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
+            return;
+        }
         if (!jsonStream.body) {
             throw new Error('No body in the response');
         }
 
-        let partialData = '';
-        jsonStream.body.on('data', (data) => {
-            const chunk = data.toString();
-            partialData += chunk;
-            while (true) {
-                let json;
-                try {
-                    json = JSON.parse(partialData);
-                } catch (e) {
-                    break;
-                }
-                const text = json.response || '';
-                const thinking = json.thinking || '';
-                const chunk = { choices: [{ text, thinking }] };
-                response.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                partialData = '';
-            }
-        });
-
-        request.socket.on('close', function () {
-            if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
-            response.end();
-        });
-
-        jsonStream.body.on('end', () => {
-            console.info('Streaming request finished');
-            response.write('data: [DONE]\n\n');
-            response.end();
-        });
-    } catch (error) {
-        console.error('Error forwarding streaming response:', error);
-        if (!response.headersSent) {
-            return response.status(500).send({ error: true });
-        } else {
-            return response.end();
+        function writeLine(line) {
+            if (response.writableEnded || response.destroyed || !line.trim()) return;
+            const json = JSON.parse(line);
+            if (json.error) throw new Error(String(json.error));
+            const text = json.response || '';
+            const thinking = json.thinking || '';
+            response.write(`data: ${JSON.stringify({ choices: [{ text, thinking }] })}\n\n`);
         }
+
+        // Decode split UTF-8 characters before separating newline-delimited records.
+        jsonStream.body.setEncoding('utf8');
+        request.socket.on('close', cancel);
+        let partialData = '';
+        for await (const chunk of jsonStream.body) {
+            partialData += chunk;
+            let newline;
+            while ((newline = partialData.indexOf('\n')) !== -1) {
+                writeLine(partialData.slice(0, newline));
+                partialData = partialData.slice(newline + 1);
+            }
+        }
+        writeLine(partialData);
+        if (response.writableEnded || response.destroyed) return;
+        console.info('Streaming request finished');
+        response.write('data: [DONE]\n\n');
+        response.end();
+    } catch (error) {
+        if (response.writableEnded || response.destroyed) return;
+        console.error('Error forwarding streaming response:', error);
+        const body = { error: error.message };
+        if (!response.headersSent) {
+            return response.status(500).send(body);
+        } else {
+            return response.end(`data: ${JSON.stringify(body)}\n\n`);
+        }
+    } finally {
+        request.socket.removeListener('close', cancel);
     }
 }
 
