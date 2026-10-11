@@ -4524,6 +4524,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         return {
             ...chatItem,
             mes: regexedMessage,
+            original_mes: message,
             index,
         };
     }));
@@ -4774,7 +4775,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = coreChat[j].mes;
             if (i === 0 && isContinue) {
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-                continue_mag = coreChat[j].mes;
+                continue_mag = coreChat[j].original_mes ?? coreChat[j].mes;
             }
             continue;
         }
@@ -4807,7 +4808,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             chat2[i] = chat2[i].includes(FORMAT_TOKEN)
                 ? chat2[i].slice(0, chat2[i].lastIndexOf(FORMAT_TOKEN))
                 : chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-            continue_mag = coreChat[j].mes;
+            continue_mag = coreChat[j].original_mes ?? coreChat[j].mes;
         }
 
         if (coreChat[j].is_user) {
@@ -5383,7 +5384,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
         if (isStreamingEnabled() && type !== 'quiet') {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
             streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, continue_mag, promptReasoning);
             if (isContinue) {
                 // Save reply does add cycle text to the prompt, so it's not needed here
@@ -5507,7 +5507,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
 
         if (isContinue) {
-            continue_mag = promptReasoning.removePrefix(continue_mag);
             getMessage = continue_mag + getMessage;
         }
 
