@@ -250,8 +250,8 @@ async function sendClaudeRequest(request, response) {
         const convertedPrompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, useSystemPrompt, useTools, getPromptNames(request));
         // Unanchored to also match prefixed ids passed through proxies, e.g. 'anthropic/claude-fable-5'
         const isFableModel = /claude-fable/.test(request.body.model);
-        const useNativeJsonOutput = /claude-(fable-5-1|opus-5-5)/.test(request.body.model);
-        const isClaude5Model = /claude-(opus-5|sonnet-5)/.test(request.body.model);
+        const useNativeJsonOutput = /claude-(fable-5-1|opus-5-5|sonnet-5-5)/.test(request.body.model);
+        const isClaude5Model = /claude-(opus-5|sonnet-5|haiku-5)/.test(request.body.model);
         const useThinking = /^claude-(3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model;
         const useWebSearch = (/^claude-(3-5|3-7|opus-4|sonnet-4|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6|opus-4-7)/.test(request.body.model) || isFableModel || isClaude5Model) && Boolean(request.body.enable_web_search);
         const isLimitedSampling = /^claude-(opus-4-1|sonnet-4-5|haiku-4-5|opus-4-5|opus-4-6|sonnet-4-6)/.test(request.body.model);
@@ -299,7 +299,7 @@ async function sendClaudeRequest(request, response) {
             }
         }
 
-        // Fable 5.1 and Opus 5.5 reject forced tools, but support native JSON outputs.
+        // Fable 5.1, Opus 5.5 and Sonnet 5.5 reject forced tools, but support native JSON outputs.
         if (request.body.json_schema) {
             if (useNativeJsonOutput) {
                 requestBody.output_config = {
