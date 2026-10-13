@@ -188,10 +188,9 @@ export function registerEnvMacros() {
         category: MacroCategory.CHARACTER,
         description: 'Original message content for {{original}} substitution in in character prompt overrides.',
         returns: 'Original message content.',
-        handler: ({ env }) => {
-            const value = env.functions.original();
-            return value;
-        },
+        handler: ({ env, rawOriginal }) => typeof env.functions.original === 'function'
+            ? env.functions.original()
+            : rawOriginal,
     });
 
     // Device / environment macros
