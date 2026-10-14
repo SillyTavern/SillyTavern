@@ -287,7 +287,7 @@
             </div>
             <div data-sd-source="custom">
                 <label for="sd_custom_url" data-i18n="Endpoint Base URL">Endpoint Base URL</label>
-                <input id="sd_custom_url" type="text" class="text_pole" data-i18n="[placeholder]sd_custom_url" placeholder="Example: https://api.venice.ai/api/v1" value="{{custom_url}}" />
+                <input id="sd_custom_url" type="text" class="text_pole" data-i18n="[placeholder]sd_custom_url" placeholder="Example: http://localhost:5001/v1" value="{{custom_url}}" />
                 <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
                     <strong class="flex1" data-i18n="API Key">API Key</strong>
                     <div id="sd_custom_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_custom_openai_sd">
@@ -295,7 +295,9 @@
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
                 </div>
-                <i data-i18n="sd_custom_hint">Hint: Works with any server implementing the OpenAI-compatible /v1/images/generations endpoint (e.g. Venice.ai, koboldcpp --routermode). Leave the API key unset if the server doesn't require one.</i>
+                <label for="sd_custom_params" data-i18n="Additional Parameters">Additional Parameters</label>
+                <textarea id="sd_custom_params" class="text_pole textarea_compact autoSetHeight" data-i18n="[placeholder]sd_custom_params_placeholder" placeholder="Parameters to be included in the request body (YAML object)&#10;Example:&#10;model: my-image-model&#10;quality: hd"></textarea>
+                <i data-i18n="sd_custom_hint">Hint: Works with any server implementing the OpenAI-compatible /v1/images/generations endpoint. Leave the API key unset if the server doesn't require one.</i>
             </div>
             <div data-sd-source="pollinations">
                 <a href="https://enter.pollinations.ai">Pollinations.ai</a>

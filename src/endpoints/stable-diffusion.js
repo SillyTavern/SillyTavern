@@ -9,7 +9,7 @@ import urlJoin from 'url-join';
 import _ from 'lodash';
 import mime from 'mime-types';
 
-import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
+import { delay, getBasicAuthHeader, isValidUrl, mergeObjectWithYaml, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
 import { AIMLAPI_HEADERS } from '../constants.js';
@@ -1881,10 +1881,7 @@ customOpenai.post('/models', async (request, response) => {
 
         const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_SD);
 
-        const modelsUrl = new URL(urlJoin(url, '/models'));
-        modelsUrl.searchParams.set('type', 'image');
-
-        const modelsResponse = await fetch(modelsUrl, {
+        const modelsResponse = await fetch(urlJoin(url, '/models'), {
             method: 'GET',
             headers: key ? { Authorization: `Bearer ${key}` } : {},
         });
@@ -1898,7 +1895,7 @@ customOpenai.post('/models', async (request, response) => {
         const data = await modelsResponse.json();
         const models = (data.data || [])
             .filter(model => !model.type || model.type === 'image')
-            .map(model => ({ value: model.id, text: model.name || model.model_spec?.name || model.id }));
+            .map(model => ({ value: model.id, text: model.name || model.id }));
 
         return response.send({ data: models });
     } catch (error) {
@@ -1909,7 +1906,7 @@ customOpenai.post('/models', async (request, response) => {
 
 customOpenai.post('/generate', async (request, response) => {
     try {
-        const { url, ...body } = request.body;
+        const { url, custom_params, ...body } = request.body;
 
         if (!url || !isValidUrl(url)) {
             console.warn('Custom OpenAI-compatible endpoint: invalid URL.');
@@ -1917,6 +1914,7 @@ customOpenai.post('/generate', async (request, response) => {
         }
 
         const key = readSecret(request.user.directories, SECRET_KEYS.CUSTOM_OPENAI_SD);
+        mergeObjectWithYaml(body, custom_params);
 
         console.debug('Custom OpenAI-compatible image request:', body);
 

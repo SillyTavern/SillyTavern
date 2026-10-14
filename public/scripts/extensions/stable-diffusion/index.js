@@ -300,6 +300,7 @@ const defaultSettings = {
 
     // Custom OpenAI-compatible endpoint settings
     custom_url: '',
+    custom_params: '',
 
     hr_upscaler: 'Latent',
     hr_scale: 1.0,
@@ -539,6 +540,7 @@ async function loadSettings() {
     $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
     $('#sd_drawthings_auth').val(extension_settings.sd.drawthings_auth);
     $('#sd_custom_url').val(extension_settings.sd.custom_url);
+    $('#sd_custom_params').val(extension_settings.sd.custom_params);
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
@@ -1286,6 +1288,11 @@ function onDrawthingsAuthInput() {
 
 function onCustomUrlInput() {
     extension_settings.sd.custom_url = $('#sd_custom_url').val();
+    saveSettingsDebounced();
+}
+
+function onCustomParamsInput() {
+    extension_settings.sd.custom_params = $('#sd_custom_params').val();
     saveSettingsDebounced();
 }
 
@@ -4255,7 +4262,7 @@ async function generateAimlapiImage(prompt, signal) {
 }
 
 /**
- * Generates an image via a user-configured OpenAI-compatible endpoint (e.g. Venice.ai, koboldcpp --routermode).
+ * Generates an image via a user-configured OpenAI-compatible endpoint.
  */
 async function generateCustomImage(prompt, signal) {
     const body = {
@@ -4265,6 +4272,7 @@ async function generateCustomImage(prompt, signal) {
         n: 1,
         size: `${extension_settings.sd.width}x${extension_settings.sd.height}`,
         response_format: 'b64_json',
+        custom_params: extension_settings.sd.custom_params,
     };
 
     const res = await fetch('/api/sd/custom-openai/generate', {
@@ -5906,6 +5914,7 @@ export async function init() {
     $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
     $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
     $('#sd_custom_url').on('input', onCustomUrlInput);
+    $('#sd_custom_params').on('input', onCustomParamsInput);
     $('#sd_vlad_validate').on('click', validateVladUrl);
     $('#sd_vlad_url').on('input', onVladUrlInput);
     $('#sd_vlad_auth').on('input', onVladAuthInput);
