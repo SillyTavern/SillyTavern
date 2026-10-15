@@ -277,6 +277,8 @@ app.get('/version', async function (_, response) {
 redirectDeprecatedEndpoints(app);
 setupPrivateEndpoints(app);
 
+const serverStartup = new ServerStartup(app, cliArgs);
+
 /**
  * Tasks that need to be run before the server starts listening.
  * @returns {Promise<void>}
@@ -313,10 +315,8 @@ async function preSetupTasks() {
     const cleanupPlugins = await loadPlugins(app, pluginsDirectory);
     const consoleTitle = process.title;
 
-    let isExiting = false;
-    const exitProcess = async () => {
-        if (isExiting) return;
-        isExiting = true;
+    let cleanupPromise;
+    const cleanupAndExit = () => cleanupPromise ??= (async () => {
         await statsOnExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
@@ -324,14 +324,26 @@ async function preSetupTasks() {
         diskCache.dispose();
         setWindowTitle(consoleTitle);
         process.exit();
+    })();
+
+    let isExiting = false;
+    const exitProcess = async () => {
+        if (isExiting) return;
+        isExiting = true;
+        try {
+            await serverStartup.stop();
+            await cleanupAndExit();
+        } finally {
+            isExiting = false;
+        }
     };
 
     // Set up event listeners for a graceful shutdown
-    process.on('SIGINT', exitProcess);
-    process.on('SIGTERM', exitProcess);
+    process.on('SIGINT', () => exitProcess());
+    process.on('SIGTERM', () => exitProcess());
     process.on('uncaughtException', (err) => {
         console.error('Uncaught exception:', err);
-        exitProcess();
+        cleanupAndExit();
     });
 
     // Add private request filter.
@@ -360,7 +372,9 @@ async function preSetupTasks() {
  * @returns {Promise<void>}
  */
 async function postSetupTasks(result) {
+    if (serverStartup.stopping) return;
     const browserLaunchHostname = await cliArgs.getBrowserLaunchHostname(result);
+    if (serverStartup.stopping) return;
     const browserLaunchUrl = cliArgs.getBrowserLaunchUrl(browserLaunchHostname);
     const browserLaunchApp = String(getConfigValue('browserLaunch.browser', 'default') ?? '');
 
@@ -369,6 +383,7 @@ async function postSetupTasks(result) {
             // TODO: This should be converted to a regular import when support for Node 18 is dropped
             const openModule = await import('open');
             const { default: open, apps } = openModule;
+            if (serverStartup.stopping) return;
 
             function getBrowsers() {
                 const isAndroid = process.platform === 'android';
@@ -394,6 +409,7 @@ async function postSetupTasks(result) {
         }
     }
 
+    if (serverStartup.stopping) return;
     if (cliArgs.heartbeatInterval > 0) {
         // Convert seconds to milliseconds for the timer
         const intervalMs = cliArgs.heartbeatInterval * 1000;
@@ -486,5 +502,5 @@ initUserStorage(globalThis.DATA_ROOT)
     .then(verifySecuritySettings)
     .then(preSetupTasks)
     .then(apply404Middleware)
-    .then(() => new ServerStartup(app, cliArgs).start())
+    .then(() => serverStartup.start())
     .then(postSetupTasks);
