@@ -1467,7 +1467,7 @@ export function parseReasoningFromString(str, { strict = true } = {}, template =
     }
 
     try {
-        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(template.prefix)}(.*?)${escapeRegex(template.suffix)}`, 's');
+        const regex = new RegExp(`${(strict ? '^\\s*?' : '')}${escapeRegex(template.prefix)}(.*?)${escapeRegex(template.suffix)}`, 'si');
 
         let didReplace = false;
         let reasoning = '';
