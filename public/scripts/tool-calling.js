@@ -249,6 +249,12 @@ export class ToolManager {
     static #INPUT_DELTA_KEY = '__input_json_delta';
 
     /**
+     * A key used to store string paths of partial function call arguments that are still being streamed.
+     * @type {string}
+     */
+    static #PARTIAL_ARGS_KEY = '__partial_args_open';
+
+    /**
      * The maximum number of times to recurse when parsing tool calls.
      * @type {number}
      */
@@ -541,6 +547,12 @@ export class ToolManager {
                             if (!Array.isArray(toolCalls[choiceIndex])) {
                                 toolCalls[choiceIndex] = [];
                             }
+                            // Continuation of a call whose arguments are streamed (streamFunctionCallArguments)
+                            const lastToolCall = toolCalls[choiceIndex][toolCalls[choiceIndex].length - 1];
+                            if (!part.functionCall.name && lastToolCall?.[this.#PARTIAL_ARGS_KEY]) {
+                                ToolManager.#applyPartialArgs(lastToolCall, part.functionCall);
+                                continue;
+                            }
                             const toolCallIndex = toolCalls[choiceIndex].length;
                             if (toolCalls[choiceIndex][toolCallIndex] === undefined) {
                                 toolCalls[choiceIndex][toolCallIndex] = {};
@@ -549,12 +561,82 @@ export class ToolManager {
                             if (part.thoughtSignature) {
                                 targetToolCall.thoughtSignature = part.thoughtSignature;
                             }
-                            ToolManager.#applyToolCallDelta(targetToolCall, part.functionCall);
+                            const functionCall = { ...part.functionCall };
+                            delete functionCall.partialArgs;
+                            delete functionCall.willContinue;
+                            ToolManager.#applyToolCallDelta(targetToolCall, functionCall);
+                            ToolManager.#applyPartialArgs(targetToolCall, part.functionCall);
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Apply streamed Gemini function call arguments to a tool call. Each fragment sets a value at a
+     * JSONPath into the arguments; a string value may be split across fragments marked with `willContinue`.
+     * @param {object} target The tool call to update
+     * @param {object} functionCall The `functionCall` of a streamed part
+     */
+    static #applyPartialArgs(target, functionCall) {
+        if (!Array.isArray(functionCall.partialArgs) && !functionCall.willContinue && !target[this.#PARTIAL_ARGS_KEY]) {
+            return;
+        }
+
+        const openPaths = target[this.#PARTIAL_ARGS_KEY] ?? new Set();
+        target.args ??= {};
+
+        for (const fragment of functionCall.partialArgs ?? []) {
+            const path = ToolManager.#parseJsonPath(fragment?.jsonPath);
+            if (!path) {
+                console.warn('[ToolManager] Unsupported JSONPath in streamed function call arguments:', fragment?.jsonPath);
+                continue;
+            }
+
+            const valueKey = ['stringValue', 'numberValue', 'boolValue', 'nullValue'].find(key => Object.hasOwn(fragment, key));
+            if (valueKey) {
+                const value = valueKey === 'nullValue' ? null : fragment[valueKey];
+                let node = target.args;
+                for (let i = 0; i < path.length - 1; i++) {
+                    if (typeof node[path[i]] !== 'object' || node[path[i]] === null) {
+                        node[path[i]] = typeof path[i + 1] === 'number' ? [] : {};
+                    }
+                    node = node[path[i]];
+                }
+                const key = path[path.length - 1];
+                const isContinued = openPaths.has(fragment.jsonPath) && typeof node[key] === 'string' && typeof value === 'string';
+                node[key] = isContinued ? node[key] + value : value;
+            }
+
+            if (fragment.willContinue) {
+                openPaths.add(fragment.jsonPath);
+            } else {
+                openPaths.delete(fragment.jsonPath);
+            }
+        }
+
+        if (functionCall.willContinue) {
+            target[this.#PARTIAL_ARGS_KEY] = openPaths;
+        } else {
+            delete target[this.#PARTIAL_ARGS_KEY];
+        }
+    }
+
+    /**
+     * Parse a JSONPath such as `$.a.b[0]` into its segments.
+     * @param {string} jsonPath JSONPath string
+     * @returns {(string|number)[]|null} Path segments, or null if the path is not supported
+     */
+    static #parseJsonPath(jsonPath) {
+        if (typeof jsonPath !== 'string' || !jsonPath.startsWith('$')) {
+            return null;
+        }
+        const segments = jsonPath.slice(1).match(/\.[^.[\]]+|\[\d+\]|\[(["']).*?\1\]/g) ?? [];
+        if (!segments.length || segments.join('') !== jsonPath.slice(1)) {
+            return null;
+        }
+        return segments.map(s => s.startsWith('.') ? s.slice(1) : /^\[\d+\]$/.test(s) ? Number(s.slice(1, -1)) : s.slice(2, -2));
     }
 
     /**

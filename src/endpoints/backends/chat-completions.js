@@ -495,6 +495,8 @@ async function sendMakerSuiteRequest(request, response) {
     const imageSize = String(request.body.request_image_resolution);
     const isGemma3 = /gemma-3/.test(model);
     const isLearnLM = model.includes('learnlm');
+    // Opt-in: stream function call arguments as `partialArgs` fragments (Vertex AI, Gemini 3+)
+    const streamFunctionCallArguments = stream && Boolean(request.body.stream_function_call_arguments);
 
     const responseMimeType = request.body.responseMimeType ?? (request.body.json_schema ? 'application/json' : undefined);
     const responseSchema = request.body.responseSchema ?? (request.body.json_schema ? request.body.json_schema.value : undefined);
@@ -656,6 +658,10 @@ async function sendMakerSuiteRequest(request, response) {
                     mode: 'ANY',
                     allowedFunctionNames: [toolChoice.function.name],
                 };
+            }
+
+            if (streamFunctionCallArguments && tools.some(t => t.function_declarations)) {
+                functionCallingConfig = { mode: 'AUTO', ...functionCallingConfig, streamFunctionCallArguments: true };
             }
 
             if (functionCallingConfig) {
