@@ -33,6 +33,8 @@ class ElevenLabsTtsProvider {
             </div>
             <label for="elevenlabs_tts_model">Model</label>
             <select id="elevenlabs_tts_model" class="text_pole">
+                <option value="eleven_v4">Eleven v4</option>
+                <option value="eleven_v4_turbo">Eleven v4 Turbo</option>
                 <option value="eleven_v3">Eleven v3</option>
                 <option value="eleven_ttv_v3">Eleven ttv v3</option>
                 <option value="eleven_multilingual_v2">Multilingual v2</option>
