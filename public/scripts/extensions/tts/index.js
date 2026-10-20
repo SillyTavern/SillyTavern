@@ -52,6 +52,7 @@ let lastPositionOfParagraphEnd = -1;
 let currentInitVoiceMapPromise = null;
 let isStreamStoppedForTts = false;
 let stoppedStreamMessageId = null;
+let ttsPauseDepth = 0;
 
 const DEFAULT_VOICE_MARKER = '[Default Voice]';
 const DISABLED_VOICE_MARKER = 'disabled';
@@ -237,6 +238,9 @@ function resetTtsPlayback() {
 
     // Set audio ready to process again
     audioQueueProcessorReady = true;
+
+    // Reset any active pause state
+    ttsPauseDepth = 0;
 }
 
 function isTtsProcessing() {
@@ -284,6 +288,103 @@ function applyStopRegex(text) {
 }
 
 /**
+ * Skips text governed by nested pause/unpause markers, updating the module-level pause depth.
+ * While the pause depth is greater than zero, no text is narrated. Each pause marker increases
+ * the depth and each unpause marker decreases it, so nested pauses require a matching number of
+ * unpause markers before narration resumes (i.e. only the outermost unpause resumes the stream).
+ * @param {string} text - The input text to process.
+ * @returns {{ text: string, pauseDepth: number }} The narratable text and the resulting pause depth.
+ */
+function applyPauseUnpauseRegex(text) {
+    const pausePattern = extension_settings.tts.apply_pause_regex && extension_settings.tts.pause_regex_pattern;
+    const unpausePattern = extension_settings.tts.apply_pause_regex && extension_settings.tts.unpause_regex_pattern;
+
+    if (!text || (!pausePattern && !unpausePattern)) {
+        return { text, pauseDepth: ttsPauseDepth };
+    }
+
+    let pauseRegex = null;
+    let unpauseRegex = null;
+
+    try {
+        if (pausePattern) {
+            pauseRegex = regexFromString(pausePattern);
+        }
+        if (unpausePattern) {
+            unpauseRegex = regexFromString(unpausePattern);
+        }
+    } catch (error) {
+        console.warn('TTS pause regex matching error:', error);
+    }
+
+    if (!pauseRegex && !unpauseRegex) {
+        return { text, pauseDepth: ttsPauseDepth };
+    }
+
+    let depth = ttsPauseDepth;
+    let cursor = 0;
+    let output = '';
+
+    while (cursor < text.length) {
+        const remainder = text.substring(cursor);
+
+        // regexFromString may return a global regex; reset lastIndex before each search
+        if (pauseRegex) {
+            pauseRegex.lastIndex = 0;
+        }
+        if (unpauseRegex) {
+            unpauseRegex.lastIndex = 0;
+        }
+
+        const pauseMatch = pauseRegex ? pauseRegex.exec(remainder) : null;
+        const unpauseMatch = unpauseRegex ? unpauseRegex.exec(remainder) : null;
+
+        const pauseIndex = pauseMatch ? pauseMatch.index : -1;
+        const unpauseIndex = unpauseMatch ? unpauseMatch.index : -1;
+
+        // No further markers: emit or drop the rest depending on the current depth
+        if (pauseIndex === -1 && unpauseIndex === -1) {
+            if (depth === 0) {
+                output += remainder;
+            }
+            break;
+        }
+
+        // Pick the earliest marker; on a tie, process the pause first
+        const usePause = pauseIndex !== -1 && (unpauseIndex === -1 || pauseIndex <= unpauseIndex);
+        const match = usePause ? pauseMatch : unpauseMatch;
+        const matchIndex = usePause ? pauseIndex : unpauseIndex;
+
+        // Emit the text preceding the marker only while narrating
+        if (depth === 0) {
+            output += remainder.substring(0, matchIndex);
+        }
+
+        const matchLength = match[0].length;
+
+        // Zero-length matches cannot toggle pause state; keep the character to guarantee progress
+        if (matchLength === 0) {
+            if (depth === 0 && matchIndex < remainder.length) {
+                output += remainder.charAt(matchIndex);
+            }
+            cursor += matchIndex + 1;
+            continue;
+        }
+
+        if (usePause) {
+            depth++;
+        } else if (depth > 0) {
+            depth--;
+        }
+
+        cursor += matchIndex + matchLength;
+    }
+
+    ttsPauseDepth = depth;
+    return { text: output, pauseDepth: depth };
+}
+
+/**
  * Clones a message, attaches the given message ID, then splits by paragraphs
  * (if enabled) and adds each part to the TTS job queue.
  * @param {ChatMessage} message - The message object to be processed.
@@ -301,6 +402,14 @@ function processAndQueueTtsMessage(message, messageId = null, { manual = false }
     // Truncate before anything else touches it
     const stopResult = applyStopRegex(clone.mes);
     clone.mes = stopResult.text;
+    if (!clone.mes) {
+        return;
+    }
+
+    // Each non-streaming message is independent, so start from a fresh pause depth
+    ttsPauseDepth = 0;
+    const pauseResult = applyPauseUnpauseRegex(clone.mes);
+    clone.mes = pauseResult.text;
     if (!clone.mes) {
         return;
     }
@@ -941,6 +1050,11 @@ function loadSettings() {
     $('#tts_stop_regex_pattern').val(extension_settings.tts.stop_regex_pattern);
     $('#tts_stop_regex_block').toggle(extension_settings.tts.apply_stop_regex);
     updateStopRegexPatternWarning();
+    $('#tts_apply_pause_regex').prop('checked', extension_settings.tts.apply_pause_regex);
+    $('#tts_pause_regex_pattern').val(extension_settings.tts.pause_regex_pattern);
+    $('#tts_unpause_regex_pattern').val(extension_settings.tts.unpause_regex_pattern);
+    $('#tts_pause_regex_block').toggle(extension_settings.tts.apply_pause_regex);
+    updatePauseRegexPatternWarning();
     $('#tts_apply_regex').prop('checked', extension_settings.tts.apply_regex);
     $('#tts_regex_pattern').val(extension_settings.tts.regex_pattern);
     $('#tts_regex_block').toggle(extension_settings.tts.apply_regex);
@@ -962,6 +1076,9 @@ const defaultSettings = {
     multi_voice_enabled: false,
     apply_stop_regex: false,
     stop_regex_pattern: '',
+    apply_pause_regex: false,
+    pause_regex_pattern: '',
+    unpause_regex_pattern: '',
     apply_regex: false,
     regex_pattern: '',
 };
@@ -1092,6 +1209,45 @@ function updateStopRegexPatternWarning() {
 
     const regex = regexFromString(pattern);
     warning.toggle(!regex);
+}
+
+function onApplyPauseRegexChange() {
+    extension_settings.tts.apply_pause_regex = !!$('#tts_apply_pause_regex').prop('checked');
+    saveSettingsDebounced();
+    $('#tts_pause_regex_block').toggle(extension_settings.tts.apply_pause_regex);
+    updatePauseRegexPatternWarning();
+}
+
+function onPauseRegexPatternChange() {
+    extension_settings.tts.pause_regex_pattern = $('#tts_pause_regex_pattern').val().toString();
+    saveSettingsDebounced();
+    updatePauseRegexPatternWarning();
+}
+
+function onUnpauseRegexPatternChange() {
+    extension_settings.tts.unpause_regex_pattern = $('#tts_unpause_regex_pattern').val().toString();
+    saveSettingsDebounced();
+    updatePauseRegexPatternWarning();
+}
+
+function updatePauseRegexPatternWarning() {
+    const warning = $('#tts_pause_regex_warning');
+    if (!extension_settings.tts.apply_pause_regex) {
+        warning.hide();
+        return;
+    }
+
+    const pausePattern = extension_settings.tts.pause_regex_pattern;
+    const unpausePattern = extension_settings.tts.unpause_regex_pattern;
+
+    if (!pausePattern && !unpausePattern) {
+        warning.hide();
+        return;
+    }
+
+    const invalidPause = pausePattern ? !regexFromString(pausePattern) : false;
+    const invalidUnpause = unpausePattern ? !regexFromString(unpausePattern) : false;
+    warning.toggle(invalidPause || invalidUnpause);
 }
 
 function onApplyRegexChange() {
@@ -1308,6 +1464,8 @@ async function onMessageEvent(messageId, lastCharIndex) {
                 periodicMessageGenerationTimer = null;
             }
         }
+        const pauseResult = applyPauseUnpauseRegex(message.mes);
+        message.mes = pauseResult.text;
         if (!message.mes) {
             return;
         }
@@ -1342,9 +1500,10 @@ async function onGenerationStarted(generationType, _args, isDryRun) {
         return;
     }
 
-    // Reset stream-level stop state for new generation
+    // Reset stream-level stop and pause state for new generation
     isStreamStoppedForTts = false;
     stoppedStreamMessageId = null;
+    ttsPauseDepth = 0;
 
     // If TTS is disabled, do nothing
     if (!extension_settings.tts.enabled) {
@@ -1709,6 +1868,9 @@ export async function init() {
         $('#tts_multi_voice_enabled').on('click', onMultiVoiceClick);
         $('#tts_apply_stop_regex').on('change', onApplyStopRegexChange);
         $('#tts_stop_regex_pattern').on('input', onStopRegexPatternChange);
+        $('#tts_apply_pause_regex').on('change', onApplyPauseRegexChange);
+        $('#tts_pause_regex_pattern').on('input', onPauseRegexPatternChange);
+        $('#tts_unpause_regex_pattern').on('input', onUnpauseRegexPatternChange);
         $('#tts_apply_regex').on('change', onApplyRegexChange);
         $('#tts_regex_pattern').on('input', onRegexPatternChange);
 
