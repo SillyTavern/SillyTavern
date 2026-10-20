@@ -284,6 +284,7 @@ import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MessageFormatter } from './scripts/message-formatter.js';
+import { trackMarkdownConverter } from './scripts/util/markdown-cache.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
@@ -535,6 +536,7 @@ export function reloadMarkdownProcessor() {
     // Inject the dinkus extension after creating the converter
     // Maybe move this into power_user init?
     converter.addExtension(markdownExclusionExt(), 'exclusion');
+    trackMarkdownConverter(converter);
 
     return converter;
 }
@@ -1796,9 +1798,10 @@ export async function sendTextareaMessage() {
  *   overrides. Merged on top of the default config.
  * @param {boolean} [isReasoning=false] - Whether the message is reasoning/thinking
  *   output (affects regex placement and some display rules).
+ * @param {import('./scripts/util/markdown-cache.js').MarkdownRenderCache} [markdownCache] - Optional per-handler Markdown cache.
  * @returns {string} Sanitized HTML string ready to assign to `innerHTML`.
  */
-export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false) {
+export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, sanitizerOverrides = {}, isReasoning = false, markdownCache = null) {
     if (!mes) {
         return '';
     }
@@ -1931,7 +1934,9 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
 
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
-        mes = converter.makeHtml(mes);
+        mes = markdownCache
+            ? markdownCache.render(mes, converter, !power_user.markdown_escape_strings)
+            : converter.makeHtml(mes);
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.

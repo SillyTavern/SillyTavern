@@ -16,6 +16,7 @@ import { enumTypes, SlashCommandEnumValue } from './slash-commands/SlashCommandE
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { createStreamingContentUpdater } from './util/stream-fadein.js';
+import { MarkdownRenderCache } from './util/markdown-cache.js';
 import { copyText, escapeRegex, isFalseBoolean, isTrueBoolean, setDatasetProperty, stringToRange, trimSpaces } from './utils.js';
 
 /**
@@ -275,6 +276,7 @@ export const ReasoningState = {
  */
 export class ReasoningHandler {
     #updateStreamingContent = createStreamingContentUpdater();
+    #markdownCache = new MarkdownRenderCache();
 
     /** @type {boolean} True if the model supports reasoning, but hides the reasoning output */
     #isHiddenReasoningModel;
@@ -565,6 +567,9 @@ export class ReasoningHandler {
      */
     updateDom(messageId, { force = false } = {}) {
         this.#checkDomElements(messageId);
+        if (force) {
+            this.#markdownCache.clear();
+        }
 
         // Main CSS class to show this message includes reasoning
         this.messageDom.classList.toggle('reasoning', this.state !== ReasoningState.None);
@@ -581,7 +586,7 @@ export class ReasoningHandler {
         const hasStoredReasoning = Boolean(this.reasoningDisplayText || this.reasoning);
         const hasReasoningContent = Boolean(String(rawReasoning ?? '').trim());
         setDatasetProperty(this.messageReasoningDetailsDom, 'hasContent', hasReasoningContent ? 'true' : null);
-        const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true);
+        const displayReasoning = messageFormatting(reasoning, '', false, false, messageId, {}, true, this.#markdownCache);
 
         this.#updateStreamingContent(this.messageReasoningContentDom, displayReasoning, power_user.stream_fade_in, force);
 

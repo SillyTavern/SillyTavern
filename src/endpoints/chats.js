@@ -381,18 +381,40 @@ async function checkChatIntegrity(filePath, integritySlug) {
  */
 
 /**
+ * Matches all search fragments across successive messages without revisiting
+ * earlier messages. Create a separate matcher for every chat file.
+ * @param {string[]} fragments Lowercase search fragments
+ * @returns {ChatTextMatcher} Incremental matcher
+ * @typedef {{ test: (text: string) => boolean }} ChatTextMatcher
+ */
+export function createChatSearchMatcher(fragments) {
+    const remaining = new Set(fragments);
+    return {
+        test(text) {
+            if (remaining.size === 0) return true;
+            const normalized = String(text ?? '').toLowerCase();
+            for (const fragment of remaining) {
+                if (normalized.includes(fragment)) remaining.delete(fragment);
+            }
+            return remaining.size === 0;
+        },
+    };
+}
+
+/**
  * Reads the information from a chat file.
  * @param {string} pathToFile - Path to the chat file
  * @param {object} additionalData - Additional data to include in the result
  * @param {boolean} withMetadata - Whether to read chat metadata
- * @param {ChatMatchFunction|null} matcher - Optional function to match messages
+ * @param {ChatMatchFunction|ChatTextMatcher|null} matcher - Optional cumulative or incremental matcher
  * @returns {Promise<ChatInfo>}
  *
  * @typedef {(textArray: string[]) => boolean} ChatMatchFunction
  */
 export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false, matcher = null) {
     const parsedPath = path.parse(pathToFile);
-    const hasMatcher = (typeof matcher === 'function');
+    const incrementalMatcher = typeof matcher === 'object' && typeof matcher?.test === 'function' ? matcher : null;
+    const hasMatcher = typeof matcher === 'function' || !!incrementalMatcher;
 
     // A chat that is deleted while a scan is running is not an error: treat it like a corrupted chat and move on.
     const chatVanished = () => {
@@ -466,9 +488,13 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
             if (hasMatcher && !hasAnyMatch && itemCounter > 0) {
                 const jsonData = tryParse(line);
                 if (jsonData) {
-                    matchBuffer.push(jsonData.mes || '');
-                    if (matcher(matchBuffer)) {
-                        hasAnyMatch = true;
+                    if (incrementalMatcher) {
+                        hasAnyMatch = incrementalMatcher.test(jsonData.mes || '');
+                    } else if (typeof matcher === 'function') {
+                        matchBuffer.push(jsonData.mes || '');
+                        hasAnyMatch = matcher(matchBuffer);
+                    }
+                    if (hasAnyMatch) {
                         matchBuffer = [];
                     }
                 }
@@ -1018,7 +1044,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
         };
 
         for (const chatFile of chatFiles) {
-            const matcher = query ? hasTextMatch : null;
+            const matcher = query ? createChatSearchMatcher(fragments) : null;
             const chatInfo = await getChatInfo(chatFile, {}, false, matcher);
             const hasMatch = chatInfo.match || hasTextMatch([chatInfo.file_id ?? '']);
 
