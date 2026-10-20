@@ -73,6 +73,7 @@ import { init as settingsInit } from './endpoints/settings.js';
 import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } from './server-startup.js';
 import { diskCache } from './endpoints/characters.js';
 import { migrateFlatSecrets } from './endpoints/secrets.js';
+import { streamDebug } from './diagnostics/gemini-stream-debug.js';
 import { migrateGroupChatsMetadataFormat } from './endpoints/groups.js';
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
@@ -246,6 +247,8 @@ app.use('/api/users', usersPublicRouter);
 
 // Everything below this line requires authentication
 app.use(requireLoginMiddleware);
+app.use('/api/stream-debug', streamDebug.router);
+app.use('/api/plugins/turing-stream-bridge/generate', streamDebug.bridgeMiddleware);
 app.post('/api/ping', (request, response) => {
     if (request.query.extend && request.session) {
         request.session.touch = Date.now();

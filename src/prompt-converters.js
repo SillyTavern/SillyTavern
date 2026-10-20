@@ -454,7 +454,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const toolNameMap = {};
 
     // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
-    const noPrefillModel = /gemini-3\.[67]-flash|gemini-3\.5-flash-lite/.test(model);
+    const noPrefillModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite|gemini-4-argon/.test(model);
 
     const contents = [];
     messages.forEach((message, index) => {
@@ -526,7 +526,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                     };
 
                     // https://ai.google.dev/gemini-api/docs/gemini-3#media_resolution
-                    if (/gemini-3/.test(model) && mediaResolution) {
+                    if (/gemini-[34]/.test(model) && mediaResolution) {
                         part.mediaResolution = {
                             level: mediaResolution,
                         };
@@ -542,6 +542,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                 const name = toolNameMap[part.tool_call_id] ?? 'unknown';
                 parts.push({
                     functionResponse: {
+                        ...(/^gemini-4/.test(model) ? { id: part.tool_call_id } : {}),
                         name: name,
                         response: { name: name, content: part.content },
                     },
@@ -550,6 +551,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
                 part.tool_calls.forEach((toolCall) => {
                     parts.push({
                         functionCall: {
+                            ...(/^gemini-4/.test(model) ? { id: toolCall.id } : {}),
                             name: toolCall.function.name,
                             args: tryParse(toolCall.function.arguments) ?? toolCall.function.arguments,
                         },
@@ -574,14 +576,14 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
 
         // https://ai.google.dev/gemini-api/docs/gemini-3#migrating_from_other_models
         // Inject stored thought signatures, or fall back to bypass magic for Gemini 3
-        if (/gemini-3/.test(model) || /gemini-2\.5/.test(model)) {
+        if (/gemini-[34]/.test(model) || /gemini-2\.5/.test(model)) {
             const skipSignatureMagic = 'skip_thought_signature_validator';
             const textSignature = message.signature;
 
             parts.forEach((part) => {
                 if (enableThoughtSignatures && textSignature && typeof part.text === 'string') {
                     part.thoughtSignature = textSignature;
-                } else if (/gemini-3/.test(model)) {
+                } else if (/gemini-[34]/.test(model)) {
                     // Gemini 3: Fall back to bypass magic for function calls (mandatory) and images
                     if (part.functionCall && !part.thoughtSignature) {
                         part.thoughtSignature = skipSignatureMagic;
@@ -599,8 +601,8 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
         // merge consecutive messages with the same role
         if (index > 0 && message.role === contents[contents.length - 1].role) {
             parts.forEach((part) => {
-                if (part.text) {
-                    const textPart = contents[contents.length - 1].parts.find(p => typeof p.text === 'string');
+                if (part.text && !part.thoughtSignature) {
+                    const textPart = contents[contents.length - 1].parts.find(p => typeof p.text === 'string' && !p.thoughtSignature);
                     if (textPart) {
                         textPart.text += '\n\n' + part.text;
                     } else {

@@ -69,6 +69,8 @@ import {
 import { getVertexAIAuth, getProjectIdFromServiceAccount } from '../google.js';
 import { getCookieSecret } from '../../users.js';
 import { fetchGoogleModels, GoogleModelsHttpError } from './google-models.js';
+import { streamDebug } from '../../diagnostics/gemini-stream-debug.js';
+import { sendVertexRequest } from './vertex-native.js';
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -452,6 +454,7 @@ async function sendClaudeRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
+    const diagnostic = streamDebug.begin(request, response);
     const useVertexAi = request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.VERTEXAI;
     const apiName = useVertexAi ? 'Google Vertex AI' : 'Google AI Studio';
     let apiUrl;
@@ -730,12 +733,14 @@ async function sendMakerSuiteRequest(request, response) {
             url = `${apiUrl.toString().replace(/\/$/, '')}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`;
         }
 
+        diagnostic?.startUpstream(url, body, headers, controller.signal);
         const generateResponse = await fetch(url, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: headers,
             signal: controller.signal,
         });
+        diagnostic?.responseHeaders(generateResponse);
 
         if (stream) {
             try {
@@ -785,6 +790,7 @@ async function sendMakerSuiteRequest(request, response) {
             return response.send(reply);
         }
     } catch (error) {
+        diagnostic?.failure(error);
         console.error(`Error communicating with ${apiName} API:`, error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
@@ -2260,7 +2266,7 @@ router.post('/generate', async function (request, response) {
             case CHAT_COMPLETION_SOURCES.CLAUDE: return await sendClaudeRequest(request, response);
             case CHAT_COMPLETION_SOURCES.AI21: return await sendAI21Request(request, response);
             case CHAT_COMPLETION_SOURCES.MAKERSUITE: return await sendMakerSuiteRequest(request, response);
-            case CHAT_COMPLETION_SOURCES.VERTEXAI: return await sendMakerSuiteRequest(request, response);
+            case CHAT_COMPLETION_SOURCES.VERTEXAI: return await sendVertexRequest(request, response);
             case CHAT_COMPLETION_SOURCES.MISTRALAI: return await sendMistralAIRequest(request, response);
             case CHAT_COMPLETION_SOURCES.COHERE: return await sendCohereRequest(request, response);
             case CHAT_COMPLETION_SOURCES.DEEPSEEK: return await sendDeepSeekRequest(request, response);

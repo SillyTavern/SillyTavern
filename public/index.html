@@ -3404,10 +3404,7 @@
                                         <input id="vertexai_express_project_id" name="vertexai_express_project_id" class="text_pole flex1" value="" type="text" autocomplete="off" placeholder="Enter your Project ID">
                                     </div>
                                     <div class="toggle-description justifyLeft marginBot5">
-                                        <small data-i18n="Project ID is required when selecting regions other than the default (us-central1). You can find this in a model 404 error message.">
-                                            `Project ID` is only required when selecting regions other than the default (us-central1).<br>
-                                            You can find this in a model 404 error message.
-                                        </small>
+                                        <small>使用项目级 API 密钥时填写 Google Cloud 项目 ID；Express 密钥可留空。</small>
                                     </div>
                                 </div>
                             </div>
@@ -3451,10 +3448,12 @@
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </label>
-                                <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="us-central1" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1" list="vertexai_region_suggestions">
+                                <input id="vertexai_region" name="vertexai_region" class="text_pole flex1" value="global" type="text" autocomplete="off" placeholder="e.g., global, us-central1, europe-west1, asia-northeast1" list="vertexai_region_suggestions">
 
                                 <datalist id="vertexai_region_suggestions">
                                     <option value="global">global</option>
+                                    <option value="us">us（美国多区域）</option>
+                                    <option value="eu">eu（欧盟多区域）</option>
                                     <option value="us-central1">us-central1</option>
                                     <option value="us-east1">us-east1</option>
                                     <option value="us-east4">us-east4</option>
@@ -3476,11 +3475,44 @@
                                 </datalist>
                             </div>
 
+                            <details class="marginTop10">
+                                <summary>Vertex 请求设置</summary>
+                                <label for="vertexai_service_tier">服务档位</label>
+                                <select id="vertexai_service_tier" class="text_pole">
+                                    <option value="auto">默认（Google 自动分配）</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="priority">Priority（更高价格）</option>
+                                    <option value="flex">Flex（较慢，当前 Vertex 不支持 Argon）</option>
+                                </select>
+                                <label for="vertexai_request_type">使用容量</label>
+                                <select id="vertexai_request_type" class="text_pole">
+                                    <option value="auto">自动</option>
+                                    <option value="shared">仅按量付费</option>
+                                    <option value="dedicated">仅已购买的专用容量</option>
+                                </select>
+                                <label for="vertexai_api_version">API 版本</label>
+                                <select id="vertexai_api_version" class="text_pole">
+                                    <option value="auto">自动（Argon 续传使用 v1beta1）</option>
+                                    <option value="v1">v1</option>
+                                    <option value="v1beta1">v1beta1</option>
+                                </select>
+                                <label for="vertexai_timeout">整次生成等待上限（秒）</label>
+                                <input id="vertexai_timeout" class="text_pole" type="number" min="30" max="7200" step="1">
+                                <label class="checkbox_label"><input id="vertexai_auto_continue" type="checkbox"><span>Argon 自动接续官方长输出分段</span></label>
+                                <label class="checkbox_label"><input id="vertexai_argument_streaming" type="checkbox"><span>函数参数流式传输</span></label>
+                                <label class="checkbox_label"><input id="vertexai_unwrap_content" type="checkbox"><span>将图灵 actual_content 转为正文</span></label>
+                                <small>连接每 10 秒自动保活。Argon 使用 low / medium / high 思考档位；温度、top-p、top-k 由模型处理。</small>
+                            </details>
+                            <small id="vertexai_runtime" role="status" aria-live="polite"></small>
+
                             <!-- Model Selection -->
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
+                                    <optgroup label="Gemini 4">
+                                        <option value="gemini-4-argon">gemini-4-argon</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.7">
                                         <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                                     </optgroup>

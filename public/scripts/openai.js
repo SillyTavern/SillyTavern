@@ -47,6 +47,7 @@ import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_descrip
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
+import { vertexDefaults, vertexSettingsMap, initVertexUI, updateVertexRuntime } from './vertex-ui.js';
 import {
     clamp,
     createThumbnail,
@@ -303,6 +304,7 @@ const sensitiveFields = [
  * @type {Record<string, [string, string, boolean, boolean]>}
  */
 export const settingsToUpdate = {
+    ...vertexSettingsMap,
     chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false, true],
     temperature: ['#temp_openai', 'temp_openai', false, false],
     frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false, false],
@@ -491,8 +493,9 @@ const default_settings = {
     assistant_prefill: '',
     assistant_impersonation: '',
     use_sysprompt: false,
+    ...vertexDefaults,
     vertexai_auth_mode: 'express',
-    vertexai_region: 'us-central1',
+    vertexai_region: 'global',
     vertexai_express_project_id: '',
     squash_system_messages: false,
     media_inlining: true,
@@ -2908,6 +2911,7 @@ export async function createGenerationParameters(settings, model, type, messages
         generate_data.stop = getCustomStoppingStrings(stopStringsLimit).slice(0, stopStringsLimit).filter(x => x.length >= 1 && x.length <= 16);
         generate_data.use_sysprompt = settings.use_sysprompt;
         if (settings.chat_completion_source === chat_completion_sources.VERTEXAI) {
+            for (const [key, fallback] of Object.entries(vertexDefaults)) generate_data[key] = settings[key] ?? fallback;
             generate_data.vertexai_auth_mode = settings.vertexai_auth_mode;
             generate_data.vertexai_region = settings.vertexai_region;
             generate_data.vertexai_express_project_id = settings.vertexai_express_project_id;
@@ -3145,6 +3149,8 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
     const { generate_data, stream, canMultiSwipe } = await createGenerationParameters(oai_settings, model, type, messages, { jsonSchema });
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
+    const nativeVertex = generate_data.chat_completion_source === chat_completion_sources.VERTEXAI;
+    if (nativeVertex) updateVertexRuntime(null);
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
         method: 'POST',
@@ -3166,29 +3172,39 @@ async function sendOpenAIRequest(type, messages, signal, { jsonSchema = null } =
             const swipes = [];
             const toolCalls = [];
             const state = { reasoning: '', images: [], signature: '', toolSignatures: {} };
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) return;
-                const rawData = value.data;
-                if (rawData === '[DONE]') return;
-                tryParseStreamingError(response, rawData);
-                const parsed = JSON.parse(rawData);
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) return;
+                    const rawData = value.data;
+                    if (rawData === '[DONE]') return;
+                    tryParseStreamingError(response, rawData);
+                    const parsed = JSON.parse(rawData);
+                    if (nativeVertex) {
+                        updateVertexRuntime(parsed);
+                        if (parsed.error) throw new Error(getChatCompletionErrorMessage(parsed, response));
+                    }
 
-                if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
-                    const swipeIndex = parsed.choices[0].index - 1;
-                    // FIXME: state.reasoning should be an array to support multi-swipe
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { overrideShowThoughts: false });
-                } else {
-                    text += getStreamingReply(parsed, state);
+                    if (canMultiSwipe && Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
+                        const swipeIndex = parsed.choices[0].index - 1;
+                        // FIXME: state.reasoning should be an array to support multi-swipe
+                        swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed, state, { overrideShowThoughts: false });
+                    } else {
+                        text += getStreamingReply(parsed, state);
+                    }
+
+                    ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
+
+                    yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
                 }
-
-                ToolManager.parseToolCalls(toolCalls, parsed, state.toolSignatures);
-
-                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed), toolCalls: toolCalls, state: state };
+            } finally {
+                await reader.cancel().catch(() => {});
+                reader.releaseLock();
             }
         };
     } else {
         const data = await response.json();
+        if (nativeVertex) updateVertexRuntime(data);
 
         checkQuotaError(data);
         checkModerationError(data);
@@ -3234,16 +3250,16 @@ export function getStreamingReply(data, state, { chatCompletionSource = null, ov
             state.images.push(...inlineData.map(x => `data:${x.mimeType};base64,${x.data}`).filter(isDataURL));
         }
         if (show_thoughts) {
-            state.reasoning += (data?.candidates?.[0]?.content?.parts?.filter(x => x.thought)?.map(x => x.text)?.[0] || '');
+            state.reasoning += (data?.candidates?.[0]?.content?.parts?.filter(x => x.thought)?.map(x => x.text || '').join('') || '');
         }
         // Extract thought signatures from streaming chunks (typically in final chunk)
         const parts = data?.candidates?.[0]?.content?.parts || [];
         parts.forEach((part) => {
-            if (part.thoughtSignature && typeof part.text === 'string') {
+            if (part.thoughtSignature && !part.functionCall) {
                 state.signature = part.thoughtSignature;
             }
         });
-        return data?.candidates?.[0]?.content?.parts?.filter(x => !x.thought)?.map(x => x.text)?.[0] || '';
+        return data?.candidates?.[0]?.content?.parts?.filter(x => !x.thought)?.map(x => x.text || '').join('') || '';
     } else if (chat_completion_source === chat_completion_sources.COHERE) {
         return data?.delta?.message?.content?.text || data?.delta?.message?.tool_plan || '';
     } else if (chat_completion_source === chat_completion_sources.DEEPSEEK) {
@@ -5141,6 +5157,7 @@ function getGeminiMaxContext(model, isUnlocked) {
 
     /** @type {[RegExp, number][]} */
     const contextMap = [
+        [/gemini-4-argon/, 1048576],
         [/gemini-2\.5-flash-image/, max_32k],
         [/gemini-3\.1-flash-image/, max_128k],
         [/gemini-3-pro-image/, max_64k],
@@ -7321,6 +7338,7 @@ export function initOpenAI() {
     $('#model_claude_select').on('change', onModelChange);
     $('#model_google_select').on('change', onModelChange);
     $('#model_vertexai_select').on('change', onModelChange);
+    initVertexUI(oai_settings, saveSettingsDebounced);
     $('#vertexai_auth_mode').on('change', onVertexAIAuthModeChange);
     $('#vertexai_region').on('input', function () {
         oai_settings.vertexai_region = String($(this).val());

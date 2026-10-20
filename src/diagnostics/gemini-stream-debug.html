@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SillyTavern 断连诊断</title>
+<style>
+:root{color-scheme:dark;font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;background:#14171c;color:#e9edf4}
+body{max-width:1100px;margin:40px auto;padding:0 24px}h1{font-size:28px;margin-bottom:8px}p{color:#b7c2d3}
+.bar{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0}button,a.button{font:inherit;border:1px solid #526079;border-radius:8px;background:#253044;color:#fff;padding:8px 16px;cursor:pointer;text-decoration:none}
+button:first-child{background:#315aab}button:disabled{opacity:.5;cursor:wait}button:focus-visible,a:focus-visible{outline:3px solid #b2ccff;outline-offset:3px}
+.box{background:#1e242d;border:1px solid #354154;border-radius:12px;padding:16px;margin-bottom:20px}#status{font-weight:600;color:#e5eefd}#error{color:#ffb7b7;white-space:pre-wrap}
+.scroll{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #354154;font-size:14px}th{color:#b7c2d3}td small{display:block;color:#a5b1c2}
+code{background:#252d38;padding:2px 5px;border-radius:4px}summary{cursor:pointer}li{margin:6px 0}#empty{padding:20px;color:#b7c2d3}.bad{color:#ffb7b7}.good{color:#98ddaf}
+</style>
+</head>
+<body>
+<h1>断连诊断</h1>
+<p>记录 Gemini / Vertex 流式请求，以及图灵保活插件的连接状态。</p>
+<div class="box">
+<div id="status" role="status" aria-live="polite">正在读取状态…</div>
+<div id="error" role="alert"></div>
+<div class="bar">
+<button type="button" data-action="start">开始记录（1 小时）</button>
+<button type="button" data-action="stop">停止新记录</button>
+<a class="button" id="download" download>下载诊断 JSON</a>
+<button type="button" data-action="clear">清空记录</button>
+</div>
+<div>点“开始记录” → 回到酒馆正常生成 → 空回或卡住后回到这里下载 JSON。</div>
+<p>卡住时可以先下载，再点酒馆的停止生成。这样能保留主动停止之前的状态。</p>
+</div>
+<div class="box scroll">
+<table><thead><tr><th>请求 / 时间</th><th>位置</th><th>状态</th><th>模型收到字节</th><th>模型静默</th><th>插件心跳写入</th></tr></thead><tbody id="rows"></tbody></table>
+<div id="empty">开始记录后，等待下一次生成。记录范围为原生 Gemini / Vertex 的流式请求。</div>
+</div>
+<details class="box"><summary>记录范围与读法</summary><ul>
+<li>“模型侧”读取渠道返回的数据；“保活插件”记录服务器向下游写出的数据。插件心跳写入次数不能证明浏览器已经收到。</li>
+<li>上游错误、HTTP 状态、首包时间、最后收包时间、结束原因和实际 Priority 请求头会进入报告。响应提供的 trafficType 也会保留。</li>
+<li>导出使用计数、时间和固定分类；API 密钥、Cookie、完整地址、提示词和聊天正文不进入报告。</li>
+<li>最多保留 40 条连接记录。图灵保活路径通常产生两条记录，可通过 bodyGroup 及时间对应；相同内容的重试也可能属于同组。</li>
+<li>记录按用户隔离，并保存到该用户数据目录的 stream-debug/latest.json。重启后需重新点“开始记录”。</li>
+<li>“停止新记录”让现有请求继续收集结束信息；“清空记录”同时停止观察现有请求。两者都保持生成连接原样。</li>
+<li>诊断不发送额外心跳、不重试请求、不调整超时，也不切换付费 Priority。</li>
+</ul></details>
+<script>
+'use strict';
+const base = location.pathname.replace(/\/$/, '');
+const prefix = base.slice(0, base.lastIndexOf('/api/stream-debug'));
+const statusNode = document.getElementById('status');
+const errorNode = document.getElementById('error');
+const rowsNode = document.getElementById('rows');
+document.getElementById('download').href = base + '/export';
+const labels = { in_progress: '进行中', upstream_error: '模型连接错误', downstream_error: '下游连接错误', upstream_http_error: '上游 HTTP 错误', local_http_error: '酒馆接口错误', downstream_closed_early: '下游提前断开', response_finished: '响应已结束' };
+let pending = false;
+function seconds(ms) { return (Math.max(0, ms ?? 0) / 1000).toFixed(1) + ' 秒'; }
+function render(report) {
+    statusNode.textContent = report.recording ? '正在记录 · ' + report.traces.length + ' 条连接' : '记录已停止 · ' + report.traces.length + ' 条连接';
+    if (report.persistenceError) errorNode.textContent = '保存到服务器失败：' + report.persistenceError + '。当前仍可直接下载内存中的报告。';
+    if (report.skippedRequests) errorNode.textContent += ' 并发记录已达上限，跳过 ' + report.skippedRequests + ' 次。';
+    rowsNode.replaceChildren();
+    for (const row of [...report.traces].reverse()) {
+        const tr = document.createElement('tr');
+        const values = [row.id.slice(0, 8) + ' · ' + new Date(row.startedAt).toLocaleTimeString(),
+            row.kind === 'native-gemini' ? '模型侧' : '保活插件',
+            row.restoredAfterRestart ? '上次运行的记录' : (labels[row.state] || row.state),
+            row.kind === 'native-gemini' ? String(row.upstream.bytes) : '—',
+            row.kind === 'native-gemini' ? seconds(row.upstreamIdleMs) : '—',
+            row.kind === 'keepalive-plugin' ? String(row.downstream.protocol.bridgeHeartbeats) : '—'];
+        for (const value of values) { const td = document.createElement('td'); td.textContent = value; tr.appendChild(td); }
+        const detail = document.createElement('small');
+        const errors = [...row.upstream.errors, ...row.downstream.errors];
+        detail.textContent = errors.length ? errors.map(e => e.code + ' / ' + e.kind).join(', ') : '已观察 ' + seconds(row.elapsedMs);
+        tr.children[2].appendChild(detail);
+        if (row.state.includes('error') || row.state.includes('early')) tr.children[2].className = 'bad';
+        rowsNode.appendChild(tr);
+    }
+    document.getElementById('empty').hidden = report.traces.length > 0;
+}
+async function refresh(action) {
+    if (pending) return;
+    pending = true;
+    document.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    try {
+        errorNode.textContent = '';
+        let response;
+        if (action) {
+            const csrf = await fetch(prefix + '/csrf-token', { credentials: 'same-origin', cache: 'no-store' });
+            if (!csrf.ok) throw Error('读取登录校验失败：HTTP ' + csrf.status);
+            const token = (await csrf.json()).token;
+            response = await fetch(base + '/control', { method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token }, body: JSON.stringify({ action }) });
+        } else response = await fetch(base + '/status', { credentials: 'same-origin', cache: 'no-store' });
+        if (!response.ok) throw Error('诊断接口返回 HTTP ' + response.status + '，请确认已登录酒馆。');
+        render(await response.json());
+    } catch (error) { errorNode.textContent = error.message; }
+    finally { pending = false; document.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
+}
+document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => refresh(button.dataset.action)));
+setInterval(() => { if (!document.hidden) refresh(); }, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+refresh();
+</script>
+</body>
+</html>
