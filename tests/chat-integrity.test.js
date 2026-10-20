@@ -1,5 +1,6 @@
-import { beforeAll, beforeEach, afterEach, describe, test, expect } from '@jest/globals';
+import { beforeAll, beforeEach, afterEach, describe, test, expect, jest } from '@jest/globals';
 import fs from 'node:fs';
+import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -22,6 +23,63 @@ beforeAll(async () => {
 const BOM = String.fromCharCode(0xFEFF);
 const SLUG = '1e6905db-bab6-4901-913b-06d18cab5a8f';
 const OTHER_SLUG = 'f1c1d103-464a-418a-a643-f9dab81589b9';
+
+describe('character chat load response', () => {
+    let directory;
+
+    beforeEach(() => {
+        directory = fs.mkdtempSync(path.join(os.tmpdir(), 'st-chat-load-'));
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        const resolved = fs.realpathSync(directory);
+        assert.equal(path.dirname(resolved), fs.realpathSync(os.tmpdir()));
+        assert.match(path.basename(resolved), /^st-chat-load-/);
+        fs.rmSync(resolved, { recursive: true, force: true });
+    });
+
+    function load(fileName = 'Chat') {
+        const route = chats.router.stack.find(layer => layer.route?.path === '/get').route;
+        const response = {
+            statusCode: 200,
+            body: undefined,
+            send(body) { this.body = body; return this; },
+            sendStatus(status) { this.statusCode = status; return this; },
+        };
+        route.stack.at(-1).handle({
+            body: { avatar_url: 'Test.png', file_name: fileName },
+            user: { directories: { chats: directory } },
+        }, response);
+        return response;
+    }
+
+    test('a character without a chat directory returns an empty array', () => {
+        expect(load()).toMatchObject({ statusCode: 200, body: [] });
+    });
+
+    test('a missing file and an unspecified file return empty arrays', () => {
+        fs.mkdirSync(path.join(directory, 'Test'));
+        expect(load()).toMatchObject({ statusCode: 200, body: [] });
+        expect(load('')).toMatchObject({ statusCode: 200, body: [] });
+    });
+
+    test('an existing chat returns its header and messages', () => {
+        fs.mkdirSync(path.join(directory, 'Test'));
+        const data = makeChat(SLUG);
+        fs.writeFileSync(path.join(directory, 'Test', 'Chat.jsonl'), toJsonl(data));
+        expect(load()).toMatchObject({ statusCode: 200, body: data });
+    });
+
+    test('a read failure returns an error rather than an empty chat', () => {
+        fs.mkdirSync(path.join(directory, 'Test'));
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
+            throw Object.assign(new Error('Permission denied'), { code: 'EACCES' });
+        });
+        expect(load().statusCode).toBe(500);
+    });
+});
 
 /**
  * Builds a chat array like the client sends it.

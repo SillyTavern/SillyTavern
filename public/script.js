@@ -417,6 +417,8 @@ export let swipeState = SWIPE_STATE.NONE;
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
+let chatLoadGeneration = 0;
+let currentChatLoad = null;
 let firstRun = false;
 export let settingsReady = false;
 let currentVersion = '0.0.0';
@@ -1584,6 +1586,9 @@ export function cancelDebouncedChatSave() {
  * @param {boolean} [options.clearData=false] Optionally clear the chat array's contents.
  */
 export async function clearChat({ clearData = false } = {}) {
+    if (clearData) {
+        currentChatLoad = { generation: ++chatLoadGeneration, pending: true };
+    }
     cancelDebouncedChatSave();
     cancelDebouncedMetadataSave();
     closeMessageEditor();
@@ -7358,20 +7363,52 @@ async function renamePastChats(oldAvatar, newAvatar, newName) {
     }
 }
 
+/**
+ * Captures a loaded chat's identity for asynchronous saves. Missing integrity
+ * during loading must never be replaced with a new slug just to allow a save.
+ * @returns {{characterId: string|undefined, groupId: string|null, chatId: string, avatar: string|undefined, integrity: string, generation: number}|null}
+ */
+export function getChatSaveContext() {
+    const chatId = getCurrentChatId();
+    if (!chatId || !chat_metadata || Array.isArray(chat_metadata) || !chat_metadata.integrity || (!selected_group && currentChatLoad?.pending)) return null;
+    return {
+        characterId: this_chid,
+        groupId: selected_group,
+        chatId,
+        avatar: selected_group ? undefined : characters[this_chid]?.avatar,
+        integrity: chat_metadata.integrity,
+        generation: chatLoadGeneration,
+    };
+}
+
+/**
+ * @param {ReturnType<typeof getChatSaveContext>} expected Captured save context
+ * @returns {boolean} Whether the same loaded chat is still selected
+ */
+export function isChatSaveContextCurrent(expected) {
+    const current = getChatSaveContext();
+    return !!expected && !!current && Object.keys(expected).every(key => expected[key] === current[key]);
+}
+
+function warnIfLoadedChatCannotSave() {
+    if (currentChatLoad && !currentChatLoad.pending && !chat_metadata?.integrity && !currentChatLoad.saveWarningShown) {
+        currentChatLoad.saveWarningShown = true;
+        toastr.error(t`Chat metadata is missing. Please reopen the chat before continuing.`, t`Chat could not be saved`);
+    }
+}
+
 export function saveChatDebounced() {
-    const chid = this_chid;
-    const selectedGroup = selected_group;
+    const saveContext = getChatSaveContext();
 
     cancelDebouncedChatSave();
+    if (!saveContext) {
+        warnIfLoadedChatCannotSave();
+        return;
+    }
 
     chatSaveTimeout = setTimeout(async () => {
-        if (selectedGroup !== selected_group) {
-            console.warn('Chat save timeout triggered, but group changed. Aborting.');
-            return;
-        }
-
-        if (chid !== this_chid) {
-            console.warn('Chat save timeout triggered, but chid changed. Aborting.');
+        if (!isChatSaveContextCurrent(saveContext)) {
+            console.debug('Chat changed or is still loading, not saving the previous chat');
             return;
         }
 
@@ -7403,7 +7440,14 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
         [chatName, withMetadata, mesId, force] = arguments;
     }
 
+    const saveContext = getChatSaveContext();
+    if (!saveContext) {
+        warnIfLoadedChatCannotSave();
+        console.debug('Chat is not ready, skipping save');
+        return;
+    }
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
+    if (!metadata.integrity) return;
     const fileName = chatName ?? characters[this_chid]?.chat;
 
     if (!fileName && name2 === neutralCharacterName) {
@@ -7444,6 +7488,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
                 force: force,
             }),
         });
+        if (!isChatSaveContextCurrent(saveContext)) return;
         const result = await fetch('/api/chats/save', saveChatRequest);
 
         if (result.ok) {
@@ -7451,6 +7496,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
         }
 
         const errorData = await result.json();
+        if (!isChatSaveContextCurrent(saveContext)) return;
         const isIntegrityError = errorData?.error === 'integrity' && !force;
         if (!isIntegrityError) {
             throw new Error(result.statusText);
@@ -7465,6 +7511,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
         );
 
         const forceSaveConfirmed = popupResult === 'OVERWRITE';
+        if (!isChatSaveContextCurrent(saveContext)) return;
 
         if (!forceSaveConfirmed) {
             console.warn('Chat integrity check failed, and user did not confirm the overwrite. Reloading the page.');
@@ -7472,7 +7519,7 @@ export async function saveChat({ chatName, withMetadata, mesId, force = false, c
             return;
         }
 
-        await saveChat({ chatName, withMetadata, mesId, force: true });
+        await saveChat({ chatName: fileName, withMetadata: metadata, mesId, force: true, chatData: trimmedChat });
     } catch (error) {
         console.error(error);
         toastr.error(t`Check the server connection and reload the page to prevent data loss.`, t`Chat could not be saved`);
@@ -7632,17 +7679,27 @@ export async function unshallowCharacter(characterId) {
 }
 
 export async function getChat() {
+    const generation = ++chatLoadGeneration;
+    const characterId = this_chid;
+    let chatName;
+    const avatar = characters[characterId]?.avatar;
+    const isCurrentLoad = () => generation === chatLoadGeneration && !selected_group
+        && this_chid === characterId && (chatName === undefined || characters[characterId]?.chat === chatName)
+        && characters[characterId]?.avatar === avatar;
+    currentChatLoad = { generation, pending: true };
     try {
-        await unshallowCharacter(this_chid);
+        await unshallowCharacter(characterId);
+        if (!isCurrentLoad()) return;
+        chatName = characters[characterId]?.chat;
 
         const response = await fetch('/api/chats/get', {
             method: 'POST',
             headers: getRequestHeaders(),
             cache: 'no-cache',
             body: JSON.stringify({
-                ch_name: characters[this_chid].name,
-                file_name: characters[this_chid].chat,
-                avatar_url: characters[this_chid].avatar,
+                ch_name: characters[characterId].name,
+                file_name: chatName,
+                avatar_url: avatar,
             }),
         });
 
@@ -7651,9 +7708,17 @@ export async function getChat() {
         }
 
         const data = await response.json();
+        if (!isCurrentLoad()) return;
+        if (!Array.isArray(data)) throw new Error('Invalid chat response');
         if (Array.isArray(data) && data.length > 0) {
             /** @type {ChatHeader} */
             const chatHeader = data.shift();
+            if (!chatHeader || typeof chatHeader !== 'object' || Array.isArray(chatHeader)) {
+                throw new Error('Invalid chat header');
+            }
+            if (chatHeader.chat_metadata != null && (typeof chatHeader.chat_metadata !== 'object' || Array.isArray(chatHeader.chat_metadata))) {
+                throw new Error('Invalid chat metadata');
+            }
             chat_metadata = chatHeader?.chat_metadata ?? {};
             chat.splice(0, chat.length, ...data);
             chat.forEach(ensureMessageMediaIsArray);
@@ -7665,23 +7730,38 @@ export async function getChat() {
         if (!chat_metadata.integrity) {
             chat_metadata.integrity = uuidv4();
         }
-        await getChatResult();
+        currentChatLoad.pending = false;
+        await getChatResult(isCurrentLoad);
+        if (!isCurrentLoad()) return;
         eventSource.emit(event_types.CHAT_LOADED, { detail: { id: this_chid, character: characters[this_chid] } });
 
         // Focus on the textarea if not already focused on a visible text input
         delay(debounce_timeout.short).then(() => {
+            if (!isCurrentLoad()) return;
             if ($(document.activeElement).is('input:visible, textarea:visible')) {
                 return;
             }
             $('#send_textarea').trigger('click').trigger('focus');
         });
     } catch (error) {
-        await getChatResult();
-        console.log(error);
+        if (!isCurrentLoad()) return;
+        if (currentChatLoad.pending) {
+            cancelDebouncedChatSave();
+            cancelDebouncedMetadataSave();
+            console.error('Chat could not be loaded', error);
+            toastr.error(t`Please try opening the chat again. Nothing was saved.`, t`Chat could not be loaded`);
+        } else {
+            console.error('Chat could not be displayed', error);
+            toastr.error(t`The chat loaded, but could not be displayed. Please try opening it again.`, t`Chat display error`);
+        }
     }
 }
 
-async function getChatResult() {
+/**
+ * @param {() => boolean} isCurrentLoad Whether this load still owns the current chat
+ */
+async function getChatResult(isCurrentLoad) {
+    if (!isCurrentLoad()) return;
     name2 = characters[this_chid].name;
     let freshChat = false;
     if (chat.length === 0) {
@@ -7692,17 +7772,23 @@ async function getChatResult() {
         }
         // Make sure the chat appears on the server
         await saveChatConditional();
+        if (!isCurrentLoad()) return;
     }
     await loadItemizedPrompts(getCurrentChatId());
+    if (!isCurrentLoad()) return;
     await printMessages();
+    if (!isCurrentLoad()) return;
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
+    if (!isCurrentLoad()) return;
     if (freshChat) await eventSource.emit(event_types.CHAT_CREATED);
+    if (!isCurrentLoad()) return;
 
     if (chat.length === 1) {
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id, 'first_message');
+        if (!isCurrentLoad()) return;
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id, 'first_message');
     }
 }
@@ -9410,8 +9496,16 @@ export async function saveMetadata() {
 }
 
 export async function saveChatConditional() {
+    const saveContext = getChatSaveContext();
+    if (!saveContext) {
+        warnIfLoadedChatCannotSave();
+        return;
+    }
     try {
-        await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
+        do {
+            await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
+            if (!isChatSaveContextCurrent(saveContext)) return;
+        } while (isChatSaving);
     } catch {
         console.warn('Timeout waiting for chat to save');
         return;
@@ -9429,8 +9523,10 @@ export async function saveChatConditional() {
         }
 
         // Save token and prompts cache to IndexedDB storage
-        saveTokenCache();
-        saveItemizedPrompts(getCurrentChatId());
+        if (isChatSaveContextCurrent(saveContext)) {
+            saveTokenCache();
+            saveItemizedPrompts(saveContext.chatId);
+        }
     } catch (error) {
         console.error('Error saving chat', error);
     } finally {

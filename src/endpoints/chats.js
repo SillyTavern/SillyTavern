@@ -572,12 +572,23 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 /**
  * Gets the chat as an object.
  * @param {string} chatFilePath The full chat file path.
- * @returns {Array}} If the chatFilePath cannot be read, this will return [].
+ * @param {boolean} [throwOnReadError=false] Propagate read errors for existing files to the HTTP handler.
+ * @returns {Array} Parsed chat, or an empty array for missing files and suppressed read errors.
  */
-export function getChatData(chatFilePath) {
+export function getChatData(chatFilePath, throwOnReadError = false) {
     let chatData = [];
 
-    const chatJSON = tryReadFileSync(chatFilePath) ?? '';
+    let chatJSON;
+    if (throwOnReadError) {
+        try {
+            chatJSON = fs.readFileSync(chatFilePath, 'utf8');
+        } catch (error) {
+            if (error.code !== 'ENOENT') throw error;
+            chatJSON = '';
+        }
+    } else {
+        chatJSON = tryReadFileSync(chatFilePath) ?? '';
+    }
     if (chatJSON.length > 0) {
         const lines = chatJSON.split('\n');
         // Iterate through the array of strings and parse each line as JSON
@@ -601,20 +612,20 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
         //if no chat dir for the character is found, make one with the character name
         if (!chatDirExists) {
             fs.mkdirSync(directoryPath);
-            return response.send({});
+            return response.send([]);
         }
 
         if (!request.body.file_name) {
-            return response.send({});
+            return response.send([]);
         }
 
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(directoryPath, sanitize(chatFileName));
 
-        return response.send(getChatData(chatFilePath));
+        return response.send(getChatData(chatFilePath, true));
     } catch (error) {
         console.error(error);
-        return response.send({});
+        return response.sendStatus(500);
     }
 });
 
