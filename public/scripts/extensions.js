@@ -1,6 +1,6 @@
 import { Popper } from '../lib.js';
 
-import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION } from '../script.js';
+import { eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration, CLIENT_VERSION, getChatSaveContext, isChatSaveContextCurrent } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from './popup.js';
 import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { delay, deleteValueByPath, equalsIgnoreCaseAndAccents, escapeHtml, isSubsetOf, sanitizeSelector, setValueByPath, versionCompare } from './utils.js';
@@ -87,22 +87,16 @@ export function cancelDebouncedMetadataSave() {
 }
 
 export function saveMetadataDebounced() {
-    const context = getContext();
-    const groupId = context.groupId;
-    const characterId = context.characterId;
+    const saveContext = getChatSaveContext();
 
     cancelDebouncedMetadataSave();
+    if (!saveContext) return;
 
     saveMetadataTimeout = setTimeout(async () => {
         const newContext = getContext();
 
-        if (groupId !== newContext.groupId) {
-            console.warn('Group changed, not saving metadata');
-            return;
-        }
-
-        if (characterId !== newContext.characterId) {
-            console.warn('Character changed, not saving metadata');
+        if (!isChatSaveContextCurrent(saveContext)) {
+            console.debug('Chat changed or is still loading, not saving metadata');
             return;
         }
 

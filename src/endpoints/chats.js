@@ -360,7 +360,7 @@ async function checkChatIntegrity(filePath, integritySlug) {
 
     // If the chat has no integrity metadata, assume it's intact (legacy chats created before integrity checks existed)
     if (!chatIntegrity) {
-        console.debug(`File "${filePath}" does not have integrity metadata matching "${integritySlug}". The integrity validation has been skipped.`);
+        console.debug(`File "${filePath}" does not have integrity metadata. The integrity validation has been skipped.`);
         return true;
     }
 
@@ -524,7 +524,7 @@ class IntegrityMismatchError extends Error {
  * Tries to save the chat data to a file, performing an integrity check if required.
  * @param {Array} chatData The chat array to save.
  * @param {string} filePath Target file path for the data.
- * @param {boolean} skipIntegrityCheck If undefined, the chat's integrity will not be checked.
+ * @param {boolean} skipIntegrityCheck Whether to skip the integrity check.
  * @param {string} handle The users handle, passed to getBackupFunction.
  * @param {string} cardName Passed to backupChat.
  * @param {string} backupDirectory Passed to backupChat.
@@ -535,8 +535,8 @@ export async function trySaveChat(chatData, filePath, skipIntegrityCheck = false
     const doIntegrityCheck = (checkIntegrity && !skipIntegrityCheck);
     const chatIntegritySlug = doIntegrityCheck ? chatData?.[0]?.chat_metadata?.integrity : undefined;
 
-    if (chatIntegritySlug && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
-        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The expected integrity slug was "${chatIntegritySlug}".`);
+    if (doIntegrityCheck && !await checkChatIntegrity(filePath, chatIntegritySlug)) {
+        throw new IntegrityMismatchError(`Chat integrity check failed for "${filePath}". The incoming integrity slug was "${chatIntegritySlug ?? 'missing'}".`);
     }
     tryWriteFileSync(filePath, jsonlData);
     getBackupFunction(handle, cardName)(backupDirectory, cardName, jsonlData);
@@ -572,12 +572,23 @@ router.post('/save', validateAvatarUrlMiddleware, async function (request, respo
 /**
  * Gets the chat as an object.
  * @param {string} chatFilePath The full chat file path.
- * @returns {Array}} If the chatFilePath cannot be read, this will return [].
+ * @param {boolean} [throwOnReadError=false] Propagate read errors for existing files to the HTTP handler.
+ * @returns {Array} Parsed chat, or an empty array for missing files and suppressed read errors.
  */
-export function getChatData(chatFilePath) {
+export function getChatData(chatFilePath, throwOnReadError = false) {
     let chatData = [];
 
-    const chatJSON = tryReadFileSync(chatFilePath) ?? '';
+    let chatJSON;
+    if (throwOnReadError) {
+        try {
+            chatJSON = fs.readFileSync(chatFilePath, 'utf8');
+        } catch (error) {
+            if (error.code !== 'ENOENT') throw error;
+            chatJSON = '';
+        }
+    } else {
+        chatJSON = tryReadFileSync(chatFilePath) ?? '';
+    }
     if (chatJSON.length > 0) {
         const lines = chatJSON.split('\n');
         // Iterate through the array of strings and parse each line as JSON
@@ -601,20 +612,20 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
         //if no chat dir for the character is found, make one with the character name
         if (!chatDirExists) {
             fs.mkdirSync(directoryPath);
-            return response.send({});
+            return response.send([]);
         }
 
         if (!request.body.file_name) {
-            return response.send({});
+            return response.send([]);
         }
 
         const chatFileName = `${String(request.body.file_name)}.jsonl`;
         const chatFilePath = path.join(directoryPath, sanitize(chatFileName));
 
-        return response.send(getChatData(chatFilePath));
+        return response.send(getChatData(chatFilePath, true));
     } catch (error) {
         console.error(error);
-        return response.send({});
+        return response.sendStatus(500);
     }
 });
 
