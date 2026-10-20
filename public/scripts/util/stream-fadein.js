@@ -1,6 +1,33 @@
 import { morphdom } from '../../lib.js';
 
 /**
+ * Creates a content writer scoped to one streaming handler.
+ * Formatting still runs on every update; only identical DOM writes are skipped.
+ * @returns {(element: HTMLElement, html: string, fade: boolean, force?: boolean) => boolean} Whether content was written
+ */
+export function createStreamingContentUpdater() {
+    /** @type {HTMLElement|null} */
+    let lastElement = null;
+    let lastHtml;
+    let lastFade;
+
+    return (element, html, fade, force = false) => {
+        if (!force && element === lastElement && html === lastHtml && fade === lastFade) {
+            return false;
+        }
+        if (fade) {
+            applyStreamFadeIn(element, html);
+        } else {
+            element.innerHTML = html;
+        }
+        lastElement = element;
+        lastHtml = html;
+        lastFade = fade;
+        return true;
+    };
+}
+
+/**
  * Check if the current browser supports native segmentation function.
  * @returns {boolean} True if the Segmenter is supported by the current browser.
  */
