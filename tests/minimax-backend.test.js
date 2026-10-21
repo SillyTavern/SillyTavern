@@ -47,12 +47,12 @@ beforeEach(() => {
     });
 });
 
-function createRequest(endpoint, messages = [{ role: 'user', content: 'Hello' }]) {
+function createRequest(endpoint, messages = [{ role: 'user', content: 'Hello' }], model = 'MiniMax-M3') {
     return {
         body: {
             chat_completion_source: 'minimax',
             minimax_endpoint: endpoint,
-            model: 'MiniMax-M3',
+            model,
             messages,
             max_tokens: 256,
             stream: false,
@@ -97,12 +97,35 @@ describe('MiniMax chat completion endpoints', () => {
         expect(body.reasoning_split).toBe(true);
     });
 
+    test('sends adaptive max-effort reasoning for MiniMax-M3.1-Flash', async () => {
+        await mod.sendMinimaxRequest(createRequest('global', undefined, 'MiniMax-M3.1-Flash'), createResponse());
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.thinking).toEqual({ type: 'adaptive' });
+        expect(body.reasoning_effort).toBe('max');
+        expect(body.reasoning_split).toBe(true);
+    });
+
+    test('does not disable always-on MiniMax-M3.1-Flash reasoning', async () => {
+        const request = createRequest('global', undefined, 'MiniMax-M3.1-Flash');
+        request.body.include_reasoning = false;
+        await mod.sendMinimaxRequest(request, createResponse());
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.thinking).toEqual({ type: 'adaptive' });
+    });
+
     test('sends global Anthropic-compatible requests to the expected URL', async () => {
         expect(await captureRequestUrl('global-anthropic')).toBe('https://api.minimax.io/anthropic/v1/messages');
     });
 
     test('sends China Anthropic-compatible requests to the expected URL', async () => {
         expect(await captureRequestUrl('cn-anthropic')).toBe('https://api.minimaxi.com/anthropic/v1/messages');
+    });
+
+    test('sends adaptive max-effort reasoning for MiniMax-M3.1-Flash over Anthropic', async () => {
+        await mod.sendMinimaxRequest(createRequest('global-anthropic', undefined, 'MiniMax-M3.1-Flash'), createResponse());
+        const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+        expect(body.thinking).toEqual({ type: 'adaptive' });
+        expect(body.output_config).toEqual({ effort: 'max' });
     });
 
     test('converts Anthropic-compatible messages and preserves the MiniMax API key', async () => {

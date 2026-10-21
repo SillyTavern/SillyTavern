@@ -94,6 +94,7 @@ const API_MINIMAX = 'https://api.minimax.io/v1';
 const API_MINIMAX_CN = 'https://api.minimaxi.com/v1';
 const API_MINIMAX_ANTHROPIC = 'https://api.minimax.io/anthropic';
 const API_MINIMAX_ANTHROPIC_CN = 'https://api.minimaxi.com/anthropic';
+const MINIMAX_FLASH_MODEL = 'MiniMax-M3.1-Flash';
 const API_OPENROUTER = 'https://openrouter.ai/api/v1';
 const API_WORKERS_AI = 'https://api.cloudflare.com/client/v4/accounts';
 
@@ -1588,7 +1589,10 @@ export async function sendMinimaxRequest(request, response) {
             const convertedPrompt = convertClaudeMessages(structuredClone(request.body.messages), '', true, useTools, getPromptNames(request), { video: true });
             const bodyParams = {};
 
-            if (request.body.model === 'MiniMax-M3') {
+            if (request.body.model === MINIMAX_FLASH_MODEL) {
+                bodyParams['thinking'] = { type: 'adaptive' };
+                bodyParams['output_config'] = { effort: 'max' };
+            } else if (request.body.model === 'MiniMax-M3') {
                 bodyParams['thinking'] = { type: request.body.include_reasoning ? 'adaptive' : 'disabled' };
             }
 
@@ -1648,7 +1652,11 @@ export async function sendMinimaxRequest(request, response) {
 
         let bodyParams = {};
 
-        if (request.body.model === 'MiniMax-M3') {
+        if (request.body.model === MINIMAX_FLASH_MODEL) {
+            bodyParams['thinking'] = { type: 'adaptive' };
+            bodyParams['reasoning_effort'] = 'max';
+            bodyParams['reasoning_split'] = true;
+        } else if (request.body.model === 'MiniMax-M3') {
             bodyParams['thinking'] = { type: request.body.include_reasoning ? 'adaptive' : 'disabled' };
             bodyParams['reasoning_split'] = true;
         }

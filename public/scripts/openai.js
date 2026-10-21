@@ -288,6 +288,12 @@ export function isMinimaxAnthropicEndpoint(endpoint) {
     return [MINIMAX_ENDPOINT.GLOBAL_ANTHROPIC, MINIMAX_ENDPOINT.CN_ANTHROPIC].includes(endpoint);
 }
 
+const MINIMAX_MODELS = ['MiniMax-M3.1-Flash', 'MiniMax-M3'];
+
+function isMinimaxMultimodalModel(model) {
+    return MINIMAX_MODELS.includes(model);
+}
+
 const sensitiveFields = [
     'reverse_proxy',
     'proxy_password',
@@ -452,7 +458,7 @@ const default_settings = {
     chutes_model: 'deepseek-ai/DeepSeek-V3-0324',
     siliconflow_model: 'deepseek-ai/DeepSeek-V3',
     siliconflow_endpoint: SILICONFLOW_ENDPOINT.GLOBAL,
-    minimax_model: 'MiniMax-M3',
+    minimax_model: 'MiniMax-M3.1-Flash',
     minimax_endpoint: MINIMAX_ENDPOINT.GLOBAL,
     electronhub_model: 'gpt-4o-mini',
     nanogpt_model: 'gpt-4o-mini',
@@ -2951,8 +2957,7 @@ export async function createGenerationParameters(settings, model, type, messages
     if (settings.chat_completion_source === chat_completion_sources.MINIMAX) {
         generate_data.minimax_endpoint = settings.minimax_endpoint || MINIMAX_ENDPOINT.GLOBAL;
         if (Number.isFinite(generate_data.temperature)) {
-            const isM3 = settings.minimax_model === 'MiniMax-M3';
-            const supportsFullTemperatureRange = isM3 || isMinimaxAnthropicEndpoint(generate_data.minimax_endpoint);
+            const supportsFullTemperatureRange = isMinimaxMultimodalModel(settings.minimax_model) || isMinimaxAnthropicEndpoint(generate_data.minimax_endpoint);
             generate_data.temperature = clamp(generate_data.temperature, supportsFullTemperatureRange ? 0 : Number.EPSILON, supportsFullTemperatureRange ? oai_max_temp : claude_max_temp);
         }
     }
@@ -4282,6 +4287,12 @@ function loadOpenAISettings(data, settings) {
             if ($element.is('input[type="checkbox"]')) {
                 $element.prop('checked', oai_settings[key]);
             } else if ($element.is('select')) {
+                if (key === 'minimax_model' && !$element.find(`option[value="${CSS.escape(oai_settings[key])}"]`).length) {
+                    const option = document.createElement('option');
+                    option.value = oai_settings[key];
+                    option.text = `${oai_settings[key]} (saved)`;
+                    $element.append(option);
+                }
                 $element.val(oai_settings[key]);
                 $element.find(`option[value="${CSS.escape(oai_settings[key])}"]`).prop('selected', true);
             } else {
@@ -5899,8 +5910,8 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MINIMAX) {
-        const maxContext = oai_settings.minimax_model === 'MiniMax-M3' ? max_1mil : oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
-        const maxTemperature = oai_settings.minimax_model === 'MiniMax-M3' || isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint) ? oai_max_temp : claude_max_temp;
+        const maxContext = isMinimaxMultimodalModel(oai_settings.minimax_model) ? max_1mil : oai_settings.minimax_model === 'M2-her' ? 65536 : 204800;
+        const maxTemperature = isMinimaxMultimodalModel(oai_settings.minimax_model) || isMinimaxAnthropicEndpoint(oai_settings.minimax_endpoint) ? oai_max_temp : claude_max_temp;
         $('#openai_max_context').attr('max', maxContext);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -6249,7 +6260,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.SILICONFLOW:
             return visionSupportedModels.some(model => oai_settings.siliconflow_model.includes(model));
         case chat_completion_sources.MINIMAX:
-            return oai_settings.minimax_model === 'MiniMax-M3';
+            return isMinimaxMultimodalModel(oai_settings.minimax_model);
         case chat_completion_sources.WORKERS_AI: {
             const waiModel = Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.workers_ai_model);
             return Boolean(waiModel && Array.isArray(waiModel.properties) && waiModel.properties.some(p => p.property_id === 'vision' && p.value === 'true'));
@@ -6295,7 +6306,7 @@ export function isVideoInliningSupported() {
         case chat_completion_sources.ZAI:
             return videoSupportedModels.some(model => oai_settings.zai_model.includes(model));
         case chat_completion_sources.MINIMAX:
-            return oai_settings.minimax_model === 'MiniMax-M3';
+            return isMinimaxMultimodalModel(oai_settings.minimax_model);
         default:
             return false;
     }
