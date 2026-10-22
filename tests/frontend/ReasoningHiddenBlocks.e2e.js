@@ -703,6 +703,58 @@ test.describe('Reasoning hidden blocks', () => {
         expect(result.reasoningText).toContain('visible reasoning');
     });
 
+    test('saves reasoning once after repeated initialization and ignores stale done actions', async ({ page }) => {
+        let saveCount = 0;
+        await page.route('**/api/chats/save', async (route) => {
+            saveCount++;
+            await route.fulfill({ json: { result: 'ok' } });
+        });
+
+        const result = await page.evaluate(async (messageHtml) => {
+            const [reasoningModule, scriptModule] = await Promise.all([
+                import('/scripts/reasoning.js'),
+                import('/script.js'),
+            ]);
+            reasoningModule.initReasoning();
+            reasoningModule.initReasoning();
+
+            const context = window.SillyTavern.getContext();
+            scriptModule.setCharacterId(context.characters.push({
+                name: 'Reasoning E2E', avatar: 'reasoning-e2e.png', chat: 'Reasoning E2E',
+            }) - 1);
+            context.chat.length = 0;
+            context.chat.push({ extra: { reasoning: 'original reasoning' }, name: 'Ilo', mes: 'Foo' });
+            const chat = document.getElementById('chat');
+            chat.innerHTML = messageHtml;
+
+            let editedEvents = 0;
+            context.eventSource.on(context.eventTypes.MESSAGE_REASONING_EDITED, () => editedEvents++);
+            const edited = new Promise(resolve => context.eventSource.once(context.eventTypes.MESSAGE_REASONING_EDITED, resolve));
+            chat.querySelector('.mes_reasoning_edit').click();
+            chat.querySelector('.reasoning_edit_textarea').value = 'saved reasoning';
+            const done = chat.querySelector('.mes_reasoning_edit_done');
+            done.click();
+            done.click();
+            await edited;
+            // A stale action after saving must also leave the stored value untouched.
+            done.click();
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            return {
+                reasoningValue: context.chat[0].extra.reasoning,
+                reasoningText: chat.querySelector('.mes_reasoning').textContent,
+                textareaCount: chat.querySelectorAll('.reasoning_edit_textarea').length,
+                editedEvents,
+            };
+        }, createEditableReasoningMessageHtml({ detailsAttributes: 'data-has-content="true" open', includeMessageContainers: true }));
+
+        expect(result.reasoningValue).toBe('saved reasoning');
+        expect(result.reasoningText).toContain('saved reasoning');
+        expect(result.textareaCount).toBe(0);
+        expect(result.editedEvents).toBe(1);
+        expect(saveCount).toBe(1);
+    });
+
     test('collapses reasoning after changing whitespace-only reasoning to different whitespace', async ({ page }) => {
         const result = await page.evaluate(async (messageHtml) => {
             const reasoningModule = await import('/scripts/reasoning.js');

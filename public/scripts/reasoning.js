@@ -50,6 +50,8 @@ const UI = {
     $maxAdditions: $('#reasoning_max_additions'),
 };
 
+let reasoningInitialized = false;
+
 /**
  * Enum representing the type of the reasoning for a message (where it came from)
  * @readonly
@@ -805,57 +807,58 @@ export class PromptReasoning {
 
 function loadReasoningSettings() {
     UI.$addToPrompts.prop('checked', power_user.reasoning.add_to_prompts);
+    UI.$prefix.val(power_user.reasoning.prefix);
+    UI.$suffix.val(power_user.reasoning.suffix);
+    UI.$separator.val(power_user.reasoning.separator);
+    UI.$maxAdditions.val(power_user.reasoning.max_additions);
+    UI.$autoParse.prop('checked', power_user.reasoning.auto_parse);
+    UI.$autoExpand.prop('checked', power_user.reasoning.auto_expand);
+    UI.$showHidden.prop('checked', power_user.reasoning.show_hidden);
+    toggleReasoningAutoExpand();
+    $('#chat').attr('data-show-hidden-reasoning', power_user.reasoning.show_hidden ? 'true' : null);
+}
+
+function setReasoningSettingsHandlers() {
     UI.$addToPrompts.on('change', function () {
         power_user.reasoning.add_to_prompts = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
-    UI.$prefix.val(power_user.reasoning.prefix);
     UI.$prefix.on('input', function () {
         power_user.reasoning.prefix = String($(this).val());
         saveSettingsDebounced();
     });
 
-    UI.$suffix.val(power_user.reasoning.suffix);
     UI.$suffix.on('input', function () {
         power_user.reasoning.suffix = String($(this).val());
         saveSettingsDebounced();
     });
 
-    UI.$separator.val(power_user.reasoning.separator);
     UI.$separator.on('input', function () {
         power_user.reasoning.separator = String($(this).val());
         saveSettingsDebounced();
     });
 
-    UI.$maxAdditions.val(power_user.reasoning.max_additions);
     UI.$maxAdditions.on('input', function () {
         power_user.reasoning.max_additions = Number($(this).val());
         saveSettingsDebounced();
     });
 
-    UI.$autoParse.prop('checked', power_user.reasoning.auto_parse);
     UI.$autoParse.on('change', function () {
         power_user.reasoning.auto_parse = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
-    UI.$autoExpand.prop('checked', power_user.reasoning.auto_expand);
     UI.$autoExpand.on('change', function () {
         power_user.reasoning.auto_expand = !!$(this).prop('checked');
         toggleReasoningAutoExpand();
         saveSettingsDebounced();
     });
-    toggleReasoningAutoExpand();
-
-    UI.$showHidden.prop('checked', power_user.reasoning.show_hidden);
     UI.$showHidden.on('change', function () {
         power_user.reasoning.show_hidden = !!$(this).prop('checked');
         $('#chat').attr('data-show-hidden-reasoning', power_user.reasoning.show_hidden ? 'true' : null);
         saveSettingsDebounced();
     });
-    $('#chat').attr('data-show-hidden-reasoning', power_user.reasoning.show_hidden ? 'true' : null);
-
     UI.$select.on('change', async function () {
         const name = String($(this).val());
         const template = reasoning_templates.find(p => p.name === name);
@@ -1314,6 +1317,9 @@ function setReasoningEventHandlers() {
         }
 
         const textarea = messageBlock.find('.reasoning_edit_textarea');
+        if (textarea.length === 0) {
+            return;
+        }
         let newReasoning = String(textarea.val());
         newReasoning = substituteParams(newReasoning);
         textarea.remove();
@@ -1336,6 +1342,9 @@ function setReasoningEventHandlers() {
 
         const { messageBlock } = getMessageFromJquery(this);
         const textarea = messageBlock.find('.reasoning_edit_textarea');
+        if (textarea.length === 0) {
+            return;
+        }
         textarea.remove();
 
         messageBlock.find('.mes_reasoning_edit_cancel:visible').trigger('click');
@@ -1700,8 +1709,14 @@ export async function loadReasoningTemplates(data) {
  */
 export function initReasoning() {
     loadReasoningSettings();
+    if (reasoningInitialized) {
+        return;
+    }
+
+    setReasoningSettingsHandlers();
     setReasoningEventHandlers();
     registerReasoningSlashCommands();
     registerReasoningMacros();
     registerReasoningAppEvents();
+    reasoningInitialized = true;
 }
