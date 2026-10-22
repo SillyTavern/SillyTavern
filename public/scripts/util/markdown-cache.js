@@ -46,7 +46,7 @@ function isNativeConverter(converter) {
 }
 
 /**
- * One-result cache owned by a reasoning handler. Regexes, formatter hooks and
+ * One-result cache owned by a streaming processor or reasoning handler. Regexes, formatter hooks and
  * sanitization stay outside this cache and continue to run on every update.
  */
 export class MarkdownRenderCache {

@@ -146,6 +146,7 @@ import {
 
 import {
     debounce,
+    cancelDebounce,
     delay,
     trimToEndSentence,
     countOccurrences,
@@ -284,7 +285,7 @@ import { SimpleMutex } from './scripts/util/SimpleMutex.js';
 import { AudioPlayer } from './scripts/audio-player.js';
 import { MacroEnvBuilder } from './scripts/macros/engine/MacroEnvBuilder.js';
 import { MessageFormatter } from './scripts/message-formatter.js';
-import { trackMarkdownConverter } from './scripts/util/markdown-cache.js';
+import { MarkdownRenderCache, trackMarkdownConverter } from './scripts/util/markdown-cache.js';
 import { MacroEngine } from './scripts/macros/engine/MacroEngine.js';
 import { addChatBackupsBrowser } from './scripts/chat-backups.js';
 import { onboardingExperimentalMacroEngine } from './scripts/macros/engine/MacroDiagnostics.js';
@@ -3543,6 +3544,7 @@ function hideStopButton() {
 
 class StreamingProcessor {
     #updateStreamingContent = createStreamingContentUpdater();
+    #markdownCache = new MarkdownRenderCache();
 
     /**
      * Creates a new streaming processor.
@@ -3718,6 +3720,10 @@ class StreamingProcessor {
                 };
             }
 
+            // Reasoning/tool updates can leave the visible answer unchanged.
+            // Reuse only Markdown conversion; regexes, hooks and sanitization
+            // still run, and the final render always gets a fresh conversion.
+            if (isFinal) this.#markdownCache.clear();
             const formattedText = messageFormatting(
                 processedText,
                 chat[messageId].name,
@@ -3726,6 +3732,7 @@ class StreamingProcessor {
                 messageId,
                 {},
                 false,
+                this.#markdownCache,
             );
             if (this.messageTextDom instanceof HTMLElement) {
                 this.#updateStreamingContent(this.messageTextDom, formattedText, power_user.stream_fade_in, isFinal);
@@ -8544,6 +8551,43 @@ export function getCurrentChatDetails() {
 }
 
 /**
+ * @typedef {object} PastChatsView
+ * @property {string|null} groupId Selected group when the view was opened
+ * @property {string|null} characterAvatar Selected character when the view was opened
+ * @property {string} currentChat Current chat filename
+ * @property {string} avatarImg Avatar image URL
+ * @property {AbortController|null} controller Pending search request
+ * @property {Function|null} debouncedDisplay Pending search callback
+ * @property {ReturnType<typeof setTimeout>|null} focusTimeout Pending autofocus timer
+ * @property {boolean} hasInput Whether the user has edited the search field
+ */
+
+/** @type {PastChatsView|null} */
+let pastChatsView = null;
+
+/** Cancels requests and callbacks belonging to the previous chat browser view. */
+function cancelPastChatsSearch() {
+    pastChatsView?.controller?.abort();
+    if (pastChatsView?.debouncedDisplay) {
+        cancelDebounce(pastChatsView.debouncedDisplay);
+    }
+    clearTimeout(pastChatsView?.focusTimeout);
+    pastChatsView = null;
+    $('#select_chat_search').off('input');
+}
+
+/**
+ * Checks both the view identity and its character/group context before applying results.
+ * @param {PastChatsView} view Chat browser view
+ * @returns {boolean} Whether the view still belongs to the current context
+ */
+function isCurrentPastChatsView(view) {
+    return pastChatsView === view
+        && view.groupId === selected_group
+        && (view.groupId !== null || view.characterAvatar === (characters[this_chid]?.avatar ?? null));
+}
+
+/**
  * Displays the past chats for a character or a group based on the selected context.
  * The function first fetches the chats, processes them, and then displays them in
  * the HTML. It also has a built-in search functionality that allows filtering the
@@ -8551,28 +8595,48 @@ export function getCurrentChatDetails() {
  * @param {string[]} hightlightNames - An array of chat names to highlight
  */
 export async function displayPastChats(hightlightNames = []) {
+    cancelPastChatsSearch();
     $('#select_chat_div').empty();
-    $('#select_chat_search').val('').off('input');
+    $('#select_chat_search').val('');
 
     const chatDetails = getCurrentChatDetails();
-    const currentChat = chatDetails.sessionName;
-    const displayName = chatDetails.characterName;
-    const avatarImg = chatDetails.avatarImgURL;
+    /** @type {PastChatsView} */
+    const view = {
+        groupId: selected_group,
+        characterAvatar: selected_group ? null : characters[this_chid]?.avatar ?? null,
+        currentChat: chatDetails.sessionName,
+        avatarImg: chatDetails.avatarImgURL,
+        controller: null,
+        debouncedDisplay: null,
+        focusTimeout: null,
+        hasInput: false,
+    };
+    pastChatsView = view;
 
-    await displayChats('', currentChat, displayName, avatarImg, selected_group, hightlightNames);
-
-    const debouncedDisplay = debounce((searchQuery) => {
-        displayChats(searchQuery, currentChat, displayName, avatarImg, selected_group, []);
+    view.debouncedDisplay = debounce((searchQuery) => {
+        displayChats(searchQuery, view, []);
     });
 
-    // Define the search input listener
-    $('#select_chat_search').off('input').on('input', function () {
+    // Invalidate the old response immediately, including during the debounce delay.
+    // Bind before fetching so typing also works while the initial list is loading.
+    $('#select_chat_search').on('input', function () {
+        view.hasInput = true;
+        clearTimeout(view.focusTimeout);
+        view.controller?.abort();
         const searchQuery = $(this).val();
-        debouncedDisplay(searchQuery);
+        view.debouncedDisplay(searchQuery);
     });
+
+    await displayChats('', view, hightlightNames);
+    if (!isCurrentPastChatsView(view)) {
+        return;
+    }
 
     // UX convenience: Focus the search field when the Manage Chat Files view opens.
-    setTimeout(function () {
+    view.focusTimeout = setTimeout(function () {
+        if (!isCurrentPastChatsView(view) || view.hasInput) {
+            return;
+        }
         const textSearchElement = $('#select_chat_search');
         textSearchElement.trigger('click').trigger('focus').trigger('select');
     }, 200);
@@ -8580,15 +8644,28 @@ export async function displayPastChats(hightlightNames = []) {
     addChatBackupsBrowser();
 }
 
-async function displayChats(searchQuery, currentChat, displayName, avatarImg, selected_group, highlightNames) {
+/**
+ * Loads the latest search results for one chat browser view.
+ * @param {string} searchQuery Search query
+ * @param {PastChatsView} view Chat browser view
+ * @param {string[]} highlightNames Chat filenames to highlight
+ */
+async function displayChats(searchQuery, view, highlightNames) {
+    if (!isCurrentPastChatsView(view)) {
+        return;
+    }
+    view.controller?.abort();
+    const controller = new AbortController();
+    view.controller = controller;
     try {
         const response = await fetch('/api/chats/search', {
             method: 'POST',
             headers: getRequestHeaders(),
+            signal: controller.signal,
             body: JSON.stringify({
                 query: searchQuery,
-                avatar_url: selected_group ? null : characters[this_chid].avatar,
-                group_id: selected_group || null,
+                avatar_url: view.characterAvatar,
+                group_id: view.groupId,
             }),
         });
 
@@ -8597,15 +8674,19 @@ async function displayChats(searchQuery, currentChat, displayName, avatarImg, se
         }
 
         const filteredData = await response.json();
-        $('#select_chat_div').empty();
+        if (controller.signal.aborted || !isCurrentPastChatsView(view)) {
+            return;
+        }
 
         filteredData.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
+        const fragment = document.createDocumentFragment();
+        const highlightedTemplates = [];
 
         for (const chat of filteredData) {
-            const isSelected = currentChat === chat.file_name;
+            const isSelected = view.currentChat === chat.file_name;
             const template = $('#past_chat_template .select_chat_block_wrapper').clone();
             template.find('.select_chat_block').attr('file_name', chat.file_name);
-            template.find('.avatar img').attr('src', avatarImg);
+            template.find('.avatar img').attr('src', view.avatarImg);
             template.find('.select_chat_block_filename').text(chat.file_name);
             template.find('.chat_file_size').text(`(${chat.file_size},`);
             template.find('.chat_messages_num').text(`${chat.message_count} 💬)`);
@@ -8617,17 +8698,29 @@ async function displayChats(searchQuery, currentChat, displayName, avatarImg, se
                 template.find('.select_chat_block').attr('highlight', String(true));
             }
 
-            $('#select_chat_div').append(template);
+            fragment.appendChild(template[0]);
 
             if (Array.isArray(highlightNames) && highlightNames.includes(chat.file_name)) {
-                const templateOffset = template.offset().top - template.parent().offset().top;
-                $('#select_chat_div').scrollTop(templateOffset);
-                flashHighlight(template, debounce_timeout.extended);
+                highlightedTemplates.push(template);
             }
         }
+        const chatList = $('#select_chat_div');
+        chatList.empty().append(fragment);
+        for (const template of highlightedTemplates) {
+            const templateOffset = template.offset().top - template.parent().offset().top;
+            chatList.scrollTop(templateOffset);
+            flashHighlight(template, debounce_timeout.extended);
+        }
     } catch (error) {
+        if (controller.signal.aborted || !isCurrentPastChatsView(view)) {
+            return;
+        }
         console.error('Error loading chats:', error);
         toastr.error('Could not load chat data. Try reloading the page.');
+    } finally {
+        if (view.controller === controller) {
+            view.controller = null;
+        }
     }
 }
 
@@ -11805,6 +11898,7 @@ jQuery(async function () {
     //////////////////////////////////////////////////////////////
 
     $('#select_chat_cross').on('click', function () {
+        cancelPastChatsSearch();
         $('#shadow_select_chat_popup').transition({
             opacity: 0,
             duration: animation_duration,

@@ -6,6 +6,8 @@ import { applyLocale } from './i18n.js';
  * @description Cache for Handlebars templates.
  */
 const TEMPLATE_CACHE = new Map();
+/** @type {Map<string, Promise<function>>} Template loads shared by concurrent renderers. */
+const TEMPLATE_REQUESTS = new Map();
 
 /**
  * Loads a URL content using XMLHttpRequest synchronously.
@@ -59,13 +61,29 @@ function getUrlAsync(url) {
  */
 export async function renderTemplateAsync(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
     async function fetchTemplateAsync(pathToTemplate) {
-        let template = TEMPLATE_CACHE.get(pathToTemplate);
-        if (!template) {
-            const templateContent = await getUrlAsync(pathToTemplate);
-            template = Handlebars.compile(templateContent);
-            TEMPLATE_CACHE.set(pathToTemplate, template);
+        const cached = TEMPLATE_CACHE.get(pathToTemplate);
+        if (cached) return cached;
+
+        let pending = TEMPLATE_REQUESTS.get(pathToTemplate);
+        if (!pending) {
+            pending = (async () => {
+                const templateContent = await getUrlAsync(pathToTemplate);
+                // A synchronous caller may have populated the cache while the
+                // request was pending. Keep the same compiled template in that case.
+                const template = TEMPLATE_CACHE.get(pathToTemplate) || Handlebars.compile(templateContent);
+                TEMPLATE_CACHE.set(pathToTemplate, template);
+                return template;
+            })();
+            TEMPLATE_REQUESTS.set(pathToTemplate, pending);
         }
-        return template;
+        try {
+            return await pending;
+        } finally {
+            // Failures must remain retryable; cache only compiled templates.
+            if (TEMPLATE_REQUESTS.get(pathToTemplate) === pending) {
+                TEMPLATE_REQUESTS.delete(pathToTemplate);
+            }
+        }
     }
 
     try {
