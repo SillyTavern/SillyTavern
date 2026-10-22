@@ -780,8 +780,15 @@ async function sendMakerSuiteRequest(request, response) {
                 return response.send({ error: { message } });
             }
 
-            // Wrap it back to OAI format (responseContent includes thought signatures in parts array)
-            const reply = { choices: [{ 'message': { 'content': responseText } }], responseContent };
+            // Wrap it back to OAI format (responseContent includes thought signatures in parts array).
+            // Google's own usage fields are passed through for extensions (token usage, cache hits).
+            const reply = {
+                choices: [{ 'message': { 'content': responseText } }],
+                responseContent,
+                usageMetadata: generateResponseJson.usageMetadata,
+                modelVersion: generateResponseJson.modelVersion,
+                responseId: generateResponseJson.responseId,
+            };
             return response.send(reply);
         }
     } catch (error) {
