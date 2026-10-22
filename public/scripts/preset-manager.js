@@ -709,6 +709,7 @@ class PresetManager {
             'server_urls',
             'type',
             'custom_model',
+            'custom_model_ids',
             'bypass_status_check',
             'infermaticai_model',
             'dreamgen_model',

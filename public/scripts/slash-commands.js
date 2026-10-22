@@ -71,10 +71,11 @@ import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, regenerateGroup, resetSelectedGroup, saveGroupChat, selected_group, getGroupMembers } from './group-chats.js';
-import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_ENDPOINT, promptManager, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
+import { chat_completion_sources, MINIMAX_ENDPOINT, oai_settings, POLLINATIONS_ENDPOINT, promptManager, setChatCompletionModel, SILICONFLOW_ENDPOINT, ZAI_ENDPOINT } from './openai.js';
 import { user_avatar } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, context_presets, flushEphemeralStoppingStrings, playMessageSound, power_user } from './power-user.js';
 import { SERVER_INPUTS, textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
+import { setCustomTextGenModel } from './textgen-models.js';
 import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, selectTokenizer } from './tokenizers.js';
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
@@ -2989,6 +2990,13 @@ export function initDefaultSlashCommands() {
         returns: t`current model`,
         namedArgumentList: [
             SlashCommandNamedArgument.fromProps({
+                name: 'exact',
+                description: t`use an exact model ID, allowing unlisted models for supported APIs`,
+                typeList: [ARGUMENT_TYPE.BOOLEAN],
+                defaultValue: 'false',
+                enumList: commonEnumProviders.boolean('trueFalse')(),
+            }),
+            SlashCommandNamedArgument.fromProps({
                 name: 'quiet',
                 description: t`suppress the toast message on model change`,
                 typeList: [ARGUMENT_TYPE.BOOLEAN],
@@ -3003,7 +3011,7 @@ export function initDefaultSlashCommands() {
                 enumProvider: () => getModelOptions(true)?.options?.map(option => new SlashCommandEnumValue(option.value, option.value !== option.text ? option.text : null)) ?? [],
             }),
         ],
-        helpString: t`Sets the model for the current API. Gets the current model name if no argument is provided.`,
+        helpString: t`Sets the model for the current API. Gets the current model name if no argument is provided. Use exact=true to select an exact model ID, including unlisted models for supported APIs.`,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'getpromptentry',
@@ -6275,6 +6283,7 @@ function getModelOptions(quiet) {
         { id: 'model_cometapi_select', api: 'openai', type: chat_completion_sources.COMETAPI },
         { id: 'model_zai_select', api: 'openai', type: chat_completion_sources.ZAI },
         { id: 'model_workers_ai_select', api: 'openai', type: chat_completion_sources.WORKERS_AI },
+        { id: 'azure_openai_model', api: 'openai', type: chat_completion_sources.AZURE_OPENAI },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -6332,18 +6341,30 @@ function getModelOptions(quiet) {
  * Sets a model for the current API.
  * @param {object} args Named arguments
  * @param {string} model New model name
- * @returns {string} New or existing model name
+ * @returns {Promise<string>} New or existing model name
  */
-function modelCallback(args, model) {
+async function modelCallback(args, model) {
     const quiet = isTrueBoolean(args?.quiet);
+    const exact = isTrueBoolean(args?.exact);
+    model = String(model || '').trim();
+
+    if (exact && model && main_api === 'openai') {
+        const selectedModel = (await setChatCompletionModel(model)) ?? model;
+        !quiet && toastr.success(t`Model set to "${selectedModel}"`);
+        return selectedModel;
+    }
+
+    if (exact && model && main_api === 'textgenerationwebui' && setCustomTextGenModel(model)) {
+        !quiet && toastr.success(t`Model set to "${model}"`);
+        return model;
+    }
+
     const { control: modelSelectControl, options } = getModelOptions(quiet);
 
     // If no model was found, the reason was already logged, we just return here
     if (options === null) {
         return '';
     }
-
-    model = String(model || '').trim();
 
     if (!model) {
         return modelSelectControl.value;
@@ -6366,10 +6387,10 @@ function modelCallback(args, model) {
     let newSelectedOption = null;
 
     const fuse = new Fuse(options, { keys: ['text', 'value'] });
-    const fuzzySearchResult = fuse.search(model);
+    const fuzzySearchResult = exact ? [] : fuse.search(model);
 
-    const exactValueMatch = options.find(x => x.value.trim().toLowerCase() === model.trim().toLowerCase());
-    const exactTextMatch = options.find(x => x.text.trim().toLowerCase() === model.trim().toLowerCase());
+    const exactValueMatch = options.find(x => exact ? x.value === model : x.value.trim().toLowerCase() === model.toLowerCase());
+    const exactTextMatch = exact ? null : options.find(x => x.text.trim().toLowerCase() === model.toLowerCase());
 
     if (exactValueMatch) {
         newSelectedOption = exactValueMatch;

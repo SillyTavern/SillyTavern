@@ -72,6 +72,19 @@ test('regional hosts and paid-tier headers are explicit and API versions do not 
     assert.equal(priority.headers['X-Vertex-AI-LLM-Request-Type'], 'shared');
 });
 
+test('unlisted model IDs reach the Vertex endpoint unchanged in streaming and regular requests', async () => {
+    for (const stream of [true, false]) {
+        const model = 'gemini-future-custom-preview-123';
+        const req = request({ model, stream, reverse_proxy: 'https://example.invalid/v1', proxy_password: 'TEST_KEY' });
+        const options = vertexOptions(req.body);
+        const connection = await resolveVertexConnection(req, options);
+        const method = stream ? 'streamGenerateContent' : 'generateContent';
+        assert.equal(options.model, model);
+        assert.equal(new URL(connection.url).pathname, `/v1/publishers/google/models/${model}:${method}`);
+        assert.ok(buildVertexRequest(req, options).contents.length > 0);
+    }
+});
+
 test('UTF-8 byte boundaries, Google empty closing fragments, nested parameters, IDs and signatures', async () => {
     const events = [fc({ name: 'actual_content', id: 'call_1', willContinue: true }),
         fc({ partialArgs: [{ jsonPath: '$.content', stringValue: '中文🙂', willContinue: true }], willContinue: true }),

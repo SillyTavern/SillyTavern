@@ -2774,5 +2774,8 @@
     "Deleting chat…": "正在刪除聊天…",
     "Loading chat…": "正在載入聊天…",
     "Bulk Delete": "批次刪除",
-    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…"
+    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…",
+    "Enter a model ID": "輸入模型 ID",
+    "Use model": "使用模型",
+    "Choose a model below or enter any model ID supported by your API. Saved separately for each API source.": "從下方清單選擇模型，或直接輸入 API 支援的任意模型 ID。每個 API 來源分別儲存。"
 }

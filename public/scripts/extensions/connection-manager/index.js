@@ -135,6 +135,7 @@ class ConnectionManagerSpinner {
  * Get named arguments for the command callback.
  * @param {object} [args] Additional named arguments
  * @param {string} [args.force] Whether to force setting the value
+ * @param {string} [args.exact] Whether to select a model by its exact ID
  * @returns {object} Named arguments
  */
 function getNamedArguments(args = {}) {
@@ -414,6 +415,9 @@ async function applyConnectionProfile(profile) {
         }
         try {
             const args = getNamedArguments(allowEmpty ? { force: 'true' } : {});
+            // A stored model is an API ID, including IDs the
+            // destination installation has never seen. Never fuzzy-match it.
+            if (command === 'model') args.exact = 'true';
             await SlashCommandParser.commands[command].callback(args, argument);
         } catch (error) {
             console.error(`Failed to execute command: ${command} ${argument}`, error);

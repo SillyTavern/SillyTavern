@@ -3643,5 +3643,8 @@
     "Deleting chat…": "正在删除聊天…",
     "Loading chat…": "正在加载聊天…",
     "Bulk Delete": "批量删除",
-    "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…"
+    "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…",
+    "Enter a model ID": "输入模型 ID",
+    "Use model": "使用模型",
+    "Choose a model below or enter any model ID supported by your API. Saved separately for each API source.": "从下方列表选择模型，或直接输入 API 支持的任意模型 ID。每个 API 来源分别保存。"
 }

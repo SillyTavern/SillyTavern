@@ -2445,6 +2445,15 @@
                                     <option value="vllm">vLLM</option>
                                 </select>
                             </div>
+                            <div id="text_completion_model_editor" class="wide100p" data-tg-type="mancer,togetherai,infermaticai,dreamgen,openrouter,vllm,aphrodite,featherless,llamacpp">
+                                <h4><label for="text_completion_model_id" data-i18n="Model ID">Model ID</label></h4>
+                                <div class="flex-container alignItemsCenter">
+                                    <input id="text_completion_model_id" class="text_pole flex1" type="text" list="text_completion_model_history" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="text_completion_model_hint" placeholder="Enter a model ID" data-i18n="[placeholder]Enter a model ID">
+                                    <button id="text_completion_model_apply" type="button" class="menu_button whitespacenowrap" data-i18n="Use model">Use model</button>
+                                </div>
+                                <datalist id="text_completion_model_history"></datalist>
+                                <small id="text_completion_model_hint" data-i18n="Choose a model below or enter any model ID supported by your API. Saved separately for each API source.">Choose a model below or enter any model ID supported by your API. Saved separately for each API source.</small>
+                            </div>
                             <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
                                 <h4 data-i18n="TogetherAI API Key">TogetherAI API Key</h4>
                                 <div class="flex-container">
@@ -2952,6 +2961,15 @@
                                 <option value="zai">Z.AI (GLM)</option>
                             </optgroup>
                         </select>
+                        <div id="chat_completion_model_editor" class="wide100p">
+                            <h4><label for="chat_completion_model_id" data-i18n="Model ID">Model ID</label></h4>
+                            <div class="flex-container alignItemsCenter">
+                                <input id="chat_completion_model_id" class="text_pole flex1" type="text" list="chat_completion_model_history" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="chat_completion_model_hint" placeholder="Enter a model ID" data-i18n="[placeholder]Enter a model ID">
+                                <button id="chat_completion_model_apply" type="button" class="menu_button whitespacenowrap" data-i18n="Use model">Use model</button>
+                            </div>
+                            <datalist id="chat_completion_model_history"></datalist>
+                            <small id="chat_completion_model_hint" data-i18n="Choose a model below or enter any model ID supported by your API. Saved separately for each API source.">Choose a model below or enter any model ID supported by your API. Saved separately for each API source.</small>
+                        </div>
                         <div class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite,vertexai,deepseek,xai,zai,moonshot">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>

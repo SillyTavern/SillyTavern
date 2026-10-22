@@ -1,6 +1,6 @@
 import { DOMPurify } from '../lib.js';
 import { isMobile } from './RossAscends-mods.js';
-import { amount_gen, eventSource, event_types, getRequestHeaders, max_context, online_status, setGenerationParamsFromPreset } from '../script.js';
+import { amount_gen, eventSource, event_types, getRequestHeaders, max_context, online_status, saveSettingsDebounced, setGenerationParamsFromPreset } from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
 import { renderTemplateAsync } from './templates.js';
@@ -8,6 +8,97 @@ import { POPUP_TYPE, callGenericPopup } from './popup.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { localizePagination, PAGINATION_TEMPLATE, textValueMatcher } from './utils.js';
+import { ensureModelOption } from './chat-models.js';
+
+// Generic and Ooba already have free-text inputs. Model loading/downloading backends
+// keep their existing controls; this editor only changes request model IDs.
+const CUSTOM_MODEL_CONTROLS = Object.freeze({
+    mancer: ['mancer_model', '#mancer_model'],
+    togetherai: ['togetherai_model', '#model_togetherai_select'],
+    infermaticai: ['infermaticai_model', '#model_infermaticai_select'],
+    dreamgen: ['dreamgen_model', '#model_dreamgen_select'],
+    openrouter: ['openrouter_model', '#openrouter_model'],
+    vllm: ['vllm_model', '#vllm_model'],
+    aphrodite: ['aphrodite_model', '#aphrodite_model'],
+    featherless: ['featherless_model', '#featherless_model'],
+    llamacpp: ['llamacpp_model', '#llamacpp_model'],
+});
+
+/**
+ * Reads bounded custom model history for one text completion backend.
+ * @param {string} type Text completion backend
+ * @returns {string[]} Custom model IDs
+ */
+function getCustomTextGenModels(type) {
+    const models = textgen_settings.custom_model_ids?.[type];
+    return Array.isArray(models)
+        ? [...new Set(models.filter(model => typeof model === 'string' && model.trim()))].slice(0, 50)
+        : [];
+}
+
+/**
+ * Restores explicitly entered IDs after catalog refreshes and synchronizes the editor.
+ * @param {string} [type] Text completion backend whose catalog changed
+ */
+export function updateTextGenModelEditor(type = textgen_settings.type) {
+    const control = Object.hasOwn(CUSTOM_MODEL_CONTROLS, type) ? CUSTOM_MODEL_CONTROLS[type] : null;
+    const model = control ? textgen_settings[control[0]] ?? '' : '';
+    const history = getCustomTextGenModels(type);
+    if (control) {
+        const select = document.querySelector(control[1]);
+        if (select instanceof HTMLSelectElement) {
+            for (const id of history) {
+                ensureModelOption(select, id);
+            }
+            if (Array.from(select.options).some(option => option.value === model)) {
+                select.value = model;
+                $(select).trigger('change.select2');
+            }
+        }
+    }
+    if (type !== textgen_settings.type) {
+        return;
+    }
+    const input = document.getElementById('text_completion_model_id');
+    if (!(input instanceof HTMLInputElement)) {
+        return;
+    }
+    if (input.dataset.modelSource !== type || input.dataset.model !== model || document.activeElement !== input) {
+        input.value = model;
+    }
+    input.dataset.modelSource = type;
+    input.dataset.model = model;
+    $('#text_completion_model_apply').prop('disabled', !control || !input.value.trim());
+    document.getElementById('text_completion_model_history')?.replaceChildren(...history.map(id => new Option(id, id)));
+}
+
+/**
+ * Selects a literal model ID using the backend's existing setting and change handler.
+ * @param {string} model Model ID
+ * @returns {boolean} Whether the ID was applied
+ */
+export function setCustomTextGenModel(model) {
+    const type = textgen_settings.type;
+    if (!Object.hasOwn(CUSTOM_MODEL_CONTROLS, type) || typeof model !== 'string' || !model.trim()) {
+        return false;
+    }
+    model = model.trim();
+    const [setting, selector] = CUSTOM_MODEL_CONTROLS[type];
+    const history = getCustomTextGenModels(type);
+    if (!textgen_settings.custom_model_ids || typeof textgen_settings.custom_model_ids !== 'object' || Array.isArray(textgen_settings.custom_model_ids)) {
+        textgen_settings.custom_model_ids = {};
+    }
+    textgen_settings.custom_model_ids[type] = [model, ...history.filter(id => id !== model)].slice(0, 50);
+    textgen_settings[setting] = model;
+    const select = document.querySelector(selector);
+    if (select instanceof HTMLSelectElement) {
+        ensureModelOption(select, model);
+        $(select).val(model).trigger('change');
+    }
+    updateTextGenModelEditor();
+    saveSettingsDebounced();
+    return true;
+}
 
 let mancerModels = [];
 let togetherModels = [];
@@ -535,7 +626,7 @@ export async function loadLlamaCppModels(data) {
     llamacppModels.sort((a, b) => a.id.localeCompare(b.id));
     llamacppModels.unshift({ id: '' });
 
-    if (!llamacppModels.find(x => x.id === textgen_settings.llamacpp_model)) {
+    if (!llamacppModels.find(x => x.id === textgen_settings.llamacpp_model) && !getCustomTextGenModels('llamacpp').includes(textgen_settings.llamacpp_model)) {
         textgen_settings.llamacpp_model = llamacppModels[0]?.id || '';
     }
 
@@ -547,6 +638,7 @@ export async function loadLlamaCppModels(data) {
         option.selected = model.id === textgen_settings.llamacpp_model;
         $('#llamacpp_model').append(option);
     }
+    updateTextGenModelEditor('llamacpp');
 }
 
 export async function loadTogetherAIModels(data) {
@@ -558,7 +650,7 @@ export async function loadTogetherAIModels(data) {
     data.sort((a, b) => a.id.localeCompare(b.id));
     togetherModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.togetherai_model)) {
+    if (!data.find(x => x.id === textgen_settings.togetherai_model) && !getCustomTextGenModels('togetherai').includes(textgen_settings.togetherai_model)) {
         textgen_settings.togetherai_model = data[0]?.id || '';
     }
 
@@ -575,6 +667,7 @@ export async function loadTogetherAIModels(data) {
         option.selected = model.id === textgen_settings.togetherai_model;
         $('#model_togetherai_select').append(option);
     }
+    updateTextGenModelEditor('togetherai');
 }
 
 export async function loadInfermaticAIModels(data) {
@@ -586,7 +679,7 @@ export async function loadInfermaticAIModels(data) {
     data.sort((a, b) => a.id.localeCompare(b.id));
     infermaticAIModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.infermaticai_model)) {
+    if (!data.find(x => x.id === textgen_settings.infermaticai_model) && !getCustomTextGenModels('infermaticai').includes(textgen_settings.infermaticai_model)) {
         textgen_settings.infermaticai_model = data[0]?.id || '';
     }
 
@@ -602,6 +695,7 @@ export async function loadInfermaticAIModels(data) {
         option.selected = model.id === textgen_settings.infermaticai_model;
         $('#model_infermaticai_select').append(option);
     }
+    updateTextGenModelEditor('infermaticai');
 }
 
 export function loadGenericModels(data) {
@@ -652,7 +746,7 @@ export async function loadDreamGenModels(data) {
 
     dreamGenModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.dreamgen_model)) {
+    if (!data.find(x => x.id === textgen_settings.dreamgen_model) && !getCustomTextGenModels('dreamgen').includes(textgen_settings.dreamgen_model)) {
         textgen_settings.dreamgen_model = data[0]?.id || '';
     }
 
@@ -668,6 +762,7 @@ export async function loadDreamGenModels(data) {
         option.selected = model.id === textgen_settings.dreamgen_model;
         $('#model_dreamgen_select').append(option);
     }
+    updateTextGenModelEditor('dreamgen');
 }
 
 export async function loadMancerModels(data) {
@@ -679,7 +774,7 @@ export async function loadMancerModels(data) {
     data.sort((a, b) => a.name.localeCompare(b.name));
     mancerModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.mancer_model)) {
+    if (!data.find(x => x.id === textgen_settings.mancer_model) && !getCustomTextGenModels('mancer').includes(textgen_settings.mancer_model)) {
         textgen_settings.mancer_model = data[0]?.id || '';
     }
 
@@ -691,6 +786,7 @@ export async function loadMancerModels(data) {
         option.selected = model.id === textgen_settings.mancer_model;
         $('#mancer_model').append(option);
     }
+    updateTextGenModelEditor('mancer');
 }
 
 export async function loadOpenRouterModels(data) {
@@ -702,7 +798,7 @@ export async function loadOpenRouterModels(data) {
     data.sort((a, b) => a.name.localeCompare(b.name));
     openRouterModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.openrouter_model)) {
+    if (!data.find(x => x.id === textgen_settings.openrouter_model) && !getCustomTextGenModels('openrouter').includes(textgen_settings.openrouter_model)) {
         textgen_settings.openrouter_model = data[0]?.id || '';
     }
 
@@ -714,6 +810,7 @@ export async function loadOpenRouterModels(data) {
         option.selected = model.id === textgen_settings.openrouter_model;
         $('#openrouter_model').append(option);
     }
+    updateTextGenModelEditor('openrouter');
 
     // Calculate the cost of the selected model + update on settings change
     calculateOpenRouterCost();
@@ -728,7 +825,7 @@ export async function loadVllmModels(data) {
 
     vllmModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.vllm_model)) {
+    if (!data.find(x => x.id === textgen_settings.vllm_model) && !getCustomTextGenModels('vllm').includes(textgen_settings.vllm_model)) {
         textgen_settings.vllm_model = data[0]?.id || '';
     }
 
@@ -740,6 +837,7 @@ export async function loadVllmModels(data) {
         option.selected = model.id === textgen_settings.vllm_model;
         $('#vllm_model').append(option);
     }
+    updateTextGenModelEditor('vllm');
 }
 
 export async function loadAphroditeModels(data) {
@@ -750,7 +848,7 @@ export async function loadAphroditeModels(data) {
 
     aphroditeModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.aphrodite_model)) {
+    if (!data.find(x => x.id === textgen_settings.aphrodite_model) && !getCustomTextGenModels('aphrodite').includes(textgen_settings.aphrodite_model)) {
         textgen_settings.aphrodite_model = data[0]?.id || '';
     }
 
@@ -762,6 +860,7 @@ export async function loadAphroditeModels(data) {
         option.selected = model.id === textgen_settings.aphrodite_model;
         $('#aphrodite_model').append(option);
     }
+    updateTextGenModelEditor('aphrodite');
 }
 
 let featherlessCurrentPage = 1;
@@ -785,7 +884,7 @@ export async function loadFeatherlessModels(data) {
     originalModels = data;  // Store the original data for search
     featherlessModels = data;
 
-    if (!data.find(x => x.id === textgen_settings.featherless_model)) {
+    if (!data.find(x => x.id === textgen_settings.featherless_model) && !getCustomTextGenModels('featherless').includes(textgen_settings.featherless_model)) {
         textgen_settings.featherless_model = data[0]?.id || '';
     }
 
@@ -978,6 +1077,7 @@ export async function loadFeatherlessModels(data) {
         option.selected = model.id === textgen_settings.featherless_model;
         $('#featherless_model').append(option);
     }
+    updateTextGenModelEditor('featherless');
 }
 
 async function fetchFeatherlessStats() {
@@ -997,7 +1097,10 @@ function onFeatherlessModelSelect(modelId) {
     textgen_settings.featherless_model = modelId;
     $('#featherless_model').val(modelId);
     $('#api_button_textgenerationwebui').trigger('click');
-    setGenerationParamsFromPreset({ max_length: model.context_length });
+    if (model?.context_length) {
+        setGenerationParamsFromPreset({ max_length: model.context_length });
+    }
+    updateTextGenModelEditor();
 }
 
 let featherlessIsGridView = false;  // Default state set to grid view
@@ -1029,7 +1132,9 @@ function onMancerModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
 
     const limits = mancerModels.find(x => x.id === modelId)?.limits;
-    setGenerationParamsFromPreset({ max_length: limits.context });
+    if (limits?.context) {
+        setGenerationParamsFromPreset({ max_length: limits.context });
+    }
 }
 
 function onTogetherModelSelect() {
@@ -1037,7 +1142,9 @@ function onTogetherModelSelect() {
     textgen_settings.togetherai_model = modelName;
     $('#api_button_textgenerationwebui').trigger('click');
     const model = togetherModels.find(x => x.id === modelName);
-    setGenerationParamsFromPreset({ max_length: model.context_length });
+    if (model?.context_length) {
+        setGenerationParamsFromPreset({ max_length: model.context_length });
+    }
 }
 
 function onInfermaticAIModelSelect() {
@@ -1045,7 +1152,9 @@ function onInfermaticAIModelSelect() {
     textgen_settings.infermaticai_model = modelName;
     $('#api_button_textgenerationwebui').trigger('click');
     const model = infermaticAIModels.find(x => x.id === modelName);
-    setGenerationParamsFromPreset({ max_length: model.context_length });
+    if (model?.context_length) {
+        setGenerationParamsFromPreset({ max_length: model.context_length });
+    }
 }
 
 function onDreamGenModelSelect() {
@@ -1086,7 +1195,9 @@ function onOpenRouterModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
     syncOpenRouterProvidersForModel(modelId, '#openrouter_providers_text');
-    setGenerationParamsFromPreset({ max_length: model.context_length });
+    if (model?.context_length) {
+        setGenerationParamsFromPreset({ max_length: model.context_length });
+    }
 }
 
 function onVllmModelSelect() {
@@ -1374,10 +1485,9 @@ export function getCurrentOpenRouterModelTokenizer() {
 
 export function getCurrentDreamGenModelTokenizer() {
     const modelId = textgen_settings.dreamgen_model;
-    const model = dreamGenModels.find(x => x.id === modelId);
-    if (model.id.startsWith('lucid-v1-medium') || model.id.startsWith('lucid-v1-base')) {
+    if (modelId?.startsWith('lucid-v1-medium') || modelId?.startsWith('lucid-v1-base')) {
         return tokenizers.MISTRAL;
-    } else if (model.id.startsWith('lucid-v1-extra-large') || model.id.startsWith('lucid-v1-max')) {
+    } else if (modelId?.startsWith('lucid-v1-extra-large') || modelId?.startsWith('lucid-v1-max')) {
         return tokenizers.LLAMA3;
     } else {
         return tokenizers.MISTRAL;
@@ -1399,6 +1509,21 @@ export function initTextGenModels() {
     $('#llamacpp_model').on('change', onLlamaCppModelSelect);
     $('#generic_model_select').on('change', onGenericModelSelect);
     $('#featherless_model').on('change', () => onFeatherlessModelSelect(String($('#featherless_model').val())));
+    $(Object.values(CUSTOM_MODEL_CONTROLS).map(([, selector]) => selector).join(',')).on('change.customModel', () => {
+        updateTextGenModelEditor();
+        saveSettingsDebounced();
+    });
+    $('#text_completion_model_apply').on('click', () => {
+        setCustomTextGenModel(String($('#text_completion_model_id').val()));
+    });
+    $('#text_completion_model_id').on('input', function () {
+        $('#text_completion_model_apply').prop('disabled', !String($(this).val()).trim());
+    }).on('keydown', function (event) {
+        if (event.key === 'Enter' && !event.originalEvent?.isComposing) {
+            event.preventDefault();
+            setCustomTextGenModel(String($(this).val()));
+        }
+    });
 
     const providersSelect = $('.openrouter_providers');
     for (const provider of OPENROUTER_PROVIDERS) {

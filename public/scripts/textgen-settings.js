@@ -1,5 +1,6 @@
 import {
     abortStatusCheck,
+    cancelStatusCheck,
     eventSource,
     event_types,
     getRequestHeaders,
@@ -23,7 +24,7 @@ import { power_user, registerDebugFunction } from './power-user.js';
 import { getActiveManualApiSamplers, loadApiSelectedSamplers, isSamplerManualPriorityEnabled } from './samplerSelect.js';
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { getEventSourceStream } from './sse-stream.js';
-import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadLlamaCppModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels, updateOpenRouterProvidersWarning } from './textgen-models.js';
+import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, loadAphroditeModels, loadDreamGenModels, loadFeatherlessModels, loadGenericModels, loadInfermaticAIModels, loadLlamaCppModels, loadMancerModels, loadOllamaModels, loadOpenRouterModels, loadTabbyModels, loadTogetherAIModels, loadVllmModels, updateOpenRouterProvidersWarning, updateTextGenModelEditor } from './textgen-models.js';
 import { ENCODE_TOKENIZERS, TEXTGEN_TOKENIZERS, TOKENIZER_SUPPORTED_KEY, getTextTokens, getTokenizerBestMatch, tokenizers } from './tokenizers.js';
 import { AbortReason } from './util/AbortReason.js';
 import { getSortableDelay, onlyUnique, arraysEqual, isObject } from './utils.js';
@@ -223,6 +224,7 @@ export const textgenerationwebui_settings = {
     n: 1,
     server_urls: {},
     custom_model: '',
+    custom_model_ids: {},
     bypass_status_check: false,
     openrouter_allow_fallbacks: true,
     xtc_threshold: 0.1,
@@ -565,7 +567,13 @@ export async function loadTextGenSettings(data, loadedSettings) {
     for (const [type, selector] of Object.entries(SERVER_INPUTS)) {
         const control = $(selector);
         control.val(textgenerationwebui_settings.server_urls[type] ?? '').on('input', function () {
-            textgenerationwebui_settings.server_urls[type] = String($(this).val()).trim();
+            const endpoint = String($(this).val()).trim();
+            const changed = textgenerationwebui_settings.server_urls[type] !== endpoint;
+            textgenerationwebui_settings.server_urls[type] = endpoint;
+            if (changed && main_api === 'textgenerationwebui' && textgenerationwebui_settings.type === type) {
+                cancelStatusCheck('Text completion endpoint changed');
+                resultCheckStatus();
+            }
             saveSettingsDebounced();
         });
     }
@@ -656,10 +664,20 @@ function sortAphroditeItemsByOrder(orderArray) {
     });
 }
 
+let textGenStatusSequence = 0;
+
 async function getStatusTextgen() {
     const url = '/api/backends/text-completions/status';
-
-    const endpoint = getTextGenServer();
+    const sequence = ++textGenStatusSequence;
+    const type = textgenerationwebui_settings.type;
+    const endpoint = getTextGenServer(type);
+    const api = main_api;
+    const signal = abortStatusCheck.signal;
+    const isCurrent = () => sequence === textGenStatusSequence
+        && !signal.aborted
+        && main_api === api
+        && textgenerationwebui_settings.type === type
+        && getTextGenServer(type) === endpoint;
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
@@ -670,7 +688,7 @@ async function getStatusTextgen() {
     // Clear logit bias cache
     BIAS_CACHE.delete(BIAS_KEY);
 
-    if ([textgen_types.GENERIC, textgen_types.OOBA].includes(textgenerationwebui_settings.type) && textgenerationwebui_settings.bypass_status_check) {
+    if ([textgen_types.GENERIC, textgen_types.OOBA].includes(type) && textgenerationwebui_settings.bypass_status_check) {
         setOnlineStatus(t`Status check bypassed`);
         return resultCheckStatus();
     }
@@ -681,47 +699,49 @@ async function getStatusTextgen() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 api_server: endpoint,
-                api_type: textgenerationwebui_settings.type,
+                api_type: type,
             }),
-            signal: abortStatusCheck.signal,
+            signal,
         });
+        if (!isCurrent()) return;
 
         const data = await response.json();
+        if (!isCurrent()) return;
 
-        if (textgenerationwebui_settings.type === textgen_types.MANCER) {
+        if (type === textgen_types.MANCER) {
             loadMancerModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.mancer_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.TOGETHERAI) {
+        } else if (type === textgen_types.TOGETHERAI) {
             loadTogetherAIModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.togetherai_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.OLLAMA) {
+        } else if (type === textgen_types.OLLAMA) {
             loadOllamaModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.ollama_model || t`Connected`);
-        } else if (textgenerationwebui_settings.type === textgen_types.INFERMATICAI) {
+        } else if (type === textgen_types.INFERMATICAI) {
             loadInfermaticAIModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.infermaticai_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.DREAMGEN) {
+        } else if (type === textgen_types.DREAMGEN) {
             loadDreamGenModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.dreamgen_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.OPENROUTER) {
+        } else if (type === textgen_types.OPENROUTER) {
             loadOpenRouterModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.openrouter_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.VLLM) {
+        } else if (type === textgen_types.VLLM) {
             loadVllmModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.vllm_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.APHRODITE) {
+        } else if (type === textgen_types.APHRODITE) {
             loadAphroditeModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.aphrodite_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.FEATHERLESS) {
+        } else if (type === textgen_types.FEATHERLESS) {
             loadFeatherlessModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.featherless_model);
-        } else if (textgenerationwebui_settings.type === textgen_types.TABBY) {
+        } else if (type === textgen_types.TABBY) {
             loadTabbyModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.tabby_model || data?.result);
-        } else if (textgenerationwebui_settings.type === textgen_types.LLAMACPP) {
+        } else if (type === textgen_types.LLAMACPP) {
             loadLlamaCppModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.llamacpp_model || data?.result || t`Connected`);
-        } else if (textgenerationwebui_settings.type === textgen_types.GENERIC) {
+        } else if (type === textgen_types.GENERIC) {
             loadGenericModels(data?.data);
             setOnlineStatus(textgenerationwebui_settings.generic_model || data?.result || t`Connected`);
         } else {
@@ -743,10 +763,10 @@ async function getStatusTextgen() {
         const wantsInstructDerivation = !autoSelected && (power_user.instruct.enabled && power_user.instruct_derived);
         const wantsContextDerivation = !autoSelected && power_user.context_derived;
         const wantsContextSize = power_user.context_size_derived;
-        const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(textgenerationwebui_settings.type);
+        const supportsChatTemplate = [textgen_types.KOBOLDCPP, textgen_types.LLAMACPP].includes(type);
 
         if (supportsChatTemplate && (wantsInstructDerivation || wantsContextDerivation || wantsContextSize)) {
-            const model = textgenerationwebui_settings.type === textgen_types.LLAMACPP
+            const model = type === textgen_types.LLAMACPP
                 ? textgenerationwebui_settings.llamacpp_model
                 : undefined;
 
@@ -755,13 +775,16 @@ async function getStatusTextgen() {
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
                     api_server: endpoint,
-                    api_type: textgenerationwebui_settings.type,
+                    api_type: type,
                     model: model,
                 }),
+                signal,
             });
+            if (!isCurrent()) return;
 
             if (response.ok) {
                 const data = await response.json();
+                if (!isCurrent()) return;
                 if (data) {
                     const { chat_template, chat_template_hash } = data;
                     power_user.chat_template_hash = chat_template_hash;
@@ -782,6 +805,7 @@ async function getStatusTextgen() {
                     console.log(`We have chat template ${chat_template.split('\n')[0]}...`);
                     const savedTemplate = power_user.model_templates_mappings[chat_template_hash];
                     const derivedTemplate = await deriveTemplatesFromChatTemplate(chat_template, chat_template_hash);
+                    if (!isCurrent()) return;
                     const { context, instruct } = savedTemplate ?? derivedTemplate;
 
                     if (wantsContextDerivation && context) {
@@ -799,6 +823,7 @@ async function getStatusTextgen() {
             toastr.error(data.response, t`API Error`, { timeOut: 5000, preventDuplicates: true });
         }
     } catch (err) {
+        if (!isCurrent()) return;
         if (err instanceof AbortReason) {
             console.info('Status check aborted.', err.reason);
         } else {
@@ -807,7 +832,7 @@ async function getStatusTextgen() {
         setOnlineStatus('no_connection');
     }
 
-    return resultCheckStatus();
+    if (isCurrent()) return resultCheckStatus();
 }
 
 export function initTextGenSettings() {
@@ -1136,6 +1161,7 @@ function showSamplerControls(apiType = null) {
     });
 
     showTypeSpecificControls(apiType ?? textgenerationwebui_settings.type);
+    updateTextGenModelEditor();
 
     const prioritizeManualSamplerSelect = isSamplerManualPriorityEnabled(apiType ?? textgenerationwebui_settings.type);
     const samplersActivatedManually = getActiveManualApiSamplers(apiType ?? textgenerationwebui_settings.type);
