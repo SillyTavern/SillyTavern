@@ -9,6 +9,7 @@ import sanitize from 'sanitize-filename';
 import { sync as writeFileAtomicSync } from 'write-file-atomic';
 import _ from 'lodash';
 
+import { ChatInfoCache } from '../chat-info-cache.js';
 import validateAvatarUrlMiddleware from '../middleware/validateFileName.js';
 import {
     getConfigValue,
@@ -22,12 +23,14 @@ import {
     tryDeleteFile,
     readFirstLine,
     isPathUnderParent,
+    getUniqueName,
 } from '../util.js';
 
 const isBackupEnabled = !!getConfigValue('backups.chat.enabled', true, 'boolean');
 const maxTotalChatBackups = Number(getConfigValue('backups.chat.maxTotalBackups', -1, 'number'));
 const throttleInterval = Number(getConfigValue('backups.chat.throttleInterval', 10_000, 'number'));
 const checkIntegrity = !!getConfigValue('backups.chat.checkIntegrity', true, 'boolean');
+const chatInfoCache = new ChatInfoCache();
 
 export const CHAT_BACKUPS_PREFIX = 'chat_';
 
@@ -222,8 +225,7 @@ function importCAIChat(userName, characterName, jsonData) {
         return [starter, ...historyData];
     }
 
-    const newChats = (jsonData.histories.histories ?? []).map(history => newChats.push(convert(history).map(obj => JSON.stringify(obj)).join('\n')));
-    return newChats;
+    return (jsonData.histories.histories ?? []).map(history => convert(history).map(obj => JSON.stringify(obj)).join('\n'));
 }
 
 /**
@@ -413,21 +415,14 @@ export function createChatSearchMatcher(fragments) {
  */
 export async function getChatInfo(pathToFile, additionalData = {}, withMetadata = false, matcher = null) {
     const parsedPath = path.parse(pathToFile);
-    const incrementalMatcher = typeof matcher === 'object' && typeof matcher?.test === 'function' ? matcher : null;
-    const hasMatcher = typeof matcher === 'function' || !!incrementalMatcher;
-
-    // A chat that is deleted while a scan is running is not an error: treat it like a corrupted chat and move on.
-    const chatVanished = () => {
-        console.warn('Chat file was deleted while it was being scanned:', pathToFile);
-        return { match: false };
-    };
 
     let stats;
     try {
         stats = await fs.promises.stat(pathToFile);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            return chatVanished();
+            chatInfoCache.delete(pathToFile);
+            return { match: false };
         }
         throw error;
     }
@@ -447,16 +442,55 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
         return chatData;
     }
 
+    const hasMatcher = typeof matcher === 'function' || typeof matcher?.test === 'function';
+    const summary = await chatInfoCache.read(pathToFile, stats, withMetadata,
+        () => readChatInfo(pathToFile, stats, withMetadata, matcher), !hasMatcher);
+    return summary === null ? { match: false } : { ...chatData, ...summary };
+}
+
+/**
+ * Scans content only, keeping caller-specific fields out of the shared cache.
+ * @param {string} pathToFile Chat file path
+ * @param {import('node:fs').Stats} stats File stats before the scan
+ * @param {boolean} withMetadata Whether to read chat metadata
+ * @param {ChatMatchFunction|ChatTextMatcher|null} matcher Optional message matcher
+ * @returns {Promise<ChatInfo|null>} Summary fields, or null if the file disappeared
+ */
+function readChatInfo(pathToFile, stats, withMetadata, matcher) {
+    const incrementalMatcher = typeof matcher === 'object' && typeof matcher?.test === 'function' ? matcher : null;
+    const hasMatcher = typeof matcher === 'function' || !!incrementalMatcher;
+    /** @type {ChatInfo} */
+    const chatData = {};
+
     return new Promise((res, rej) => {
         const fileStream = fs.createReadStream(pathToFile);
+        let finished = false;
+        /**
+         * @param {ChatInfo|null} value Scan result
+         * @param {Error|null} error Read error
+         */
+        const finish = (value, error = null) => {
+            if (finished) return;
+            finished = true;
+            // Keep the read slot until the descriptor is actually closed.
+            // readline's close event can precede the stream's asynchronous close.
+            const settle = () => error ? rej(error) : res(value);
+            if (fileStream.closed) settle();
+            else {
+                fileStream.once('close', settle);
+                fileStream.destroy();
+            }
+            rl.close();
+        };
 
         // The file can still disappear between the stat above and the stream opening
-        fileStream.on('error', (error) => {
+        fileStream.on('error', (/** @type {NodeJS.ErrnoException} */ error) => {
             if (error.code === 'ENOENT') {
-                res(chatVanished());
+                chatInfoCache.delete(pathToFile);
+                finish(null);
                 return;
             }
-            rej(error);
+            finish(null, error);
         });
 
         const rl = readline.createInterface({
@@ -467,10 +501,10 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
         // readline re-emits input stream errors; without a listener the emit throws
         rl.on('error', (error) => {
             if (error.code === 'ENOENT') {
-                res(chatVanished());
+                finish(null);
                 return;
             }
-            rej(error);
+            finish(null, error);
         });
 
         let lastLine;
@@ -503,6 +537,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
             lastLine = line;
         });
         rl.on('close', () => {
+            if (finished) return;
             if (lastLine) {
                 const jsonData = tryParse(lastLine);
                 if (jsonData && (jsonData.name || jsonData.character_name || jsonData.chat_metadata)) {
@@ -511,7 +546,7 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                     chatData.last_mes = jsonData.send_date || new Date(Math.round(stats.mtimeMs)).toISOString();
                     chatData.match = hasMatcher ? hasAnyMatch : true;
 
-                    res(chatData);
+                    finish(chatData);
                 } else {
                     // The last line is unparseable or lacks known fields (e.g. a truncated write or an external edit).
                     // Resolve a degraded preview from the stat data instead of hiding an otherwise intact chat
@@ -521,11 +556,11 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
                     chatData.chat_items = Math.max(itemCounter - 2, 0);
                     chatData.mes = '[The message is empty]';
                     chatData.match = hasMatcher ? hasAnyMatch : true;
-                    res(chatData);
+                    finish(chatData);
                 }
             } else {
                 // The file was truncated after the stat reported a non-zero size; treat it like an empty chat
-                res(chatData);
+                finish(chatData);
             }
         });
     });
@@ -782,10 +817,12 @@ router.post('/group/import', function (request, response) {
             return response.sendStatus(400);
         }
 
-        const chatname = humanizedDateTime();
+        const chatname = getUniqueName(humanizedDateTime(),
+            name => fs.existsSync(path.join(request.user.directories.groupChats, `${name}.jsonl`)), { startIndex: 0 });
+        if (chatname === null) throw new Error('Could not find an unused filename for the imported group chat.');
         const pathToUpload = path.join(filedata.destination, filedata.filename);
         const pathToNewFile = path.join(request.user.directories.groupChats, `${chatname}.jsonl`);
-        fs.copyFileSync(pathToUpload, pathToNewFile);
+        fs.copyFileSync(pathToUpload, pathToNewFile, fs.constants.COPYFILE_EXCL);
         fs.unlinkSync(pathToUpload);
         return response.send({ res: chatname });
     } catch (error) {
@@ -811,6 +848,15 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
     if (!isPathUnderParent(request.user.directories.chats, directoryPath)) {
         return response.sendStatus(400);
     }
+
+    // One upload can contain several histories, and multiple imports can share
+    // a timestamp. Never replace an earlier chat with another imported history.
+    const getImportFileName = () => {
+        const name = getUniqueName(`${characterName} - ${humanizedDateTime()} imported`,
+            name => fs.existsSync(path.join(directoryPath, `${name}.jsonl`)), { startIndex: 0 });
+        if (name === null) throw new Error('Could not find an unused filename for the imported chat.');
+        return `${name}.jsonl`;
+    };
 
     try {
         const pathToUpload = path.join(request.file.destination, request.file.filename);
@@ -839,7 +885,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
             }
 
             const handleChat = (chat) => {
-                const fileName = `${characterName} - ${humanizedDateTime()} imported.jsonl`;
+                const fileName = getImportFileName();
                 const filePath = path.join(directoryPath, fileName);
                 fileNames.push(fileName);
                 writeFileAtomicSync(filePath, chat, 'utf8');
@@ -878,7 +924,7 @@ router.post('/import', validateAvatarUrlMiddleware, function (request, response)
                 console.warn('Failed to flatten Chub Chat data: ', error);
             }
 
-            const fileName = `${characterName} - ${humanizedDateTime()} imported.jsonl`;
+            const fileName = getImportFileName();
             const filePath = path.join(directoryPath, fileName);
             fileNames.push(fileName);
             if (flattenedChat !== data) {
@@ -1044,6 +1090,9 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
         };
 
         for (const chatFile of chatFiles) {
+            // The client cancels obsolete searches while typing or switching
+            // chats. Stop after the current file instead of scanning the rest.
+            if (response.destroyed) return;
             const matcher = query ? createChatSearchMatcher(fragments) : null;
             const chatInfo = await getChatInfo(chatFile, {}, false, matcher);
             const hasMatch = chatInfo.match || hasTextMatch([chatInfo.file_id ?? '']);
@@ -1070,7 +1119,7 @@ router.post('/search', validateAvatarUrlMiddleware, async function (request, res
             }
         }
 
-        return response.send(results);
+        if (!response.destroyed) return response.send(results);
     } catch (error) {
         console.error('Chat search error:', error);
         return response.status(500).json({ error: 'Search failed' });

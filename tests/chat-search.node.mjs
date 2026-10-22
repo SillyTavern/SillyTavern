@@ -97,3 +97,28 @@ test('search route isolates chat matches and retains independent filename matchi
     );
     assert.deepEqual(result.map(item => item.file_name).sort(), ['alpha beta', 'both']);
 });
+
+test('a disconnected search stops scanning after the current file', async (t) => {
+    const root = await directory(t);
+    const character = path.join(root, 'Character');
+    await fs.mkdir(character);
+    for (const name of ['first', 'second', 'third']) {
+        await fs.writeFile(path.join(character, `${name}.jsonl`), jsonl(['alpha']));
+    }
+    const response = {
+        destroyed: false,
+        send() { assert.fail('A disconnected client must not receive a response'); },
+        status(code) { throw new Error(`Unexpected status ${code}`); },
+    };
+    const stat = fs.stat;
+    let inspectedFiles = 0;
+    t.mock.method(fs, 'stat', async (...args) => {
+        inspectedFiles++;
+        const result = await stat(...args);
+        response.destroyed = true;
+        return result;
+    });
+    const handler = router.stack.find(layer => layer.route?.path === '/search').route.stack.at(-1).handle;
+    await handler({ body: { query: 'alpha', avatar_url: 'Character.png' }, user: { directories: { chats: root } } }, response);
+    assert.equal(inspectedFiles, 1);
+});
