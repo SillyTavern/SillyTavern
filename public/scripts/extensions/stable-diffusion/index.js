@@ -2489,6 +2489,10 @@ async function loadNovelModels() {
 
 async function loadGoogleModels() {
     return [
+        'gemini-2.5-flash-image',
+        'gemini-3.1-flash-image',
+        'gemini-3.1-flash-lite-image',
+        'gemini-3-pro-image',
         'imagen-4.0-generate-001',
         'imagen-4.0-ultra-generate-001',
         'imagen-4.0-fast-generate-001',
@@ -4620,7 +4624,7 @@ async function generateGoogleImage(prompt, negativePrompt, signal) {
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'jpg', data: data.image };
+        return { format: data.format || 'jpg', data: data.image };
     } else {
         const text = await result.text();
         throw new Error(text);
