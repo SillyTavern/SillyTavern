@@ -547,6 +547,11 @@ async function sendMakerSuiteRequest(request, response) {
             delete generationConfig.candidateCount;
         }
 
+        // Gemini 3.8 Flash rejects maxOutputTokens above its 65536 output limit instead of clamping it
+        if (/gemini-3\.8-flash/.test(model) && generationConfig.maxOutputTokens > 65536) {
+            generationConfig.maxOutputTokens = 65536;
+        }
+
         const enableImageModality = requestImages && imageGenerationModels.includes(model);
         const enableImageConfig = enableImageModality && (aspectRatio || imageSize);
         if (enableImageModality) {
