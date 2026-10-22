@@ -454,7 +454,7 @@ export function convertGooglePrompt(messages, model, useSysPrompt, names) {
     const toolNameMap = {};
 
     // https://ai.google.dev/gemini-api/docs/latest-model#prefilled-model-turn-validation
-    const noPrefillModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
+    const noPrefillModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite|gemini-4-argon/.test(model);
 
     const contents = [];
     messages.forEach((message, index) => {
@@ -1300,6 +1300,27 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         }
 
         return null;
+    }
+
+    function getGemini4ArgonBudget() {
+        switch (reasoningEffort) {
+            case REASONING_EFFORT.auto:
+                return null;
+            case REASONING_EFFORT.min:
+            case REASONING_EFFORT.low:
+                return 'low';
+            case REASONING_EFFORT.medium:
+                return 'medium';
+            case REASONING_EFFORT.high:
+            case REASONING_EFFORT.max:
+                return 'high';
+        }
+
+        return null;
+    }
+
+    if (/gemini-4-argon/.test(model)) {
+        return getGemini4ArgonBudget();
     }
 
     if (/gemini-3[.\d]*-pro/.test(model)) {
