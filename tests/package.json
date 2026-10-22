@@ -3,8 +3,9 @@
     "type": "module",
     "license": "AGPL-3.0",
     "scripts": {
-        "test": "npm run test:unit && npm run test:e2e",
+        "test": "npm run test:unit && npm run test:native && npm run test:e2e",
         "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.json",
+        "test:native": "node --test *.node.mjs",
         "test:e2e": "playwright test",
         "lint": "eslint \"**/*.js\" ./*.js",
         "lint:fix": "eslint \"**/*.js\" ./*.js --fix"
