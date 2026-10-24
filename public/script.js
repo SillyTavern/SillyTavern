@@ -179,7 +179,6 @@ import {
     importFromExternalUrl,
     shiftUpByOne,
     shiftDownByOne,
-    canUseNegativeLookbehind,
     trimSpaces,
     clamp,
     shakeElement,
@@ -1873,9 +1872,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId, san
     }
 
     if (!isSystem && power_user.encode_tags) {
-        mes = canUseNegativeLookbehind()
-            ? mes.replaceAll('<', '&lt;').replace(new RegExp('(?<!^|\\n\\s*)>', 'g'), '&gt;')
-            : mes.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+        mes = mes.replaceAll('<', '&lt;').replace(/(?<!^|\n\s*)>/g, '&gt;');
     }
 
     // Make sure reasoning strings are always shown, even if they include "<" or ">"

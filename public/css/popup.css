@@ -1,6 +1,3 @@
-@import url('/lib/dialog-polyfill.css');
-@import url('./popup-safari-fix.css');
-
 dialog {
     color: var(--SmartThemeBodyColor);
 }
@@ -26,7 +23,6 @@ dialog {
 
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
-    -webkit-font-smoothing: subpixel-antialiased;
 
     /* Variables setup */
     --popup-animation-speed: var(--animation-duration-slow);
@@ -104,13 +100,11 @@ dialog {
 
 .popup[open]::backdrop {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
 }
 
 body.no-blur .popup[open]::backdrop {
     backdrop-filter: none;
-    -webkit-backdrop-filter: none;
 }
 
 /* Closing animation */
@@ -198,7 +192,6 @@ body.no-blur .popup[open]::backdrop {
     /* Fix weird animation issue with fonts on brightness filter */
     backface-visibility: hidden;
     transform: translateZ(0);
-    -webkit-font-smoothing: subpixel-antialiased;
 }
 
 .popup-controls .menu_button:hover:focus-visible {

@@ -132,21 +132,21 @@ export const power_user = {
     markdown_escape_strings: '',
     chat_truncation: 100,
     streaming_fps: 30,
-    smooth_streaming: false,
+    smooth_streaming: true,
     smooth_streaming_no_think: false,
     smooth_streaming_speed: 50,
     stream_fade_in: false,
 
-    fast_ui_mode: true,
-    avatar_style: avatar_styles.ROUND,
-    chat_display: chat_styles.DEFAULT,
+    fast_ui_mode: false,
+    avatar_style: avatar_styles.ROUNDED,
+    chat_display: chat_styles.BUBBLES,
     toastr_position: defaultToastPosition,
-    chat_width: 50,
+    chat_width: 60,
     never_resize_avatars: false,
     show_card_avatar_urls: false,
     play_message_sound: false,
     play_sound_unfocused: true,
-    auto_save_msg_edits: false,
+    auto_save_msg_edits: true,
     confirm_message_delete: true,
 
     sort_field: 'name',
@@ -174,7 +174,7 @@ export const power_user = {
     movingUIState: {},
     movingUIPreset: '',
     noShadows: false,
-    theme: 'Default (Dark) 1.7.1',
+    theme: 'Violet Glass Dark',
 
     gestures: true,
     auto_swipe: false,
@@ -190,10 +190,10 @@ export const power_user = {
     allow_name1_display: false,
     allow_name2_display: false,
     hotswap_enabled: true,
-    timer_enabled: true,
+    timer_enabled: false,
     timestamps_enabled: true,
-    timestamp_model_icon: false,
-    mesIDDisplay_enabled: false,
+    timestamp_model_icon: true,
+    mesIDDisplay_enabled: true,
     hideChatAvatars_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
@@ -301,7 +301,7 @@ export const power_user = {
     encode_tags: false,
     experimental_macro_engine: true,
     servers: [],
-    bogus_folders: false,
+    bogus_folders: true,
     zoomed_avatar_magnification: false,
     show_tag_filters: false,
     aux_field: 'character_version',
@@ -332,7 +332,7 @@ export const power_user = {
     compact_input_area: true,
     show_swipe_num_all_messages: false,
     auto_connect: false,
-    auto_load_chat: false,
+    auto_load_chat: true,
     forbid_external_media: true,
     external_media_allowed_overrides: [],
     external_media_forbidden_overrides: [],
@@ -4260,7 +4260,7 @@ jQuery(() => {
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/theme Cappuccino</code></pre>
+                    <pre><code>/theme Violet Glass Dark</code></pre>
                 </li>
                 <li>
                     <pre><code>/theme</code></pre>

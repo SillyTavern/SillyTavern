@@ -86,7 +86,6 @@
 
 #bulk_tag_shadow_popup {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
     position: absolute;
     width: 100%;

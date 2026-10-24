@@ -2,7 +2,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import util from 'node:util';
-import net from 'node:net';
 import dns from 'node:dns';
 import process from 'node:process';
 import http from 'node:http';
@@ -74,14 +73,6 @@ import { redirectDeprecatedEndpoints, ServerStartup, setupPrivateEndpoints } fro
 import { diskCache } from './endpoints/characters.js';
 import { migrateFlatSecrets } from './endpoints/secrets.js';
 import { migrateGroupChatsMetadataFormat } from './endpoints/groups.js';
-
-// Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
-// https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
-// Safe to remove once support for Node v20 is dropped.
-if (process.versions && process.versions.node && process.versions.node.match(/20\.[0-2]\.0/)) {
-    // @ts-ignore
-    if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
-}
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -362,28 +353,17 @@ async function preSetupTasks() {
 async function postSetupTasks(result) {
     const browserLaunchHostname = await cliArgs.getBrowserLaunchHostname(result);
     const browserLaunchUrl = cliArgs.getBrowserLaunchUrl(browserLaunchHostname);
-    const browserLaunchApp = String(getConfigValue('browserLaunch.browser', 'default') ?? '');
+    const browserLaunchApp = String(getConfigValue('browserLaunch.browser', 'firefox') ?? '');
 
     if (cliArgs.browserLaunchEnabled) {
         try {
-            // TODO: This should be converted to a regular import when support for Node 18 is dropped
-            const openModule = await import('open');
-            const { default: open, apps } = openModule;
-
-            function getBrowsers() {
-                const isAndroid = process.platform === 'android';
-                if (isAndroid) {
-                    return {};
-                }
-                return {
-                    'firefox': apps.firefox,
-                    'chrome': apps.chrome,
-                    'edge': apps.edge,
-                    'brave': apps.brave,
-                };
-            }
-
-            const validBrowsers = getBrowsers();
+            const { default: open, apps } = await import('open');
+            const validBrowsers = {
+                'firefox': apps.firefox,
+                'chrome': apps.chrome,
+                'edge': apps.edge,
+                'brave': apps.brave,
+            };
             const appName = validBrowsers[browserLaunchApp.trim().toLowerCase()];
             const openOptions = appName ? { app: { name: appName } } : {};
 

@@ -169,28 +169,6 @@ export async function hideChatMessageRange(start, end, unhide, nameFitler = null
 }
 
 /**
- * Mark message as hidden (system message).
- * @deprecated Use hideChatMessageRange.
- * @param {number} messageId Message ID
- * @param {JQuery<Element>} _messageBlock Unused
- * @returns {Promise<void>}
- */
-export async function hideChatMessage(messageId, _messageBlock) {
-    return hideChatMessageRange(messageId, messageId, false);
-}
-
-/**
- * Mark message as visible (non-system message).
- * @deprecated Use hideChatMessageRange.
- * @param {number} messageId Message ID
- * @param {JQuery<Element>} _messageBlock Unused
- * @returns {Promise<void>}
- */
-export async function unhideChatMessage(messageId, _messageBlock) {
-    return hideChatMessageRange(messageId, messageId, true);
-}
-
-/**
  * Adds a file attachment to the message.
  * @param {ChatMessage} message Message object
  * @returns {Promise<void>} A promise that resolves when file is uploaded.

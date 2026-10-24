@@ -670,21 +670,14 @@ export async function initMovingUI() {
 /**@type {HTMLTextAreaElement} */
 const sendTextArea = document.querySelector('#send_textarea');
 const chatBlock = document.getElementById('chat');
-const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
 
 /**
  * this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
  */
 function autoFitSendTextArea() {
-    const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
-
     sendTextArea.style.height = '1px'; // Reset height to 1px to force recalculation of scrollHeight
     const newHeight = sendTextArea.scrollHeight;
     sendTextArea.style.height = `${newHeight}px`;
-
-    if (!isFirefox) {
-        chatBlock.scrollTop = chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom);
-    }
 }
 export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea, debounce_timeout.short);
 

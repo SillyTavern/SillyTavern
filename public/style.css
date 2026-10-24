@@ -68,21 +68,21 @@
 
 
     /*Default Theme, will be changed by ToolCool Color Picker*/
-    --SmartThemeBodyColor: rgb(220, 220, 210);
-    --SmartThemeEmColor: rgb(145, 145, 145);
-    --SmartThemeUnderlineColor: rgb(188, 231, 207);
-    --SmartThemeQuoteColor: rgb(225, 138, 36);
+    --SmartThemeBodyColor: rgba(230, 232, 242, 1);
+    --SmartThemeEmColor: rgba(188, 180, 230, 1);
+    --SmartThemeUnderlineColor: rgba(167, 139, 250, 1);
+    --SmartThemeQuoteColor: rgba(178, 158, 255, 1);
     /* --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9); */
-    --SmartThemeBlurTintColor: rgba(23, 23, 23, 1);
-    --SmartThemeChatTintColor: rgba(23, 23, 23, 1);
-    --SmartThemeUserMesBlurTintColor: rgba(0, 0, 0, 0.3);
-    --SmartThemeBotMesBlurTintColor: rgba(60, 60, 60, 0.3);
+    --SmartThemeBlurTintColor: rgba(20, 18, 32, 0.55);
+    --SmartThemeChatTintColor: rgba(12, 10, 22, 0.25);
+    --SmartThemeUserMesBlurTintColor: rgba(70, 54, 160, 0.55);
+    --SmartThemeBotMesBlurTintColor: rgba(26, 24, 44, 0.6);
     --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
-    --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
-    --SmartThemeBorderColor: rgba(0, 0, 0, 0.5);
-    --SmartThemeCheckboxBgColorR: 220;
-    --SmartThemeCheckboxBgColorG: 220;
-    --SmartThemeCheckboxBgColorB: 210;
+    --SmartThemeShadowColor: rgba(0, 0, 0, 0.45);
+    --SmartThemeBorderColor: rgba(255, 255, 255, 0.12);
+    --SmartThemeCheckboxBgColorR: 230;
+    --SmartThemeCheckboxBgColorG: 232;
+    --SmartThemeCheckboxBgColorB: 242;
     --SmartThemeCheckboxTickColorValue: calc(((((var(--SmartThemeCheckboxBgColorR) * 299) + (var(--SmartThemeCheckboxBgColorG) * 587) + (var(--SmartThemeCheckboxBgColorB) * 114)) / 1000) - 128) * -1000);
     --SmartThemeCheckboxTickColor: rgb(var(--SmartThemeCheckboxTickColorValue),
             var(--SmartThemeCheckboxTickColorValue),
@@ -134,17 +134,9 @@
 
 * {
     box-sizing: border-box;
-    -webkit-font-smoothing: antialiased;
-    -webkit-tap-highlight-color: transparent;
-    -moz-osx-font-smoothing: grayscale;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
-}
-
-html {
-    /*fix for chrome flickering on blurred divs*/
-    -webkit-transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    -webkit-perspective: 1000;
+    scrollbar-width: thin;
+    scrollbar-color: var(--grey7070a) transparent;
 }
 
 body {
@@ -167,56 +159,8 @@ body {
     color-scheme: only light;
 }
 
-::-webkit-scrollbar {
-    width: 0.7rem;
-    scrollbar-gutter: stable;
-}
-
-::-webkit-scrollbar-track {
-    cursor: default;
-}
-
-::-webkit-scrollbar-track:hover {
-    /* Adaptive, but won't contrast with neutral-gray. */
-    background-color: rgba(126, 126, 126, 0.2);
-}
-
-::-webkit-scrollbar-thumb {
-    cursor: grab;
-}
-
-::-webkit-scrollbar-thumb:active {
-    cursor: grabbing;
-}
-
 .scrollY {
     overflow-y: auto !important;
-}
-
-::-webkit-scrollbar-thumb:vertical {
-    background-color: var(--grey7070a);
-    box-shadow: inset 0 0 0 1px var(--black50a);
-    border-radius: 10px;
-    background-clip: content-box;
-    border: 2px solid transparent;
-    min-height: 40px;
-}
-
-body.movingUI ::-webkit-scrollbar-thumb:vertical {
-    border-top: 20px solid transparent;
-}
-
-::-webkit-scrollbar-thumb:horizontal {
-    background-color: var(--grey7070a);
-    box-shadow: inset 0 0 0 1px var(--black50a);
-    border-radius: 10px;
-    background-clip: content-box;
-    border: 2px solid transparent;
-    min-width: 40px;
-}
-
-::-webkit-scrollbar-corner {
-    background-color: transparent;
 }
 
 table.responsiveTable {
@@ -244,9 +188,7 @@ table.responsiveTable {
 }
 
 .animated {
-    -webkit-animation-duration: var(--animation-duration, 3s) !important;
     animation-duration: var(--animation-duration, 3s) !important;
-    -webkit-animation-fill-mode: both !important;
     animation-fill-mode: both !important;
     box-shadow: inset 0 0 5px var(--SmartThemeQuoteColor);
 }
@@ -439,10 +381,6 @@ input[type='checkbox']:focus-visible {
 .mes_reasoning_details .mes_reasoning_summary {
     list-style: none;
     margin-right: calc(var(--mes-right-spacing) * -1);
-}
-
-.mes_reasoning_details summary::-webkit-details-marker {
-    display: none;
 }
 
 .mes_reasoning *:last-child {
@@ -765,7 +703,6 @@ hr {
     box-shadow: 0 2px 20px 0 var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     z-index: 3005;
 }
 
@@ -805,9 +742,6 @@ hr {
     top: 0px;
     opacity: 0.5;
     cursor: grab;
-    /* border: 1px solid var(--SmartThemeBorderColor); */
-    cursor: -moz-grab;
-    cursor: -webkit-grab;
     display: none;
     filter: drop-shadow(0px 0px 0px black);
     transition: all var(--animation-duration-2x);
@@ -843,8 +777,6 @@ body .panelControlBar {
 
 #sheldheader:active {
     cursor: grabbing;
-    cursor: -moz-grabbing;
-    cursor: -webkit-grabbing;
 }
 
 .pull-tab {
@@ -870,7 +802,6 @@ body .panelControlBar {
     border-right: 1px solid var(--SmartThemeBorderColor); */
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeChatTintColor);
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex-direction: column;
     z-index: 30;
@@ -882,13 +813,6 @@ body .panelControlBar {
     width: 100%;
     margin: 1px auto 0 auto;
     z-index: 30;
-}
-
-/* special case for desktop Safari to allow #sheld resizing */
-@media only screen and (min-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) and (pointer: fine) {
-    #form_sheld {
-        margin-bottom: 4px;
-    }
 }
 
 #send_form {
@@ -1087,7 +1011,6 @@ body .panelControlBar {
     display: flex;
     z-index: 29999;
     background-color: var(--SmartThemeBlurTintColor);
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     flex-flow: column;
@@ -1234,7 +1157,6 @@ body .panelControlBar {
 /* This has much better performance than .transform on large chats*/
 .slide {
     animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
-    -webkit-animation: slide calc(var(--slide-mes-x-duration, var(--animation-duration, 125ms))) ease-in-out forwards;
     will-change: transform;
 }
 
@@ -2599,7 +2521,6 @@ body[data-stscript-style] .hljs.language-stscript {
     margin: 3px;
     opacity: 0.75;
     filter: grayscale(1);
-    -webkit-transition: all var(--animation-duration-2x) ease-in-out;
     transition: all var(--animation-duration-2x) ease-in-out;
 }
 
@@ -2763,7 +2684,6 @@ input[type="file"] {
     margin-top: 0;
     padding: 1px;
     filter: brightness(75%);
-    -webkit-transition: all var(--animation-duration-3x) ease-in-out;
     transition: all var(--animation-duration-3x) ease-in-out;
 }
 
@@ -3045,8 +2965,6 @@ input[type="file"] {
 /*#################################################################*/
 
 select {
-    -moz-appearance: none;
-    -webkit-appearance: none;
     appearance: none;
     padding: 3px 5px;
     background-color: var(--black30a);
@@ -3261,24 +3179,6 @@ select option[disabled]:not(:checked) {
 
 #persona_connections_buttons {
     margin-bottom: 5px;
-}
-
-input[type=search]::-webkit-search-cancel-button {
-    -webkit-appearance: none;
-    height: 1em;
-    width: 1em;
-    border-radius: 50em;
-    background-color: var(--SmartThemeBodyColor);
-    mask: url('/img/times-circle.svg') no-repeat 50% 50%;
-    background-size: contain;
-    opacity: 0;
-    pointer-events: none;
-    cursor: pointer;
-}
-
-input[type=search]:focus::-webkit-search-cancel-button {
-    opacity: .5;
-    pointer-events: all;
 }
 
 .bogus_folder_select,
@@ -3857,7 +3757,6 @@ grammarly-extension {
 
 #shadow_popup {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
     display: none;
     opacity: 0.0;
@@ -4012,7 +3911,6 @@ body #toast-container {
 body #toast-container>div {
     opacity: 1;
     filter: unset;
-    -ms-filter: unset;
     padding: 10px 10px 10px 50px;
     font-size: calc(var(--mainFontSize) * 0.95);
     width: 300px;
@@ -4052,8 +3950,6 @@ button.toast-close-button {
 }
 
 input[type='checkbox'] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
     appearance: none;
     outline: 1px solid var(--grey5020a);
     position: relative;
@@ -4236,7 +4132,6 @@ input[type='checkbox'].del_checkbox {
 }
 
 .neo-range-slider {
-    -webkit-appearance: none !important;
     appearance: none !important;
     margin: 0 !important;
     margin-top: 7px !important;
@@ -4276,7 +4171,6 @@ input[type="range"]:focus-visible {
 }
 
 input[type="range"] {
-    -webkit-appearance: none;
     appearance: none;
     margin: 0;
     padding: 0;
@@ -4292,17 +4186,15 @@ input[type="range"] {
     filter: brightness(0.75);
 }
 
-input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
+input[type="range"]::-moz-range-thumb {
+    appearance: none;
     position: relative;
-    /*box-shadow: 0 0 5px 0 black;
-    box-shadow: inset 0 0 5px var(--black70a);*/
-    -webkit-appearance: none;
     height: 15px;
     width: 15px;
     border-radius: 50%;
     background: var(--SmartThemeCheckboxTickColor);
     border: 2px solid var(--SmartThemeBodyColor);
+    box-sizing: border-box;
 }
 
 .doubleRangeContainer {
@@ -4346,7 +4238,7 @@ input[type="range"]::-webkit-slider-thumb {
             }
         }
 
-        >input::-webkit-slider-thumb {
+        >input::-moz-range-thumb {
             z-index: 2;
         }
 
@@ -4617,7 +4509,6 @@ body:is([data-generating="true"], [data-swiping="true"]) :is(
 #shadow_character_popup {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     display: none;
     opacity: 1.0;
     position: absolute;
@@ -4631,7 +4522,6 @@ body:is([data-generating="true"], [data-swiping="true"]) :is(
     display: none;
     background-color: var(--SmartThemeBlurTintColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
 
     min-width: 100px;
     max-width: var(--sheldWidth);
@@ -4708,7 +4598,6 @@ h5 {
     margin-left: 36px;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--black70a);
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     width: 110px;
     text-align: center;
 }
@@ -4724,7 +4613,6 @@ h5 {
     top: 0;
     background-color: var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
 }
 
 #select_chat_popup {
@@ -4793,7 +4681,6 @@ h5 {
 
 .swipe_picker_block {
     cursor: pointer;
-    -webkit-user-select: none;
     user-select: none;
 }
 
@@ -4878,7 +4765,6 @@ h5 {
 .PastChat_cross:not(.disabled):hover {
     color: red;
     filter: drop-shadow(0 0 2px red);
-    -webkit-animation: infinite-spinning 1s ease-out 0s infinite normal;
     animation: infinite-spinning 1s ease-out 0s infinite normal;
 }
 
@@ -4891,7 +4777,6 @@ h5 {
     cursor: default !important;
     color: inherit;
     filter: none;
-    -webkit-animation: none;
     animation: none;
     opacity: 0.2 !important;
 }
@@ -5200,7 +5085,6 @@ a:hover {
 .mes_img {
     max-width: 100%;
     max-height: 40vh;
-    image-rendering: -webkit-optimize-contrast;
     cursor: pointer;
 }
 
@@ -5385,15 +5269,6 @@ body:not(.caption) .mes_img_caption {
     background: #000;
 }
 
-/* Ensure video controls are visible */
-.mes_video::-webkit-media-controls {
-    display: flex !important;
-}
-
-.mes_video::-webkit-media-controls-panel {
-    background-color: rgba(0, 0, 0, 0.2);
-}
-
 /* Align the content of this span to the right */
 .delete-button {
     margin-right: 10px;
@@ -5571,7 +5446,6 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     margin: 0 auto;
     height: 0;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     /* z-index: 1000 !important; */
     transition-property: height, display;
     transition-duration: var(--animation-duration-2x);
@@ -5588,10 +5462,6 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     height: auto;
     height: calc-size(auto, size);
     overflow-y: auto;
-
-    @supports selector(::-webkit-scrollbar-thumb) {
-        animation: hide-scroll var(--animation-duration-2x) backwards;
-    }
 
     @starting-style {
         height: 0;
@@ -5915,17 +5785,9 @@ body:not(.movingUI) .drawer-content.maximized {
     border-radius: 10px;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
-/* Hide scrollbar for IE, Edge, and Firefox */
+/* Hide scrollbar for Firefox */
 .no-scrollbar {
-    -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
 }
 
 #groupMemberListPopoutClose {
@@ -6383,7 +6245,6 @@ body:not(.movingUI) .drawer-content.maximized {
     background-color: var(--SmartThemeBlurTintColor);
     color: var(--SmartThemeBodyColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
 }
 
 .info-block.hint {

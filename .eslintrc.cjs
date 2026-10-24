@@ -24,7 +24,6 @@ module.exports = {
             },
             globals: {
                 globalThis: 'readonly',
-                Deno: 'readonly',
             },
         },
         {
@@ -75,7 +74,6 @@ module.exports = {
         'data/**',
         'cache/**',
         'src/tokenizers/**',
-        'docker/**',
         'plugins/**',
         '**/*.min.js',
         'public/scripts/extensions/quick-reply/lib/**',

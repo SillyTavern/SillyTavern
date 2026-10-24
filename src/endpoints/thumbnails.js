@@ -19,7 +19,7 @@ export const ALLOWED_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif'
 
 const thumbnailsEnabled = !!getConfigValue('thumbnails.enabled', true, 'boolean');
 const quality = Math.min(100, Math.max(1, parseInt(getConfigValue('thumbnails.quality', 95, 'number'))));
-const pngFormat = String(getConfigValue('thumbnails.format', 'jpg')).toLowerCase().trim() === 'png';
+const thumbnailFormat = String(getConfigValue('thumbnails.format', 'webp')).toLowerCase().trim();
 
 /**
  * @typedef {'bg' | 'avatar' | 'persona'} ThumbnailType
@@ -228,9 +228,14 @@ async function processSingleImage(file, originalFolder, thumbnailFolder, type) {
             thumbImage.cover({ w: configWidth, h: configHeight });
         }
 
-        const buffer = pngFormat
-            ? await thumbImage.getBuffer(JimpMime.png)
-            : await thumbImage.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
+        let buffer;
+        if (thumbnailFormat === 'png') {
+            buffer = await thumbImage.getBuffer(JimpMime.png);
+        } else if (thumbnailFormat === 'webp') {
+            buffer = await thumbImage.getBuffer(JimpMime.webp, { quality: quality });
+        } else {
+            buffer = await thumbImage.getBuffer(JimpMime.jpeg, { quality: quality, jpegColorSpace: 'ycbcr' });
+        }
 
         writeFileAtomicSync(pathToCachedFile, buffer);
 

@@ -22,15 +22,8 @@ public/stats.json
 /config.conf
 /config.yaml
 /config.conf.bak
-/docker/config
-/docker/user
-/docker/extensions
-/docker/data
-/docker/dist
-.DS_Store
 public/settings.json
 /thumbnails
-whitelist.txt
 .vscode/**
 !.vscode/extensions.json
 .idea/
@@ -41,7 +34,6 @@ secrets.json
 public/movingUI/
 public/QuickReplies/
 content.log
-cloudflared.exe
 public/assets/
 access.log
 /vectors/
@@ -55,7 +47,6 @@ public/scripts/extensions/third-party
 /certs
 .aider*
 .env
-/StartDev.bat
 yarn.lock
 *.code-workspace
 test-results/

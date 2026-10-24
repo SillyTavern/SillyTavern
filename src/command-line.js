@@ -243,27 +243,6 @@ export class CommandLineParser {
                 default: null,
                 describe: 'Interval in seconds to write a heartbeat file. 0 to disable.',
             })
-            /* DEPRECATED options */
-            .option('autorun', {
-                type: 'boolean',
-                default: null,
-                describe: 'DEPRECATED: Use "browserLaunchEnabled" instead.',
-            })
-            .option('autorunHostname', {
-                type: 'string',
-                default: null,
-                describe: 'DEPRECATED: Use "browserLaunchHostname" instead.',
-            })
-            .option('autorunPortOverride', {
-                type: 'number',
-                default: null,
-                describe: 'DEPRECATED: Use "browserLaunchPort" instead.',
-            })
-            .option('avoidLocalhost', {
-                type: 'boolean',
-                default: null,
-                describe: 'DEPRECATED: Use "browserLaunchAvoidLocalhost" instead.',
-            })
             .parseSync();
 
         const isGlobal = globalThis.FORCE_GLOBAL_MODE ?? cliArguments.global ?? false;
@@ -308,10 +287,10 @@ export class CommandLineParser {
             enableIPv6: stringToBool(cliArguments.enableIPv6) ?? stringToBool(getConfigValue('protocol.ipv6', defaultConfig.enableIPv6)) ?? defaultConfig.enableIPv6,
             dnsPreferIPv6: cliArguments.dnsPreferIPv6 ?? getConfigValue('dnsPreferIPv6', defaultConfig.dnsPreferIPv6, 'boolean'),
             heartbeatInterval: cliArguments.heartbeatInterval ?? getConfigValue('heartbeatInterval', defaultConfig.heartbeatInterval, 'number'),
-            browserLaunchEnabled: cliArguments.browserLaunchEnabled ?? cliArguments.autorun ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean'),
-            browserLaunchHostname: cliArguments.browserLaunchHostname ?? cliArguments.autorunHostname ?? getConfigValue('browserLaunch.hostname', defaultConfig.browserLaunchHostname),
-            browserLaunchPort: cliArguments.browserLaunchPort ?? cliArguments.autorunPortOverride ?? getConfigValue('browserLaunch.port', defaultConfig.browserLaunchPort, 'number'),
-            browserLaunchAvoidLocalhost: cliArguments.browserLaunchAvoidLocalhost ?? cliArguments.avoidLocalhost ?? getConfigValue('browserLaunch.avoidLocalhost', defaultConfig.browserLaunchAvoidLocalhost, 'boolean'),
+            browserLaunchEnabled: cliArguments.browserLaunchEnabled ?? getConfigValue('browserLaunch.enabled', defaultConfig.browserLaunchEnabled, 'boolean'),
+            browserLaunchHostname: cliArguments.browserLaunchHostname ?? getConfigValue('browserLaunch.hostname', defaultConfig.browserLaunchHostname),
+            browserLaunchPort: cliArguments.browserLaunchPort ?? getConfigValue('browserLaunch.port', defaultConfig.browserLaunchPort, 'number'),
+            browserLaunchAvoidLocalhost: cliArguments.browserLaunchAvoidLocalhost ?? getConfigValue('browserLaunch.avoidLocalhost', defaultConfig.browserLaunchAvoidLocalhost, 'boolean'),
             enableCorsProxy: cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', defaultConfig.enableCorsProxy, 'boolean'),
             disableCsrf: cliArguments.disableCsrf ?? getConfigValue('disableCsrfProtection', defaultConfig.disableCsrf, 'boolean'),
             ssl: cliArguments.ssl ?? getConfigValue('ssl.enabled', defaultConfig.ssl, 'boolean'),

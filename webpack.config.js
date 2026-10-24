@@ -2,7 +2,6 @@ import process from 'node:process';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import isDocker from 'is-docker';
 import webpack from 'webpack';
 import { serverDirectory } from './src/server-directory.js';
 import { getVersion, color } from './src/util.js';
@@ -52,20 +51,13 @@ const appVersion = await getVersion();
 
 /**
  * Get the Webpack configuration for the public/lib.js file.
- * 1. Docker has got cache and the output file pre-baked.
- * 2. Non-Docker environments use the global DATA_ROOT variable to determine the cache and output directories.
  * @param {object} options Configuration options.
- * @param {boolean} [options.forceDist=false] Whether to force the use the /dist folder.
  * @param {boolean} [options.pruneCache=false] Whether to prune old cache directories.
  * @returns {import('webpack').Configuration}
  * @throws {Error} If the DATA_ROOT variable is not set.
  * */
-export default function getPublicLibConfig({ forceDist = false, pruneCache = false } = {}) {
+export default function getPublicLibConfig({ pruneCache = false } = {}) {
     function getWebpackRoot() {
-        if (forceDist || isDocker()) {
-            return path.resolve(process.cwd(), 'dist', '_webpack');
-        }
-
         if (typeof globalThis.DATA_ROOT === 'string') {
             return path.resolve(globalThis.DATA_ROOT, '_webpack');
         }

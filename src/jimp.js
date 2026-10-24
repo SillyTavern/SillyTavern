@@ -56,6 +56,7 @@ const JimpMime = {
     jpeg: jpeg().mime,
     png: png().mime,
     tiff: tiff().mime,
+    webp: webp().mime,
 };
 
 export default Jimp;

@@ -1,7 +1,6 @@
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Black.woff2') format('woff2'),
-        url('NotoSans-Black.woff') format('woff');
+    src: url('NotoSans-Black.woff2') format('woff2');
     font-weight: 900;
     font-style: normal;
     font-display: swap;
@@ -9,8 +8,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-ExtraBoldItalic.woff2') format('woff2'),
-        url('NotoSans-ExtraBoldItalic.woff') format('woff');
+    src: url('NotoSans-ExtraBoldItalic.woff2') format('woff2');
     font-weight: bold;
     font-style: italic;
     font-display: swap;
@@ -18,8 +16,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-BlackItalic.woff2') format('woff2'),
-        url('NotoSans-BlackItalic.woff') format('woff');
+    src: url('NotoSans-BlackItalic.woff2') format('woff2');
     font-weight: 900;
     font-style: italic;
     font-display: swap;
@@ -27,8 +24,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-ExtraBold.woff2') format('woff2'),
-        url('NotoSans-ExtraBold.woff') format('woff');
+    src: url('NotoSans-ExtraBold.woff2') format('woff2');
     font-weight: bold;
     font-style: normal;
     font-display: swap;
@@ -36,8 +32,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-ThinItalic.woff2') format('woff2'),
-        url('NotoSans-ThinItalic.woff') format('woff');
+    src: url('NotoSans-ThinItalic.woff2') format('woff2');
     font-weight: 100;
     font-style: italic;
     font-display: swap;
@@ -45,8 +40,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-BoldItalic.woff2') format('woff2'),
-        url('NotoSans-BoldItalic.woff') format('woff');
+    src: url('NotoSans-BoldItalic.woff2') format('woff2');
     font-weight: bold;
     font-style: italic;
     font-display: swap;
@@ -54,8 +48,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Bold.woff2') format('woff2'),
-        url('NotoSans-Bold.woff') format('woff');
+    src: url('NotoSans-Bold.woff2') format('woff2');
     font-weight: bold;
     font-style: normal;
     font-display: swap;
@@ -63,8 +56,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-LightItalic.woff2') format('woff2'),
-        url('NotoSans-LightItalic.woff') format('woff');
+    src: url('NotoSans-LightItalic.woff2') format('woff2');
     font-weight: 300;
     font-style: italic;
     font-display: swap;
@@ -72,8 +64,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Italic.woff2') format('woff2'),
-        url('NotoSans-Italic.woff') format('woff');
+    src: url('NotoSans-Italic.woff2') format('woff2');
     font-weight: normal;
     font-style: italic;
     font-display: swap;
@@ -81,8 +72,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-ExtraLightItalic.woff2') format('woff2'),
-        url('NotoSans-ExtraLightItalic.woff') format('woff');
+    src: url('NotoSans-ExtraLightItalic.woff2') format('woff2');
     font-weight: 200;
     font-style: italic;
     font-display: swap;
@@ -90,8 +80,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Light.woff2') format('woff2'),
-        url('NotoSans-Light.woff') format('woff');
+    src: url('NotoSans-Light.woff2') format('woff2');
     font-weight: 300;
     font-style: normal;
     font-display: swap;
@@ -99,8 +88,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-ExtraLight.woff2') format('woff2'),
-        url('NotoSans-ExtraLight.woff') format('woff');
+    src: url('NotoSans-ExtraLight.woff2') format('woff2');
     font-weight: 200;
     font-style: normal;
     font-display: swap;
@@ -108,8 +96,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Medium.woff2') format('woff2'),
-        url('NotoSans-Medium.woff') format('woff');
+    src: url('NotoSans-Medium.woff2') format('woff2');
     font-weight: 500;
     font-style: normal;
     font-display: swap;
@@ -117,8 +104,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Regular.woff2') format('woff2'),
-        url('NotoSans-Regular.woff') format('woff');
+    src: url('NotoSans-Regular.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -126,8 +112,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-MediumItalic.woff2') format('woff2'),
-        url('NotoSans-MediumItalic.woff') format('woff');
+    src: url('NotoSans-MediumItalic.woff2') format('woff2');
     font-weight: 500;
     font-style: italic;
     font-display: swap;
@@ -135,8 +120,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-SemiBoldItalic.woff2') format('woff2'),
-        url('NotoSans-SemiBoldItalic.woff') format('woff');
+    src: url('NotoSans-SemiBoldItalic.woff2') format('woff2');
     font-weight: 600;
     font-style: italic;
     font-display: swap;
@@ -144,8 +128,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-SemiBold.woff2') format('woff2'),
-        url('NotoSans-SemiBold.woff') format('woff');
+    src: url('NotoSans-SemiBold.woff2') format('woff2');
     font-weight: 600;
     font-style: normal;
     font-display: swap;
@@ -153,8 +136,7 @@
 
 @font-face {
     font-family: 'Noto Sans';
-    src: url('NotoSans-Thin.woff2') format('woff2'),
-        url('NotoSans-Thin.woff') format('woff');
+    src: url('NotoSans-Thin.woff2') format('woff2');
     font-weight: 100;
     font-style: normal;
     font-display: swap;

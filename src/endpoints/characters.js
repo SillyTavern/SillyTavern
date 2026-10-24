@@ -29,8 +29,6 @@ import cacheBuster from '../middleware/cacheBuster.js';
 // With 100 MB limit it would take roughly 3000 characters to reach this limit
 const memoryCacheCapacity = getConfigValue('performance.memoryCacheCapacity', '100mb');
 const memoryCache = new MemoryLimitedMap(memoryCacheCapacity);
-// Some Android devices require tighter memory management
-const isAndroid = process.platform === 'android';
 // Use shallow character data for the character list
 const useShallowCharacters = !!getConfigValue('performance.lazyLoadCharacters', false, 'boolean');
 const useDiskCache = !!getConfigValue('performance.useDiskCache', true, 'boolean');
@@ -196,7 +194,7 @@ async function readCharacterData(inputFile, inputFormat = 'png') {
     }
 
     const result = await parse(inputFile, inputFormat);
-    !isAndroid && memoryCache.set(cacheKey, result);
+    memoryCache.set(cacheKey, result);
     if (useDiskCache) {
         try {
             const cache = await diskCache.instance();

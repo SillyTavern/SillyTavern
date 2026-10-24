@@ -21,10 +21,9 @@ browserLaunch:
   # Open the browser automatically on server startup.
   enabled: true
   # Browser to use for opening the URL.
-  # NOT SUPPORTED ON ANDROID DEVICES.
   # - Use "default" to use the system default browser
   # - Use "firefox", "chrome", "edge"
-  browser: 'default'
+  browser: 'firefox'
   # Overrides the hostname that opens in the browser.
   # - Use "auto" to let the server decide
   # - Use options like 'localhost', 'st.example.com'
@@ -43,7 +42,7 @@ port: 8000
 heartbeatInterval: 0
 # Enable HTTP/HTTPS keep-alive globally.
 # Disabling restores old Node 18 behavior, can help if ECONNRESET and other network errors occur.
-enableKeepAlive: false
+enableKeepAlive: true
 # -- SSL options --
 ssl:
   # Enable SSL/TLS encryption
@@ -64,8 +63,6 @@ enableForwardedWhitelist: true
 whitelist:
   - ::1
   - 127.0.0.1
-# Automatically whitelist Docker host and gateway IPs
-whitelistDockerHosts: true
 # Toggle basic authentication for endpoints
 basicAuthMode: false
 # Basic authentication credentials
@@ -224,9 +221,9 @@ backups:
     # Verify integrity of chat files before saving
     checkIntegrity: true
     # Maximum number of chat backups to keep per user (starting from the most recent). Set to -1 to keep all backups.
-    maxTotalBackups: -1
+    maxTotalBackups: 500
     # Interval in milliseconds to throttle chat backups per user
-    throttleInterval: 10000
+    throttleInterval: 30000
 
 # THUMBNAILING CONFIGURATION
 thumbnails:
@@ -236,7 +233,7 @@ thumbnails:
   # * "jpg": best compression with adjustable quality, no transparency
   # * "png": preserves transparency but increases filesize by about 100%
   # Changing this only affects new thumbnails. To recreate the old ones, clear out /thumbnails folder in your user data.
-  format: "jpg"
+  format: "webp"
   # JPG thumbnail quality (0-100)
   quality: 95
   # Maximum thumbnail dimensions per type [width, height]
@@ -246,7 +243,7 @@ thumbnails:
 performance:
   # Enables lazy loading of character cards. Improves performances with large card libraries.
   # May have compatibility issues with some extensions.
-  lazyLoadCharacters: false
+  lazyLoadCharacters: true
   # The maximum amount of memory that parsed character cards can use. Set to 0 to disable memory caching.
   memoryCacheCapacity: '100mb'
   # Enables disk caching for character cards. Improves performances with large card libraries.
@@ -254,7 +251,7 @@ performance:
   # Configures gzip compression for client requests with large payloads (e.g. settings or chat saves).
   requestCompression:
     # Enable request compression.
-    enabled: false
+    enabled: true
     # Minimum payload size to trigger compression. Set to 0 to compress all requests regardless of size.
     minPayloadSize: '256kb'
     # Hard upper payload size limit for compression. Set to 0 to allow compression of any size.
@@ -314,7 +311,7 @@ extensions:
 # - Use "system" to force system backend
 # - Use "builtin" to force integrated backend
 git:
-  backend: auto
+  backend: system
 
 # Additional model tokenizers can be downloaded on demand.
 # Disabling will fallback to another locally available tokenizer.

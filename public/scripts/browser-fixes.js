@@ -1,4 +1,4 @@
-import { getParsedUA, isMobile } from './RossAscends-mods.js';
+import { isMobile } from './RossAscends-mods.js';
 
 const isFirefox = () => /firefox/i.test(navigator.userAgent);
 
@@ -53,18 +53,6 @@ function sanitizeInlineQuotationOnCopy() {
     });
 }
 
-function addSafariPatch() {
-    const userAgent = getParsedUA();
-    console.debug('User Agent', userAgent);
-    const isMobileSafari = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isDesktopSafari = userAgent?.browser?.name === 'Safari' && userAgent?.platform?.type === 'desktop';
-    const isIOS = userAgent?.os?.name === 'iOS';
-
-    if (isIOS || isMobileSafari || isDesktopSafari) {
-        document.body.classList.add('safari');
-    }
-}
-
 function applyBrowserFixes() {
     if (isFirefox()) {
         sanitizeInlineQuotationOnCopy();
@@ -87,8 +75,6 @@ function applyBrowserFixes() {
         window.addEventListener('resize', fixFunkyPositioning);
         window.addEventListener('orientationchange', fixFunkyPositioning);
     }
-
-    addSafariPatch();
 }
 
 export { isFirefox, applyBrowserFixes };

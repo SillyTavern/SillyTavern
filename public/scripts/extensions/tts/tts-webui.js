@@ -400,7 +400,7 @@ class TtsWebuiProvider {
     }
 
     async initAudioWorklet(wavSampleRate) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: wavSampleRate });
+        this.audioContext = new window.AudioContext({ sampleRate: wavSampleRate });
 
         // Load the PCM processor from separate file
         const processorUrl = './scripts/extensions/tts/lib/pcm-processor.js';

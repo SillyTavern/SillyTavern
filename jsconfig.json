@@ -19,7 +19,6 @@
         "backups/**",
         "data/**",
         "cache/**",
-        "src/tokenizers/**",
-        "docker/**"
+        "src/tokenizers/**"
     ]
 }

@@ -574,7 +574,7 @@ async function hideOverlay() {
         if (hasTransitions) {
             Promise.race([
                 new Promise((r) => setTimeout(r, 500)), // Fallback timeout
-                new Promise((r) => loaderElement.one('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', r)),
+                new Promise((r) => loaderElement.one('transitionend', r)),
             ]).finally(cleanup);
         } else {
             cleanup();

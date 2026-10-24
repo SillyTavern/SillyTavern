@@ -1,6 +1,4 @@
-import path from 'node:path';
-
-export const forbiddenRegExp = path.sep === '/' ? /[/\x00]/ : /[/\x00\\]/;
+export const forbiddenRegExp = /[/\x00]/;
 
 /**
  * Checks if an object has a toString method.

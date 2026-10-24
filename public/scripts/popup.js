@@ -1,4 +1,3 @@
-import dialogPolyfill from '../lib/dialog-polyfill.esm.js';
 import { shouldSendOnEnter } from './RossAscends-mods.js';
 import { t } from './i18n.js';
 import { power_user, toastPositionClasses } from './power-user.js';
@@ -235,18 +234,6 @@ export class Popup {
         const template = document.querySelector('#popup_template');
         // @ts-ignore
         this.dlg = template.content.cloneNode(true).querySelector('.popup');
-        if (!this.dlg.showModal) {
-            this.dlg.classList.add('poly_dialog');
-            dialogPolyfill.registerDialog(this.dlg);
-            // Force a vertical reposition after the content
-            // (like crop image) has been set
-            const resizeObserver = new ResizeObserver((entries) => {
-                for (const entry of entries) {
-                    dialogPolyfill.reposition(entry.target);
-                }
-            });
-            resizeObserver.observe(this.dlg);
-        }
         this.body = this.dlg.querySelector('.popup-body');
         this.content = this.dlg.querySelector('.popup-content');
         this.mainInput = this.dlg.querySelector('.popup-input');

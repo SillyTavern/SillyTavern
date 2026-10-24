@@ -450,8 +450,8 @@
 }
 
 .widthFreeExpand {
-    width: -webkit-fill-available;
     width: -moz-available;
+    width: stretch;
 }
 
 .wide100p {
