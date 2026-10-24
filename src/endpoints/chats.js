@@ -618,6 +618,70 @@ router.post('/get', validateAvatarUrlMiddleware, function (request, response) {
     }
 });
 
+/**
+ * Updates references to a renamed chat (checkpoint/branch links) in the other chat files of a directory.
+ * Only the affected lines are re-serialized; unparseable lines and unrelated files are left untouched.
+ * @param {string} directory Directory containing the chat files
+ * @param {string} oldName Previous chat name (without extension)
+ * @param {string} newName New chat name (without extension)
+ * @returns {number} Number of updated files
+ */
+export function relinkRenamedChat(directory, oldName, newName) {
+    const needle = JSON.stringify(oldName).slice(1, -1);
+    let updatedFiles = 0;
+
+    for (const file of fs.readdirSync(directory)) {
+        if (path.extname(file) !== '.jsonl' || file === `${newName}.jsonl`) {
+            continue;
+        }
+
+        try {
+            const filePath = path.join(directory, file);
+            const content = tryReadFileSync(filePath);
+            if (!content || !content.includes(needle)) {
+                continue;
+            }
+
+            let changed = false;
+            const lines = content.split('\n').map((line, index) => {
+                if (!line.includes(needle)) {
+                    return line;
+                }
+                const message = tryParse(line);
+                if (!message || typeof message !== 'object') {
+                    return line;
+                }
+                const metadata = index === 0 ? message.chat_metadata : null;
+                const extra = message.extra;
+                let lineChanged = false;
+                if (metadata?.main_chat === oldName) {
+                    metadata.main_chat = newName;
+                    lineChanged = true;
+                }
+                if (extra?.bookmark_link === oldName) {
+                    extra.bookmark_link = newName;
+                    lineChanged = true;
+                }
+                if (Array.isArray(extra?.branches) && extra.branches.includes(oldName)) {
+                    extra.branches = extra.branches.map(x => x === oldName ? newName : x);
+                    lineChanged = true;
+                }
+                changed ||= lineChanged;
+                return lineChanged ? JSON.stringify(message) : line;
+            });
+
+            if (changed) {
+                tryWriteFileSync(filePath, lines.join('\n'));
+                updatedFiles++;
+            }
+        } catch (error) {
+            console.warn(`Could not update chat links in "${file}"`, error);
+        }
+    }
+
+    return updatedFiles;
+}
+
 router.post('/rename', validateAvatarUrlMiddleware, async function (request, response) {
     try {
         if (!request.body || !request.body.original_file || !request.body.renamed_file) {
@@ -643,6 +707,7 @@ router.post('/rename', validateAvatarUrlMiddleware, async function (request, res
 
         fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
         fs.unlinkSync(pathToOriginalFile);
+        relinkRenamedChat(pathToFolder, path.parse(pathToOriginalFile).name, sanitizedFileName);
         console.info('Successfully renamed chat file.');
         return response.send({ ok: true, sanitizedFileName });
     } catch (error) {
