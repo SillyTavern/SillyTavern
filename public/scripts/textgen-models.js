@@ -367,6 +367,20 @@ export function updateOpenRouterProvidersWarning(providersSelector) {
     $warning.toggleClass('displayNone', !showWarning);
 }
 
+/**
+ * Applies a provider multiselect's selection to the stored list without losing its order.
+ * jQuery returns selected options in DOM order, but OpenRouter treats the list as a priority order.
+ * @param {string[]} storedProviders Providers in their stored order
+ * @param {string[]} selectedProviders Providers currently selected, in DOM order
+ * @returns {string[]} Still-selected providers in their stored order, followed by new selections
+ */
+export function mergeOpenRouterProviderOrder(storedProviders, selectedProviders) {
+    const stored = Array.isArray(storedProviders) ? storedProviders : [];
+    const kept = stored.filter(provider => selectedProviders.includes(provider));
+    const added = selectedProviders.filter(provider => !kept.includes(provider));
+    return [...kept, ...added];
+}
+
 export async function syncOpenRouterProvidersForModel(modelId, providersSelector) {
     const $providers = $(providersSelector);
 
