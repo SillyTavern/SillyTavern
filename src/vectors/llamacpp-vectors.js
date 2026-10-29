@@ -8,10 +8,11 @@ import { trimV1 } from '../util.js';
  * Gets the vector for the given text from LlamaCpp
  * @param {string[]} texts - The array of texts to get the vectors for
  * @param {string} apiUrl - The API URL
+ * @param {string} model - The model to use (required by a router-mode server, optional otherwise)
  * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
+export async function getLlamaCppBatchVector(texts, apiUrl, model, directories) {
     const url = new URL(urlJoin(trimV1(apiUrl), '/v1/embeddings'));
 
     const headers = {};
@@ -23,7 +24,7 @@ export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
             'Content-Type': 'application/json',
             ...headers,
         },
-        body: JSON.stringify({ input: texts }),
+        body: JSON.stringify({ input: texts, model: model || undefined }),
     });
 
     if (!response.ok) {
@@ -49,10 +50,11 @@ export async function getLlamaCppBatchVector(texts, apiUrl, directories) {
  * Gets the vector for the given text from LlamaCpp
  * @param {string} text - The text to get the vector for
  * @param {string} apiUrl - The API URL
+ * @param {string} model - The model to use (required by a router-mode server, optional otherwise)
  * @param {import('../users.js').UserDirectoryList} directories - The directories object for the user
  * @returns {Promise<number[]>} - The vector for the text
  */
-export async function getLlamaCppVector(text, apiUrl, directories) {
-    const vectors = await getLlamaCppBatchVector([text], apiUrl, directories);
+export async function getLlamaCppVector(text, apiUrl, model, directories) {
+    const vectors = await getLlamaCppBatchVector([text], apiUrl, model, directories);
     return vectors[0];
 }

@@ -74,7 +74,7 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
         case 'cohere':
             return getCohereVector(text, isQuery, directories, sourceSettings.model);
         case 'llamacpp':
-            return getLlamaCppVector(text, sourceSettings.apiUrl, directories);
+            return getLlamaCppVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'vllm':
             return getVllmVector(text, sourceSettings.apiUrl, sourceSettings.model, directories);
         case 'ollama':
@@ -142,7 +142,7 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 results.push(...await getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
                 break;
             case 'llamacpp':
-                results.push(...await getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
+                results.push(...await getLlamaCppBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
                 break;
             case 'vllm':
                 results.push(...await getVllmBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, directories));
@@ -207,6 +207,7 @@ function getSourceSettings(source, request) {
         case 'llamacpp':
             return {
                 apiUrl: String(request.body.apiUrl),
+                model: String(request.body.model || ''),
             };
         case 'vllm':
             return {
