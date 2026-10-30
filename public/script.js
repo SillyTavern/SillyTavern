@@ -10080,6 +10080,10 @@ export async function swipe(event, direction, { source, repeated, message = chat
                 //Update the chat.
                 await loadFromSwipeId(mesId, chat[mesId].swipe_id);
                 await redisplayChat({ startIndex: mesId });
+
+                //The restored candidate and its message element are now available.
+                //Notify listeners once, after both the data and the DOM have been restored.
+                await eventSource.emit(event_types.MESSAGE_SWIPED, mesId);
             } else {
                 await Popup.show.confirm(
                     t`ERROR: <code>syncSwipeToMes</code> has failed to revert the failed ${direction} swipe on message #${mesId}.`,
