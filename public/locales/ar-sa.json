@@ -396,7 +396,7 @@
     "Available Models": "النماذج المتاحة",
     "Prompt Post-Processing": "موجه بعد المعالجة",
     "Applies additional processing to the prompt before sending it to the API.": "يطبق معالجة إضافية على الموجه قبل إرساله إلى واجهة برمجة التطبيقات.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "تتحقق من اتصالك بواجهة برمجة التطبيقات من خلال إرسال رسالة اختبار قصيرة. كن على علم بأنك ستحصل على الفضل في ذلك!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "يتحقق من اتصال API الخاص بك عن طريق إرسال رسالة اختبار قصيرة. قد يؤدي ذلك إلى فرض رسوم استخدام.",
     "Test Message": "رسالة اختبار",
     "Auto-connect to Last Server": "الاتصال التلقائي بآخر خادم",
     "Missing key": "❌المفتاح مفقود",

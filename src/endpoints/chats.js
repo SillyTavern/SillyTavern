@@ -487,12 +487,19 @@ export async function getChatInfo(pathToFile, additionalData = {}, withMetadata 
 
                     res(chatData);
                 } else {
-                    console.warn('Found an invalid or corrupted chat file:', pathToFile);
-                    res({});
+                    // The last line is unparseable or lacks known fields (e.g. a truncated write or an external edit).
+                    // Resolve a degraded preview from the stat data instead of hiding an otherwise intact chat
+                    // from the chat list, search and recents.
+                    console.warn('Found an invalid or corrupted last line in a chat file:', pathToFile);
+                    // Exclude both the metadata line and the unreadable trailing line.
+                    chatData.chat_items = Math.max(itemCounter - 2, 0);
+                    chatData.mes = '[The message is empty]';
+                    chatData.match = hasMatcher ? hasAnyMatch : true;
+                    res(chatData);
                 }
             } else {
-                // The file was truncated after the stat reported a non-zero size
-                res({});
+                // The file was truncated after the stat reported a non-zero size; treat it like an empty chat
+                res(chatData);
             }
         });
     });

@@ -392,7 +392,7 @@
     "Available Models": "Beschikbare modellen",
     "Prompt Post-Processing": "Snelle naverwerking",
     "Applies additional processing to the prompt before sending it to the API.": "Past extra verwerking toe op de prompt voordat deze naar de API wordt verzonden.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "Verifieert uw API-verbinding door een kort testbericht te verzenden. Wees ervan bewust dat u hiervoor wordt gecrediteerd!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "Verifieert uw API-verbinding door een kort testbericht te verzenden. Hiervoor kunnen gebruikskosten in rekening worden gebracht.",
     "Test Message": "Testbericht",
     "Auto-connect to Last Server": "Automatisch verbinden met de laatste server",
     "Missing key": "❌ Ontbrekende sleutel",

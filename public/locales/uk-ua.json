@@ -394,7 +394,7 @@
     "Available Models": "Доступні моделі",
     "Prompt Post-Processing": "Швидка постобробка",
     "Applies additional processing to the prompt before sending it to the API.": "Застосовує додаткову обробку запиту перед надсиланням його в API.",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "Підтверджує ваше підключення до API, надсилаючи коротке тестове повідомлення. Пам'ятайте, що ви будете платити за це!",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "Перевіряє підключення до API, надсилаючи коротке тестове повідомлення. За це може стягуватися плата за використання.",
     "Test Message": "Тестове повідомлення",
     "Auto-connect to Last Server": "Автоматичне підключення до останнього сервера",
     "Missing key": "❌ Відсутній ключ",
