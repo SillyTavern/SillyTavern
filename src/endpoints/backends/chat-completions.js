@@ -2772,7 +2772,7 @@ multimodalModels.post('/aimlapi', async (_req, res) => {
             return res.json([]);
         }
 
-        const multimodalModels = data.data.filter(m => m?.capabilities?.includes('vision')).map(m => m.id);
+        const multimodalModels = data.data.filter(m => m?.type === 'openai/chat-completions' && m?.capabilities?.includes('vision')).map(m => m.id);
         return res.json(multimodalModels);
     } catch (error) {
         console.error(error);
