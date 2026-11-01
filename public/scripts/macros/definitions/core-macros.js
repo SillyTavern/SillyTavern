@@ -204,7 +204,9 @@ export function registerCoreMacros() {
 
             // Resolve nested macros in the chosen branch
             // Trim result unless # flag is set (preserveWhitespace)
-            let result = resolve(chosenBranch);
+            // keep the whitespace markers until after the trim, so that explicit {{newline}}, {{space}}
+            // and {{noop}} output stays in the branch.
+            let result = resolve(chosenBranch, { keepWhitespaceMarkers: true });
             if (!flags.preserveWhitespace) {
                 result = trimContent(result);
             }

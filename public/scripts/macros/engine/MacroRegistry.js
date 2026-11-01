@@ -121,10 +121,12 @@ export const MacroValueType = Object.freeze({
  *           seeding (e.g., in {{pick}}) to ensure identical macros at different positions produce different results.
  * @property {(value: any) => string} normalize - Normalize function to use on unsure macro results to make sure they return strings as expected.
  * @property {(content: string, options?: { trimIndent?: boolean }) => string} trimContent - Trims scoped content with optional indentation dedent. Defaults to trimming indentation.
- * @property {(text: string, options?: { offsetDelta?: number }) => string} resolve - Evaluates macros in the given text using the same environment.
+ * @property {(text: string, options?: { offsetDelta?: number, keepWhitespaceMarkers?: boolean }) => string} resolve - Evaluates macros in the given text using the same environment.
  *           Use when delayArgResolution is true. By default, preserves the caller's globalOffset so nested
  *           macros like {{pick}} maintain deterministic position-based behavior. Pass offsetDelta to add
  *           an additional offset for uniqueness (e.g., to differentiate between multiple resolve calls).
+ *           keepWhitespaceMarkers returns the result with whitespace markers. Use it only when the
+ *           handler returns that result, because the evaluation around the macro removes them.
  * @property {(message: string, error?: any) => void} warn - Logs a runtime warning with automatic macro call context.
  *           Use this to report issues in how the macro was invoked (e.g., invalid argument values, edge cases).
  */
@@ -450,8 +452,10 @@ class MacroRegistry {
             globalOffset: call.globalOffset,
             normalize: MacroEngine.normalizeMacroResult.bind(MacroEngine),
             trimContent: MacroEngine.trimScopedContent.bind(MacroEngine),
-            resolve: (text, { offsetDelta = 0 } = {}) => MacroEngine.evaluate(text, call.env, {
+            resolve: (text, { offsetDelta = 0, keepWhitespaceMarkers = false } = {}) => MacroEngine.evaluate(text, call.env, {
                 contextOffset: call.globalOffset + offsetDelta,
+                // {{if}} trims the resolved branch before the markers are removed.
+                keepWhitespaceMarkers,
             }),
             warn: (message, error = undefined) => logMacroRuntimeWarning({ message, call, def, error }),
         };

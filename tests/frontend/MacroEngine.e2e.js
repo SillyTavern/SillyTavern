@@ -4,6 +4,80 @@ import { testSetup } from './frontent-test-utils.js';
 test.describe('MacroEngine', () => {
     test.beforeEach(testSetup.awaitST);
 
+    test.describe('Whitespace regressions (#5673, #5674)', () => {
+
+        test('stored variables never contain protection artifacts via named macros', async ({ page }) => {
+            await evaluateWithEngine(page, '{{setvar::x::{{newline}}}}');
+            expect(await evaluateWithEngine(page, '{{getvar::x}}')).toBe('\n');
+            await evaluateWithEngine(page, '{{setvar::y::a{{noop}}b}}');
+            expect(await evaluateWithEngine(page, '{{getvar::y}}')).toBe('ab');
+        });
+
+        test('sentinel-free corpus sweep', async ({ page }) => {
+            for (const name of ['newline', 'space', 'noop', 'char', 'user', 'model', 'time', 'date']) {
+                expect(await evaluateWithEngine(page, `x{{${name}}}y`)).not.toContain('\uFDD0');
+            }
+        });
+
+        test('comparison operands unaffected by protection', async ({ page }) => {
+            // the == operator is a variable-shorthand operator, not an {{if}} argument
+            const output = await evaluateWithEngine(page, '{{setvar::a:: 5 }}{{.a == 5}}');
+            expect(output).toBe('true');
+        });
+
+        test('comparison result usable in {{if}}', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{setvar::c:: 5 }}{{if {{.c == 5}} }}Y{{else}}N{{/if}}');
+            expect(output).toBe('Y');
+        });
+
+        test('depth restore after error', async ({ page }) => {
+            await evaluateWithEngine(page, '{{if 1}}{{nonexistentmacrowithargs::x::y::z}}{{/if}}');
+            const output = await evaluateWithEngine(page, 'a {{newline}} b');
+            expect(output).toBe('a \n b');
+            expect(output).not.toContain('\uFDD0');
+        });
+        test('{{noop}} prevents newline trimming around {{trim}}', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo\n{{noop}}{{trim}}\nbar');
+            expect(output).toBe('foo\nbar');
+        });
+
+        test('{{noop}} preserves the space in variable shorthand assignment values', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{.myvar = foo}}{{.myvar += {{noop}} bar}}{{.myvar}}');
+            expect(output).toBe('foo bar');
+        });
+
+        test('{{newline}} works inside {{if}} branches', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo{{if 1}}{{newline}}{{/if}}bar');
+            expect(output).toBe('foo\nbar');
+        });
+
+        test('literal author whitespace is still trimmed in assignment values', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{.myvar = x }}{{.myvar}}');
+            expect(output).toBe('x');
+        });
+
+        test('literal author whitespace is still trimmed in {{if}} branches', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo{{if 1}} hi {{/if}}bar');
+            expect(output).toBe('foohibar');
+        });
+
+        test('{{trim}} without {{noop}} still eats surrounding newlines', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo\n{{trim}}\nbar');
+            expect(output).toBe('foobar');
+        });
+
+        test('the # (preserveWhitespace) flag keeps working', async ({ page }) => {
+            const output = await evaluateWithEngine(page, 'foo{{#if 1}}{{newline}}{{/if}}bar');
+            expect(output).toBe('foo\nbar');
+        });
+
+        test('macro results stored in variables contain no protection artifacts', async ({ page }) => {
+            const output = await evaluateWithEngine(page, '{{.myvar = a{{newline}}b}}{{.myvar}}');
+            expect(output).toBe('a\nb');
+            expect(output).not.toContain('\uFDD0');
+        });
+    });
+
     test.describe('Basic evaluation', () => {
         test('should return input unchanged when there are no macros', async ({ page }) => {
             const input = 'Hello world, no macros here.';
