@@ -108,14 +108,19 @@
             "whatwg-url": "^14.0.0"
         }
     },
-    "name": "sillytavern",
+    "name": "easiertavern",
+    "description": "A beginner-friendly AI storytelling interface built as a SillyTavern fork.",
     "type": "module",
     "license": "AGPL-3.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/SillyTavern/SillyTavern.git"
+        "url": "https://github.com/YusufErenGoc/EasierTavern.git"
     },
-    "version": "1.19.0",
+    "homepage": "https://github.com/YusufErenGoc/EasierTavern#readme",
+    "bugs": {
+        "url": "https://github.com/YusufErenGoc/EasierTavern/issues"
+    },
+    "version": "1.0",
     "scripts": {
         "init": "node src/server-init.js",
         "start": "node server.js",

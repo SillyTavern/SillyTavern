@@ -1,4 +1,4 @@
-name: Feature Request ✨
+name: EasierTavern Feature Request ✨
 type: Feature
 description: Suggest an idea for future development of this project. Please use English only.
 title: '[FEATURE_REQUEST] <title>'
@@ -68,12 +68,12 @@ body:
     validations:
       required: true
 
-  # Field 7 - Can the user user test in staging
+  # Field 7 - Can the user test a development build?
   - type: dropdown
     id: canTestStaging
     attributes:
-      label: Are you willing to test this on staging/unstable branch if this is implemented?
-      description: Otherwise you'll need to wait until the next stable release after the feature is developed.
+      label: Are you willing to test a development build if this is implemented?
+      description: Testing feedback helps maintain compatibility with both simplified and advanced modes.
       options:
         - 'No'
         - 'Maybe'

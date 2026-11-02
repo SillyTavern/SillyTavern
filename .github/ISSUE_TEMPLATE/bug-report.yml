@@ -1,6 +1,6 @@
-name: Bug Report 🐛
+name: EasierTavern Bug Report 🐛
 type: Bug
-description: Report something that's not working the intended way. Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused! Please use English only.
+description: Report a reproducible EasierTavern problem. Please use English and remove personal data and secrets.
 title: '[BUG] <title>'
 labels: ['🐛 Bug']
 body:
@@ -8,7 +8,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Where are you running SillyTavern?
+      description: Where are you running EasierTavern?
       options:
         - 🪟 Windows
         - 🐧 Linux
@@ -32,9 +32,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version
-      description: What version of SillyTavern are you running?
-      placeholder: (check User Settings to see the version)
+      label: Revision
+      description: Which EasierTavern revision are you running?
+      placeholder: Paste the Git commit hash from `git rev-parse --short HEAD`
     validations:
       required: true
 
@@ -46,7 +46,7 @@ body:
       placeholder: |
         - Node.js version (if applicable): [run `node --version` in cmd]
         - Generation API [e.g. KoboldAI, OpenAI]
-        - Branch [staging, release]
+        - Branch
         - Model [e.g. Pygmalion 6b, LLaMa 13b]
     validations:
       required: false
@@ -77,17 +77,19 @@ body:
       options:
         - label: I have explained the issue clearly, and I included all relevant info
           required: true
-        - label: I have checked that this [issue hasn't already been raised](https://github.com/SillyTavern/SillyTavern/issues?q=is%3Aissue)
+        - label: I have checked that this [issue hasn't already been raised](https://github.com/YusufErenGoc/EasierTavern/issues?q=is%3Aissue)
           required: true
-        - label: I have checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
+        - label: I have read the [EasierTavern README](https://github.com/YusufErenGoc/EasierTavern/blob/release/README.md) and relevant [upstream documentation](https://docs.sillytavern.app/)
           required: true
-        - label: I confirm that my issue is not related to third-party content, unofficial extension or patch. If in doubt, check with a new [user account](https://docs.sillytavern.app/administration/multi-user/) and with extensions disabled
+        - label: I reproduced the issue with third-party extensions disabled, or clearly identified any extension involved
+          required: true
+        - label: I stated whether the problem occurs in simplified mode, advanced mode, or both
           required: true
 
   - type: markdown
     attributes:
       value: |-
         ## Thanks 🙏
-        Thank you for raising this ticket - in doing so you are helping to make SillyTavern better for everyone.
+        Thank you for helping improve EasierTavern. If the problem also occurs in unmodified SillyTavern, please say so explicitly.
     validations:
       required: false

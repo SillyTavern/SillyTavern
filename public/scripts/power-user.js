@@ -331,7 +331,7 @@ export const power_user = {
     reduced_motion: false,
     compact_input_area: true,
     show_swipe_num_all_messages: false,
-    auto_connect: false,
+    auto_connect: true,
     auto_load_chat: false,
     forbid_external_media: true,
     external_media_allowed_overrides: [],

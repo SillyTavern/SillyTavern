@@ -16,8 +16,8 @@ labels:
           🏆 This issue has been marked as a good first issue for contributors to implement!
           This is a great way to support the project. While also improving your skills, you'll also be credited as a contributor once your PR is merged.
 
-          If you're new to SillyTavern [here is the official documentation](https://docs.sillytavern.app/). The official contribution guide can be found [here](https://github.com/SillyTavern/SillyTavern/blob/release/CONTRIBUTING.md).
-          If you need any support, feel free to reach out via [Discord](https://discord.gg/sillytavern), or let us know in this issue or via [discussions](https://github.com/SillyTavern/SillyTavern/discussions).
+          If you're new to EasierTavern, read the [project README](https://github.com/YusufErenGoc/EasierTavern/blob/release/README.md) and [contribution guide](https://github.com/YusufErenGoc/EasierTavern/blob/release/CONTRIBUTING.md).
+          If you need help, ask in this issue and state whether the problem also occurs in unmodified SillyTavern.
 
   - name: ❌ wontfix
     labeled:
@@ -34,16 +34,6 @@ labels:
         body: >
           🛑 This issue has been marked as 'out of scope', as this can't or won't be implemented.
           If you have any questions about this, feel free to reach out.
-
-  - name: ✅ Done (staging)
-    labeled:
-      issue:
-        body: >
-          ✅ It looks like all or part of this issue has now been implemented as part of the `staging` branch.
-          If you currently are on the `release` branch, you can switch to `staging` to test this right away.
-
-          Note that `staging` is considered less stable than the official releases. To switch, follow existing instructions,
-          or simply enter the following command: `git switch staging`
 
   - name: ✅ Done
     labeled:

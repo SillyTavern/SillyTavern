@@ -8037,9 +8037,13 @@ export async function getSettings(initLoaderHandle = null) {
         firstRun = !!settings.firstRun;
 
         if (firstRun) {
-            await initLoaderHandle?.hide();
-            await doOnboarding(user_avatar);
+            const startsInMinimalMode = accountStorage.getItem('EasierTavern_InterfaceMode') !== 'advanced';
+            if (!startsInMinimalMode) {
+                await initLoaderHandle?.hide();
+                await doOnboarding(user_avatar);
+            }
             firstRun = false;
+            saveSettingsDebounced();
         }
     }
     await validateDisabledSamplers();

@@ -218,7 +218,25 @@ app.get('/', cacheBuster.middleware, (request, response) => {
         return response.redirect(redirectUrl);
     }
 
-    return response.sendFile('index.html', { root: path.join(serverDirectory, 'public') });
+    return response.sendFile('advanced.html', { root: path.join(serverDirectory, 'public') });
+});
+
+app.get('/index.html', cacheBuster.middleware, (request, response) => {
+    const query = request.url.split('?')[1];
+    return response.redirect(query ? `/?${query}` : '/');
+});
+
+// Keep legacy bookmarks working while both interfaces share one runtime document.
+app.get('/advanced.html', cacheBuster.middleware, (request, response) => {
+    if (shouldRedirectToLogin(request)) {
+        const query = request.url.split('?')[1];
+        const redirectUrl = query ? `/login?${query}` : '/login';
+        return response.redirect(redirectUrl);
+    }
+
+    const query = new URLSearchParams(request.query);
+    query.set('ui', 'advanced');
+    return response.redirect(`/?${query.toString()}`);
 });
 
 // Callback endpoint for OAuth PKCE flows (e.g. OpenRouter)

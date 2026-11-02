@@ -1,85 +1,53 @@
-# How to contribute to SillyTavern
+# Contributing to EasierTavern
 
-## Setting up the dev environment
+Thank you for helping improve EasierTavern. This repository is an independent fork of [SillyTavern](https://github.com/SillyTavern/SillyTavern), so contributions should clearly distinguish fork-specific work from changes that belong upstream.
 
-1. Required software: git and node.
-2. Recommended editor: Visual Studio Code.
-3. You can also use GitHub Codespaces which sets up everything for you.
+## Where should a change go?
 
-## Getting the code ready
+Open an EasierTavern issue or pull request when the change concerns the simplified interface or compatibility between the simplified and advanced interfaces.
 
-1. Register a GitHub account.
-2. Fork this repository under your account.
-3. Clone the fork onto your machine.
-4. Open the cloned repository in the code editor.
-5. Create a git branch (recommended), review the [git book](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control) if you haven't.
-6. Make your changes and test them locally.
-7. Commit the changes and push the branch to the remote repo.
-8. Go to GitHub, and open a pull request, targeting the appropriate upstream branch.
+If a bug is reproducible in an unmodified SillyTavern installation, or a feature would benefit SillyTavern generally, consider contributing it to the upstream project first. Follow the upstream project's own contribution rules when doing so. Do not cross-post the same issue to both projects without explaining why.
 
-## Contribution guidelines
+## Before opening an issue
 
-### Maintain code quality
+- Search [existing EasierTavern issues](https://github.com/YusufErenGoc/EasierTavern/issues).
+- Update to the latest revision and reproduce the problem again.
+- Check whether it occurs in simplified mode, advanced mode, or both.
+- Disable third-party extensions when they may be involved.
+- Remove API keys, personal chat content, and other secrets from logs and screenshots.
 
-Our standards are pretty low, but make sure the code is not too ugly:
+## Development setup
 
-- Run VS Code's autoformat when you're done.
-- Check with ESLint by running `npm run lint`, then fix the errors.
-- Use common sense and follow existing naming conventions.
+1. Install Git and Node.js 20 or newer.
+2. Fork and clone this repository.
+3. Install all development dependencies with `npm install`.
+4. Create a focused branch for your change.
+5. Make the change and add or update tests where practical.
+6. Run the relevant checks before submitting:
 
-### Use the correct target branch
+   ```bash
+   npm run lint
+   npx playwright test tests/simple-ui.e2e.js
+   ```
 
-Create pull requests for the `staging` branch, 99% of contributions should go there. That way people could test your code before the next stable release.
+The Playwright test requires a compatible browser. Set `PLAYWRIGHT_EXECUTABLE_PATH` if the browser is installed in a non-default location.
 
-You can still send a pull request for `release` in the following scenarios:
+## Pull-request guidelines
 
-- Updating README.
-- Updating GitHub Actions.
-- Hotfixing a critical bug.
+- Target the repository's default branch unless a maintainer requests another branch.
+- Keep each pull request focused and explain the reason for the change, the implementation, and how it was tested.
+- Preserve compatibility with the canonical SillyTavern runtime and data formats.
+- Test both simplified and advanced modes when changing shared behavior.
+- Do not commit user data, generated backups, secrets, logs, `node_modules`, or third-party extension data.
+- Keep user-facing English copy and Turkish translations in sync when applicable.
+- Avoid unrelated formatting or generated-file changes that make upstream synchronization harder.
 
-Project maintainers will test and can change your code before merging. To keep our workflow smooth, please ensure the following:
+English is the primary language for code, commit messages, pull requests, and issue discussions. Localization files may use their target language.
 
-- The "Allow edits from maintainers" option is checked.
-- Avoid force-pushing your branch once the PR is out of draft state.
+## Keeping the fork maintainable
 
-### Make contributions small and testable
+EasierTavern periodically incorporates upstream SillyTavern changes. Fork-specific code should remain isolated where possible, and changes to upstream files should be minimal and documented. If a change intentionally diverges from upstream behavior, state that explicitly in the pull request.
 
-To make sure that your contribution remains testable and reviewable, try not to exceed a soft limit of **200 lines of code** (both additions and deletions) per pull request. If you have more to contribute, split it into multiple pull requests.
+## License
 
-We can also consider creating a separate feature branch for more substantial changes, but please discuss it with the maintainers first. For example:
-
-- Leave the main larger PR as a draft so it can be used to discuss the implementation.
-- Split each group of functions or features into a ~200 line PR so it can be properly reviewed and merged to staging or a feature branch.
-- If there are large codependent changes that cannot be split, start with the most utilized dependencies and stub dependent functions.
-- Each will be reviewed and tested one by one, merging into the feature branch as they're ready.
-- Do not create all branches in advance, as subsequent changes made in previous commits as a result of test/review may create a lot of merge conflicts.
-
-### Provide clear descriptions of your changes
-
-Write at least somewhat meaningful PR descriptions and commit messages. There's no "right" way to do it, but the following may help with outlining a general structure:
-
-- What is the reason for a change?
-- What did you do to achieve this?
-- How would a reviewer test the change?
-
-### We (likely) don't speak your language
-
-English is the primary language of communication in this project. Please use only English when writing commit messages, PR descriptions, comments and other text. This does not apply to contributions to localization files.
-
-### Legal stuff
-
-Mind the license. Your contributions will be licensed under the GNU Affero General Public License. If you don't know what that implies, consult your lawyer.
-
-## Use of AI coding assistance tools ("Vibe Coding")
-
-We do not prohibit nor encourage the use of AI tools for coding assistance to help you write code, documentation, etc. This includes specialized IDEs, plugins and add-ons, chat interfaces, etc. However, please keep in mind the following:
-
-- No matter who (or what) wrote the code, you are responsible for it. Make sure to carefully review and test everything before committing, and be ready to discuss and fix any issues that may arise during the review.
-- Maintainers can reject reviewing and accepting PRs of very low quality, i.e. if the time to fix the issues exceeds the time to write the code from scratch.
-- Avoid common mistakes attributed to AI tools, such as: adding/removing unrelated comments, excessive logging, unawareness of the project context and conventions, etc.
-- You are allowed, but not required, to trigger AI tools that are added to the project by maintainers (Gemini, Copilot, Codex). Keep in mind that any feedback (comments, suggestions) that these tools generate is not a call to action; make sure to properly assess it before applying.
-
-## Further reading
-
-1. [How to write UI extensions](https://docs.sillytavern.app/for-contributors/writing-extensions/)
-2. [How to write server plugins](https://docs.sillytavern.app/for-contributors/server-plugins)
+By contributing, you agree that your contribution will be licensed under the [GNU Affero General Public License v3.0](LICENSE). You are responsible for ensuring that you have the right to submit the code and assets you contribute.

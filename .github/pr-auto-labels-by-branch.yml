@@ -1,10 +1,4 @@
 ####################################
-# Label PRs against 'release'      #
-####################################
-❗ Against Release Branch:
-- base-branch: 'release'
-
-####################################
 # Labels based on PR branch name   #
 ####################################
 🦋 Bug Fix:

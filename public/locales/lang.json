@@ -62,5 +62,9 @@
     {
         "lang": "th-th",
         "display": "ไทย (Thai)"
+    },
+    {
+        "lang": "tr-tr",
+        "display": "Türkçe (Turkish)"
     }
 ]

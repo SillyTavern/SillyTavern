@@ -1,25 +1,31 @@
 # Security Policy
 
-We take the security of this project seriously. If you discover any security vulnerabilities or have concerns regarding the security of this repository, please reach out to us immediately. We appreciate your efforts in responsibly disclosing the issue and will make every effort to address it promptly.
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Please do not disclose suspected vulnerabilities in a public issue, discussion, pull request, screenshot, or chat log.
 
-To report a security vulnerability, please follow these steps:
+Use GitHub's private vulnerability reporting flow for [YusufErenGoc/EasierTavern](https://github.com/YusufErenGoc/EasierTavern/security). Open the repository's **Security** tab, select **Advisories**, and choose **Report a vulnerability**. Include:
 
-1. Go to the **Security** tab of this repository on GitHub.
-2. Click on **"Report a vulnerability"**.
-3. Provide a clear description of the vulnerability and its potential impact. Be as detailed as possible.
-4. If applicable, include steps or a PoC (Proof of Concept) to reproduce the vulnerability.
-5. Submit the report.
+- the affected revision or version;
+- whether the issue occurs in simplified mode, advanced mode, or both;
+- clear reproduction steps and expected impact;
+- a minimal proof of concept, if appropriate; and
+- any known mitigations.
 
-Once we receive the private report notification, we will promptly investigate and assess the reported vulnerability.
+Remove real API keys, personal conversations, and unrelated user data from the report. If GitHub private reporting is unavailable, contact the repository owner privately through the contact method shown on their GitHub profile and provide only enough public information to establish a secure reporting channel.
 
-Please do not disclose any potential vulnerabilities in public repositories, issue trackers, or forums until we have had a chance to review and address the issue.
+## Fork and upstream scope
 
-## Scope
+EasierTavern-specific vulnerabilities include problems in the simplified interface, its bridge to the SillyTavern runtime, Turkish localization behavior, and fork-provided launch scripts.
 
-This security policy applies to all the code and files within this repository and its dependencies actively maintained by us. If you encounter a security issue in a dependency that is not directly maintained by us, please follow responsible disclosure practices and report it to the respective project.
+If the same vulnerability is present in an unmodified SillyTavern installation, also use the [SillyTavern security reporting process](https://github.com/SillyTavern/SillyTavern/security). Tell both maintainers that the report affects upstream and fork code so disclosure and remediation can be coordinated. Do not publish the vulnerability while either project is investigating it.
 
-While we strive to ensure the security of this project, please note that there may be limitations on resources, response times, and mitigations.
+Security issues in AI providers, local inference backends, extensions, browsers, Node.js, or other dependencies should also be reported to the responsible project or vendor.
 
-Thank you for your help in making this project more secure.
+## Supported versions
+
+This community fork does not promise long-term support for older revisions. Security fixes are applied to the current default branch when resources permit. Before reporting a problem, confirm it still exists in the latest revision without third-party extensions.
+
+## Deployment guidance
+
+EasierTavern is designed primarily for trusted, local use. Do not expose it directly to the public internet without understanding and configuring authentication, network access controls, TLS, reverse-proxy behavior, and the security implications of installed extensions. Keep Node.js and dependencies updated, protect the `data` directory, and never commit secrets or user content.
