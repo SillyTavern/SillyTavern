@@ -5,7 +5,7 @@ import { Buffer } from 'node:buffer';
 import express from 'express';
 import sanitize from 'sanitize-filename';
 
-import { clientRelativePath, removeFileExtension, getImages, isPathUnderParent } from '../util.js';
+import { clientRelativeUrl, removeFileExtension, getImages, isPathUnderParent } from '../util.js';
 import { MEDIA_EXTENSIONS, MEDIA_REQUEST_TYPE } from '../constants.js';
 
 /**
@@ -70,7 +70,7 @@ router.post('/upload', async (request, response) => {
         ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(image, 'base64');
         await fs.promises.writeFile(pathToNewFile, new Uint8Array(imageBuffer));
-        response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
+        response.send({ path: clientRelativeUrl(request.user.directories.root, pathToNewFile) });
     } catch (error) {
         console.error(error);
         response.status(500).send({ error: 'Failed to save the image' });
@@ -136,7 +136,16 @@ router.post('/delete', async (request, response) => {
             return response.status(400).send('No path specified');
         }
 
-        const pathToDelete = path.join(request.user.directories.root, request.body.path);
+        let pathToDelete = path.join(request.user.directories.root, request.body.path);
+        if (!fs.existsSync(pathToDelete)) {
+            // Uploaded paths are URL-encoded, older ones are stored as-is
+            try {
+                pathToDelete = path.join(request.user.directories.root, decodeURIComponent(request.body.path));
+            } catch {
+                // Not a valid encoded path, keep the original one
+            }
+        }
+
         if (!isPathUnderParent(request.user.directories.userImages, pathToDelete)) {
             return response.status(400).send('Invalid path');
         }

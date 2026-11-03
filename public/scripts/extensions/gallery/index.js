@@ -130,8 +130,8 @@ async function getGalleryItems(url) {
 
     for (const file of data) {
         const item = {
-            src: `user/images/${url}/${file}`,
-            srct: `user/images/${url}/${file}`,
+            src: `user/images/${encodeURIComponent(url)}/${encodeURIComponent(file)}`,
+            srct: `user/images/${encodeURIComponent(url)}/${encodeURIComponent(file)}`,
             title: '', // Optional title for each item
         };
 
@@ -244,7 +244,7 @@ async function initGallery(items, url) {
         fnThumbnailOpen: viewWithDragbox,
         fnThumbnailInit: function (/** @type {JQuery<HTMLElement>} */ $thumbnail, /** @type {{src: string}} */ item) {
             if (!item?.src) return;
-            $thumbnail.attr('title', String(item.src).split('/').pop());
+            $thumbnail.attr('title', decodeURIComponent(String(item.src).split('/').pop()));
         },
     });
 

@@ -9,6 +9,7 @@ import {
     humanizedDateTime,
     tryParse,
     clientRelativePath,
+    clientRelativeUrl,
     getUniqueName,
     removeFileExtension,
     removeColorFormatting,
@@ -177,6 +178,16 @@ describe('clientRelativePath', () => {
 
     test('should throw if path does not start with root', () => {
         expect(() => clientRelativePath('/data/user', '/other/path')).toThrow();
+    });
+});
+
+describe('clientRelativeUrl', () => {
+    test('should encode # and ?', () => {
+        expect(clientRelativeUrl('/data/user', '/data/user/images/Chatbot #T4LK1-e/pic?1.png')).toBe('/images/Chatbot %23T4LK1-e/pic%3F1.png');
+    });
+
+    test('should keep other characters unchanged', () => {
+        expect(clientRelativeUrl('/data/user', '/data/user/images/Café chat/pic 1.png')).toBe('/images/Café chat/pic 1.png');
     });
 });
 

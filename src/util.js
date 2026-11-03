@@ -592,6 +592,17 @@ export function clientRelativePath(root, inputPath) {
 }
 
 /**
+ * Same as `clientRelativePath`, but encodes `#` and `?`, so that names containing them
+ * can be used as a URL without being cut into a fragment or a query string.
+ * @param {string} root The root directory of the user data folder.
+ * @param {string} inputPath The path to be converted.
+ * @returns {string} The relative URL path from which the client can access the file.
+ */
+export function clientRelativeUrl(root, inputPath) {
+    return clientRelativePath(root, inputPath).replace(/[#?]/g, encodeURIComponent);
+}
+
+/**
  * Returns a name that is unique among the names that exist.
  * @param {string} baseName The name to check.
  * @param {{ (name: string): boolean; }} exists Function to check if name exists.
