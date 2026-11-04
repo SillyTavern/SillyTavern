@@ -1120,15 +1120,21 @@ router.post('/edit', validateAvatarUrlMiddleware, async function (request, respo
     try {
         if (!request.file) {
             const avatarPath = path.join(request.user.directories.characters, request.body.avatar_url);
-            await writeCharacterData(avatarPath, char, targetFile, request);
+            const result = await writeCharacterData(avatarPath, char, targetFile, request);
+            if (!result) {
+                return response.sendStatus(500);
+            }
         } else {
             const crop = tryParse(request.query.crop);
             const newAvatarPath = path.join(request.file.destination, request.file.filename);
-            invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
-            await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
+            const result = await writeCharacterData(newAvatarPath, char, targetFile, request, crop);
             fs.unlinkSync(newAvatarPath);
+            if (!result) {
+                return response.sendStatus(500);
+            }
 
             // Bust cache to reload the new avatar
+            invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
             cacheBuster.bust(request, response);
         }
 
