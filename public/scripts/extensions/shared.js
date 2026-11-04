@@ -90,6 +90,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     if (isLlamaCpp) {
+        if (extension_settings.caption.multimodal_model === 'llamacpp_current') {
+            requestBody.model = textgenerationwebui_settings.llamacpp_model;
+        }
+
         requestBody.server_url = extension_settings.caption.alt_endpoint_enabled
             ? extension_settings.caption.alt_endpoint_url
             : textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
