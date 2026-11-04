@@ -2570,10 +2570,10 @@ export function addOneMessage(mes, { type = undefined, insertAfter = null, scrol
     let messageElement;
 
     if (type === 'swipe') {
-        // Forbidden black magic
-        // This allows to use "continue" on user messages
-        mes.swipe_id ??= 0;
-        mes.swipes ??= [mes.mes];
+        if (!mes.is_user) {
+            mes.swipe_id ??= 0;
+            mes.swipes ??= [mes.mes];
+        }
         //This keeps listeners intact.
         messageElement = chatElement.find(`[mesid="${messageId}"]`);
         updateMessageElement(mes, { messageId, messageElement, adjustMediaScroll: scroll ? SCROLL_BEHAVIOR.ADJUST : SCROLL_BEHAVIOR.NONE });
@@ -3660,6 +3660,7 @@ class StreamingProcessor {
             getMessage: text,
             isImpersonate: isImpersonate,
             isContinue: isContinue,
+            continueFrom: this.continueMessage.length,
             displayIncompleteSentences: !isFinal,
             stoppingStrings: this.stoppingStrings,
         });
@@ -5517,6 +5518,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             getMessage: getMessage,
             isImpersonate: isImpersonate,
             isContinue: isContinue,
+            continueFrom: isContinue ? continue_mag.length : 0,
             displayIncompleteSentences: displayIncomplete,
         });
 
@@ -6431,6 +6433,7 @@ function extractMultiSwipes(data, type) {
  * @param {string} [options.getMessage] The message to clean up
  * @param {boolean} [options.isImpersonate] Whether this is an impersonated message
  * @param {boolean} [options.isContinue] Whether this is a continued message
+ * @param {number} [options.continueFrom=0] Start of generated text when cleaning a full continued message
  * @param {boolean} [options.displayIncompleteSentences] Whether to keep incomplete sentences at the end.
  * @param {array} [options.stoppingStrings] Array of stopping strings.
  * @param {boolean} [options.includeUserPromptBias] Whether to permit prepending the user prompt bias at the beginning.
@@ -6439,7 +6442,7 @@ function extractMultiSwipes(data, type) {
  *
  * @returns {string} The formatted message
  */
-export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayIncompleteSentences = false, stoppingStrings = null, includeUserPromptBias = true, trimNames = true, trimWrongNames = true } = {}) {
+export function cleanUpMessage({ getMessage, isImpersonate, isContinue, continueFrom = 0, displayIncompleteSentences = false, stoppingStrings = null, includeUserPromptBias = true, trimNames = true, trimWrongNames = true } = {}) {
     if (arguments.length > 0 && typeof arguments[0] !== 'object') {
         console.trace('cleanUpMessage called with positional arguments. Please use an object instead.');
         [getMessage, isImpersonate, isContinue, displayIncompleteSentences, stoppingStrings, includeUserPromptBias, trimNames, trimWrongNames] = arguments;
@@ -6466,9 +6469,20 @@ export function cleanUpMessage({ getMessage, isImpersonate, isContinue, displayI
         stoppingStrings = getStoppingStrings(isImpersonate, isContinue, main_api);
     }
 
+    const isUserContinuation = isContinue && chat[chat.length - 1]?.is_user;
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
-            for (let j = stoppingString.length; j > 0; j--) {
+            if (isUserContinuation) {
+                // A backend may ignore stops. Keep the next speaker out of the user's message.
+                const stopIndex = getMessage.indexOf(stoppingString, continueFrom);
+                if (stopIndex >= 0) {
+                    getMessage = getMessage.slice(0, stopIndex);
+                }
+            }
+            const maxStopLength = isUserContinuation
+                ? Math.min(stoppingString.length, getMessage.length - continueFrom)
+                : stoppingString.length;
+            for (let j = maxStopLength; j > 0; j--) {
                 if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
                     getMessage = getMessage.slice(0, -j);
                     break;
@@ -6784,6 +6798,10 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
     }
 
     const item = chat[chat.length - 1];
+    statMesProcess(item, type, characters, this_chid, oldMessage);
+    if (item.is_user) {
+        return { type, getMessage };
+    }
     if (item.swipe_info === undefined) {
         item.swipe_info = [];
     }
@@ -6825,7 +6843,6 @@ export async function saveReply({ type, getMessage, fromStreaming = false, title
         item.swipe_info.push(...swipeInfoArray);
     }
 
-    statMesProcess(item, type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }
 
