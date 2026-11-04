@@ -11,7 +11,7 @@ export const testSetup = {
     },
 
     /**
-     * Waits for SillyTavern to fully load by navigating to the home page and waiting for the preloader to disappear.
+     * Navigates to the home page and waits for application initialization and APP_READY listeners to finish.
      * @param {Object} params
      * @param {import('@playwright/test').Page} params.page
      */
@@ -36,7 +36,10 @@ export const testSetup = {
                 throw new Error('Could not log into any account without a password.');
             }
         }
-        await page.waitForFunction('document.getElementById("preloader") === null', { timeout: 0 });
+        await page.waitForFunction(() => {
+            const context = window.SillyTavern?.getContext();
+            return context?.eventSource.autoFireLastArgs.has(context.eventTypes.APP_READY);
+        });
     },
 
     /**
