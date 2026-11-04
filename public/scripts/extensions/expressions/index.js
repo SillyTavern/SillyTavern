@@ -176,7 +176,7 @@ async function visualNovelRemoveInactive(container) {
             const element = $(current);
             const avatar = element.data('avatar');
 
-            if (!group.members.includes(avatar) || group.disabled_members.includes(avatar)) {
+            if (!group.members.includes(avatar) || (group.disabled_members.includes(avatar) && hideMutedSprites)) {
                 element.fadeOut(250, () => {
                     element.remove();
                     resolve();
