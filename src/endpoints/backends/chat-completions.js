@@ -2503,11 +2503,20 @@ router.post('/generate', async function (request, response) {
             }
 
             const isClaude = /(?:^|\/)claude[-_]/.test(request.body.model);
-            if (enableSystemPromptCache && isClaude) {
+            const useCacheDepth = cachingAtDepth !== -1 && Array.isArray(request.body.messages);
+            if (isClaude && (enableSystemPromptCache || useCacheDepth)) {
                 bodyParams['cache_control'] = {
                     'enabled': true,
                     'ttl': cacheTTL,
                 };
+                if (useCacheDepth) {
+                    if (enableSystemPromptCache) {
+                        cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
+                    }
+                    cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+                    // Prevent NanoGPT from adding automatic breakpoints past the selected depth.
+                    bodyParams['cache_control'].explicitCacheControl = true;
+                }
             }
         } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.POLLINATIONS) {
             const isAnonymous = request.body.pollinations_endpoint === POLLINATIONS_ENDPOINT.ANONYMOUS;
