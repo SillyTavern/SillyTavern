@@ -1013,6 +1013,7 @@ export function setWorldInfoSettings(settings, data) {
     eventSource.on(event_types.CHAT_CHANGED, async () => {
         const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
         $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
+        followCharacterLorebook();
         // Pre-cache the world info data for the chat for quicker first prompt generation
         await getSortedEntries();
     });
@@ -1030,6 +1031,64 @@ export function setWorldInfoSettings(settings, data) {
 
     // Add slash commands
     registerWorldInfoSlashCommands();
+}
+
+/** Lorebook the editor opened on its own for the current character, if any. */
+let autoOpenedEditorWorld = null;
+/** Character lorebook to open in the editor the next time the World Info panel is shown. */
+let pendingEditorWorld = null;
+/** What the editor showed when {@link pendingEditorWorld} was set ('' = nothing). */
+let pendingEditorFrom = '';
+
+/**
+ * Gets the name of the lorebook shown in the editor.
+ * @returns {string} Lorebook name, or an empty string if none is shown
+ */
+function getEditorWorld() {
+    const selectedIndex = String($('#world_editor_select').val() ?? '');
+    return selectedIndex === '' ? '' : (world_names[Number(selectedIndex)] ?? '');
+}
+
+/**
+ * When the chat changes, let the editor follow the character's primary lorebook, so the panel
+ * doesn't keep showing a previous character's book (which looks like the lorebook isn't loaded).
+ * A book the user picked themselves is kept. Deferred until the panel is shown, so switching
+ * characters doesn't render a lorebook nobody is looking at.
+ */
+function followCharacterLorebook() {
+    pendingEditorWorld = null;
+    const world = this_chid !== undefined ? characters[this_chid]?.data?.extensions?.world : null;
+    if (!world || !world_names.includes(world)) {
+        return;
+    }
+    const current = getEditorWorld();
+    if (current && current !== autoOpenedEditorWorld) {
+        return;
+    }
+    if (current === world) {
+        autoOpenedEditorWorld = world;
+        return;
+    }
+    pendingEditorWorld = world;
+    pendingEditorFrom = current;
+    if ($('#WorldInfo').hasClass('openDrawer')) {
+        applyPendingEditorWorld();
+    }
+}
+
+/**
+ * Opens the pending character lorebook in the editor, unless something else
+ * (the user, or another feature) has switched the editor in the meantime.
+ */
+function applyPendingEditorWorld() {
+    const world = pendingEditorWorld;
+    pendingEditorWorld = null;
+    const index = world ? world_names.indexOf(world) : -1;
+    if (index === -1 || getEditorWorld() !== pendingEditorFrom) {
+        return;
+    }
+    autoOpenedEditorWorld = world;
+    $('#world_editor_select').val(index).trigger('change');
 }
 
 /**
@@ -6227,6 +6286,12 @@ export function initWorldInfo() {
         saveSettingsDebounced();
         eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
     };
+
+    $('#WI-SP-button > .drawer-toggle').on('click', () => setTimeout(() => {
+        if ($('#WorldInfo').hasClass('openDrawer')) {
+            applyPendingEditorWorld();
+        }
+    }));
 
     $('#world_info_depth').on('input', function () {
         world_info_depth = Number($(this).val());
