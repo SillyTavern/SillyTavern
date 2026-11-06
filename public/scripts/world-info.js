@@ -1013,6 +1013,7 @@ export function setWorldInfoSettings(settings, data) {
     eventSource.on(event_types.CHAT_CHANGED, async () => {
         const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
         $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
+        followCharacterLorebook();
         // Pre-cache the world info data for the chat for quicker first prompt generation
         await getSortedEntries();
     });
@@ -1030,6 +1031,36 @@ export function setWorldInfoSettings(settings, data) {
 
     // Add slash commands
     registerWorldInfoSlashCommands();
+}
+
+/** Lorebook the editor opened on its own for the current character ('' = none). */
+let autoOpenedEditorWorld = '';
+
+/**
+ * Gets the name of the lorebook shown in the editor.
+ * @returns {string} Lorebook name, or an empty string if none is shown
+ */
+function getEditorWorld() {
+    const selectedIndex = String($('#world_editor_select').val() ?? '');
+    return selectedIndex === '' ? '' : (world_names[Number(selectedIndex)] ?? '');
+}
+
+/**
+ * When the chat changes, let the editor follow the character's primary lorebook, so the panel
+ * doesn't keep showing the previous character's book (which looks like the new one isn't loaded).
+ * A book the user picked themselves is left alone.
+ */
+function followCharacterLorebook() {
+    const current = getEditorWorld();
+    if (current && current !== autoOpenedEditorWorld) {
+        return;
+    }
+    const characterWorld = this_chid !== undefined ? characters[this_chid]?.data?.extensions?.world : '';
+    const world = characterWorld && world_names.includes(characterWorld) ? characterWorld : '';
+    autoOpenedEditorWorld = world;
+    if (world !== current) {
+        $('#world_editor_select').val(world ? world_names.indexOf(world) : '').trigger('change');
+    }
 }
 
 /**
