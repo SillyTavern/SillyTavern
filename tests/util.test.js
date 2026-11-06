@@ -1,5 +1,5 @@
 import { afterEach, describe, test, expect, jest } from '@jest/globals';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { Response } from 'node-fetch';
 import { CHAT_COMPLETION_SOURCES } from '../src/constants';
@@ -9,6 +9,8 @@ function createMockExpressResponse() {
     const response = new PassThrough();
     response.statusCode = 200;
     response.statusMessage = '';
+    response.headers = {};
+    response.setHeader = (name, value) => { response.headers[name.toLowerCase()] = value; };
 
     return response;
 }
@@ -132,6 +134,17 @@ describe('flattenSchema', () => {
 });
 
 describe('forwardFetchResponse', () => {
+    test('preserves the upstream response content type', async () => {
+        const response = createMockExpressResponse();
+        response.socket = new EventEmitter();
+        const bodyPromise = collectResponseBody(response);
+        await forwardFetchResponse(new Response('{"answer":"ok"}', {
+            headers: { 'content-type': 'application/json; charset=utf-8' },
+        }), response);
+        expect(await bodyPromise).toBe('{"answer":"ok"}');
+        expect(response.headers['content-type']).toBe('application/json; charset=utf-8');
+    });
+
     test('should log JSON error bodies and return the original body for non-2xx streaming responses', async () => {
         const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
         const body = JSON.stringify({ error: { message: 'Forbidden by upstream policy' }, detail: 'policy_denied' });
