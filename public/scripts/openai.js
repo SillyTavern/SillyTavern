@@ -5027,10 +5027,7 @@ function getConnectionSnapshot() {
 }
 
 /**
- * With "Bind presets to API connections" on, switching presets also applies the API and model saved
- * in the preset. That is easy to miss (and can leave no model selected), so tell the user.
- * Checked again after a short delay, so callers that set their own model right after the preset
- * (e.g. connection profiles) don't get a misleading notice.
+ * Tells the user when a preset they picked also changed the API or model ("Bind presets to API connections").
  * @param {string} presetName Name of the preset that was applied
  * @param {{source: string, model: string}} before Connection before the preset was applied
  */
@@ -5039,25 +5036,19 @@ function notifyPresetConnectionChange(presetName, before) {
     if (after.source === before.source && after.model === before.model) {
         return;
     }
-    setTimeout(() => {
-        const now = getConnectionSnapshot();
-        if (now.source !== after.source || now.model !== after.model) {
-            return;
-        }
-        const sourceName = $('#chat_completion_source option:selected').text() || now.source;
-        const modelName = now.model || t`no model selected`;
-        toastr.info(
-            t`Preset "${presetName}" also switched the connection to ${sourceName} · ${modelName}. Turn off "Bind presets to API connections" to keep your API and model when switching presets.`,
-            t`Connection changed`,
-            { timeOut: 10000 },
-        );
-    }, 1000);
+    const sourceName = $('#chat_completion_source option:selected').text() || after.source;
+    const modelName = after.model || t`no model selected`;
+    toastr.info(
+        t`Preset "${presetName}" switched the connection to ${sourceName} · ${modelName}. To keep your API and model when switching presets, turn off "Bind presets to API connections".`,
+        t`Connection changed`,
+    );
 }
 
 // Load OpenAI preset settings
-function onSettingsPresetChange() {
+function onSettingsPresetChange(event) {
     const presetNameBefore = oai_settings.preset_settings_openai;
-    const connectionBefore = getConnectionSnapshot();
+    // Only for presets picked in the dropdown; /preset, connection profiles etc. set the connection on purpose
+    const connectionBefore = event?.originalEvent && oai_settings.bind_preset_to_connection ? getConnectionSnapshot() : null;
 
     const presetName = $('#settings_preset_openai').find(':selected').text();
     oai_settings.preset_settings_openai = presetName;
@@ -5117,7 +5108,7 @@ function onSettingsPresetChange() {
         await eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
         await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'openai', name: presetName });
 
-        if (oai_settings.bind_preset_to_connection) {
+        if (connectionBefore) {
             notifyPresetConnectionChange(presetName, connectionBefore);
         }
     });
