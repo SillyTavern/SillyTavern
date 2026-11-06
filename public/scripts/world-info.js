@@ -1033,12 +1033,8 @@ export function setWorldInfoSettings(settings, data) {
     registerWorldInfoSlashCommands();
 }
 
-/** Lorebook the editor opened on its own for the current character, if any. */
-let autoOpenedEditorWorld = null;
-/** Character lorebook to open in the editor the next time the World Info panel is shown. */
-let pendingEditorWorld = null;
-/** What the editor showed when {@link pendingEditorWorld} was set ('' = nothing). */
-let pendingEditorFrom = '';
+/** Lorebook the editor opened on its own for the current character ('' = none). */
+let autoOpenedEditorWorld = '';
 
 /**
  * Gets the name of the lorebook shown in the editor.
@@ -1051,44 +1047,20 @@ function getEditorWorld() {
 
 /**
  * When the chat changes, let the editor follow the character's primary lorebook, so the panel
- * doesn't keep showing a previous character's book (which looks like the lorebook isn't loaded).
- * A book the user picked themselves is kept. Deferred until the panel is shown, so switching
- * characters doesn't render a lorebook nobody is looking at.
+ * doesn't keep showing the previous character's book (which looks like the new one isn't loaded).
+ * A book the user picked themselves is left alone.
  */
 function followCharacterLorebook() {
-    pendingEditorWorld = null;
-    const world = this_chid !== undefined ? characters[this_chid]?.data?.extensions?.world : null;
-    if (!world || !world_names.includes(world)) {
-        return;
-    }
     const current = getEditorWorld();
     if (current && current !== autoOpenedEditorWorld) {
         return;
     }
-    if (current === world) {
-        autoOpenedEditorWorld = world;
-        return;
-    }
-    pendingEditorWorld = world;
-    pendingEditorFrom = current;
-    if ($('#WorldInfo').hasClass('openDrawer')) {
-        applyPendingEditorWorld();
-    }
-}
-
-/**
- * Opens the pending character lorebook in the editor, unless something else
- * (the user, or another feature) has switched the editor in the meantime.
- */
-function applyPendingEditorWorld() {
-    const world = pendingEditorWorld;
-    pendingEditorWorld = null;
-    const index = world ? world_names.indexOf(world) : -1;
-    if (index === -1 || getEditorWorld() !== pendingEditorFrom) {
-        return;
-    }
+    const characterWorld = this_chid !== undefined ? characters[this_chid]?.data?.extensions?.world : '';
+    const world = characterWorld && world_names.includes(characterWorld) ? characterWorld : '';
     autoOpenedEditorWorld = world;
-    $('#world_editor_select').val(index).trigger('change');
+    if (world !== current) {
+        $('#world_editor_select').val(world ? world_names.indexOf(world) : '').trigger('change');
+    }
 }
 
 /**
@@ -6286,12 +6258,6 @@ export function initWorldInfo() {
         saveSettingsDebounced();
         eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
     };
-
-    $('#WI-SP-button > .drawer-toggle').on('click', () => setTimeout(() => {
-        if ($('#WorldInfo').hasClass('openDrawer')) {
-            applyPendingEditorWorld();
-        }
-    }));
 
     $('#world_info_depth').on('input', function () {
         world_info_depth = Number($(this).val());
