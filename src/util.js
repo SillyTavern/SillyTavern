@@ -731,6 +731,12 @@ export async function forwardFetchResponse(from, to) {
     to.statusCode = statusCode;
     to.statusMessage = statusText;
 
+    // Preserve the upstream format so clients can distinguish JSON from SSE.
+    const contentType = from.headers.get('content-type');
+    if (contentType) {
+        to.setHeader('Content-Type', contentType);
+    }
+
     if (!from.ok) {
         try {
             const rawErrorText = await from.text();

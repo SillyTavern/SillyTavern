@@ -558,10 +558,16 @@ export class ConnectionManagerRequestService {
 
         let text = '';
         let reasoning = '';
+        let progressFailed = false;
 
         const reportProgress = () => {
-            display?.updateReasoning(reasoning).updateContent(text);
-            onProgress?.(text, reasoning);
+            try {
+                display?.updateReasoning(reasoning).updateContent(text);
+                onProgress?.(text, reasoning);
+            } catch (error) {
+                progressFailed = true;
+                throw error;
+            }
         };
 
         try {
@@ -588,7 +594,7 @@ export class ConnectionManagerRequestService {
                 }
             } catch (error) {
                 // Aborts are handled by the outer catch
-                if (abortController.signal.aborted) {
+                if (abortController.signal.aborted || progressFailed) {
                     throw error;
                 }
 
@@ -609,7 +615,7 @@ export class ConnectionManagerRequestService {
             }
         } catch (error) {
             // Stopped by the user (or the caller's signal): return what arrived so far
-            if (abortController.signal.aborted) {
+            if (abortController.signal.aborted && !progressFailed) {
                 display?.markStopped({ label: `${displayLabel} [${t`Stopped`}]` });
                 return { content: text, reasoning };
             }

@@ -454,6 +454,8 @@ let dialogueCloseStop = false;
 export let chat_metadata = {};
 /** @type {StreamingProcessor} */
 export let streamingProcessor = null;
+/** @type {StreamingProcessor?} */
+let extensionStreamingProcessor = null;
 let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
@@ -3589,7 +3591,9 @@ export class StreamingProcessor {
     }
 
     markUIGenStopped() {
-        unblockGeneration();
+        if (this !== extensionStreamingProcessor) {
+            unblockGeneration();
+        }
     }
 
     async onStartStreaming(text) {
@@ -5601,11 +5605,27 @@ export function stopGeneration() {
  * standard chat streaming pipeline: assign a generator to a StreamingProcessor,
  * register it here so the global stop button aborts it, then await generate().
  * The caller is responsible for calling onFinishStreaming() afterwards and for
- * resetting the processor back to null when done.
+ * resetting the processor back to null in a finally block when done. Registering
+ * acquires the generation lock; clearing it releases the lock.
  * @param {StreamingProcessor?} processor Processor to set, or null to clear
+ * @throws {Error} If another generation is already active
  */
 export function setStreamingProcessor(processor) {
-    streamingProcessor = processor;
+    if (processor) {
+        if (is_send_press || is_group_generating || streamingProcessor || extensionStreamingProcessor) {
+            throw new Error('A generation is already active');
+        }
+        extensionStreamingProcessor = processor;
+        streamingProcessor = processor;
+        is_send_press = true;
+        deactivateSendButtons();
+    } else if (extensionStreamingProcessor) {
+        if (streamingProcessor === extensionStreamingProcessor) {
+            streamingProcessor = null;
+        }
+        extensionStreamingProcessor = null;
+        unblockGeneration();
+    }
 }
 
 /**
@@ -5681,7 +5701,7 @@ function flushWIInjections() {
  */
 function unblockGeneration(type) {
     // Don't unblock if a parallel stream is still running
-    if (type === 'quiet' && streamingProcessor && !streamingProcessor.isFinished) {
+    if (type === 'quiet' && streamingProcessor && (!streamingProcessor.isFinished || streamingProcessor === extensionStreamingProcessor)) {
         return;
     }
 
