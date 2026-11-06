@@ -5018,9 +5018,37 @@ export function getPresetApplicationPromise() {
     return presetApplicationPromise;
 }
 
+/**
+ * Gets the chat completion source and model currently in use.
+ * @returns {{source: string, model: string}}
+ */
+function getConnectionSnapshot() {
+    return { source: oai_settings.chat_completion_source, model: getChatCompletionModel() ?? '' };
+}
+
+/**
+ * Tells the user when a preset they picked also changed the API or model ("Bind presets to API connections").
+ * @param {string} presetName Name of the preset that was applied
+ * @param {{source: string, model: string}} before Connection before the preset was applied
+ */
+function notifyPresetConnectionChange(presetName, before) {
+    const after = getConnectionSnapshot();
+    if (after.source === before.source && after.model === before.model) {
+        return;
+    }
+    const sourceName = $('#chat_completion_source option:selected').text() || after.source;
+    const modelName = after.model || t`no model selected`;
+    toastr.info(
+        t`Preset "${presetName}" switched the connection to ${sourceName} · ${modelName}. To keep your API and model when switching presets, turn off "Bind presets to API connections".`,
+        t`Connection changed`,
+    );
+}
+
 // Load OpenAI preset settings
-function onSettingsPresetChange() {
+function onSettingsPresetChange(event) {
     const presetNameBefore = oai_settings.preset_settings_openai;
+    // Only for presets picked in the dropdown; /preset, connection profiles etc. set the connection on purpose
+    const connectionBefore = event?.originalEvent && oai_settings.bind_preset_to_connection ? getConnectionSnapshot() : null;
 
     const presetName = $('#settings_preset_openai').find(':selected').text();
     oai_settings.preset_settings_openai = presetName;
@@ -5079,6 +5107,10 @@ function onSettingsPresetChange() {
         saveSettingsDebounced();
         await eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
         await eventSource.emit(event_types.PRESET_CHANGED, { apiId: 'openai', name: presetName });
+
+        if (connectionBefore) {
+            notifyPresetConnectionChange(presetName, connectionBefore);
+        }
     });
 }
 
