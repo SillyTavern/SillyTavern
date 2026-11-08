@@ -3068,6 +3068,8 @@
                                 <select id="model_openai_select">
                                     <optgroup label="GPT-6">
                                         <option value="gpt-6-astra">gpt-6-astra</option>
+                                        <option value="gpt-6-sol">gpt-6-sol</option>
+                                        <option value="gpt-6-luna">gpt-6-luna</option>
                                     </optgroup>
                                     <optgroup label="GPT-5.6">
                                         <option value="gpt-5.6">gpt-5.6</option>
@@ -3098,12 +3100,12 @@
                                     <optgroup label="GPT-5.1">
                                         <option value="gpt-5.1">gpt-5.1</option>
                                         <option value="gpt-5.1-2025-11-13">gpt-5.1-2025-11-13</option>
-                                        <option value="gpt-5.1-chat-latest">gpt-5.1-chat-latest</option>
+                                        <option value="gpt-5.1-chat-latest">gpt-5.1-chat-latest (deprecated)</option>
                                     </optgroup>
                                     <optgroup label="GPT-5">
                                         <option value="gpt-5">gpt-5</option>
                                         <option value="gpt-5-2025-08-07">gpt-5-2025-08-07 (deprecated)</option>
-                                        <option value="gpt-5-chat-latest">gpt-5-chat-latest</option>
+                                        <option value="gpt-5-chat-latest">gpt-5-chat-latest (deprecated)</option>
                                         <option value="gpt-5-mini">gpt-5-mini</option>
                                         <option value="gpt-5-mini-2025-08-07">gpt-5-mini-2025-08-07 (deprecated)</option>
                                         <option value="gpt-5-nano">gpt-5-nano</option>
@@ -3154,8 +3156,8 @@
                                         <option value="gpt-3.5-turbo-instruct">gpt-3.5-turbo-instruct (deprecated)</option>
                                     </optgroup>
                                     <optgroup label="Other">
-                                        <option value="babbage-002">babbage-002</option>
-                                        <option value="davinci-002">davinci-002</option>
+                                        <option value="babbage-002">babbage-002 (deprecated)</option>
+                                        <option value="davinci-002">davinci-002 (deprecated)</option>
                                     </optgroup>
                                     <optgroup id="openai_external_category" label="External">
                                     </optgroup>
@@ -3188,6 +3190,7 @@
                                     <optgroup label="Versions">
                                         <option value="claude-fable-5-1">claude-fable-5-1</option>
                                         <option value="claude-fable-5">claude-fable-5</option>
+                                        <option value="claude-opus-5-5">claude-opus-5-5</option>
                                         <option value="claude-opus-5">claude-opus-5</option>
                                         <option value="claude-sonnet-5">claude-sonnet-5</option>
                                         <option value="claude-opus-4-8">claude-opus-4-8</option>
@@ -3311,6 +3314,9 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
+                                    <optgroup label="Gemini 3.8">
+                                        <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.7">
                                         <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                                     </optgroup>
@@ -3481,6 +3487,9 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_vertexai_select">
                                     <!-- data-mode="full" is for models that require a service account -->
+                                    <optgroup label="Gemini 3.8">
+                                        <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+                                    </optgroup>
                                     <optgroup label="Gemini 3.7">
                                         <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                                     </optgroup>
@@ -4070,7 +4079,7 @@
                             <div class="api_loading menu_button menu_button_icon" data-i18n="Cancel">Cancel</div>
                             <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon" data-i18n="Additional Parameters">Additional Parameters</div>
                             <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
-                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="Test Message;[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
+                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. This may incur usage charges." data-i18n="Test Message;[title]Verifies your API connection by sending a short test message. This may incur usage charges.">Test Message</div>
                         </div>
                         <div class="online_status">
                             <div class="online_status_indicator"></div>

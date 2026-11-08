@@ -393,7 +393,7 @@
     "Available Models": "可用模型",
     "Prompt Post-Processing": "提示詞後處理",
     "Applies additional processing to the prompt before sending it to the API.": "這個選項會在將提示詞送往 API 之前，對它進行額外的處理。",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "透過傳送簡短的測試訊息來驗證您的 API 連線。請注意，您將因此獲得榮譽！",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "透過傳送簡短的測試訊息來驗證您的 API 連線。這可能會產生使用費用。",
     "Test Message": "測試訊息",
     "Auto-connect to Last Server": "自動連線至上次使用的伺服器",
     "Missing key": "❌ 鑰匙遺失",

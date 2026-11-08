@@ -390,7 +390,7 @@ export function convertCohereMessages(messages, names) {
     }
 
     messages.forEach((msg, index) => {
-        // Tool calls require an assistent primer
+        // Tool calls require an assistant primer
         if (Array.isArray(msg.tool_calls)) {
             if (index > 0 && messages[index - 1].role === 'assistant') {
                 msg.content = messages[index - 1].content;
@@ -1264,7 +1264,7 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
 
     function getGemini3FlashBudget() {
         // https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash
-        const noMinimalThinking = /gemini-3\.7-flash/.test(model);
+        const noMinimalThinking = /gemini-3\.[78]-flash/.test(model);
         switch (reasoningEffort) {
             case REASONING_EFFORT.auto:
                 return null;

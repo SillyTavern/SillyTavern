@@ -514,7 +514,7 @@
     "Clear your API key": "Стереть ключ от API",
     "Refresh models": "Обновить модели",
     "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "Получите свой OpenRouter API токен используя OAuth. У вас будет открыта вкладка openrouter.ai",
-    "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "Проверка работоспособности вашего соединения с API путём отправки короткого тестового сообщения. Внимание: оно будет отправлено от вашего имени.",
+    "Verifies your API connection by sending a short test message. This may incur usage charges.": "Проверяет соединение с API, отправляя короткое тестовое сообщение. Это может повлечь плату за использование.",
     "Edit": "Редактировать",
     "Locked = World Editor will stay open": "Закреплено = Редактор мира останется открытым",
     "Entries can activate other entries by mentioning their keywords": "Записи могут активировать другие записи, если в них содержатся ключевые слова",
