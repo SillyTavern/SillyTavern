@@ -95,6 +95,7 @@ const sources = {
     zai: 'zai',
     openrouter: 'openrouter',
     workersai: 'workersai',
+    venice: 'venice',
 };
 const comfyTypes = {
     standard: 'standard',
@@ -360,6 +361,10 @@ const defaultSettings = {
     google_api: 'makersuite',
     google_enhance: true,
     google_duration: 6,
+
+    // Venice settings
+    venice_style_preset: '',
+    venice_safe_mode: false,
 };
 
 const writePromptFieldsDebounced = debounce(writePromptFields, debounce_timeout.relaxed);
@@ -560,6 +565,8 @@ async function loadSettings() {
     $('#sd_google_api').val(extension_settings.sd.google_api);
     $('#sd_google_enhance').prop('checked', extension_settings.sd.google_enhance);
     $('#sd_google_duration').val(extension_settings.sd.google_duration);
+    $('#sd_venice_style_preset').val(extension_settings.sd.venice_style_preset);
+    $('#sd_venice_safe_mode').prop('checked', extension_settings.sd.venice_safe_mode);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -1332,6 +1339,16 @@ function onStabilityStylePresetChange() {
     saveSettingsDebounced();
 }
 
+function onVeniceStylePresetChange() {
+    extension_settings.sd.venice_style_preset = String($('#sd_venice_style_preset').val());
+    saveSettingsDebounced();
+}
+
+function onVeniceSafeModeInput() {
+    extension_settings.sd.venice_safe_mode = !!$('#sd_venice_safe_mode').prop('checked');
+    saveSettingsDebounced();
+}
+
 async function changeComfyWorkflow(_, name) {
     name = name.replace(/(\.json)?$/i, '.json');
     if ($(`#sd_comfy_workflow > [value="${name}"]`).length > 0) {
@@ -1746,6 +1763,9 @@ async function loadSamplers() {
         case sources.workersai:
             samplers = ['N/A'];
             break;
+        case sources.venice:
+            samplers = ['N/A'];
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1998,6 +2018,9 @@ async function loadModels() {
             break;
         case sources.workersai:
             models = await loadWorkersAIImageModels();
+            break;
+        case sources.venice:
+            models = await loadVeniceModels();
             break;
     }
 
@@ -2412,6 +2435,23 @@ async function loadAimlapiModels() {
     return (json.data || []);
 }
 
+async function loadVeniceModels() {
+    $('#sd_venice_key').toggleClass('success', !!secret_state[SECRET_KEYS.VENICE]);
+
+    const result = await fetch('/api/sd/venice/models', {
+        method: 'POST',
+        headers: getRequestHeaders({ omitContentType: true }),
+    });
+
+    if (!result.ok) {
+        return [];
+    }
+
+    const json = await result.json();
+
+    return (json.data || []);
+}
+
 async function loadVladModels() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -2645,6 +2685,9 @@ async function loadSchedulers() {
         case sources.workersai:
             schedulers = ['N/A'];
             break;
+        case sources.venice:
+            schedulers = ['N/A'];
+            break;
     }
 
     for (const scheduler of schedulers) {
@@ -2766,6 +2809,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.workersai:
+            vaes = ['N/A'];
+            break;
+        case sources.venice:
             vaes = ['N/A'];
             break;
     }
@@ -3420,6 +3466,9 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
             case sources.workersai:
                 result = await generateWorkersAIImage(prefixedPrompt, negativePrompt, signal);
                 break;
+            case sources.venice:
+                result = await generateVeniceImage(prefixedPrompt, negativePrompt, signal);
+                break;
         }
 
         if (!result.data) {
@@ -3561,15 +3610,27 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
 }
 
 /**
- * Gets an aspect ratio for Stability that is the closest to the given width and height.
+ * Gets an aspect ratio that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'|'zai'|'xai'|'openrouter'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'|'xai'|'openrouter'|'venice'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
     function getAspectRatios() {
         switch (source) {
+            case 'venice':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '9:16': 9 / 16,
+                    '4:3': 4 / 3,
+                    '3:4': 3 / 4,
+                    '3:2': 3 / 2,
+                    '2:3': 2 / 3,
+                    '21:9': 21 / 9,
+                    '4:5': 4 / 5,
+                };
             case 'openrouter':
                 return {
                     '1:1': 1,
@@ -4279,6 +4340,86 @@ async function generateAimlapiImage(prompt, negativePrompt, signal) {
         body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(await res.text());
+
+    const { format, data } = await res.json();
+    return { format: format || 'png', data };
+}
+
+/**
+ * Generates an image using Venice AI.
+ * @param {string} prompt Prompt text
+ * @param {string} [negativePrompt] Negative prompt text
+ * @param {AbortSignal} [signal] Abort signal
+ */
+async function generateVeniceImage(prompt, negativePrompt, signal) {
+    const model = (extension_settings.sd.model || '').trim();
+    const rawWidth = Number(extension_settings.sd.width) || 1024;
+    const rawHeight = Number(extension_settings.sd.height) || 1024;
+
+    const body = {
+        prompt,
+        model,
+        format: 'png',
+    };
+
+    if (extension_settings.sd.venice_style_preset) {
+        body.style_preset = extension_settings.sd.venice_style_preset;
+    }
+
+    if (typeof extension_settings.sd.venice_safe_mode === 'boolean') {
+        body.safe_mode = extension_settings.sd.venice_safe_mode;
+    }
+
+    const modelLower = model.toLowerCase();
+    const isAspectRatioModel =
+        modelLower.includes('qwen-image') ||
+        modelLower.includes('flux') ||
+        modelLower.includes('grok-imagine') ||
+        modelLower.includes('krea') ||
+        modelLower.includes('ideogram') ||
+        modelLower.includes('recraft') ||
+        modelLower.includes('seedream') ||
+        modelLower.includes('wan-2-7') ||
+        modelLower.includes('nano-banana') ||
+        modelLower.includes('hunyuan');
+
+    if (isAspectRatioModel) {
+        body.aspect_ratio = getClosestAspectRatio(rawWidth, rawHeight, 'venice');
+        const maxDim = Math.max(rawWidth, rawHeight);
+        body.resolution = maxDim >= 3072 ? '4K' : (maxDim >= 1536 ? '2K' : '1K');
+    } else {
+        const w = clamp(Math.round(rawWidth / 16) * 16, 256, 2048);
+        const h = clamp(Math.round(rawHeight / 16) * 16, 256, 2048);
+        body.width = w;
+        body.height = h;
+
+        if (extension_settings.sd.steps) {
+            body.steps = clamp(Number(extension_settings.sd.steps) || 25, 10, 50);
+        }
+        if (extension_settings.sd.scale) {
+            body.cfg_scale = clamp(Number(extension_settings.sd.scale) || 7, 1, 20);
+        }
+    }
+
+    if (negativePrompt) {
+        body.negative_prompt = negativePrompt;
+    }
+
+    if (extension_settings.sd.seed >= 0) {
+        body.seed = extension_settings.sd.seed;
+    }
+
+    const res = await fetch('/api/sd/venice/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        signal,
+        body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Venice AI error: ${res.status} ${errorText}`);
+    }
 
     const { format, data } = await res.json();
     return { format: format || 'png', data };
@@ -5213,6 +5354,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.OPENROUTER];
         case sources.workersai:
             return !!oai_settings.workers_ai_account_id && secret_state[SECRET_KEYS.WORKERS_AI];
+        case sources.venice:
+            return secret_state[SECRET_KEYS.VENICE];
         default:
             return false;
     }
@@ -5975,6 +6118,9 @@ export async function init() {
         extension_settings.sd.google_duration = Number($(this).val());
         saveSettingsDebounced();
     });
+
+    $('#sd_venice_style_preset').on('change', onVeniceStylePresetChange);
+    $('#sd_venice_safe_mode').on('input', onVeniceSafeModeInput);
     $('#sd_models_refresh').on('click', async () => {
         await loadModels();
     });
@@ -6023,6 +6169,7 @@ export async function init() {
                 [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
                 [sources.workersai]: SECRET_KEYS.WORKERS_AI,
                 [sources.openrouter]: SECRET_KEYS.OPENROUTER,
+                [sources.venice]: SECRET_KEYS.VENICE,
             };
             const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);
             if (!shouldReloadOptions) {

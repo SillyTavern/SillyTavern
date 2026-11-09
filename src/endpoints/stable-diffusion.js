@@ -12,7 +12,7 @@ import mime from 'mime-types';
 import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { AIMLAPI_HEADERS } from '../constants.js';
+import { AIMLAPI_HEADERS, VENICE_ENDPOINT } from '../constants.js';
 
 /**
  * Gets the comfy workflows.
@@ -2225,6 +2225,136 @@ workersai.post('/generate', async (request, response) => {
     }
 });
 
+const venice = express.Router();
+
+venice.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.VENICE) || process.env.VENICE_API_KEY;
+
+        if (!key) {
+            console.warn('Venice API key not found.');
+            return response.sendStatus(400);
+        }
+
+        const baseUrl = process.env.VENICE_BASE_URL || VENICE_ENDPOINT;
+        const modelsResponse = await fetch(`${baseUrl}/models?type=image`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.warn('Venice API returned an error:', await modelsResponse.text());
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await modelsResponse.json();
+        const models = (data.data || [])
+            .map(model => ({
+                value: model.id,
+                text: model.model_spec?.name || model.id,
+                constraints: model.model_spec?.constraints || {},
+            }))
+            .sort((a, b) => a.text.localeCompare(b.text));
+
+        return response.send({ data: models });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+venice.post('/styles', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.VENICE) || process.env.VENICE_API_KEY;
+
+        if (!key) {
+            return response.sendStatus(400);
+        }
+
+        const baseUrl = process.env.VENICE_BASE_URL || VENICE_ENDPOINT;
+        const res = await fetch(`${baseUrl}/image/styles`, {
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!res.ok) {
+            return response.sendStatus(500);
+        }
+
+        const data = await res.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+venice.post('/generate-image', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.VENICE) || process.env.VENICE_API_KEY;
+        if (!key) return res.sendStatus(400);
+
+        const baseUrl = process.env.VENICE_BASE_URL || VENICE_ENDPOINT;
+        let payload = { ...req.body };
+
+        console.debug('Venice image request:', payload);
+
+        let apiRes = await fetch(`${baseUrl}/image/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        // If error indicates width/height not supported, retry with aspect_ratio
+        if (!apiRes.ok && (apiRes.status === 400 || apiRes.status === 422)) {
+            const errText = await apiRes.text();
+            if (errText.includes('width') && errText.includes('aspect_ratio')) {
+                console.warn('Venice: Retrying without width/height using aspect_ratio...');
+                delete payload.width;
+                delete payload.height;
+                if (!payload.aspect_ratio) {
+                    payload.aspect_ratio = '1:1';
+                }
+                apiRes = await fetch(`${baseUrl}/image/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${key}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+            } else {
+                console.warn('Venice image generation failed:', errText);
+                return res.status(apiRes.status || 500).send(errText);
+            }
+        }
+
+        if (!apiRes.ok) {
+            const err = await apiRes.text();
+            console.warn('Venice image generation failed:', err);
+            return res.status(apiRes.status || 500).send(err);
+        }
+
+        /** @type {any} */
+        const data = await apiRes.json();
+        const b64 = Array.isArray(data.images) ? data.images[0] : null;
+        if (!b64) return res.status(500).send('No image returned');
+
+        const format = data.request?.format || payload.format || 'png';
+        return res.json({ format: format, data: b64 });
+    } catch (e) {
+        console.error(e);
+        res.status(500).send(e instanceof Error ? e.message : 'Internal error');
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
@@ -2242,3 +2372,4 @@ router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
 router.use('/zai', zai);
 router.use('/workersai', workersai);
+router.use('/venice', venice);

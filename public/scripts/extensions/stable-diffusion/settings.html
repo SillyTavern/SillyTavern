@@ -57,6 +57,7 @@
                 <option value="openai">OpenAI</option>
                 <option value="openrouter">OpenRouter</option>
                 <option value="pollinations">Pollinations</option>
+                <option value="venice">Venice AI</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
                 <option value="stability">Stability AI</option>
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
@@ -192,6 +193,46 @@
                         <i class="fa-fw fa-solid fa-key"></i>
                         <span data-i18n="Click to set">Click to set</span>
                     </div>
+                </div>
+            </div>
+            <div data-sd-source="venice">
+                <div class="flex-container flexnowrap alignItemsBaseline marginBot5">
+                    <strong class="flex1" data-i18n="API Key">API Key</strong>
+                    <div id="sd_venice_key" class="menu_button menu_button_icon manage-api-keys" data-key="api_key_venice">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                        <span data-i18n="Click to set">Click to set</span>
+                    </div>
+                </div>
+                <div class="flex-container">
+                    <div class="flex1">
+                        <label for="sd_venice_style_preset" data-i18n="Style Preset">Style Preset</label>
+                        <select id="sd_venice_style_preset" class="text_pole">
+                            <option value="">None</option>
+                            <option value="3D Model">3D Model</option>
+                            <option value="Analog Film">Analog Film</option>
+                            <option value="Anime">Anime</option>
+                            <option value="Cinematic">Cinematic</option>
+                            <option value="Comic Book">Comic Book</option>
+                            <option value="Craft Clay">Craft Clay</option>
+                            <option value="Digital Art">Digital Art</option>
+                            <option value="Enhance">Enhance</option>
+                            <option value="Fantasy Art">Fantasy Art</option>
+                            <option value="Isometric Style">Isometric Style</option>
+                            <option value="Line Art">Line Art</option>
+                            <option value="Lowpoly">Lowpoly</option>
+                            <option value="Neon Punk">Neon Punk</option>
+                            <option value="Origami">Origami</option>
+                            <option value="Photographic">Photographic</option>
+                            <option value="Pixel Art">Pixel Art</option>
+                            <option value="Texture">Texture</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex-container marginTop5">
+                    <label class="checkbox_label" for="sd_venice_safe_mode">
+                        <input id="sd_venice_safe_mode" type="checkbox" />
+                        <span data-i18n="Safe Mode">Safe Mode</span>
+                    </label>
                 </div>
             </div>
             <div data-sd-source="zai">
@@ -587,7 +628,7 @@
                 </label>
             </div>
 
-            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability,bfl,sdcpp,openrouter,aimlapi" class="marginTop5">
+            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras,stability,bfl,sdcpp,openrouter,aimlapi,venice" class="marginTop5">
                 <label for="sd_seed">
                     <span data-i18n="Seed">Seed</span>
                     <small data-i18n="(-1 for random)">(-1 for random)</small>
