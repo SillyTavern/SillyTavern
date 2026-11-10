@@ -2522,6 +2522,8 @@ async function loadZaiModels() {
 }
 
 async function loadOpenRouterModels() {
+    $('#sd_openrouter_key').toggleClass('success', !!secret_state[SECRET_KEYS.OPENROUTER]);
+
     const result = await fetch('/api/openrouter/models/image', {
         method: 'POST',
         headers: getRequestHeaders({ omitContentType: true }),
@@ -3362,7 +3364,7 @@ async function sendGenerationRequest(generationType, prompt, additionalNegativeP
                 result = await generateOpenAiImage(prefixedPrompt, signal);
                 break;
             case sources.aimlapi:
-                result = await generateAimlapiImage(prefixedPrompt, signal);
+                result = await generateAimlapiImage(prefixedPrompt, negativePrompt, signal);
                 break;
             case sources.comfy:
                 switch (extension_settings.sd.comfy_type) {
@@ -3562,12 +3564,23 @@ async function generateExtrasImage(prompt, negativePrompt, signal) {
  * Gets an aspect ratio for Stability that is the closest to the given width and height.
  * @param {number} width Target width
  * @param {number} height Target height
- * @param {'google'|'stability'|'zai'|'xai'} source Source of the request, used to determine aspect ratio
+ * @param {'google'|'stability'|'zai'|'xai'|'openrouter'} source Source of the request, used to determine aspect ratio
  * @returns {string} Closest aspect ratio as a string
  */
 function getClosestAspectRatio(width, height, source) {
     function getAspectRatios() {
         switch (source) {
+            case 'openrouter':
+                return {
+                    '1:1': 1,
+                    '16:9': 16 / 9,
+                    '9:16': 9 / 16,
+                    '4:3': 4 / 3,
+                    '3:4': 3 / 4,
+                    '3:2': 3 / 2,
+                    '2:3': 2 / 3,
+                    '21:9': 21 / 9,
+                };
             case 'stability':
                 return {
                     '16:9': 16 / 9,
@@ -4172,27 +4185,91 @@ async function generateOpenAiImage(prompt, signal) {
  * - Extracts the URL or base64 response.
  * - If it’s a URL, fetches the image and converts to base64.
  * - Returns { format: 'png', data: '<base64 string>' }, ready for saveBase64AsFile().
+ * @param {string} prompt Prompt text
+ * @param {string} [negativePrompt] Negative prompt text
+ * @param {AbortSignal} [signal] Abort signal
  */
-async function generateAimlapiImage(prompt, signal) {
-    const model = extension_settings.sd.model.toLowerCase();
-    const isSdLike =
-        model.startsWith('flux/') ||
-        model.startsWith('stable') ||
-        model === 'recraft-v3' ||
-        model === 'triposr';
+async function generateAimlapiImage(prompt, negativePrompt, signal) {
+    const model = (extension_settings.sd.model || '').trim();
+    const modelLower = model.toLowerCase();
+
+    const rawWidth = Number(extension_settings.sd.width) || 512;
+    const rawHeight = Number(extension_settings.sd.height) || 512;
+
+    const isGoogleLike =
+        modelLower.includes('google') ||
+        modelLower.includes('gemini') ||
+        modelLower.includes('nano-banana') ||
+        modelLower.includes('imagen');
+
+    const isXaiLike =
+        modelLower.includes('x-ai') ||
+        modelLower.includes('grok');
+
+    const isOpenAiLike =
+        modelLower.includes('openai') ||
+        modelLower.includes('dall-e') ||
+        modelLower.includes('gpt-image');
 
     const body = { prompt, model };
-    if (isSdLike) {
-        body.steps = clamp(extension_settings.sd.steps, 1, 50);
-        body.guidance = clamp(extension_settings.sd.scale, 1.5, 5);
-        body.width = clamp(extension_settings.sd.width, 256, 1440);
-        body.height = clamp(extension_settings.sd.height, 256, 1440);
-        if (extension_settings.sd.seed >= 0) body.seed = extension_settings.sd.seed;
-    } else {
+
+    if (isGoogleLike) {
+        // Google models (Imagen, Gemini Nano Banana) require aspect_ratio and resolution ('1K', '2K', '4K')
+        body.aspect_ratio = getClosestAspectRatio(rawWidth, rawHeight, 'google');
+        const maxDim = Math.max(rawWidth, rawHeight);
+        body.resolution = maxDim >= 3072 ? '4K' : (maxDim >= 1536 ? '2K' : '1K');
+    } else if (isXaiLike) {
+        // xAI Grok Imagine models require aspect_ratio and resolution ('1k', '1.5k', '2k')
+        body.aspect_ratio = getClosestAspectRatio(rawWidth, rawHeight, 'xai');
+        const maxDim = Math.max(rawWidth, rawHeight);
+        body.resolution = maxDim >= 1920 ? '2k' : (maxDim >= 1280 ? '1.5k' : '1k');
+    } else if (isOpenAiLike) {
         body.n = 1;
-        body.size = `${extension_settings.sd.width}x${extension_settings.sd.height}`;
-        body.quality = extension_settings.sd.openai_quality;
-        body.style = extension_settings.sd.openai_style;
+        if (modelLower.includes('dall-e-3')) {
+            // DALL-E 3 only allows 1024x1024, 1024x1792, or 1792x1024
+            if (rawWidth > rawHeight) {
+                body.size = '1792x1024';
+            } else if (rawHeight > rawWidth) {
+                body.size = '1024x1792';
+            } else {
+                body.size = '1024x1024';
+            }
+        } else if (modelLower.includes('dall-e-2')) {
+            const maxDim = Math.max(rawWidth, rawHeight);
+            body.size = maxDim <= 256 ? '256x256' : (maxDim <= 512 ? '512x512' : '1024x1024');
+        } else {
+            // GPT Image models (e.g. gpt-image-2.6) require multiples of 16, min 256, max 3840
+            const w = clamp(Math.round(rawWidth / 16) * 16, 256, 3840);
+            const h = clamp(Math.round(rawHeight / 16) * 16, 256, 3840);
+            body.size = `${w}x${h}`;
+        }
+        if (extension_settings.sd.openai_quality) body.quality = extension_settings.sd.openai_quality;
+        if (extension_settings.sd.openai_style) body.style = extension_settings.sd.openai_style;
+    } else {
+        // Flux, Stable Diffusion, Recraft, Qwen Image, Bytedance Seedream, etc.
+        // Requires image_size: { width, height } where width & height are multiples of 32
+        const w = clamp(Math.round(rawWidth / 32) * 32, 256, 1536);
+        const h = clamp(Math.round(rawHeight / 32) * 32, 256, 1536);
+        body.image_size = { width: w, height: h };
+        body.width = w;
+        body.height = h;
+        body.size = `${w}x${h}`;
+
+        const steps = clamp(extension_settings.sd.steps, 1, 50);
+        body.steps = steps;
+        body.num_inference_steps = steps;
+
+        const guidance = clamp(extension_settings.sd.scale, 1.5, 20);
+        body.guidance = guidance;
+        body.guidance_scale = guidance;
+
+        if (negativePrompt) {
+            body.negative_prompt = negativePrompt;
+        }
+    }
+
+    if (extension_settings.sd.seed >= 0) {
+        body.seed = extension_settings.sd.seed;
     }
 
     const res = await fetch('/api/sd/aimlapi/generate-image', {
@@ -4204,7 +4281,7 @@ async function generateAimlapiImage(prompt, signal) {
     if (!res.ok) throw new Error(await res.text());
 
     const { format, data } = await res.json();
-    return { format, data };
+    return { format: format || 'png', data };
 }
 
 /**
@@ -4714,20 +4791,25 @@ async function generateZaiImage(prompt, signal) {
  * @returns {Promise<{format: string, data: string}>}
  */
 async function generateOpenRouterImage(prompt, signal) {
+    const body = {
+        model: extension_settings.sd.model,
+        prompt: prompt,
+        aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'openrouter'),
+    };
+    if (extension_settings.sd.seed >= 0) {
+        body.seed = extension_settings.sd.seed;
+    }
+
     const result = await fetch('/api/openrouter/image/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         signal: signal,
-        body: JSON.stringify({
-            model: extension_settings.sd.model,
-            prompt: prompt,
-            aspect_ratio: getClosestAspectRatio(extension_settings.sd.width, extension_settings.sd.height, 'stability'),
-        }),
+        body: JSON.stringify(body),
     });
 
     if (result.ok) {
         const data = await result.json();
-        return { format: 'jpg', data: data.image };
+        return { format: data.format || 'png', data: data.image };
     }
 
     const text = await result.text();
@@ -5940,6 +6022,7 @@ export async function init() {
                 [sources.comfy]: SECRET_KEYS.COMFY_RUNPOD,
                 [sources.pollinations]: SECRET_KEYS.POLLINATIONS,
                 [sources.workersai]: SECRET_KEYS.WORKERS_AI,
+                [sources.openrouter]: SECRET_KEYS.OPENROUTER,
             };
             const shouldReloadOptions = Object.entries(keySourceMap).some(([k, v]) => k === extension_settings.sd.source && v === key);
             if (!shouldReloadOptions) {
