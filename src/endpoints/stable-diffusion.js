@@ -12,7 +12,7 @@ import mime from 'mime-types';
 import { delay, getBasicAuthHeader, isValidUrl, tryParse } from '../util.js';
 import { readSecret, SECRET_KEYS } from './secrets.js';
 import { getFileNameValidationFunction } from '../middleware/validateFileName.js';
-import { AIMLAPI_HEADERS } from '../constants.js';
+import { AIMLAPI_HEADERS, VENICE_ENDPOINT } from '../constants.js';
 
 /**
  * Gets the comfy workflows.
@@ -1818,14 +1818,19 @@ aimlapi.post('/models', async (request, response) => {
         const data = await modelsResponse.json();
         const models = (data.data || [])
             .filter(model =>
-                model.type === 'image' &&
+                (model.type === 'image' ||
+                 model.type === 'openai/image-generations' ||
+                 (Array.isArray(model.tags) && model.tags.includes('playground:image') && model.type !== 'openai/image-editing')) &&
                 model.id !== 'triposr' &&
-                model.id !== 'flux/dev/image-to-image',
+                !model.id.includes('image-to-image') &&
+                !model.id.includes('-edit') &&
+                !model.id.endsWith('/edit'),
             )
             .map(model => ({
                 value: model.id,
                 text: model.info?.name || model.id,
-            }));
+            }))
+            .sort((a, b) => a.text.localeCompare(b.text));
 
         return response.send({ data: models });
     } catch (error) {
@@ -1839,39 +1844,63 @@ aimlapi.post('/generate-image', async (req, res) => {
         const key = readSecret(req.user.directories, SECRET_KEYS.AIMLAPI);
         if (!key) return res.sendStatus(400);
 
-        console.debug('AI/ML API image request:', req.body);
+        const payload = { ...req.body };
+        const modelLower = String(payload.model || '').toLowerCase();
+
+        // Safety normalization: ensure model-family specific resolution parameters are present
+        const isGoogleLike = modelLower.includes('google') || modelLower.includes('gemini') || modelLower.includes('nano-banana') || modelLower.includes('imagen');
+        const isXaiLike = modelLower.includes('x-ai') || modelLower.includes('grok');
+        const isOpenAiLike = modelLower.includes('openai') || modelLower.includes('dall-e') || modelLower.includes('gpt-image');
+
+        if (!isGoogleLike && !isXaiLike && !isOpenAiLike) {
+            // For SD/Flux/Recraft/Qwen models, ensure image_size is an object with multiples of 32
+            if (!payload.image_size && (payload.width || payload.height)) {
+                const w = Math.round((Number(payload.width) || 512) / 32) * 32;
+                const h = Math.round((Number(payload.height) || 512) / 32) * 32;
+                payload.image_size = { width: w, height: h };
+            }
+        }
+
+        console.debug('AI/ML API image request:', payload);
 
         const apiRes = await fetch('https://api.aimlapi.com/v1/images/generations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}`, ...AIMLAPI_HEADERS },
-            body: JSON.stringify(req.body),
+            body: JSON.stringify(payload),
         });
         if (!apiRes.ok) {
             const err = await apiRes.text();
-            return res.status(500).send(err);
+            console.warn('AI/ML API image generation failed:', err);
+            return res.status(apiRes.status || 500).send(err);
         }
         /** @type {any} */
         const data = await apiRes.json();
 
-        const imgObj = Array.isArray(data.images) ? data.images[0] : data.data?.[0];
+        const imgObj = Array.isArray(data.images) ? data.images[0] : (Array.isArray(data.data) ? data.data[0] : null);
         if (!imgObj) return res.status(500).send('No image returned');
 
         let base64;
+        let format = 'png';
         if (imgObj.b64_json || imgObj.base64) {
             base64 = imgObj.b64_json || imgObj.base64;
+            if (imgObj.mime_type) {
+                format = mime.extension(imgObj.mime_type) || 'png';
+            }
         } else if (imgObj.url) {
-            const blobRes = await fetch(imgObj.url);
+            const blobRes = await fetch(imgObj.url, { redirect: 'follow' });
             if (!blobRes.ok) throw new Error('Failed to fetch image URL');
+            const contentType = blobRes.headers.get('content-type');
+            if (contentType) format = mime.extension(contentType) || 'png';
             const buffer = await blobRes.arrayBuffer();
             base64 = Buffer.from(buffer).toString('base64');
         } else {
             throw new Error('Unsupported image format');
         }
 
-        return res.json({ format: 'png', data: base64 });
+        return res.json({ format: format, data: base64 });
     } catch (e) {
         console.error(e);
-        res.status(500).send('Internal error');
+        res.status(500).send(e instanceof Error ? e.message : 'Internal error');
     }
 });
 
@@ -2196,6 +2225,136 @@ workersai.post('/generate', async (request, response) => {
     }
 });
 
+const venice = express.Router();
+
+venice.post('/models', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.VENICE) || process.env.VENICE_API_KEY;
+
+        if (!key) {
+            console.warn('Venice API key not found.');
+            return response.sendStatus(400);
+        }
+
+        const baseUrl = process.env.VENICE_BASE_URL || VENICE_ENDPOINT;
+        const modelsResponse = await fetch(`${baseUrl}/models?type=image`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.warn('Venice API returned an error:', await modelsResponse.text());
+            return response.sendStatus(500);
+        }
+
+        /** @type {any} */
+        const data = await modelsResponse.json();
+        const models = (data.data || [])
+            .map(model => ({
+                value: model.id,
+                text: model.model_spec?.name || model.id,
+                constraints: model.model_spec?.constraints || {},
+            }))
+            .sort((a, b) => a.text.localeCompare(b.text));
+
+        return response.send({ data: models });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+venice.post('/styles', async (request, response) => {
+    try {
+        const key = readSecret(request.user.directories, SECRET_KEYS.VENICE) || process.env.VENICE_API_KEY;
+
+        if (!key) {
+            return response.sendStatus(400);
+        }
+
+        const baseUrl = process.env.VENICE_BASE_URL || VENICE_ENDPOINT;
+        const res = await fetch(`${baseUrl}/image/styles`, {
+            headers: {
+                Authorization: `Bearer ${key}`,
+            },
+        });
+
+        if (!res.ok) {
+            return response.sendStatus(500);
+        }
+
+        const data = await res.json();
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+venice.post('/generate-image', async (req, res) => {
+    try {
+        const key = readSecret(req.user.directories, SECRET_KEYS.VENICE) || process.env.VENICE_API_KEY;
+        if (!key) return res.sendStatus(400);
+
+        const baseUrl = process.env.VENICE_BASE_URL || VENICE_ENDPOINT;
+        let payload = { ...req.body };
+
+        console.debug('Venice image request:', payload);
+
+        let apiRes = await fetch(`${baseUrl}/image/generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${key}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        // If error indicates width/height not supported, retry with aspect_ratio
+        if (!apiRes.ok && (apiRes.status === 400 || apiRes.status === 422)) {
+            const errText = await apiRes.text();
+            if (errText.includes('width') && errText.includes('aspect_ratio')) {
+                console.warn('Venice: Retrying without width/height using aspect_ratio...');
+                delete payload.width;
+                delete payload.height;
+                if (!payload.aspect_ratio) {
+                    payload.aspect_ratio = '1:1';
+                }
+                apiRes = await fetch(`${baseUrl}/image/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${key}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+            } else {
+                console.warn('Venice image generation failed:', errText);
+                return res.status(apiRes.status || 500).send(errText);
+            }
+        }
+
+        if (!apiRes.ok) {
+            const err = await apiRes.text();
+            console.warn('Venice image generation failed:', err);
+            return res.status(apiRes.status || 500).send(err);
+        }
+
+        /** @type {any} */
+        const data = await apiRes.json();
+        const b64 = Array.isArray(data.images) ? data.images[0] : null;
+        if (!b64) return res.status(500).send('No image returned');
+
+        const format = data.request?.format || payload.format || 'png';
+        return res.json({ format: format, data: b64 });
+    } catch (e) {
+        console.error(e);
+        res.status(500).send(e instanceof Error ? e.message : 'Internal error');
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/comfyrunpod', comfyRunPod);
 router.use('/together', together);
@@ -2213,3 +2372,4 @@ router.use('/xai', xai);
 router.use('/aimlapi', aimlapi);
 router.use('/zai', zai);
 router.use('/workersai', workersai);
+router.use('/venice', venice);
