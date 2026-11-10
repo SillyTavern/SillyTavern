@@ -455,7 +455,7 @@ const default_settings = {
     nanogpt_model: 'gpt-4o-mini',
     nanogpt_provider: '',
     nanogpt_payg_override: false,
-    deepseek_model: 'deepseek-v4-flash',
+    deepseek_model: 'deepseek-flash',
     aimlapi_model: 'chatgpt-4o-latest',
     xai_model: 'grok-3-beta',
     pollinations_model: 'openai',
@@ -2202,7 +2202,7 @@ function saveModelList(data) {
         $('#model_nanogpt_select').val(oai_settings.nanogpt_model).trigger('change');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.DEEPSEEK && model_list.length > 0) {
         $('#model_deepseek_select').empty();
         model_list.forEach((model) => {
             $('#model_deepseek_select').append($('<option>', { value: model.id, text: model.id }));
@@ -2621,7 +2621,7 @@ function getReasoningEffort(settings = null, model = null) {
                 }
 
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)) {
-                    if (/^(?:gpt-5\.(?:4|5|6)|gpt-6-(?:sol|luna))/.test(model)) {
+                    if (/^(?:gpt-5\.(?:4|5|6)|gpt-6-(?:sol|luna)|gpt-6\.1-terra)/.test(model)) {
                         return 'none';
                     }
                     if (/^gpt-5/.test(model)) {
@@ -2632,7 +2632,7 @@ function getReasoningEffort(settings = null, model = null) {
                 return reasoning_effort_types.low;
             case reasoning_effort_types.max:
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
-                    && /^gpt-6-/.test(model)) {
+                    && /^gpt-6(?:\.\d+)?-/.test(model)) {
                     return reasoning_effort_types.max;
                 }
                 if ([chat_completion_sources.OPENAI, chat_completion_sources.AZURE_OPENAI].includes(settings.chat_completion_source)
@@ -2697,7 +2697,7 @@ export async function createGenerationParameters(settings, model, type, messages
 
     // DeepSeek only accepts image blocks in user messages. Media can also be
     // attached to system and assistant messages by the shared inlining path.
-    const isDeepSeekVisionModel = typeof model === 'string' && model.toLowerCase().includes('deepseek-v4-flash-vision-exp');
+    const isDeepSeekVisionModel = typeof model === 'string' && /deepseek-(?:flash|v4-flash)/i.test(model);
     if (isDeepSeekVisionModel) {
         messages = messages.flatMap((message) => {
             if (!['system', 'assistant'].includes(message.role) || !Array.isArray(message.content)) {
@@ -3094,10 +3094,10 @@ export async function createGenerationParameters(settings, model, type, messages
         }
     }
 
-    if (gptSources.includes(settings.chat_completion_source) && /gpt-6-/.test(model)) {
+    if (gptSources.includes(settings.chat_completion_source) && /gpt-6(?:\.\d+)?-/.test(model)) {
         generate_data.max_completion_tokens = generate_data.max_tokens;
         delete generate_data.max_tokens;
-        if (model.includes('gpt-6-astra') || generate_data.reasoning_effort !== 'none') {
+        if (model.includes('gpt-6-astra') || model.includes('gpt-6.1-sol') || generate_data.reasoning_effort !== 'none') {
             delete generate_data.temperature;
             delete generate_data.top_p;
             delete generate_data.logprobs;
@@ -3108,7 +3108,7 @@ export async function createGenerationParameters(settings, model, type, messages
     // Claude Fable / Claude 5 models removed sampling parameters and reject them with HTTP 400,
     // including via OpenAI-compatible proxies. Unanchored to also match prefixed ids
     // like 'anthropic/claude-fable-5' or 'anthropic/claude-opus-5'.
-    if (/claude-(fable|opus-5|sonnet-5)/.test(model)) {
+    if (/claude-(fable|opus-5|sonnet-5|haiku-5)/.test(model)) {
         delete generate_data.temperature;
         delete generate_data.top_p;
         delete generate_data.top_k;
@@ -5094,7 +5094,7 @@ function getMaxContextOpenAI(value) {
 
     /** @type {[RegExp, number][]} */
     const contextMap = [
-        [/^gpt-6-/, max_1050k],
+        [/^gpt-6(?:\.\d+)?-/, max_1050k],
         [/^gpt-5\.6/, max_1050k],
         [/^gpt-5\.[45]/, max_1mil],
         [/^gpt-5/, max_400k],
@@ -5732,7 +5732,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|sonnet-5|opus-4-6|opus-4-7|opus-4-8|opus-5|fable)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|sonnet-5|haiku-5-5|opus-4-6|opus-4-7|opus-4-8|opus-5|fable)/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
@@ -6244,6 +6244,8 @@ export function isImageInliningSupported() {
         'gpt-4.5-preview',
         'gpt-4o',
         'gpt-6-astra',
+        'gpt-6.1-sol',
+        'gpt-6.1-terra',
         'gpt-6-sol',
         'gpt-6-luna',
         'gpt-5',
@@ -6258,6 +6260,7 @@ export function isImageInliningSupported() {
         'claude-sonnet-4',
         'claude-sonnet-5',
         'claude-haiku-4',
+        'claude-haiku-5',
         // Cohere
         'c4ai-aya-vision',
         'command-a-vision',
@@ -6291,6 +6294,8 @@ export function isImageInliningSupported() {
         'kimi-latest',
         // DeepSeek
         'deepseek-v4-flash-vision-exp',
+        'deepseek-flash',
+        'deepseek-v4-flash',
         // Z.AI (GLM)
         'glm-4.5v',
         'glm-4.6v',
