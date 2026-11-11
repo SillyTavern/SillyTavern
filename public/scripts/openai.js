@@ -3107,8 +3107,8 @@ export async function createGenerationParameters(settings, model, type, messages
 
     // Claude Fable / Claude 5 models removed sampling parameters and reject them with HTTP 400,
     // including via OpenAI-compatible proxies. Unanchored to also match prefixed ids
-    // like 'anthropic/claude-fable-5' or 'anthropic/claude-opus-5'.
-    if (/claude-(fable|opus-5|sonnet-5)/.test(model)) {
+    // like 'anthropic/claude-fable-5' or 'anthropic/claude-opus-5'. Opus and Sonnet are matched by major version.
+    if (/claude-(fable|(opus|sonnet)-[5-9](?!\d))/.test(model)) {
         delete generate_data.temperature;
         delete generate_data.top_p;
         delete generate_data.top_k;
@@ -5146,7 +5146,7 @@ function getGeminiMaxContext(model, isUnlocked) {
         [/gemini-2\.5-flash-image/, max_32k],
         [/gemini-3\.1-flash-image/, max_128k],
         [/gemini-3-pro-image/, max_64k],
-        [/gemini-(?:3[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
+        [/gemini-(?:[3-9](?!\d)[.\d]*|2\.(?:5|0))-(pro|flash)/, max_1mil],
         [/(gemini-exp|learnlm-2\.0-flash|gemini-robotics)/, max_1mil],
         [/gemma-3-27b-it/, max_128k],
         [/gemma-3n-e4b-it/, max_8k],
@@ -5732,7 +5732,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (/^claude-(sonnet-4-5|sonnet-4-6|sonnet-5|opus-4-6|opus-4-7|opus-4-8|opus-5|fable)/.test(value)) {
+        } else if (/^claude-(sonnet-4-5|sonnet-4-6|opus-4-6|opus-4-7|opus-4-8|fable|(opus|sonnet)-[5-9](?!\d))/.test(value)) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (/^claude-(3|opus|haiku|sonnet)/.test(value)) {
             $('#openai_max_context').attr('max', max_200k);
