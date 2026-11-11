@@ -1473,9 +1473,5 @@
     "Bulk Delete": "ลบจำนวนมาก",
     "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…",
     "Custom…": "กำหนดเอง…",
-    "Enter a Model ID": "ใส่ ID โมเดล",
-    "Use this model": "ใช้โมเดลนี้",
-    "Settings from": "ใช้การตั้งค่าจาก",
-    "Auto (from name)": "อัตโนมัติ (จากชื่อ)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "ขนาดบริบท การให้เหตุผล และการรองรับรูปภาพจะใช้ตามโมเดลนี้ อัตโนมัติจะคาดเดาจาก ID โมเดล"
+    "Enter a Model ID": "ใส่ ID โมเดล"
 }

@@ -1456,9 +1456,5 @@
     "Bulk Delete": "حذف جماعي",
     "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…",
     "Custom…": "مخصص…",
-    "Enter a Model ID": "أدخل معرّف النموذج",
-    "Use this model": "استخدم هذا النموذج",
-    "Settings from": "الإعدادات من",
-    "Auto (from name)": "تلقائي (من الاسم)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "يُؤخذ حجم السياق والتفكير ودعم الصور من هذا النموذج. الوضع التلقائي يخمّنها من معرّف النموذج."
+    "Enter a Model ID": "أدخل معرّف النموذج"
 }

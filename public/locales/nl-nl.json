@@ -1452,9 +1452,5 @@
     "Bulk Delete": "Bulkverwijdering",
     "Deleting ${0} character(s)…": "${0} personage(s) verwijderen…",
     "Custom…": "Aangepast…",
-    "Enter a Model ID": "Voer een model-ID in",
-    "Use this model": "Dit model gebruiken",
-    "Settings from": "Instellingen van",
-    "Auto (from name)": "Automatisch (op naam)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "Contextgrootte, redeneren en beeldondersteuning worden van dit model overgenomen. Automatisch leidt ze af uit de model-ID."
+    "Enter a Model ID": "Voer een model-ID in"
 }

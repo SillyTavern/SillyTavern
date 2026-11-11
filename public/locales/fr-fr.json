@@ -2063,9 +2063,5 @@
     "Loading chat…": "Chargement de la discussion…",
     "Bulk Delete": "Suppression groupée",
     "Deleting ${0} character(s)…": "Suppression de ${0} personnage(s)…",
-    "Custom…": "Personnalisé…",
-    "Use this model": "Utiliser ce modèle",
-    "Settings from": "Paramètres de",
-    "Auto (from name)": "Auto (d’après le nom)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "La taille du contexte, le raisonnement et la prise en charge des images sont repris de ce modèle. Auto les déduit de l’ID du modèle."
+    "Custom…": "Personnalisé…"
 }

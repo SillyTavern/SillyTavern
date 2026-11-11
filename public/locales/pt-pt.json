@@ -1454,9 +1454,5 @@
     "Bulk Delete": "Eliminação em massa",
     "Deleting ${0} character(s)…": "A eliminar ${0} personagem(ns)…",
     "Custom…": "Personalizado…",
-    "Enter a Model ID": "Introduza um ID de modelo",
-    "Use this model": "Usar este modelo",
-    "Settings from": "Definições de",
-    "Auto (from name)": "Automático (pelo nome)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "O tamanho do contexto, o raciocínio e o suporte de imagens são obtidos deste modelo. Automático deduz a partir do ID do modelo."
+    "Enter a Model ID": "Introduza um ID de modelo"
 }

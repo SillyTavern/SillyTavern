@@ -6,7 +6,7 @@ describe('getCapabilityModel', () => {
         expect(getCapabilityModel({ model: 'gpt-4o' })).toBe('gpt-4o');
     });
 
-    test('uses the "Settings from" base when given', () => {
+    test('uses the base model when given', () => {
         expect(getCapabilityModel({ model: 'my-finetune', model_base: 'gpt-4o' })).toBe('gpt-4o');
     });
 

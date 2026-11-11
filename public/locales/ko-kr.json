@@ -1635,9 +1635,5 @@
     "Bulk Delete": "대량 삭제",
     "Deleting ${0} character(s)…": "${0}개 캐릭터 삭제 중…",
     "Custom…": "사용자 지정…",
-    "Enter a Model ID": "모델 ID 입력",
-    "Use this model": "이 모델 사용",
-    "Settings from": "설정 기준",
-    "Auto (from name)": "자동 (이름으로 판단)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "컨텍스트 크기, 추론, 이미지 지원은 이 모델의 설정을 따릅니다. 자동은 모델 ID로 추측합니다."
+    "Enter a Model ID": "모델 ID 입력"
 }

@@ -1454,9 +1454,5 @@
     "Bulk Delete": "Xóa hàng loạt",
     "Deleting ${0} character(s)…": "Đang xóa ${0} nhân vật…",
     "Custom…": "Tùy chỉnh…",
-    "Enter a Model ID": "Nhập ID mô hình",
-    "Use this model": "Dùng mô hình này",
-    "Settings from": "Cài đặt theo",
-    "Auto (from name)": "Tự động (theo tên)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "Kích thước ngữ cảnh, suy luận và hỗ trợ hình ảnh được lấy từ mô hình này. Tự động sẽ đoán dựa trên ID mô hình."
+    "Enter a Model ID": "Nhập ID mô hình"
 }

@@ -82,7 +82,7 @@ import { ToolManager } from './tool-calling.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { COMETAPI_IGNORE_PATTERNS, IGNORE_SYMBOL, MEDIA_DISPLAY, MEDIA_TYPE } from './constants.js';
 import { syncNanoGptProvidersForModel, syncOpenRouterProvidersForModel, updateNanoGptProvidersWarning, updateOpenRouterProvidersWarning } from './textgen-models.js';
-import { CUSTOM_MODEL_SELECTS, getBaseSelectId, getListedModelValues, initCustomModelSelects, isCustomModelSelect, resolveCapabilityModel, syncAllCustomModelSelects, syncCustomModelSelect } from './custom-model-select.js';
+import { getListedModelValues, initCustomModelSelects, isCustomModelSelect, resolveCapabilityModel, resolveSelectedModel, syncAllCustomModelSelects, syncCustomModelSelect } from './custom-model-select.js';
 
 export {
     openai_messages_count,
@@ -356,8 +356,6 @@ export const settingsToUpdate = {
     google_model: ['#model_google_select', 'google_model', false, true],
     vertexai_model: ['#model_vertexai_select', 'vertexai_model', false, true],
     zai_model: ['#model_zai_select', 'zai_model', false, true],
-    // "Settings from" model for custom model IDs, e.g. claude_model_base
-    ...Object.fromEntries(CUSTOM_MODEL_SELECTS.map(x => [x.baseKey, [`#${getBaseSelectId(x.selector)}`, x.baseKey, false, true]])),
     zai_endpoint: ['#zai_endpoint', 'zai_endpoint', false, true],
     workers_ai_model: ['#model_workers_ai_select', 'workers_ai_model', false, true],
     workers_ai_account_id: ['#workers_ai_account_id', 'workers_ai_account_id', false, true],
@@ -474,7 +472,8 @@ const default_settings = {
     azure_deployment_name: '',
     azure_api_version: '2024-02-15-preview',
     azure_openai_model: '',
-    ...Object.fromEntries(CUSTOM_MODEL_SELECTS.map(x => [x.baseKey, ''])),
+    // Custom model IDs used per source: { [source]: string[] }
+    custom_models: {},
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -2078,7 +2077,7 @@ function saveModelList(data) {
         // Keep unlisted saved models; they show in the "Custom" group
         syncCustomModelSelect('#model_openai_select', oai_settings.openai_model || default_settings.openai_model);
         if (oai_settings.show_external_models) {
-            $('#model_openai_select').val(oai_settings.openai_model || default_settings.openai_model).trigger('change');
+            $('#model_openai_select').trigger('change');
         }
     }
 
@@ -2280,7 +2279,7 @@ function saveModelList(data) {
         }
 
         syncCustomModelSelect('#model_google_select', oai_settings.google_model);
-        $('#model_google_select').val(oai_settings.google_model).trigger('change');
+        $('#model_google_select').trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
@@ -2299,7 +2298,7 @@ function saveModelList(data) {
         }
 
         syncCustomModelSelect('#model_groq_select', oai_settings.groq_model);
-        $('#model_groq_select').val(oai_settings.groq_model).trigger('change');
+        $('#model_groq_select').trigger('change');
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.SILICONFLOW) {
@@ -2420,7 +2419,7 @@ function saveModelList(data) {
         }
 
         syncCustomModelSelect('#model_moonshot_select', oai_settings.moonshot_model);
-        $('#model_moonshot_select').val(oai_settings.moonshot_model).trigger('change');
+        $('#model_moonshot_select').trigger('change');
     }
 }
 
@@ -2713,7 +2712,7 @@ export async function createGenerationParameters(settings, model, type, messages
     }
     messages = messages.filter(msg => msg && typeof msg === 'object');
 
-    // Model checks below use the "Settings from" model of custom IDs; the request sends the real ID
+    // Model checks below use the guessed settings of custom IDs; the request sends the real ID
     const requestModel = model;
     model = getChatCompletionCapabilityModel(settings, requestModel);
 
@@ -4391,6 +4390,7 @@ function loadOpenAISettings(data, settings) {
         }
     }
 
+    oai_settings.custom_models = structuredClone(oai_settings.custom_models ?? {});
     syncAllCustomModelSelects(oai_settings);
 
     $(`#settings_preset_openai option[value="${openai_setting_names[oai_settings.preset_settings_openai]}"]`).prop('selected', true);
@@ -5512,7 +5512,8 @@ function getNanoGptMaxContext(model, isUnlocked) {
 
 async function onModelChange() {
     biasCache = undefined;
-    let value = String($(this).val() || '');
+    // With "Custom…" selected, the model is the saved custom ID
+    let value = isCustomModelSelect(this) ? resolveSelectedModel(this, oai_settings) : String($(this).val() || '');
 
     // Skip setting the context size for sources that get it from external APIs
     const hasModelsLoaded = Array.isArray(model_list) && model_list.length > 0;
@@ -5532,7 +5533,7 @@ async function onModelChange() {
         }
         console.log('Claude model changed to', value);
         oai_settings.claude_model = value;
-        $('#model_claude_select').val(oai_settings.claude_model);
+        syncCustomModelSelect('#model_claude_select', oai_settings.claude_model);
     }
 
     if ($(this).is('#model_openai_select')) {
@@ -5740,7 +5741,7 @@ async function onModelChange() {
         oai_settings.workers_ai_model = value;
     }
 
-    // Limits come from the "Settings from" model for custom model IDs
+    // Limits come from the guessed settings for custom model IDs
     const capabilityModel = getChatCompletionCapabilityModel();
 
     if ([chat_completion_sources.MAKERSUITE, chat_completion_sources.VERTEXAI].includes(oai_settings.chat_completion_source)) {
@@ -6387,7 +6388,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.COMETAPI:
             return true;
         case chat_completion_sources.MOONSHOT:
-            return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.moonshot_model)?.supports_image_in);
+            return (Array.isArray(model_list) && model_list.find(m => m.id === capabilityModel)?.supports_image_in);
         case chat_completion_sources.NANOGPT:
             return (Array.isArray(model_list) && model_list.find(m => m.id === oai_settings.nanogpt_model)?.capabilities?.vision);
         case chat_completion_sources.ZAI:
@@ -7370,10 +7371,7 @@ export function initOpenAI() {
     $('#api_button_openai').on('click', onConnectButtonClick);
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
     // Bound before onModelChange so picking "Custom…" never reaches it
-    initCustomModelSelects(() => oai_settings, (selector) => {
-        saveSettingsDebounced();
-        $(selector).trigger('change');
-    });
+    initCustomModelSelects(() => oai_settings);
     $('#model_openai_select').on('change', onModelChange);
     $('#model_claude_select').on('change', onModelChange);
     $('#model_google_select').on('change', onModelChange);

@@ -488,7 +488,7 @@ async function sendMakerSuiteRequest(request, response) {
     }
 
     const model = String(request.body.model);
-    // "Settings from" model of a custom ID, for feature checks
+    // Model whose settings a custom ID uses, for feature checks
     const capabilityModel = getCapabilityModel(request.body);
     const stream = Boolean(request.body.stream);
     const enableWebSearch = Boolean(request.body.enable_web_search);
@@ -530,7 +530,7 @@ async function sendMakerSuiteRequest(request, response) {
         const isThinkingConfigModel = m => (/^gemini-2.5-(flash|pro)/.test(m) && !/-image(-preview)?$/.test(m)) || (/^gemini-3[.\d]*-(flash|pro)/.test(m));
         const isImageSizeModel = m => /^gemini-3/.test(m);
         // https://ai.google.dev/gemini-api/docs/latest-model#api-changes-and-parameter-updates
-        const noSamplingModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(model);
+        const noSamplingModel = /gemini-3\.[678]-flash|gemini-3\.5-flash-lite/.test(capabilityModel);
 
         const noSearchModels = [
             'gemini-2.0-flash-lite',
@@ -1640,7 +1640,7 @@ async function sendMinimaxRequest(request, response) {
             'messages': messages,
             'model': request.body.model,
             'temperature': request.body.temperature,
-            'max_tokens': request.body.model === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
+            'max_tokens': getCapabilityModel(request.body) === 'M2-her' ? Math.min(request.body.max_tokens, 2048) : request.body.max_tokens,
             'stream': request.body.stream,
             'top_p': request.body.top_p,
             'stop': request.body.stop,

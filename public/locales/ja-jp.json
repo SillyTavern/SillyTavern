@@ -1461,9 +1461,5 @@
     "Bulk Delete": "一括削除",
     "Deleting ${0} character(s)…": "${0}人のキャラクターを削除中…",
     "Custom…": "カスタム…",
-    "Enter a Model ID": "モデルIDを入力",
-    "Use this model": "このモデルを使用",
-    "Settings from": "設定の参照元",
-    "Auto (from name)": "自動（名前から判定）",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "コンテキストサイズ、推論、画像対応はこのモデルのものを使用します。自動ではモデルIDから推測します。"
+    "Enter a Model ID": "モデルIDを入力"
 }

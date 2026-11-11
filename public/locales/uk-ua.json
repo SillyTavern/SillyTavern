@@ -1454,9 +1454,5 @@
     "Bulk Delete": "Масове видалення",
     "Deleting ${0} character(s)…": "Видалення ${0} персонажа(ів)…",
     "Custom…": "Власна модель…",
-    "Enter a Model ID": "Введіть ID моделі",
-    "Use this model": "Використати цю модель",
-    "Settings from": "Налаштування від",
-    "Auto (from name)": "Авто (за назвою)",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "Розмір контексту, міркування та підтримка зображень беруться від цієї моделі. «Авто» визначає їх за ID моделі."
+    "Enter a Model ID": "Введіть ID моделі"
 }

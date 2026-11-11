@@ -3644,9 +3644,5 @@
     "Loading chat…": "正在加载聊天…",
     "Bulk Delete": "批量删除",
     "Deleting ${0} character(s)…": "正在删除 ${0} 个角色…",
-    "Custom…": "自定义…",
-    "Use this model": "使用此模型",
-    "Settings from": "设置参照",
-    "Auto (from name)": "自动（根据名称）",
-    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "上下文大小、推理和图片支持将沿用此模型。自动模式会根据模型 ID 推断。"
+    "Custom…": "自定义…"
 }

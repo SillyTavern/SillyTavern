@@ -2,60 +2,88 @@
  * Adds a "Custom…" entry to hardcoded Chat Completion model dropdowns.
  *
  * The model ID is still stored in the source's existing `<source>_model` setting.
- * A saved value that is not one of the dropdown's options is shown as its own
- * entry in a "Custom" group, so the dropdown never shows a blank selection.
- * Picking "Custom…" opens a text box; confirming adds the typed ID as an entry
- * and selects it, which then goes through the regular `change` handler.
+ * When the saved model is not one of the dropdown's options, "Custom…" is selected
+ * and a text field below the dropdown shows the saved ID. Typing an ID there saves it.
+ *
+ * A custom ID gets the settings (context size, reasoning, media, parameters) of the source's
+ * most advanced known model, as a guess for models released later. Requests use the real ID.
  */
 
-/** Value of the "Custom…" action option. Never saved to settings. */
-export const CUSTOM_MODEL_SENTINEL = '__custom_model__';
+import { lodash } from '../lib.js';
 
-const CUSTOM_GROUP_CLASS = 'custom_model_group';
-const CUSTOM_OPTION_ATTR = 'data-custom-model';
-const EDITOR_CLASS = 'custom_model_editor';
-const BASE_HINT = 'Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.';
+/** Value of the "Custom…" option. Never saved to settings. */
+export const CUSTOM_MODEL_SENTINEL = '__custom_model__';
 
 /**
  * @typedef {object} CustomModelSelect
  * @property {string} source Chat completion source ID
  * @property {string} selector Model select selector
  * @property {string} settingKey Key of the model ID in the chat completion settings
- * @property {string} baseKey Key of the "Settings from" model in the chat completion settings
- * @property {(value: string) => string} [normalize] Normalizes a typed model ID
+ * @property {string} [guess] Most advanced known model, whose settings custom IDs use
+ * @property {boolean} [stripModelsPrefix] Removes a leading "models/" from typed IDs
  */
-
-/** @type {(value: string) => string} */
-const stripGoogleModelsPrefix = (value) => value.replace(/^models\//, '');
 
 /** @type {CustomModelSelect[]} */
 export const CUSTOM_MODEL_SELECTS = [
-    { source: 'openai', selector: '#model_openai_select', settingKey: 'openai_model', baseKey: 'openai_model_base' },
-    { source: 'claude', selector: '#model_claude_select', settingKey: 'claude_model', baseKey: 'claude_model_base' },
-    { source: 'makersuite', selector: '#model_google_select', settingKey: 'google_model', baseKey: 'google_model_base', normalize: stripGoogleModelsPrefix },
-    { source: 'vertexai', selector: '#model_vertexai_select', settingKey: 'vertexai_model', baseKey: 'vertexai_model_base', normalize: stripGoogleModelsPrefix },
-    { source: 'ai21', selector: '#model_ai21_select', settingKey: 'ai21_model', baseKey: 'ai21_model_base' },
-    { source: 'perplexity', selector: '#model_perplexity_select', settingKey: 'perplexity_model', baseKey: 'perplexity_model_base' },
-    { source: 'cohere', selector: '#model_cohere_select', settingKey: 'cohere_model', baseKey: 'cohere_model_base' },
-    { source: 'minimax', selector: '#model_minimax_select', settingKey: 'minimax_model', baseKey: 'minimax_model_base' },
-    { source: 'zai', selector: '#model_zai_select', settingKey: 'zai_model', baseKey: 'zai_model_base' },
-    { source: 'groq', selector: '#model_groq_select', settingKey: 'groq_model', baseKey: 'groq_model_base' },
-    { source: 'moonshot', selector: '#model_moonshot_select', settingKey: 'moonshot_model', baseKey: 'moonshot_model_base' },
+    { source: 'openai', selector: '#model_openai_select', settingKey: 'openai_model', guess: 'gpt-6-astra' },
+    { source: 'claude', selector: '#model_claude_select', settingKey: 'claude_model', guess: 'claude-fable-5-1' },
+    { source: 'makersuite', selector: '#model_google_select', settingKey: 'google_model', guess: 'gemini-3.8-flash', stripModelsPrefix: true },
+    { source: 'vertexai', selector: '#model_vertexai_select', settingKey: 'vertexai_model', guess: 'gemini-3.8-flash', stripModelsPrefix: true },
+    { source: 'ai21', selector: '#model_ai21_select', settingKey: 'ai21_model', guess: 'jamba-large' },
+    { source: 'perplexity', selector: '#model_perplexity_select', settingKey: 'perplexity_model', guess: 'sonar-pro' },
+    { source: 'cohere', selector: '#model_cohere_select', settingKey: 'cohere_model', guess: 'command-a-vision-07-2025' },
+    { source: 'minimax', selector: '#model_minimax_select', settingKey: 'minimax_model', guess: 'MiniMax-M2.7' },
+    { source: 'zai', selector: '#model_zai_select', settingKey: 'zai_model', guess: 'glm-5.2' },
+    { source: 'groq', selector: '#model_groq_select', settingKey: 'groq_model' },
+    { source: 'moonshot', selector: '#model_moonshot_select', settingKey: 'moonshot_model', guess: 'kimi-k2.5' },
 ];
 
+/** @type {() => object} */
+let getSettingsRef = () => null;
+
 /**
- * Gets the ID of the "Settings from" select for a model select.
- * @param {string} selector Model select selector
- * @returns {string} Base select ID (without #)
+ * Gets the definition of a model select.
+ * @param {string|HTMLElement} select Select element or selector
+ * @returns {CustomModelSelect|undefined} Definition, if the select supports custom models
  */
-export function getBaseSelectId(selector) {
-    return `${selector.replace(/^#/, '')}_base`;
+const getEntry = (select) => CUSTOM_MODEL_SELECTS.find(x => $(select).is(x.selector));
+
+/**
+ * Checks if a select element supports custom models.
+ * @param {string|HTMLElement} select Select element or selector
+ * @returns {boolean} True if custom models are supported
+ */
+export const isCustomModelSelect = (select) => !!getEntry(select);
+
+/**
+ * Gets the values of the listed (non-custom) model options of a select.
+ * @param {string|HTMLElement} select Select element or selector
+ * @returns {string[]} Listed model IDs
+ */
+export function getListedModelValues(select) {
+    return $(select).find('option').map((_, o) => o.value).get().filter(x => x !== CUSTOM_MODEL_SENTINEL);
 }
 
 /**
- * Gets the model whose capabilities (context size, reasoning, image support, request parameters)
- * apply to the current model. For the saved custom model with a "Settings from" model chosen, that's
- * the chosen model; otherwise it's the model itself. The actual request always uses the real model ID.
+ * Gets the model ID a model select currently stands for. With "Custom…" selected,
+ * that's the saved custom model (or nothing if the saved model is a listed one).
+ * @param {HTMLElement} select Model select element
+ * @param {object} settings Chat completion settings
+ * @returns {string} Model ID, or an empty string
+ */
+export function resolveSelectedModel(select, settings) {
+    const value = String($(select).val() ?? '');
+    if (value !== CUSTOM_MODEL_SENTINEL) {
+        return value;
+    }
+    const saved = String(settings?.[getEntry(select)?.settingKey] ?? '');
+    return getListedModelValues(select).includes(saved) ? '' : saved;
+}
+
+/**
+ * Gets the model whose settings (context size, reasoning, image support, request parameters) apply
+ * to the current model. A saved custom ID uses the source's most advanced known model; anything
+ * else is its own model. The actual request always uses the real model ID.
  * @param {object} settings Chat completion settings
  * @param {string} model Current model ID
  * @returns {string} Model ID to use for capability checks
@@ -63,144 +91,70 @@ export function getBaseSelectId(selector) {
 export function resolveCapabilityModel(settings, model) {
     model = String(model ?? '');
     const entry = CUSTOM_MODEL_SELECTS.find(x => x.source === settings?.chat_completion_source);
-    const base = entry ? String(settings[entry.baseKey] ?? '') : '';
-    // The base belongs to the saved model only, not to other IDs passed with these settings (e.g. connection profiles)
-    if (!model || !base || model !== settings[entry.settingKey] || getListedModelValues(entry.selector).includes(model)) {
+    // Only the saved model counts, not other IDs passed with these settings (e.g. connection profiles)
+    if (!entry?.guess || !model || model !== settings[entry.settingKey]) {
         return model;
     }
-    return base;
+    const listed = getListedModelValues(entry.selector);
+    return listed.length === 0 || listed.includes(model) ? model : entry.guess;
 }
 
 /**
- * Checks if an option element is a regular (listed) model option.
- * @param {HTMLOptionElement} option Option element
- * @returns {boolean} True if the option is a listed model
+ * Gets the custom model IDs used before with a source (settings `custom_models`: `{ [source]: string[] }`).
+ * @param {object} settings Chat completion settings
+ * @param {CustomModelSelect} entry Select definition
+ * @returns {string[]} Model IDs
  */
-function isListedOption(option) {
-    return option.value !== CUSTOM_MODEL_SENTINEL && !option.hasAttribute(CUSTOM_OPTION_ATTR);
-}
+const getRememberedModels = (settings, entry) => [].concat(lodash.get(settings, ['custom_models', entry?.source], []));
 
 /**
- * Gets the values of the listed (non-custom) model options of a select.
- * @param {string|HTMLSelectElement} select Select element or selector
- * @returns {string[]} Listed model IDs
+ * Remembers a custom model ID. Listed models are not remembered.
+ * @param {object} settings Chat completion settings
+ * @param {CustomModelSelect} entry Select definition
+ * @param {string} id Model ID
  */
-export function getListedModelValues(select) {
-    const element = $(select).get(0);
-    if (!(element instanceof HTMLSelectElement)) {
-        return [];
+function rememberCustomModel(settings, entry, id) {
+    if (settings && id && !getListedModelValues(entry.selector).includes(id)) {
+        lodash.set(settings, ['custom_models', entry.source], lodash.union(getRememberedModels(settings, entry), [id]));
     }
-    return Array.from(element.options).filter(isListedOption).map(o => o.value);
 }
 
 /**
- * Checks if a select element supports custom models.
- * @param {string|HTMLElement} select Select element or selector
- * @returns {boolean} True if custom models are supported
+ * Checks if a name is a custom model ID that was used before with this select.
+ * @param {HTMLElement} select Model select element
+ * @param {string} id Model ID
+ * @returns {boolean} True if the ID is a remembered custom model
  */
-export function isCustomModelSelect(select) {
-    const element = $(select).get(0);
-    return !!element && CUSTOM_MODEL_SELECTS.some(x => $(x.selector).is(element));
-}
+export const isRememberedCustomModel = (select, id) => getRememberedModels(getSettingsRef(), getEntry(select)).includes(id);
 
 /**
- * Makes sure the "Custom" group and the "Custom…" action option exist at the end of the select.
- * Dynamic lists (Groq, Moonshot) are emptied on connect, so this is safe to call repeatedly.
- * @param {JQuery<HTMLElement>} $select Select element
- * @returns {JQuery<HTMLElement>} The custom group
- */
-function ensureCustomStructure($select) {
-    let $group = $select.children(`optgroup.${CUSTOM_GROUP_CLASS}`);
-    if ($group.length === 0) {
-        $group = $('<optgroup>')
-            .addClass(CUSTOM_GROUP_CLASS)
-            .attr('label', 'Custom')
-            .attr('data-i18n', '[label]Custom');
-    }
-
-    let $sentinel = $select.children(`option[value="${CUSTOM_MODEL_SENTINEL}"]`);
-    if ($sentinel.length === 0) {
-        $sentinel = $('<option>')
-            .val(CUSTOM_MODEL_SENTINEL)
-            .text('Custom…')
-            .attr('data-i18n', 'Custom…');
-    }
-
-    // Keep both at the very end, the group above the action
-    $select.append($group, $sentinel);
-    $group.toggle($group.children().length > 0);
-    return $group;
-}
-
-/**
- * Shows the saved model in the select. If the model isn't a listed option,
- * it is added to the "Custom" group. Custom entries that became listed
- * (e.g. after the API model list loaded) are removed. Does not trigger `change`.
- * Also refreshes the "Settings from" row, which is only shown for custom models.
+ * Shows the saved model in the select. A model that isn't a listed option is shown as "Custom…"
+ * with the ID in the text box below. Does not trigger `change`.
  * @param {string} selector Select selector
  * @param {string} value Saved model ID
- * @param {string} [baseValue] Saved "Settings from" model. Keeps the current choice if omitted.
  */
-export function syncCustomModelSelect(selector, value, baseValue) {
+export function syncCustomModelSelect(selector, value) {
     const $select = $(selector);
     if ($select.length === 0) {
         return;
     }
 
-    const $group = ensureCustomStructure($select);
-    const listed = getListedModelValues($select);
+    // Dynamic lists (Groq, Moonshot) are emptied on connect, which drops the option
+    if ($select.children(`option[value="${CUSTOM_MODEL_SENTINEL}"]`).length === 0) {
+        $select.append(new Option('Custom…', CUSTOM_MODEL_SENTINEL));
+    }
+
     value = String(value ?? '');
-
-    // Drop custom entries that duplicate a listed option
-    $group.children('option').each(function () {
-        if (listed.includes(this.value)) {
-            this.remove();
-        }
-    });
-
-    if (value && value !== CUSTOM_MODEL_SENTINEL && !listed.includes(value)) {
-        const exists = $group.children('option').toArray().some(o => o.value === value);
-        if (!exists) {
-            $group.append($('<option>').val(value).text(value).attr(CUSTOM_OPTION_ATTR, 'true'));
-        }
-    }
-
-    $group.toggle($group.children().length > 0);
-
+    const isCustom = !!value && !getListedModelValues($select).includes(value);
     if (value) {
-        $select.val(value);
+        $select.val(isCustom ? CUSTOM_MODEL_SENTINEL : value);
     }
 
-    syncBaseSelect(selector, listed, !!value && !listed.includes(value), baseValue);
-}
-
-/**
- * Refreshes the "Settings from" select: its options mirror the listed models.
- * @param {string} selector Model select selector
- * @param {string[]} listed Listed model IDs
- * @param {boolean} isCustom Whether the current model is a custom one
- * @param {string} [baseValue] Value to select. Keeps the current choice if omitted.
- */
-function syncBaseSelect(selector, listed, isCustom, baseValue) {
-    const $base = $(`#${getBaseSelectId(selector)}`);
-    if ($base.length === 0) {
-        return;
+    const $editor = $(`${selector}_custom`);
+    $editor.toggleClass('displayNone', $select.val() !== CUSTOM_MODEL_SENTINEL);
+    if (isCustom) {
+        $editor.find('input').val(value);
     }
-
-    const current = baseValue ?? String($base.val() ?? '');
-    const existing = $base.children('option').map((_, o) => o.value).get().slice(1);
-    if (existing.join('\n') !== listed.join('\n')) {
-        $base.children('option').slice(1).remove();
-        const $source = $(selector);
-        for (const id of listed) {
-            const text = $source.find('option').filter((_, o) => o.value === id).first().text() || id;
-            $base.append($('<option>').val(id).text(text));
-        }
-    }
-
-    // A "Settings from" model that is no longer listed falls back to Auto
-    $base.val(listed.includes(current) ? current : '');
-    $base.closest('.custom_model_base').toggleClass('displayNone', !isCustom);
 }
 
 /**
@@ -208,137 +162,80 @@ function syncBaseSelect(selector, listed, isCustom, baseValue) {
  * @param {object} settings Chat completion settings
  */
 export function syncAllCustomModelSelects(settings) {
-    for (const { selector, settingKey, baseKey } of CUSTOM_MODEL_SELECTS) {
-        syncCustomModelSelect(selector, settings[settingKey], String(settings[baseKey] ?? ''));
+    for (const entry of CUSTOM_MODEL_SELECTS) {
+        const id = String(settings[entry.settingKey] ?? '');
+        rememberCustomModel(settings, entry, id);
+        syncCustomModelSelect(entry.selector, id);
     }
 }
 
 /**
- * Creates the inline editor shown below a select when "Custom…" is picked.
- * @param {JQuery<HTMLElement>} $select Select element
- * @returns {JQuery<HTMLElement>} Editor container
- */
-function createEditor($select) {
-    const selectId = $select.attr('id');
-    const $editor = $(`
-        <div class="${EDITOR_CLASS} flex-container alignItemsCenter marginTop5 displayNone" data-for="${selectId}">
-            <input type="text" class="text_pole flex1 margin0" autocomplete="off" spellcheck="false"
-                placeholder="Enter a Model ID" data-i18n="[placeholder]Enter a Model ID">
-            <div class="menu_button menu_button_icon fa-solid fa-check margin0" title="Use this model" data-i18n="[title]Use this model"></div>
-            <div class="menu_button menu_button_icon fa-solid fa-xmark margin0" title="Cancel" data-i18n="[title]Cancel"></div>
-        </div>`);
-    const $baseRow = $(`
-        <div class="custom_model_base flex-container alignItemsCenter marginTop5 displayNone" data-for="${selectId}">
-            <span title="${BASE_HINT}" data-i18n="Settings from;[title]${BASE_HINT}">Settings from</span>
-            <select id="${selectId}_base" class="text_pole flex1 margin0" title="${BASE_HINT}" data-i18n="[title]${BASE_HINT}">
-                <option value="" data-i18n="Auto (from name)">Auto (from name)</option>
-            </select>
-        </div>`);
-    $select.after($editor, $baseRow);
-    return $editor;
-}
-
-/** @type {() => object} */
-let getSettingsRef = () => null;
-
-/**
- * Selects a model ID in a custom-capable select, adding it as a custom entry if it isn't listed,
- * and triggers `change` so the regular handler saves it. A different custom model starts with
- * "Settings from" on Auto.
+ * Selects a model ID in a custom-capable select and triggers `change` so the regular handler saves it.
+ * A listed ID selects its option; anything else is saved as a custom model.
  * @param {HTMLElement} select Model select element
  * @param {string} value Model ID
  * @returns {string} The selected model ID, or an empty string if nothing was selected
  */
 export function selectCustomModel(select, value) {
-    const entry = CUSTOM_MODEL_SELECTS.find(x => $(x.selector).is(select));
+    const entry = getEntry(select);
     value = String(value ?? '').trim();
+    if (entry?.stripModelsPrefix) {
+        value = value.replace(/^models\//, '');
+    }
     if (!entry || !value || value === CUSTOM_MODEL_SENTINEL) {
         return '';
     }
-    if (entry.normalize) {
-        value = entry.normalize(value);
+
+    if (getListedModelValues(select).includes(value)) {
+        $(select).val(value).trigger('change');
+        return value;
     }
 
     const settings = getSettingsRef();
-    const isNewModel = !!settings && settings[entry.settingKey] !== value;
-    if (isNewModel) {
-        settings[entry.baseKey] = '';
-    }
-    syncCustomModelSelect(entry.selector, value, isNewModel ? '' : undefined);
-    $(entry.selector).val(value).trigger('change');
+    rememberCustomModel(settings, entry, value);
+    // The change handler reads the model from the settings while "Custom…" is selected
+    lodash.set(settings, entry.settingKey, value);
+    syncCustomModelSelect(entry.selector, value);
+    $(select).trigger('change');
     return value;
 }
 
 /**
- * Adds the "Custom…" option and editor to every supported select.
- * Must be called before the selects' `change` handlers are bound,
- * so that picking "Custom…" never reaches them.
+ * Adds the "Custom…" option and text box to every supported select.
+ * Must be called before the selects' `change` handlers are bound.
  * @param {() => object} getSettings Returns the current chat completion settings
- * @param {(selector: string) => void} onBaseChange Called after a "Settings from" model was stored
  */
-export function initCustomModelSelects(getSettings, onBaseChange) {
+export function initCustomModelSelects(getSettings) {
     getSettingsRef = getSettings;
-    for (const { selector, settingKey, baseKey } of CUSTOM_MODEL_SELECTS) {
+    for (const { selector, settingKey } of CUSTOM_MODEL_SELECTS) {
         const $select = $(selector);
         if ($select.length === 0) {
             continue;
         }
 
-        ensureCustomStructure($select);
-        const $editor = createEditor($select);
-        const $input = $editor.find('input');
+        const $input = $('<input type="text" class="text_pole flex1 margin0" autocomplete="off" spellcheck="false" placeholder="Enter a Model ID" data-i18n="[placeholder]Enter a Model ID">');
+        const $editor = $(`<div id="${$select.attr('id')}_custom" class="flex-container marginTop5 displayNone"></div>`).append($input);
+        $select.after($editor);
+        syncCustomModelSelect(selector, getSettings()?.[settingKey]);
 
-        const closeEditor = () => {
-            $editor.addClass('displayNone');
-            $input.val('');
-        };
-
-        const commit = () => {
-            const value = String($input.val() ?? '');
-            closeEditor();
-            selectCustomModel($select.get(0), value);
-        };
-
-        $(`#${getBaseSelectId(selector)}`).on('change', function () {
-            const settings = getSettings();
-            if (settings) {
-                settings[baseKey] = String($(this).val() ?? '');
-            }
-            onBaseChange?.(selector);
-        });
-
+        // "Custom…" was picked (or restored for a saved custom model): show the text box.
+        // The regular handler continues with the saved custom model, or ignores it if there is none.
         $select.on('change', function (event) {
-            if ($select.val() !== CUSTOM_MODEL_SENTINEL) {
-                closeEditor();
-                const value = String($select.val() ?? '');
-                const isCustom = !!value && !getListedModelValues($select).includes(value);
-                $(`#${getBaseSelectId(selector)}`).closest('.custom_model_base').toggleClass('displayNone', !isCustom);
-                return;
+            const isCustom = $select.val() === CUSTOM_MODEL_SENTINEL;
+            $editor.toggleClass('displayNone', !isCustom);
+            if (isCustom) {
+                $input.val(resolveSelectedModel(this, getSettings()));
+                !event.isTrigger && $input.trigger('focus');
             }
-
-            // Don't let the sentinel reach onModelChange; restore the saved model instead
-            event.stopImmediatePropagation();
-            const current = String(getSettings()?.[settingKey] ?? '');
-            syncCustomModelSelect(selector, current);
-
-            const isCustom = !!current && !getListedModelValues($select).includes(current);
-            $input.val(isCustom ? current : '');
-            $editor.removeClass('displayNone');
-            $input.trigger('focus');
         });
 
-        $input.on('keydown', function (event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                commit();
-            } else if (event.key === 'Escape') {
+        $input.on('change', () => selectCustomModel($select.get(0), String($input.val())) || syncCustomModelSelect(selector, getSettings()?.[settingKey]));
+        $input.on('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
-                closeEditor();
+                event.key === 'Enter' ? $input.trigger('change') : syncCustomModelSelect(selector, getSettings()?.[settingKey]);
             }
         });
-
-        $editor.find('.fa-check').on('click', commit);
-        $editor.find('.fa-xmark').on('click', closeEditor);
     }
 }

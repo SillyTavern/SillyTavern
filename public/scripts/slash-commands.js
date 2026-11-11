@@ -79,7 +79,7 @@ import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, get
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { registerActionLoaderSlashCommands } from './action-loader-slashcommands.js';
-import { CUSTOM_MODEL_SENTINEL, isCustomModelSelect, selectCustomModel } from './custom-model-select.js';
+import { CUSTOM_MODEL_SENTINEL, isCustomModelSelect, isRememberedCustomModel, selectCustomModel } from './custom-model-select.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
@@ -6368,6 +6368,14 @@ function modelCallback(args, model) {
         }
         return customModel;
     };
+
+    // A custom ID used before is an exact match; don't let fuzzy search swap it for a similar listed model
+    if (options.length && !options.some(x => x.value === model) && isCustomModelSelect(modelSelectControl) && isRememberedCustomModel(modelSelectControl, model)) {
+        const customModel = setCustomModel();
+        if (customModel) {
+            return customModel;
+        }
+    }
 
     if (!options.length) {
         const customModel = setCustomModel();
