@@ -1471,5 +1471,7 @@
     "Deleting chat…": "กำลังลบแชท…",
     "Loading chat…": "กำลังโหลดแชท…",
     "Bulk Delete": "ลบจำนวนมาก",
-    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…"
+    "Deleting ${0} character(s)…": "กำลังลบ ${0} ตัวละคร…",
+    "Custom…": "กำหนดเอง…",
+    "Enter a Model ID": "ใส่ ID โมเดล"
 }

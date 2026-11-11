@@ -1454,5 +1454,7 @@
     "Deleting chat…": "جارٍ حذف المحادثة…",
     "Loading chat…": "جارٍ تحميل المحادثة…",
     "Bulk Delete": "حذف جماعي",
-    "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…"
+    "Deleting ${0} character(s)…": "جارٍ حذف ${0} شخصية (شخصيات)…",
+    "Custom…": "مخصص…",
+    "Enter a Model ID": "أدخل معرّف النموذج"
 }

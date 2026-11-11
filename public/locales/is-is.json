@@ -1452,5 +1452,7 @@
     "Deleting chat…": "Eyði spjalli…",
     "Loading chat…": "Hleð spjalli…",
     "Bulk Delete": "Fjöldaeyðing",
-    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…"
+    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…",
+    "Custom…": "Sérsniðið…",
+    "Enter a Model ID": "Sláðu inn auðkenni líkans"
 }
