@@ -5201,8 +5201,8 @@ function getMistralMaxContext(model, isUnlocked) {
         }
     }
 
-    // Return context size if model found, otherwise default to 32k
-    return max_32k;
+    // Return context size if model found, otherwise default to 128k
+    return max_128k;
 }
 
 /**
@@ -5341,8 +5341,8 @@ function getSiliconflowMaxContext(model, isUnlocked) {
         'zai-org/GLM-4.6': max_200k,
     };
 
-    // Return context size if model found, otherwise default to 32k
-    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_32k;
+    // Return context size if model found, otherwise default to 128k
+    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_128k;
 }
 
 /**
@@ -5381,8 +5381,8 @@ function getMoonshotMaxContext(model, isUnlocked) {
         'kimi-k2-thinking-turbo': max_256k,
     };
 
-    // Return context size if model found, otherwise default to 32k
-    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_32k;
+    // Return context size if model found, otherwise default to 256k
+    return Object.entries(contextMap).find(([key]) => model.includes(key))?.[1] || max_256k;
 }
 
 /**
@@ -5407,7 +5407,7 @@ function getFireworksMaxContext(model, isUnlocked) {
         }
     }
 
-    return max_32k;
+    return max_128k;
 }
 
 /**
@@ -5427,7 +5427,7 @@ function getChutesMaxContext(model, isUnlocked) {
             return modelInfo.context_length;
         }
     }
-    return max_8k;
+    return max_128k;
 }
 
 /**
@@ -5783,7 +5783,8 @@ async function onModelChange() {
         } else if (['c4ai-aya-vision-8b', 'c4ai-aya-vision-32b'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_16k);
         } else {
-            $('#openai_max_context').attr('max', max_4k);
+            // Current Cohere models are 128k or larger; only the legacy models above are smaller
+            $('#openai_max_context').attr('max', max_128k);
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -5895,8 +5896,8 @@ async function onModelChange() {
         } else {
             const model = model_list.find(m => m.id === oai_settings.workers_ai_model);
             const ctxProp = Array.isArray(model?.properties) && model.properties.find(p => p.property_id === 'context_window');
-            const contextLength = ctxProp ? Number(ctxProp.value) : max_8k;
-            $('#openai_max_context').attr('max', contextLength || max_8k);
+            const contextLength = ctxProp ? Number(ctxProp.value) : max_32k;
+            $('#openai_max_context').attr('max', contextLength || max_32k);
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
@@ -5939,7 +5940,7 @@ async function onModelChange() {
             maxContext = unlocked_max;
         } else {
             const model = model_list.find(m => m.id === oai_settings.aimlapi_model);
-            maxContext = (model?.info?.contextLength ?? model?.context_length) || max_32k;
+            maxContext = (model?.info?.contextLength ?? model?.context_length) || max_128k;
             console.log('[AI/ML API] Model CTX:', model?.info?.contextLength);
         }
 

@@ -522,8 +522,8 @@ export function getTokenizerModel(requestModel) {
         return 'nemo';
     }
 
-    // default
-    return 'gpt-3.5-turbo';
+    // Unknown models: o200k (GPT-4o) is closer to current tokenizers than GPT-3.5's cl100k
+    return 'gpt-4o';
 }
 
 export function getTiktokenTokenizer(model) {
