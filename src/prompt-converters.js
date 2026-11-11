@@ -1302,11 +1302,11 @@ export function calculateGoogleBudgetTokens(maxTokens, reasoningEffort, model) {
         return null;
     }
 
-    if (/gemini-3[.\d]*-pro/.test(model)) {
+    if (/gemini-[3-9](?!\d)[.\d]*-pro/.test(model)) {
         return getGemini3ProBudget();
     }
 
-    if (/gemini-3[.\d]*-flash/.test(model)) {
+    if (/gemini-[3-9](?!\d)[.\d]*-flash/.test(model)) {
         return getGemini3FlashBudget();
     }
 

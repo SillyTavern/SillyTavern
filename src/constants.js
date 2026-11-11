@@ -456,7 +456,14 @@ export const AZURE_OPENAI_KEYS = [
     'reasoning_effort',
 ];
 
-export const OPENAI_VERBOSITY_MODELS = /^(?:gpt-5|gpt-6-)/;
+// GPT-5 to GPT-9. The lookahead keeps 'gpt-35-turbo' (Azure's GPT-3.5) and similar IDs out.
+export const OPENAI_VERBOSITY_MODELS = /^gpt-[5-9](?!\d)/;
+
+/**
+ * Matches OpenAI reasoning models that are not yet in OPENAI_REASONING_EFFORT_MODELS:
+ * o3 and later o-series, GPT-5 to GPT-9, except chat and search variants.
+ */
+export const OPENAI_REASONING_EFFORT_PATTERN = /^(?:o[3-9]|gpt-[5-9])(?!\d)(?!.*-(?:chat|search))/;
 
 export const OPENAI_REASONING_EFFORT_MODELS = [
     'o1',
