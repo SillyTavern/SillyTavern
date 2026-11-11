@@ -785,8 +785,8 @@ export function getTokenizerModel() {
         }
     }
 
-    // Default to Turbo 3.5
-    return turboTokenizer;
+    // Unknown models: o200k (GPT-4o) is closer to current tokenizers than GPT-3.5's cl100k
+    return gpt4oTokenizer;
 }
 
 /**
