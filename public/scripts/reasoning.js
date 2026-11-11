@@ -5,7 +5,7 @@ import { chat, closeMessageEditor, event_types, eventSource, main_api, messageFo
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { getCurrentLocale, t, translate } from './i18n.js';
 import { macros, MacroCategory } from './macros/macro-system.js';
-import { chat_completion_sources, getChatCompletionModel, oai_settings } from './openai.js';
+import { chat_completion_sources, getChatCompletionCapabilityModel, oai_settings } from './openai.js';
 import { Popup } from './popup.js';
 import { performFuzzySearch, power_user } from './power-user.js';
 import { getPresetManager } from './preset-manager.js';
@@ -239,7 +239,7 @@ export function isHiddenReasoningModel() {
         { name: 'gemini-2.0-pro-exp', func: FUNCS.startsWith },
     ];
 
-    const model = getChatCompletionModel() || '';
+    const model = getChatCompletionCapabilityModel();
 
     const isHidden = hiddenReasoningModels.some(({ name, func }) => func(model, name));
     return isHidden;

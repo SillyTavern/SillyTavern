@@ -1454,5 +1454,11 @@
     "Deleting chat…": "Chat wird gelöscht…",
     "Loading chat…": "Chat wird geladen…",
     "Bulk Delete": "Massenlöschung",
-    "Deleting ${0} character(s)…": "${0} Charakter(e) werden gelöscht…"
+    "Deleting ${0} character(s)…": "${0} Charakter(e) werden gelöscht…",
+    "Custom…": "Benutzerdefiniert…",
+    "Enter a Model ID": "Modell-ID eingeben",
+    "Use this model": "Dieses Modell verwenden",
+    "Settings from": "Einstellungen von",
+    "Auto (from name)": "Automatisch (aus Name)",
+    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "Kontextgröße, Reasoning und Bildunterstützung werden von diesem Modell übernommen. Automatisch leitet sie aus der Modell-ID ab."
 }

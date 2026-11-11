@@ -1452,5 +1452,11 @@
     "Deleting chat…": "Eyði spjalli…",
     "Loading chat…": "Hleð spjalli…",
     "Bulk Delete": "Fjöldaeyðing",
-    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…"
+    "Deleting ${0} character(s)…": "Eyði ${0} persónu(m)…",
+    "Custom…": "Sérsniðið…",
+    "Enter a Model ID": "Sláðu inn auðkenni líkans",
+    "Use this model": "Nota þetta líkan",
+    "Settings from": "Stillingar frá",
+    "Auto (from name)": "Sjálfvirkt (út frá nafni)",
+    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "Stærð samhengis, rökhugsun og myndstuðningur eru tekin frá þessu líkani. Sjálfvirkt giskar út frá auðkenni líkansins."
 }

@@ -79,6 +79,7 @@ import { decodeTextTokens, getAvailableTokenizers, getFriendlyTokenizerName, get
 import { debounce, delay, equalsIgnoreCaseAndAccents, findChar, getCharIndex, isFalseBoolean, isTrueBoolean, onlyUnique, regexFromString, showFontAwesomePicker, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { registerActionLoaderSlashCommands } from './action-loader-slashcommands.js';
+import { CUSTOM_MODEL_SENTINEL, isCustomModelSelect, selectCustomModel } from './custom-model-select.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
@@ -6324,7 +6325,8 @@ function getModelOptions(quiet) {
         return [valueOption];
     };
 
-    const options = getOptions(modelSelectControl).filter(x => x.value).filter(onlyUnique);
+    // "Custom…" is an action, not a model
+    const options = getOptions(modelSelectControl).filter(x => x.value && x.value !== CUSTOM_MODEL_SENTINEL).filter(onlyUnique);
     return { control: modelSelectControl, options };
 }
 
@@ -6358,7 +6360,20 @@ function modelCallback(args, model) {
         return model;
     }
 
+    // Dropdowns that accept custom models take a name that matches nothing as-is
+    const setCustomModel = () => {
+        const customModel = isCustomModelSelect(modelSelectControl) ? selectCustomModel(modelSelectControl, model) : '';
+        if (customModel) {
+            !quiet && toastr.success(t`Model set to "${customModel}"`);
+        }
+        return customModel;
+    };
+
     if (!options.length) {
+        const customModel = setCustomModel();
+        if (customModel) {
+            return customModel;
+        }
         !quiet && toastr.warning(t`No model options found. Check your API settings.`);
         return '';
     }
@@ -6385,6 +6400,10 @@ function modelCallback(args, model) {
         !quiet && toastr.success(t`Model set to "${newSelectedOption.text}"`);
         return newSelectedOption.value;
     } else {
+        const customModel = setCustomModel();
+        if (customModel) {
+            return customModel;
+        }
         !quiet && toastr.warning(t`No model found with name "${model}"`);
         return '';
     }

@@ -2774,5 +2774,10 @@
     "Deleting chat…": "正在刪除聊天…",
     "Loading chat…": "正在載入聊天…",
     "Bulk Delete": "批次刪除",
-    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…"
+    "Deleting ${0} character(s)…": "正在刪除 ${0} 個角色…",
+    "Custom…": "自訂…",
+    "Use this model": "使用此模型",
+    "Settings from": "設定參照",
+    "Auto (from name)": "自動（依名稱判斷）",
+    "Context size, reasoning and image support are taken from this model. Auto guesses from the model ID.": "上下文大小、推理與圖片支援將沿用此模型。自動模式會依模型 ID 推斷。"
 }
