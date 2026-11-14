@@ -2503,7 +2503,16 @@ router.post('/generate', async function (request, response) {
             }
 
             const isClaude = /(?:^|\/)claude[-_]/.test(request.body.model);
-            if (enableSystemPromptCache && isClaude) {
+            if (isClaude && cachingAtDepth !== -1 && Array.isArray(request.body.messages)) {
+                // Inline markers replace NanoGPT's automatic placement, so the system prompt needs its own
+                if (enableSystemPromptCache) {
+                    cachingSystemPromptForOpenRouter(request.body.messages, cacheTTL);
+                }
+
+                cachingAtDepthForOpenRouterClaude(request.body.messages, cachingAtDepth, cacheTTL);
+            }
+
+            if (isClaude && (enableSystemPromptCache || cachingAtDepth !== -1)) {
                 bodyParams['cache_control'] = {
                     'enabled': true,
                     'ttl': cacheTTL,
