@@ -73,6 +73,12 @@ import EventSourceStream from './sse-stream.js';
 
 // #endregion
 
+/** @param {Response} response */
+function isJsonResponse(response) {
+    const contentType = response.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase();
+    return contentType === 'application/json' || contentType?.endsWith('+json');
+}
+
 /**
  * Creates & sends a text completion request.
  */
@@ -116,15 +122,15 @@ export class TextCompletionService {
      * @throws {Error}
      */
     static async sendRequest(data, extractData = true, signal = null) {
-        if (!data.stream) {
-            const response = await fetch(getGenerateUrl(this.TYPE), {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                cache: 'no-cache',
-                body: JSON.stringify(data),
-                signal: signal ?? new AbortController().signal,
-            });
+        const response = await fetch(data.stream ? '/api/backends/text-completions/generate' : getGenerateUrl(this.TYPE), {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            cache: 'no-cache',
+            body: JSON.stringify(data),
+            signal: signal ?? new AbortController().signal,
+        });
 
+        if (!data.stream || isJsonResponse(response)) {
             const json = await response.json();
             if (!response.ok || json.error) {
                 throw new Error(String(json.error?.message || 'Response not OK'));
@@ -143,14 +149,6 @@ export class TextCompletionService {
                 }),
             };
         }
-
-        const response = await fetch('/api/backends/text-completions/generate', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            cache: 'no-cache',
-            body: JSON.stringify(data),
-            signal: signal ?? new AbortController().signal,
-        });
 
         if (!response.ok) {
             const text = await response.text();
@@ -468,7 +466,7 @@ export class ChatCompletionService {
             signal: signal ?? new AbortController().signal,
         });
 
-        if (!data.stream) {
+        if (!data.stream || isJsonResponse(response)) {
             const json = await response.json();
             if (!response.ok || json.error) {
                 throw new Error(String(json.error?.message || 'Response not OK'));
