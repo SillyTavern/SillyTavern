@@ -101,6 +101,11 @@ describe('convertTextCompletionPrompt', () => {
 
 
 describe('calculateClaudeBudgetTokens', () => {
+    test('missing effort returns null for both model kinds', () => {
+        expect(mod.calculateClaudeBudgetTokens(8192, undefined, true, true)).toBeNull();
+        expect(mod.calculateClaudeBudgetTokens(8192, undefined, true, false)).toBeNull();
+    });
+
     describe('adaptive model (Opus 4.6+)', () => {
         test('auto returns null', () => {
             expect(mod.calculateClaudeBudgetTokens(8192, 'auto', true, true)).toBeNull();
