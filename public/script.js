@@ -3694,7 +3694,7 @@ class StreamingProcessor {
 
             // Token count update.
             const tokenCountText = this.reasoningHandler.reasoning + processedText;
-            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await getTokenCountAsync(tokenCountText, 0) : 0;
+            const currentTokenCount = isFinal && power_user.message_token_count_enabled ? await this.#getTokenCount(tokenCountText) : 0;
             if (currentTokenCount) {
                 chat[messageId].extra.token_count = currentTokenCount;
                 if (this.messageTokenCounterDom instanceof HTMLElement) {
@@ -3740,6 +3740,29 @@ class StreamingProcessor {
 
         if (!scrollLock) {
             scrollChatToBottom({ waitForFrame: true });
+        }
+    }
+
+    /**
+     * Gets the final message token count, returning promptly if generation is stopped while the count is pending.
+     * A generation that was stopped before this point still gets counted: Stop aborts first and finalizes after,
+     * so bailing out on an already aborted signal would drop the count of every stopped message.
+     * @param {string} text Message text to count
+     * @returns {Promise<number>} Token count, or 0 if generation was aborted while counting
+     */
+    async #getTokenCount(text) {
+        const signal = this.abortController.signal;
+
+        let onAbort;
+        const aborted = new Promise(resolve => {
+            onAbort = () => resolve(0);
+            signal.addEventListener('abort', onAbort, { once: true });
+        });
+
+        try {
+            return await Promise.race([getTokenCountAsync(text, 0), aborted]);
+        } finally {
+            signal.removeEventListener('abort', onAbort);
         }
     }
 
