@@ -45,7 +45,7 @@ import {
 
 import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret, updateSecretDisplay } from './secrets.js';
-import { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, applyCustomSnapshot, captureCustomConnection, captureCustomFields, ensureCustomProviderState, getCustomAuth, getCustomProvider, listCustomProviders, normalizeCustomEndpoint, reconcileCustomCredential, settingsForCustomRequest, switchCustomProvider, validateCustomSnapshot } from './custom-providers.js';
+import { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, CUSTOM_PROVIDER_CONTROLS, applyCustomSnapshot, captureCustomConnection, captureCustomFields, ensureCustomProviderState, getCustomAuth, getCustomProvider, listCustomProviders, normalizeCustomEndpoint, reconcileCustomCredential, settingsForCustomRequest, switchCustomProvider, validateCustomSnapshot } from './custom-providers.js';
 
 import { getEventSourceStream } from './sse-stream.js';
 import {
@@ -6225,7 +6225,10 @@ function toggleChatCompletionForms() {
     setToolReasoningControls();
 }
 
-/** The input of each control a Custom provider may show or hide. The control's block is its closest data-source element. */
+/**
+ * The input of each control a Custom provider may show or hide. The control's block is its closest data-source element.
+ * @type {Record<import('./custom-providers.js').CustomProviderControl, string>}
+ */
 const CUSTOM_PROVIDER_CONTROL_INPUTS = {
     temperature: '#temp_openai', top_p: '#top_p_openai', top_k: '#top_k_openai', top_a: '#top_a_openai', min_p: '#min_p_openai',
     repetition_penalty: '#repetition_penalty_openai', frequency_penalty: '#freq_pen_openai', presence_penalty: '#pres_pen_openai',
@@ -6250,8 +6253,8 @@ export function getActiveCustomProviderId() {
  */
 function applyCustomProviderControls() {
     const controls = getCustomProvider(getActiveCustomProviderId())?.controls;
-    for (const [name, selector] of Object.entries(CUSTOM_PROVIDER_CONTROL_INPUTS)) {
-        const block = $(selector).closest('[data-source]');
+    for (const name of CUSTOM_PROVIDER_CONTROLS) {
+        const block = $(CUSTOM_PROVIDER_CONTROL_INPUTS[name]).closest('[data-source]');
         if (!block.length) continue;
         const matchesSource = String(block.data('source')).split(',').includes(oai_settings.chat_completion_source);
         let visible = block.data('source-mode') !== 'except' ? matchesSource : !matchesSource;
@@ -7023,7 +7026,7 @@ function parseSourceOption(value) {
 /**
  * Lists the named Custom provider setups in the source dropdown, in their own group, and shows the active one as selected.
  * They stay Custom connections: the group only makes them findable by name where every other provider is picked.
- * @param {Map<string, {label: string, owner: string}>} entries Setups by provider ID, including unavailable saved ones
+ * @param {Map<string, {label: string, owner: string, registered: boolean}>} entries Setups by provider ID, including unavailable saved ones
  * @param {string[]} labels Labels of the registered setups, to tell apart equal names
  * @param {string} activeId Provider ID of the active setup, or an empty string for Manual
  */

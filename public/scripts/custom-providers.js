@@ -14,25 +14,121 @@ export { CUSTOM_CONNECTION_FIELDS, CUSTOM_CREDENTIAL_KEYS, captureCustomFields, 
 
 export const CUSTOM_PROVIDER_API_VERSION = 1;
 
-/** @typedef {{mode: 'discover'|'manual', suggestions?: {id: string, label?: string}[]}} ModelSetup */
-/** @typedef {{mode: 'none'}|{mode: 'bearer', required: boolean}} AuthPolicy */
+/**
+ * The connection values a provider starts with. They fill the Custom (OpenAI-compatible) connection
+ * when the user selects the provider, and "Reset provider defaults" restores them.
+ * @typedef {object} CustomProviderDefaults
+ * @property {string} custom_url The API root. HTTP or HTTPS, without `/chat/completions`, without credentials, a query
+ * string or a fragment. Example: `https://api.example.com/v1`. Required.
+ * @property {string} [custom_model] Model ID that is preselected. Leave it out to let the user choose.
+ * @property {string} [custom_include_headers] Extra request headers, as YAML (`Name: value` lines). Not for keys:
+ * `Authorization`, `x-api-key`, `api-key` and cookie headers are rejected, the key always comes from the user's key picker.
+ * @property {string} [custom_include_body] Body fields the server adds to every request, or overwrites, as YAML.
+ * Example: `max_completion_tokens: 4096`. Applied after SillyTavern built the request, so it wins over a setting.
+ * @property {string} [custom_exclude_body] Body fields the server removes from every request, as a YAML list.
+ * Example: `- max_tokens`. Use it for every parameter the service rejects.
+ * @property {''|'merge'|'merge_tools'|'semi'|'semi_tools'|'strict'|'strict_tools'|'single'} [custom_prompt_post_processing]
+ * How the prompt is reshaped before sending. Leave it out unless the service rejects SillyTavern's default message layout.
+ */
+
+/**
+ * One model offered to the user before the first successful connection.
+ * @typedef {object} CustomProviderModelSuggestion
+ * @property {string} id Model ID as the service expects it
+ * @property {string} [label] Name shown in the model dropdown. Defaults to the ID.
+ */
+
+/**
+ * How the model list of a provider is obtained.
+ * @typedef {object} ModelSetup
+ * @property {'discover'|'manual'} mode `discover`: after connecting, the list is read from `<custom_url>/models`.
+ * `manual`: the service has no model list; the user picks a suggestion or types an ID under "Advanced".
+ * @property {CustomProviderModelSuggestion[]} [suggestions] Models offered before the first connection, and the whole
+ * list in `manual` mode.
+ */
+
+/**
+ * How the service authenticates. The key itself is never part of a definition: the user picks or enters it.
+ * - `{ mode: 'bearer', required: true }`: a key is needed and is sent as `Authorization: Bearer <key>`.
+ * - `{ mode: 'bearer', required: false }`: a key is optional; "No key" is offered.
+ * - `{ mode: 'none' }`: the service takes no key at all, for example a local server. The key input is hidden.
+ * @typedef {{mode: 'none'}|{mode: 'bearer', required: boolean}} AuthPolicy
+ */
+
+/**
+ * Name of a Chat Completion control a provider may show or hide. The full list is `CUSTOM_PROVIDER_CONTROLS`,
+ * also available as `SillyTavern.getContext().customProviders.controls`.
+ * @typedef {'temperature'|'top_p'|'top_k'|'top_a'|'min_p'|'repetition_penalty'|'frequency_penalty'|'presence_penalty'|'seed'|'n'|'logit_bias'|'reasoning_effort'|'verbosity'|'show_thoughts'|'function_calling'|'web_search'|'inline_media'|'inline_image_quality'|'request_images'|'system_prompt'} CustomProviderControl
+ */
+
+/**
+ * Which Chat Completion controls are visible while the provider is the selected connection.
+ * Controls that are not named keep the visibility of the Custom source.
+ * @typedef {object} CustomProviderControls
+ * @property {CustomProviderControl[]} [hide] Controls to hide. Hiding does not stop SillyTavern from sending the value:
+ * also list the field in `defaults.custom_exclude_body`.
+ * @property {CustomProviderControl[]} [show] Controls to show although the Custom source hides them. Showing does not make
+ * SillyTavern send the value: add it to the request yourself in a `CHAT_COMPLETION_SETTINGS_READY` listener.
+ */
+
+/**
+ * Everything that describes a Custom provider. Pass it to `customProviders.register()`.
+ * A definition is data only: registering never selects the provider, connects, stores a key or sends a request.
+ * Unknown fields are rejected with an error that names the field.
+ * @typedef {object} CustomProviderDefinition
+ * @property {string} label Name shown in the Chat Completion source list, in the "Custom Providers" group. Plain text.
+ * @property {CustomProviderDefaults} defaults Connection values the provider starts with. Only `custom_url` is required.
+ * @property {ModelSetup} models How the model list is obtained, and optional suggestions.
+ * @property {AuthPolicy} auth Whether the service needs a key.
+ * @property {CustomProviderControls} [controls] Chat Completion controls to show or hide while the provider is selected.
+ * @property {string} [documentationUrl] HTTP(S) link shown as "Documentation" in the provider card.
+ * @property {string} [supportUrl] HTTP(S) link shown as "Support" in the provider card.
+ * @property {string} [note] One short hint shown in the provider card, for example where to get a key.
+ */
+
+/**
+ * Handle returned by `customProviders.register()`. Keep it to update or remove the provider.
+ * @typedef {object} Registration
+ * @property {string} id Full provider ID, `<extension ID>:<provider ID>`. Compare it with `customProviders.active()`.
+ * @property {(definition: CustomProviderDefinition) => void} update Replaces the definition. An invalid one throws and
+ * leaves the current definition in place. Connections the user already saved keep their own values.
+ * @property {() => void} unregister Removes the provider from the list. Safe to call more than once. Saved connections keep working.
+ */
+
+/**
+ * The Custom provider API, `SillyTavern.getContext().customProviders`.
+ * @typedef {object} CustomProvidersApi
+ * @property {1} apiVersion Version of this API. Check it before registering.
+ * @property {(providerId: string, definition: CustomProviderDefinition) => Registration} register Adds a provider for the
+ * calling extension. `providerId` is a short stable slug (lowercase letters, digits, dashes, at most 64 characters);
+ * saved connections refer to it, so do not change it after release. Call it from the extension's `activate` and
+ * `enable` hooks and call `unregister()` on the handle in `disable`, `delete` and `clean`. Throws for an invalid
+ * definition, a duplicate ID, or when the call does not come from an extension.
+ * @property {(id: string) => CustomProviderDefinition|undefined} get Returns a copy of one registered definition by full ID.
+ * @property {() => {id: string, ownerExtension: string, definition: CustomProviderDefinition}[]} list Returns copies of
+ * all registered providers, sorted by label.
+ * @property {(id: string|null) => Promise<void>} select Selects a provider by full ID, or the Manual connection with
+ * `null`. Only works while Chat Completion with the Custom source is selected. Does not connect.
+ * @property {() => string|null} active Returns the full ID of the provider that is the selected connection, or `null`
+ * for Manual and for every other source. Use it to act only while your provider is in use.
+ * @property {readonly CustomProviderControl[]} controls The control names accepted in `controls.show` and `controls.hide`.
+ */
+
 /** @typedef {{mode: 'unbound'}|{mode: 'none'}|{mode: 'reference', key: string, id: string, endpoint: string}|{mode: 'legacy-custom', id: string|null}} CredentialBinding */
 /** @typedef {{provider: {id: string, label: string}|null, models: ModelSetup, auth: AuthPolicy, credential: CredentialBinding}} ConnectionMetadata */
 /** @typedef {ConnectionMetadata & {version: 1, settings: Record<string, string>}} CustomConnectionSnapshot */
 /** @typedef {{version: 1, active: ConnectionMetadata|null, manual: CustomConnectionSnapshot|null, drafts: Record<string, CustomConnectionSnapshot>}} CustomProviderState */
-/** @typedef {{label: string, defaults: Record<string, string>, models: ModelSetup, auth: AuthPolicy, controls?: {show?: string[], hide?: string[]}, documentationUrl?: string, supportUrl?: string, note?: string}} CustomProviderDefinition */
-/** @typedef {Readonly<{id: string, update: (definition: CustomProviderDefinition) => void, unregister: () => void}>} Registration */
 
 /**
  * Chat Completion controls a provider may show or hide while it is the selected connection.
  * Hiding a control does not stop its value from being sent: also remove the field with custom_exclude_body.
  * Showing a control does not make SillyTavern send its value: the extension adds it to the request itself.
  */
-export const CUSTOM_PROVIDER_CONTROLS = Object.freeze([
+export const CUSTOM_PROVIDER_CONTROLS = /** @type {readonly CustomProviderControl[]} */ (Object.freeze([
     'temperature', 'top_p', 'top_k', 'top_a', 'min_p', 'repetition_penalty', 'frequency_penalty', 'presence_penalty',
     'seed', 'n', 'logit_bias', 'reasoning_effort', 'verbosity', 'show_thoughts', 'function_calling', 'web_search',
     'inline_media', 'inline_image_quality', 'request_images', 'system_prompt',
-]);
+]));
 
 const registrations = new Map();
 const suspendedOwners = new Set();

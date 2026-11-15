@@ -138,10 +138,26 @@ test('Custom setup and Profile journey through the installed extension', async (
         await page.evaluate(() => { $('#chat_completion_source').trigger('change'); });
         await expect(source).toHaveValue(`custom:${owner}:b`);
         await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(`${owner}:b`));
+        // B was registered without an owner ID, hides one control, and gets the area for its own inputs.
+        const context = () => page.evaluate(() => ({
+            active: SillyTavern.getContext().customProviders.active(),
+            seedHidden: $('#seed_openai').closest('[data-source]').css('display') === 'none',
+            temperatureHidden: $('#temp_openai').closest('[data-source]').css('display') === 'none',
+            slot: document.getElementById('custom_provider_extension_settings').childElementCount,
+        }));
+        expect(await context()).toEqual({ active: `${owner}:b`, seedHidden: true, temperatureHidden: false, slot: 0 });
+        await page.evaluate(() => { document.getElementById('custom_provider_extension_settings').append(document.createElement('select')); });
+        await page.evaluate(() => { $('#chat_completion_source').trigger('change'); });
+        expect((await context()).slot).toBe(1);
+        await pickSetup(page, `${owner}:a`);
+        expect(await context()).toEqual({ active: `${owner}:a`, seedHidden: false, temperatureHidden: false, slot: 0 });
+        await pickSetup(page, `${owner}:b`);
+        expect((await context()).seedHidden).toBe(true);
         // Picking plain Custom is the remembered Manual connection.
         await page.selectOption('#chat_completion_source', 'custom');
         await expect(page.locator('#chat_completion_source')).toHaveValue(setupOption(''));
         await expect(page.locator('#custom_model_id')).toHaveValue('manual-model');
+        expect(await context()).toEqual({ active: null, seedHidden: false, temperatureHidden: false, slot: 0 });
         await page.evaluate(async () => { await (await import('/script.js')).saveSettings(); });
     });
 

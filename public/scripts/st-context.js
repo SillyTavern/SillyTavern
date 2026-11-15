@@ -133,6 +133,10 @@ function registerCustomProviderFromContext(...args) {
 
 export function getContext() {
     return {
+        /**
+         * Custom providers: lets an extension add a named provider on top of the Custom (OpenAI-compatible) connection.
+         * @type {import('./custom-providers.js').CustomProvidersApi}
+         */
         customProviders: { apiVersion: CUSTOM_PROVIDER_API_VERSION, register: registerCustomProviderFromContext, get: getCustomProvider, list: listCustomProviders, select: selectCustomProvider, active: getActiveCustomProviderId, controls: CUSTOM_PROVIDER_CONTROLS },
         accountStorage,
         chat,
