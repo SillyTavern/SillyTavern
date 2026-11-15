@@ -5251,7 +5251,7 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
                     break;
                 }
                 if (Array.isArray(WIOutletEntries[entry.outletName])) {
-                    WIOutletEntries[entry.outletName].push(content);
+                    WIOutletEntries[entry.outletName].unshift(content);
                 } else {
                     WIOutletEntries[entry.outletName] = [content];
                 }
