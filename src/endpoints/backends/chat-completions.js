@@ -5,7 +5,7 @@ import util from 'node:util';
 import express from 'express';
 import fetch from 'node-fetch';
 import urlJoin from 'url-join';
-import { CustomAuthError, resolveCustomAuth } from '../../custom-auth.js';
+import { CustomAuthError, redactCustomKey, resolveCustomAuth } from '../../custom-auth.js';
 
 import {
     AIMLAPI_HEADERS,
@@ -2702,7 +2702,7 @@ router.post('/generate', async function (request, response) {
             redirect: customAuth?.redirect,
         };
 
-        if (!customAuth) console.debug('Chat Completion request:', requestBody);
+        console.debug('Chat Completion request:', redactCustomKey(customAuth, requestBody));
 
         const fetchResponse = await fetch(endpointUrl, config);
 
@@ -2714,7 +2714,7 @@ router.post('/generate', async function (request, response) {
         if (fetchResponse.ok) {
             /** @type {any} */
             const json = await fetchResponse.json();
-            if (!customAuth) console.debug('Chat Completion response:', json);
+            console.debug('Chat Completion response:', redactCustomKey(customAuth, json));
             return response.send(json);
         } else {
             const responseText = await fetchResponse.text();
@@ -2722,7 +2722,7 @@ router.post('/generate', async function (request, response) {
 
             const message = fetchResponse.statusText || 'Unknown error occurred';
             const quota_error = fetchResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
-            console.error('Chat completion request error: ', message, customAuth ? '(managed Custom response omitted)' : responseText);
+            console.error('Chat completion request error: ', message, redactCustomKey(customAuth, responseText));
 
             if (!response.headersSent) {
                 response.send({ error: { message }, quota_error: quota_error });

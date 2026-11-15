@@ -150,3 +150,14 @@ test('eligible keys cover every Chat Completion source that has a key category',
     const expected = Object.values(CHAT_COMPLETION_SOURCES).map(source => `api_key_${source}`).filter(key => categories.has(key));
     expect([...CUSTOM_CREDENTIAL_KEYS].sort()).toEqual(expected.sort());
 });
+
+test('a resolved key is removed from logged text and objects, other values pass through', async () => {
+    const { redactCustomKey } = await import('../src/custom-auth.js');
+    const auth = { key: 'synthetic-selected' };
+    expect(redactCustomKey(auth, 'Incorrect API key provided: synthetic-selected.')).toBe('Incorrect API key provided: [redacted key].');
+    expect(redactCustomKey(auth, { error: { message: 'bad key synthetic-selected' }, n: 1 })).toEqual({ error: { message: 'bad key [redacted key]' }, n: 1 });
+    const body = { model: 'm' };
+    expect(redactCustomKey(auth, body)).toBe(body);
+    expect(redactCustomKey(undefined, 'synthetic-selected')).toBe('synthetic-selected');
+    expect(redactCustomKey({ key: '' }, 'text')).toBe('text');
+});

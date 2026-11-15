@@ -59,3 +59,22 @@ export function resolveCustomAuth(directories, body, endpoint = body.custom_url)
         throw new CustomAuthError(error.message);
     }
 }
+
+/**
+ * Removes the resolved key from something that is about to be logged or sent back to the client.
+ * Request and response bodies do not normally contain the key, but some services echo it in error messages.
+ * @param {{key: string}|undefined} customAuth Result of resolveCustomAuth(), undefined for a legacy connection
+ * @param {any} value Text or JSON-serializable value
+ * @returns {any} The same value with every occurrence of the key replaced
+ */
+export function redactCustomKey(customAuth, value) {
+    const key = customAuth?.key;
+    if (!key) return value;
+    const isText = typeof value === 'string';
+    let text;
+    try { text = isText ? value : JSON.stringify(value); } catch { return value; }
+    if (!text?.includes(key)) return value;
+    const redacted = text.split(key).join('[redacted key]');
+    if (isText) return redacted;
+    try { return JSON.parse(redacted); } catch { return redacted; }
+}

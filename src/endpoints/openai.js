@@ -4,7 +4,7 @@ import { Buffer } from 'node:buffer';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 import express from 'express';
-import { CustomAuthError, resolveCustomAuth } from '../custom-auth.js';
+import { CustomAuthError, redactCustomKey, resolveCustomAuth } from '../custom-auth.js';
 
 import { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1, delay } from '../util.js';
 import { setAdditionalHeaders } from '../additional-headers.js';
@@ -238,7 +238,7 @@ router.post('/caption-image', async (request, response) => {
         }
 
         setAdditionalHeaders(request, { headers }, apiUrl);
-        if (!customAuth) console.debug('Multimodal captioning request', body);
+        console.debug('Multimodal captioning request', redactCustomKey(customAuth, body));
 
         const result = await fetch(apiUrl, {
             method: 'POST',
@@ -253,13 +253,13 @@ router.post('/caption-image', async (request, response) => {
 
         if (!result.ok) {
             const text = await result.text();
-            console.warn('Multimodal captioning request failed', result.statusText, customAuth ? '(managed Custom response omitted)' : text);
-            return response.status(500).send(customAuth ? 'Custom caption request failed. Check the model and connection.' : text);
+            console.warn('Multimodal captioning request failed', result.statusText, redactCustomKey(customAuth, text));
+            return response.status(500).send(redactCustomKey(customAuth, text));
         }
 
         /** @type {any} */
         const data = await result.json();
-        if (!customAuth) console.info('Multimodal captioning response', data);
+        console.info('Multimodal captioning response', redactCustomKey(customAuth, data));
         const caption = data?.choices?.[0]?.message?.content ?? data?.message?.content?.[0]?.text;
 
         if (!caption) {
