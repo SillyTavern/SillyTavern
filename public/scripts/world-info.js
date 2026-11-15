@@ -23,6 +23,7 @@ import { renderTemplateAsync } from './templates.js';
 import { t } from './i18n.js';
 import { accountStorage } from './util/AccountStorage.js';
 import { getOrCreatePersonaDescriptor, setPersonaDescription, user_avatar } from './personas.js';
+import { CHARACTER_FILTER_STATES, CHARACTER_FILTER_TYPES, evaluateCharacterFilter, migrateCharacterFilter } from './world-info-character-filter.js';
 
 export const world_info_insertion_strategy = {
     evenly: 0,
@@ -37,26 +38,7 @@ export const world_info_logic = {
     AND_ALL: 3,
 };
 
-/**
- * @enum {string} Types for character filter items
- */
-export const CHARACTER_FILTER_TYPES = {
-    CHARACTER: 'character',
-    TAG: 'tag',
-    PERSONA: 'persona',
-};
-
-/**
- * @enum {string} Filter states for individual character filter items.
- * - ONE_OF: At least one item with this state must match (OR logic). This is the default.
- * - REQUIRED: This specific item must match (AND logic).
- * - EXCLUDED: If this item matches, the entry is filtered out (NOT logic).
- */
-export const CHARACTER_FILTER_STATES = {
-    ONE_OF: 'oneOf',
-    REQUIRED: 'required',
-    EXCLUDED: 'excluded',
-};
+export { CHARACTER_FILTER_STATES, CHARACTER_FILTER_TYPES };
 
 /** Ordered cycle for clicking through filter states */
 const CHARACTER_FILTER_STATE_CYCLE = [
@@ -2218,78 +2200,6 @@ function migrateWorldInfoData(name, data) {
 }
 
 /**
- * Migrates an entry's characterFilter from old formats to the current format.
- * Handles: legacy object with isExclude/names/tags, and intermediate array with boolean exclude.
- * Target format: array of `{ type, name, state }` items.
- * @param {object} entry - The WI entry to migrate
- * @returns {boolean} - Whether anything was migrated
- */
-function migrateCharacterFilter(entry) {
-    // Legacy object format: { isExclude, names, tags }
-    if (entry.characterFilter && !Array.isArray(entry.characterFilter) && typeof entry.characterFilter === 'object') {
-        const oldFilter = entry.characterFilter;
-        const newFilter = [];
-        const hasNames = Array.isArray(oldFilter.names) && oldFilter.names.length > 0;
-        const hasTags = Array.isArray(oldFilter.tags) && oldFilter.tags.length > 0;
-
-        if (oldFilter.isExclude) {
-            // Exclude mode: all items become EXCLUDED
-            if (hasNames) {
-                for (const name of oldFilter.names) {
-                    newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.EXCLUDED });
-                }
-            }
-            if (hasTags) {
-                for (const tag of oldFilter.tags) {
-                    newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.EXCLUDED });
-                }
-            }
-        } else if (hasNames && hasTags) {
-            // Both names and tags in include mode: old logic was AND between groups.
-            // Names → ONE_OF (character must be one of these)
-            // Tags → REQUIRED (preserves AND relationship: tags must also match)
-            for (const name of oldFilter.names) {
-                newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.ONE_OF });
-            }
-            for (const tag of oldFilter.tags) {
-                newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.REQUIRED });
-            }
-        } else {
-            // Only names or only tags: ONE_OF preserves exact old behavior
-            if (hasNames) {
-                for (const name of oldFilter.names) {
-                    newFilter.push({ type: CHARACTER_FILTER_TYPES.CHARACTER, name, state: CHARACTER_FILTER_STATES.ONE_OF });
-                }
-            }
-            if (hasTags) {
-                for (const tag of oldFilter.tags) {
-                    newFilter.push({ type: CHARACTER_FILTER_TYPES.TAG, name: tag, state: CHARACTER_FILTER_STATES.ONE_OF });
-                }
-            }
-        }
-        console.debug('[WI] Migrated old characterFilter object format for entry', entry.uid);
-        entry.characterFilter = newFilter;
-        return true;
-    }
-
-    // Normalize non-array to empty array
-    if (!Array.isArray(entry.characterFilter)) {
-        entry.characterFilter = [];
-        return true;
-    }
-
-    // Intermediate array format: items may have boolean 'exclude' instead of 'state'
-    for (const item of entry.characterFilter) {
-        if (!item.state || !Object.values(CHARACTER_FILTER_STATES).includes(item.state)) {
-            item.state = item.exclude ? CHARACTER_FILTER_STATES.EXCLUDED : CHARACTER_FILTER_STATES.ONE_OF;
-            delete item.exclude;
-        }
-    }
-
-    return false;
-}
-
-/**
  * Sorts the given data based on the selected sort option
  *
  * @param {any[]} data WI entries
@@ -3316,6 +3226,27 @@ function initCharacterFilterSelect2Helper(characterFilter, wiData) {
 function fillCharacterFilterOptionsHelper({ characterFilter, entry }) {
     const filterItems = Array.isArray(entry.characterFilter) ? entry.characterFilter : [];
 
+    /**
+     * Adds selected options for filter items whose character, tag or persona no longer exists.
+     * Without them the item would be invisible, and the next change to the filter would drop it silently.
+     * @param {HTMLOptGroupElement} group Option group of the type
+     * @param {string} type One of CHARACTER_FILTER_TYPES
+     */
+    const appendMissingItems = (group, type) => {
+        const known = new Set([...group.children].map(option => /** @type {HTMLOptionElement} */(option).value));
+        for (const item of filterItems) {
+            if (item.type !== type || known.has(item.name)) continue;
+            const option = document.createElement('option');
+            option.innerText = t`${item.name} (missing)`;
+            option.value = item.name;
+            option.selected = true;
+            option.setAttribute('data-type', type);
+            option.setAttribute('data-missing', 'true');
+            group.append(option);
+            known.add(item.name);
+        }
+    };
+
     // Characters optgroup
     const charGroup = document.createElement('optgroup');
     charGroup.label = t`Characters`;
@@ -3329,6 +3260,7 @@ function fillCharacterFilterOptionsHelper({ characterFilter, entry }) {
         option.setAttribute('data-type', CHARACTER_FILTER_TYPES.CHARACTER);
         charGroup.append(option);
     });
+    appendMissingItems(charGroup, CHARACTER_FILTER_TYPES.CHARACTER);
     characterFilter.append(charGroup);
 
     // Tags optgroup
@@ -3343,6 +3275,7 @@ function fillCharacterFilterOptionsHelper({ characterFilter, entry }) {
         option.setAttribute('data-type', CHARACTER_FILTER_TYPES.TAG);
         tagGroup.append(option);
     });
+    appendMissingItems(tagGroup, CHARACTER_FILTER_TYPES.TAG);
     characterFilter.append(tagGroup);
 
     // Personas optgroup
@@ -3357,6 +3290,7 @@ function fillCharacterFilterOptionsHelper({ characterFilter, entry }) {
         option.setAttribute('data-type', CHARACTER_FILTER_TYPES.PERSONA);
         personaGroup.append(option);
     });
+    appendMissingItems(personaGroup, CHARACTER_FILTER_TYPES.PERSONA);
     characterFilter.append(personaGroup);
 }
 
@@ -3469,8 +3403,13 @@ function updateCharacterFilterStateStyles(characterFilterSelect, entryFilter) {
         const type = filterItem?.type;
 
         // Remove all state classes, then add the current one
-        $(this).removeClass('character_filter_oneOf character_filter_required character_filter_excluded character_filter_redundant');
+        $(this).removeClass('character_filter_oneOf character_filter_required character_filter_excluded character_filter_redundant character_filter_missing');
         $(this).addClass(`character_filter_${state}`);
+
+        // An item whose character, tag or persona no longer exists stays in the filter, shown as missing
+        const isMissing = filterItem && characterFilterSelect.find('option[data-missing]').toArray()
+            .some(option => option.getAttribute('data-type') === filterItem.type && /** @type {HTMLOptionElement} */(option).value === filterItem.name);
+        $(this).toggleClass('character_filter_missing', Boolean(isMissing));
 
         // Mark non-required items of singleton types as redundant when a required item of the same type exists
         const isRedundant = type && hasRequiredSingleton.has(type) && state !== CHARACTER_FILTER_STATES.REQUIRED;
@@ -5141,45 +5080,15 @@ export async function checkWorldInfo(chat, maxContext, isDryRun, globalScanData 
 
             // Check if this entry applies based on character filter (characters, tags, personas)
             if (Array.isArray(entry.characterFilter) && entry.characterFilter.length > 0) {
-                const oneOfItems = entry.characterFilter.filter(f => f.state === CHARACTER_FILTER_STATES.ONE_OF);
-                const requiredItems = entry.characterFilter.filter(f => f.state === CHARACTER_FILTER_STATES.REQUIRED);
-                const excludedItems = entry.characterFilter.filter(f => f.state === CHARACTER_FILTER_STATES.EXCLUDED);
-
-                /** Checks whether a single filter item matches the current context */
-                const matchesItem = (item) => {
-                    switch (item.type) {
-                        case CHARACTER_FILTER_TYPES.CHARACTER:
-                            return item.name === getCharaFilename();
-                        case CHARACTER_FILTER_TYPES.TAG: {
-                            const tagKey = getTagKeyForEntity(this_chid);
-                            if (tagKey) {
-                                const tagMapEntry = context.tagMap[tagKey];
-                                return Array.isArray(tagMapEntry) && tagMapEntry.includes(item.name);
-                            }
-                            return false;
-                        }
-                        case CHARACTER_FILTER_TYPES.PERSONA:
-                            return item.name === user_avatar;
-                        default:
-                            return false;
-                    }
-                };
-
-                // EXCLUDED: If any excluded item matches, filter out this entry
-                if (excludedItems.length > 0 && excludedItems.some(matchesItem)) {
-                    log('filtered out by character filter (excluded item matched)');
-                    continue;
-                }
-
-                // REQUIRED: Every required item must match
-                if (requiredItems.length > 0 && !requiredItems.every(matchesItem)) {
-                    log('filtered out by character filter (required item not matched)');
-                    continue;
-                }
-
-                // ONE_OF: At least one must match (OR logic)
-                if (oneOfItems.length > 0 && !oneOfItems.some(matchesItem)) {
-                    log('filtered out by character filter (no oneOf item matched)');
+                const tagKey = getTagKeyForEntity(this_chid);
+                const tagMapEntry = tagKey ? context.tagMap[tagKey] : null;
+                const filterResult = evaluateCharacterFilter(entry.characterFilter, {
+                    character: getCharaFilename(),
+                    tags: Array.isArray(tagMapEntry) ? tagMapEntry : [],
+                    persona: user_avatar,
+                });
+                if (!filterResult.pass) {
+                    log(`filtered out by character filter (${filterResult.reason})`);
                     continue;
                 }
             }
