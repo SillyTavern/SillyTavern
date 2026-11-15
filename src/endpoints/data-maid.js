@@ -212,6 +212,15 @@ export class DataMaidService {
                     return; // Skip URLs and data URIs
                 }
                 knownImageFullPaths.add(path.normalize(path.join(this.directories.root, image)));
+                // Uploaded image paths are stored URL-encoded, the files on disk are not
+                try {
+                    const decodedImage = decodeURIComponent(image);
+                    if (decodedImage !== image) {
+                        knownImageFullPaths.add(path.normalize(path.join(this.directories.root, decodedImage)));
+                    }
+                } catch {
+                    // Not a valid encoded path, the as-is variant is enough
+                }
             });
             const images = await fs.promises.readdir(this.directories.userImages, { withFileTypes: true });
             for (const dirent of images) {

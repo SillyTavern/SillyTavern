@@ -137,17 +137,20 @@ router.post('/delete', async (request, response) => {
         }
 
         let pathToDelete = path.join(request.user.directories.root, request.body.path);
+        if (!isPathUnderParent(request.user.directories.userImages, pathToDelete)) {
+            return response.status(400).send('Invalid path');
+        }
+
         if (!fs.existsSync(pathToDelete)) {
             // Uploaded paths are URL-encoded, older ones are stored as-is
             try {
-                pathToDelete = path.join(request.user.directories.root, decodeURIComponent(request.body.path));
+                const decodedPath = path.join(request.user.directories.root, decodeURIComponent(request.body.path));
+                if (isPathUnderParent(request.user.directories.userImages, decodedPath)) {
+                    pathToDelete = decodedPath;
+                }
             } catch {
                 // Not a valid encoded path, keep the original one
             }
-        }
-
-        if (!isPathUnderParent(request.user.directories.userImages, pathToDelete)) {
-            return response.status(400).send('Invalid path');
         }
 
         if (!fs.existsSync(pathToDelete)) {
