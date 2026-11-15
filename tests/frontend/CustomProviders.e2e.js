@@ -11,6 +11,7 @@ const owner = 'third-party/custom-provider-extension';
 let upstream;
 let root;
 const received = [];
+const keyHeaders = [];
 let upstreamRequests = 0;
 let heldModels;
 
@@ -21,6 +22,7 @@ test.beforeAll(async () => {
     fs.cpSync(new URL('../fixtures/custom-provider-extension', import.meta.url), destination, { recursive: true });
     upstream = http.createServer(async (req, res) => {
         upstreamRequests++;
+        keyHeaders.push({ path: req.url, authorization: req.headers.authorization, apiKey: req.headers['x-api-key'] });
         if (req.url.endsWith('/models')) {
             if (heldModels?.path === req.url) {
                 const held = heldModels;
@@ -282,6 +284,11 @@ test('Custom setup and Profile journey through the installed extension', async (
         }
         await reset({ mode: 'bearer', required: true });
         await syntheticKey(page, 'a', 'api_key_custom');
+        // A provider can ask for the key under its own header instead of Authorization: Bearer.
+        await reset({ mode: 'header', name: 'x-api-key', required: true });
+        await syntheticKey(page, 'a', 'api_key_custom');
+        await page.locator('#api_button_openai').click();
+        await expect.poll(() => keyHeaders.findLast(item => item.path === '/a/v1/models')).toEqual({ path: '/a/v1/models', authorization: undefined, apiKey: 'synthetic-a' });
         await reset({ mode: 'none' });
         await expect(page.locator('#api_key_custom')).toBeDisabled();
         expect(await page.evaluate(async () => (await import('/scripts/openai.js')).captureCurrentCustomConnection().credential.mode)).toBe('none');

@@ -7124,7 +7124,7 @@ function renderCustomProviderSetup() {
     $('#custom_provider_actions').toggleClass('displayNone', !details || (!named && !otherDrafts));
     $('#custom_endpoint_block').toggleClass('displayNone', !details);
     $('#custom_key_block').toggleClass('displayNone', named && active.auth.mode === 'none');
-    $('#custom_key_optional').toggleClass('displayNone', named && active.auth.mode === 'bearer' && active.auth.required);
+    $('#custom_key_optional').toggleClass('displayNone', named && active.auth.mode !== 'none' && active.auth.required);
     $('#custom_model_id_block').toggleClass('displayNone', !details && active.models.mode === 'discover');
     $('#custom_model_select_block').toggleClass('displayNone', !details && active.models.mode === 'manual' && !active.models.suggestions?.length);
     $('#custom_key_title').text(named ? t`API Key` : t`Custom API Key`);
@@ -7159,7 +7159,7 @@ function initCustomProviderSetup() {
                 customConnectionChanged('edit', { invalidateStatus: true });
             } else if (value === 'none') {
                 const active = oai_settings.custom_provider_state.active;
-                if (active.auth.mode === 'bearer' && active.auth.required) throw new Error('This provider requires a key.');
+                if (active.auth.mode !== 'none' && active.auth.required) throw new Error('This provider requires a key.');
                 active.credential = validateCustomSnapshot({ ...captureCurrentCustomConnection(), credential: { mode: 'none' } }).credential;
                 customConnectionChanged('edit', { invalidateStatus: true });
             } else if (value && value !== 'legacy') await bindCustomCredential(...JSON.parse(value));

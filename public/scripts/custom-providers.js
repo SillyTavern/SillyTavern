@@ -51,8 +51,11 @@ export const CUSTOM_PROVIDER_API_VERSION = 1;
  * How the service authenticates. The key itself is never part of a definition: the user picks or enters it.
  * - `{ mode: 'bearer', required: true }`: a key is needed and is sent as `Authorization: Bearer <key>`.
  * - `{ mode: 'bearer', required: false }`: a key is optional; "No key" is offered.
+ * - `{ mode: 'header', name: 'x-api-key', required: true }`: the key is sent as the bare value of the named header
+ *   instead of `Authorization: Bearer`. Use it for services that expect `x-api-key`, `api-key` or similar.
+ *   `required: false` makes the key optional.
  * - `{ mode: 'none' }`: the service takes no key at all, for example a local server. The key input is hidden.
- * @typedef {{mode: 'none'}|{mode: 'bearer', required: boolean}} AuthPolicy
+ * @typedef {{mode: 'none'}|{mode: 'bearer', required: boolean}|{mode: 'header', name: string, required: boolean}} AuthPolicy
  */
 
 /**
@@ -279,7 +282,7 @@ export function switchCustomProvider(settings, id, legacySecretId = null) {
     if (!snapshot) {
         const definition = getCustomProvider(id);
         if (!definition) throw new Error('This provider has neither a registration nor a saved connection.');
-        snapshot = { version: 1, settings: definition.defaults, provider: { id, label: definition.label }, models: definition.models, auth: definition.auth, credential: { mode: definition.auth.mode === 'bearer' && definition.auth.required ? 'unbound' : 'none' } };
+        snapshot = { version: 1, settings: definition.defaults, provider: { id, label: definition.label }, models: definition.models, auth: definition.auth, credential: { mode: definition.auth.mode !== 'none' && definition.auth.required ? 'unbound' : 'none' } };
     }
     applyCustomSnapshot(settings, snapshot, legacySecretId);
 }
@@ -292,7 +295,7 @@ export function getCustomAuth(settings) {
     if (!state.active) return undefined;
     const snapshot = captureCustomConnection(settings);
     const credential = snapshot.credential;
-    if (credential.mode === 'unbound' || snapshot.auth.mode === 'bearer' && snapshot.auth.required && credential.mode === 'none') throw new Error('Choose a stored key for this connection before connecting.');
+    if (credential.mode === 'unbound' || snapshot.auth.mode !== 'none' && snapshot.auth.required && credential.mode === 'none') throw new Error('Choose a stored key for this connection before connecting.');
     if (credential.mode === 'reference' && credential.endpoint !== normalizeCustomEndpoint(snapshot.settings.custom_url)) throw new Error('The API root changed. Select a key again to approve the new root.');
     return { version: 1, auth: snapshot.auth, credential };
 }

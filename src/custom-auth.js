@@ -9,7 +9,7 @@ export class CustomAuthError extends Error {
 }
 
 /** Validate YAML before the existing merge/exclude helpers (which tolerate parse errors). */
-function validateParameters(body, managed) {
+function validateParameters(body, managed, auth) {
     for (const field of ['custom_include_headers', 'custom_include_body', 'custom_exclude_body']) {
         if (body[field] === undefined || body[field] === '') continue;
         if (typeof body[field] !== 'string') throw new CustomAuthError(`${field} must be YAML text.`);
@@ -24,6 +24,9 @@ function validateParameters(body, managed) {
         const keys = mappings.flatMap(item => Object.keys(item));
         if (managed && field === 'custom_include_headers' && keys.some(key => /^(authorization|proxy-authorization|x-api-key|api-key|cookie|set-cookie)$/i.test(key))) {
             throw new CustomAuthError('Credential headers are reserved for the core key picker.');
+        }
+        if (managed && field === 'custom_include_headers' && auth?.mode === 'header' && keys.some(key => key.toLowerCase() === auth.name.toLowerCase())) {
+            throw new CustomAuthError('The key header of this connection is reserved for the core key picker.');
         }
         if (field === 'custom_include_body' && keys.some(key => ['custom_auth', 'custom_provider_state', 'custom-connection', 'credential', 'secret_id'].includes(key))) {
             throw new CustomAuthError('Local connection metadata cannot be included in the upstream body.');
@@ -41,19 +44,20 @@ export function resolveCustomAuth(directories, body, endpoint = body.custom_url)
         const { credential, auth } = snapshot;
         const root = normalizeCustomEndpoint(endpoint);
         const legacy = credential.mode === 'legacy-custom';
-        validateParameters(body, !legacy);
+        validateParameters(body, !legacy, auth);
         let key = '';
-        if (credential.mode === 'unbound' || auth.mode === 'bearer' && auth.required && credential.mode === 'none') throw new CustomAuthError('Choose a stored key before making this request.');
+        if (credential.mode === 'unbound' || auth.mode !== 'none' && auth.required && credential.mode === 'none') throw new CustomAuthError('Choose a stored key before making this request.');
         if (credential.mode === 'reference') {
             if (!CUSTOM_CREDENTIAL_KEYS.includes(credential.key) || credential.endpoint !== root) throw new CustomAuthError('The key is not approved for this exact API root. Select it again.');
-            if (auth.mode !== 'bearer') throw new CustomAuthError('This connection does not accept a bearer credential.');
+            if (auth.mode === 'none') throw new CustomAuthError('This connection does not accept a key.');
             key = readSecret(directories, credential.key, credential.id);
             if (!key) throw new CustomAuthError('The selected key no longer exists. Choose a stored key.');
         } else if (legacy && credential.id !== null) {
             key = readSecret(directories, SECRET_KEYS.CUSTOM, credential.id);
             if (!key) throw new CustomAuthError('The captured Custom key no longer exists.');
         }
-        return { key, endpoint: root, headers: key ? { Authorization: `Bearer ${key}` } : {}, redirect: key ? 'error' : 'follow' };
+        const headers = !key ? {} : auth.mode === 'header' ? { [auth.name]: key } : { Authorization: `Bearer ${key}` };
+        return { key, endpoint: root, headers, redirect: key ? 'error' : 'follow' };
     } catch (error) {
         if (error instanceof CustomAuthError) throw error;
         throw new CustomAuthError(error.message);

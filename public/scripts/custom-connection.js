@@ -53,11 +53,19 @@ export function normalizeModels(value) {
     }) };
 }
 
+/** Headers a provider may not use to carry its key: they belong to the transport or to the browser session. */
+const RESERVED_KEY_HEADERS = /^(host|content-length|content-type|transfer-encoding|connection|accept|accept-encoding|user-agent|cookie|set-cookie|proxy-authorization)$/i;
+
 export function normalizeAuth(value) {
-    object(value, 'auth', ['mode', 'required']);
-    if (value.mode === 'none' && value.required === undefined) return { mode: 'none' };
-    if (value.mode === 'bearer' && typeof value.required === 'boolean') return { mode: 'bearer', required: value.required };
-    throw new Error('Use auth.mode none, or bearer with a boolean required flag.');
+    object(value, 'auth', ['mode', 'required', 'name']);
+    if (value.mode === 'none' && value.required === undefined && value.name === undefined) return { mode: 'none' };
+    if (value.mode === 'bearer' && typeof value.required === 'boolean' && value.name === undefined) return { mode: 'bearer', required: value.required };
+    if (value.mode === 'header' && typeof value.required === 'boolean') {
+        const name = text(value.name, 'auth.name', true);
+        if (!/^[A-Za-z][A-Za-z0-9-]{0,63}$/.test(name) || RESERVED_KEY_HEADERS.test(name)) throw new Error('auth.name must be a plain header name such as x-api-key.');
+        return { mode: 'header', name, required: value.required };
+    }
+    throw new Error('Use auth.mode none, bearer with a boolean required flag, or header with a header name and a boolean required flag.');
 }
 
 /** Copy the six active connection values, including deliberate empty strings. */
@@ -95,7 +103,7 @@ export function validateCustomSnapshot(value) {
         throw new Error('Unsupported credential binding.');
     } else if (Object.keys(credential).length !== 1) throw new Error('A keyless binding cannot carry key fields.');
     if (auth.mode === 'none' && credential.mode !== 'none') throw new Error('A no-auth connection cannot carry a credential.');
-    if (auth.mode === 'bearer' && auth.required && credential.mode === 'none') throw new Error('Required bearer authentication must be bound or unbound.');
+    if (auth.mode !== 'none' && auth.required && credential.mode === 'none') throw new Error('Required authentication must be bound or unbound.');
     if (credential.mode === 'legacy-custom' && (auth.mode !== 'bearer' || auth.required)) throw new Error('A captured Manual binding requires optional bearer authentication.');
     if (credential.mode === 'reference' && credential.endpoint !== normalizeCustomEndpoint(settings.custom_url)) throw new Error('The key is not approved for this exact API root. Select it again.');
     return { version: 1, settings, provider: copy(value.provider), models, auth, credential };

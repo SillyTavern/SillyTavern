@@ -161,3 +161,16 @@ test('a resolved key is removed from logged text and objects, other values pass 
     expect(redactCustomKey(undefined, 'synthetic-selected')).toBe('synthetic-selected');
     expect(redactCustomKey({ key: '' }, 'text')).toBe('text');
 });
+
+test('header authentication sends the bare key under the provider header and reserves that header', () => {
+    const auth = { mode: 'header', name: 'x-api-key', required: true };
+    const body = { custom_url: endpoint, custom_auth: { version: 1, auth, credential: reference() } };
+    const resolved = resolveCustomAuth({ root: directory }, body);
+    expect(resolved.headers).toEqual({ 'x-api-key': 'synthetic-selected' });
+    expect(resolved.redirect).toBe('error');
+    expect(() => resolveCustomAuth({ root: directory }, { ...body, custom_include_headers: 'X-Api-Key: other' })).toThrow('reserved');
+    expect(() => resolveCustomAuth({ root: directory }, { ...body, custom_auth: { version: 1, auth, credential: { mode: 'none' } } })).toThrow();
+    expect(() => resolveCustomAuth({ root: directory }, { ...body, custom_auth: { version: 1, auth: { ...auth, name: 'Cookie' }, credential: reference() } })).toThrow('plain header name');
+    const optional = { mode: 'header', name: 'api-key', required: false };
+    expect(resolveCustomAuth({ root: directory }, { custom_url: endpoint, custom_auth: { version: 1, auth: optional, credential: { mode: 'none' } } }).headers).toEqual({});
+});
