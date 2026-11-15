@@ -1318,7 +1318,7 @@ function setReasoningEventHandlers() {
         }
         updateReasoningFromValue(message, newReasoning);
         await saveChatConditional();
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(messageId, message, { rerenderMessage: !messageBlock.find('.edit_textarea').length });
         closeReasoningDetailsWithoutContent(messageBlock);
 
         messageBlock.find('.mes_edit_done:visible').trigger('click');
@@ -1387,7 +1387,7 @@ function setReasoningEventHandlers() {
         delete message.extra.reasoning_type;
         delete message.extra.reasoning_duration;
         await saveChatConditional();
-        updateMessageBlock(messageId, message);
+        updateMessageBlock(messageId, message, { rerenderMessage: !messageBlock.find('.edit_textarea').length });
         const textarea = messageBlock.find('.reasoning_edit_textarea');
         textarea.remove();
         await eventSource.emit(event_types.MESSAGE_REASONING_DELETED, messageId);
