@@ -116,3 +116,33 @@ describe.each([false, true])('character edits (avatar upload: %s)', withUpload =
         expect(response.headers.get('Clear-Site-Data')).toBe(withUpload ? '"cache"' : null);
     });
 });
+
+describe('character rename', () => {
+    test('keeps the old card and its chats when the renamed card cannot be written', async () => {
+        const chatsDir = path.join(testDir, 'chats');
+        const oldChats = path.join(chatsDir, 'Test');
+        fs.mkdirSync(oldChats, { recursive: true });
+        fs.writeFileSync(path.join(oldChats, 'chat-A.jsonl'), '{}\n');
+        directories.chats = chatsDir;
+
+        const renamedPath = path.join(directories.characters, 'Renamed.png');
+        const renameSync = fs.renameSync;
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(fs, 'renameSync').mockImplementation((source, destination) => {
+            if (destination === renamedPath) throw Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' });
+            return renameSync(source, destination);
+        });
+
+        const response = await fetch(`${baseUrl}/api/characters/rename`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar_url: 'Test.png', new_name: 'Renamed' }),
+        });
+
+        expect(response.status).toBe(500);
+        expect(fs.readFileSync(avatarPath)).toEqual(originalCard);
+        expect(fs.existsSync(renamedPath)).toBe(false);
+        expect(fs.existsSync(path.join(oldChats, 'chat-A.jsonl'))).toBe(true);
+        expect(fs.existsSync(path.join(chatsDir, 'Renamed'))).toBe(false);
+    });
+});
