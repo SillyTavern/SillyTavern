@@ -326,3 +326,63 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     overflow-y: auto;
     overflow-x: hidden;
 }
+
+/* Character filter: selected items. Click one to cycle one of / required / excluded. */
+.world_entry .select2-selection__choice.character_filter_oneOf .select2-selection__choice__display,
+.world_entry .select2-selection__choice.character_filter_required .select2-selection__choice__display,
+.world_entry .select2-selection__choice.character_filter_excluded .select2-selection__choice__display {
+    cursor: pointer;
+}
+
+/* required (AND) */
+.world_entry .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_required {
+    border-color: var(--active);
+}
+
+/* excluded (NOT): dashed border instead of a strikethrough, which was hard to see */
+.world_entry .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_excluded {
+    border-color: var(--SmartThemeQuoteColor, #e74c3c) !important;
+    border-style: dashed;
+    opacity: 0.75;
+}
+
+/* an item whose character, tag or persona no longer exists */
+.world_entry .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_missing .select2-selection__choice__display {
+    font-style: italic;
+}
+
+/* items made redundant by a required character or persona */
+.world_entry .select2-container .select2-selection--multiple .select2-selection__choice.character_filter_redundant {
+    opacity: 0.33;
+}
+
+/* Character filter: state indicators in the dropdown list, which select2 renders outside the entry */
+.cf_option {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+.cf_option i {
+    width: 1.2em;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.cf_state_indicator {
+    margin-left: auto;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.cf_state_indicator.cf_state_oneOf {
+    opacity: 0.5;
+}
+
+.cf_state_indicator.cf_state_required {
+    color: var(--active);
+}
+
+.cf_state_indicator.cf_state_excluded {
+    color: var(--SmartThemeQuoteColor, #e74c3c);
+}
