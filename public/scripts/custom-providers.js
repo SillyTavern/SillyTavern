@@ -20,14 +20,25 @@ export const CUSTOM_PROVIDER_API_VERSION = 1;
 /** @typedef {{provider: {id: string, label: string}|null, models: ModelSetup, auth: AuthPolicy, credential: CredentialBinding}} ConnectionMetadata */
 /** @typedef {ConnectionMetadata & {version: 1, settings: Record<string, string>}} CustomConnectionSnapshot */
 /** @typedef {{version: 1, active: ConnectionMetadata|null, manual: CustomConnectionSnapshot|null, drafts: Record<string, CustomConnectionSnapshot>}} CustomProviderState */
-/** @typedef {{label: string, defaults: Record<string, string>, models: ModelSetup, auth: AuthPolicy, documentationUrl?: string, supportUrl?: string, note?: string}} CustomProviderDefinition */
+/** @typedef {{label: string, defaults: Record<string, string>, models: ModelSetup, auth: AuthPolicy, controls?: {show?: string[], hide?: string[]}, documentationUrl?: string, supportUrl?: string, note?: string}} CustomProviderDefinition */
 /** @typedef {Readonly<{id: string, update: (definition: CustomProviderDefinition) => void, unregister: () => void}>} Registration */
+
+/**
+ * Chat Completion controls a provider may show or hide while it is the selected connection.
+ * Hiding a control does not stop its value from being sent: also remove the field with custom_exclude_body.
+ * Showing a control does not make SillyTavern send its value: the extension adds it to the request itself.
+ */
+export const CUSTOM_PROVIDER_CONTROLS = Object.freeze([
+    'temperature', 'top_p', 'top_k', 'top_a', 'min_p', 'repetition_penalty', 'frequency_penalty', 'presence_penalty',
+    'seed', 'n', 'logit_bias', 'reasoning_effort', 'verbosity', 'show_thoughts', 'function_calling', 'web_search',
+    'inline_media', 'inline_image_quality', 'request_images', 'system_prompt',
+]);
 
 const registrations = new Map();
 const suspendedOwners = new Set();
 
 function normalizeDefinition(value) {
-    object(value, 'Provider definition', ['label', 'defaults', 'models', 'auth', 'documentationUrl', 'supportUrl', 'note']);
+    object(value, 'Provider definition', ['label', 'defaults', 'models', 'auth', 'controls', 'documentationUrl', 'supportUrl', 'note']);
     object(value.defaults, 'Provider defaults', CUSTOM_CONNECTION_FIELDS);
     const defaults = captureCustomFields(value.defaults);
     defaults.custom_url = normalizeCustomEndpoint(defaults.custom_url);
@@ -40,6 +51,16 @@ function normalizeDefinition(value) {
         }
     }
     if (value.note !== undefined) result.note = text(value.note, 'Provider note');
+    if (value.controls !== undefined) {
+        object(value.controls, 'Provider controls', ['show', 'hide']);
+        result.controls = {};
+        for (const list of ['show', 'hide']) {
+            const names = value.controls[list] ?? [];
+            if (!Array.isArray(names) || names.some(name => !CUSTOM_PROVIDER_CONTROLS.includes(name))) throw new Error(`controls.${list} must list known control names: ${CUSTOM_PROVIDER_CONTROLS.join(', ')}.`);
+            result.controls[list] = [...new Set(names)];
+        }
+        if (result.controls.show.some(name => result.controls.hide.includes(name))) throw new Error('A control cannot be both shown and hidden.');
+    }
     return result;
 }
 

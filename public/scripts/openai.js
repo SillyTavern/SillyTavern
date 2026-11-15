@@ -6221,7 +6221,44 @@ function toggleChatCompletionForms() {
         $(this).toggle(mode !== 'except' ? matchesSource : !matchesSource);
     });
 
+    applyCustomProviderControls();
     setToolReasoningControls();
+}
+
+/** The input of each control a Custom provider may show or hide. The control's block is its closest data-source element. */
+const CUSTOM_PROVIDER_CONTROL_INPUTS = {
+    temperature: '#temp_openai', top_p: '#top_p_openai', top_k: '#top_k_openai', top_a: '#top_a_openai', min_p: '#min_p_openai',
+    repetition_penalty: '#repetition_penalty_openai', frequency_penalty: '#freq_pen_openai', presence_penalty: '#pres_pen_openai',
+    seed: '#seed_openai', n: '#n_openai', logit_bias: '#openai_logit_bias_preset', reasoning_effort: '#openai_reasoning_effort',
+    verbosity: '#openai_verbosity', show_thoughts: '#openai_show_thoughts', function_calling: '#openai_function_calling',
+    web_search: '#openai_enable_web_search', inline_media: '#openai_media_inlining', inline_image_quality: '#openai_inline_image_quality',
+    request_images: '#openai_request_images', system_prompt: '#use_sysprompt',
+};
+
+/**
+ * Gets the ID of the named Custom provider that is the selected connection.
+ * @returns {string|null} Provider ID, or null for Manual and for every other source or API
+ */
+export function getActiveCustomProviderId() {
+    if (main_api !== 'openai' || oai_settings.chat_completion_source !== chat_completion_sources.CUSTOM) return null;
+    return oai_settings.custom_provider_state?.active?.provider?.id ?? null;
+}
+
+/**
+ * Shows and hides the controls a selected Custom provider declared, on top of what the Custom source shows by default.
+ * Everything a provider did not name keeps the visibility its data-source attribute gives it.
+ */
+function applyCustomProviderControls() {
+    const controls = getCustomProvider(getActiveCustomProviderId())?.controls;
+    for (const [name, selector] of Object.entries(CUSTOM_PROVIDER_CONTROL_INPUTS)) {
+        const block = $(selector).closest('[data-source]');
+        if (!block.length) continue;
+        const matchesSource = String(block.data('source')).split(',').includes(oai_settings.chat_completion_source);
+        let visible = block.data('source-mode') !== 'except' ? matchesSource : !matchesSource;
+        if (controls?.hide?.includes(name)) visible = false;
+        if (controls?.show?.includes(name)) visible = true;
+        block.toggle(visible);
+    }
 }
 
 async function testApiConnection() {
@@ -7057,6 +7094,13 @@ function renderCustomProviderSetup() {
     $('#custom_provider_name').text(entry?.label ?? '');
     $('#custom_provider_owner').text((entry?.owner ?? '').replace(/^third-party\//, ''));
     $('#custom_provider_info').text(named ? definition ? definition.note ?? '' : t`extension unavailable` : '');
+    // A place for the provider's own inputs. It is emptied whenever another connection takes over.
+    const slot = document.getElementById('custom_provider_extension_settings');
+    if (slot && slot.dataset.provider !== id) {
+        slot.replaceChildren();
+        slot.dataset.provider = id;
+    }
+    applyCustomProviderControls();
     for (const [selector, url] of [['#custom_provider_documentation', definition?.documentationUrl], ['#custom_provider_support', definition?.supportUrl]]) $(selector).attr('href', url ?? '').toggleClass('displayNone', !url);
 
     for (const [field, selector] of [['custom_url', '#custom_api_url_text'], ['custom_model', '#custom_model_id'], ['custom_prompt_post_processing', '#custom_prompt_post_processing'], ['custom_include_headers', '#custom_include_headers'], ['custom_include_body', '#custom_include_body'], ['custom_exclude_body', '#custom_exclude_body']]) $(selector).val(oai_settings[field]);

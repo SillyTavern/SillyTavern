@@ -40,6 +40,15 @@ describe('Custom provider registration', () => {
     test.each(['https://u:p@example.test/v1', 'https://example.test/v1?key=x', 'https://example.test/v1#x', 'https://example.test/v1/chat/completions', 'file:///tmp/api'])('rejects an unsafe or completion URL %s', url => {
         expect(() => registerCustomProvider(owner, 'a', definition(url))).toThrow();
     });
+    test('accepts known control names and rejects unknown or contradictory ones', () => {
+        const handle = registerCustomProvider(owner, 'controls', { ...definition(), controls: { hide: ['temperature', 'temperature', 'top_p'], show: ['top_k'] } });
+        expect(getCustomProvider(handle.id).controls).toEqual({ show: ['top_k'], hide: ['temperature', 'top_p'] });
+        expect(getCustomProvider(registerCustomProvider(owner, 'plain', definition()).id).controls).toBeUndefined();
+        expect(() => registerCustomProvider(owner, 'unknown', { ...definition(), controls: { hide: ['no_such_control'] } })).toThrow('known control names');
+        expect(() => registerCustomProvider(owner, 'both', { ...definition(), controls: { hide: ['seed'], show: ['seed'] } })).toThrow('both shown and hidden');
+        expect(() => registerCustomProvider(owner, 'shape', { ...definition(), controls: { remove: [] } })).toThrow('unsupported field');
+    });
+
     test('keeps the root path and HTTP support', () => {
         expect(normalizeCustomEndpoint('HTTP://LOCALHOST:1234/tenant/v1/')).toBe('http://localhost:1234/tenant/v1');
     });
